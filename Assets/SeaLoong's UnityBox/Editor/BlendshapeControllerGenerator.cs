@@ -10,12 +10,14 @@ using UnityEngine;
 public class BlendshapeControllerGenerator : EditorWindow
 {
   private SkinnedMeshRenderer targetRenderer;
-  private string rendererRelativePath = "";
+  private GameObject avatarRoot;
   private Vector2 _scroll;
+  private string blendshapePropertyPrefix = "blendShape.";
   private string outputFolder = "Assets/SeaLoong's UnityBox/GeneratedBlendshapes";
   private List<string> blendshapeNames = new List<string>();
   private List<bool> selected;
   private string controllerName = "";
+
 
   [MenuItem("Tools/SeaLoong's UnityBox/Blendshape Controller Generator")]
   public static void ShowWindow()
@@ -27,16 +29,23 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     EditorGUILayout.LabelField("Blendshape Controller Generator", EditorStyles.boldLabel);
 
+    var prevAvatarRoot = avatarRoot;
     var prevRenderer = targetRenderer;
+
+    avatarRoot = (GameObject)EditorGUILayout.ObjectField("Avatar", avatarRoot, typeof(GameObject), true);
+    if (avatarRoot != null && avatarRoot != prevAvatarRoot)
+    {
+      targetRenderer = avatarRoot.GetComponentInChildren<SkinnedMeshRenderer>();
+    }
+
     targetRenderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField("Target SkinnedMeshRenderer", targetRenderer, typeof(SkinnedMeshRenderer), true);
     if (targetRenderer != null && targetRenderer != prevRenderer)
     {
-      rendererRelativePath = GetTransformPath(targetRenderer.transform);
-      if (string.IsNullOrWhiteSpace(controllerName))
-        controllerName = targetRenderer.gameObject.name;
+      controllerName = targetRenderer.gameObject.name;
       RefreshBlendshapes();
     }
-    rendererRelativePath = EditorGUILayout.TextField("Renderer Path", rendererRelativePath);
+
+    EditorGUILayout.HelpBox("Avatar 为必需项。\n绑定路径使用 Avatar 到 Target 的相对路径（Target 必须是 Avatar 的子对象）。\n工具不会创建或修改任何 Animator 组件。", MessageType.Info);
 
     EditorGUILayout.BeginHorizontal();
     EditorGUILayout.LabelField("Output Folder", GUILayout.MaxWidth(80));
@@ -55,6 +64,7 @@ public class BlendshapeControllerGenerator : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     controllerName = EditorGUILayout.TextField("Controller FileName", controllerName);
+    blendshapePropertyPrefix = EditorGUILayout.TextField("Blendshape Property Prefix", blendshapePropertyPrefix);
 
     if (GUILayout.Button("Refresh Blendshapes"))
     {
@@ -74,7 +84,7 @@ public class BlendshapeControllerGenerator : EditorWindow
         for (int i = 0; i < selected.Count; i++) selected[i] = false;
       }
       EditorGUILayout.EndHorizontal();
-      _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(200));
+      _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(300));
       for (int i = 0; i < blendshapeNames.Count; i++)
       {
         selected[i] = EditorGUILayout.ToggleLeft(blendshapeNames[i], selected[i]);
@@ -82,22 +92,46 @@ public class BlendshapeControllerGenerator : EditorWindow
       EditorGUILayout.EndScrollView();
     }
 
-    EditorGUILayout.Space();
-    EditorGUILayout.HelpBox(
-        "生成器将为每个勾选的 Blendshape 创建一个 AnimationClip（线性从 0 到 100）。同时生成一个 Animator Controller（每个Blendshape一个Layer，float参数控制）。\nRenderer Path 用于指定动画曲线绑定到哪个SkinnedMeshRenderer（如 'Body/Head'），需与Animator结构一致。",
-        MessageType.Info);
+    // 检查 Avatar 与 Target 的关系
+    string computedRelativePreview = null;
+    if (avatarRoot != null && targetRenderer != null)
+      computedRelativePreview = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
 
+    if (avatarRoot == null)
+    {
+      EditorGUILayout.HelpBox("请指定 Avatar（作为路径基准）。", MessageType.Error);
+    }
+    else if (targetRenderer != null && computedRelativePreview == null)
+    {
+      EditorGUILayout.HelpBox("Target 不在所选 Avatar 下。请确保 Avatar 是其祖先。", MessageType.Error);
+    }
+
+    EditorGUILayout.Space();
+    EditorGUILayout.HelpBox("生成器将为每个勾选的 Blendshape 创建一个 AnimationClip（0->100），并生成对应的 Animator Controller。", MessageType.Info);
+
+    // Only enable generation when avatarRoot and target relationships are valid
+    bool avatarOk = avatarRoot != null && targetRenderer != null && computedRelativePreview != null;
+    EditorGUI.BeginDisabledGroup(!avatarOk || blendshapeNames.Count == 0);
     if (GUILayout.Button("Generate Controller"))
     {
-      if (targetRenderer == null || string.IsNullOrEmpty(rendererRelativePath))
+      if (targetRenderer == null)
       {
-        EditorUtility.DisplayDialog("Missing fields", "请指定SkinnedMeshRenderer和Renderer Path。", "OK");
+        EditorUtility.DisplayDialog("Missing fields", "请指定 SkinnedMeshRenderer。", "OK");
       }
       else
       {
-        Generate();
+        string computed = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
+        if (computed == null)
+        {
+          EditorUtility.DisplayDialog("Invalid Avatar", "Avatar 必须是 Target 的祖先。", "OK");
+        }
+        else
+        {
+          Generate();
+        }
       }
     }
+    EditorGUI.EndDisabledGroup();
   }
 
   private void RefreshBlendshapes()
@@ -124,9 +158,6 @@ public class BlendshapeControllerGenerator : EditorWindow
       blendshapeNames.Add(name);
       selected.Add(true);
     }
-
-    // 自动填充路径（只在刷新时覆盖）
-    rendererRelativePath = GetTransformPath(targetRenderer.transform);
   }
 
   private void Generate()
@@ -169,7 +200,16 @@ public class BlendshapeControllerGenerator : EditorWindow
       controller.RemoveLayer(0);
     }
 
-    string meshPrefix = targetRenderer != null ? targetRenderer.gameObject.name + "__" : "";
+    string meshPrefix = targetRenderer != null ? targetRenderer.gameObject.name + "_" : "";
+
+    // 预先计算最终绑定路径：使用 avatarRoot 到 target 的相对路径（目标必须为 avatarRoot 的子孙）
+    string computedRelative = null;
+    if (avatarRoot != null && targetRenderer != null)
+    {
+      computedRelative = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
+    }
+    string finalBindingPath = computedRelative ?? "";
+
     for (int i = 0; i < blendshapeNames.Count; i++)
     {
       if (!selected[i]) continue;
@@ -187,10 +227,11 @@ public class BlendshapeControllerGenerator : EditorWindow
       clipSettings.loopTime = true;
       AnimationUtility.SetAnimationClipSettings(clip, clipSettings);
 
+      // 使用预先计算的 finalBindingPath
       var binding = new EditorCurveBinding();
-      binding.path = rendererRelativePath;
+      binding.path = finalBindingPath;
       binding.type = typeof(SkinnedMeshRenderer);
-      binding.propertyName = "blendShape." + name;
+      binding.propertyName = blendshapePropertyPrefix + name;
 
       var curve = new AnimationCurve();
       curve.AddKey(new Keyframe(0f, 0f));
@@ -203,8 +244,8 @@ public class BlendshapeControllerGenerator : EditorWindow
       AnimationUtility.SetEditorCurve(clip, binding, curve);
       AssetDatabase.CreateAsset(clip, clipPath);
 
-      // add a float parameter for future use
-      string paramName = "BS_" + safeName;
+      // add a float parameter for future use (prefix with mesh/gameobject name to avoid collisions)
+      string paramName = meshPrefix + "BS_" + safeName;
       if (!controller.parameters.Any(p => p.name == paramName))
       {
         controller.AddParameter(paramName, AnimatorControllerParameterType.Float);
@@ -232,7 +273,10 @@ public class BlendshapeControllerGenerator : EditorWindow
     AssetDatabase.SaveAssets();
     AssetDatabase.Refresh();
 
-    EditorUtility.DisplayDialog("Done", "Generated Animator Controller and clips in: \n" + outputFolder, "OK");
+    string shownPath = computedRelative != null ? (computedRelative + " (relative to Avatar)") : "(bound to target object)";
+    EditorUtility.DisplayDialog("Done",
+      "Generated Animator Controller and clips in: \n" + outputFolder + "\nBinding path used: '" + shownPath + "'",
+      "OK");
   }
 
   private static string GetRelativePath(Transform root, Transform target)
