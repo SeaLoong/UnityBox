@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using System.Collections.Immutable;
 using UnityEditor.Animations;
 using UnityEngine;
 using nadena.dev.modular_avatar.core;
@@ -13,18 +14,23 @@ public class BlendshapeControllerGenerator : EditorWindow
 {
   private GameObject avatarRoot;
   private Vector2 meshListScroll;
-  private List<Vector2> blendshapeScrolls = new List<Vector2>();
   private string blendshapePropertyPrefix = "blendShape.";
   private string outputFolder = "Assets/SeaLoong's UnityBox/GeneratedBlendshapes";
 
   private string controllerName = "";
-  // Multi-mesh support
-  private List<SkinnedMeshRenderer> meshRenderers = new List<SkinnedMeshRenderer>();
-  private List<List<string>> meshBlendshapeNames = new List<List<string>>();
-  private List<List<bool>> meshSelectedBlendshapes = new List<List<bool>>();
-  private List<bool> meshEnabled = new List<bool>();
-  private List<bool> meshFoldout = new List<bool>();
-  private List<string> meshParamPrefixes = new List<string>();
+  // Multi-mesh support: represent each entry as a struct-like class to avoid parallel-list desync
+  private class MeshEntry
+  {
+    public SkinnedMeshRenderer renderer;
+    public List<string> blendshapeNames = new List<string>();
+    public List<bool> selected = new List<bool>();
+    public bool enabled = true;
+    public bool foldout = false;
+    public string prefix = "";
+    public Vector2 scroll = Vector2.zero;
+  }
+
+  private List<MeshEntry> meshEntries = new List<MeshEntry>();
   private string scanFilter = "";
   private bool scanIncludeInactive = true;
   private List<string> lastGeneratedAssets = new List<string>();
@@ -75,14 +81,12 @@ public class BlendshapeControllerGenerator : EditorWindow
       if (GUILayout.Button("Scan", GUILayout.Width(70)))
       {
         RefreshMeshes(scanIncludeInactive, string.IsNullOrWhiteSpace(scanFilter) ? null : scanFilter);
-        // align prefixes
-        meshParamPrefixes.Clear();
-        for (int i = 0; i < meshRenderers.Count; i++)
+        // align prefixes on the new meshEntries
+        for (int i = 0; i < meshEntries.Count; i++)
         {
-          var mr = meshRenderers[i];
-          meshParamPrefixes.Add(mr != null ? mr.gameObject.name + "_" : "mesh_" + i + "_");
+          var e = meshEntries[i];
+          e.prefix = e.renderer != null ? e.renderer.gameObject.name + "_" : "mesh_" + i + "_";
         }
-        // cleared
       }
       EditorGUILayout.EndHorizontal();
 
@@ -95,24 +99,20 @@ public class BlendshapeControllerGenerator : EditorWindow
 
       if (GUILayout.Button("Add", GUILayout.Width(60)))
       {
-        meshRenderers.Add(null);
-        meshBlendshapeNames.Add(new List<string>());
-        meshSelectedBlendshapes.Add(new List<bool>());
-        meshEnabled.Add(true);
-        meshFoldout.Add(false);
-        meshParamPrefixes.Add("mesh_" + (meshParamPrefixes.Count) + "_");
-        blendshapeScrolls.Add(Vector2.zero);
+        var e = new MeshEntry();
+        e.renderer = null;
+        e.blendshapeNames = new List<string>();
+        e.selected = new List<bool>();
+        e.enabled = true;
+        e.foldout = false;
+        e.prefix = "mesh_" + meshEntries.Count + "_";
+        e.scroll = Vector2.zero;
+        meshEntries.Add(e);
       }
 
       if (GUILayout.Button("Clear", GUILayout.Width(60)))
       {
-        meshRenderers.Clear();
-        meshBlendshapeNames.Clear();
-        meshSelectedBlendshapes.Clear();
-        meshEnabled.Clear();
-        meshFoldout.Clear();
-        meshParamPrefixes.Clear();
-        blendshapeScrolls.Clear();
+        meshEntries.Clear();
       }
 
       // Suggest button removed
@@ -123,12 +123,13 @@ public class BlendshapeControllerGenerator : EditorWindow
     {
       // Render mesh entries (user-managed) inside a dedicated scroll area
       meshListScroll = EditorGUILayout.BeginScrollView(meshListScroll, GUILayout.MaxHeight(800), GUILayout.ExpandHeight(false));
-      for (int mi = 0; mi < meshRenderers.Count; mi++)
+      for (int mi = 0; mi < meshEntries.Count; mi++)
       {
-        var mr = meshRenderers[mi];
+        var entry = meshEntries[mi];
+        var mr = entry.renderer;
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.BeginHorizontal();
-        meshEnabled[mi] = EditorGUILayout.Toggle(meshEnabled[mi], GUILayout.MaxWidth(18));
+        entry.enabled = EditorGUILayout.Toggle(entry.enabled, GUILayout.MaxWidth(18));
         var newMr = (SkinnedMeshRenderer)EditorGUILayout.ObjectField(mr, typeof(SkinnedMeshRenderer), true);
         // display relative path for the mesh to make entries distinguishable
         string relPath = null;
@@ -139,13 +140,13 @@ public class BlendshapeControllerGenerator : EditorWindow
         if (newMr != mr)
         {
           // Prevent duplicate selection of same SkinnedMeshRenderer instance
-          if (newMr != null && meshRenderers.Where((existing, idx) => idx != mi && existing == newMr).Any())
+          if (newMr != null && meshEntries.Where((existing, idx) => idx != mi && existing.renderer == newMr).Any())
           {
             EditorUtility.DisplayDialog("Duplicate Mesh", "This SkinnedMeshRenderer is already added in the list. Please select a different mesh.", "OK");
           }
           else
           {
-            meshRenderers[mi] = newMr;
+            entry.renderer = newMr;
             // refresh this entry's blendshape lists
             var names = new List<string>();
             var sels = new List<bool>();
@@ -157,31 +158,32 @@ public class BlendshapeControllerGenerator : EditorWindow
                 sels.Add(true);
               }
             }
-            meshBlendshapeNames[mi] = names;
-            meshSelectedBlendshapes[mi] = sels;
-            meshFoldout[mi] = names.Count > 0;
+            entry.blendshapeNames = names;
+            entry.selected = sels;
+            entry.foldout = names.Count > 0;
             // Reset prefix to the mesh's name when user assigns a mesh (drag-in)
-            if (meshParamPrefixes.Count <= mi)
-              meshParamPrefixes.Add(newMr != null ? newMr.gameObject.name + "_" : "mesh_" + mi + "_");
-            else
-              meshParamPrefixes[mi] = newMr != null ? newMr.gameObject.name + "_" : "mesh_" + mi + "_";
-            // ensure blendshape scroll list has an entry
-            if (blendshapeScrolls.Count <= mi) blendshapeScrolls.Add(Vector2.zero);
+            entry.prefix = newMr != null ? newMr.gameObject.name + "_" : (string.IsNullOrWhiteSpace(entry.prefix) ? "mesh_" + mi + "_" : entry.prefix);
+            // ensure scroll value exists
+            entry.scroll = entry.scroll;
           }
         }
 
         if (GUILayout.Button("Remove", GUILayout.Width(64)))
         {
-          meshRenderers.RemoveAt(mi);
-          meshBlendshapeNames.RemoveAt(mi);
-          meshSelectedBlendshapes.RemoveAt(mi);
-          meshEnabled.RemoveAt(mi);
-          meshFoldout.RemoveAt(mi);
-          if (blendshapeScrolls.Count > mi) blendshapeScrolls.RemoveAt(mi);
+          meshEntries.RemoveAt(mi);
           EditorGUILayout.EndHorizontal();
           EditorGUILayout.EndVertical();
           break;
         }
+        EditorGUILayout.EndHorizontal();
+
+        // Parameter prefix editor and preview
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Param Prefix", GUILayout.MaxWidth(80));
+        if (string.IsNullOrWhiteSpace(entry.prefix)) entry.prefix = mr != null ? (mr.gameObject.name + "_") : ("mesh_" + mi + "_");
+        entry.prefix = EditorGUILayout.TextField(entry.prefix);
+        // read-only preview (SelectableLabel allows copy on newer Unity versions; fallback to LabelField)
+        EditorGUILayout.SelectableLabel("BS_" + entry.prefix + "<blendshape>", GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
         EditorGUILayout.EndHorizontal();
 
         // foldout header: show Avatar-relative path when available, otherwise show full transform path
@@ -192,23 +194,12 @@ public class BlendshapeControllerGenerator : EditorWindow
           header = relPath;
         else
           header = GetTransformPath(mr.transform);
-        meshFoldout[mi] = EditorGUILayout.Foldout(meshFoldout[mi], header);
+        entry.foldout = EditorGUILayout.Foldout(entry.foldout, header);
 
-        // Parameter prefix editor and preview
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Param Prefix", GUILayout.MaxWidth(80));
-        if (meshParamPrefixes.Count <= mi) meshParamPrefixes.Add(mr != null ? (mr.gameObject.name + "_") : ("mesh_" + mi + "_"));
-        meshParamPrefixes[mi] = EditorGUILayout.TextField(meshParamPrefixes[mi]);
-        // read-only preview (SelectableLabel allows copy on newer Unity versions; fallback to LabelField)
-        EditorGUILayout.SelectableLabel("BS_" + meshParamPrefixes[mi] + "<blendshape>", GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
-        EditorGUILayout.EndHorizontal();
-
-        // suggestion UI removed
-
-        if (meshFoldout[mi])
+        if (entry.foldout)
         {
-          var names = meshBlendshapeNames[mi];
-          var sels = meshSelectedBlendshapes[mi];
+          var names = entry.blendshapeNames;
+          var sels = entry.selected;
           if (names != null && names.Count > 0)
           {
             // Compact select/deselect toolbar
@@ -223,18 +214,17 @@ public class BlendshapeControllerGenerator : EditorWindow
             }
             EditorGUILayout.EndHorizontal();
 
-            if (blendshapeScrolls.Count <= mi) blendshapeScrolls.Add(Vector2.zero);
             // calculate desired height based on number of names (line height + padding), cap at 300
             float lineH = EditorGUIUtility.singleLineHeight + 4f;
             float desiredH = Mathf.Min(names.Count * lineH + 8f, 300f);
-            blendshapeScrolls[mi] = EditorGUILayout.BeginScrollView(blendshapeScrolls[mi], GUILayout.Height(desiredH));
+            entry.scroll = EditorGUILayout.BeginScrollView(entry.scroll, GUILayout.Height(desiredH));
             for (int bi = 0; bi < names.Count; bi++)
             {
               EditorGUILayout.BeginHorizontal();
 
               sels[bi] = EditorGUILayout.ToggleLeft(names[bi], sels[bi]);
 
-              var previewPrefix = (meshParamPrefixes.Count > mi && !string.IsNullOrWhiteSpace(meshParamPrefixes[mi])) ? meshParamPrefixes[mi] : (mr != null ? mr.gameObject.name + "_" : "");
+              var previewPrefix = !string.IsNullOrWhiteSpace(entry.prefix) ? entry.prefix : (mr != null ? mr.gameObject.name + "_" : "");
               EditorGUILayout.SelectableLabel("BS_" + previewPrefix + SanitizeName(names[bi]), GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
               EditorGUILayout.EndHorizontal();
@@ -266,16 +256,16 @@ public class BlendshapeControllerGenerator : EditorWindow
     if (GUILayout.Button("Generate"))
     {
       // ensure at least one enabled mesh and validate ancestor relationship
-      if (!meshEnabled.Any(x => x))
+      if (!meshEntries.Any(e => e.enabled))
       {
         EditorUtility.DisplayDialog("No meshes selected", "Please enable at least one mesh for export.", "OK");
       }
       else
       {
-        for (int mi = 0; mi < meshRenderers.Count; mi++)
+        foreach (var entry in meshEntries)
         {
-          if (!meshEnabled[mi]) continue;
-          var mr = meshRenderers[mi];
+          if (!entry.enabled) continue;
+          var mr = entry.renderer;
           if (mr == null) continue;
           var rel = GetRelativePath(avatarRoot.transform, mr.transform);
           if (rel == null)
@@ -295,17 +285,18 @@ public class BlendshapeControllerGenerator : EditorWindow
     // Propose parameter prefix adjustments to avoid conflicts, but don't apply them immediately.
     var usedParams = new HashSet<string>(StringComparer.Ordinal);
     var proposedPrefixes = new List<string>();
-    for (int i = 0; i < meshRenderers.Count; i++) proposedPrefixes.Add(i < meshParamPrefixes.Count ? meshParamPrefixes[i] : null);
+    for (int i = 0; i < meshEntries.Count; i++) proposedPrefixes.Add(!string.IsNullOrWhiteSpace(meshEntries[i].prefix) ? meshEntries[i].prefix : null);
 
     var proposals = new List<string>();
-    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    for (int mi = 0; mi < meshEntries.Count; mi++)
     {
-      if (!meshEnabled[mi]) continue;
-      var names = meshBlendshapeNames[mi];
-      var sels = meshSelectedBlendshapes[mi];
+      var entry = meshEntries[mi];
+      if (!entry.enabled) continue;
+      var names = entry.blendshapeNames;
+      var sels = entry.selected;
       if (names == null || sels == null) continue;
       if (string.IsNullOrWhiteSpace(proposedPrefixes[mi]))
-        proposedPrefixes[mi] = (meshRenderers[mi] != null ? meshRenderers[mi].gameObject.name : "mesh") + "_";
+        proposedPrefixes[mi] = (entry.renderer != null ? entry.renderer.gameObject.name : "mesh") + "_";
 
       string basePrefix = proposedPrefixes[mi];
       string attemptPrefix = basePrefix;
@@ -353,8 +344,7 @@ public class BlendshapeControllerGenerator : EditorWindow
         // apply proposed prefixes
         for (int i = 0; i < proposedPrefixes.Count; i++)
         {
-          if (i < meshParamPrefixes.Count) meshParamPrefixes[i] = proposedPrefixes[i];
-          else meshParamPrefixes.Add(proposedPrefixes[i]);
+          if (i < meshEntries.Count) meshEntries[i].prefix = proposedPrefixes[i];
         }
         foreach (var s in proposals) Debug.Log(s + " (auto-applied)");
       }
@@ -368,11 +358,11 @@ public class BlendshapeControllerGenerator : EditorWindow
 
     // Compute total number of clips to generate across enabled meshes
     int totalClips = 0;
-    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    foreach (var entry in meshEntries)
     {
-      if (!meshEnabled[mi]) continue;
-      var names = meshBlendshapeNames[mi];
-      var sels = meshSelectedBlendshapes[mi];
+      if (!entry.enabled) continue;
+      var names = entry.blendshapeNames;
+      var sels = entry.selected;
       if (names == null || sels == null) continue;
       for (int j = 0; j < names.Count; j++) if (sels[j]) totalClips++;
     }
@@ -384,15 +374,16 @@ public class BlendshapeControllerGenerator : EditorWindow
     }
 
     int clipIndex = 0;
-    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    for (int mi = 0; mi < meshEntries.Count; mi++)
     {
-      if (!meshEnabled[mi]) continue;
-      var mr = meshRenderers[mi];
-      var names = meshBlendshapeNames[mi];
-      var sels = meshSelectedBlendshapes[mi];
+      var entry = meshEntries[mi];
+      if (!entry.enabled) continue;
+      var mr = entry.renderer;
+      var names = entry.blendshapeNames;
+      var sels = entry.selected;
       if (names == null || sels == null) continue;
 
-      var usePrefix = (mi < proposedPrefixes.Count) ? proposedPrefixes[mi] : (mi < meshParamPrefixes.Count ? meshParamPrefixes[mi] : null);
+      var usePrefix = (mi < proposedPrefixes.Count) ? proposedPrefixes[mi] : entry.prefix;
       bool cancelled = GenerateForMesh(mr, names, sels, clipIndex, totalClips, usePrefix);
       if (cancelled)
       {
@@ -608,7 +599,9 @@ public class BlendshapeControllerGenerator : EditorWindow
       if (topItem == null) topItem = topMenuGO.AddComponent<ModularAvatarMenuItem>();
       try
       {
+        topItem.label = "Blendshapes";
         topItem.PortableControl.Type = PortableControlType.SubMenu;
+        topItem.automaticValue = true;
         topItem.MenuSource = SubmenuSource.Children;
         // Do not set topItem.PortableControl.Parameter or Value for submenus
       }
@@ -633,6 +626,7 @@ public class BlendshapeControllerGenerator : EditorWindow
     try
     {
       controllerMenuItem.PortableControl.Type = PortableControlType.SubMenu;
+      controllerMenuItem.automaticValue = true;
       controllerMenuItem.MenuSource = SubmenuSource.Children;
     }
     catch (Exception)
@@ -672,6 +666,7 @@ public class BlendshapeControllerGenerator : EditorWindow
           try
           {
             midItem.PortableControl.Type = PortableControlType.SubMenu;
+            midItem.automaticValue = true;
             midItem.MenuSource = SubmenuSource.Children;
             // Ensure no parameter/value are set on submenu items
             try { midItem.PortableControl.Parameter = ""; } catch { }
@@ -687,11 +682,8 @@ public class BlendshapeControllerGenerator : EditorWindow
       // Configure the leaf menu item to point at the generated parameter and set sensible defaults.
       try
       {
-        // Parameter this control targets
-        item.PortableControl.Parameter = paramName;
-        // Use Toggle by default (common for on/off controls). Value=1 means the 'on' value.
-        item.PortableControl.Type = PortableControlType.Toggle;
-        item.PortableControl.Value = 1f;
+        item.PortableControl.Type = PortableControlType.RadialPuppet;
+        item.PortableControl.SubParameters = ImmutableList.Create(paramName);
 
         // Menu item flags: keep defaults consistent with Modular Avatar expectations
         item.isSaved = true;
@@ -821,12 +813,7 @@ public class BlendshapeControllerGenerator : EditorWindow
 
   private void RefreshMeshes(bool includeInactive, string nameFilter)
   {
-    meshRenderers.Clear();
-    meshBlendshapeNames.Clear();
-    meshSelectedBlendshapes.Clear();
-    meshEnabled.Clear();
-    meshFoldout.Clear();
-    blendshapeScrolls.Clear();
+    meshEntries.Clear();
 
     if (avatarRoot == null) return;
 
@@ -835,7 +822,8 @@ public class BlendshapeControllerGenerator : EditorWindow
     foreach (var sr in srs)
     {
       if (!string.IsNullOrEmpty(nameFilter) && !sr.gameObject.name.Contains(nameFilter)) continue;
-      meshRenderers.Add(sr);
+      var entry = new MeshEntry();
+      entry.renderer = sr;
 
       var names = new List<string>();
       var sels = new List<bool>();
@@ -848,13 +836,18 @@ public class BlendshapeControllerGenerator : EditorWindow
           sels.Add(true);
         }
       }
-      meshBlendshapeNames.Add(names);
-      meshSelectedBlendshapes.Add(sels);
-      blendshapeScrolls.Add(Vector2.zero);
+      entry.blendshapeNames = names;
+      entry.selected = sels;
+      entry.scroll = Vector2.zero;
 
       // default enable and foldout states
-      meshEnabled.Add(true);
-      meshFoldout.Add(false);
+      entry.enabled = true;
+      entry.foldout = false;
+
+      // default prefix
+      entry.prefix = sr != null ? sr.gameObject.name + "_" : "mesh_" + meshEntries.Count + "_";
+
+      meshEntries.Add(entry);
     }
   }
 
