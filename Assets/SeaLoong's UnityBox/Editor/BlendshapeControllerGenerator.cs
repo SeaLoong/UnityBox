@@ -5,18 +5,29 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using nadena.dev.modular_avatar.core;
 
-// 生成器：为指定 SkinnedMeshRenderer 的若干 Blendshape 生成 AnimationClip 和 AnimatorController，每个Blendshape一个Layer，float参数控制。
+// Generator: create AnimationClips and an AnimatorController for selected Blendshapes on a
+// SkinnedMeshRenderer — one Layer per blendshape, controlled by a float parameter.
 public class BlendshapeControllerGenerator : EditorWindow
 {
-  private SkinnedMeshRenderer targetRenderer;
   private GameObject avatarRoot;
-  private Vector2 _scroll;
+  private Vector2 meshListScroll;
+  private List<Vector2> blendshapeScrolls = new List<Vector2>();
   private string blendshapePropertyPrefix = "blendShape.";
   private string outputFolder = "Assets/SeaLoong's UnityBox/GeneratedBlendshapes";
-  private List<string> blendshapeNames = new List<string>();
-  private List<bool> selected;
+
   private string controllerName = "";
+  // Multi-mesh support
+  private List<SkinnedMeshRenderer> meshRenderers = new List<SkinnedMeshRenderer>();
+  private List<List<string>> meshBlendshapeNames = new List<List<string>>();
+  private List<List<bool>> meshSelectedBlendshapes = new List<List<bool>>();
+  private List<bool> meshEnabled = new List<bool>();
+  private List<bool> meshFoldout = new List<bool>();
+  private List<string> meshParamPrefixes = new List<string>();
+  private string scanFilter = "";
+  private bool scanIncludeInactive = true;
+  private List<string> lastGeneratedAssets = new List<string>();
 
 
   [MenuItem("Tools/SeaLoong's UnityBox/Blendshape Controller Generator")]
@@ -29,23 +40,9 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     EditorGUILayout.LabelField("Blendshape Controller Generator", EditorStyles.boldLabel);
 
-    var prevAvatarRoot = avatarRoot;
-    var prevRenderer = targetRenderer;
-
     avatarRoot = (GameObject)EditorGUILayout.ObjectField("Avatar", avatarRoot, typeof(GameObject), true);
-    if (avatarRoot != null && avatarRoot != prevAvatarRoot)
-    {
-      targetRenderer = avatarRoot.GetComponentInChildren<SkinnedMeshRenderer>();
-    }
 
-    targetRenderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField("Target SkinnedMeshRenderer", targetRenderer, typeof(SkinnedMeshRenderer), true);
-    if (targetRenderer != null && targetRenderer != prevRenderer)
-    {
-      controllerName = targetRenderer.gameObject.name;
-      RefreshBlendshapes();
-    }
-
-    EditorGUILayout.HelpBox("Avatar 为必需项。\n绑定路径使用 Avatar 到 Target 的相对路径（Target 必须是 Avatar 的子对象）。\n工具不会创建或修改任何 Animator 组件。", MessageType.Info);
+    EditorGUILayout.HelpBox("Binding path uses the Avatar-to-Target relative path (Target must be a descendant of the Avatar).", MessageType.Info);
 
     EditorGUILayout.BeginHorizontal();
     EditorGUILayout.LabelField("Output Folder", GUILayout.MaxWidth(80));
@@ -66,111 +63,365 @@ public class BlendshapeControllerGenerator : EditorWindow
     controllerName = EditorGUILayout.TextField("Controller FileName", controllerName);
     blendshapePropertyPrefix = EditorGUILayout.TextField("Blendshape Property Prefix", blendshapePropertyPrefix);
 
-    if (GUILayout.Button("Refresh Blendshapes"))
-    {
-      RefreshBlendshapes();
-    }
+    EditorGUILayout.Space();
 
-    if (blendshapeNames.Count > 0)
+    if (avatarRoot != null)
     {
-      EditorGUILayout.LabelField("Blendshapes", EditorStyles.boldLabel);
+      // --- Scan toolbar (filter + scan) ---
       EditorGUILayout.BeginHorizontal();
-      if (GUILayout.Button("全选", GUILayout.MaxWidth(60)))
+      scanFilter = EditorGUILayout.TextField(scanFilter, GUILayout.MinWidth(120));
+      scanIncludeInactive = EditorGUILayout.ToggleLeft("Include Inactive", scanIncludeInactive, GUILayout.Width(120));
+
+      if (GUILayout.Button("Scan", GUILayout.Width(70)))
       {
-        for (int i = 0; i < selected.Count; i++) selected[i] = true;
-      }
-      if (GUILayout.Button("全不选", GUILayout.MaxWidth(60)))
-      {
-        for (int i = 0; i < selected.Count; i++) selected[i] = false;
+        RefreshMeshes(scanIncludeInactive, string.IsNullOrWhiteSpace(scanFilter) ? null : scanFilter);
+        // align prefixes
+        meshParamPrefixes.Clear();
+        for (int i = 0; i < meshRenderers.Count; i++)
+        {
+          var mr = meshRenderers[i];
+          meshParamPrefixes.Add(mr != null ? mr.gameObject.name + "_" : "mesh_" + i + "_");
+        }
+        // cleared
       }
       EditorGUILayout.EndHorizontal();
-      _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(300));
-      for (int i = 0; i < blendshapeNames.Count; i++)
+
+      EditorGUILayout.HelpBox("Scan Filter: the filter matches GameObject names under the Avatar. Leave empty for no filtering.", MessageType.Info);
+
+      // --- Selection toolbar (Add/Clear) placed under Scan ---
+      EditorGUILayout.BeginHorizontal();
+
+      EditorGUILayout.LabelField("Meshes to generate (choose from Avatar or add manually)", EditorStyles.label);
+
+      if (GUILayout.Button("Add", GUILayout.Width(60)))
       {
-        selected[i] = EditorGUILayout.ToggleLeft(blendshapeNames[i], selected[i]);
+        meshRenderers.Add(null);
+        meshBlendshapeNames.Add(new List<string>());
+        meshSelectedBlendshapes.Add(new List<bool>());
+        meshEnabled.Add(true);
+        meshFoldout.Add(false);
+        meshParamPrefixes.Add("mesh_" + (meshParamPrefixes.Count) + "_");
+        blendshapeScrolls.Add(Vector2.zero);
+      }
+
+      if (GUILayout.Button("Clear", GUILayout.Width(60)))
+      {
+        meshRenderers.Clear();
+        meshBlendshapeNames.Clear();
+        meshSelectedBlendshapes.Clear();
+        meshEnabled.Clear();
+        meshFoldout.Clear();
+        meshParamPrefixes.Clear();
+        blendshapeScrolls.Clear();
+      }
+
+      // Suggest button removed
+      EditorGUILayout.EndHorizontal();
+    }
+
+    if (avatarRoot != null)
+    {
+      // Render mesh entries (user-managed) inside a dedicated scroll area
+      meshListScroll = EditorGUILayout.BeginScrollView(meshListScroll, GUILayout.MaxHeight(800), GUILayout.ExpandHeight(false));
+      for (int mi = 0; mi < meshRenderers.Count; mi++)
+      {
+        var mr = meshRenderers[mi];
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.BeginHorizontal();
+        meshEnabled[mi] = EditorGUILayout.Toggle(meshEnabled[mi], GUILayout.MaxWidth(18));
+        var newMr = (SkinnedMeshRenderer)EditorGUILayout.ObjectField(mr, typeof(SkinnedMeshRenderer), true);
+        // display relative path for the mesh to make entries distinguishable
+        string relPath = null;
+        if (newMr != null && avatarRoot != null)
+          relPath = GetRelativePath(avatarRoot.transform, newMr.transform);
+        if (newMr != null && relPath == null)
+          relPath = GetTransformPath(newMr.transform);
+        if (newMr != mr)
+        {
+          // Prevent duplicate selection of same SkinnedMeshRenderer instance
+          if (newMr != null && meshRenderers.Where((existing, idx) => idx != mi && existing == newMr).Any())
+          {
+            EditorUtility.DisplayDialog("Duplicate Mesh", "This SkinnedMeshRenderer is already added in the list. Please select a different mesh.", "OK");
+          }
+          else
+          {
+            meshRenderers[mi] = newMr;
+            // refresh this entry's blendshape lists
+            var names = new List<string>();
+            var sels = new List<bool>();
+            if (newMr != null && newMr.sharedMesh != null)
+            {
+              for (int bi = 0; bi < newMr.sharedMesh.blendShapeCount; bi++)
+              {
+                names.Add(newMr.sharedMesh.GetBlendShapeName(bi));
+                sels.Add(true);
+              }
+            }
+            meshBlendshapeNames[mi] = names;
+            meshSelectedBlendshapes[mi] = sels;
+            meshFoldout[mi] = names.Count > 0;
+            // Reset prefix to the mesh's name when user assigns a mesh (drag-in)
+            if (meshParamPrefixes.Count <= mi)
+              meshParamPrefixes.Add(newMr != null ? newMr.gameObject.name + "_" : "mesh_" + mi + "_");
+            else
+              meshParamPrefixes[mi] = newMr != null ? newMr.gameObject.name + "_" : "mesh_" + mi + "_";
+            // ensure blendshape scroll list has an entry
+            if (blendshapeScrolls.Count <= mi) blendshapeScrolls.Add(Vector2.zero);
+          }
+        }
+
+        if (GUILayout.Button("Remove", GUILayout.Width(64)))
+        {
+          meshRenderers.RemoveAt(mi);
+          meshBlendshapeNames.RemoveAt(mi);
+          meshSelectedBlendshapes.RemoveAt(mi);
+          meshEnabled.RemoveAt(mi);
+          meshFoldout.RemoveAt(mi);
+          if (blendshapeScrolls.Count > mi) blendshapeScrolls.RemoveAt(mi);
+          EditorGUILayout.EndHorizontal();
+          EditorGUILayout.EndVertical();
+          break;
+        }
+        EditorGUILayout.EndHorizontal();
+
+        // foldout header: show Avatar-relative path when available, otherwise show full transform path
+        string header;
+        if (mr == null)
+          header = "(unset)";
+        else if (!string.IsNullOrEmpty(relPath))
+          header = relPath;
+        else
+          header = GetTransformPath(mr.transform);
+        meshFoldout[mi] = EditorGUILayout.Foldout(meshFoldout[mi], header);
+
+        // Parameter prefix editor and preview
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Param Prefix", GUILayout.MaxWidth(80));
+        if (meshParamPrefixes.Count <= mi) meshParamPrefixes.Add(mr != null ? (mr.gameObject.name + "_") : ("mesh_" + mi + "_"));
+        meshParamPrefixes[mi] = EditorGUILayout.TextField(meshParamPrefixes[mi]);
+        // read-only preview (SelectableLabel allows copy on newer Unity versions; fallback to LabelField)
+        EditorGUILayout.SelectableLabel("BS_" + meshParamPrefixes[mi] + "<blendshape>", GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+        EditorGUILayout.EndHorizontal();
+
+        // suggestion UI removed
+
+        if (meshFoldout[mi])
+        {
+          var names = meshBlendshapeNames[mi];
+          var sels = meshSelectedBlendshapes[mi];
+          if (names != null && names.Count > 0)
+          {
+            // Compact select/deselect toolbar
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("All", GUILayout.Width(44)))
+            {
+              for (int k = 0; k < sels.Count; k++) sels[k] = true;
+            }
+            if (GUILayout.Button("None", GUILayout.Width(44)))
+            {
+              for (int k = 0; k < sels.Count; k++) sels[k] = false;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (blendshapeScrolls.Count <= mi) blendshapeScrolls.Add(Vector2.zero);
+            // calculate desired height based on number of names (line height + padding), cap at 300
+            float lineH = EditorGUIUtility.singleLineHeight + 4f;
+            float desiredH = Mathf.Min(names.Count * lineH + 8f, 300f);
+            blendshapeScrolls[mi] = EditorGUILayout.BeginScrollView(blendshapeScrolls[mi], GUILayout.Height(desiredH));
+            for (int bi = 0; bi < names.Count; bi++)
+            {
+              EditorGUILayout.BeginHorizontal();
+
+              sels[bi] = EditorGUILayout.ToggleLeft(names[bi], sels[bi]);
+
+              var previewPrefix = (meshParamPrefixes.Count > mi && !string.IsNullOrWhiteSpace(meshParamPrefixes[mi])) ? meshParamPrefixes[mi] : (mr != null ? mr.gameObject.name + "_" : "");
+              EditorGUILayout.SelectableLabel("BS_" + previewPrefix + SanitizeName(names[bi]), GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+
+              EditorGUILayout.EndHorizontal();
+            }
+            EditorGUILayout.EndScrollView();
+          }
+          else
+          {
+            EditorGUILayout.LabelField("(no blendshapes)");
+          }
+        }
+        EditorGUILayout.EndVertical();
       }
       EditorGUILayout.EndScrollView();
+      EditorGUILayout.Space();
     }
 
-    // 检查 Avatar 与 Target 的关系
-    string computedRelativePreview = null;
-    if (avatarRoot != null && targetRenderer != null)
-      computedRelativePreview = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
-
+    // Validate Avatar presence
     if (avatarRoot == null)
     {
-      EditorGUILayout.HelpBox("请指定 Avatar（作为路径基准）。", MessageType.Error);
-    }
-    else if (targetRenderer != null && computedRelativePreview == null)
-    {
-      EditorGUILayout.HelpBox("Target 不在所选 Avatar 下。请确保 Avatar 是其祖先。", MessageType.Error);
+      EditorGUILayout.HelpBox("Please specify an Avatar (used as the binding root).", MessageType.Error);
     }
 
     EditorGUILayout.Space();
-    EditorGUILayout.HelpBox("生成器将为每个勾选的 Blendshape 创建一个 AnimationClip（0->100），并生成对应的 Animator Controller。", MessageType.Info);
+    EditorGUILayout.HelpBox("The generator will create an AnimationClip (0->100) for each selected blendshape and generate a corresponding Animator Controller.", MessageType.Info);
 
-    // Only enable generation when avatarRoot and target relationships are valid
-    bool avatarOk = avatarRoot != null && targetRenderer != null && computedRelativePreview != null;
-    EditorGUI.BeginDisabledGroup(!avatarOk || blendshapeNames.Count == 0);
-    if (GUILayout.Button("Generate Controller"))
+    bool avatarOk = avatarRoot != null;
+    EditorGUI.BeginDisabledGroup(!avatarOk);
+    if (GUILayout.Button("Generate"))
     {
-      if (targetRenderer == null)
+      // ensure at least one enabled mesh and validate ancestor relationship
+      if (!meshEnabled.Any(x => x))
       {
-        EditorUtility.DisplayDialog("Missing fields", "请指定 SkinnedMeshRenderer。", "OK");
+        EditorUtility.DisplayDialog("No meshes selected", "Please enable at least one mesh for export.", "OK");
       }
       else
       {
-        string computed = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
-        if (computed == null)
+        for (int mi = 0; mi < meshRenderers.Count; mi++)
         {
-          EditorUtility.DisplayDialog("Invalid Avatar", "Avatar 必须是 Target 的祖先。", "OK");
+          if (!meshEnabled[mi]) continue;
+          var mr = meshRenderers[mi];
+          if (mr == null) continue;
+          var rel = GetRelativePath(avatarRoot.transform, mr.transform);
+          if (rel == null)
+          {
+            EditorUtility.DisplayDialog("Invalid Avatar", "One or more selected meshes are not descendants of the Avatar. Ensure Avatar is ancestor of the mesh.", "OK");
+            return;
+          }
         }
-        else
-        {
-          Generate();
-        }
+        Generate();
       }
     }
     EditorGUI.EndDisabledGroup();
   }
 
-  private void RefreshBlendshapes()
-  {
-    blendshapeNames.Clear();
-    selected = new List<bool>();
-    if (targetRenderer == null)
-    {
-      EditorUtility.DisplayDialog("No target", "Please assign a SkinnedMeshRenderer first.", "OK");
-      return;
-    }
-
-    var mesh = targetRenderer.sharedMesh;
-    if (mesh == null)
-    {
-      EditorUtility.DisplayDialog("No mesh", "The target renderer has no sharedMesh assigned.", "OK");
-      return;
-    }
-
-    int count = mesh.blendShapeCount;
-    for (int i = 0; i < count; i++)
-    {
-      var name = mesh.GetBlendShapeName(i);
-      blendshapeNames.Add(name);
-      selected.Add(true);
-    }
-  }
-
   private void Generate()
   {
-    // 确保父目录存在
-    string meshName = targetRenderer != null ? targetRenderer.gameObject.name : "Mesh";
+    // Propose parameter prefix adjustments to avoid conflicts, but don't apply them immediately.
+    var usedParams = new HashSet<string>(StringComparer.Ordinal);
+    var proposedPrefixes = new List<string>();
+    for (int i = 0; i < meshRenderers.Count; i++) proposedPrefixes.Add(i < meshParamPrefixes.Count ? meshParamPrefixes[i] : null);
+
+    var proposals = new List<string>();
+    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    {
+      if (!meshEnabled[mi]) continue;
+      var names = meshBlendshapeNames[mi];
+      var sels = meshSelectedBlendshapes[mi];
+      if (names == null || sels == null) continue;
+      if (string.IsNullOrWhiteSpace(proposedPrefixes[mi]))
+        proposedPrefixes[mi] = (meshRenderers[mi] != null ? meshRenderers[mi].gameObject.name : "mesh") + "_";
+
+      string basePrefix = proposedPrefixes[mi];
+      string attemptPrefix = basePrefix;
+      int suffix = 1;
+      bool collides = false;
+      for (int j = 0; j < names.Count; j++)
+      {
+        if (!sels[j]) continue;
+        var pname = "BS_" + attemptPrefix + SanitizeName(names[j]);
+        if (usedParams.Contains(pname)) { collides = true; break; }
+      }
+      if (collides)
+      {
+        do
+        {
+          attemptPrefix = basePrefix + suffix + "_";
+          suffix++;
+          collides = false;
+          for (int j = 0; j < names.Count; j++)
+          {
+            if (!sels[j]) continue;
+            var pname = "BS_" + attemptPrefix + SanitizeName(names[j]);
+            if (usedParams.Contains(pname)) { collides = true; break; }
+          }
+        } while (collides);
+        proposals.Add($"Entry #{mi}: '{basePrefix}' -> '{attemptPrefix}'");
+        proposedPrefixes[mi] = attemptPrefix;
+      }
+
+      // reserve names for proposed prefix
+      for (int j = 0; j < names.Count; j++)
+      {
+        if (!sels[j]) continue;
+        var pname = "BS_" + proposedPrefixes[mi] + SanitizeName(names[j]);
+        usedParams.Add(pname);
+      }
+    }
+
+    if (proposals.Count > 0)
+    {
+      var msg = "The following prefix proposals were generated to avoid parameter name collisions:\n\n" + string.Join("\n", proposals) + "\n\nChoose an action:";
+      bool autoApply = EditorUtility.DisplayDialog("Parameter Prefix Conflicts", msg, "Auto-apply", "Edit Prefixes");
+      if (autoApply)
+      {
+        // apply proposed prefixes
+        for (int i = 0; i < proposedPrefixes.Count; i++)
+        {
+          if (i < meshParamPrefixes.Count) meshParamPrefixes[i] = proposedPrefixes[i];
+          else meshParamPrefixes.Add(proposedPrefixes[i]);
+        }
+        foreach (var s in proposals) Debug.Log(s + " (auto-applied)");
+      }
+      else
+      {
+        // let user edit prefixes manually
+        EditorUtility.DisplayDialog("Edit Prefixes", "Please edit the prefixes in the list and press Generate again.", "OK");
+        return;
+      }
+    }
+
+    // Compute total number of clips to generate across enabled meshes
+    int totalClips = 0;
+    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    {
+      if (!meshEnabled[mi]) continue;
+      var names = meshBlendshapeNames[mi];
+      var sels = meshSelectedBlendshapes[mi];
+      if (names == null || sels == null) continue;
+      for (int j = 0; j < names.Count; j++) if (sels[j]) totalClips++;
+    }
+
+    if (totalClips == 0)
+    {
+      EditorUtility.DisplayDialog("Nothing to generate", "No blendshape clips selected for export.", "OK");
+      return;
+    }
+
+    int clipIndex = 0;
+    for (int mi = 0; mi < meshRenderers.Count; mi++)
+    {
+      if (!meshEnabled[mi]) continue;
+      var mr = meshRenderers[mi];
+      var names = meshBlendshapeNames[mi];
+      var sels = meshSelectedBlendshapes[mi];
+      if (names == null || sels == null) continue;
+
+      var usePrefix = (mi < proposedPrefixes.Count) ? proposedPrefixes[mi] : (mi < meshParamPrefixes.Count ? meshParamPrefixes[mi] : null);
+      bool cancelled = GenerateForMesh(mr, names, sels, clipIndex, totalClips, usePrefix);
+      if (cancelled)
+      {
+        EditorUtility.ClearProgressBar();
+        Debug.LogWarning("Generation cancelled by user.");
+        return;
+      }
+
+      for (int j = 0; j < names.Count; j++) if (sels[j]) clipIndex++;
+    }
+    EditorUtility.ClearProgressBar();
+  }
+
+  private bool GenerateForMesh(SkinnedMeshRenderer mr, List<string> names, List<bool> sels, int clipIndexOffset, int totalClips, string usePrefix)
+  {
+    string meshName = mr != null ? mr.gameObject.name : "Mesh";
     string meshSubFolder = Path.Combine(outputFolder, meshName).Replace("\\", "/");
-    string baseControllerName = string.IsNullOrWhiteSpace(controllerName) ? meshName : Path.GetFileNameWithoutExtension(controllerName);
-    string controllerPath = Path.Combine(meshSubFolder, baseControllerName + ".controller").Replace("\\", "/");
+    // Controller file base name: if user provided a controllerName, use it (filename only),
+    // otherwise default to the mesh name. Controller files are placed per-mesh folder so
+    // filename collisions are not a problem.
+    string baseControllerNameForFile = string.IsNullOrWhiteSpace(controllerName) ? meshName : Path.GetFileNameWithoutExtension(controllerName);
+    string controllerPath = Path.Combine(meshSubFolder, baseControllerNameForFile + ".controller").Replace("\\", "/");
+    // Menu name policy: always use the mesh name for the first-level submenu. This avoids
+    // any risk of cross-mesh replacement and organizes the Modular Avatar menu per-mesh.
+    string baseControllerNameForMenu = meshName;
     string controllerDir = controllerPath.Substring(0, controllerPath.LastIndexOf('/'));
     if (!AssetDatabase.IsValidFolder(controllerDir))
     {
-      // 递归创建所有父目录
+      // Recursively create any missing directories
       string[] parts = controllerDir.Split('/');
       string cur = "Assets";
       for (int i = 1; i < parts.Length; i++)
@@ -182,52 +433,62 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
     }
 
-    // 检查controller是否已存在
+    // Check whether the controller already exists
     if (AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath) != null)
     {
       if (!EditorUtility.DisplayDialog("Overwrite?", "Controller already exists. Overwrite?", "Yes", "No"))
-        return;
+        return false;
       AssetDatabase.DeleteAsset(controllerPath);
     }
 
-    var mesh = targetRenderer.sharedMesh;
     // create controller
     var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
-    // 删除默认BaseLayer
+    // Remove default BaseLayer
     if (controller.layers.Length > 0)
     {
       controller.RemoveLayer(0);
     }
 
-    string meshPrefix = targetRenderer != null ? targetRenderer.gameObject.name + "_" : "";
+    string meshPrefix = !string.IsNullOrEmpty(usePrefix) ? usePrefix : (mr != null ? mr.gameObject.name + "_" : "");
 
-    // 预先计算最终绑定路径：使用 avatarRoot 到 target 的相对路径（目标必须为 avatarRoot 的子孙）
+    // Precompute final binding path: use the Avatar-to-Target relative path (Target must be a descendant of the Avatar)
     string computedRelative = null;
-    if (avatarRoot != null && targetRenderer != null)
+    if (avatarRoot != null && mr != null)
     {
-      computedRelative = GetRelativePath(avatarRoot.transform, targetRenderer.transform);
+      computedRelative = GetRelativePath(avatarRoot.transform, mr.transform);
     }
     string finalBindingPath = computedRelative ?? "";
 
-    for (int i = 0; i < blendshapeNames.Count; i++)
+    if (names == null || sels == null) return false;
+
+    int localCount = 0;
+    for (int i = 0; i < names.Count; i++)
     {
-      if (!selected[i]) continue;
-      var name = blendshapeNames[i];
+      if (!sels[i]) continue;
+      var name = names[i];
+      float globalProgress = (float)(clipIndexOffset + localCount) / Math.Max(1, totalClips);
+      if (EditorUtility.DisplayCancelableProgressBar("Generating Blendshape Clips", $"{meshName}: {localCount + 1}/{names.Count} - {name}", globalProgress))
+      {
+        EditorUtility.ClearProgressBar();
+        Debug.LogWarning("Generation cancelled by user during clip creation.");
+        return true;
+      }
+      localCount++;
       string safeName = SanitizeName(name);
       string clipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + ".anim").Replace("\\", "/");
 
-      // 创建一个线性动画clip（0->100，1秒），并设置为循环
+      // Create a linear AnimationClip (0->100 over 1 second) and set it to loop
       var clip = new AnimationClip();
       clip.name = safeName;
       clip.wrapMode = WrapMode.Loop;
 
-      // 设置循环属性（兼容所有Unity版本）
+      // Configure loop setting (compatible across Unity versions)
       var clipSettings = AnimationUtility.GetAnimationClipSettings(clip);
       clipSettings.loopTime = true;
       AnimationUtility.SetAnimationClipSettings(clip, clipSettings);
 
-      // 使用预先计算的 finalBindingPath
+      // Use the precomputed finalBindingPath
       var binding = new EditorCurveBinding();
       binding.path = finalBindingPath;
       binding.type = typeof(SkinnedMeshRenderer);
@@ -243,18 +504,19 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
       AnimationUtility.SetEditorCurve(clip, binding, curve);
       AssetDatabase.CreateAsset(clip, clipPath);
+      // record created asset
+      lastGeneratedAssets.Add(clipPath);
 
-      // add a float parameter for future use (prefix with mesh/gameobject name to avoid collisions)
-      string paramName = meshPrefix + "BS_" + safeName;
+      // add a float parameter for future use (prefix 'BS_' first to avoid collisions and keep stable naming)
+      string paramName = "BS_" + meshPrefix + safeName;
       if (!controller.parameters.Any(p => p.name == paramName))
       {
         controller.AddParameter(paramName, AnimatorControllerParameterType.Float);
       }
 
-      // 创建Layer和StateMachine
       var stateMachine = new AnimatorStateMachine();
       stateMachine.name = safeName;
-      AssetDatabase.AddObjectToAsset(stateMachine, controllerPath); // 关键：序列化到Controller资源
+      AssetDatabase.AddObjectToAsset(stateMachine, controllerPath); // serialize into controller asset
 
       var state = stateMachine.AddState(safeName);
       state.motion = clip;
@@ -269,15 +531,28 @@ public class BlendshapeControllerGenerator : EditorWindow
       controller.AddLayer(layer);
     }
 
+    // Create Modular Avatar menu structure under the Avatar (multi-level). Each leaf gets a ModularAvatarMenuItem.
+    try
+    {
+      CreateMAMenu(avatarRoot, baseControllerNameForMenu, controllerPath, meshPrefix, names, sels);
+    }
+    catch (Exception)
+    {
+      // menu creation failing shouldn't block controller generation
+    }
+
     EditorUtility.SetDirty(controller);
     AssetDatabase.SaveAssets();
     AssetDatabase.Refresh();
 
+    lastGeneratedAssets.Add(controllerPath);
+
     string shownPath = computedRelative != null ? (computedRelative + " (relative to Avatar)") : "(bound to target object)";
-    EditorUtility.DisplayDialog("Done",
-      "Generated Animator Controller and clips in: \n" + outputFolder + "\nBinding path used: '" + shownPath + "'",
-      "OK");
+    Debug.Log("Generated Animator Controller and clips in: " + meshSubFolder + " Binding path used: '" + shownPath + "'");
+    return false;
   }
+
+  // Prefix suggestion feature removed.
 
   private static string GetRelativePath(Transform root, Transform target)
   {
@@ -301,6 +576,232 @@ public class BlendshapeControllerGenerator : EditorWindow
     return new string(arr);
   }
 
+  // Create a Modular Avatar menu hierarchy under the given avatar root. The menu root will be
+  // named <baseControllerName>_Menu. For each selected blendshape, a path of GameObjects is created
+  // from the name split by '/', and a ModularAvatarMenuItem is attached on the leaf.
+  private void CreateMAMenu(GameObject avatarRoot, string baseControllerName, string controllerPath, string meshPrefix, List<string> blendshapeNames, List<bool> selected)
+  {
+    if (avatarRoot == null) return;
+
+    // 顶层菜单固定为 Blendshapes_Menu，Installer 只放在最上级
+    string topMenuName = "Blendshapes_Menu";
+    var existingTop = avatarRoot.transform.Find(topMenuName);
+    GameObject topMenuGO;
+    if (existingTop != null)
+    {
+      // 顶级菜单已存在：保留，不要删除
+      topMenuGO = existingTop.gameObject;
+    }
+    else
+    {
+      // 不存在则创建顶级并添加 Installer
+      topMenuGO = new GameObject(topMenuName);
+      Undo.RegisterCreatedObjectUndo(topMenuGO, "Create MA Top Menu Root");
+      topMenuGO.transform.SetParent(avatarRoot.transform, false);
+      topMenuGO.AddComponent<ModularAvatarMenuInstaller>();
+    }
+
+    // Ensure top-level has a ModularAvatarMenuItem marked as SubMenu (no parameter/value set)
+    try
+    {
+      var topItem = topMenuGO.GetComponent<ModularAvatarMenuItem>();
+      if (topItem == null) topItem = topMenuGO.AddComponent<ModularAvatarMenuItem>();
+      try
+      {
+        topItem.PortableControl.Type = PortableControlType.SubMenu;
+        topItem.MenuSource = SubmenuSource.Children;
+        // Do not set topItem.PortableControl.Parameter or Value for submenus
+      }
+      catch { }
+    }
+    catch { }
+
+    // 在顶层下创建一个子菜单，名字为 baseControllerName
+    // 如果同名子菜单已存在则删除它（我们只替换第一层子菜单）
+    var existingController = topMenuGO.transform.Find(baseControllerName);
+    if (existingController != null)
+    {
+      Undo.DestroyObjectImmediate(existingController.gameObject);
+    }
+    var controllerMenuGO = new GameObject(baseControllerName);
+    Undo.RegisterCreatedObjectUndo(controllerMenuGO, "Create Controller Submenu");
+    controllerMenuGO.transform.SetParent(topMenuGO.transform, false);
+
+    // 标记 controllerMenuGO 为子菜单（添加一个 ModularAvatarMenuItem Type=SubMenu）
+    var controllerMenuItem = controllerMenuGO.GetComponent<ModularAvatarMenuItem>();
+    if (controllerMenuItem == null) controllerMenuItem = controllerMenuItem = controllerMenuGO.AddComponent<ModularAvatarMenuItem>();
+    try
+    {
+      controllerMenuItem.PortableControl.Type = PortableControlType.SubMenu;
+      controllerMenuItem.MenuSource = SubmenuSource.Children;
+    }
+    catch (Exception)
+    {
+      // ignore compatibility issues
+    }
+
+    // 为每个选中的 blendshape 创建菜单项（按 '/' 切分为多级），放到 controllerMenuGO 下
+    for (int i = 0; i < blendshapeNames.Count; i++)
+    {
+      if (!selected[i]) continue;
+      var fullName = blendshapeNames[i];
+      string safeName = SanitizeName(fullName);
+      string paramName = "BS_" + meshPrefix + SanitizeName(fullName);
+
+      var parts = fullName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+      Transform parent = controllerMenuGO.transform;
+      for (int p = 0; p < parts.Length; p++)
+      {
+        var part = parts[p].Trim();
+        if (string.IsNullOrEmpty(part)) continue;
+        var child = parent.Find(part);
+        if (child == null)
+        {
+          var go = new GameObject(part);
+          Undo.RegisterCreatedObjectUndo(go, "Create MA Menu Item");
+          go.transform.SetParent(parent, false);
+          child = go.transform;
+        }
+        // For intermediate nodes (not leaf), ensure they are marked as SubMenu and have no parameter
+        var isLeaf = (p == parts.Length - 1);
+        var childGo = child.gameObject;
+        if (!isLeaf)
+        {
+          var midItem = childGo.GetComponent<ModularAvatarMenuItem>();
+          if (midItem == null) midItem = childGo.AddComponent<ModularAvatarMenuItem>();
+          try
+          {
+            midItem.PortableControl.Type = PortableControlType.SubMenu;
+            midItem.MenuSource = SubmenuSource.Children;
+            // Ensure no parameter/value are set on submenu items
+            try { midItem.PortableControl.Parameter = ""; } catch { }
+          }
+          catch { }
+        }
+        parent = child;
+      }
+
+      // 在叶节点添加 ModularAvatarMenuItem（若已存在则复用）
+      var item = parent.GetComponent<ModularAvatarMenuItem>();
+      if (item == null) item = parent.gameObject.AddComponent<ModularAvatarMenuItem>();
+      // Configure the leaf menu item to point at the generated parameter and set sensible defaults.
+      try
+      {
+        // Parameter this control targets
+        item.PortableControl.Parameter = paramName;
+        // Use Toggle by default (common for on/off controls). Value=1 means the 'on' value.
+        item.PortableControl.Type = PortableControlType.Toggle;
+        item.PortableControl.Value = 1f;
+
+        // Menu item flags: keep defaults consistent with Modular Avatar expectations
+        item.isSaved = true;
+        item.isSynced = true;
+        item.isDefault = false;
+        item.automaticValue = true;
+        item.MenuSource = SubmenuSource.Children;
+      }
+      catch (Exception)
+      {
+        // If PortableControl isn't available (very old package variant), ignore silently.
+      }
+    }
+
+    // Add a ModularAvatarMergeAnimator on the first-level controller submenu so the generated controller
+    // will be merged into the avatar's FX layer at build time. Use try/catch to remain
+    // compatible with package version differences.
+    try
+    {
+      var merge = controllerMenuGO.GetComponent<ModularAvatarMergeAnimator>();
+      if (merge == null) merge = controllerMenuGO.AddComponent<ModularAvatarMergeAnimator>();
+
+      // Load the generated controller asset and assign it.
+      var runtimeController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(controllerPath);
+      if (runtimeController != null)
+      {
+        merge.animator = runtimeController;
+      }
+
+      // Prefer relative path mode so bindings remain relative to the avatar when possible.
+      merge.pathMode = MergeAnimatorPathMode.Relative;
+      merge.mergeAnimatorMode = MergeAnimatorMode.Append;
+
+      // Set the relativePathRoot to the avatar root so any relative bindings resolve correctly.
+      if (avatarRoot != null)
+      {
+        try { merge.relativePathRoot.Set(avatarRoot); } catch { }
+      }
+
+      // Mark that we should match avatar write defaults if available.
+      try { merge.matchAvatarWriteDefaults = true; } catch { }
+
+      // Try to explicitly set the target layer to FX. If VRC SDK symbols are available,
+      // use the strongly-typed enum; otherwise fall back to a reflection-based attempt.
+#if MA_VRCSDK3_AVATARS
+      try
+      {
+        merge.layerType = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor.AnimLayerType.FX;
+      }
+      catch { }
+#else
+      try
+      {
+        var layerTypeProp = merge.GetType().GetField("layerType");
+        if (layerTypeProp != null)
+        {
+          var enumType = layerTypeProp.FieldType;
+          var fxVal = Enum.Parse(enumType, "FX");
+          layerTypeProp.SetValue(merge, fxVal);
+        }
+      }
+      catch { /* ignore if not present or enum name differs */ }
+#endif
+    }
+    catch (Exception)
+    {
+      // If the package version doesn't provide ModularAvatarMergeAnimator, skip silently.
+    }
+
+    // Ensure ModularAvatarParameters exists on the top-level menu and add missing parameter configs only.
+    try
+    {
+      var paramsComp = topMenuGO.GetComponent<ModularAvatarParameters>();
+      if (paramsComp == null) paramsComp = topMenuGO.AddComponent<ModularAvatarParameters>();
+
+      // Build a set of existing parameter names/prefixes
+      var existing = new HashSet<string>(StringComparer.Ordinal);
+      foreach (var pc in paramsComp.parameters)
+      {
+        if (!string.IsNullOrEmpty(pc.nameOrPrefix)) existing.Add(pc.nameOrPrefix);
+      }
+
+      // For each selected blendshape, add a ParameterConfig only if missing
+      for (int i = 0; i < blendshapeNames.Count; i++)
+      {
+        if (!selected[i]) continue;
+        var fullName = blendshapeNames[i];
+        string paramName = "BS_" + meshPrefix + SanitizeName(fullName);
+        if (existing.Contains(paramName)) continue; // already present, skip
+
+        var newPc = new ParameterConfig();
+        newPc.nameOrPrefix = paramName;
+        newPc.remapTo = "";
+        newPc.internalParameter = false;
+        newPc.isPrefix = false;
+        newPc.syncType = ParameterSyncType.Float;
+        newPc.localOnly = false;
+        newPc.defaultValue = 0f;
+        newPc.saved = true;
+        newPc.hasExplicitDefaultValue = false;
+
+        paramsComp.parameters.Add(newPc);
+      }
+    }
+    catch (Exception)
+    {
+      // If the package version doesn't expose ModularAvatarParameters or ParameterConfig fields differ, skip.
+    }
+  }
+
   private static string GetTransformPath(Transform t)
   {
     var path = t.name;
@@ -310,5 +811,57 @@ public class BlendshapeControllerGenerator : EditorWindow
       path = t.name + "/" + path;
     }
     return path;
+  }
+
+  // Populate meshRenderers and per-mesh blendshape name/selection lists based on avatarRoot
+  private void RefreshMeshes()
+  {
+    RefreshMeshes(true, null);
+  }
+
+  private void RefreshMeshes(bool includeInactive, string nameFilter)
+  {
+    meshRenderers.Clear();
+    meshBlendshapeNames.Clear();
+    meshSelectedBlendshapes.Clear();
+    meshEnabled.Clear();
+    meshFoldout.Clear();
+    blendshapeScrolls.Clear();
+
+    if (avatarRoot == null) return;
+
+    // Find all SkinnedMeshRenderer components under the avatar root
+    var srs = avatarRoot.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive);
+    foreach (var sr in srs)
+    {
+      if (!string.IsNullOrEmpty(nameFilter) && !sr.gameObject.name.Contains(nameFilter)) continue;
+      meshRenderers.Add(sr);
+
+      var names = new List<string>();
+      var sels = new List<bool>();
+      var mesh = sr.sharedMesh;
+      if (mesh != null)
+      {
+        for (int i = 0; i < mesh.blendShapeCount; i++)
+        {
+          names.Add(mesh.GetBlendShapeName(i));
+          sels.Add(true);
+        }
+      }
+      meshBlendshapeNames.Add(names);
+      meshSelectedBlendshapes.Add(sels);
+      blendshapeScrolls.Add(Vector2.zero);
+
+      // default enable and foldout states
+      meshEnabled.Add(true);
+      meshFoldout.Add(false);
+    }
+  }
+
+  private void OnEnable()
+  {
+    // Ensure meshes list is populated if Avatar was set previously
+    if (avatarRoot != null)
+      RefreshMeshes();
   }
 }
