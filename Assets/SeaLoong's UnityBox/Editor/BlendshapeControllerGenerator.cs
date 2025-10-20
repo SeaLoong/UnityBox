@@ -22,8 +22,8 @@ public class BlendshapeControllerGenerator : EditorWindow
   private class MeshEntry
   {
     public SkinnedMeshRenderer renderer;
-    public List<string> blendshapeNames = new List<string>();
-    public List<bool> selected = new List<bool>();
+    public List<string> blendshapeNames = new();
+    public List<bool> selected = new();
     public bool enabled = true;
     public bool foldout = false;
     public string prefix = "";
@@ -163,8 +163,6 @@ public class BlendshapeControllerGenerator : EditorWindow
             entry.foldout = names.Count > 0;
             // Reset prefix to the mesh's name when user assigns a mesh (drag-in)
             entry.prefix = newMr != null ? newMr.gameObject.name + "_" : (string.IsNullOrWhiteSpace(entry.prefix) ? "mesh_" + mi + "_" : entry.prefix);
-            // ensure scroll value exists
-            entry.scroll = entry.scroll;
           }
         }
 
