@@ -12,10 +12,36 @@ using nadena.dev.modular_avatar.core;
 // SkinnedMeshRenderer — one Layer per blendshape, controlled by a float parameter.
 public class BlendshapeControllerGenerator : EditorWindow
 {
+  private enum BlendParamType
+  {
+    Float,
+    Bool
+  }
   private GameObject avatarRoot;
   private Vector2 meshListScroll;
   private string blendshapePropertyPrefix = "blendShape.";
-  private string outputFolder = "Assets/SeaLoong's UnityBox/GeneratedBlendshapes";
+  private string outputFolder = "Assets/SeaLoong's UnityBox/Blendshape Controller Generator/Generated";
+  // Global parameter prefix for generated Animator parameters (e.g., "BS_")
+  private string parameterPrefix = "BS_";
+  private const string EditorPrefKey_ParameterPrefix = "BlendshapeControllerGenerator.ParameterPrefix";
+  // Configurable curve for Float-type blendshapes
+  [SerializeField] private AnimationCurve floatCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+  [SerializeField] private float floatCurveDuration = 1f;
+  [SerializeField] private bool floatCurveLoop = true;
+  [SerializeField] private float floatValueScale = 100f; // allow >100 and customization
+  private const string EditorPrefKey_FloatCurve = "BlendshapeControllerGenerator.FloatCurve";
+  private const string EditorPrefKey_FloatCurveDuration = "BlendshapeControllerGenerator.FloatCurveDuration";
+  private const string EditorPrefKey_FloatCurveLoop = "BlendshapeControllerGenerator.FloatCurveLoop";
+  private const string EditorPrefKey_FloatValueScale = "BlendshapeControllerGenerator.FloatValueScale";
+
+  [Serializable]
+  private struct CurveData { public Keyframe[] keys; }
+
+  // Batch UI helpers (shared)
+  private BlendParamType batchParamType = BlendParamType.Float;
+  private bool batchBoolInvert = false;
+  private float batchBoolOff = 0f;
+  private float batchBoolOn = 100f;
 
   private string controllerName = "";
   // Multi-mesh support: represent each entry as a struct-like class to avoid parallel-list desync
@@ -24,6 +50,10 @@ public class BlendshapeControllerGenerator : EditorWindow
     public SkinnedMeshRenderer renderer;
     public List<string> blendshapeNames = new();
     public List<bool> selected = new();
+    public List<BlendParamType> paramTypes = new();
+    public List<bool> boolInverts = new();
+    public List<float> boolOffValues = new();
+    public List<float> boolOnValues = new();
     public bool enabled = true;
     public bool foldout = false;
     public string prefix = "";
@@ -68,6 +98,45 @@ public class BlendshapeControllerGenerator : EditorWindow
 
     controllerName = EditorGUILayout.TextField("Controller FileName", controllerName);
     blendshapePropertyPrefix = EditorGUILayout.TextField("Blendshape Property Prefix", blendshapePropertyPrefix);
+    string newParamPrefix = EditorGUILayout.TextField("Parameter Prefix", parameterPrefix);
+    if (newParamPrefix != parameterPrefix)
+    {
+      parameterPrefix = newParamPrefix ?? string.Empty;
+      EditorPrefs.SetString(EditorPrefKey_ParameterPrefix, parameterPrefix);
+    }
+
+    // Float curve configuration UI
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField("Float Curve Settings", EditorStyles.boldLabel);
+    var newCurve = EditorGUILayout.CurveField("Curve (0..1 -> 0..1)", floatCurve);
+    if (newCurve != floatCurve && newCurve != null)
+    {
+      floatCurve = newCurve;
+      try
+      {
+        var data = new CurveData { keys = floatCurve.keys };
+        EditorPrefs.SetString(EditorPrefKey_FloatCurve, JsonUtility.ToJson(data));
+      }
+      catch { }
+    }
+    var newDuration = EditorGUILayout.FloatField("Duration (s)", Mathf.Max(0.0001f, floatCurveDuration));
+    if (!Mathf.Approximately(newDuration, floatCurveDuration))
+    {
+      floatCurveDuration = Mathf.Max(0.0001f, newDuration);
+      EditorPrefs.SetFloat(EditorPrefKey_FloatCurveDuration, floatCurveDuration);
+    }
+    var newLoop = EditorGUILayout.Toggle("Loop Time", floatCurveLoop);
+    if (newLoop != floatCurveLoop)
+    {
+      floatCurveLoop = newLoop;
+      EditorPrefs.SetInt(EditorPrefKey_FloatCurveLoop, floatCurveLoop ? 1 : 0);
+    }
+    var newScale = EditorGUILayout.FloatField("Value Scale", floatValueScale);
+    if (!Mathf.Approximately(newScale, floatValueScale))
+    {
+      floatValueScale = newScale; // allow any float, no normalization
+      EditorPrefs.SetFloat(EditorPrefKey_FloatValueScale, floatValueScale);
+    }
 
     EditorGUILayout.Space();
 
@@ -103,6 +172,10 @@ public class BlendshapeControllerGenerator : EditorWindow
         e.renderer = null;
         e.blendshapeNames = new List<string>();
         e.selected = new List<bool>();
+        e.paramTypes = new List<BlendParamType>();
+        e.boolInverts = new List<bool>();
+        e.boolOffValues = new List<float>();
+        e.boolOnValues = new List<float>();
         e.enabled = true;
         e.foldout = false;
         e.prefix = "mesh_" + meshEntries.Count + "_";
@@ -152,11 +225,23 @@ public class BlendshapeControllerGenerator : EditorWindow
             var sels = new List<bool>();
             if (newMr != null && newMr.sharedMesh != null)
             {
+              var types = new List<BlendParamType>();
+              var inverts = new List<bool>();
+              var offs = new List<float>();
+              var ons = new List<float>();
               for (int bi = 0; bi < newMr.sharedMesh.blendShapeCount; bi++)
               {
                 names.Add(newMr.sharedMesh.GetBlendShapeName(bi));
                 sels.Add(true);
+                types.Add(BlendParamType.Float);
+                inverts.Add(false);
+                offs.Add(0f);
+                ons.Add(100f);
               }
+              entry.paramTypes = types;
+              entry.boolInverts = inverts;
+              entry.boolOffValues = offs;
+              entry.boolOnValues = ons;
             }
             entry.blendshapeNames = names;
             entry.selected = sels;
@@ -181,7 +266,7 @@ public class BlendshapeControllerGenerator : EditorWindow
         if (string.IsNullOrWhiteSpace(entry.prefix)) entry.prefix = mr != null ? (mr.gameObject.name + "_") : ("mesh_" + mi + "_");
         entry.prefix = EditorGUILayout.TextField(entry.prefix);
         // read-only preview (SelectableLabel allows copy on newer Unity versions; fallback to LabelField)
-        EditorGUILayout.SelectableLabel("BS_" + entry.prefix + "<blendshape>", GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+        EditorGUILayout.SelectableLabel(parameterPrefix + entry.prefix + "<blendshape>", GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
         EditorGUILayout.EndHorizontal();
 
         // foldout header: show Avatar-relative path when available, otherwise show full transform path
@@ -198,8 +283,44 @@ public class BlendshapeControllerGenerator : EditorWindow
         {
           var names = entry.blendshapeNames;
           var sels = entry.selected;
+          var types = entry.paramTypes;
+          var inverts = entry.boolInverts;
+          var offs = entry.boolOffValues;
+          var ons = entry.boolOnValues;
           if (names != null && names.Count > 0)
           {
+            // Batch row
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Batch:", GUILayout.Width(44));
+            batchParamType = (BlendParamType)EditorGUILayout.EnumPopup(batchParamType, GUILayout.Width(60));
+            if (GUILayout.Button("Set Type", GUILayout.Width(64)))
+            {
+              if (types == null || types.Count != names.Count)
+                entry.paramTypes = types = Enumerable.Repeat(batchParamType, names.Count).ToList();
+              else
+                for (int k = 0; k < types.Count; k++) types[k] = batchParamType;
+            }
+            // Bool batch
+            batchBoolInvert = EditorGUILayout.ToggleLeft("Inv", batchBoolInvert, GUILayout.Width(42));
+            EditorGUILayout.LabelField("Off", GUILayout.Width(28));
+            batchBoolOff = EditorGUILayout.FloatField(batchBoolOff, GUILayout.Width(60));
+            EditorGUILayout.LabelField("On", GUILayout.Width(24));
+            batchBoolOn = EditorGUILayout.FloatField(batchBoolOn, GUILayout.Width(60));
+            if (GUILayout.Button("Apply Bool", GUILayout.Width(88)))
+            {
+              if (inverts == null || inverts.Count != names.Count) inverts = entry.boolInverts = Enumerable.Repeat(false, names.Count).ToList();
+              if (offs == null || offs.Count != names.Count) offs = entry.boolOffValues = Enumerable.Repeat(0f, names.Count).ToList();
+              if (ons == null || ons.Count != names.Count) ons = entry.boolOnValues = Enumerable.Repeat(100f, names.Count).ToList();
+              for (int k = 0; k < names.Count; k++)
+              {
+                if (types[k] != BlendParamType.Bool) continue;
+                inverts[k] = batchBoolInvert;
+                offs[k] = batchBoolOff;
+                ons[k] = batchBoolOn;
+              }
+            }
+            EditorGUILayout.EndHorizontal();
+
             // Compact select/deselect toolbar
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("All", GUILayout.Width(44)))
@@ -223,7 +344,33 @@ public class BlendshapeControllerGenerator : EditorWindow
               sels[bi] = EditorGUILayout.ToggleLeft(names[bi], sels[bi]);
 
               var previewPrefix = !string.IsNullOrWhiteSpace(entry.prefix) ? entry.prefix : (mr != null ? mr.gameObject.name + "_" : "");
-              EditorGUILayout.SelectableLabel("BS_" + previewPrefix + SanitizeName(names[bi]), GUILayout.MaxWidth(300), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+              // Type dropdown
+              if (types == null || types.Count != names.Count)
+              {
+                // fix length if out of sync
+                types = entry.paramTypes = Enumerable.Repeat(BlendParamType.Float, names.Count).ToList();
+              }
+              types[bi] = (BlendParamType)EditorGUILayout.EnumPopup(types[bi], GUILayout.Width(60));
+              // Invert toggle only for Bool type
+              if (inverts == null || inverts.Count != names.Count)
+              {
+                inverts = entry.boolInverts = Enumerable.Repeat(false, names.Count).ToList();
+              }
+              if (types[bi] == BlendParamType.Bool)
+              {
+                inverts[bi] = EditorGUILayout.ToggleLeft("Inv", inverts[bi], GUILayout.Width(42));
+                // Off/On values for Bool
+                if (offs == null || offs.Count != names.Count) offs = entry.boolOffValues = Enumerable.Repeat(0f, names.Count).ToList();
+                if (ons == null || ons.Count != names.Count) ons = entry.boolOnValues = Enumerable.Repeat(100f, names.Count).ToList();
+                EditorGUILayout.LabelField("Off", GUILayout.Width(28));
+                float newOff = EditorGUILayout.FloatField(offs[bi], GUILayout.Width(60));
+                EditorGUILayout.LabelField("On", GUILayout.Width(24));
+                float newOn = EditorGUILayout.FloatField(ons[bi], GUILayout.Width(60));
+                if (!Mathf.Approximately(newOff, offs[bi])) offs[bi] = newOff; // allow >100
+                if (!Mathf.Approximately(newOn, ons[bi])) ons[bi] = newOn;     // allow >100
+              }
+              // Preview
+              EditorGUILayout.SelectableLabel(parameterPrefix + previewPrefix + SanitizeName(names[bi]), GUILayout.MaxWidth(260), GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
               EditorGUILayout.EndHorizontal();
             }
@@ -292,6 +439,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       if (!entry.enabled) continue;
       var names = entry.blendshapeNames;
       var sels = entry.selected;
+      var types = entry.paramTypes;
       if (names == null || sels == null) continue;
       if (string.IsNullOrWhiteSpace(proposedPrefixes[mi]))
         proposedPrefixes[mi] = (entry.renderer != null ? entry.renderer.gameObject.name : "mesh") + "_";
@@ -303,7 +451,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
-        var pname = "BS_" + attemptPrefix + SanitizeName(names[j]);
+        var pname = parameterPrefix + attemptPrefix + SanitizeName(names[j]);
         if (usedParams.Contains(pname)) { collides = true; break; }
       }
       if (collides)
@@ -316,7 +464,7 @@ public class BlendshapeControllerGenerator : EditorWindow
           for (int j = 0; j < names.Count; j++)
           {
             if (!sels[j]) continue;
-            var pname = "BS_" + attemptPrefix + SanitizeName(names[j]);
+            var pname = parameterPrefix + attemptPrefix + SanitizeName(names[j]);
             if (usedParams.Contains(pname)) { collides = true; break; }
           }
         } while (collides);
@@ -328,7 +476,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
-        var pname = "BS_" + proposedPrefixes[mi] + SanitizeName(names[j]);
+        var pname = parameterPrefix + proposedPrefixes[mi] + SanitizeName(names[j]);
         usedParams.Add(pname);
       }
     }
@@ -354,15 +502,21 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
     }
 
-    // Compute total number of clips to generate across enabled meshes
+    // Compute total number of clips to generate across enabled meshes (Float:1, Bool:2)
     int totalClips = 0;
     foreach (var entry in meshEntries)
     {
       if (!entry.enabled) continue;
       var names = entry.blendshapeNames;
       var sels = entry.selected;
+      var types = entry.paramTypes;
       if (names == null || sels == null) continue;
-      for (int j = 0; j < names.Count; j++) if (sels[j]) totalClips++;
+      for (int j = 0; j < names.Count; j++)
+      {
+        if (!sels[j]) continue;
+        var t = (types != null && types.Count == names.Count) ? types[j] : BlendParamType.Float;
+        totalClips += (t == BlendParamType.Bool) ? 2 : 1;
+      }
     }
 
     if (totalClips == 0)
@@ -379,10 +533,14 @@ public class BlendshapeControllerGenerator : EditorWindow
       var mr = entry.renderer;
       var names = entry.blendshapeNames;
       var sels = entry.selected;
+      var types = entry.paramTypes;
+      var inverts = entry.boolInverts;
+      var offs = entry.boolOffValues;
+      var ons = entry.boolOnValues;
       if (names == null || sels == null) continue;
 
       var usePrefix = (mi < proposedPrefixes.Count) ? proposedPrefixes[mi] : entry.prefix;
-      bool cancelled = GenerateForMesh(mr, names, sels, clipIndex, totalClips, usePrefix);
+      bool cancelled = GenerateForMesh(mr, names, sels, types, inverts, offs, ons, clipIndex, totalClips, usePrefix);
       if (cancelled)
       {
         EditorUtility.ClearProgressBar();
@@ -390,12 +548,17 @@ public class BlendshapeControllerGenerator : EditorWindow
         return;
       }
 
-      for (int j = 0; j < names.Count; j++) if (sels[j]) clipIndex++;
+      for (int j = 0; j < names.Count; j++)
+      {
+        if (!sels[j]) continue;
+        var t = (types != null && types.Count == names.Count) ? types[j] : BlendParamType.Float;
+        clipIndex += (t == BlendParamType.Bool) ? 2 : 1;
+      }
     }
     EditorUtility.ClearProgressBar();
   }
 
-  private bool GenerateForMesh(SkinnedMeshRenderer mr, List<string> names, List<bool> sels, int clipIndexOffset, int totalClips, string usePrefix)
+  private bool GenerateForMesh(SkinnedMeshRenderer mr, List<string> names, List<bool> sels, List<BlendParamType> types, List<bool> inverts, List<float> offs, List<float> ons, int clipIndexOffset, int totalClips, string usePrefix)
   {
     string meshName = mr != null ? mr.gameObject.name : "Mesh";
     string meshSubFolder = Path.Combine(outputFolder, meshName).Replace("\\", "/");
@@ -432,8 +595,7 @@ public class BlendshapeControllerGenerator : EditorWindow
 
     // create controller
     var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-
-    // Remove default BaseLayer
+    // Remove default BaseLayer if any
     if (controller.layers.Length > 0)
     {
       controller.RemoveLayer(0);
@@ -449,81 +611,153 @@ public class BlendshapeControllerGenerator : EditorWindow
     }
     string finalBindingPath = computedRelative ?? "";
 
-    if (names == null || sels == null) return false;
-
     int localCount = 0;
     for (int i = 0; i < names.Count; i++)
     {
       if (!sels[i]) continue;
       var name = names[i];
-      float globalProgress = (float)(clipIndexOffset + localCount) / Math.Max(1, totalClips);
-      if (EditorUtility.DisplayCancelableProgressBar("Generating Blendshape Clips", $"{meshName}: {localCount + 1}/{names.Count} - {name}", globalProgress))
-      {
-        EditorUtility.ClearProgressBar();
-        Debug.LogWarning("Generation cancelled by user during clip creation.");
-        return true;
-      }
-      localCount++;
+      var pType = (types != null && types.Count == names.Count) ? types[i] : BlendParamType.Float;
+      bool invert = (inverts != null && inverts.Count == names.Count) ? inverts[i] : false;
+      float offVal = (offs != null && offs.Count == names.Count) ? offs[i] : 0f;
+      float onVal = (ons != null && ons.Count == names.Count) ? ons[i] : 100f;
       string safeName = SanitizeName(name);
-      string clipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + ".anim").Replace("\\", "/");
 
-      // Create a linear AnimationClip (0->100 over 1 second) and set it to loop
-      var clip = new AnimationClip();
-      clip.name = safeName;
-      clip.wrapMode = WrapMode.Loop;
-
-      // Configure loop setting (compatible across Unity versions)
-      var clipSettings = AnimationUtility.GetAnimationClipSettings(clip);
-      clipSettings.loopTime = true;
-      AnimationUtility.SetAnimationClipSettings(clip, clipSettings);
-
-      // Use the precomputed finalBindingPath
-      var binding = new EditorCurveBinding();
-      binding.path = finalBindingPath;
-      binding.type = typeof(SkinnedMeshRenderer);
-      binding.propertyName = blendshapePropertyPrefix + name;
-
-      var curve = new AnimationCurve();
-      curve.AddKey(new Keyframe(0f, 0f));
-      curve.AddKey(new Keyframe(1f, 100f));
-      for (int k = 0; k < curve.length; k++)
+      if (pType == BlendParamType.Float)
       {
-        AnimationUtility.SetKeyLeftTangentMode(curve, k, AnimationUtility.TangentMode.Linear);
-        AnimationUtility.SetKeyRightTangentMode(curve, k, AnimationUtility.TangentMode.Linear);
-      }
-      AnimationUtility.SetEditorCurve(clip, binding, curve);
-      AssetDatabase.CreateAsset(clip, clipPath);
-      // record created asset
-      lastGeneratedAssets.Add(clipPath);
+        // progress update for one clip
+        float globalProgress = (float)(clipIndexOffset + localCount) / Math.Max(1, totalClips);
+        if (EditorUtility.DisplayCancelableProgressBar("Generating Blendshape Clips", $"{meshName}: {localCount + 1}/{names.Count} - {name}", globalProgress))
+        {
+          EditorUtility.ClearProgressBar();
+          Debug.LogWarning("Generation cancelled by user during clip creation.");
+          return true;
+        }
+        localCount++;
 
-      // add a float parameter for future use (prefix 'BS_' first to avoid collisions and keep stable naming)
-      string paramName = "BS_" + meshPrefix + safeName;
-      if (!controller.parameters.Any(p => p.name == paramName))
+        string clipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + ".anim").Replace("\\", "/");
+
+        // Create a configurable AnimationClip using the selected curve and duration
+        var clip = new AnimationClip();
+        clip.name = safeName;
+        clip.wrapMode = floatCurveLoop ? WrapMode.Loop : WrapMode.Default;
+
+        var clipSettings = AnimationUtility.GetAnimationClipSettings(clip);
+        clipSettings.loopTime = floatCurveLoop;
+        AnimationUtility.SetAnimationClipSettings(clip, clipSettings);
+
+        var binding = new EditorCurveBinding();
+        binding.path = finalBindingPath;
+        binding.type = typeof(SkinnedMeshRenderer);
+        binding.propertyName = blendshapePropertyPrefix + name;
+
+        var curve = BuildScaledCurve(floatCurve, floatCurveDuration, floatValueScale);
+        AnimationUtility.SetEditorCurve(clip, binding, curve);
+        AssetDatabase.CreateAsset(clip, clipPath);
+        lastGeneratedAssets.Add(clipPath);
+
+        string paramName = parameterPrefix + meshPrefix + safeName;
+        if (!controller.parameters.Any(p => p.name == paramName))
+        {
+          controller.AddParameter(paramName, AnimatorControllerParameterType.Float);
+        }
+
+        var stateMachine = new AnimatorStateMachine();
+        stateMachine.name = safeName;
+        AssetDatabase.AddObjectToAsset(stateMachine, controllerPath);
+
+        var state = stateMachine.AddState(safeName);
+        state.motion = clip;
+        state.timeParameterActive = true;
+        state.timeParameter = paramName;
+
+        var layer = new AnimatorControllerLayer();
+        layer.name = safeName;
+        layer.defaultWeight = 1f;
+        layer.stateMachine = stateMachine;
+
+        controller.AddLayer(layer);
+      }
+      else // Bool
       {
-        controller.AddParameter(paramName, AnimatorControllerParameterType.Float);
+        // We'll generate two clips: Off(0) and On(100), and a bool parameter to switch them
+        // First clip (Off)
+        float globalProgress = (float)(clipIndexOffset + localCount) / Math.Max(1, totalClips);
+        if (EditorUtility.DisplayCancelableProgressBar("Generating Blendshape Clips", $"{meshName}: {localCount + 1}/{names.Count} - {name} (" + (invert ? "On" : "Off") + ")", globalProgress))
+        {
+          EditorUtility.ClearProgressBar();
+          Debug.LogWarning("Generation cancelled by user during clip creation.");
+          return true;
+        }
+        localCount++;
+        string aClipName = invert ? "_On" : "_Off";
+        float aValue = invert ? onVal : offVal;
+        string aClipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + aClipName + ".anim").Replace("\\", "/");
+        var aClip = new AnimationClip();
+        aClip.name = safeName + aClipName;
+        var aBinding = new EditorCurveBinding { path = finalBindingPath, type = typeof(SkinnedMeshRenderer), propertyName = blendshapePropertyPrefix + name };
+        var aCurve = AnimationCurve.Constant(0f, 1f, aValue);
+        AnimationUtility.SetEditorCurve(aClip, aBinding, aCurve);
+        AssetDatabase.CreateAsset(aClip, aClipPath);
+        lastGeneratedAssets.Add(aClipPath);
+
+        // Second clip (On)
+        globalProgress = (float)(clipIndexOffset + localCount) / Math.Max(1, totalClips);
+        if (EditorUtility.DisplayCancelableProgressBar("Generating Blendshape Clips", $"{meshName}: {localCount + 1}/{names.Count} - {name} (" + (invert ? "Off" : "On") + ")", globalProgress))
+        {
+          EditorUtility.ClearProgressBar();
+          Debug.LogWarning("Generation cancelled by user during clip creation.");
+          return true;
+        }
+        localCount++;
+        string bClipName = invert ? "_Off" : "_On";
+        float bValue = invert ? offVal : onVal;
+        string bClipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + bClipName + ".anim").Replace("\\", "/");
+        var bClip = new AnimationClip();
+        bClip.name = safeName + bClipName;
+        var bBinding = new EditorCurveBinding { path = finalBindingPath, type = typeof(SkinnedMeshRenderer), propertyName = blendshapePropertyPrefix + name };
+        var bCurve = AnimationCurve.Constant(0f, 1f, bValue);
+        AnimationUtility.SetEditorCurve(bClip, bBinding, bCurve);
+        AssetDatabase.CreateAsset(bClip, bClipPath);
+        lastGeneratedAssets.Add(bClipPath);
+
+        string paramName = parameterPrefix + meshPrefix + safeName;
+        if (!controller.parameters.Any(p => p.name == paramName))
+        {
+          controller.AddParameter(paramName, AnimatorControllerParameterType.Bool);
+        }
+
+        var stateMachine = new AnimatorStateMachine { name = safeName };
+        AssetDatabase.AddObjectToAsset(stateMachine, controllerPath);
+
+        // Determine states based on invert
+        var stateA = stateMachine.AddState(safeName + aClipName);
+        stateA.motion = aClip;
+        var stateB = stateMachine.AddState(safeName + bClipName);
+        stateB.motion = bClip;
+
+        // default state: false => Off (or On if inverted)
+        stateMachine.defaultState = invert ? stateB : stateA;
+
+        // Transitions based on bool
+        var toOn = stateMachine.AddAnyStateTransition(invert ? stateA : stateB);
+        toOn.hasExitTime = false;
+        toOn.duration = 0f;
+        toOn.AddCondition(AnimatorConditionMode.If, 0f, paramName);
+
+        var toOff = stateMachine.AddAnyStateTransition(invert ? stateB : stateA);
+        toOff.hasExitTime = false;
+        toOff.duration = 0f;
+        toOff.AddCondition(AnimatorConditionMode.IfNot, 0f, paramName);
+
+        var layer = new AnimatorControllerLayer { name = safeName, defaultWeight = 1f, stateMachine = stateMachine };
+        controller.AddLayer(layer);
       }
-
-      var stateMachine = new AnimatorStateMachine();
-      stateMachine.name = safeName;
-      AssetDatabase.AddObjectToAsset(stateMachine, controllerPath); // serialize into controller asset
-
-      var state = stateMachine.AddState(safeName);
-      state.motion = clip;
-      state.timeParameterActive = true;
-      state.timeParameter = paramName;
-
-      var layer = new AnimatorControllerLayer();
-      layer.name = safeName;
-      layer.defaultWeight = 1f;
-      layer.stateMachine = stateMachine;
-
-      controller.AddLayer(layer);
     }
 
     // Create Modular Avatar menu structure under the Avatar (multi-level). Each leaf gets a ModularAvatarMenuItem.
     try
     {
-      CreateMAMenu(avatarRoot, baseControllerNameForMenu, controllerPath, meshPrefix, names, sels);
+      CreateMAMenu(avatarRoot, baseControllerNameForMenu, controllerPath, meshPrefix, names, sels, types, inverts, offs, ons);
     }
     catch (Exception)
     {
@@ -568,7 +802,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   // Create a Modular Avatar menu hierarchy under the given avatar root. The menu root will be
   // named <baseControllerName>_Menu. For each selected blendshape, a path of GameObjects is created
   // from the name split by '/', and a ModularAvatarMenuItem is attached on the leaf.
-  private void CreateMAMenu(GameObject avatarRoot, string baseControllerName, string controllerPath, string meshPrefix, List<string> blendshapeNames, List<bool> selected)
+  private void CreateMAMenu(GameObject avatarRoot, string baseControllerName, string controllerPath, string meshPrefix, List<string> blendshapeNames, List<bool> selected, List<BlendParamType> types, List<bool> inverts, List<float> offs, List<float> ons)
   {
     if (avatarRoot == null) return;
 
@@ -638,7 +872,9 @@ public class BlendshapeControllerGenerator : EditorWindow
       if (!selected[i]) continue;
       var fullName = blendshapeNames[i];
       string safeName = SanitizeName(fullName);
-      string paramName = "BS_" + meshPrefix + SanitizeName(fullName);
+      string paramName = parameterPrefix + meshPrefix + SanitizeName(fullName);
+      var pType = (types != null && types.Count == blendshapeNames.Count) ? types[i] : BlendParamType.Float;
+      bool invert = (inverts != null && inverts.Count == blendshapeNames.Count) ? inverts[i] : false;
 
       var parts = fullName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
       Transform parent = controllerMenuGO.transform;
@@ -680,8 +916,19 @@ public class BlendshapeControllerGenerator : EditorWindow
       // Configure the leaf menu item to point at the generated parameter and set sensible defaults.
       try
       {
-        item.PortableControl.Type = PortableControlType.RadialPuppet;
-        item.PortableControl.SubParameters = ImmutableList.Create(paramName);
+        // Use a more readable label (last segment of original path)
+        try { item.label = parts.LastOrDefault() ?? safeName; } catch { }
+        if (pType == BlendParamType.Float)
+        {
+          item.PortableControl.Type = PortableControlType.RadialPuppet;
+          item.PortableControl.SubParameters = ImmutableList.Create(paramName);
+        }
+        else
+        {
+          item.PortableControl.Type = PortableControlType.Toggle;
+          try { item.PortableControl.Parameter = paramName; } catch { }
+          // Toggle 默认值由 Animator 默认状态决定；这里不直接设置数值
+        }
 
         // Menu item flags: keep defaults consistent with Modular Avatar expectations
         item.isSaved = true;
@@ -769,15 +1016,16 @@ public class BlendshapeControllerGenerator : EditorWindow
       {
         if (!selected[i]) continue;
         var fullName = blendshapeNames[i];
-        string paramName = "BS_" + meshPrefix + SanitizeName(fullName);
+        string paramName = parameterPrefix + meshPrefix + SanitizeName(fullName);
         if (existing.Contains(paramName)) continue; // already present, skip
+        var pType = (types != null && types.Count == blendshapeNames.Count) ? types[i] : BlendParamType.Float;
 
         var newPc = new ParameterConfig();
         newPc.nameOrPrefix = paramName;
         newPc.remapTo = "";
         newPc.internalParameter = false;
         newPc.isPrefix = false;
-        newPc.syncType = ParameterSyncType.Float;
+        newPc.syncType = (pType == BlendParamType.Bool) ? ParameterSyncType.Bool : ParameterSyncType.Float;
         newPc.localOnly = false;
         newPc.defaultValue = 0f;
         newPc.saved = true;
@@ -825,6 +1073,7 @@ public class BlendshapeControllerGenerator : EditorWindow
 
       var names = new List<string>();
       var sels = new List<bool>();
+      var types = new List<BlendParamType>();
       var mesh = sr.sharedMesh;
       if (mesh != null)
       {
@@ -832,10 +1081,12 @@ public class BlendshapeControllerGenerator : EditorWindow
         {
           names.Add(mesh.GetBlendShapeName(i));
           sels.Add(true);
+          types.Add(BlendParamType.Float);
         }
       }
       entry.blendshapeNames = names;
       entry.selected = sels;
+      entry.paramTypes = types;
       entry.scroll = Vector2.zero;
 
       // default enable and foldout states
@@ -851,8 +1102,70 @@ public class BlendshapeControllerGenerator : EditorWindow
 
   private void OnEnable()
   {
+    // Load persisted parameter prefix
+    if (EditorPrefs.HasKey(EditorPrefKey_ParameterPrefix))
+    {
+      parameterPrefix = EditorPrefs.GetString(EditorPrefKey_ParameterPrefix, parameterPrefix);
+    }
+    // Load float curve configuration
+    try
+    {
+      if (EditorPrefs.HasKey(EditorPrefKey_FloatCurve))
+      {
+        var json = EditorPrefs.GetString(EditorPrefKey_FloatCurve, string.Empty);
+        if (!string.IsNullOrEmpty(json))
+        {
+          var data = JsonUtility.FromJson<CurveData>(json);
+          if (data.keys != null && data.keys.Length > 0)
+          {
+            floatCurve = new AnimationCurve(data.keys);
+          }
+        }
+      }
+      if (EditorPrefs.HasKey(EditorPrefKey_FloatCurveDuration))
+      {
+        floatCurveDuration = Mathf.Max(0.0001f, EditorPrefs.GetFloat(EditorPrefKey_FloatCurveDuration, floatCurveDuration));
+      }
+      if (EditorPrefs.HasKey(EditorPrefKey_FloatCurveLoop))
+      {
+        floatCurveLoop = EditorPrefs.GetInt(EditorPrefKey_FloatCurveLoop, floatCurveLoop ? 1 : 0) != 0;
+      }
+      if (EditorPrefs.HasKey(EditorPrefKey_FloatValueScale))
+      {
+        floatValueScale = EditorPrefs.GetFloat(EditorPrefKey_FloatValueScale, floatValueScale);
+      }
+    }
+    catch { }
     // Ensure meshes list is populated if Avatar was set previously
     if (avatarRoot != null)
       RefreshMeshes();
+  }
+
+  // Build a new curve from source where time is scaled by duration and value by valueScale.
+  // Tangent slopes (dv/dt) are scaled accordingly by (valueScale / duration) to preserve shape.
+  private static AnimationCurve BuildScaledCurve(AnimationCurve source, float duration, float valueScale)
+  {
+    if (source == null || source.keys == null || source.keys.Length == 0)
+    {
+      // fallback: linear 0..1
+      return new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(duration, valueScale));
+    }
+    var keys = source.keys;
+    var newKeys = new Keyframe[keys.Length];
+    float slopeScale = (duration == 0f) ? 0f : (valueScale / duration);
+    for (int i = 0; i < keys.Length; i++)
+    {
+      var k = keys[i];
+      var nk = new Keyframe(k.time * duration, k.value * valueScale, k.inTangent * slopeScale, k.outTangent * slopeScale)
+      {
+        weightedMode = k.weightedMode,
+        inWeight = k.inWeight,
+        outWeight = k.outWeight
+      };
+      newKeys[i] = nk;
+    }
+    var curve = new AnimationCurve(newKeys);
+    // Preserve pre/post wrap modes if set on source (Unity uses constants on AnimationCurve not accessible; ok to keep defaults)
+    return curve;
   }
 }
