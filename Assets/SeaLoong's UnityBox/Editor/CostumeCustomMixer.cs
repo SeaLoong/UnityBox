@@ -589,6 +589,7 @@ public class CostumeCustomMixer : EditorWindow
     var go = new GameObject(name);
     Undo.RegisterCreatedObjectUndo(go, "Create Root Child");
     go.transform.SetParent(parent.transform, false);
+    go.transform.SetAsFirstSibling(); // 设置为第一个子节点
     EnsureSubmenuOnNode(go, "Costume Custom Mixer");
     return go;
   }
