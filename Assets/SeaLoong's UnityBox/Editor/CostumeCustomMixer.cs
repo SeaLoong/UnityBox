@@ -164,7 +164,7 @@ public class CostumeCustomMixer : EditorWindow
             internalParameter = false,
             isPrefix = false,
             syncType = ParameterSyncType.Bool,
-            localOnly = false,
+            localOnly = true,
             defaultValue = 0f,
             saved = false,
             hasExplicitDefaultValue = false
