@@ -8,14 +8,13 @@ using UnityEngine;
 using nadena.dev.modular_avatar.core;
 using VRC.SDK3.Avatars.Components;
 
-public class CostumeCustomMixer : EditorWindow
+public class CostumeSimpleController : EditorWindow
 {
   private static readonly string[] DefaultOutfitHints = { "origin", "original", "default", "base", "vanilla", "standard", "normal" };
   private GameObject costumesRoot;
-  private string customMixName = "CustomMix";
-  private string paramPrefix = "CSTM_";
+  private string paramPrefix = "CST_";
   private string costumeParamName = "costume";
-  private string generatedFolder = "Assets/SeaLoong's UnityBox/Costume Custom Mixer/Generated";
+  private string generatedFolder = "Assets/SeaLoong's UnityBox/Costume Simple Controller/Generated";
   [SerializeField]
   private string ignoreNamesCsv = "Armature,Bones,Bone,Skeleton,Rig";
   private GameObject defaultOutfitOverride;
@@ -25,10 +24,11 @@ public class CostumeCustomMixer : EditorWindow
   private Dictionary<GameObject, Dictionary<GameObject, bool>> partSelections = new Dictionary<GameObject, Dictionary<GameObject, bool>>();
   private bool previewFoldout = true;
   private Vector2 scrollPosition = Vector2.zero;
-  [MenuItem("Tools/SeaLoong's UnityBox/Costume Custom Mixer")]
+
+  [MenuItem("Tools/SeaLoong's UnityBox/Costume Simple Controller")]
   public static void ShowWindow()
   {
-    GetWindow<CostumeCustomMixer>("Costume Custom Mixer");
+    GetWindow<CostumeSimpleController>("Costume Simple Controller");
   }
 
   private void UpdatePreview()
@@ -38,28 +38,30 @@ public class CostumeCustomMixer : EditorWindow
     partSelections.Clear();
     if (costumesRoot == null) return;
     var ignoreSet = BuildIgnoreSet();
-    currentOutfitMap = FindOutfits(costumesRoot, excludeRootNamed: customMixName, ignoreSet: ignoreSet);
+    currentOutfitMap = FindOutfits(costumesRoot, ignoreSet);
     foreach (var outfit in currentOutfitMap.Keys)
     {
-      outfitSelections[outfit] = true;
+      outfitSelections[outfit] = true; // 默认选中
       partSelections[outfit] = new Dictionary<GameObject, bool>();
       foreach (var part in currentOutfitMap[outfit])
       {
-        partSelections[outfit][part] = true;
+        partSelections[outfit][part] = true; // 默认选中
       }
     }
   }
+
   private void OnGUI()
   {
-    EditorGUILayout.LabelField("Costume Custom Mixer", EditorStyles.boldLabel);
+    EditorGUILayout.LabelField("Costume Simple Controller", EditorStyles.boldLabel);
     var oldRoot = costumesRoot;
     costumesRoot = (GameObject)EditorGUILayout.ObjectField("Costumes Root", costumesRoot, typeof(GameObject), true);
     if (costumesRoot != oldRoot)
     {
       UpdatePreview();
     }
-    customMixName = EditorGUILayout.TextField("CustomMix Node Name", customMixName);
     paramPrefix = EditorGUILayout.TextField("Parameter Prefix", paramPrefix);
+    costumeParamName = EditorGUILayout.TextField("Costume Parameter Name", costumeParamName);
+    defaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField("Default Outfit (optional)", defaultOutfitOverride, typeof(GameObject), true);
 
     EditorGUILayout.BeginHorizontal();
     generatedFolder = EditorGUILayout.TextField("Output Folder", generatedFolder);
@@ -83,13 +85,12 @@ public class CostumeCustomMixer : EditorWindow
     }
     EditorGUILayout.EndHorizontal();
 
-    defaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField("Default Outfit (optional)", defaultOutfitOverride, typeof(GameObject), true);
     EditorGUILayout.HelpBox(
       "使用指南：\n" +
       "1) 选择 Costumes Root\n" +
-      "2) 点击 Generate：重建 Menu、'" + customMixName + "' 子菜单与参数；生成 Reset 控制器并合并到 FX\n" +
-      "3) Output Folder 可自定义生成文件输出目录\n" +
-      "4) Default Outfit 可拖入默认服装节点\n" +
+      "2) 预览并选择要生成的服装和部件\n" +
+      "3) 点击 Generate：生成选中的控制菜单\n" +
+      "4) Output Folder 可自定义生成文件输出目录\n" +
       "5) Ignore Names：结构匹配时忽略的直接子对象名称",
       MessageType.Info);
 
@@ -139,7 +140,6 @@ public class CostumeCustomMixer : EditorWindow
           if (processedInPreview.Contains(outfit)) continue;
 
           var outfitPath = GetRelativePath(costumesRoot, outfit);
-
           var parent = outfit.transform.parent;
           bool hasVariants = parent != null && variantGroups.ContainsKey(parent);
           List<GameObject> variantOutfits = hasVariants ? variantGroups[parent] : new List<GameObject> { outfit };
@@ -164,6 +164,7 @@ public class CostumeCustomMixer : EditorWindow
             displayName = string.IsNullOrEmpty(outfitPath) ? outfit.name : outfitPath;
           }
 
+          // 显示服装复选框
           EditorGUILayout.BeginHorizontal();
           outfitSelections[outfit] = EditorGUILayout.ToggleLeft(displayName, outfitSelections[outfit]);
           if (hasVariants)
@@ -180,6 +181,7 @@ public class CostumeCustomMixer : EditorWindow
           {
             EditorGUI.indentLevel++;
 
+            // 显示变体（所有变体都可以勾选）
             if (hasVariants)
             {
               EditorGUILayout.LabelField("变体:", EditorStyles.boldLabel);
@@ -187,10 +189,12 @@ public class CostumeCustomMixer : EditorWindow
               {
                 processedInPreview.Add(variant);
 
+                // 初始化变体的选择状态
                 if (!outfitSelections.ContainsKey(variant))
                 {
                   outfitSelections[variant] = true;
                 }
+                // 初始化变体的部件字典（即使是空的也要初始化）
                 if (!partSelections.ContainsKey(variant))
                 {
                   partSelections[variant] = new Dictionary<GameObject, bool>();
@@ -204,6 +208,7 @@ public class CostumeCustomMixer : EditorWindow
               EditorGUILayout.Space(5);
             }
 
+            // 显示部件（只有模板outfit才有部件）
             var parts = currentOutfitMap[outfit];
             if (parts.Count > 0)
             {
@@ -211,9 +216,9 @@ public class CostumeCustomMixer : EditorWindow
               foreach (var part in parts)
               {
                 var partPath = GetRelativePath(outfit, part);
-                var partParam = BuildParamName(customMixName + "/" + outfitPath + "/" + partPath);
+                var partParam = BuildParamName(outfitPath + "/" + partPath);
                 EditorGUILayout.BeginHorizontal();
-                partSelections[outfit][part] = EditorGUILayout.ToggleLeft(part.name, partSelections[outfit][part]);
+                partSelections[outfit][part] = EditorGUILayout.ToggleLeft($"  {part.name}", partSelections[outfit][part]);
                 EditorGUILayout.LabelField($"({partParam})", EditorStyles.miniLabel, GUILayout.MinWidth(200));
                 EditorGUILayout.EndHorizontal();
               }
@@ -237,11 +242,12 @@ public class CostumeCustomMixer : EditorWindow
         }
         catch (Exception ex)
         {
-          Debug.LogError("CostumeCustomMixer generation failed: " + ex);
+          Debug.LogError("CostumeSimpleController generation failed: " + ex);
         }
       }
     }
   }
+
   private void Generate()
   {
     if (costumesRoot == null)
@@ -257,6 +263,7 @@ public class CostumeCustomMixer : EditorWindow
       if (outfitSelections[outfit])
       {
         var selectedParts = currentOutfitMap[outfit].Where(part => partSelections[outfit][part]).ToList();
+        // 允许空部件列表（用于变体）
         filteredOutfitMap[outfit] = selectedParts;
       }
     }
@@ -264,11 +271,11 @@ public class CostumeCustomMixer : EditorWindow
     if (!PreflightCheck(filteredOutfitMap)) return;
 
     int undoGroup = Undo.GetCurrentGroup();
-    Undo.SetCurrentGroupName("Generate Costume Custom Mix");
-    void Progress(string info, float p) { EditorUtility.DisplayProgressBar("Costume Custom Mixer", info, Mathf.Clamp01(p)); }
+    Undo.SetCurrentGroupName("Generate Costume Simple Controller");
+    void Progress(string info, float p) { EditorUtility.DisplayProgressBar("Costume Simple Controller", info, Mathf.Clamp01(p)); }
     try
     {
-      Progress("Initializing...", 0.05f);
+      Progress("Initializing...", 0.1f);
       var menuRoot = PrepareChildRoot(costumesRoot, "Costume_Menu");
       if (menuRoot.GetComponent<ModularAvatarMenuInstaller>() == null)
       {
@@ -276,7 +283,25 @@ public class CostumeCustomMixer : EditorWindow
         catch { menuRoot.AddComponent<ModularAvatarMenuInstaller>(); }
       }
       var rootParams = EnsureParametersComponent(menuRoot);
-      var rootParamNames = new HashSet<string>(rootParams.parameters.Select(p => p.nameOrPrefix ?? ""));
+
+      // Add unified costume parameter
+      if (!rootParams.parameters.Any(p => p.nameOrPrefix == costumeParamName))
+      {
+        Undo.RecordObject(rootParams, "Add costume parameter");
+        var pc = new ParameterConfig
+        {
+          nameOrPrefix = costumeParamName,
+          remapTo = "",
+          internalParameter = false,
+          isPrefix = false,
+          syncType = ParameterSyncType.Int,
+          localOnly = false,
+          defaultValue = 0f,
+          saved = true,
+          hasExplicitDefaultValue = false
+        };
+        rootParams.parameters.Add(pc);
+      }
 
       GameObject defaultOutfit = null;
       {
@@ -292,15 +317,171 @@ public class CostumeCustomMixer : EditorWindow
             if (DefaultOutfitHints.Any(h => lower.Contains(h))) { defaultOutfit = outfitGo; break; }
           }
         }
+        Debug.Log(defaultOutfit != null
+          ? $"[CostumeSimpleController] 默认服装：{defaultOutfit.name}"
+          : "[CostumeSimpleController] 默认服装未解析");
       }
-      Debug.Log(defaultOutfit != null
-        ? $"[CostumeCustomMixer] 默认服装：{defaultOutfit.name}"
-        : "[CostumeCustomMixer] 默认服装未解析");
 
-      if (!rootParamNames.Contains(costumeParamName))
+      Progress("Building toggles...", 0.5f);
+
+      // 对服装进行分组：同父节点下的服装为一组
+      var outfitGroups = new Dictionary<Transform, List<GameObject>>();
+      foreach (var outfitGO in filteredOutfitMap.Keys)
+      {
+        var parent = outfitGO.transform.parent;
+        if (parent != null)
+        {
+          if (!outfitGroups.ContainsKey(parent))
+          {
+            outfitGroups[parent] = new List<GameObject>();
+          }
+          outfitGroups[parent].Add(outfitGO);
+          Debug.Log($"[Group] Adding {outfitGO.name} (parts: {filteredOutfitMap[outfitGO].Count}) to parent {parent.name}");
+        }
+      }
+
+      // 已处理的服装集合，避免重复处理变体
+      var processedOutfits = new HashSet<GameObject>();
+
+      foreach (var outfitGO in filteredOutfitMap.Keys)
+      {
+        if (processedOutfits.Contains(outfitGO)) continue;
+
+        // 获取同组的所有服装（包括变体）
+        var parent = outfitGO.transform.parent;
+        var variantOutfits = (parent != null && outfitGroups.ContainsKey(parent))
+          ? outfitGroups[parent].Where(go => filteredOutfitMap.ContainsKey(go)).ToList()
+          : new List<GameObject> { outfitGO };
+
+        // 只有多个变体时才认为是变体组
+        bool hasVariants = variantOutfits.Count > 1 && parent != null && parent.gameObject != costumesRoot;
+
+        Debug.Log($"[Generate] Processing {outfitGO.name}: hasVariants={hasVariants}, variantCount={variantOutfits.Count}, parent={parent?.name ?? "null"}");
+        if (hasVariants)
+        {
+          Debug.Log($"[Generate] Variants in group: {string.Join(", ", variantOutfits.Select(v => $"{v.name}(parts:{filteredOutfitMap[v].Count})"))}");
+        }
+
+        // 确定菜单路径：如果有变体，使用父节点路径；否则使用outfit路径
+        string menuBasePath;
+        GameObject menuTargetObject;
+        if (hasVariants)
+        {
+          // 变体组：使用父节点路径
+          menuBasePath = GetRelativePath(costumesRoot, parent.gameObject);
+          menuTargetObject = parent.gameObject;
+          Debug.Log($"[Generate] Using parent path: {menuBasePath}");
+        }
+        else
+        {
+          // 单个outfit：使用outfit路径
+          menuBasePath = GetRelativePath(costumesRoot, outfitGO);
+          menuTargetObject = outfitGO;
+          Debug.Log($"[Generate] Using outfit path: {menuBasePath}");
+        }
+
+        var partsMenu = menuBasePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var curMenu = menuRoot;
+
+        // 创建层级菜单
+        for (int i = 0; i < Mathf.Max(0, partsMenu.Length - 1); i++)
+        {
+          curMenu = EnsurePath(curMenu, partsMenu[i]);
+          EnsureSubmenuOnNode(curMenu);
+        }
+
+        // 创建最终的outfit子菜单
+        var outfitLeafName = partsMenu.Length > 0 ? partsMenu[partsMenu.Length - 1] : menuTargetObject.name;
+        var outfitSubmenu = EnsurePath(curMenu, outfitLeafName);
+        EnsureSubmenuOnNode(outfitSubmenu, outfitLeafName);
+
+        // 添加部件开关（仅第一个服装，即模板服装）
+        var meshes = filteredOutfitMap[outfitGO];
+        if (meshes.Count > 0)
+        {
+          // 创建部件子菜单
+          var partsSubmenu = FindOrCreateChild(outfitSubmenu, "Parts");
+          EnsureSubmenuOnNode(partsSubmenu);
+
+          foreach (var meshNode in meshes)
+          {
+            string partRelPath = GetRelativePath(outfitGO, meshNode);
+            bool partDefaultActive = meshNode.activeSelf;
+
+            var partNode = FindOrCreateChild(partsSubmenu, meshNode.name);
+            var partMi = CreateMenuItem(partNode);
+            Undo.RecordObject(partMi, "Configure part toggle");
+            partMi.PortableControl.Type = PortableControlType.Toggle;
+            string outfitRelPath = GetRelativePath(costumesRoot, outfitGO);
+            string partParamName = BuildParamName(outfitRelPath + "/" + partRelPath);
+            partMi.PortableControl.Parameter = partParamName;
+            partMi.automaticValue = true;
+            partMi.isDefault = partDefaultActive;
+            partMi.isSaved = true;
+            partMi.isSynced = true;
+            var partToggle = RecreateComponent<ModularAvatarObjectToggle>(partNode);
+            AddObjectToToggle(partToggle, meshNode, true);
+
+            if (!rootParams.parameters.Any(p => p.nameOrPrefix == partParamName))
+            {
+              Undo.RecordObject(rootParams, "Add part parameter");
+              var pc = new ParameterConfig
+              {
+                nameOrPrefix = partParamName,
+                remapTo = "",
+                internalParameter = false,
+                isPrefix = false,
+                syncType = ParameterSyncType.Bool,
+                localOnly = false,
+                defaultValue = partDefaultActive ? 1f : 0f,
+                saved = true,
+                hasExplicitDefaultValue = true
+              };
+              rootParams.parameters.Add(pc);
+            }
+            meshNode.SetActive(false);
+          }
+        }
+
+        if (hasVariants)
+        {
+          foreach (var variant in variantOutfits)
+          {
+            processedOutfits.Add(variant);
+            var variantNode = FindOrCreateChild(outfitSubmenu, variant.name);
+            var variantMi = CreateMenuItem(variantNode);
+            Undo.RecordObject(variantMi, "Configure variant toggle");
+            variantMi.PortableControl.Type = PortableControlType.Toggle;
+            variantMi.PortableControl.Parameter = costumeParamName;
+            variantMi.automaticValue = true;
+            variantMi.isDefault = (defaultOutfit != null && variant == defaultOutfit);
+            variantMi.isSaved = true;
+            variantMi.isSynced = true;
+            var variantToggle = RecreateComponent<ModularAvatarObjectToggle>(variantNode);
+            AddObjectToToggle(variantToggle, variant);
+          }
+        }
+        else
+        {
+          processedOutfits.Add(outfitGO);
+          var outfitNode = FindOrCreateChild(outfitSubmenu, outfitGO.name);
+          var outfitMi = CreateMenuItem(outfitNode);
+          Undo.RecordObject(outfitMi, "Configure outfit toggle");
+          outfitMi.PortableControl.Type = PortableControlType.Toggle;
+          outfitMi.PortableControl.Parameter = costumeParamName;
+          outfitMi.automaticValue = true;
+          outfitMi.isDefault = (defaultOutfit != null && outfitGO == defaultOutfit);
+          outfitMi.isSaved = true;
+          outfitMi.isSynced = true;
+          var outfitToggle = RecreateComponent<ModularAvatarObjectToggle>(outfitNode);
+          AddObjectToToggle(outfitToggle, outfitGO);
+        }
+      }
+
+      if (!rootParams.parameters.Any(p => p.nameOrPrefix == costumeParamName))
       {
         Undo.RecordObject(rootParams, "Add costume parameter");
-        var pcCostume = new ParameterConfig
+        var pc = new ParameterConfig
         {
           nameOrPrefix = costumeParamName,
           remapTo = "",
@@ -312,148 +493,10 @@ public class CostumeCustomMixer : EditorWindow
           saved = true,
           hasExplicitDefaultValue = false
         };
-        rootParams.parameters.Add(pcCostume);
-        rootParamNames.Add(costumeParamName);
+        rootParams.parameters.Add(pc);
       }
 
-      var resetParam = BuildParamName("ResetCustomMix");
-      {
-        var resetNode = FindOrCreateChild(menuRoot, "Reset CustomMix");
-        var resetItem = CreateMenuItem(resetNode);
-        Undo.RecordObject(resetItem, "Configure Reset CustomMix button");
-        resetItem.PortableControl.Type = PortableControlType.Button;
-        resetItem.PortableControl.Parameter = resetParam;
-        resetItem.automaticValue = true;
-        resetItem.isSaved = false;
-        resetItem.isSynced = false;
-        if (!rootParamNames.Contains(resetParam))
-        {
-          Undo.RecordObject(rootParams, "Add reset parameter");
-          var rp = new ParameterConfig
-          {
-            nameOrPrefix = resetParam,
-            remapTo = "",
-            internalParameter = false,
-            isPrefix = false,
-            syncType = ParameterSyncType.Bool,
-            localOnly = true,
-            defaultValue = 0f,
-            saved = false,
-            hasExplicitDefaultValue = false
-          };
-          rootParams.parameters.Add(rp);
-          rootParamNames.Add(resetParam);
-        }
-      }
-
-      {
-        Progress("Building Enable toggle...", 0.15f);
-        var enableNode = FindOrCreateChild(menuRoot, "Enable CustomMix");
-        var enableItem = CreateMenuItem(enableNode);
-        Undo.RecordObject(enableItem, "Configure Enable CustomMix toggle");
-        enableItem.PortableControl.Type = PortableControlType.Toggle;
-        enableItem.PortableControl.Parameter = costumeParamName;
-        enableItem.automaticValue = true;
-        enableItem.isSaved = true;
-        enableItem.isSynced = true;
-        var enableToggle = RecreateComponent<ModularAvatarObjectToggle>(enableNode);
-        foreach (var pair in filteredOutfitMap)
-        {
-          var outfitGO = pair.Key;
-          var meshes = pair.Value;
-          AddObjectToToggle(enableToggle, outfitGO, true);
-          foreach (var mesh in meshes) AddObjectToToggle(enableToggle, mesh, false);
-        }
-      }
-
-      var customMixParamNames = new List<string>();
-      {
-        Progress("Building CustomMix tree and parameters...", 0.35f);
-        var customMixMenu = FindOrCreateChild(menuRoot, customMixName);
-        EnsureSubmenuOnNode(customMixMenu);
-        var paramsComp = EnsureParametersComponent(menuRoot);
-        var existingParams = new HashSet<string>(paramsComp.parameters.Select(p => p.nameOrPrefix ?? ""));
-        foreach (var pair in filteredOutfitMap)
-        {
-          var outfitNode = pair.Key;
-          string outfitRelPath2 = GetRelativePath(costumesRoot, outfitNode);
-          var parts2 = outfitRelPath2.Split('/', StringSplitOptions.RemoveEmptyEntries);
-          var cur = customMixMenu;
-          foreach (var seg in parts2)
-          {
-            cur = EnsurePath(cur, seg);
-            EnsureSubmenuOnNode(cur);
-          }
-          var meshNodes = pair.Value;
-          foreach (var meshNode in meshNodes)
-          {
-            string partRelPath = GetRelativePath(outfitNode, meshNode);
-            bool partDefaultActive = meshNode.activeSelf;
-            string displayName = partDefaultActive ? meshNode.name : ("No " + meshNode.name);
-
-            var controlNode = FindOrCreateChild(cur, displayName);
-            Debug.Log($"[CostumeCustomMixer] Mesh Path: {partRelPath}, Control Node: {controlNode.name}");
-            string paramName = BuildParamName(customMixName + "/" + outfitRelPath2 + "/" + partRelPath);
-            var menuItem = CreateMenuItem(controlNode);
-            Undo.RecordObject(menuItem, "Configure CustomMix part toggle");
-            menuItem.PortableControl.Type = PortableControlType.Toggle;
-            menuItem.PortableControl.Parameter = paramName;
-            menuItem.automaticValue = true;
-            menuItem.isDefault = false;
-            menuItem.isSaved = true;
-            menuItem.isSynced = true;
-            var toggle = RecreateComponent<ModularAvatarObjectToggle>(controlNode);
-            AddObjectToToggle(toggle, meshNode, true);
-
-            if (!existingParams.Contains(paramName))
-            {
-              Undo.RecordObject(paramsComp, "Add CustomMix parameter");
-              var pc = new ParameterConfig
-              {
-                nameOrPrefix = paramName,
-                remapTo = "",
-                internalParameter = false,
-                isPrefix = false,
-                syncType = ParameterSyncType.Bool,
-                localOnly = false,
-                defaultValue = 0f,
-                saved = true,
-                hasExplicitDefaultValue = true
-              };
-              paramsComp.parameters.Add(pc);
-              existingParams.Add(paramName);
-            }
-            customMixParamNames.Add(paramName);
-          }
-        }
-      }
-
-      Progress("Building outfit toggles...", 0.70f);
-      foreach (var outfitGO in filteredOutfitMap.Keys)
-      {
-        string outfitRelPath = GetRelativePath(costumesRoot, outfitGO);
-        var partsOutfit = outfitRelPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var curMenu = menuRoot;
-        for (int i = 0; i < Mathf.Max(0, partsOutfit.Length - 1); i++)
-        {
-          curMenu = EnsurePath(curMenu, partsOutfit[i]);
-          EnsureSubmenuOnNode(curMenu);
-        }
-        var outfitLeafName = partsOutfit.Length > 0 ? partsOutfit[partsOutfit.Length - 1] : outfitGO.name;
-        var outfitLeaf = EnsurePath(curMenu, outfitLeafName);
-        var mi = CreateMenuItem(outfitLeaf);
-        Undo.RecordObject(mi, "Configure outfit toggle");
-        mi.PortableControl.Type = PortableControlType.Toggle;
-        mi.PortableControl.Parameter = costumeParamName;
-        mi.automaticValue = true;
-        mi.isDefault = (defaultOutfit != null && outfitGO == defaultOutfit);
-        mi.isSaved = true;
-        mi.isSynced = true;
-        var outfitToggle = RecreateComponent<ModularAvatarObjectToggle>(outfitLeaf);
-        AddObjectToToggle(outfitToggle, outfitGO);
-      }
-
-      Progress("Deactivating outfits by default...", 0.85f);
+      Progress("Deactivating outfits by default...", 0.9f);
       foreach (var outfitGO in filteredOutfitMap.Keys)
       {
         Undo.RegisterCompleteObjectUndo(outfitGO, "Deactivate outfit by default");
@@ -462,20 +505,18 @@ public class CostumeCustomMixer : EditorWindow
         ActivateAncestorsUntilRoot(outfitGO, costumesRoot);
       }
 
-      Progress("Merging Reset controller to FX...", 0.95f);
-      TrySetupResetControllerAndMerge(menuRoot, resetParam, customMixParamNames);
-
       EditorUtility.SetDirty(menuRoot);
       Undo.CollapseUndoOperations(undoGroup);
       Progress("Done", 1f);
-      Debug.Log($"[CostumeCustomMixer] Generated: outfits={filteredOutfitMap.Count}, parts={customMixParamNames.Count}; outputDir='{generatedFolder}'.");
-      EditorUtility.DisplayDialog("生成完成", "已生成/重建 Menu、参数与 Reset 控制器（已合并至 FX）。", "确定");
+      Debug.Log($"[CostumeSimpleController] Generated: outfits={filteredOutfitMap.Count}, parts={filteredOutfitMap.Values.Sum(l => l.Count)}; outputDir='{generatedFolder}'.");
+      EditorUtility.DisplayDialog("生成完成", "已生成选中的服装和部件的控制菜单。", "确定");
     }
     finally
     {
       EditorUtility.ClearProgressBar();
     }
   }
+
   private bool PreflightCheck(Dictionary<GameObject, List<GameObject>> outfitMap)
   {
     bool hasMenuChild = costumesRoot.transform.Find("Costume_Menu") != null;
@@ -486,7 +527,7 @@ public class CostumeCustomMixer : EditorWindow
     int excludedSubtrees = 0;
     foreach (Transform t in costumesRoot.GetComponentsInChildren<Transform>(true))
     {
-      if (t != costumesRoot.transform && t.name == customMixName) excludedSubtrees++;
+      if (t != costumesRoot.transform && t.name == "Costume_Menu") excludedSubtrees++;
     }
 
     GameObject previewDefault = null;
@@ -513,15 +554,12 @@ public class CostumeCustomMixer : EditorWindow
     }
 
     var sb = new StringBuilder();
-    sb.AppendLine("即将生成/重建，摘要：");
+    sb.AppendLine("即将生成，摘要：");
     sb.AppendLine($"- 服装(outfit)：{outfitCount}");
     sb.AppendLine($"- 部件(mesh)：{partCount}");
     var folderPreview = string.IsNullOrWhiteSpace(generatedFolder) ? "Assets" : generatedFolder.Trim();
     if (!folderPreview.StartsWith("Assets")) folderPreview = "Assets";
     sb.AppendLine($"- 生成文件目录：{folderPreview}");
-    var controllerPreviewPath = $"{folderPreview}/CostumeCustomMixer.controller";
-    bool controllerExists = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPreviewPath) != null;
-    sb.AppendLine($"- 控制器：{controllerPreviewPath} {(controllerExists ? "(已存在)" : "(将创建)")}");
     if (previewDefault != null)
     {
       sb.AppendLine($"- 默认服装：{previewDefault.name}（{defaultSource}）");
@@ -532,18 +570,7 @@ public class CostumeCustomMixer : EditorWindow
     }
     if (hasMenuChild) sb.AppendLine("- 注意：存在 'Costume_Menu' 子物体，将被重建");
     if (rootHasMesh) sb.AppendLine("- 提示：根节点含网格，根上的网格不会被处理");
-    if (excludedSubtrees > 0) sb.AppendLine($"- 提示：检测到 {excludedSubtrees} 个名为 '{customMixName}' 的子树，将被跳过");
-    if (string.IsNullOrWhiteSpace(costumeParamName)) sb.AppendLine("- 警告：Costume 参数名为空，建议填写有效名称");
-    if (string.IsNullOrWhiteSpace(customMixName)) sb.AppendLine("- 警告：CustomMix 节点名为空，建议填写有效名称");
-    var ignoreSet = BuildIgnoreSet();
-    if (ignoreSet != null && ignoreSet.Count > 0)
-    {
-      sb.AppendLine("- 忽略名称（包含匹配，不区分大小写）：" + string.Join(", ", ignoreSet));
-    }
-    else
-    {
-      sb.AppendLine("- 忽略名称：无");
-    }
+    if (excludedSubtrees > 0) sb.AppendLine($"- 提示：检测到 {excludedSubtrees} 个名为 'Costume_Menu' 的子树，将被跳过");
 
     if (outfitMap.Count > 0)
     {
@@ -568,20 +595,21 @@ public class CostumeCustomMixer : EditorWindow
     }
 
     var message = sb.ToString();
-    Debug.Log("[CostumeCustomMixer] 预检\n" + message);
+    Debug.Log("[CostumeSimpleController] 预检\n" + message);
     return EditorUtility.DisplayDialog("生成前预检", message, "继续", "取消");
   }
 
-  private static Dictionary<GameObject, List<GameObject>> FindOutfits(GameObject root, string excludeRootNamed, HashSet<string> ignoreSet)
+  private static Dictionary<GameObject, List<GameObject>> FindOutfits(GameObject root, HashSet<string> ignoreSet)
   {
     var outfitMap = new Dictionary<GameObject, List<GameObject>>();
     var stack = new Stack<Transform>();
     stack.Push(root.transform);
+
+    Debug.Log($"[FindOutfits] Starting search from root: {root.name}");
+
     while (stack.Count > 0)
     {
       var t = stack.Pop();
-      if (!string.IsNullOrEmpty(excludeRootNamed) && t != root.transform && t.name == excludeRootNamed) continue;
-
       if (HasMeshOn(t))
       {
         var parent = t.parent;
@@ -602,41 +630,71 @@ public class CostumeCustomMixer : EditorWindow
             if (parts.Count > 0)
             {
               outfitMap[outfitNode] = parts;
+              Debug.Log($"[FindOutfits] Found outfit: {outfitNode.name} with {parts.Count} parts, parent: {parent.parent?.name ?? "null"}");
             }
-            AppendStructureBasedOutfits(outfitNode, excludeRootNamed, outfitMap, ignoreSet, root);
+            AppendStructureBasedOutfits(outfitNode, outfitMap, ignoreSet, root);
           }
         }
       }
       for (int i = t.childCount - 1; i >= 0; i--) stack.Push(t.GetChild(i));
     }
+
+    Debug.Log($"[FindOutfits] Total outfits found: {outfitMap.Count}");
+    foreach (var kv in outfitMap)
+    {
+      Debug.Log($"[FindOutfits] - {kv.Key.name}: {kv.Value.Count} parts");
+    }
+
     return outfitMap;
   }
 
   /// <summary>
-  /// Identifies variants by recognizing all sibling nodes under the same parent without requiring name matching.
+  /// 在"同级（同父）"范围内识别换色套装变体；调用时机：每次新发现一个服装根节点后。
+  /// 将所有同父兄弟节点识别为变体（不需要子对象名称匹配）。
   /// </summary>
-  private static void AppendStructureBasedOutfits(GameObject newOutfitRoot, string excludeRootNamed, Dictionary<GameObject, List<GameObject>> outfitMap, HashSet<string> ignoreSet, GameObject costumeRoot)
+  private static void AppendStructureBasedOutfits(GameObject newOutfitRoot, Dictionary<GameObject, List<GameObject>> outfitMap, HashSet<string> ignoreSet, GameObject costumeRoot)
   {
     if (newOutfitRoot == null || outfitMap == null) return;
     var parent = newOutfitRoot.transform?.parent;
     if (parent == null) return;
-    if (!string.IsNullOrEmpty(excludeRootNamed) && (parent.name == excludeRootNamed || newOutfitRoot.name == excludeRootNamed)) return;
 
-    if (costumeRoot != null && parent.gameObject == costumeRoot) return;
+    Debug.Log($"[AppendStructureBasedOutfits] Checking outfit: {newOutfitRoot.name}, parent: {parent.name}");
 
+    // 检查父节点是否为costume根节点（即是否在根节点下）
+    if (costumeRoot != null && parent.gameObject == costumeRoot)
+    {
+      Debug.Log($"[AppendStructureBasedOutfits] Parent is costume root, skipping");
+      return;
+    }
+
+    // 遍历同父兄弟作为变体：所有未在 outfitMap 中的节点
     int childCount = parent.childCount;
     int addedCount = 0;
     for (int i = 0; i < childCount; i++)
     {
       var candidate = parent.GetChild(i);
       if (candidate == null) continue;
-      if (!string.IsNullOrEmpty(excludeRootNamed) && candidate.name == excludeRootNamed) continue;
       var candidateGo = candidate.gameObject;
-      if (outfitMap.ContainsKey(candidateGo)) continue;
+      if (outfitMap.ContainsKey(candidateGo)) continue; // 已是服装
 
-      outfitMap[candidateGo] = new List<GameObject>();
+      // 直接将同父兄弟识别为变体，无需子对象匹配
+      Debug.Log($"[AppendStructureBasedOutfits] Found variant: {candidateGo.name} (sibling of {newOutfitRoot.name})");
+      outfitMap[candidateGo] = new List<GameObject>(); // 变体的部件列表为空
       addedCount++;
     }
+
+    Debug.Log($"[AppendStructureBasedOutfits] Added {addedCount} variants for template '{newOutfitRoot.name}'");
+  }
+
+  private static bool NameMatchesIgnore(string name, HashSet<string> ignoreSet)
+  {
+    if (string.IsNullOrEmpty(name) || ignoreSet == null || ignoreSet.Count == 0) return false;
+    foreach (var ig in ignoreSet)
+    {
+      if (string.IsNullOrEmpty(ig)) continue;
+      if (name.IndexOf(ig, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+    }
+    return false;
   }
 
   private HashSet<string> BuildIgnoreSet()
@@ -649,17 +707,6 @@ public class CostumeCustomMixer : EditorWindow
       .Where(s => !string.IsNullOrEmpty(s));
     foreach (var p in parts) set.Add(p);
     return set;
-  }
-
-  private static bool NameMatchesIgnore(string name, HashSet<string> ignoreSet)
-  {
-    if (string.IsNullOrEmpty(name) || ignoreSet == null || ignoreSet.Count == 0) return false;
-    foreach (var ig in ignoreSet)
-    {
-      if (string.IsNullOrEmpty(ig)) continue;
-      if (name.IndexOf(ig, StringComparison.OrdinalIgnoreCase) >= 0) return true;
-    }
-    return false;
   }
 
   private static bool HasMeshOn(Transform t)
@@ -677,7 +724,7 @@ public class CostumeCustomMixer : EditorWindow
     var child = parent.transform.Find(name);
     if (child != null) return child.gameObject;
     var go = new GameObject(name);
-    Undo.RegisterCreatedObjectUndo(go, "Create Mirror Node");
+    Undo.RegisterCreatedObjectUndo(go, "Create Node");
     go.transform.SetParent(parent.transform, false);
     return go;
   }
@@ -694,6 +741,7 @@ public class CostumeCustomMixer : EditorWindow
     }
     return cur;
   }
+
   private static void EnsureSubmenuOnNode(GameObject node, string label = "")
   {
     var old = node.GetComponent<ModularAvatarMenuItem>();
@@ -730,6 +778,18 @@ public class CostumeCustomMixer : EditorWindow
     return string.Join("/", parts);
   }
 
+  private static GameObject FindNearestOutfitParent(GameObject node, Dictionary<GameObject, List<GameObject>> outfitMap)
+  {
+    if (node == null || outfitMap == null || outfitMap.Count == 0) return null;
+    GameObject cand = node;
+    while (cand != null && !outfitMap.ContainsKey(cand))
+    {
+      var t = cand.transform;
+      cand = t != null && t.parent != null ? t.parent.gameObject : null;
+    }
+    return cand != null && outfitMap.ContainsKey(cand) ? cand : null;
+  }
+
   private string BuildParamName(string relPath)
   {
     string raw = relPath.Replace('/', '_');
@@ -743,17 +803,6 @@ public class CostumeCustomMixer : EditorWindow
     return new string(arr);
   }
 
-  private static GameObject FindNearestOutfitParent(GameObject node, Dictionary<GameObject, List<GameObject>> outfitMap)
-  {
-    if (node == null || outfitMap == null || outfitMap.Count == 0) return null;
-    GameObject cand = node;
-    while (cand != null && !outfitMap.ContainsKey(cand))
-    {
-      var t = cand.transform;
-      cand = t != null && t.parent != null ? t.parent.gameObject : null;
-    }
-    return cand != null && outfitMap.ContainsKey(cand) ? cand : null;
-  }
   private static ModularAvatarMenuItem CreateMenuItem(GameObject node)
   {
     var existing = node.GetComponent<ModularAvatarMenuItem>();
@@ -785,14 +834,13 @@ public class CostumeCustomMixer : EditorWindow
     try { return Undo.AddComponent<T>(node); }
     catch { return node.AddComponent<T>(); }
   }
+
   private static void AddObjectToToggle(ModularAvatarObjectToggle toggle, GameObject target, bool active = true)
   {
     if (toggle == null || target == null) return;
     Undo.RecordObject(toggle, "Add Object To MA Object Toggle");
-    // Build AvatarObjectReference for target
     var aor = new AvatarObjectReference();
     aor.Set(target);
-    // Avoid duplicates by comparing referencePath or resolved target
     var list = toggle.Objects ?? new List<ToggledObject>();
     bool exists = false;
     foreach (var item in list)
@@ -817,129 +865,6 @@ public class CostumeCustomMixer : EditorWindow
       list.Add(new ToggledObject { Object = aor, Active = active });
       toggle.Objects = list;
       EditorUtility.SetDirty(toggle);
-    }
-  }
-
-  private bool TrySetupResetControllerAndMerge(GameObject menuRoot, string resetParam, List<string> customMixParamNames)
-  {
-    if (menuRoot == null || string.IsNullOrEmpty(resetParam) || customMixParamNames == null || customMixParamNames.Count == 0)
-      return false;
-    try
-    {
-      var folder = string.IsNullOrWhiteSpace(generatedFolder) ? "Assets" : generatedFolder.Trim();
-      if (!folder.StartsWith("Assets")) folder = "Assets";
-      EnsureAssetFolder(folder);
-      var controllerPath = $"{folder}/CostumeCustomMixer.controller";
-      var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-      if (controller == null)
-      {
-        controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-      }
-
-      void EnsureBoolParam(string name)
-      {
-        if (controller.parameters.All(p => p.name != name))
-        {
-          controller.AddParameter(name, AnimatorControllerParameterType.Bool);
-        }
-      }
-      EnsureBoolParam(resetParam);
-      foreach (var p in customMixParamNames.Distinct()) EnsureBoolParam(p);
-
-      const string LayerName = "Reset CustomMix";
-      var layers = controller.layers.ToList();
-      int existingIdx = layers.FindIndex(l => l.name == LayerName);
-      if (existingIdx >= 0)
-      {
-        layers.RemoveAt(existingIdx);
-        controller.layers = layers.ToArray();
-      }
-      controller.AddLayer(LayerName);
-      var layersAfterAdd = controller.layers;
-      int newLayerIdx = Array.FindIndex(layersAfterAdd, l => l.name == LayerName);
-      if (newLayerIdx >= 0)
-      {
-        var newLayer = layersAfterAdd[newLayerIdx];
-        newLayer.defaultWeight = 1f;
-        layersAfterAdd[newLayerIdx] = newLayer;
-        controller.layers = layersAfterAdd;
-      }
-      var layer = controller.layers.First(l => l.name == LayerName);
-      var sm = layer.stateMachine;
-      foreach (var st in sm.states.Select(s => s.state).ToArray())
-      {
-        sm.RemoveState(st);
-      }
-      var idle = sm.AddState("Idle");
-      sm.defaultState = idle;
-      var resetState = sm.AddState("Reset");
-      resetState.writeDefaultValues = false;
-      var toReset = sm.AddAnyStateTransition(resetState);
-      toReset.hasExitTime = false;
-      toReset.hasFixedDuration = true;
-      toReset.duration = 0f;
-      toReset.offset = 0f;
-      toReset.AddCondition(AnimatorConditionMode.If, 0, resetParam);
-      var back = resetState.AddTransition(idle);
-      back.hasExitTime = false;
-      back.hasFixedDuration = true;
-      back.duration = 0f;
-      back.offset = 0f;
-      var behaviour = resetState.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
-      if (behaviour == null) return false;
-      var newList = new List<VRCAvatarParameterDriver.Parameter>();
-      foreach (var p in customMixParamNames.Distinct())
-      {
-        newList.Add(new VRCAvatarParameterDriver.Parameter
-        {
-          name = p,
-          value = 0f,
-          type = VRCAvatarParameterDriver.ChangeType.Set
-        });
-      }
-      newList.Add(new VRCAvatarParameterDriver.Parameter
-      {
-        name = resetParam,
-        value = 0f,
-        type = VRCAvatarParameterDriver.ChangeType.Set
-      });
-      behaviour.parameters = newList;
-      Debug.Log($"[CostumeCustomMixer] Controller updated: {controllerPath}");
-      EditorUtility.SetDirty(controller);
-      AssetDatabase.SaveAssets();
-
-      var merge = RecreateComponent<ModularAvatarMergeAnimator>(menuRoot);
-      merge.animator = controller;
-      merge.layerType = VRCAvatarDescriptor.AnimLayerType.FX;
-      merge.deleteAttachedAnimator = false;
-      merge.mergeAnimatorMode = MergeAnimatorMode.Append;
-      EditorUtility.SetDirty(menuRoot);
-      return true;
-    }
-    catch (Exception e)
-    {
-      Debug.LogWarning($"Failed to set up Reset controller/merge: {e.Message}");
-      return false;
-    }
-  }
-
-  private static void EnsureAssetFolder(string assetsRelativePath)
-  {
-    if (string.IsNullOrEmpty(assetsRelativePath)) return;
-    assetsRelativePath = assetsRelativePath.Replace('\\', '/');
-    if (!assetsRelativePath.StartsWith("Assets")) return;
-    var parts = assetsRelativePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-    if (parts.Length == 0) return;
-    var current = parts[0];
-    for (int i = 1; i < parts.Length; i++)
-    {
-      var next = parts[i];
-      var combined = current + "/" + next;
-      if (!AssetDatabase.IsValidFolder(combined))
-      {
-        AssetDatabase.CreateFolder(current, next);
-      }
-      current = combined;
     }
   }
 
