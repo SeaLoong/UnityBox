@@ -730,7 +730,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     if (avatarRoot == null) return;
 
-    string topMenuName = "Blendshapes_Menu";
+    string topMenuName = "Blendshapes Menu";
     var existingTop = avatarRoot.transform.Find(topMenuName);
     GameObject topMenuGO;
     if (existingTop != null)

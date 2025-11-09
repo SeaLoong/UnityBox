@@ -2,6 +2,14 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
+
+/[Aa]ssets/*
+!/[Aa]ssets/SeaLoong's UnityBox/
+/[Aa]ssets/SeaLoong's UnityBox/*
+!/[Aa]ssets/SeaLoong's UnityBox/Editor/
+!/[Aa]ssets/SeaLoong's UnityBox/Editor/**
+
+
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
@@ -104,4 +112,6 @@ InitTestScene*.unity*
 
 /Pumkin
 /Thry
-/Assets/XR
+
+*.unity
+/[Aa]ssets/*.unity
