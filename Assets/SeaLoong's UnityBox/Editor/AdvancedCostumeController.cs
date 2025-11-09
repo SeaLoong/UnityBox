@@ -514,7 +514,8 @@ public class AdvancedCostumeController : EditorWindow
         {
           string partRelPath = Utils.GetRelativePath(outfit.BaseObject, part);
           string partParamName = Utils.BuildParamName(paramPrefix, outfit.RelativePath + "/" + partRelPath);
-          controller.AddParameter(partParamName, AnimatorControllerParameterType.Bool);
+          // Animator 中使用 Float 类型
+          controller.AddParameter(partParamName, AnimatorControllerParameterType.Float);
         }
       }
     }
@@ -522,14 +523,14 @@ public class AdvancedCostumeController : EditorWindow
     // 创建服装切换层
     CreateOutfitSwitchingLayer(controller, outfits, outfitIndexMap, defaultOutfit);
 
-    // 创建部件控制层
+    // 创建部件初始化层和控制层
     if (enableParts)
     {
-      foreach (var outfit in outfits)
-      {
-        if (outfit.Parts.Count > 0)
-          CreatePartsControlLayer(controller, outfit);
-      }
+      // 先创建初始化层,确保所有部件初始为 OFF
+      CreatePartsInitLayer(controller, outfits);
+
+      // 创建一个统一的部件控制层,包含所有 outfit 的所有部件
+      CreatePartsControlLayer(controller, outfits);
     }
 
     AssetDatabase.SaveAssets();
@@ -558,9 +559,9 @@ public class AdvancedCostumeController : EditorWindow
       var state = layer.stateMachine.AddState(obj.name, new Vector3(300, 50 + index * 60, 0));
 
       // 创建动画
-      var clip = CreateOutfitSwitchAnimation(allObjects, obj, index);
+      var clip = CreateOutfitSwitchAnimation(outfits, allObjects, obj, index);
       state.motion = clip;
-      state.writeDefaultValues = false;
+      state.writeDefaultValues = true;
 
       if (defaultOutfit != null && obj == defaultOutfit.BaseObject)
         defaultState = state;
@@ -577,7 +578,7 @@ public class AdvancedCostumeController : EditorWindow
     controller.AddLayer(layer);
   }
 
-  private AnimationClip CreateOutfitSwitchAnimation(List<GameObject> allObjects, GameObject activeObject, int index)
+  private AnimationClip CreateOutfitSwitchAnimation(List<OutfitData> outfits, List<GameObject> allObjects, GameObject activeObject, int index)
   {
     string animFolder = Path.Combine(generatedFolder, "Animations");
     if (!Directory.Exists(animFolder))
@@ -600,7 +601,7 @@ public class AdvancedCostumeController : EditorWindow
     foreach (var obj in allObjects)
     {
       bool active = false;
-      
+
       if (obj == activeObject)
       {
         // 激活的对象本身
@@ -611,7 +612,7 @@ public class AdvancedCostumeController : EditorWindow
         // 如果 activeObject 是变体，也要启用其本体
         active = true;
       }
-      
+
       var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
       string path = Utils.GetRelativePath(costumesRoot, obj);
       clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
@@ -621,48 +622,112 @@ public class AdvancedCostumeController : EditorWindow
     return clip;
   }
 
-  private void CreatePartsControlLayer(AnimatorController controller, OutfitData outfit)
+  private void CreatePartsInitLayer(AnimatorController controller, List<OutfitData> outfits)
   {
-    foreach (var part in outfit.Parts)
+    // 创建初始化层,确保所有部件初始为 OFF
+    var layer = new AnimatorControllerLayer
     {
-      string partRelPath = Utils.GetRelativePath(outfit.BaseObject, part);
-      string partParamName = Utils.BuildParamName(paramPrefix, outfit.RelativePath + "/" + partRelPath);
+      name = "Parts Init",
+      defaultWeight = 1f,
+      stateMachine = new AnimatorStateMachine()
+    };
+    layer.stateMachine.name = layer.name;
+    layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
+    AssetDatabase.AddObjectToAsset(layer.stateMachine, controller);
 
-      var layer = new AnimatorControllerLayer
-      {
-        name = partParamName,
-        defaultWeight = 1f,
-        stateMachine = new AnimatorStateMachine()
-      };
-      layer.stateMachine.name = layer.name;
-      layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
-      AssetDatabase.AddObjectToAsset(layer.stateMachine, controller);
-
-      // ON 状态
-      var onState = layer.stateMachine.AddState("ON", new Vector3(300, 50, 0));
-      onState.motion = CreatePartToggleAnimation(part, true, partParamName);
-      onState.writeDefaultValues = false;
-
-      // OFF 状态
-      var offState = layer.stateMachine.AddState("OFF", new Vector3(300, 120, 0));
-      offState.motion = CreatePartToggleAnimation(part, false, partParamName);
-      offState.writeDefaultValues = false;
-
-      layer.stateMachine.defaultState = part.activeSelf ? onState : offState;
-
-      // 添加转换
-      var toOn = layer.stateMachine.AddAnyStateTransition(onState);
-      toOn.AddCondition(AnimatorConditionMode.If, 0, partParamName);
-      toOn.duration = 0;
-      toOn.hasExitTime = false;
-
-      var toOff = layer.stateMachine.AddAnyStateTransition(offState);
-      toOff.AddCondition(AnimatorConditionMode.IfNot, 0, partParamName);
-      toOff.duration = 0;
-      toOff.hasExitTime = false;
-
-      controller.AddLayer(layer);
+    // 创建一个空动画,设置所有部件为 OFF
+    string animFolder = Path.Combine(generatedFolder, "Animations");
+    if (!Directory.Exists(animFolder))
+    {
+      Directory.CreateDirectory(animFolder);
+      AssetDatabase.Refresh();
     }
+
+    string animPath = Path.Combine(animFolder, "PartsInit_OFF.anim").Replace("\\", "/");
+    var clip = new AnimationClip { legacy = false, wrapMode = WrapMode.Once };
+    var settings = AnimationUtility.GetAnimationClipSettings(clip);
+    settings.loopTime = false;
+    AnimationUtility.SetAnimationClipSettings(clip, settings);
+
+    // 为所有部件添加 OFF 曲线
+    foreach (var outfit in outfits)
+    {
+      foreach (var part in outfit.Parts)
+      {
+        var curve = AnimationCurve.Constant(0, 1f / 60f, 0f);
+        string path = Utils.GetRelativePath(costumesRoot, part);
+        clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
+      }
+    }
+
+    AssetDatabase.CreateAsset(clip, animPath);
+
+    // 创建状态
+    var state = layer.stateMachine.AddState("Init", new Vector3(300, 50, 0));
+    state.motion = clip;
+    state.writeDefaultValues = true;  // WD=true: 写入所有部件为 OFF 的默认值
+    layer.stateMachine.defaultState = state;
+
+    controller.AddLayer(layer);
+  }
+
+  private void CreatePartsControlLayer(AnimatorController controller, List<OutfitData> outfits)
+  {
+    // 检查是否有任何部件
+    if (!outfits.Any(o => o.Parts.Count > 0)) return;
+
+    // 为所有部件创建一个统一的层,使用 Direct BlendTree
+    var layer = new AnimatorControllerLayer
+    {
+      name = "Parts Control",
+      defaultWeight = 1f,
+      stateMachine = new AnimatorStateMachine()
+    };
+    layer.stateMachine.name = layer.name;
+    layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
+    AssetDatabase.AddObjectToAsset(layer.stateMachine, controller);
+
+    // 创建 Direct BlendTree
+    var blendTree = new BlendTree
+    {
+      name = "Parts",
+      blendType = BlendTreeType.Direct,
+      hideFlags = HideFlags.HideInHierarchy
+    };
+    AssetDatabase.AddObjectToAsset(blendTree, controller);
+
+    // 遍历所有 outfit 的所有部件
+    foreach (var outfit in outfits)
+    {
+      foreach (var part in outfit.Parts)
+      {
+        string partRelPath = Utils.GetRelativePath(outfit.BaseObject, part);
+        string partParamName = Utils.BuildParamName(paramPrefix, outfit.RelativePath + "/" + partRelPath);
+
+        // 只创建 ON 动画
+        var onClip = CreatePartToggleAnimation(part, true, partParamName);
+
+        // 添加到 Direct BlendTree
+        blendTree.AddChild(onClip, 0.5f);
+
+        // 使用反射调用内部方法 SetDirectBlendTreeParameter
+        int childIndex = blendTree.children.Length - 1;
+        var setDirectBlendMethod = typeof(BlendTree).GetMethod("SetDirectBlendTreeParameter",
+          System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        if (setDirectBlendMethod != null)
+        {
+          setDirectBlendMethod.Invoke(blendTree, new object[] { childIndex, partParamName });
+        }
+      }
+    }
+
+    // 创建状态
+    var state = layer.stateMachine.AddState("Parts", new Vector3(300, 50, 0));
+    state.motion = blendTree;
+    state.writeDefaultValues = true;  // WD=true: ON 动画会覆盖初始化层的 OFF 状态
+    layer.stateMachine.defaultState = state;
+
+    controller.AddLayer(layer);
   }
 
   private AnimationClip CreatePartToggleAnimation(GameObject part, bool active, string paramName)
