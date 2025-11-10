@@ -697,6 +697,7 @@ public class AdvancedCostumeController : EditorWindow
     AssetDatabase.AddObjectToAsset(blendTree, controller);
 
     // 遍历所有 outfit 的所有部件
+    var children = new List<ChildMotion>();
     foreach (var outfit in outfits)
     {
       foreach (var part in outfit.Parts)
@@ -707,19 +708,17 @@ public class AdvancedCostumeController : EditorWindow
         // 只创建 ON 动画
         var onClip = CreatePartToggleAnimation(part, true, partParamName);
 
-        // 添加到 Direct BlendTree
-        blendTree.AddChild(onClip, 0.5f);
-
-        // 使用反射调用内部方法 SetDirectBlendTreeParameter
-        int childIndex = blendTree.children.Length - 1;
-        var setDirectBlendMethod = typeof(BlendTree).GetMethod("SetDirectBlendTreeParameter",
-          System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-        if (setDirectBlendMethod != null)
+        children.Add(new ChildMotion
         {
-          setDirectBlendMethod.Invoke(blendTree, new object[] { childIndex, partParamName });
-        }
+          motion = onClip,
+          directBlendParameter = partParamName,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        });
       }
     }
+    blendTree.children = children.ToArray();
 
     // 创建状态
     var state = layer.stateMachine.AddState("Parts", new Vector3(300, 50, 0));
