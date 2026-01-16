@@ -151,9 +151,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Armature.1
       objectReference: {fileID: 0}
+    - target: {fileID: 2975691307570278719, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4913155436411973969, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
       propertyPath: m_Name
       value: ViolenceRabbit
+      objectReference: {fileID: 0}
+    - target: {fileID: 4913155436411973969, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5213448265770956519, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -215,6 +223,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Skyblue
       objectReference: {fileID: 0}
+    - target: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9096869836350783313, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
       propertyPath: m_LocalRotation.x
       value: -0.005151302
@@ -237,6 +249,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2975691307570278719, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 237068051}
+    - targetCorrespondingSourceObject: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2060933235}
   m_SourcePrefab: {fileID: 100100000, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
 --- !u!4 &237068049 stripped
 Transform:
@@ -381,6 +396,7 @@ GameObject:
   m_Component:
   - component: {fileID: 357781338}
   - component: {fileID: 357781339}
+  - component: {fileID: 357781340}
   m_Layer: 0
   m_Name: Choker
   m_TagString: Untagged
@@ -420,7 +436,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/Choker
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -430,9 +446,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &357781340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357781337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/Choker
+      targetObject: {fileID: 237068056}
+    Active: 1
 --- !u!1 &877048540
 GameObject:
   m_ObjectHideFlags: 0
@@ -507,13 +541,14 @@ GameObject:
   m_Component:
   - component: {fileID: 877572300}
   - component: {fileID: 877572301}
+  - component: {fileID: 877572302}
   m_Layer: 0
   m_Name: Pink
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &877572300
 Transform:
   m_ObjectHideFlags: 0
@@ -578,6 +613,24 @@ MonoBehaviour:
       targetObject: {fileID: 237068052}
     Material: {fileID: 2100000, guid: 373031357476ecb4dbf735a6e65e09d4, type: 2}
     MaterialIndex: 0
+--- !u!114 &877572302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 877572299}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue
+      targetObject: {fileID: 2060933233}
+    Active: 1
 --- !u!1 &882970123
 GameObject:
   m_ObjectHideFlags: 0
@@ -588,8 +641,6 @@ GameObject:
   m_Component:
   - component: {fileID: 882970124}
   - component: {fileID: 882970128}
-  - component: {fileID: 882970127}
-  - component: {fileID: 882970126}
   - component: {fileID: 882970125}
   m_Layer: 0
   m_Name: Costumes Menu
@@ -645,181 +696,6 @@ MonoBehaviour:
   isDefault: 0
   automaticValue: 1
   label: Costumes
---- !u!114 &882970126
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 882970123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 71a96d4ea0c344f39e277d82035bf9bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  parameters:
-  - nameOrPrefix: costume
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 1
-    localOnly: 0
-    defaultValue: 0
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothGloves
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothOutwear
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothShoes
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothSkirt
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothSkirtIn
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/Orignial/ClothSocks
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/Bottom
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/Breast
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/Choker
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/Kase
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/LegBelt
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/Main
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
-  - nameOrPrefix: CST/ViolenceRabbit/MainArm
-    remapTo: 
-    internalParameter: 0
-    isPrefix: 0
-    syncType: 3
-    localOnly: 0
-    defaultValue: 1
-    saved: 1
-    hasExplicitDefaultValue: 1
-    m_overrideAnimatorDefaults: 0
---- !u!114 &882970127
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 882970123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bb122659f724ebf85fe095ac02dc339, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  animator: {fileID: 9100000, guid: 24ab6a6e91c448e4fbf5016470ea1248, type: 2}
-  layerType: 5
-  deleteAttachedAnimator: 0
-  pathMode: 0
-  matchAvatarWriteDefaults: 1
-  relativePathRoot:
-    referencePath: Costumes
-    targetObject: {fileID: 1230535413}
-  layerPriority: 0
-  mergeAnimatorMode: 0
 --- !u!114 &882970128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -844,6 +720,7 @@ GameObject:
   m_Component:
   - component: {fileID: 938380859}
   - component: {fileID: 938380860}
+  - component: {fileID: 938380861}
   m_Layer: 0
   m_Name: Main
   m_TagString: Untagged
@@ -883,7 +760,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/Main
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -893,9 +770,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &938380861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938380858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 1
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/Main
+      targetObject: {fileID: 237068053}
+    Active: 1
 --- !u!1 &975205812
 GameObject:
   m_ObjectHideFlags: 0
@@ -906,6 +801,7 @@ GameObject:
   m_Component:
   - component: {fileID: 975205813}
   - component: {fileID: 975205814}
+  - component: {fileID: 975205815}
   m_Layer: 0
   m_Name: Bottom
   m_TagString: Untagged
@@ -945,7 +841,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/Bottom
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -955,9 +851,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &975205815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975205812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/Bottom
+      targetObject: {fileID: 237068058}
+    Active: 1
 --- !u!1 &986817874
 GameObject:
   m_ObjectHideFlags: 1
@@ -1181,13 +1095,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1117957977}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &1143754421
 GameObject:
   m_ObjectHideFlags: 0
@@ -1198,6 +1112,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1143754422}
   - component: {fileID: 1143754423}
+  - component: {fileID: 1143754424}
   m_Layer: 0
   m_Name: ClothShoes
   m_TagString: Untagged
@@ -1237,7 +1152,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothShoes
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1250,6 +1165,24 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &1143754424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1143754421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 1
 --- !u!1 &1199538831
 GameObject:
   m_ObjectHideFlags: 0
@@ -1452,6 +1385,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1299411285}
   - component: {fileID: 1299411286}
+  - component: {fileID: 1299411287}
   m_Layer: 0
   m_Name: Pink
   m_TagString: Untagged
@@ -1491,8 +1425,8 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: costume
-    value: 2
+      name: 
+    value: 0
     style: 0
     subMenu: {fileID: 0}
     subParameters: []
@@ -1502,8 +1436,26 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 0
-  automaticValue: 0
+  automaticValue: 1
   label: 
+--- !u!114 &1299411287
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299411284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Pink
+      targetObject: {fileID: 877572299}
+    Active: 1
 --- !u!1 &1394447155
 GameObject:
   m_ObjectHideFlags: 0
@@ -1519,7 +1471,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1394447156
 Transform:
   m_ObjectHideFlags: 0
@@ -1551,6 +1503,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1443863704}
   - component: {fileID: 1443863705}
+  - component: {fileID: 1443863706}
   m_Layer: 0
   m_Name: Breast
   m_TagString: Untagged
@@ -1590,7 +1543,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/Breast
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1600,9 +1553,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &1443863706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1443863703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/Breast
+      targetObject: {fileID: 237068057}
+    Active: 1
 --- !u!1 &1529652788
 GameObject:
   m_ObjectHideFlags: 0
@@ -1613,6 +1584,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1529652789}
   - component: {fileID: 1529652790}
+  - component: {fileID: 1529652791}
   m_Layer: 0
   m_Name: ClothSocks
   m_TagString: Untagged
@@ -1652,7 +1624,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothSocks
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1665,6 +1637,24 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &1529652791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1529652788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 0
 --- !u!1 &1618750500
 GameObject:
   m_ObjectHideFlags: 0
@@ -1675,6 +1665,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1618750501}
   - component: {fileID: 1618750502}
+  - component: {fileID: 1618750503}
   m_Layer: 0
   m_Name: ClothSkirtIn
   m_TagString: Untagged
@@ -1714,7 +1705,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothSkirtIn
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1727,6 +1718,24 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &1618750503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1618750500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 1
 --- !u!1 &1635846225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1737,6 +1746,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1635846226}
   - component: {fileID: 1635846227}
+  - component: {fileID: 1635846228}
   m_Layer: 0
   m_Name: ClothSkirt
   m_TagString: Untagged
@@ -1776,7 +1786,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothSkirt
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1789,6 +1799,24 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &1635846228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635846225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 1
 --- !u!1 &1640083522
 GameObject:
   m_ObjectHideFlags: 0
@@ -1799,6 +1827,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1640083523}
   - component: {fileID: 1640083524}
+  - component: {fileID: 1640083525}
   m_Layer: 0
   m_Name: LegBelt
   m_TagString: Untagged
@@ -1838,7 +1867,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/LegBelt
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1848,9 +1877,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &1640083525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1640083522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/LegBelt
+      targetObject: {fileID: 237068054}
+    Active: 1
 --- !u!1 &1654186502
 GameObject:
   m_ObjectHideFlags: 0
@@ -1861,6 +1908,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1654186503}
   - component: {fileID: 1654186504}
+  - component: {fileID: 1654186505}
   m_Layer: 0
   m_Name: Orignial
   m_TagString: Untagged
@@ -1900,7 +1948,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: costume
+      name: 
     value: 0
     style: 0
     subMenu: {fileID: 0}
@@ -1911,8 +1959,26 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 0
-  automaticValue: 0
+  automaticValue: 1
   label: 
+--- !u!114 &1654186505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654186502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial
+      targetObject: {fileID: 1394447155}
+    Active: 1
 --- !u!1001 &1670618697
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1980,6 +2046,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1685273134}
   - component: {fileID: 1685273135}
+  - component: {fileID: 1685273136}
   m_Layer: 0
   m_Name: Kase
   m_TagString: Untagged
@@ -2019,7 +2086,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/Kase
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -2029,9 +2096,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &1685273136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1685273133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/Kase
+      targetObject: {fileID: 237068055}
+    Active: 1
 --- !u!1 &1706819942
 GameObject:
   m_ObjectHideFlags: 0
@@ -2042,6 +2127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1706819943}
   - component: {fileID: 1706819944}
+  - component: {fileID: 1706819945}
   m_Layer: 0
   m_Name: Skyblue
   m_TagString: Untagged
@@ -2081,8 +2167,8 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: costume
-    value: 1
+      name: 
+    value: 0
     style: 0
     subMenu: {fileID: 0}
     subParameters: []
@@ -2092,8 +2178,26 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 0
-  automaticValue: 0
+  automaticValue: 1
   label: 
+--- !u!114 &1706819945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706819942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue
+      targetObject: {fileID: 2060933233}
+    Active: 1
 --- !u!1 &1746090066
 GameObject:
   m_ObjectHideFlags: 0
@@ -2104,6 +2208,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1746090067}
   - component: {fileID: 1746090068}
+  - component: {fileID: 1746090069}
   m_Layer: 0
   m_Name: MainArm
   m_TagString: Untagged
@@ -2143,7 +2248,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/ViolenceRabbit/MainArm
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -2153,9 +2258,27 @@ MonoBehaviour:
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
-  isDefault: 1
+  isDefault: 0
   automaticValue: 1
   label: 
+--- !u!114 &1746090069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1746090066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 1
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Skyblue/MainArm
+      targetObject: {fileID: 237068052}
+    Active: 0
 --- !u!1 &2056211714
 GameObject:
   m_ObjectHideFlags: 0
@@ -2166,6 +2289,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2056211715}
   - component: {fileID: 2056211716}
+  - component: {fileID: 2056211717}
   m_Layer: 0
   m_Name: ClothOutwear
   m_TagString: Untagged
@@ -2205,7 +2329,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothOutwear
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -2218,6 +2342,47 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &2056211717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2056211714}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 1
+--- !u!1 &2060933233 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+  m_PrefabInstance: {fileID: 237068048}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2060933235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2060933233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/ViolenceRabbit/Armature.1
+      targetObject: {fileID: 237068050}
+    Active: 1
 --- !u!1 &2073252731
 GameObject:
   m_ObjectHideFlags: 0
@@ -2228,6 +2393,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2073252732}
   - component: {fileID: 2073252733}
+  - component: {fileID: 2073252734}
   m_Layer: 0
   m_Name: ClothGloves
   m_TagString: Untagged
@@ -2267,7 +2433,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: CST/Orignial/ClothGloves
+      name: 
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -2280,6 +2446,24 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
+--- !u!114 &2073252734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073252731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_inverted: 0
+  m_objects:
+  - Object:
+      referencePath: Costumes/Orignial/ClothGloves
+      targetObject: {fileID: 5367843770339341070}
+    Active: 1
 --- !u!4 &17289617837038350
 Transform:
   m_ObjectHideFlags: 0
@@ -5754,7 +5938,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1600088984965275484
 GameObject:
   m_ObjectHideFlags: 0
@@ -8131,7 +8315,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &2486893759005448857
 GameObject:
   m_ObjectHideFlags: 0
@@ -11686,7 +11870,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3960763038517479599
 Transform:
   m_ObjectHideFlags: 0
@@ -15639,7 +15823,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5371686871732964475
 Transform:
   m_ObjectHideFlags: 0
@@ -16628,7 +16812,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5812131508180760348
 Transform:
   m_ObjectHideFlags: 0
@@ -16877,7 +17061,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &5900460369922693682
 MonoBehaviour:
   m_ObjectHideFlags: 0

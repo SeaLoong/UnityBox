@@ -18,11 +18,11 @@ public static class Utils
     if (t == null) return false;
 
     var smr = t.GetComponent<SkinnedMeshRenderer>();
-    if (smr != null && smr.sharedMesh != null) return true;
+    if (smr != null) return true;
 
     var mr = t.GetComponent<MeshRenderer>();
     var mf = t.GetComponent<MeshFilter>();
-    return mr != null && mf != null && mf.sharedMesh != null;
+    return mr != null && mf != null;
   }
 
   /// <summary>
