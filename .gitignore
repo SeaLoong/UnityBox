@@ -5,9 +5,7 @@
 
 /[Aa]ssets/*
 !/[Aa]ssets/SeaLoong's UnityBox/
-/[Aa]ssets/SeaLoong's UnityBox/*
-!/[Aa]ssets/SeaLoong's UnityBox/Editor/
-!/[Aa]ssets/SeaLoong's UnityBox/Editor/**
+/[Aa]ssets/SeaLoong's UnityBox/**/Generated/**/*
 
 
 .utmp/
