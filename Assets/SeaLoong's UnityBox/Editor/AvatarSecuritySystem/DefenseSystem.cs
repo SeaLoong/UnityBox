@@ -31,7 +31,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         #region Public API
 
         /// <summary>
-        /// 创建防御层（仅在构建模式生成）
+        /// 创建防御层
         /// </summary>
         /// <param name="isDebugMode">是否是调试模式（生成简化版）</param>
         public static AnimatorControllerLayer CreateDefenseLayer(
@@ -50,12 +50,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // 状态：Active（防御激活）
             var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
+            activeState.motion = ASSAnimatorUtils.SharedEmptyClip;
 
             // 调试模式：生成简化版防御
             int stateCount = isDebugMode ? 50 : config.stateCount;
             
-            // 生成所有防御的动画
-            var stateMotion = GenerateDefenseStates(controller, stateCount);
+            // 直接在stateMachine中生成大量空状态（混淆逆向）
+            GenerateDefenseStates(layer.stateMachine, stateCount);
+            
             AnimationClip shaderMotion = null;
             AnimationClip particleMotion = null;
             AnimationClip drawCallMotion = null;
@@ -70,16 +72,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 drawCallMotion = GenerateDrawCallAnimation(controller, avatarRoot, config);
                 lightMotion = GenerateLightAnimation(controller, avatarRoot, config);
                 clothMotion = GenerateClothAnimation(controller, avatarRoot, config);
+                
+                // 将反制措施动画应用到Active状态
+                activeState.motion = CombineDefenseMotions(controller, 
+                    shaderMotion, particleMotion, drawCallMotion, lightMotion, clothMotion);
             }
             else
             {
                 // 调试版本：仅生成占位符动画
                 Debug.Log(ASSI18n.T("log.simplified_countermeasures"));
             }
-            
-            // 混合所有反制措施
-            activeState.motion = CombineAllDefenseMotions(controller, 
-                stateMotion, shaderMotion, particleMotion, drawCallMotion, lightMotion, clothMotion);
             
             // 转换条件：IsLocal && TimeUp
             var toActive = ASSAnimatorUtils.CreateTransition(inactiveState, activeState);
@@ -98,85 +100,33 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         #region Defense States (防御状态)
 
         /// <summary>
-        /// 生成大量防御状态（使用优化的BlendTree结构）
-        /// 为了避免Unity的256个参数限制，使用2D BlendTree来减少参数数量
+        /// 直接生成大量空状态（混淆逆向）
         /// </summary>
-        private static BlendTree GenerateDefenseStates(AnimatorController controller, int stateCount)
+        private static void GenerateDefenseStates(AnimatorStateMachine stateMachine, int stateCount)
         {
             Debug.Log(string.Format(ASSI18n.T("log.defense_start"), stateCount));
 
-            // 使用2D BlendTree来减少参数数量
-            // 例如：100x100 = 10000个状态只需要 2 个参数！
-            var rootBlendTree = new BlendTree
-            {
-                name = "ASS_DefenseStateRoot",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = "DefenseState_X",
-                hideFlags = HideFlags.HideInHierarchy,
-                useAutomaticThresholds = false
-            };
-
-            // 添加主轴参数
-            ASSAnimatorUtils.AddParameterIfNotExists(controller, "DefenseState_X",
-                AnimatorControllerParameterType.Float, defaultFloat: 0f);
-            ASSAnimatorUtils.AddParameterIfNotExists(controller, "DefenseState_Y",
-                AnimatorControllerParameterType.Float, defaultFloat: 0f);
-
-            // 计算需要多少个子树（每个子树100个状态）
-            int statesPerSubTree = 100;
-            int subTreeCount = Mathf.CeilToInt(stateCount / (float)statesPerSubTree);
-
-            var children = new List<ChildMotion>();
-
-            for (int i = 0; i < subTreeCount; i++)
-            {
-                int childCount = Mathf.Min(statesPerSubTree, stateCount - i * statesPerSubTree);
-                var subTree = GenerateDefenseSubTree(controller, i, childCount);
-                ASSAnimatorUtils.AddSubAsset(controller, subTree);
-
-                children.Add(new ChildMotion
-                {
-                    motion = subTree,
-                    threshold = i,
-                    timeScale = 1f
-                });
-            }
-
-            rootBlendTree.children = children.ToArray();
-
-            Debug.Log(string.Format(ASSI18n.T("log.defense_complete"), subTreeCount));
-            return rootBlendTree;
-        }
-
-        /// <summary>
-        /// 生成单个防御子树（使用1D BlendTree）
-        /// </summary>
-        private static BlendTree GenerateDefenseSubTree(AnimatorController controller, int treeIndex, int childCount)
-        {
-            var subTree = new BlendTree
-            {
-                name = $"ASS_DefenseStateSubTree_{treeIndex}",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = "DefenseState_Y",
-                hideFlags = HideFlags.HideInHierarchy,
-                useAutomaticThresholds = false
-            };
-
-            var children = new List<ChildMotion>();
             var sharedClip = ASSAnimatorUtils.SharedEmptyClip;
+            
+            // 直接生成N个空状态
+            // 排列成网格布局避免重叠
+            int columns = Mathf.CeilToInt(Mathf.Sqrt(stateCount));
+            float spacing = 150f;
+            float baseX = 400f;
+            float baseY = 50f;
 
-            for (int i = 0; i < childCount; i++)
+            for (int i = 0; i < stateCount; i++)
             {
-                children.Add(new ChildMotion
-                {
-                    motion = sharedClip,
-                    threshold = i,
-                    timeScale = 1f
-                });
+                int row = i / columns;
+                int col = i % columns;
+                
+                var defenseState = stateMachine.AddState($"Defense_{i}", 
+                    new Vector3(baseX + col * spacing, baseY + row * spacing, 0));
+                defenseState.motion = sharedClip;
+                defenseState.writeDefaultValues = true;
             }
 
-            subTree.children = children.ToArray();
-            return subTree;
+            Debug.Log(string.Format(ASSI18n.T("log.defense_complete"), stateCount));
         }
 
         #endregion
@@ -184,61 +134,47 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         #region Motion Combination (动作混合)
 
         /// <summary>
-        /// 组合所有防御动画
+        /// 组合防御动画（不包含状态BlendTree）
         /// </summary>
-        private static Motion CombineAllDefenseMotions(
+        private static Motion CombineDefenseMotions(
             AnimatorController controller,
-            Motion stateMotion,
             Motion shaderMotion,
             Motion particleMotion,
             Motion drawCallMotion,
             Motion lightMotion,
             Motion clothMotion)
         {
+            // 如果只有一个动画，直接返回
+            var motions = new List<Motion>();
+            if (shaderMotion != null) motions.Add(shaderMotion);
+            if (particleMotion != null) motions.Add(particleMotion);
+            if (drawCallMotion != null) motions.Add(drawCallMotion);
+            if (lightMotion != null) motions.Add(lightMotion);
+            if (clothMotion != null) motions.Add(clothMotion);
+            
+            if (motions.Count == 0)
+                return ASSAnimatorUtils.SharedEmptyClip;
+            
+            if (motions.Count == 1)
+                return motions[0];
+            
+            // 使用Direct BlendTree组合多个动画
             var blendTree = new BlendTree
             {
                 name = "ASS_DefenseCombined",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = "DefenseActive",
-                hideFlags = HideFlags.HideInHierarchy,
-                useAutomaticThresholds = false
+                blendType = BlendTreeType.Direct,
+                hideFlags = HideFlags.HideInHierarchy
             };
 
-            // 添加一个简单的控制参数
-            ASSAnimatorUtils.AddParameterIfNotExists(controller, "DefenseActive",
-                AnimatorControllerParameterType.Float, defaultFloat: 1f);
-
             var children = new List<ChildMotion>();
-            
-            int index = 0;
-            if (stateMotion != null)
+            foreach (var motion in motions)
             {
-                children.Add(new ChildMotion { motion = stateMotion, threshold = index++, timeScale = 1f });
-            }
-            
-            if (shaderMotion != null)
-            {
-                children.Add(new ChildMotion { motion = shaderMotion, threshold = index++, timeScale = 1f });
-            }
-            
-            if (particleMotion != null)
-            {
-                children.Add(new ChildMotion { motion = particleMotion, threshold = index++, timeScale = 1f });
-            }
-            
-            if (drawCallMotion != null)
-            {
-                children.Add(new ChildMotion { motion = drawCallMotion, threshold = index++, timeScale = 1f });
-            }
-            
-            if (lightMotion != null)
-            {
-                children.Add(new ChildMotion { motion = lightMotion, threshold = index++, timeScale = 1f });
-            }
-            
-            if (clothMotion != null)
-            {
-                children.Add(new ChildMotion { motion = clothMotion, threshold = index++, timeScale = 1f });
+                children.Add(new ChildMotion 
+                { 
+                    motion = motion, 
+                    directBlendParameter = "Unity Reserved", // Direct模式不使用参数
+                    timeScale = 1f 
+                });
             }
 
             blendTree.children = children.ToArray();

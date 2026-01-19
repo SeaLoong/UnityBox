@@ -138,29 +138,28 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             ASSAnimatorUtils.SetupAudioSource(avatarRoot, ASSConstants.GO_WARNING_AUDIO);
 #endif
 
-            // 5. 生成所有系统层
+            // 5. 生成所有系统层（所有模式都生成相同的层，只是内部状态不同）
             var lockLayer = InitialLockSystem.CreateLockLayer(fxController, avatarRoot, config);
             fxController.AddLayer(lockLayer);
 
             var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
             fxController.AddLayer(passwordLayer);
 
-            // 倒计时层
-            CreateCountdownLayerByMode(fxController, avatarRoot, config, isPlayMode);
+            // 倒计时层（所有模式都生成）
+            bool useLooping = config.unlimitedPasswordTime && isPlayMode;
+            var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, avatarRoot, config, isLooping: useLooping);
+            fxController.AddLayer(countdownLayer);
 
-            // 警告音效层（独立层，与倒计时层并行工作）
-            if (!config.unlimitedPasswordTime && config.warningBeep != null)
+            // 警告音效层（所有模式都生成，只要配置了警告音）
+            if (config.warningBeep != null)
             {
-                var warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, avatarRoot, config);
+                var warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, avatarRoot, config, isLooping: useLooping);
                 fxController.AddLayer(warningAudioLayer);
             }
 
-            // 不再创建独立的FeedbackLayer，反馈已集成到各状态中
-
-            // 防御层
+            // 防御层（所有模式都生成）
             if (!config.disableCountermeasures)
             {
-                // 播放模式：简化版防御；构建模式：完整防御
                 var defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
                 fxController.AddLayer(defenseLayer);
                 
@@ -179,39 +178,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 7. 保存
             ASSAnimatorUtils.SaveAndRefresh();
             ASSAnimatorUtils.LogOptimizationStats(fxController);
-        }
-
-        /// <summary>
-        /// 根据模式创建倒计时层
-        /// </summary>
-        private void CreateCountdownLayerByMode(
-            AnimatorController fxController, 
-            GameObject avatarRoot, 
-            AvatarSecuritySystemComponent config, 
-            bool isPlayMode)
-        {
-            if (!config.unlimitedPasswordTime)
-            {
-                // 正常倒计时模式
-                var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, avatarRoot, config);
-                fxController.AddLayer(countdownLayer);
-            }
-            else
-            {
-                // 无限时间模式
-                if (isPlayMode)
-                {
-                    // 播放模式：创建循环倒计时（仅用于显示效果）
-                    var countdownLayer = CountdownSystem.CreateLoopingCountdownLayer(fxController, avatarRoot, config);
-                    fxController.AddLayer(countdownLayer);
-                    
-                    // 添加TimeUp参数（防御层会用到，但永远不会触发）
-                    ASSAnimatorUtils.AddParameterIfNotExists(fxController, ASSConstants.PARAM_TIME_UP,
-                        AnimatorControllerParameterType.Bool, defaultBool: false);
-                }
-                
-                Debug.Log(ASSI18n.T("log.debug_mode"));
-            }
         }
 
         /// <summary>
