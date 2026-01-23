@@ -8,7 +8,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// <summary>
     /// 动画剪辑生成工具 - 创建各种反馈和控制动画
     /// </summary>
-    public static class ASSAnimationClipGenerator
+    public static class AnimationClipGenerator
     {
         /// <summary>
         /// 创建 GameObject 激活状态动画
@@ -23,7 +23,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             for (int i = 0; i < targets.Length; i++)
             {
-                string path = ASSAnimatorUtils.GetRelativePath(root, targets[i]);
+                string path = AnimatorUtils.GetRelativePath(root, targets[i]);
                 var curve = AnimationCurve.Constant(0f, 1f / 60f, activeStates[i] ? 1f : 0f);
                 clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
             }
@@ -88,7 +88,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public static void SaveClip(AnimationClip clip, string relativePath)
         {
-            string fullPath = $"{ASSConstants.ASSET_FOLDER}/{ASSConstants.ANIMATIONS_FOLDER}/{relativePath}";
+            string fullPath = $"{Constants.ASSET_FOLDER}/{Constants.ANIMATIONS_FOLDER}/{relativePath}";
             string directory = System.IO.Path.GetDirectoryName(fullPath);
             
             if (!System.IO.Directory.Exists(directory))

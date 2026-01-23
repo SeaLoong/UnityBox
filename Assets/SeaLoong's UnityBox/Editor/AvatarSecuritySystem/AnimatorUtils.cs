@@ -14,7 +14,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// <summary>
     /// Animator 工具类 - 提供创建和操作 AnimatorController 的辅助方法
     /// </summary>
-    public static class ASSAnimatorUtils
+    public static class AnimatorUtils
     {
         /// <summary>
         /// 共享的空 AnimationClip（节省文件大小）
@@ -26,7 +26,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             {
                 if (_sharedEmptyClip == null)
                 {
-                    string path = $"{ASSConstants.ASSET_FOLDER}/{ASSConstants.SHARED_EMPTY_CLIP_NAME}";
+                    string path = $"{Constants.ASSET_FOLDER}/{Constants.SHARED_EMPTY_CLIP_NAME}";
                     _sharedEmptyClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
                     
                     if (_sharedEmptyClip == null)
@@ -36,7 +36,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                         settings.loopTime = false;
                         AnimationUtility.SetAnimationClipSettings(_sharedEmptyClip, settings);
                         
-                        System.IO.Directory.CreateDirectory(ASSConstants.ASSET_FOLDER);
+                        System.IO.Directory.CreateDirectory(Constants.ASSET_FOLDER);
                         AssetDatabase.CreateAsset(_sharedEmptyClip, path);
                     }
                 }

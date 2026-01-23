@@ -3,6 +3,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using SeaLoongUnityBox;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 #if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
@@ -30,16 +33,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AvatarSecuritySystemComponent config,
             bool isLooping = false)
         {
-            var layer = ASSAnimatorUtils.CreateLayer(ASSConstants.LAYER_COUNTDOWN, 1f);
+            var layer = CreateLayer(LAYER_COUNTDOWN, 1f);
             float duration = config.countdownDuration;
 
             // 添加TimeUp参数（所有模式都需要）
-            ASSAnimatorUtils.AddParameterIfNotExists(controller, ASSConstants.PARAM_TIME_UP,
+            AddParameterIfNotExists(controller, PARAM_TIME_UP,
                 AnimatorControllerParameterType.Bool, defaultBool: false);
 
             // 创建倒计时动画（完整倒计时，包含警告阶段）
             var countdownClip = CreateCountdownClip(duration, avatarRoot);
-            ASSAnimatorUtils.AddSubAsset(controller, countdownClip);
+            AddSubAsset(controller, countdownClip);
 
             // 状态：Countdown（倒计时进行中）
             var countdownState = layer.stateMachine.AddState("Countdown", new Vector3(200, 50, 0));
@@ -52,24 +55,24 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (isLooping)
             {
 #if VRC_SDK_VRCSDK3
-                ASSAnimatorUtils.AddParameterDriverBehaviour(countdownState, ASSConstants.PARAM_TIME_UP, 0f, localOnly: true);
+                AddParameterDriverBehaviour(countdownState, PARAM_TIME_UP, 0f, localOnly: true);
 #endif
             }
 
             // 状态：Unlocked（密码正确，停止倒计时）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
-            unlockedState.motion = ASSAnimatorUtils.SharedEmptyClip;
+            unlockedState.motion = SharedEmptyClip;
 
             // 状态：TimeUp（倒计时结束，设置参数）
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
-            timeUpState.motion = ASSAnimatorUtils.SharedEmptyClip;
+            timeUpState.motion = SharedEmptyClip;
             
 #if VRC_SDK_VRCSDK3
-            ASSAnimatorUtils.AddParameterDriverBehaviour(timeUpState, ASSConstants.PARAM_TIME_UP, 1f, localOnly: true);
+            AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
 #endif
             
             // Countdown → TimeUp（倒计时结束）
-            var toTimeUp = ASSAnimatorUtils.CreateTransition(countdownState, timeUpState,
+            var toTimeUp = CreateTransition(countdownState, timeUpState,
                 hasExitTime: true, exitTime: 1.0f);
             toTimeUp.duration = 0f;
 
@@ -77,24 +80,24 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (isLooping)
             {
                 // 循环模式：TimeUp → Countdown（回到开始形成循环）
-                var timeUpToCountdown = ASSAnimatorUtils.CreateTransition(timeUpState, countdownState,
+                var timeUpToCountdown = CreateTransition(timeUpState, countdownState,
                     hasExitTime: true, exitTime: 0f);
                 timeUpToCountdown.duration = 0f;
             }
             
             // 转换：密码正确 → 解锁（所有状态都可以转到Unlocked）
-            var countdownToUnlocked = ASSAnimatorUtils.CreateTransition(countdownState, unlockedState);
-            countdownToUnlocked.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+            var countdownToUnlocked = CreateTransition(countdownState, unlockedState);
+            countdownToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             
-            var timeUpToUnlocked = ASSAnimatorUtils.CreateTransition(timeUpState, unlockedState);
-            timeUpToUnlocked.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+            var timeUpToUnlocked = CreateTransition(timeUpState, unlockedState);
+            timeUpToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
-            ASSAnimatorUtils.AddSubAsset(controller, layer.stateMachine);
+            AddSubAsset(controller, layer.stateMachine);
 
             string logMessage = isLooping 
-                ? ASSI18n.T("log.debug_mode") + " - 循环倒计时用于显示测试"
-                : string.Format(ASSI18n.T("log.countdown_layer_created"), duration, config.warningThreshold);
+                ? T("log.debug_mode") + " - 循环倒计时用于显示测试"
+                : string.Format(T("log.countdown_layer_created"), duration, config.warningThreshold);
             Debug.Log(logMessage);
             
             return layer;
@@ -117,7 +120,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             // 创建进度条宽度动画（从满到空）
-            string barPath = $"{ASSConstants.GO_UI_CANVAS}/CountdownBar/Bar";
+            string barPath = $"{GO_UI_CANVAS}/CountdownBar/Bar";
             AnimationCurve anchorCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
             clip.SetCurve(barPath, typeof(RectTransform), "m_AnchorMax.x", anchorCurve);
 
@@ -136,7 +139,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AvatarSecuritySystemComponent config,
             bool isLooping = false)
         {
-            var layer = ASSAnimatorUtils.CreateLayer("ASS_WarningAudio", 1f);
+            var layer = CreateLayer("ASS_WarningAudio", 1f);
             float warningThreshold = config.warningThreshold;
             float duration = config.countdownDuration;
             float warningStartTime = duration - warningThreshold;
@@ -148,63 +151,63 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             waitingState.motion = waitingClip;
             waitingState.writeDefaultValues = true;
             layer.stateMachine.defaultState = waitingState;
-            ASSAnimatorUtils.AddSubAsset(controller, waitingClip);
+            AddSubAsset(controller, waitingClip);
 
             // 状态：WarningBeep（播放警告音，1秒动画自循环）
             var beepState = layer.stateMachine.AddState("WarningBeep", new Vector3(200, 150, 0));
             var beepClip = CreateWarningLoopClip(1f);
             beepState.motion = beepClip;
             beepState.writeDefaultValues = true;
-            ASSAnimatorUtils.AddSubAsset(controller, beepClip);
+            AddSubAsset(controller, beepClip);
 
 #if VRC_SDK_VRCSDK3
             // 添加音效播放行为（每次进入状态时播放）
             if (config.warningBeep != null)
             {
-                ASSAnimatorUtils.AddPlayAudioBehaviour(beepState, 
-                    ASSConstants.GO_WARNING_AUDIO, 
+                AddPlayAudioBehaviour(beepState, 
+                    GO_WARNING_AUDIO, 
                     config.warningBeep);
             }
 #endif
 
             // 状态：Stop（停止音效）
             var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));
-            stopState.motion = ASSAnimatorUtils.SharedEmptyClip;
+            stopState.motion = SharedEmptyClip;
             stopState.writeDefaultValues = true;
 
             // 转换：Waiting → WarningBeep（当Waiting动画播放完毕）
-            var waitingToBeep = ASSAnimatorUtils.CreateTransition(waitingState, beepState,
+            var waitingToBeep = CreateTransition(waitingState, beepState,
                 hasExitTime: true, exitTime: 1.0f);
             waitingToBeep.duration = 0f;
 
             // 转换：WarningBeep → Stop（当TimeUp时停止，优先级高于自循环）
-            var beepToStop = ASSAnimatorUtils.CreateTransition(beepState, stopState);
-            beepToStop.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_TIME_UP);
+            var beepToStop = CreateTransition(beepState, stopState);
+            beepToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
             beepToStop.duration = 0f;
 
             // WarningBeep自循环（每秒一次，触发音效）
-            var beepLoop = ASSAnimatorUtils.CreateTransition(beepState, beepState,
+            var beepLoop = CreateTransition(beepState, beepState,
                 hasExitTime: true, exitTime: 1.0f);
             beepLoop.duration = 0f;
 
             // 循环模式：Stop → Waiting（自动回到等待状态形成循环，仅在密码未正确时）
             if (isLooping)
             {
-                var stopToWaiting = ASSAnimatorUtils.CreateTransition(stopState, waitingState,
+                var stopToWaiting = CreateTransition(stopState, waitingState,
                     hasExitTime: true, exitTime: 0f);
-                stopToWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+                stopToWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                 stopToWaiting.duration = 0f;
             }
 
             // 添加密码正确时的转换
-            var waitingToStop = ASSAnimatorUtils.CreateTransition(waitingState, stopState);
-            waitingToStop.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+            var waitingToStop = CreateTransition(waitingState, stopState);
+            waitingToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
 
-            var beepToStopOnUnlock = ASSAnimatorUtils.CreateTransition(beepState, stopState);
-            beepToStopOnUnlock.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+            var beepToStopOnUnlock = CreateTransition(beepState, stopState);
+            beepToStopOnUnlock.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
-            ASSAnimatorUtils.AddSubAsset(controller, layer.stateMachine);
+            AddSubAsset(controller, layer.stateMachine);
 
             string logMessage = isLooping
                 ? $"[ASS] Created warning audio layer (looping): waiting={warningStartTime}s, beeping={warningThreshold}s"

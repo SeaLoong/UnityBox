@@ -3,7 +3,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// <summary>
     /// ASS 系统常量定义
     /// </summary>
-    public static class ASSConstants
+    public static class Constants
     {
         // 系统名称
         public const string SYSTEM_NAME = "Avatar Security System";

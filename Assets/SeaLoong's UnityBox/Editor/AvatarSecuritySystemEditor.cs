@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using SeaLoongUnityBox.AvatarSecuritySystem.Editor;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace SeaLoongUnityBox
 {
@@ -25,7 +26,7 @@ namespace SeaLoongUnityBox
             // 应用组件中保存的语言设置
             if (_target.uiLanguage != SystemLanguage.Unknown)
             {
-                ASSI18n.SetLanguage(_target.uiLanguage);
+                SetLanguage(_target.uiLanguage);
             }
         }
 
@@ -67,24 +68,24 @@ namespace SeaLoongUnityBox
                 fontSize = 16,
                 alignment = TextAnchor.MiddleCenter
             };
-            EditorGUILayout.LabelField($"🔒 {ASSI18n.T("system.name")} ({ASSI18n.T("system.short_name")})", style);
-            EditorGUILayout.LabelField(ASSI18n.T("system.subtitle"), EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField($"🔒 {T("system.name")} ({T("system.short_name")})", style);
+            EditorGUILayout.LabelField(T("system.subtitle"), EditorStyles.centeredGreyMiniLabel);
         }
 
         private void DrawWarningBox()
         {
-            EditorGUILayout.HelpBox(ASSI18n.T("warning.main"), MessageType.Warning);
+            EditorGUILayout.HelpBox(T("warning.main"), MessageType.Warning);
         }
 
         private void DrawPasswordSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("password.config"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("password.config"), EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("useRightHand"), 
-                new GUIContent(ASSI18n.T("password.use_right_hand"), ASSI18n.T("password.use_right_hand_tooltip")));
+                new GUIContent(T("password.use_right_hand"), T("password.use_right_hand_tooltip")));
 
             EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField(ASSI18n.T("password.sequence"), EditorStyles.miniLabel);
+            EditorGUILayout.LabelField(T("password.sequence"), EditorStyles.miniLabel);
 
             var passwordProp = serializedObject.FindProperty("gesturePassword");
             
@@ -92,7 +93,7 @@ namespace SeaLoongUnityBox
             for (int i = 0; i < passwordProp.arraySize; i++)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(string.Format(ASSI18n.T("password.step"), i + 1), GUILayout.Width(60));
+                EditorGUILayout.LabelField(string.Format(T("password.step"), i + 1), GUILayout.Width(60));
                 
                 var element = passwordProp.GetArrayElementAtIndex(i);
                 int currentValue = element.intValue;
@@ -100,7 +101,7 @@ namespace SeaLoongUnityBox
                     new int[] { 1, 2, 3, 4, 5, 6, 7 });
                 element.intValue = newValue;
 
-                if (GUILayout.Button(new GUIContent("X", ASSI18n.T("password.delete_step")), GUILayout.Width(30)))
+                if (GUILayout.Button(new GUIContent("X", T("password.delete_step")), GUILayout.Width(30)))
                 {
                     passwordProp.DeleteArrayElementAtIndex(i);
                 }
@@ -110,17 +111,17 @@ namespace SeaLoongUnityBox
 
             // 添加按钮
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button(ASSI18n.T("password.add_gesture")))
+            if (GUILayout.Button(T("password.add_gesture")))
             {
                 passwordProp.InsertArrayElementAtIndex(passwordProp.arraySize);
                 passwordProp.GetArrayElementAtIndex(passwordProp.arraySize - 1).intValue = 1;
             }
-            if (GUILayout.Button(ASSI18n.T("password.clear")))
+            if (GUILayout.Button(T("password.clear")))
             {
-                if (EditorUtility.DisplayDialog(ASSI18n.T("common.warning"), 
-                    ASSI18n.T("password.clear_confirm"), 
-                    ASSI18n.T("common.confirm"), 
-                    ASSI18n.T("common.cancel")))
+                if (EditorUtility.DisplayDialog(T("common.warning"), 
+                    T("password.clear_confirm"), 
+                    T("common.confirm"), 
+                    T("common.cancel")))
                 {
                     passwordProp.ClearArray();
                 }
@@ -131,7 +132,7 @@ namespace SeaLoongUnityBox
             if (_target.gesturePassword.Count == 0)
             {
                 // 0位密码：显示禁用提示
-                EditorGUILayout.HelpBox("⚠️ " + ASSI18n.T("password.empty_warning"), 
+                EditorGUILayout.HelpBox("⚠️ " + T("password.empty_warning"), 
                     MessageType.Warning);
             }
             else
@@ -145,8 +146,8 @@ namespace SeaLoongUnityBox
                 
                 var oldColor = GUI.color;
                 GUI.color = strengthColor;
-                EditorGUILayout.HelpBox(string.Format(ASSI18n.T("password.strength"), 
-                    ASSI18n.T(strengthKey), _target.gesturePassword.Count), 
+                EditorGUILayout.HelpBox(string.Format(T("password.strength"), 
+                    T(strengthKey), _target.gesturePassword.Count), 
                     MessageType.Info);
                 GUI.color = oldColor;
             }
@@ -154,16 +155,16 @@ namespace SeaLoongUnityBox
 
         private void DrawCountdownSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("countdown.config"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("countdown.config"), EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("countdownDuration"),
-                new GUIContent(ASSI18n.T("countdown.duration"), ASSI18n.T("countdown.duration_tooltip")));
+                new GUIContent(T("countdown.duration"), T("countdown.duration_tooltip")));
         }
 
         private void DrawLanguageSelector()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("🌐 " + ASSI18n.T("language.title"), GUILayout.Width(120));
+            EditorGUILayout.LabelField("🌐 " + T("language.title"), GUILayout.Width(120));
             
             var languageProp = serializedObject.FindProperty("uiLanguage");
             SystemLanguage currentLang = (SystemLanguage)languageProp.intValue;
@@ -175,7 +176,7 @@ namespace SeaLoongUnityBox
             }
             
             string[] languageNames = { 
-                ASSI18n.T("language.auto"), 
+                T("language.auto"), 
                 "简体中文", 
                 "English", 
                 "日本語" 
@@ -194,7 +195,7 @@ namespace SeaLoongUnityBox
             if (newIndex != currentIndex)
             {
                 languageProp.intValue = (int)languageValues[newIndex];
-                ASSI18n.SetLanguage(languageValues[newIndex]);
+                SetLanguage(languageValues[newIndex]);
                 serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_target);
             }
@@ -204,60 +205,139 @@ namespace SeaLoongUnityBox
 
         private void DrawDefenseSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("defense.config"), EditorStyles.boldLabel);
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("stateCount"),
-                new GUIContent(ASSI18n.T("defense.state_count"), ASSI18n.T("defense.state_count_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("particleSystemCount"),
-                new GUIContent(ASSI18n.T("defense.particle_count"), ASSI18n.T("defense.particle_count_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("extraMaterialCount"),
-                new GUIContent(ASSI18n.T("defense.material_count"), ASSI18n.T("defense.material_count_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("pointLightCount"),
-                new GUIContent(ASSI18n.T("defense.light_count"), ASSI18n.T("defense.light_count_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableClothCountermeasure"),
-                new GUIContent(ASSI18n.T("defense.cloth_enabled"), ASSI18n.T("defense.cloth_enabled_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("clothVertexCount"),
-                new GUIContent(ASSI18n.T("defense.cloth_vertex_count"), ASSI18n.T("defense.cloth_vertex_count_tooltip")));
+            EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
+
+            SerializedProperty useCustomProp = serializedObject.FindProperty("useCustomDefenseSettings");
+            bool useCustomSettings = useCustomProp.boolValue;
+
+            // 自定义防御设置开关
+            EditorGUILayout.PropertyField(useCustomProp,
+                new GUIContent(T("defense.use_custom"), T("defense.use_custom_tooltip")));
+
+            EditorGUILayout.Space(3);
+
+            if (!useCustomSettings)
+            {
+                // 使用防御等级（简单模式）
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("defenseLevel"),
+                    new GUIContent(T("defense.level"), T("defense.level_tooltip")));
+
+                int defenseLevel = serializedObject.FindProperty("defenseLevel").intValue;
+                
+                // 显示等级说明
+                EditorGUILayout.Space(3);
+                EditorGUILayout.HelpBox(GetDefenseLevelDescription(defenseLevel), MessageType.Info);
+            }
+            else
+            {
+                // 自定义设置模式 - 显示所有参数
+                EditorGUILayout.HelpBox(T("defense.custom_mode_hint"), MessageType.Warning);
+                
+                EditorGUILayout.Space(5);
+
+                // CPU Defense Methods
+                EditorGUILayout.LabelField(T("defense.cpu_methods"), EditorStyles.boldLabel);
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableConstraintChain"),
+                    new GUIContent(T("defense.constraint_chain"), T("defense.constraint_chain_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("constraintChainDepth"),
+                    new GUIContent(T("defense.constraint_depth"), T("defense.constraint_depth_tooltip")));
+
+                EditorGUILayout.Space(3);
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enablePhysBone"),
+                    new GUIContent(T("defense.phys_bone"), T("defense.phys_bone_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("physBoneChainLength"),
+                    new GUIContent(T("defense.phys_bone_length"), T("defense.phys_bone_length_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("physBoneColliderCount"),
+                    new GUIContent(T("defense.phys_bone_colliders"), T("defense.phys_bone_colliders_tooltip")));
+
+                EditorGUILayout.Space(3);
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableContactSystem"),
+                    new GUIContent(T("defense.contact_system"), T("defense.contact_system_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("contactComponentCount"),
+                    new GUIContent(T("defense.contact_count"), T("defense.contact_count_tooltip")));
+
+                EditorGUILayout.Space(5);
+
+                // GPU Defense Methods
+                EditorGUILayout.LabelField(T("defense.gpu_methods"), EditorStyles.boldLabel);
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableHeavyShader"),
+                    new GUIContent(T("defense.heavy_shader"), T("defense.heavy_shader_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("shaderLoopCount"),
+                    new GUIContent(T("defense.shader_loops"), T("defense.shader_loops_tooltip")));
+
+                EditorGUILayout.Space(3);
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableOverdraw"),
+                    new GUIContent(T("defense.overdraw"), T("defense.overdraw_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("overdrawLayerCount"),
+                    new GUIContent(T("defense.overdraw_layers"), T("defense.overdraw_layers_tooltip")));
+
+                EditorGUILayout.Space(3);
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableHighPolyMesh"),
+                    new GUIContent(T("defense.high_poly"), T("defense.high_poly_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("highPolyVertexCount"),
+                    new GUIContent(T("defense.high_poly_vertices"), T("defense.high_poly_vertices_tooltip")));
+            }
+        }
+
+        private string GetDefenseLevelDescription(int level)
+        {
+            return level switch
+            {
+                0 => T("defense.level_0_desc"),
+                1 => T("defense.level_1_desc"),
+                2 => T("defense.level_2_desc"),
+                3 => T("defense.level_3_desc"),
+                4 => T("defense.level_4_desc"),
+                _ => "Unknown Defense Level"
+            };
         }
 
         private void DrawDebugSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("advanced.debug_options"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("advanced.debug_options"), EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableInPlayMode"),
-                new GUIContent(ASSI18n.T("advanced.play_mode"), ASSI18n.T("advanced.play_mode_tooltip")));
+                new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("unlimitedPasswordTime"),
-                new GUIContent(ASSI18n.T("advanced.unlimited_time"), ASSI18n.T("advanced.unlimited_time_tooltip")));
+                new GUIContent(T("advanced.unlimited_time"), T("advanced.unlimited_time_tooltip")));
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableCountermeasures"),
-                new GUIContent(ASSI18n.T("advanced.disable_defense"), ASSI18n.T("advanced.disable_defense_tooltip")));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
+                new GUIContent(T("advanced.disable_defense"), T("advanced.disable_defense_tooltip")));
         }
 
         private void DrawLockSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("advanced.lock_options"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("invertParameters"),
-                new GUIContent(ASSI18n.T("advanced.invert_params"), ASSI18n.T("advanced.invert_params_tooltip")));
+                new GUIContent(T("advanced.invert_params"), T("advanced.invert_params_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
-                new GUIContent(ASSI18n.T("advanced.disable_objects"), ASSI18n.T("advanced.disable_objects_tooltip")));
+                new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
         }
 
         private void DrawEstimationSection()
         {
-            EditorGUILayout.LabelField(ASSI18n.T("estimate.title"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("estimate.title"), EditorStyles.boldLabel);
             
             float sizeKB = _target.EstimateFileSizeKB();
             string sizeText = sizeKB > 1024 ? $"{sizeKB / 1024f:F2} MB" : $"{sizeKB:F1} KB";
             
-            EditorGUILayout.HelpBox($"📊 {ASSI18n.T("estimate.file_size")}: {sizeText}", 
+            EditorGUILayout.HelpBox($"📊 {T("estimate.file_size")}: {sizeText}", 
                 MessageType.None);
         }
     }

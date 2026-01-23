@@ -3,6 +3,10 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
 using System.Linq;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimationClipGenerator;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 #if NDMF_AVAILABLE
 using nadena.dev.ndmf;
@@ -25,7 +29,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             GameObject avatarRoot,
             AvatarSecuritySystemComponent config)
         {
-            var layer = ASSAnimatorUtils.CreateLayer(ASSConstants.LAYER_INITIAL_LOCK, 1f);
+            var layer = AnimatorUtils.CreateLayer(Constants.LAYER_INITIAL_LOCK, 1f);
 
             // 创建锁定状态
             var lockedState = layer.stateMachine.AddState("Locked", new Vector3(200, 50, 0));
@@ -40,30 +44,30 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             {
                 var lockClip = CreateObjectDisableClip(avatarRoot);
                 lockedState.motion = lockClip;
-                ASSAnimatorUtils.AddSubAsset(controller, lockClip);
+                AnimatorUtils.AddSubAsset(controller, lockClip);
             }
             else
             {
-                lockedState.motion = ASSAnimatorUtils.SharedEmptyClip;
+                lockedState.motion = AnimatorUtils.SharedEmptyClip;
             }
 
             // 生成解锁动画
             var unlockClip = CreateObjectEnableClip(avatarRoot);
             unlockedState.motion = unlockClip;
             // SharedEmptyClip不需要添加为子资源，它是独立文件
-            // ASSAnimatorUtils.AddSubAsset会自动处理这种情况
+            // AnimatorUtils.AddSubAsset会自动处理这种情况
 
             // 添加参数（已由密码系统添加 PASSWORD_CORRECT）
             // PARAM_UNLOCKED 由 PASSWORD_CORRECT 驱动，不需要单独参数
 
             // 转换：密码正确时解锁
-            var toUnlocked = ASSAnimatorUtils.CreateTransition(lockedState, unlockedState);
-            toUnlocked.AddCondition(AnimatorConditionMode.If, 0, ASSConstants.PARAM_PASSWORD_CORRECT);
+            var toUnlocked = AnimatorUtils.CreateTransition(lockedState, unlockedState);
+            toUnlocked.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_PASSWORD_CORRECT);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
-            ASSAnimatorUtils.AddSubAsset(controller, layer.stateMachine);
+            AnimatorUtils.AddSubAsset(controller, layer.stateMachine);
 
-            Debug.Log(ASSI18n.T("log.lock_layer_created"));
+            Debug.Log(I18n.T("log.lock_layer_created"));
             return layer;
         }
 
@@ -79,7 +83,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             for (int i = 0; i < states.Length; i++)
                 states[i] = false;
 
-            var clip = ASSAnimationClipGenerator.CreateGameObjectActiveClip(
+            var clip = AnimationClipGenerator.CreateGameObjectActiveClip(
                 "ASS_ObjectsDisabled",
                 avatarRoot,
                 targets,
@@ -101,14 +105,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var clip = new AnimationClip { name = "ASS_Unlock" };
             
             // 查找UI和音频对象
-            Transform uiCanvas = avatarRoot.transform.Find(ASSConstants.GO_UI_CANVAS);
-            Transform feedbackAudio = avatarRoot.transform.Find(ASSConstants.GO_FEEDBACK_AUDIO);
-            Transform warningAudio = avatarRoot.transform.Find(ASSConstants.GO_WARNING_AUDIO);
+            Transform uiCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
+            Transform feedbackAudio = avatarRoot.transform.Find(Constants.GO_FEEDBACK_AUDIO);
+            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_WARNING_AUDIO);
             
             // 禁用UI Canvas
             if (uiCanvas != null)
             {
-                string uiPath = ASSConstants.GO_UI_CANVAS;
+                string uiPath = Constants.GO_UI_CANVAS;
                 var uiCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f); // false
                 clip.SetCurve(uiPath, typeof(GameObject), "m_IsActive", uiCurve);
             }
@@ -116,7 +120,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 禁用密码输入音频对象
             if (feedbackAudio != null)
             {
-                string audioPath = ASSConstants.GO_FEEDBACK_AUDIO;
+                string audioPath = Constants.GO_FEEDBACK_AUDIO;
                 var audioCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f); // false
                 clip.SetCurve(audioPath, typeof(GameObject), "m_IsActive", audioCurve);
             }
@@ -124,12 +128,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 禁用警告音频对象
             if (warningAudio != null)
             {
-                string warningPath = ASSConstants.GO_WARNING_AUDIO;
+                string warningPath = Constants.GO_WARNING_AUDIO;
                 var warningCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f); // false
                 clip.SetCurve(warningPath, typeof(GameObject), "m_IsActive", warningCurve);
             }
             
-            Debug.Log(ASSI18n.T("log.lock_unlock_animation_created"));
+            Debug.Log(I18n.T("log.lock_unlock_animation_created"));
             return clip;
         }
 
@@ -143,10 +147,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 "VRCAvatarDescriptor",
                 "Animator",
                 "PipelineSaver",
-                ASSConstants.GO_ASS_ROOT, // 排除 ASS 系统自身
-                ASSConstants.GO_UI_CANVAS, // 排除反馈UI
-                ASSConstants.GO_FEEDBACK_AUDIO, // 排除密码输入音频
-                ASSConstants.GO_WARNING_AUDIO // 排除警告音频
+                Constants.GO_ASS_ROOT, // 排除 ASS 系统自身
+                Constants.GO_UI_CANVAS, // 排除反馈UI
+                Constants.GO_FEEDBACK_AUDIO, // 排除密码输入音频
+                Constants.GO_WARNING_AUDIO // 排除警告音频
             };
 
             var targets = new List<GameObject>();
@@ -170,7 +174,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 targets.Add(child);
             }
 
-            Debug.Log(string.Format(ASSI18n.T("log.lock_targets_found"), targets.Count));
+            Debug.Log(string.Format(I18n.T("log.lock_targets_found"), targets.Count));
             return targets.ToArray();
         }
 
@@ -223,9 +227,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
 
             EditorUtility.SetDirty(maParams);
-            Debug.Log(string.Format(ASSI18n.T("log.lock_parameters_inverted"), expressionParameters.parameters.Length));
+            Debug.Log(string.Format(I18n.T("log.lock_parameters_inverted"), expressionParameters.parameters.Length));
 #else
-            Debug.LogWarning(ASSI18n.T("log.lock_ma_missing"));
+            Debug.LogWarning(I18n.T("log.lock_ma_missing"));
 #endif
         }
 

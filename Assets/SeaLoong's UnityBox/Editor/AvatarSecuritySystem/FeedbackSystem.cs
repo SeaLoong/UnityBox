@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -18,15 +20,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public static GameObject CreateHUDCanvas(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
             // 查找或创建Canvas
-            Transform existingCanvas = avatarRoot.transform.Find(ASSConstants.GO_UI_CANVAS);
+            Transform existingCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
             if (existingCanvas != null)
             {
-                Debug.Log(ASSI18n.T("log.visual_existing_canvas"));
+                Debug.Log(I18n.T("log.visual_existing_canvas"));
                 return existingCanvas.gameObject;
             }
 
             // 创建Canvas GameObject（始终作为avatarRoot的直接子对象）
-            var canvasObj = new GameObject(ASSConstants.GO_UI_CANVAS);
+            var canvasObj = new GameObject(Constants.GO_UI_CANVAS);
             canvasObj.transform.SetParent(avatarRoot.transform, false);
             canvasObj.SetActive(true); // 确保Canvas默认启用
 
@@ -44,7 +46,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 添加GraphicRaycaster（UI交互需要）
             canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
-            Debug.Log(ASSI18n.T("log.visual_canvas_created"));
+            Debug.Log(I18n.T("log.visual_canvas_created"));
             return canvasObj;
         }
 
@@ -91,7 +93,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             barRect.sizeDelta = new Vector2(-4, -4); // 留出边框
             barRect.anchoredPosition = Vector2.zero;
 
-            Debug.Log(ASSI18n.T("log.visual_countdown_created"));
+            Debug.Log(I18n.T("log.visual_countdown_created"));
             return containerObj;
         }
 
@@ -105,7 +107,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             textObj.SetActive(true); // 确保Text默认启用
 
             var text = textObj.AddComponent<UnityEngine.UI.Text>();
-            text.text = ASSI18n.T("visual.unlimited_text");
+            text.text = I18n.T("visual.unlimited_text");
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = 80;
             text.alignment = TextAnchor.MiddleCenter;
@@ -119,7 +121,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             rectTransform.anchoredPosition = Vector2.zero;
             rectTransform.sizeDelta = new Vector2(600, 120);
 
-            Debug.Log(ASSI18n.T("log.visual_status_created"));
+            Debug.Log(I18n.T("log.visual_status_created"));
             return textObj;
         }
 

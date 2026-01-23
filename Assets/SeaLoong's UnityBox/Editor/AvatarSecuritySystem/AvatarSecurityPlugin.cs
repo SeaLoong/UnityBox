@@ -5,6 +5,9 @@ using UnityEditor;
 using UnityEditor.Animations;
 using nadena.dev.ndmf;
 using VRC.SDK3.Avatars.Components;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 [assembly: ExportsPlugin(typeof(SeaLoongUnityBox.AvatarSecuritySystem.Editor.AvatarSecurityPlugin))]
 
@@ -18,8 +21,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// </summary>
     public class AvatarSecurityPlugin : Plugin<AvatarSecurityPlugin>
     {
-        public override string DisplayName => ASSConstants.SYSTEM_NAME;
-        public override string QualifiedName => ASSConstants.PLUGIN_QUALIFIED_NAME;
+        public override string DisplayName => Constants.SYSTEM_NAME;
+        public override string QualifiedName => Constants.PLUGIN_QUALIFIED_NAME;
 
         protected override void Configure()
         {
@@ -32,18 +35,18 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 // 如果没有组件或密码配置无效，跳过
                 if (assConfig == null || !assConfig.IsPasswordValid())
                 {
-                    Debug.Log(ASSI18n.T("log.not_found"));
+                    Debug.Log(I18n.T("log.not_found"));
                     return;
                 }
 
                 // 如果密码为空（0位），等同于不启用ASS，直接跳过
                 if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
                 {
-                    Debug.Log(ASSI18n.T("log.plugin_password_empty"));
+                    Debug.Log(I18n.T("log.plugin_password_empty"));
                     return;
                 }
 
-                Debug.Log(ASSI18n.T("log.generating"));
+                Debug.Log(I18n.T("log.generating"));
 
                 // 自动加载音频资源
                 LoadAudioResources(assConfig);
@@ -53,7 +56,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 if (isPlayMode && !assConfig.enableInPlayMode)
                 {
-                    Debug.Log(ASSI18n.T("log.plugin_play_disabled"));
+                    Debug.Log(I18n.T("log.plugin_play_disabled"));
                     return;
                 }
 
@@ -61,14 +64,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 if (!isPlayMode)
                 {
                     bool confirmed = EditorUtility.DisplayDialog(
-                        ASSI18n.T("build.confirm_title"),
-                        string.Format(ASSI18n.T("build.confirm_message"),
+                        I18n.T("build.confirm_title"),
+                        string.Format(I18n.T("build.confirm_message"),
                             assConfig.gesturePassword.Count,
                             assConfig.countdownDuration,
-                            assConfig.stateCount,
+                            assConfig.defenseLevel,
                             assConfig.EstimateFileSizeKB()),
-                        ASSI18n.T("build.continue"),
-                        ASSI18n.T("common.cancel")
+                        I18n.T("build.continue"),
+                        I18n.T("common.cancel")
                     );
 
                     if (!confirmed)
@@ -83,7 +86,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     GenerateSystem(ctx, assConfig, isPlayMode);
 
 
-                    Debug.Log(ASSI18n.T("log.complete"));
+                    Debug.Log(I18n.T("log.complete"));
                 }
                 catch (System.Exception ex)
                 {
@@ -101,48 +104,39 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <param name="isPlayMode">是否为播放模式（调试用）</param>
         private void GenerateSystem(BuildContext ctx, AvatarSecuritySystemComponent config, bool isPlayMode)
         {
-            Debug.Log(isPlayMode ? ASSI18n.T("log.play_mode_test") : ASSI18n.T("log.build_mode_full"));
+            Debug.Log(isPlayMode ? I18n.T("log.play_mode_test") : I18n.T("log.build_mode_full"));
 
             var avatarRoot = ctx.AvatarRootObject;
             var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
 
             if (descriptor == null)
             {
-                Debug.LogError(ASSI18n.T("log.plugin_no_descriptor"));
+                Debug.LogError(I18n.T("log.plugin_no_descriptor"));
                 return;
             }
 
-            // 1. 构建模式：创建防御用的 GameObject（粒子系统、Draw Calls、光源、Cloth）
-            if (!isPlayMode && !config.disableCountermeasures)
-            {
-                DefenseSystem.CreateParticleSystemObjects(avatarRoot, config);
-                DefenseSystem.CreateDrawCallObjects(avatarRoot, config);
-                DefenseSystem.CreateLightObjects(avatarRoot, config);
-                DefenseSystem.CreateClothObjects(avatarRoot, config);
-            }
-
-            // 2. 获取或创建 FX Controller
+            // 1. 获取或创建 FX Controller
             var fxController = GetOrCreateFXController(descriptor);
 
             // 添加VRChat内置参数（如果不存在）
-            ASSAnimatorUtils.AddParameterIfNotExists(fxController, ASSConstants.PARAM_IS_LOCAL, 
+            AnimatorUtils.AddParameterIfNotExists(fxController, Constants.PARAM_IS_LOCAL, 
                 AnimatorControllerParameterType.Bool, defaultBool: false);
 
-            // 3. 创建UI Canvas和视觉反馈
+            // 2. 创建UI Canvas和视觉反馈
             var canvasObj = FeedbackSystem.CreateHUDCanvas(avatarRoot, config);
             FeedbackSystem.CreateCountdownBar(canvasObj, config);
 
-            // 4. 设置AudioSource（必须在生成层之前创建）
+            // 3. 设置AudioSource（必须在生成层之前创建）
 #if VRC_SDK_VRCSDK3
-            ASSAnimatorUtils.SetupAudioSource(avatarRoot, ASSConstants.GO_FEEDBACK_AUDIO);
-            ASSAnimatorUtils.SetupAudioSource(avatarRoot, ASSConstants.GO_WARNING_AUDIO);
+            AnimatorUtils.SetupAudioSource(avatarRoot, Constants.GO_FEEDBACK_AUDIO);
+            AnimatorUtils.SetupAudioSource(avatarRoot, Constants.GO_WARNING_AUDIO);
 #endif
 
-            // 5. 生成所有系统层（所有模式都生成相同的层，只是内部状态不同）
+            // 4. 生成所有系统层（所有模式都生成相同的层，只是内部状态不同）
             var lockLayer = InitialLockSystem.CreateLockLayer(fxController, avatarRoot, config);
             fxController.AddLayer(lockLayer);
 
-            var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
+                var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
             fxController.AddLayer(passwordLayer);
 
             // 倒计时层（所有模式都生成）
@@ -158,26 +152,26 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
 
             // 防御层（所有模式都生成）
-            if (!config.disableCountermeasures)
+            if (!config.disableDefense)
             {
                 var defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
                 fxController.AddLayer(defenseLayer);
                 
                 if (isPlayMode)
                 {
-                    Debug.Log(ASSI18n.T("log.play_mode_simplified"));
+                    Debug.Log(I18n.T("log.play_mode_simplified"));
                 }
             }
 
-            // 6. 构建模式：反转参数（如果启用）
+            // 5. 构建模式：反转参数（如果启用）
             if (!isPlayMode && config.invertParameters)
             {
                 InitialLockSystem.InvertAvatarParameters(avatarRoot, config);
             }
 
             // 7. 保存
-            ASSAnimatorUtils.SaveAndRefresh();
-            ASSAnimatorUtils.LogOptimizationStats(fxController);
+            AnimatorUtils.SaveAndRefresh();
+            AnimatorUtils.LogOptimizationStats(fxController);
         }
 
         /// <summary>
@@ -199,8 +193,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             else
             {
                 // 创建新的 FX Controller
-                string path = $"{ASSConstants.ASSET_FOLDER}/{ASSConstants.CONTROLLER_NAME}";
-                System.IO.Directory.CreateDirectory(ASSConstants.ASSET_FOLDER);
+                string path = $"{Constants.ASSET_FOLDER}/{Constants.CONTROLLER_NAME}";
+                System.IO.Directory.CreateDirectory(Constants.ASSET_FOLDER);
                 
                 controller = AnimatorController.CreateAnimatorControllerAtPath(path);
                 fxLayer.animatorController = controller;
@@ -219,21 +213,21 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             if (config == null)
             {
-                Debug.LogWarning(ASSI18n.T("log.plugin_config_empty"));
+                Debug.LogWarning(I18n.T("log.plugin_config_empty"));
                 return;
             }
 
             // 加载每步输入成功提示音
-            config.stepSuccessSound = Resources.Load<AudioClip>($"{ASSConstants.AUDIO_RESOURCE_PATH}/{ASSConstants.AUDIO_STEP_SUCCESS}");
+            config.stepSuccessSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_STEP_SUCCESS}");
             
             // 加载密码成功音效
-            config.successSound = Resources.Load<AudioClip>($"{ASSConstants.AUDIO_RESOURCE_PATH}/{ASSConstants.AUDIO_PASSWORD_SUCCESS}");
+            config.successSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_PASSWORD_SUCCESS}");
             
             // 加载错误音效
-            config.errorSound = Resources.Load<AudioClip>($"{ASSConstants.AUDIO_RESOURCE_PATH}/{ASSConstants.AUDIO_INPUT_ERROR}");
+            config.errorSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_INPUT_ERROR}");
             
             // 加载倒计时警告音效
-            config.warningBeep = Resources.Load<AudioClip>($"{ASSConstants.AUDIO_RESOURCE_PATH}/{ASSConstants.AUDIO_COUNTDOWN_WARNING}");
+            config.warningBeep = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_COUNTDOWN_WARNING}");
 
             // 验证
             int loadedCount = 0;
@@ -246,7 +240,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             
             if (loadedCount < 4)
             {
-                Debug.LogWarning(ASSI18n.T("log.plugin_audio_missing"));
+                Debug.LogWarning(I18n.T("log.plugin_audio_missing"));
             }
         }
     }

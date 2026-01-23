@@ -36,34 +36,19 @@ namespace SeaLoongUnityBox
         // 输入间隔固定为0.5秒
         [HideInInspector] public float inputCooldown = 0.5f;
 
+        [Range(0.1f, 1f)]
+        [Tooltip("#{gesture.hold_time_tooltip}")]
+        public float gestureHoldTime = 0.15f;
+
+        [Range(0.1f, 1f)]
+        [Tooltip("#{gesture.error_tolerance_tooltip}")]
+        public float gestureErrorTolerance = 0.3f;
+
         // 音频资源（由 Editor 自动从 Resources 加载）
         [HideInInspector] public AudioClip errorSound;
         [HideInInspector] public AudioClip stepSuccessSound;
         [HideInInspector] public AudioClip warningBeep;
         [HideInInspector] public AudioClip successSound;
-
-        [Range(1000, 50000)]
-        [Tooltip("#{defense.state_count_tooltip}")]
-        public int stateCount = 10000;
-
-        [Range(0, 100)]
-        [Tooltip("#{defense.particle_count_tooltip}")]
-        public int particleSystemCount = 50;
-
-        [Range(0, 200)]
-        [Tooltip("#{defense.material_count_tooltip}")]
-        public int extraMaterialCount = 100;
-
-        [Range(0, 50)]
-        [Tooltip("#{defense.light_count_tooltip}")]
-        public int pointLightCount = 20;
-
-        [Tooltip("#{defense.cloth_enabled_tooltip}")]
-        public bool enableClothCountermeasure = true;
-
-        [Range(1000, 50000)]
-        [Tooltip("#{defense.cloth_vertex_count_tooltip}")]
-        public int clothVertexCount = 10000;
 
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enableInPlayMode = true;
@@ -72,13 +57,66 @@ namespace SeaLoongUnityBox
         public bool unlimitedPasswordTime = true;
 
         [Tooltip("#{advanced.disable_defense_tooltip}")]
-        public bool disableCountermeasures = false;
+        public bool disableDefense = false;
 
         [Tooltip("#{advanced.invert_params_tooltip}")]
         public bool invertParameters = true;
 
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
+
+        [Tooltip("倒计时结束后触发的防御强度（调试模式下自动简化）")]
+        [Range(0, 4)]
+        public int defenseLevel = 4;
+
+        [Tooltip("#{defense.use_custom_tooltip}")]
+        public bool useCustomDefenseSettings = false;
+
+        [Tooltip("#{defense.constraint_chain_desc}")]
+        public bool enableConstraintChain = true;
+
+        [Range(10, 100)]
+        [Tooltip("#{defense.constraint_depth_desc}")]
+        public int constraintChainDepth = 50;
+
+        [Tooltip("#{defense.phys_bone_desc}")]
+        public bool enablePhysBone = true;
+
+        [Range(5, 50)]
+        [Tooltip("#{defense.phys_bone_length_desc}")]
+        public int physBoneChainLength = 20;
+
+        [Range(0, 100)]
+        [Tooltip("#{defense.phys_bone_colliders_desc}")]
+        public int physBoneColliderCount = 50;
+
+        [Tooltip("#{defense.contact_system_desc}")]
+        public bool enableContactSystem = true;
+
+        [Range(10, 200)]
+        [Tooltip("#{defense.contact_count_desc}")]
+        public int contactComponentCount = 100;
+
+        [Tooltip("#{defense.heavy_shader_desc}")]
+        public bool enableHeavyShader = true;
+
+        [Range(0, 200)]
+        [Tooltip("#{defense.shader_loops_desc}")]
+        public int shaderLoopCount = 100;
+
+        [Tooltip("#{defense.overdraw_desc}")]
+        public bool enableOverdraw = true;
+
+        [Range(5, 50)]
+        [Tooltip("#{defense.overdraw_layers_desc}")]
+        public int overdrawLayerCount = 20;
+
+        [Tooltip("#{defense.high_poly_desc}")]
+        public bool enableHighPolyMesh = true;
+
+        [Range(10000, 200000)]
+        [Tooltip("#{defense.high_poly_vertices_desc}")]
+        public int highPolyVertexCount = 100000;
 
         /// <summary>
         /// VRChat 手势枚举
@@ -144,14 +182,13 @@ namespace SeaLoongUnityBox
         public float EstimateFileSizeKB()
         {
             float baseSize = 100f; // 基础动画和状态机
-            float stateSize = stateCount * 1.5f; // 每个状态约1.5KB
             float audioSize = 0f;
 
             if (errorSound != null) audioSize += 15f;
             if (warningBeep != null) audioSize += 10f;
             if (successSound != null) audioSize += 20f;
 
-            return baseSize + stateSize + audioSize;
+            return baseSize + audioSize;
         }
 
 #if UNITY_EDITOR
@@ -164,6 +201,90 @@ namespace SeaLoongUnityBox
             // 确保阈值逻辑正确
             if (warningThreshold > countdownDuration)
                 warningThreshold = countdownDuration / 2f;
+
+            // 如果不使用自定义设置，则根据防御等级自动配置参数
+            if (!useCustomDefenseSettings)
+            {
+                ApplyDefenseLevelConfiguration();
+            }
+        }
+
+        /// <summary>
+        /// 根据defenseLevel自动应用防御配置
+        /// </summary>
+        private void ApplyDefenseLevelConfiguration()
+        {
+            switch (defenseLevel)
+            {
+                case 0: // 禁用所有防御
+                    enableConstraintChain = false;
+                    enablePhysBone = false;
+                    enableContactSystem = false;
+                    enableHeavyShader = false;
+                    enableOverdraw = false;
+                    enableHighPolyMesh = false;
+                    break;
+
+                case 1: // 基础CPU防御
+                    enableConstraintChain = true;
+                    constraintChainDepth = 30;
+                    enablePhysBone = true;
+                    physBoneChainLength = 10;
+                    physBoneColliderCount = 30;
+                    enableContactSystem = true;
+                    contactComponentCount = 50;
+                    enableHeavyShader = false;
+                    enableOverdraw = false;
+                    enableHighPolyMesh = false;
+                    break;
+
+                case 2: // CPU + 基础GPU防御
+                    enableConstraintChain = true;
+                    constraintChainDepth = 50;
+                    enablePhysBone = true;
+                    physBoneChainLength = 20;
+                    physBoneColliderCount = 50;
+                    enableContactSystem = true;
+                    contactComponentCount = 100;
+                    enableHeavyShader = true;
+                    shaderLoopCount = 50;
+                    enableOverdraw = true;
+                    overdrawLayerCount = 10;
+                    enableHighPolyMesh = false;
+                    break;
+
+                case 3: // CPU + 加强GPU防御
+                    enableConstraintChain = true;
+                    constraintChainDepth = 70;
+                    enablePhysBone = true;
+                    physBoneChainLength = 30;
+                    physBoneColliderCount = 70;
+                    enableContactSystem = true;
+                    contactComponentCount = 150;
+                    enableHeavyShader = true;
+                    shaderLoopCount = 120;
+                    enableOverdraw = true;
+                    overdrawLayerCount = 25;
+                    enableHighPolyMesh = true;
+                    highPolyVertexCount = 120000;
+                    break;
+
+                case 4: // 最大防御强度
+                    enableConstraintChain = true;
+                    constraintChainDepth = 100;
+                    enablePhysBone = true;
+                    physBoneChainLength = 50;
+                    physBoneColliderCount = 100;
+                    enableContactSystem = true;
+                    contactComponentCount = 200;
+                    enableHeavyShader = true;
+                    shaderLoopCount = 200;
+                    enableOverdraw = true;
+                    overdrawLayerCount = 50;
+                    enableHighPolyMesh = true;
+                    highPolyVertexCount = 200000;
+                    break;
+            }
         }
 
         private void Reset()
@@ -172,16 +293,11 @@ namespace SeaLoongUnityBox
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = 30f;
             warningThreshold = 10f;
-            stateCount = 10000;
-            particleSystemCount = 50;
-            extraMaterialCount = 100;
-            pointLightCount = 20;
-            enableClothCountermeasure = true;
-            clothVertexCount = 10000;
             enableInPlayMode = true;
             unlimitedPasswordTime = true;
             invertParameters = true;
             disableRootChildren = true;
+            defenseLevel = 4;
         }
 #endif
     }
