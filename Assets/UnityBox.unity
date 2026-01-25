@@ -18108,7 +18108,7 @@ MonoBehaviour:
   uiLanguage: 43
   gesturePassword: 01000000020000000300000004000000
   useRightHand: 0
-  countdownDuration: 120
+  countdownDuration: 30
   warningThreshold: 10
   inputCooldown: 0.5
   gestureHoldTime: 0.15
@@ -18118,7 +18118,6 @@ MonoBehaviour:
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
   enableInPlayMode: 1
-  unlimitedPasswordTime: 1
   disableDefense: 0
   invertParameters: 1
   disableRootChildren: 1

@@ -97,34 +97,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             return containerObj;
         }
 
-        /// <summary>
-        /// 创建状态文本（无限时间模式）
-        /// </summary>
-        public static GameObject CreateStatusText(GameObject canvasObj)
-        {
-            var textObj = new GameObject("StatusText");
-            textObj.transform.SetParent(canvasObj.transform, false);
-            textObj.SetActive(true); // 确保Text默认启用
-
-            var text = textObj.AddComponent<UnityEngine.UI.Text>();
-            text.text = I18n.T("visual.unlimited_text");
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 80;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = new Color(1f, 0.3f, 0.3f, 0.9f); // 浅红色半透明
-            text.fontStyle = FontStyle.Bold;
-
-            var rectTransform = textObj.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.8f); // 屏幕上方
-            rectTransform.anchorMax = new Vector2(0.5f, 0.8f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(600, 120);
-
-            Debug.Log(I18n.T("log.visual_status_created"));
-            return textObj;
-        }
-
         #endregion
     }
 }

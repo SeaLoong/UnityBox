@@ -25,7 +25,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 增强特性：
         /// 1. 手势稳定时间：需要保持手势一定时间才计入
         /// 2. 忽略Idle手势(0)：允许在正确手势之间短暂回到Idle
-        /// 4. 容错机制：短时间输入错误手势后仍有机会继续，而不是立即重置
+        /// 3. 容错机制：短时间输入错误手势后仍有机会继续，而不是立即重置
         /// 使用 VRC State Behaviours 播放音效和设置参数
         /// 时间到后强制进入失败状态，禁止继续输入
         /// </summary>
@@ -62,18 +62,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.defaultState = waitState;
 
             // 创建时间到失败状态（禁止输入）
+            // 倒计时结束后防御系统会启动，不需要在密码系统给失败反馈
             var timeUpFailedState = layer.stateMachine.AddState("TimeUp_Failed", new Vector3(50, -50, 0));
             timeUpFailedState.motion = AnimatorUtils.SharedEmptyClip;
-
-#if VRC_SDK_VRCSDK3
-            // 播放错误音效
-            if (config.errorSound != null)
-            {
-                AnimatorUtils.AddPlayAudioBehaviour(timeUpFailedState, 
-                    Constants.GO_FEEDBACK_AUDIO, 
-                    config.errorSound);
-            }
-#endif
 
             // Any State → TimeUp_Failed（时间到后强制进入失败状态）
             var anyToFailed = AnimatorUtils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
@@ -170,10 +161,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     correctTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
                     correctTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
                     correctTransition.duration = 0f;
-                                // 最后一步不需要 Confirmed 和 ErrorTolerance 的处理
-                                if (isLastStep) continue;
-
                 }
+
+                // 最后一步不需要 Confirmed 和 ErrorTolerance 的处理
+                if (isLastStep) continue;
 
                 // ===== Confirmed状态处理 =====
                 // Confirmed → Confirmed（Idle自循环，允许松开）
@@ -257,6 +248,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 #endif
             
             // 设置密码正确参数（使用 Parameter Driver）
+            // 注意：localOnly=true 只影响驱动行为的执行位置
+            // 参数同步由 VRCExpressionParameters 中的 networkSynced 属性控制
             AnimatorUtils.AddParameterDriverBehaviour(successState, Constants.PARAM_PASSWORD_CORRECT, 1f, localOnly: true);
 
             // 最后一步 Holding → Success（手势保持0.15s后直接成功）

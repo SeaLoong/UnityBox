@@ -53,9 +53,6 @@ namespace SeaLoongUnityBox
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enableInPlayMode = true;
 
-        [Tooltip("#{advanced.unlimited_time_tooltip}")]
-        public bool unlimitedPasswordTime = true;
-
         [Tooltip("#{advanced.disable_defense_tooltip}")]
         public bool disableDefense = false;
 
@@ -330,7 +327,6 @@ namespace SeaLoongUnityBox
             countdownDuration = 30f;
             warningThreshold = 10f;
             enableInPlayMode = true;
-            unlimitedPasswordTime = true;
             invertParameters = true;
             disableRootChildren = true;
             defenseLevel = 4;

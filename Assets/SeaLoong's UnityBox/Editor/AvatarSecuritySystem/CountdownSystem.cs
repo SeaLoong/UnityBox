@@ -21,22 +21,20 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     public static class CountdownSystem
     {
         /// <summary>
-        /// 创建倒计时层（简化版：2个状态）
+        /// 创建倒计时层（简化版：3个状态）
         /// </summary>
         /// <param name="controller">Animator Controller</param>
         /// <param name="avatarRoot">Avatar根对象</param>
         /// <param name="config">配置组件</param>
-        /// <param name="isLooping">是否循环模式（调试用）</param>
         public static AnimatorControllerLayer CreateCountdownLayer(
             AnimatorController controller,
             GameObject avatarRoot,
-            AvatarSecuritySystemComponent config,
-            bool isLooping = false)
+            AvatarSecuritySystemComponent config)
         {
             var layer = CreateLayer(LAYER_COUNTDOWN, 1f);
             float duration = config.countdownDuration;
 
-            // 添加TimeUp参数（所有模式都需要）
+            // 添加TimeUp参数
             AddParameterIfNotExists(controller, PARAM_TIME_UP,
                 AnimatorControllerParameterType.Bool, defaultBool: false);
 
@@ -50,14 +48,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             countdownState.speed = 1f;
             countdownState.writeDefaultValues = true;
             layer.stateMachine.defaultState = countdownState;
-
-            // 循环模式下，在Countdown状态进入时重置TimeUp参数
-            if (isLooping)
-            {
-#if VRC_SDK_VRCSDK3
-                AddParameterDriverBehaviour(countdownState, PARAM_TIME_UP, 0f, localOnly: true);
-#endif
-            }
 
             // 状态：Unlocked（密码正确，停止倒计时）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
@@ -75,15 +65,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var toTimeUp = CreateTransition(countdownState, timeUpState,
                 hasExitTime: true, exitTime: 1.0f);
             toTimeUp.duration = 0f;
-
-            // 根据模式创建不同的后续转换
-            if (isLooping)
-            {
-                // 循环模式：TimeUp → Countdown（回到开始形成循环）
-                var timeUpToCountdown = CreateTransition(timeUpState, countdownState,
-                    hasExitTime: true, exitTime: 0f);
-                timeUpToCountdown.duration = 0f;
-            }
             
             // 转换：密码正确 → 解锁（所有状态都可以转到Unlocked）
             var countdownToUnlocked = CreateTransition(countdownState, unlockedState);
@@ -95,10 +76,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             AddSubAsset(controller, layer.stateMachine);
 
-            string logMessage = isLooping 
-                ? T("log.debug_mode") + " - 循环倒计时用于显示测试"
-                : string.Format(T("log.countdown_layer_created"), duration, config.warningThreshold);
-            Debug.Log(logMessage);
+            Debug.Log(string.Format(T("log.countdown_layer_created"), duration, config.warningThreshold));
             
             return layer;
         }
@@ -136,10 +114,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public static AnimatorControllerLayer CreateWarningAudioLayer(
             AnimatorController controller,
             GameObject avatarRoot,
-            AvatarSecuritySystemComponent config,
-            bool isLooping = false)
+            AvatarSecuritySystemComponent config)
         {
-            var layer = CreateLayer("ASS_WarningAudio", 1f);
+            var layer = CreateLayer(LAYER_WARNING_AUDIO, 1f);
             float warningThreshold = config.warningThreshold;
             float duration = config.countdownDuration;
             float warningStartTime = duration - warningThreshold;
@@ -190,15 +167,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 hasExitTime: true, exitTime: 1.0f);
             beepLoop.duration = 0f;
 
-            // 循环模式：Stop → Waiting（自动回到等待状态形成循环，仅在密码未正确时）
-            if (isLooping)
-            {
-                var stopToWaiting = CreateTransition(stopState, waitingState,
-                    hasExitTime: true, exitTime: 0f);
-                stopToWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                stopToWaiting.duration = 0f;
-            }
-
             // 添加密码正确时的转换
             var waitingToStop = CreateTransition(waitingState, stopState);
             waitingToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
@@ -209,10 +177,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             AddSubAsset(controller, layer.stateMachine);
 
-            string logMessage = isLooping
-                ? $"[ASS] Created warning audio layer (looping): waiting={warningStartTime}s, beeping={warningThreshold}s"
-                : $"[ASS] Created warning audio layer: waiting={warningStartTime}s, beeping={warningThreshold}s";
-            Debug.Log(logMessage);
+            Debug.Log($"[ASS] Created warning audio layer: waiting={warningStartTime}s, beeping={warningThreshold}s");
             return layer;
         }
 
@@ -261,17 +226,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log($"[ASS] Created warning loop animation: duration={duration}s");
             return clip;
-        }
-
-        /// <summary>
-        /// 创建循环倒计时层（无限时间模式，用于显示测试）
-        /// </summary>
-        public static AnimatorControllerLayer CreateLoopingCountdownLayer(
-            AnimatorController controller,
-            GameObject avatarRoot,
-            AvatarSecuritySystemComponent config)
-        {
-            return CreateCountdownLayer(controller, avatarRoot, config, isLooping: true);
         }
     }
 }

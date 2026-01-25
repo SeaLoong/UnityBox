@@ -1,4 +1,5 @@
 #if NDMF_AVAILABLE
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
@@ -132,29 +133,31 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AnimatorUtils.SetupAudioSource(avatarRoot, Constants.GO_WARNING_AUDIO);
 #endif
 
-            // 4. 生成所有系统层（所有模式都生成相同的层，只是内部状态不同）
-            var lockLayer = InitialLockSystem.CreateLockLayer(fxController, avatarRoot, config);
-            fxController.AddLayer(lockLayer);
+            // 4. 生成所有系统层
+            // 注意：锁定层需要先创建，但层权重控制需要在所有层添加后配置
+            var lockResult = InitialLockSystem.CreateLockLayer(fxController, avatarRoot, config);
+            fxController.AddLayer(lockResult.Layer);
 
-                var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
+            var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
             fxController.AddLayer(passwordLayer);
 
-            // 倒计时层（所有模式都生成）
-            bool useLooping = config.unlimitedPasswordTime && isPlayMode;
-            var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, avatarRoot, config, isLooping: useLooping);
+            // 倒计时层
+            var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, avatarRoot, config);
             fxController.AddLayer(countdownLayer);
 
-            // 警告音效层（所有模式都生成，只要配置了警告音）
+            // 警告音效层（只要配置了警告音）
+            AnimatorControllerLayer warningAudioLayer = null;
             if (config.warningBeep != null)
             {
-                var warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, avatarRoot, config, isLooping: useLooping);
+                warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, avatarRoot, config);
                 fxController.AddLayer(warningAudioLayer);
             }
 
             // 防御层（所有模式都生成）
+            AnimatorControllerLayer defenseLayer = null;
             if (!config.disableDefense)
             {
-                var defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
+                defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
                 fxController.AddLayer(defenseLayer);
                 
                 if (isPlayMode)
@@ -163,15 +166,91 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 }
             }
 
-            // 5. 构建模式：反转参数（如果启用）
+            // 5. 配置层权重控制（所有层已添加后）
+            var assLayerNames = new List<string>
+            {
+                Constants.LAYER_INITIAL_LOCK,
+                Constants.LAYER_PASSWORD_INPUT,
+                Constants.LAYER_COUNTDOWN
+            };
+            if (warningAudioLayer != null)
+                assLayerNames.Add(warningAudioLayer.name);
+            if (defenseLayer != null)
+                assLayerNames.Add(defenseLayer.name);
+            
+            InitialLockSystem.ConfigureLayerWeightControl(fxController, lockResult, assLayerNames.ToArray());
+
+            // 6. 注册 ASS 参数到 VRCExpressionParameters（高优先级位置）
+            RegisterASSParameters(descriptor, config);
+
+            // 7. 构建模式：反转参数（如果启用）
             if (!isPlayMode && config.invertParameters)
             {
                 InitialLockSystem.InvertAvatarParameters(avatarRoot, config);
             }
 
-            // 7. 保存
+            // 8. 保存
             AnimatorUtils.SaveAndRefresh();
             AnimatorUtils.LogOptimizationStats(fxController);
+        }
+
+        /// <summary>
+        /// 注册 ASS 参数到 VRCExpressionParameters
+        /// 直接修改 VRC 参数列表，将 ASS 参数插入到数组开头（高优先级位置）
+        /// 参数配置说明：
+        /// - ASS_PasswordCorrect: 同步参数(networkSynced=true)，让其他玩家看到解锁状态
+        /// - ASS_TimeUp: 本地参数(networkSynced=false)，仅用于触发防御
+        /// </summary>
+        private void RegisterASSParameters(VRCAvatarDescriptor descriptor, AvatarSecuritySystemComponent config)
+        {
+#if VRC_SDK_VRCSDK3
+            var expressionParameters = descriptor.expressionParameters;
+            if (expressionParameters == null)
+            {
+                Debug.LogWarning("[ASS] VRCExpressionParameters 不存在，无法注册参数");
+                return;
+            }
+
+            // 获取现有参数列表
+            var existingParams = expressionParameters.parameters?.ToList() 
+                ?? new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>();
+
+            // 移除已存在的 ASS 参数（避免重复）
+            existingParams.RemoveAll(p => p.name == Constants.PARAM_PASSWORD_CORRECT || p.name == Constants.PARAM_TIME_UP);
+
+            // 创建 ASS 参数
+            var assParams = new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>
+            {
+                // ASS_PasswordCorrect - 同步参数（其他玩家需要看到解锁状态）
+                new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+                {
+                    name = Constants.PARAM_PASSWORD_CORRECT,
+                    valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
+                    defaultValue = 0f,      // 默认锁定
+                    saved = false,          // 不保存，每次加入都锁定
+                    networkSynced = true    // 同步给其他玩家
+                },
+                // ASS_TimeUp - 本地参数（仅用于触发防御，不同步）
+                new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+                {
+                    name = Constants.PARAM_TIME_UP,
+                    valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
+                    defaultValue = 0f,
+                    saved = false,
+                    networkSynced = false   // 本地参数，不同步
+                }
+            };
+
+            // 将 ASS 参数插入到数组开头（高优先级位置，避免被压缩参数插件影响）
+            assParams.AddRange(existingParams);
+            expressionParameters.parameters = assParams.ToArray();
+
+            EditorUtility.SetDirty(expressionParameters);
+            Debug.Log($"[ASS] 已注册 ASS 参数到 VRCExpressionParameters 开头位置: " +
+                     $"{Constants.PARAM_PASSWORD_CORRECT}(同步), {Constants.PARAM_TIME_UP}(本地)");
+#else
+            Debug.LogWarning("[ASS] VRC SDK 不可用，无法注册参数");
+#endif
         }
 
         /// <summary>

@@ -24,8 +24,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string AUDIO_COUNTDOWN_WARNING = "CountdownWarning";
 
         // Animator 参数名称
-        public const string PARAM_LOCKED = "ASS_Locked";
-        public const string PARAM_UNLOCKED = "ASS_Unlocked";
         public const string PARAM_PASSWORD_CORRECT = "ASS_PasswordCorrect";
         public const string PARAM_TIME_UP = "ASS_TimeUp";
         public const string PARAM_PASSWORD_ERROR = "ASS_PasswordError";
@@ -39,6 +37,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string LAYER_INITIAL_LOCK = "ASS_InitialLock";
         public const string LAYER_PASSWORD_INPUT = "ASS_PasswordInput";
         public const string LAYER_COUNTDOWN = "ASS_Countdown";
+        public const string LAYER_WARNING_AUDIO = "ASS_WarningAudio";
         public const string LAYER_DEFENSE = "ASS_Defense";
 
         // GameObject 名称
@@ -47,6 +46,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string GO_FEEDBACK_AUDIO = "ASS_Audio";
         public const string GO_WARNING_AUDIO = "ASS_WarningAudio";
         public const string GO_PARTICLES = "ASS_Particles";
+        public const string GO_DEFENSE_ROOT = "__ASS_Defense__";
+        public const string GO_OCCLUSION_MESH = "ASS_OcclusionMesh";
 
         // 优化相关
         public const string SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim";

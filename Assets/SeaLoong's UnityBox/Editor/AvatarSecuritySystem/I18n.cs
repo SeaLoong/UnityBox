@@ -820,18 +820,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "在 Play 模式下保留密码系统（用于测试）" },
                     { SystemLanguage.Japanese, "プレイモードでパスワードシステムを保持（テスト用）" }
                 },
-                ["advanced.unlimited_time"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Unlimited Password Time" },
-                    { SystemLanguage.ChineseSimplified, "不限制密码输入时间" },
-                    { SystemLanguage.Japanese, "パスワード入力時間制限なし" }
-                },
-                ["advanced.unlimited_time_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Disable countdown (no time limit for password input)" },
-                    { SystemLanguage.ChineseSimplified, "禁用倒计时（密码输入无时间限制）" },
-                    { SystemLanguage.Japanese, "カウントダウンを無効化（パスワード入力に時間制限なし）" }
-                },
                 ["advanced.disable_defense"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Disable Defense" },
@@ -870,15 +858,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_objects"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Disable Root Children" },
-                    { SystemLanguage.ChineseSimplified, "禁用根对象" },
-                    { SystemLanguage.Japanese, "ルートオブジェクトを無効化" }
+                    { SystemLanguage.English, "Hide Objects" },
+                    { SystemLanguage.ChineseSimplified, "隐藏对象" },
+                    { SystemLanguage.Japanese, "オブジェクトを非表示" }
                 },
                 ["advanced.disable_objects_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Disable all root level child objects as initial lock" },
-                    { SystemLanguage.ChineseSimplified, "禁用所有根级子对象作为初始锁定" },
-                    { SystemLanguage.Japanese, "初期ロックとしてすべてのルートレベル子オブジェクトを無効化" }
+                    { SystemLanguage.English, "Hide all root level child objects when locked" },
+                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象" },
+                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクトを非表示" }
                 },
 
                 // ========== 视觉反馈 ==========
@@ -894,20 +882,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "倒计时文本" },
                     { SystemLanguage.Japanese, "カウントダウンテキスト" }
                 },
-                ["visual.unlimited_text"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Unlimited" },
-                    { SystemLanguage.ChineseSimplified, "不限时" },
-                    { SystemLanguage.Japanese, "無制限" }
-                },
 
                 // ========== 调试日志 ==========
-                ["log.debug_mode"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "[ASS] Debug mode: Unlimited password input time" },
-                    { SystemLanguage.ChineseSimplified, "[ASS] 调试模式：无限密码输入时间" },
-                    { SystemLanguage.Japanese, "[ASS] デバッグモード：パスワード入力時間無制限" }
-                },
                 ["log.simplified_defense"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "[ASS] Debug mode: Generating simplified defense (no performance impact)" },
@@ -1097,12 +1073,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "[ASS] Countdown text created" },
                     { SystemLanguage.ChineseSimplified, "[ASS] 已创建倒计时文本" },
                     { SystemLanguage.Japanese, "[ASS] カウントダウンテキストが作成されました" }
-                },
-                ["log.visual_status_created"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "[ASS] Status text created (unlimited)" },
-                    { SystemLanguage.ChineseSimplified, "[ASS] 已创建状态文本（不限时）" },
-                    { SystemLanguage.Japanese, "[ASS] ステータステキストが作成されました（無制限）" }
                 },
                 ["log.visual_animation_created"] = new Dictionary<SystemLanguage, string>
                 {

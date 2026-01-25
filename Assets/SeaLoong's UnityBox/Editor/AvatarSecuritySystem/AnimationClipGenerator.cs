@@ -12,7 +12,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     {
         /// <summary>
         /// 创建 GameObject 激活状态动画
+        /// 警告：此方法使用 m_IsActive，在 VRChat 中不受 Write Defaults 影响
+        /// 建议使用 Scale=0 代替 m_IsActive 来控制对象可见性
         /// </summary>
+        [System.Obsolete("VRChat's m_IsActive is not affected by Write Defaults. Consider using Scale=0 instead.")]
         public static AnimationClip CreateGameObjectActiveClip(string name, GameObject root, GameObject[] targets, bool[] activeStates)
         {
             var clip = new AnimationClip { name = name, legacy = false };

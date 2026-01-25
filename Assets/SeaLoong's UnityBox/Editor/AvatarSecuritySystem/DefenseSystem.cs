@@ -28,7 +28,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// </summary>
     public static class DefenseSystem
     {
-        private const string DEFENSE_ROOT_NAME = "__ASS_Defense__";
 
         /// <summary>
         /// 创建防御层
@@ -85,18 +84,20 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         private static GameObject CreateDefenseComponents(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode)
         {
             // 查找或创建根对象
-            var existingRoot = avatarRoot.transform.Find(DEFENSE_ROOT_NAME);
+            var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
             {
                 Object.DestroyImmediate(existingRoot.gameObject);
             }
 
-            var root = new GameObject(DEFENSE_ROOT_NAME);
+            var root = new GameObject(Constants.GO_DEFENSE_ROOT);
             root.transform.SetParent(avatarRoot.transform);
             root.transform.localPosition = Vector3.zero;
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
-            root.SetActive(false); // 默认禁用
+            // 默认禁用，通过动画控制激活
+            // 使用 m_IsActive 控制可以完全禁用对象，避免 PhysBone/Constraint 等组件消耗性能
+            root.SetActive(false);
 
             // 根据模式调整参数，并确保不超过VRChat限制
             int constraintDepth = isDebugMode ? 5 : ValidateConstraintDepth(config.constraintChainDepth);
@@ -409,6 +410,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 创建防御激活/停用动画剪辑
+        /// 注意：使用 Scale 控制而非 m_IsActive，因为 VRChat 的 m_IsActive 不受 Write Defaults 影响
         /// </summary>
         private static AnimationClip CreateDefenseActivationClip(GameObject avatarRoot, GameObject defenseRoot, AvatarSecuritySystemComponent config, bool activate, bool isDebugMode)
         {
@@ -420,9 +422,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             string rootPath = AnimatorUtils.GetRelativePath(avatarRoot, defenseRoot);
             
-            // 控制根对象Active状态
-            var curve = AnimationCurve.Constant(0f, 1f / 60f, activate ? 1f : 0f);
-            clip.SetCurve(rootPath, typeof(GameObject), "m_IsActive", curve);
+            // 使用 m_IsActive 控制防御对象的激活状态
+            // 这样可以完全禁用对象，避免 PhysBone/Constraint 等组件在禁用时仍消耗性能
+            float activeValue = activate ? 1f : 0f;
+            var activeCurve = AnimationCurve.Constant(0f, 1f / 60f, activeValue);
+            clip.SetCurve(rootPath, typeof(GameObject), "m_IsActive", activeCurve);
 
             // 控制Shader参数
             if (config.enableHeavyShader && !isDebugMode)

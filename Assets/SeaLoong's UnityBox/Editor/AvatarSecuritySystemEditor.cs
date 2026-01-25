@@ -348,9 +348,6 @@ namespace SeaLoongUnityBox
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableInPlayMode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("unlimitedPasswordTime"),
-                new GUIContent(T("advanced.unlimited_time"), T("advanced.unlimited_time_tooltip")));
-            
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
                 new GUIContent(T("advanced.disable_defense"), T("advanced.disable_defense_tooltip")));
         }
