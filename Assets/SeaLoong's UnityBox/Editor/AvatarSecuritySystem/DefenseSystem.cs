@@ -62,9 +62,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             activeState.motion = activateClip;
             inactiveState.motion = deactivateClip;
 
-            // 生成混淆状态（简化版50个，完整版1000个）
-            int stateCount = isDebugMode ? 50 : 1000;
-            GenerateDecoyStates(layer.stateMachine, stateCount);
 
             // 转换条件：IsLocal && TimeUp
             var toActive = AnimatorUtils.CreateTransition(inactiveState, activeState);
@@ -75,7 +72,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AnimatorUtils.AddSubAsset(controller, layer.stateMachine);
 
             string modeText = isDebugMode ? "调试模式（简化）" : "完整模式";
-            Debug.Log($"[ASS] 防御层已创建 ({modeText}): 混淆状态={stateCount}");
+            Debug.Log($"[ASS] 防御层已创建 ({modeText}): 无混淆状态");
             return layer;
         }
 
@@ -83,6 +80,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 创建防御组件根对象及所有子组件
+        /// 自动处理参数到VRChat限制，确保生成的Avatar仍可上传
         /// </summary>
         private static GameObject CreateDefenseComponents(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode)
         {
@@ -100,14 +98,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             root.transform.localScale = Vector3.one;
             root.SetActive(false); // 默认禁用
 
-            // 根据模式调整参数
-            int constraintDepth = isDebugMode ? 5 : config.constraintChainDepth;
-            int physBoneLength = isDebugMode ? 3 : config.physBoneChainLength;
-            int physBoneColliders = isDebugMode ? 2 : config.physBoneColliderCount;
-            int contactCount = isDebugMode ? 4 : config.contactComponentCount;
-            int shaderLoops = isDebugMode ? 0 : config.shaderLoopCount;
+            // 根据模式调整参数，并确保不超过VRChat限制
+            int constraintDepth = isDebugMode ? 5 : ValidateConstraintDepth(config.constraintChainDepth);
+            int physBoneLength = isDebugMode ? 3 : ValidatePhysBoneLength(config.physBoneChainLength);
+            int physBoneColliders = isDebugMode ? 2 : ValidatePhysBoneColliders(config.physBoneColliderCount, physBoneLength);
+            int contactCount = isDebugMode ? 4 : ValidateContactCount(config.contactComponentCount);
+            int shaderLoops = isDebugMode ? 0 : ValidateShaderLoops(config.shaderLoopCount);
             int overdrawLayers = isDebugMode ? 3 : config.overdrawLayerCount;
-            int polyVertices = isDebugMode ? 1000 : config.highPolyVertexCount;
+            int polyVertices = isDebugMode ? 1000 : ValidateHighPolyVertices(config.highPolyVertexCount);
 
             // 创建CPU消耗组件
             if (config.enableConstraintChain)
@@ -161,27 +159,38 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 obj.transform.SetParent(chainRoot.transform);
                 obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
 
-                var constraint = obj.AddComponent<ParentConstraint>();
-                constraint.constraintActive = true;
-                constraint.weight = 1f;
-                constraint.locked = true;
+                // ParentConstraint（原有）
+                var parentC = obj.AddComponent<ParentConstraint>();
+                parentC.constraintActive = true;
+                parentC.weight = 1f;
+                parentC.locked = true;
 
                 if (i > 0)
                 {
-                    var source = new ConstraintSource
-                    {
-                        sourceTransform = previous.transform,
-                        weight = 1f
-                    };
-                    constraint.AddSource(source);
-                    constraint.SetTranslationOffset(0, Vector3.zero);
-                    constraint.SetRotationOffset(0, Vector3.zero);
+                    var src = new ConstraintSource { sourceTransform = previous.transform, weight = 1f };
+                    parentC.AddSource(src);
+                    parentC.SetTranslationOffset(0, Vector3.zero);
+                    parentC.SetRotationOffset(0, Vector3.zero);
+
+                    // 额外添加 PositionConstraint 增加CPU复杂度
+                    var posC = obj.AddComponent<PositionConstraint>();
+                    posC.constraintActive = true;
+                    posC.locked = true;
+                    posC.weight = 1f;
+                    posC.AddSource(src);
+
+                    // 额外添加 RotationConstraint 增加CPU复杂度
+                    var rotC = obj.AddComponent<RotationConstraint>();
+                    rotC.constraintActive = true;
+                    rotC.locked = true;
+                    rotC.weight = 1f;
+                    rotC.AddSource(src);
                 }
 
                 previous = obj;
             }
 
-            Debug.Log($"[ASS] 创建Constraint链: 深度={depth}");
+            Debug.Log($"[ASS] 创建Constraint链: 深度={depth}, 每节点包含 Parent/Position/Rotation 三种约束");
         }
 
 #if VRC_SDK_VRCSDK3
@@ -207,14 +216,42 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 previous = bone.transform;
             }
 
-            // 添加PhysBone组件
+            // 添加PhysBone组件（使用Advanced模式增加CPU消耗）
             var physBone = chainRoot.AddComponent<VRCPhysBone>();
-            physBone.integrationType = VRCPhysBone.IntegrationType.Simplified;
+            physBone.integrationType = VRCPhysBone.IntegrationType.Advanced;
             physBone.pull = 0.8f;
+            physBone.pullCurve = AnimationCurve.EaseInOut(0, 0.5f, 1, 1f);
             physBone.spring = 0.8f;
+            physBone.springCurve = AnimationCurve.EaseInOut(0, 0.3f, 1, 0.9f);
             physBone.stiffness = 0.5f;
+            physBone.stiffnessCurve = AnimationCurve.Linear(0, 0.2f, 1, 0.7f);
             physBone.gravity = 0.5f;
+            physBone.gravityCurve = AnimationCurve.Linear(0, 0.3f, 1, 0.8f);
+            physBone.gravityFalloff = 0.4f;
+            physBone.gravityFalloffCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
             physBone.immobile = 0.3f;
+            physBone.immobileType = VRCPhysBone.ImmobileType.AllMotion;
+            physBone.immobileCurve = AnimationCurve.Linear(0, 0.1f, 1, 0.5f);
+            
+            // 限制（增加物理计算复杂度）
+            physBone.limitType = VRCPhysBone.LimitType.Angle;
+            physBone.maxAngleX = 45f;
+            physBone.maxAngleZ = 45f;
+            physBone.limitRotation = new Vector3(15, 30, 15);
+            
+            // 拉伸（使用maxStretch）
+            physBone.maxStretch = 0.5f;
+            
+            // 抓取相关（使用AdvancedBool）
+            physBone.allowGrabbing = VRCPhysBoneBase.AdvancedBool.True;
+            physBone.allowPosing = VRCPhysBoneBase.AdvancedBool.True;
+            physBone.grabMovement = 0.8f;
+            physBone.snapToHand = true;
+            
+            // 参数驱动（虽然不使用但增加配置复杂度）
+            physBone.parameter = "";
+            physBone.isAnimated = false;
+            
             var collidersList = new List<VRCPhysBoneCollider>();
 
             // 创建Collider
@@ -230,17 +267,19 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 var collider = colliderObj.AddComponent<VRCPhysBoneCollider>();
                 collider.shapeType = VRCPhysBoneCollider.ShapeType.Capsule;
-                collider.radius = 0.1f;
-                collider.height = 0.5f;
+                collider.radius = 0.3f;
+                collider.height = 1.0f;
+                collider.insideBounds = true;
+                collider.bonesAsSpheres = false;
 
                 collidersList.Add(collider);
             }
 
-            Debug.Log($"[ASS] 创建PhysBone链: 长度={chainLength}, Collider={colliderCount}");
+            // 将colliders分配给PhysBone
+            physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
             
-                    // 将colliders分配给PhysBone
-                    // VRCPhysBoneCollider继承自VRCPhysBoneColliderBase，可以直接赋值
-                    physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
+            Debug.Log($"[ASS] 创建PhysBone链 (Advanced模式): 长度={chainLength}, Collider={colliderCount}, " +
+                     $"启用限制/拉伸/挤压/抓取, Curve数=6");
         }
 
         /// <summary>
@@ -266,9 +305,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 var sender = senderObj.AddComponent<VRCContactSender>();
                 sender.shapeType = VRCContactSender.ShapeType.Capsule;
-                sender.radius = 0.5f;
-                sender.height = 1f;
-                sender.collisionTags = new List<string> { "Tag1", "Tag2", "Tag3" };
+                sender.radius = 1.0f;
+                sender.height = 2f;
+                sender.collisionTags = new List<string> { "Tag1", "Tag2", "Tag3", "Tag4", "Tag5" };
+                sender.localOnly = true;
             }
 
             // 创建Receiver
@@ -284,9 +324,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 var receiver = receiverObj.AddComponent<VRCContactReceiver>();
                 receiver.shapeType = VRCContactReceiver.ShapeType.Capsule;
-                receiver.radius = 0.5f;
-                receiver.height = 1f;
-                receiver.collisionTags = new List<string> { "Tag1", "Tag2", "Tag3" };
+                receiver.radius = 1.0f;
+                receiver.height = 2f;
+                receiver.collisionTags = new List<string> { "Tag1", "Tag2", "Tag3", "Tag4", "Tag5" };
+                receiver.localOnly = true;
             }
 
             Debug.Log($"[ASS] 创建Contact系统: {halfCount} senders + {halfCount} receivers");
@@ -335,7 +376,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             meshFilter.mesh = mesh;
 
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            meshRenderer.material = new Material(Shader.Find("Standard"));
+            meshRenderer.sharedMaterials = new Material[]
+            {
+                new Material(Shader.Find("Standard")),
+                new Material(Shader.Find("Standard"))
+            };
 
             Debug.Log($"[ASS] 创建高面数Mesh: {mesh.vertexCount}顶点, {mesh.triangles.Length / 3}三角形");
         }
@@ -392,29 +437,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         #endregion
 
-        #region Decoy States Generation
-
-        /// <summary>
-        /// 生成大量混淆状态
-        /// </summary>
-        private static void GenerateDecoyStates(AnimatorStateMachine stateMachine, int stateCount)
-        {
-            var sharedClip = AnimatorUtils.SharedEmptyClip;
-
-            for (int i = 0; i < stateCount; i++)
-            {
-                int x = (i % 10) * 200 + 400;
-                int y = (i / 10) * 100 + 50;
-
-                var decoyState = stateMachine.AddState($"Decoy_{i}", new Vector3(x, y, 0));
-                decoyState.motion = sharedClip;
-                decoyState.writeDefaultValues = true;
-            }
-
-            Debug.Log($"[ASS] 生成混淆状态: {stateCount}个");
-        }
-
-        #endregion
 
         #region Mesh Generation Utilities
 
@@ -492,12 +514,138 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 }
             }
 
+            // 顶点/索引
             mesh.SetVertices(vertices);
-            mesh.SetTriangles(triangles, 0);
+
+            // 切分为两个子网格以增加复杂度
+            var tris0 = new List<int>();
+            var tris1 = new List<int>();
+            for (int i = 0; i < triangles.Count; i += 3)
+            {
+                if (((i / 3) % 2) == 0) { tris0.Add(triangles[i]); tris0.Add(triangles[i + 1]); tris0.Add(triangles[i + 2]); }
+                else { tris1.Add(triangles[i]); tris1.Add(triangles[i + 1]); tris1.Add(triangles[i + 2]); }
+            }
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(tris0, 0);
+            mesh.SetTriangles(tris1, 1);
+
+            // UV与颜色
+            var uv = new List<Vector2>(vertices.Count);
+            var uv2 = new List<Vector2>(vertices.Count);
+            var colors = new List<Color>(vertices.Count);
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                Vector3 v = vertices[i].normalized;
+                uv.Add(new Vector2((v.x + 1f) * 0.5f, (v.z + 1f) * 0.5f));
+                uv2.Add(new Vector2((v.y + 1f) * 0.5f, (v.x + 1f) * 0.5f));
+                colors.Add(new Color(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z), 1f));
+            }
+            mesh.uv = uv.ToArray();
+            mesh.uv2 = uv2.ToArray();
+            mesh.colors = colors.ToArray();
+
             mesh.RecalculateNormals();
+#if UNITY_2019_1_OR_NEWER
+            mesh.RecalculateTangents();
+#endif
             mesh.RecalculateBounds();
 
             return mesh;
+        }
+
+        #endregion
+
+        #region VRChat Limit Validation
+
+        /// <summary>
+        /// 验证Constraint深度，确保不超过VRChat限制
+        /// </summary>
+        private static int ValidateConstraintDepth(int requested)
+        {
+            int maxDepth = Constants.CONSTRAINT_CHAIN_MAX_DEPTH; // 100
+            int validValue = Mathf.Clamp(requested, 10, maxDepth);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] Constraint深度超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
+        }
+
+        /// <summary>
+        /// 验证PhysBone链长度，确保不超过256
+        /// </summary>
+        private static int ValidatePhysBoneLength(int requested)
+        {
+            int maxLength = Constants.PHYSBONE_CHAIN_MAX_LENGTH; // 256
+            int validValue = Mathf.Clamp(requested, 10, maxLength);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] PhysBone链长度超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
+        }
+
+        /// <summary>
+        /// 验证PhysBone Collider数量，确保不超过256
+        /// 同时考虑链长度以避免过度配置
+        /// </summary>
+        private static int ValidatePhysBoneColliders(int requested, int chainLength)
+        {
+            int maxColliders = Constants.PHYSBONE_COLLIDER_MAX_COUNT; // 256
+            int validValue = Mathf.Clamp(requested, 10, maxColliders);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] PhysBone Collider数量超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
+        }
+
+        /// <summary>
+        /// 验证Contact组件数量，确保不超过200
+        /// </summary>
+        private static int ValidateContactCount(int requested)
+        {
+            int maxCount = Constants.CONTACT_MAX_COUNT; // 200
+            int validValue = Mathf.Clamp(requested, 10, maxCount);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] Contact组件数量超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
+        }
+
+        /// <summary>
+        /// 验证Shader循环次数，确保不超过500
+        /// </summary>
+        private static int ValidateShaderLoops(int requested)
+        {
+            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT; // 500
+            int validValue = Mathf.Clamp(requested, 0, maxLoops);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] Shader循环次数超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
+        }
+
+        /// <summary>
+        /// 验证高多边形顶点数，确保不超过500k
+        /// </summary>
+        private static int ValidateHighPolyVertices(int requested)
+        {
+            int maxVertices = Constants.HIGHPOLY_MESH_MAX_VERTICES; // 500000
+            int validValue = Mathf.Clamp(requested, 50000, maxVertices);
+            
+            if (validValue != requested)
+            {
+                Debug.LogWarning($"[ASS] 高多边形顶点数超出范围: {requested} -> {validValue}");
+            }
+            return validValue;
         }
 
         #endregion
@@ -515,3 +663,4 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         #endregion
     }
 }
+

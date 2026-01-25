@@ -117,21 +117,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 clip.SetCurve(uiPath, typeof(GameObject), "m_IsActive", uiCurve);
             }
             
-            // 禁用密码输入音频对象
-            if (feedbackAudio != null)
-            {
-                string audioPath = Constants.GO_FEEDBACK_AUDIO;
-                var audioCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f); // false
-                clip.SetCurve(audioPath, typeof(GameObject), "m_IsActive", audioCurve);
-            }
-            
-            // 禁用警告音频对象
-            if (warningAudio != null)
-            {
-                string warningPath = Constants.GO_WARNING_AUDIO;
-                var warningCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f); // false
-                clip.SetCurve(warningPath, typeof(GameObject), "m_IsActive", warningCurve);
-            }
+            // 保留音频对象为默认状态（不显式禁用），避免成功后音效被关掉
             
             Debug.Log(I18n.T("log.lock_unlock_animation_created"));
             return clip;

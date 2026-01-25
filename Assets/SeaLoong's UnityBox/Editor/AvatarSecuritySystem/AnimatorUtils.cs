@@ -343,6 +343,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             if (clip == null) return;
 
+#if VRC_SDK_VRCSDK3
             var behaviour = state.AddStateMachineBehaviour<VRCAnimatorPlayAudio>();
             behaviour.SourcePath = audioSourcePath;
             behaviour.Clips = new AudioClip[] { clip };
@@ -351,6 +352,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             behaviour.StopOnExit = false;
             behaviour.PlayOnExit = false;
             behaviour.Loop = false;
+#endif
         }
 
         /// <summary>

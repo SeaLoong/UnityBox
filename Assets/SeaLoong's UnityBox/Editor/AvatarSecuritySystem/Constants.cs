@@ -61,5 +61,64 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const int GESTURE_ROCKNROLL = 5;
         public const int GESTURE_HANDGUN = 6;
         public const int GESTURE_THUMBSUP = 7;
+
+        // VRChat 组件上限（防止超过上限导致模型无法上传）
+        // 参考：https://docs.vrchat.com/docs/avatars
+        
+        /// <summary>
+        /// PhysBone 数量上限
+        /// "Very Poor" Avatar 等级允许更多 PhysBone，但为了保险起见设为256
+        /// 需要考虑：模型本身的PhysBone + ASS防御的PhysBone不能超过此值
+        /// </summary>
+        public const int PHYSBONE_MAX_COUNT = 256;
+
+        /// <summary>
+        /// 单个PhysBone链的最大骨骼数
+        /// 每条链代表一个VRCPhysBone组件，链越长消耗越大
+        /// 建议保持在256以内避免极端性能问题
+        /// </summary>
+        public const int PHYSBONE_CHAIN_MAX_LENGTH = 256;
+
+        /// <summary>
+        /// PhysBone Collider 上限（单个PhysBone可引用的Collider数）
+        /// VRCPhysBone最多可以配置256个Collider
+        /// </summary>
+        public const int PHYSBONE_COLLIDER_MAX_COUNT = 256;
+
+        /// <summary>
+        /// Contact Sender/Receiver 组件的总数上限
+        /// 为了避免过度消耗，建议不超过200个（Sender+Receiver总计）
+        /// </summary>
+        public const int CONTACT_MAX_COUNT = 200;
+
+        /// <summary>
+        /// Constraint 链的最大深度
+        /// 过深会导致计算链过长，建议不超过100
+        /// </summary>
+        public const int CONSTRAINT_CHAIN_MAX_DEPTH = 100;
+
+        /// <summary>
+        /// Overdraw 层数上限
+        /// 过多层数会导致严重帧率下降
+        /// </summary>
+        public const int OVERDRAW_MAX_LAYERS = 50;
+
+        /// <summary>
+        /// 高多边形Mesh顶点数上限
+        /// 超过500k顶点的单个Mesh会严重影响性能
+        /// </summary>
+        public const int HIGHPOLY_MESH_MAX_VERTICES = 500000;
+
+        /// <summary>
+        /// Shader 循环次数上限
+        /// 过多循环会导致GPU过载
+        /// </summary>
+        public const int SHADER_LOOP_MAX_COUNT = 500;
+
+        /// <summary>
+        /// 防御生成的混淆状态数量
+        /// 状态过多会增加AnimatorController体积
+        /// </summary>
+        public const int DECOY_STATES_MAX_COUNT = 10000;
     }
 }

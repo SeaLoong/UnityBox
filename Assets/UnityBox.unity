@@ -18108,24 +18108,37 @@ MonoBehaviour:
   uiLanguage: 43
   gesturePassword: 01000000020000000300000004000000
   useRightHand: 0
-  countdownDuration: 30
+  countdownDuration: 120
   warningThreshold: 10
   inputCooldown: 0.5
+  gestureHoldTime: 0.15
+  gestureErrorTolerance: 0.3
   errorSound: {fileID: 0}
   stepSuccessSound: {fileID: 0}
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
-  stateCount: 10000
-  particleSystemCount: 50
-  extraMaterialCount: 100
-  pointLightCount: 20
-  enableClothCountermeasure: 1
-  clothVertexCount: 10000
   enableInPlayMode: 1
   unlimitedPasswordTime: 1
-  disableCountermeasures: 0
+  disableDefense: 0
   invertParameters: 1
   disableRootChildren: 1
+  defenseLevel: 4
+  useCustomDefenseSettings: 0
+  enableCpuDefense: 1
+  enableConstraintChain: 1
+  constraintChainDepth: 100
+  enablePhysBone: 1
+  physBoneChainLength: 256
+  physBoneColliderCount: 256
+  enableContactSystem: 1
+  contactComponentCount: 200
+  enableGpuDefense: 1
+  enableHeavyShader: 1
+  shaderLoopCount: 500
+  enableOverdraw: 1
+  overdrawLayerCount: 50
+  enableHighPolyMesh: 1
+  highPolyVertexCount: 500000
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0

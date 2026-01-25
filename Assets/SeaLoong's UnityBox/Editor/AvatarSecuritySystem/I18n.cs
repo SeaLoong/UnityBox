@@ -580,9 +580,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_4_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 4: Maximum defense strength (all methods at full power)" },
-                    { SystemLanguage.ChineseSimplified, "等级 4：最大防御强度（所有方法全力运行）" },
-                    { SystemLanguage.Japanese, "レベル4：最大防御強度（全方法フルパワー）" }
+                    { SystemLanguage.English, "Level 4: Maximum defense strength (all parameters set to VRChat limits)" },
+                    { SystemLanguage.ChineseSimplified, "等级 4：最大防御强度（所有参数对应 VRChat 上限）" },
+                    { SystemLanguage.Japanese, "レベル4：最大防御強度（全パラメータがVRChat制限値）" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {
@@ -656,6 +656,30 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "顶点数量（10k-200k）" },
                     { SystemLanguage.Japanese, "頂点数（10k-200k）" }
                 },
+                ["defense.enable_cpu_defense_desc"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Enable CPU Defense (Constraint, PhysBone, Contact)" },
+                    { SystemLanguage.ChineseSimplified, "启用CPU防御（Constraint、PhysBone、Contact）" },
+                    { SystemLanguage.Japanese, "CPU防御を有効化（Constraint、PhysBone、Contact）" }
+                },
+                ["defense.enable_cpu_defense"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Enable CPU Defense" },
+                    { SystemLanguage.ChineseSimplified, "启用CPU防御" },
+                    { SystemLanguage.Japanese, "CPU防御を有効化" }
+                },
+                ["defense.enable_gpu_defense_desc"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Enable GPU Defense (Shader, Overdraw, HighPoly)" },
+                    { SystemLanguage.ChineseSimplified, "启用GPU防御（Shader、Overdraw、高多边形）" },
+                    { SystemLanguage.Japanese, "GPU防御を有効化（Shader、Overdraw、ハイポリゴン）" }
+                },
+                ["defense.enable_gpu_defense"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Enable GPU Defense" },
+                    { SystemLanguage.ChineseSimplified, "启用GPU防御" },
+                    { SystemLanguage.Japanese, "GPU防御を有効化" }
+                },
                 ["defense.constraint_chain_desc"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Enable Constraint chain consumption" },
@@ -703,6 +727,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Enable complex Shader consumption" },
                     { SystemLanguage.ChineseSimplified, "启用复杂Shader消耗" },
                     { SystemLanguage.Japanese, "複雑なシェーダー消費を有効化" }
+                },
+                ["defense.heavy_shader_explanation"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "\"Heavy Shader\" means a shader with complex calculations that increases GPU workload:\n• Multiple texture samples\n• Floating-point math operations\n• Loops in fragment/vertex shader\n• Multiple render passes\n\nThis doesn't directly protect against model theft, but makes the avatar perform very poorly for anyone wearing it without the correct password, discouraging use." },
+                    { SystemLanguage.ChineseSimplified, "\"重型Shader\"是指拥有复杂计算的着色器，会增加GPU工作量：\n• 多次纹理采样\n• 浮点数学运算\n• 在片元/顶点着色器中循环\n• 多个渲染通道\n\n这并不能直接防止模型被盗，但会让没有输入正确密码的人穿着该Avatar时性能极差，从而起到威慑作用。" },
+                    { SystemLanguage.Japanese, "\"重いシェーダー\"は複雑な計算を持つシェーダーで、GPUワークロードを増加させます：\n• 複数のテクスチャサンプリング\n• 浮動小数点演算\n• フラグメント/頂点シェーダー内のループ\n• 複数のレンダリングパス\n\nこれはモデルの盗難を直接防ぐものではありませんが、正しいパスワードなしで着用した人のアバターのパフォーマンスを大幅に低下させ、使用を阻止します。" }
                 },
                 ["defense.shader_loops_desc"] = new Dictionary<SystemLanguage, string>
                 {
