@@ -42,12 +42,21 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var countdownClip = CreateCountdownClip(duration, avatarRoot);
             AddSubAsset(controller, countdownClip);
 
-            // 状态：Countdown（倒计时进行中）
+            // 状态：Remote（其他玩家的默认状态，不进入倒计时）
+            var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
+            remoteState.motion = SharedEmptyClip;
+            remoteState.writeDefaultValues = true;
+            layer.stateMachine.defaultState = remoteState;
+
+            // 状态：Countdown（倒计时进行中，仅本地玩家）
             var countdownState = layer.stateMachine.AddState("Countdown", new Vector3(200, 50, 0));
             countdownState.motion = countdownClip;
             countdownState.speed = 1f;
             countdownState.writeDefaultValues = true;
-            layer.stateMachine.defaultState = countdownState;
+
+            // 转换：Remote → Countdown（IsLocal 时进入倒计时）
+            var toCountdown = CreateTransition(remoteState, countdownState);
+            toCountdown.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
 
             // 状态：Unlocked（密码正确，停止倒计时）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
@@ -121,14 +130,23 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             float duration = config.countdownDuration;
             float warningStartTime = duration - warningThreshold;
 
+            // 状态：Remote（其他玩家的默认状态，不播放警告音效）
+            var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
+            remoteState.motion = SharedEmptyClip;
+            remoteState.writeDefaultValues = true;
+            layer.stateMachine.defaultState = remoteState;
+
             // 状态：Waiting（等待警告时间，播放与倒计时同步的空动画）
             var waitingState = layer.stateMachine.AddState("Waiting", new Vector3(200, 50, 0));
             // 加上0.1秒延迟，确保10次1秒循环后(20.1+10=30.1)不会在TimeUp前触发第11次
             var waitingClip = CreateWaitingClip(warningStartTime + 0.1f);  
             waitingState.motion = waitingClip;
             waitingState.writeDefaultValues = true;
-            layer.stateMachine.defaultState = waitingState;
             AddSubAsset(controller, waitingClip);
+            
+            // 转换：Remote → Waiting（IsLocal 时开始等待）
+            var toWaiting = CreateTransition(remoteState, waitingState);
+            toWaiting.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
 
             // 状态：WarningBeep（播放警告音，1秒动画自循环）
             var beepState = layer.stateMachine.AddState("WarningBeep", new Vector3(200, 150, 0));

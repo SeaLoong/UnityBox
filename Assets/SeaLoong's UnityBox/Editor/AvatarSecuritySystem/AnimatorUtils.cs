@@ -313,8 +313,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 var audioSource = audioObject.AddComponent<AudioSource>();
                 audioSource.playOnAwake = false;
                 audioSource.loop = false;
-                audioSource.spatialBlend = 0f; // 2D sound
-                audioSource.volume = 1f;
+                audioSource.spatialBlend = 0f; // 2D sound（只有自己能听到）
+                audioSource.volume = 0.5f; // 适中音量
+                audioSource.priority = 0; // 最高优先级
                 
                 Debug.Log($"[ASS] 已创建 AudioSource: {audioObjectName}");
             }
@@ -327,8 +328,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     var audioSource = audioObject.AddComponent<AudioSource>();
                     audioSource.playOnAwake = false;
                     audioSource.loop = false;
-                    audioSource.spatialBlend = 0f;
-                    audioSource.volume = 1f;
+                    audioSource.spatialBlend = 0f; // 2D sound（只有自己能听到）
+                    audioSource.volume = 0.5f; // 适中音量
+                    audioSource.priority = 0; // 最高优先级
                 }
                 Debug.Log($"[ASS] 使用现有 AudioSource: {audioObjectName}");
             }
