@@ -33,7 +33,7 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 - ⏱️ **倒计时机制** - 限时输入（默认30秒），增加破解难度
 - 🎨 **视觉/音频反馈** - 实时提示用户输入状态（绿→黄→红）
 - 🔒 **初始锁定** - Avatar 启动时所有功能被禁用 + 参数反转
-- ⚡ **智能惩罚** - 仅对穿戴者生效（IsLocal），不影响其他玩家
+- ⚡ **智能防御** - 仅对穿戴者生效（IsLocal），不影响其他玩家
 - 🛠️ **非破坏性** - 编辑时零影响，仅构建时生成
 - 🔧 **NDMF 集成** - 无缝集成到 VRChat Avatar 构建流程
 
@@ -49,7 +49,7 @@ Avatar 启动
 🤚 用户输入手势密码
     ├─ ✅ 正确 → PASSWORD_CORRECT = true → 解锁 → 正常使用
     ├─ ❌ 错误 → 触发 PASSWORD_ERROR → 红色闪烁 → 重置输入
-    └─ ⏰ 超时 → 设置 TIME_UP = true → 触发惩罚 → 功能锁定
+    └─ ⏰ 超时 → 设置 TIME_UP = true → 触发防御 → 功能锁定
 ```
 
 ### 📊 性能指标
@@ -57,7 +57,7 @@ Avatar 启动
 | 场景 | CPU | GPU | FPS | 文件大小 | 影响范围 |
 |------|-----|-----|-----|---------|---------|
 | **正常使用** | < 1% | 0% | 正常 | +9 MB | 无 |
-| **惩罚激活** | 30-60% | 60-90% | 10-30 | +9 MB | 仅穿戴者 |
+| **防御激活** | 30-60% | 60-90% | 10-30 | +9 MB | 仅穿戴者 |
 | **其他玩家** | 0% | 0% | 正常 | - | 无影响 ✅ |
 
 ---
@@ -123,12 +123,12 @@ Success Sound: SuccessChime.wav  # 成功音效 (~0.5s)
 Enable Particle Effects: true    # 视觉粒子反馈
 ```
 
-#### 步骤 5: 惩罚配置（高级）
+#### 步骤 5: 防御配置（高级）
 
 ```yaml
 Decoy State Count: 6000          # 1000-10000（推荐 6000）
-Punishment Shader: SecurityBurnShader  # GPU 密集 Shader
-Hide Avatar On Punishment: true  # 惩罚时隐藏模型
+Defense Shader: SecurityBurnShader   # GPU 密集 Shader
+Hide Avatar On Defense: true     # 防御激活时隐藏模型
 ```
 
 #### 步骤 6: 测试
@@ -162,7 +162,7 @@ Hide Avatar On Punishment: true  # 惩罚时隐藏模型
 4. 密码错误：
    ❌ 红色闪烁 + 错误音效 → 重置到第一步
 5. 倒计时结束（未解锁）：
-   ⚠️ 触发惩罚措施（仅对穿戴者）
+   ⚠️ 触发防御措施（仅对穿戴者）
 ```
 
 #### 倒计时视觉反馈
@@ -188,7 +188,7 @@ AvatarSecurityPlugin (NDMF Plugin)
     ├─ PasswordInput (手势密码验证)
     ├─ Countdown (倒计时系统)
     ├─ Feedback (视觉/音频反馈)
-    └─ Punishment (惩罚措施 - 仅构建模式)
+    └─ Defense (防御措施 - 仅构建模式)
     ↓
 AnimationClips + GPU Shader + GameObject Hierarchy
 ```
@@ -214,7 +214,7 @@ Assets/SeaLoong's UnityBox/
 │       ├─ GesturePasswordSystem.cs     # 手势密码系统生成器
 │       ├─ CountdownSystem.cs           # 倒计时系统生成器
 │       ├─ FeedbackSystem.cs            # 反馈系统生成器
-│       └─ PunishmentSystem.cs          # 惩罚系统生成器（692行）
+│       └─ DefenseSystem.cs            # 防御系统生成器（672行）
 │
 ├─ Shaders/
 │   └─ SecurityBurnShader.shader        # GPU 密集 Shader（8 octaves FBM）
@@ -223,7 +223,7 @@ Assets/SeaLoong's UnityBox/
     ├─ ASS_README.md                    # 简要说明
     ├─ ASS_User_Guide.md                # 用户指南
     ├─ ASS_Technical_Documentation.md   # 技术文档
-    ├─ ASS_Performance_Punishment.md    # 性能惩罚设计
+    ├─ ASS_Defense_Design.md          # 防御系统设计
     └─ ASS_VRChat_Limitations.md        # VRChat 限制说明
 ```
 
@@ -342,7 +342,7 @@ for (int gesture = 0; gesture <= 7; gesture++) {
 - 30秒倒计时（可配置）
 - 使用 timeParameter 驱动动画播放位置
 - 密码正确时停止倒计时
-- 超时时设置 TIME_UP 参数触发惩罚
+- 超时时设置 TIME_UP 参数触发防御
 
 #### 实现细节
 
@@ -430,15 +430,15 @@ clip.SetCurve(uiPath, typeof(Image), "m_Color.r", curveR);
 
 ---
 
-### 5️⃣ 惩罚系统（PunishmentSystem）
+### 5️⃣ 防御系统（DefenseSystem）
 
 #### 功能（仅构建模式）
-1. **诱饵状态**：6000 个虚假 Animator 状态混淆逆向
-2. **GPU Shader**：复杂 Shader 替换所有材质
-3. **粒子系统**：50 个粒子系统（50,000 粒子）
-4. **Draw Calls**：100 个独立材质增加渲染负载
-5. **点光源**：10 个实时点光源
-6. **Cloth 模拟**：10,000 顶点的布料物理模拟
+1. **CPU 约束链**：嵌套 Constraint 链计算消耗
+2. **PhysBone**：物理骨骼模拟消耗
+3. **Contact 系统**：碰撞检测组件
+4. **Overdraw**：多层透明渲染
+5. **高面数 Mesh**：顶点处理消耗
+6. **复杂 Shader**：GPU 密集着色器
 
 #### 激活条件
 
@@ -531,7 +531,7 @@ albedo = HSVtoRGB(hsv);
 - FPS 下降：5-15 帧
 - 仅对穿戴者生效（通过 IsLocal 参数控制材质激活）
 
-#### 粒子系统惩罚
+#### 粒子系统防御
 
 **配置：**
 ```csharp
@@ -552,7 +552,7 @@ emission.rateOverTime = 200;        // 200 粒子/秒
 - GPU：Billboard 渲染
 - 预估：20-30% GPU 占用
 
-#### Draw Calls 惩罚
+#### Draw Calls 防御
 
 **实现：**
 ```csharp
@@ -580,7 +580,7 @@ for (int i = 0; i < 100; i++) {
 
 #### 编辑器性能
 - ✅ **编辑时**：0 影响（组件不生成任何资产）
-- ✅ **Play 模式**：仅生成测试系统（无惩罚层）
+- ✅ **Play 模式**：仅生成测试系统（无防御层）
 - ⚠️ **构建时**：5-30 秒（取决于诱饵状态数量）
   - 1000 状态：~5 秒
   - 6000 状态：~15 秒
@@ -596,7 +596,7 @@ GPU: 0%
 FPS: 无影响
 ```
 
-**惩罚激活（盗取者）：**
+**防御激活（盗取者）：**
 ```
 CPU: 30-60%
   ├─ Animator BlendTree 计算: 10-20%
@@ -615,7 +615,7 @@ FPS: 10-30 帧（目标达成 ✅）
 **对其他玩家的影响：**
 ```
 ✅ 完全无影响（通过 IsLocal 参数隔离）
-- 惩罚层 Weight = 0（对其他玩家）
+- 防御层 Weight = 0（对其他玩家）
 - 粒子/光源/Cloth 不激活
 - Shader 不替换
 ```
@@ -678,15 +678,15 @@ public AudioClip warningBeep;       // 警告哔哔声
 public AudioClip successSound;      // 成功解锁音效
 public bool enableParticleEffects;  // 启用粒子特效反馈
 
-// === 惩罚配置 ===
+// === 防御配置 ===
 [Range(1000, 10000)]
 public int decoyStateCount;         // 诱饵状态数量
 
-public Shader punishmentShader;     // GPU 密集 Shader
-public bool hideAvatarOnPunishment; // 惩罚时隐藏 Avatar
+public Shader defenseShader;        // GPU 密集 Shader
+public bool hideAvatarOnDefense;    // 防御时隐藏 Avatar
 
 // === 高级选项 ===
-public bool enableInPlayMode;       // Play 模式测试（无惩罚）
+public bool enableInPlayMode;       // Play 模式测试（无防御）
 public bool invertParameters;       // 反转参数默认值
 public bool disableRootChildren;    // 禁用根级子对象
 ```
@@ -796,33 +796,33 @@ public static AnimatorControllerLayer CreateFeedbackLayer(
     AvatarSecuritySystemComponent config
 );
 
-// === 惩罚系统 ===
-public static AnimatorControllerLayer CreatePunishmentLayer(
+// === 防御系统 ===
+public static AnimatorControllerLayer CreateDefenseLayer(
     AnimatorController controller,
     GameObject avatarRoot,
     AvatarSecuritySystemComponent config
 );
 
-// 创建粒子系统惩罚
-public static void CreateParticleSystemObjects(
+// 创建 Constraint 链防御
+public static void CreateConstraintChainObjects(
     GameObject avatarRoot,
     AvatarSecuritySystemComponent config
 );
 
-// 创建 Draw Calls 惩罚
-public static void CreateDrawCallObjects(
+// 创建 PhysBone 防御
+public static void CreatePhysBoneObjects(
     GameObject avatarRoot,
     AvatarSecuritySystemComponent config
 );
 
-// 创建光源惩罚
-public static void CreateLightObjects(
+// 创建 Overdraw 防御
+public static void CreateOverdrawObjects(
     GameObject avatarRoot,
     AvatarSecuritySystemComponent config
 );
 
-// 创建布料物理惩罚
-public static void CreateClothObjects(
+// 创建高面数 Mesh 防御
+public static void CreateHighPolyMeshObjects(
     GameObject avatarRoot,
     AvatarSecuritySystemComponent config
 );
@@ -872,7 +872,7 @@ public static void CreateClothObjects(
 **A**: 理论上可以，但：
 - 需要修改 VRChat 客户端（违反 TOS）
 - 需要逆向工程 Animator 逻辑
-- 惩罚措施仍会激活（性能下降）
+- 防御措施仍会激活（性能下降）
 
 ### 💡 使用问题
 
@@ -894,10 +894,10 @@ public static void CreateClothObjects(
 **A**: 
 - 解锁后：几乎无影响（< 1% CPU）
 - 未解锁：轻微影响（Animator 层计算）
-- 惩罚激活：严重影响（仅对盗取者）
+- 防御激活：严重影响（仅对盗取者）
 
-#### Q: 其他玩家会看到惩罚效果吗？
-**A**: 不会。惩罚通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是正常 Avatar。
+#### Q: 其他玩家会看到防御效果吗？
+**A**: 不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是正常 Avatar。
 
 ### ⚙️ 技术问题
 
@@ -908,11 +908,11 @@ public static void CreateClothObjects(
 3. 构建时间过长（> 1 小时）
 4. 会影响合法用户的重新构建
 
-#### Q: 为什么错误输入不直接触发惩罚？
+#### Q: 为什么错误输入不直接触发防御？
 **A**: 用户体验考虑：
 - 用户可能在学习密码时多次输错
-- 立即惩罚体验太差
-- 只有倒计时结束才惩罚（盗取者无耐心）
+- 立即防御体验太差
+- 只有倒计时结束才防御（盗取者无耐心）
 
 #### Q: 可以在商业 Avatar 中使用吗？
 **A**: 可以，但需要：
@@ -931,7 +931,7 @@ public static void CreateClothObjects(
 #### Q: VRChat 会封禁使用此系统的账号吗？
 **A**: 可能风险：
 - 恶意消耗资源可能违反 TOS
-- 建议：不要设置过于极端的惩罚
+- 建议：不要设置过于极端的防御
 - 仅用于保护自己的作品
 
 ### 🛠️ 故障排除
@@ -1008,8 +1008,8 @@ SOFTWARE.
 
 3. **技术风险**
    - 恶意消耗资源可能违反 VRChat TOS
-   - 过度惩罚可能导致账号封禁
-   - 建议设置合理的惩罚强度
+   - 过度防御可能导致账号封禁
+   - 建议设置合理的防御强度
 
 4. **责任声明**
    - 作者不对任何滥用行为负责
@@ -1095,7 +1095,7 @@ SOFTWARE.
 - 倒计时机制（可配置 10-120 秒）
 - 视觉/音频反馈系统
 - 初始锁定（对象禁用 + 参数反转）
-- 智能惩罚系统（6 种措施）
+- 智能防御系统（6 种措施）
 - NDMF 集成
 - GPU 密集 Shader (SecurityBurnShader)
 - 自定义 Inspector UI
@@ -1105,7 +1105,7 @@ SOFTWARE.
 **🎯 核心指标**
 - 文件大小：~9 MB (6000 诱饵状态)
 - 构建时间：~15 秒
-- 惩罚 FPS：10-30 帧（目标达成）
+- 防御 FPS：10-30 帧（目标达成）
 - 对其他玩家影响：0（通过 IsLocal 隔离）
 
 ---

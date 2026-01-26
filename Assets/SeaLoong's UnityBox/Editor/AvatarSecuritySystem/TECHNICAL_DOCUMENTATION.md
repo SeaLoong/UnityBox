@@ -23,13 +23,17 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 安全保护系统，通过
 | 功能 | 实现方式 | WD 恢复 |
 |------|----------|---------|
 | 隐藏对象 | `Transform.localScale = 0` | ✅ 支持 |
-| 材质锁定 | `m_Materials.Array.data[n] = null` | ✅ 支持 |
+| 遮挡 Mesh | `GameObject.m_IsActive = 0/1` | ❌ 不依赖 WD |
+| 防御对象 | `GameObject.m_IsActive = 0/1` | ❌ 不依赖 WD |
 | 参数反转 | VRCParameterDriver | - |
 | 层权重 | VRCAnimatorLayerControl | - |
 
 **状态机**:
 ```
-Locked (默认) ──[PARAM_PASSWORD_CORRECT]──> Unlocked
+Remote (默认) ──[IsLocal]──> Locked ──[PARAM_PASSWORD_CORRECT]──> Unlocked
+     │                           │                                    │
+ (其他玩家)                  (显示遮挡Mesh)                       (隐藏遮挡Mesh)
+ (空动画)                    (隐藏Avatar)                         (显示Avatar)
 ```
 
 **层权重控制**:
@@ -89,15 +93,21 @@ Step_N_ErrorTolerance ──[超时]──> Wait_Input
 
 **倒计时层 (ASS_Countdown)**:
 ```
-Countdown (默认) ──[exitTime=1.0]──> TimeUp ──> [设置 PARAM_TIME_UP=1]
-     └── [PARAM_PASSWORD_CORRECT] → Unlocked
+Remote (默认) ──[IsLocal]──> Countdown ──[exitTime=1.0]──> TimeUp
+   │                              │                           │
+(其他玩家)                   [PARAM_PASSWORD_CORRECT]    [设置 PARAM_TIME_UP=1]
+                                  ↓                           ↓
+                              Unlocked                    [PARAM_PASSWORD_CORRECT]
+                                                              ↓
+                                                          Unlocked
 ```
 
 **警告音效层 (ASS_WarningAudio)**:
 ```
-Waiting (等待警告阶段) ──[exitTime=1.0]──> WarningBeep (循环播放)
-                                              ├── [PARAM_TIME_UP] → Stop
-                                              └── [exitTime=1.0] → 自循环
+Remote (默认) ──[IsLocal]──> Waiting (等待警告阶段) ──[exitTime=1.0]──> WarningBeep (循环播放)
+   │                                                                        ├── [PARAM_TIME_UP] → Stop
+   │                                                                        └── [exitTime=1.0] → 自循环
+(其他玩家)
 ```
 
 ---
@@ -209,10 +219,10 @@ AvatarSecurityPlugin.GenerateSystem()
 
 ## 已知问题和注意事项
 
-1. **m_IsActive 不受 WD 影响**: VRChat 限制，改用 Scale=0 隐藏对象
+1. **m_IsActive 策略**: ASS 完全控制的对象（遮挡Mesh、防御对象、UI Canvas）使用 m_IsActive 控制；Avatar 原有对象使用 Scale=0 隐藏
 2. **层权重控制时机**: 必须在所有层添加后才能配置
-3. **音频对象**: 不应在解锁动画中禁用，否则成功音效无法播放
-4. **参数反转**: 使用 Modular Avatar 或 VRCParameterDriver 实现
+3. **音频对象**: 使用 spatialBlend=0 确保只有本地玩家能听到
+4. **IsLocal 条件**: 所有可能影响其他玩家观感的层都需要 IsLocal 条件
 
 ---
 
@@ -263,19 +273,25 @@ Editor/
 | 问题 | 文件 | 修复方式 |
 |------|------|----------|
 | `continue` 位置错误 | GesturePasswordSystem.cs | 移动到 else 块外部 |
-| Canvas 使用 m_IsActive | InitialLockSystem.cs | 改用 Scale=0 |
 | 未使用的 originalMaterial | InitialLockSystem.cs | 添加注释说明 |
 | 未使用的常量 | Constants.cs | 移除 PARAM_LOCKED/UNLOCKED |
 | 层名称硬编码 | CountdownSystem.cs | 使用 LAYER_WARNING_AUDIO 常量 |
 | 注释编号不连续 | GesturePasswordSystem.cs | 4 → 3 |
 
+> **注意**: 第一轮中"Canvas 使用 m_IsActive → 改用 Scale=0"的修复已被第二轮策略覆盖。最终策略：ASS 完全控制的对象（Canvas、遮挡Mesh、防御对象）统一使用 m_IsActive 控制。
+
 ### ✅ 已修复问题（第二轮 - 全面检查）
 
 | 问题 | 文件 | 修复方式 |
 |------|------|----------|
-| 防御激活使用 m_IsActive | DefenseSystem.cs | 改用 Scale=0 控制 |
-| 防御根对象 SetActive(false) | DefenseSystem.cs | 改为 Scale=0 + SetActive(true) |
-| CreateGameObjectActiveClip 使用 m_IsActive | AnimationClipGenerator.cs | 添加 [Obsolete] 警告 |
+| 防御激活使用 Scale 控制 | DefenseSystem.cs | 改用 m_IsActive 控制 |
+| 防御根对象 Scale=0 | DefenseSystem.cs | 改为 SetActive(false) |
+| 遮挡 Mesh 使用 Scale 控制 | InitialLockSystem.cs | 改用 m_IsActive 控制 |
+| 倒计时层缺少 IsLocal | CountdownSystem.cs | 添加 Remote 状态和 IsLocal 条件 |
+| 警告音效层缺少 IsLocal | CountdownSystem.cs | 添加 Remote 状态和 IsLocal 条件 |
+| 锁定层缺少 IsLocal | InitialLockSystem.cs | 添加 Remote 状态和 IsLocal 条件 |
+| 失败音效在密码系统 | GesturePasswordSystem.cs | 移除（由防御系统处理） |
+| 音效音量过大 | AnimatorUtils.cs | 降低到 0.5，优先级设为 0 |
 
 ### 🟡 设计决策说明
 
@@ -304,75 +320,37 @@ Editor/
 
 | 属性 | Write Defaults 恢复 | ASS 使用方式 |
 |------|---------------------|--------------|
-| Transform.localScale | ✅ 支持 | 隐藏对象、UI、防御组件 |
+| Transform.localScale | ✅ 支持 | 隐藏 Avatar 原有对象 |
 | Transform.position/rotation | ✅ 支持 | - |
 | BlendShape | ✅ 支持 | - |
-| Material Reference | ✅ 支持 | 材质锁定 |
-| **GameObject.m_IsActive** | ❌ **不支持** | **禁止使用** |
+| Material Reference | ✅ 支持 | - |
+| **GameObject.m_IsActive** | ❌ **不支持** | **仅用于 ASS 完全控制的对象**（遮挡Mesh、防御对象、UI Canvas）|
+
+**m_IsActive 使用策略**:
+- ASS 创建的对象（遮挡Mesh、防御根对象、UI Canvas）可以使用 m_IsActive，因为：
+  1. 这些对象初始状态由 ASS 代码控制
+  2. 不需要依赖 Write Defaults 恢复
+  3. 可以完全禁用 PhysBone/Constraint 等组件避免性能消耗
+- Avatar 原有对象必须使用 Scale=0 隐藏
 
 ---
 
 ## 修复摘要
 
-**总计修复: 9 个问题**
+**总计修复: 13 个问题**
 
-- 严重问题: 3 个 (continue 位置、m_IsActive 相关)
-- 中等问题: 4 个 (常量、命名一致性)
-- 轻微问题: 2 个 (注释、警告标记)
+- 严重问题: 5 个 (IsLocal 条件、m_IsActive 策略)
+- 中等问题: 5 个 (常量、命名一致性、注释)
+- 轻微问题: 3 个 (音量、优先级、文档更新)
 
 ---
 
-## 代码审查发现的问题
+## 剩余建议（可选）
 
-### ✅ 已修复问题
-
-#### 1. GesturePasswordSystem.cs:174 - `continue` 语句位置错误 ✅ 已修复
-
-**原问题**: `if (isLastStep) continue;` 放在 `else` 块内，导致只对 `i > 0` 的最后一步生效
-
-**修复**: 将 `continue` 移动到 `if`/`else` 块外部独立判断
-
-#### 2. CreateUnlockClip - 使用 m_IsActive 禁用 Canvas ✅ 已修复
-
-**原问题**: VRChat 的 `m_IsActive` 不受 Write Defaults 影响
-
-**修复**: 改用 `Scale=0` 隐藏 UI Canvas
-
-#### 3. MaterialSlotInfo.originalMaterial 未使用 ✅ 已修复
-
-**修复**: 添加注释说明保留原因
-
-#### 4. Constants 中未使用的常量 ✅ 已修复
-
-**修复**: 移除未使用的 `PARAM_LOCKED` 和 `PARAM_UNLOCKED`
-
-#### 5. CountdownSystem 警告音效层名称硬编码 ✅ 已修复
-
-**修复**: 添加 `LAYER_WARNING_AUDIO` 常量并使用
-
-#### 6. 注释编号不连续 ✅ 已修复
-
-**修复**: 将 `4.` 改为 `3.`
-
-### 🟢 剩余建议（可选）
-
-#### 冗余的 Debug.Log 调用
+### 冗余的 Debug.Log 调用
 
 多个地方有硬编码的中文日志字符串，没有通过 I18n 系统：
 - `AvatarSecurityPlugin.cs:207`: `"[ASS] 使用现有 FX Controller: {controller.name}"`
 - `InitialLockSystem.cs:133`: `"[ASS] 层权重控制：添加层 ..."`
 
 **建议**: 使用 I18n 系统统一管理
-
----
-
-## 修复摘要
-
-| 问题 | 状态 | 修复方式 |
-|------|------|----------|
-| continue 位置错误 | ✅ 已修复 | 移动到 else 块外部 |
-| m_IsActive 用于 Canvas | ✅ 已修复 | 改用 Scale=0 |
-| 未使用的 originalMaterial | ✅ 已修复 | 添加注释说明 |
-| 未使用的 PARAM_LOCKED/UNLOCKED | ✅ 已修复 | 已移除 |
-| 层名称常量化 | ✅ 已修复 | 添加 LAYER_WARNING_AUDIO |
-| 注释编号不连续 | ✅ 已修复 | 4 → 3 |

@@ -410,7 +410,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 创建防御激活/停用动画剪辑
-        /// 注意：使用 Scale 控制而非 m_IsActive，因为 VRChat 的 m_IsActive 不受 Write Defaults 影响
+        /// 使用 m_IsActive 控制防御组件，因为防御对象是 ASS 完全控制的对象，
+        /// 且使用 m_IsActive 可以完全禁用 PhysBone/Constraint 等组件避免性能消耗
         /// </summary>
         private static AnimationClip CreateDefenseActivationClip(GameObject avatarRoot, GameObject defenseRoot, AvatarSecuritySystemComponent config, bool activate, bool isDebugMode)
         {
