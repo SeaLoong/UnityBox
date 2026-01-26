@@ -354,6 +354,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             behaviour.StopOnExit = false;
             behaviour.PlayOnExit = false;
             behaviour.Loop = false;
+            // 设置音量参数（与 SetupAudioSource 保持一致，0.5 固定音量）
+            behaviour.Volume = new Vector2(0.5f, 0.5f);
+            behaviour.VolumeApplySettings = VRCAnimatorPlayAudio.ApplySettings.ApplyIfStopped;
 #endif
         }
 
