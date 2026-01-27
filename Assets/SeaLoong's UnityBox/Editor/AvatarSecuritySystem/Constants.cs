@@ -14,19 +14,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string ASSET_FOLDER = "Assets/SeaLoong's UnityBox/Generated/ASS";
         public const string CONTROLLER_NAME = "ASS_Controller.controller";
         public const string ANIMATIONS_FOLDER = "Animations";
-        public const string AUDIO_FOLDER = "Audio";
 
         // 音频资源路径（Resources 文件夹相对路径）
         public const string AUDIO_RESOURCE_PATH = "AvatarSecuritySystem";
-        public const string AUDIO_STEP_SUCCESS = "StepSuccess";
         public const string AUDIO_PASSWORD_SUCCESS = "PasswordSuccess";
-        public const string AUDIO_INPUT_ERROR = "InputError";
         public const string AUDIO_COUNTDOWN_WARNING = "CountdownWarning";
 
         // Animator 参数名称
         public const string PARAM_PASSWORD_CORRECT = "ASS_PasswordCorrect";
         public const string PARAM_TIME_UP = "ASS_TimeUp";
-        public const string PARAM_PASSWORD_ERROR = "ASS_PasswordError";
         public const string PARAM_IS_LOCAL = "IsLocal"; // VRChat 内置参数
 
         // VRChat 手势参数
@@ -51,17 +47,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         // 优化相关
         public const string SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim";
-        public const int BLENDTREE_CHILDREN_PER_TREE = 100; // 每个 BlendTree 的子项数
-
-        // VRChat 内置手势值
-        public const int GESTURE_IDLE = 0;
-        public const int GESTURE_FIST = 1;
-        public const int GESTURE_HANDOPEN = 2;
-        public const int GESTURE_FINGERPOINT = 3;
-        public const int GESTURE_VICTORY = 4;
-        public const int GESTURE_ROCKNROLL = 5;
-        public const int GESTURE_HANDGUN = 6;
-        public const int GESTURE_THUMBSUP = 7;
 
         // VRChat 组件上限（防止超过上限导致模型无法上传）
         // 参考：https://docs.vrchat.com/docs/avatars
@@ -99,27 +84,20 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const int CONSTRAINT_CHAIN_MAX_DEPTH = 100;
 
         /// <summary>
-        /// Overdraw 层数上限
-        /// 过多层数会导致严重帧率下降
+        /// Overdraw 层数上限（无实际限制，仅编辑器优化）
         /// </summary>
-        public const int OVERDRAW_MAX_LAYERS = 50;
+        public const int OVERDRAW_MAX_LAYERS = 10000;
 
         /// <summary>
-        /// 高多边形Mesh顶点数上限
-        /// 超过500k顶点的单个Mesh会严重影响性能
+        /// 高多边形Mesh顶点总数上限（无硬限制，可分散到多个Mesh中）
+        /// 可分散到多个Mesh中突破单Mesh65k顶点限制
         /// </summary>
-        public const int HIGHPOLY_MESH_MAX_VERTICES = 500000;
+        public const int HIGHPOLY_MESH_MAX_VERTICES = 100000000; // 1亿顶点
 
         /// <summary>
-        /// Shader 循环次数上限
-        /// 过多循环会导致GPU过载
+        /// Shader 循环次数上限（无硬限制）
+        /// GPU会因计算而过载，但VRChat不会阻止
         /// </summary>
-        public const int SHADER_LOOP_MAX_COUNT = 500;
-
-        /// <summary>
-        /// 防御生成的混淆状态数量
-        /// 状态过多会增加AnimatorController体积
-        /// </summary>
-        public const int DECOY_STATES_MAX_COUNT = 10000;
+        public const int SHADER_LOOP_MAX_COUNT = 1000000; // 100万次循环
     }
 }

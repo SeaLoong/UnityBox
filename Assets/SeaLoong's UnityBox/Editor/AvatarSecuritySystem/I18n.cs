@@ -844,17 +844,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "锁定选项" },
                     { SystemLanguage.Japanese, "ロックオプション" }
                 },
-                ["advanced.invert_params"] = new Dictionary<SystemLanguage, string>
+                ["advanced.lock_fx_layers"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Invert Parameters" },
-                    { SystemLanguage.ChineseSimplified, "反转参数" },
-                    { SystemLanguage.Japanese, "パラメータを反転" }
+                    { SystemLanguage.English, "Lock FX Layers" },
+                    { SystemLanguage.ChineseSimplified, "锁定FX层" },
+                    { SystemLanguage.Japanese, "FXレイヤーをロック" }
                 },
-                ["advanced.invert_params_tooltip"] = new Dictionary<SystemLanguage, string>
+                ["advanced.lock_fx_layers_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Invert all Avatar parameters as initial lock" },
-                    { SystemLanguage.ChineseSimplified, "反转所有 Avatar 参数作为初始锁定" },
-                    { SystemLanguage.Japanese, "初期ロックとしてすべてのアバターパラメータを反転" }
+                    { SystemLanguage.English, "Set all non-ASS FX layer weights to 0 when locked" },
+                    { SystemLanguage.ChineseSimplified, "锁定时将所有非ASS的FX层权重设为0" },
+                    { SystemLanguage.Japanese, "ロック時にASS以外のすべてのFXレイヤーのウェイトを0に設定" }
                 },
                 ["advanced.disable_objects"] = new Dictionary<SystemLanguage, string>
                 {
@@ -1217,26 +1217,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Please use VRChat SDK's Build & Publish feature to build the Avatar.\nThe ASS system will be generated automatically during the build." },
                     { SystemLanguage.ChineseSimplified, "请使用 VRChat SDK 的 Build & Publish 功能构建 Avatar。\nASS 系统会在构建时自动生成。" },
                     { SystemLanguage.Japanese, "VRChat SDKのBuild & Publish機能を使用してアバターをビルドしてください。\nASSシステムはビルド時に自動的に生成されます。" }
-                },
-
-                // ========== 构建确认对话框 ==========
-                ["build.confirm_title"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Avatar Security System" },
-                    { SystemLanguage.ChineseSimplified, "Avatar 安全系统" },
-                    { SystemLanguage.Japanese, "アバターセキュリティシステム" }
-                },
-                ["build.confirm_message"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "About to generate security system for Avatar:\n\n• Password length: {0} digits\n• Countdown: {1} seconds\n• Defense states: {2}\n• Estimated file size: {3:F1} KB\n\nDo you want to continue?" },
-                    { SystemLanguage.ChineseSimplified, "即将为 Avatar 生成安全系统：\n\n• 密码长度：{0} 位\n• 倒计时：{1} 秒\n• 防御状态：{2} 个\n• 预估文件大小：{3:F1} KB\n\n确定要继续吗？" },
-                    { SystemLanguage.Japanese, "アバターのセキュリティシステムを生成します：\n\n• パスワード長：{0} 桁\n• カウントダウン：{1} 秒\n• 防御状態：{2} 個\n• 推定ファイルサイズ：{3:F1} KB\n\n続行しますか？" }
-                },
-                ["build.continue"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Continue Build" },
-                    { SystemLanguage.ChineseSimplified, "继续构建" },
-                    { SystemLanguage.Japanese, "ビルドを続行" }
                 },
 
                 // ========== 日志消息 ==========

@@ -61,26 +61,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     return;
                 }
 
-                // 显示确认对话框（仅构建模式）
-                if (!isPlayMode)
-                {
-                    bool confirmed = EditorUtility.DisplayDialog(
-                        I18n.T("build.confirm_title"),
-                        string.Format(I18n.T("build.confirm_message"),
-                            assConfig.gesturePassword.Count,
-                            assConfig.countdownDuration,
-                            assConfig.defenseLevel,
-                            assConfig.EstimateFileSizeKB()),
-                        I18n.T("build.continue"),
-                        I18n.T("common.cancel")
-                    );
-
-                    if (!confirmed)
-                    {
-                        throw new System.Exception("[ASS] Build cancelled by user");
-                    }
-                }
-
                 // 生成系统
                 try
                 {
@@ -183,10 +163,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 6. 注册 ASS 参数到 VRCExpressionParameters（高优先级位置）
             RegisterASSParameters(descriptor, config);
 
-            // 7. 构建模式：反转参数（如果启用）
-            if (!isPlayMode && config.invertParameters)
+            // 7. 锁定 FX 层权重（如果启用）
+            if (!isPlayMode && config.lockFxLayers)
             {
-                InitialLockSystem.InvertAvatarParameters(avatarRoot, config);
+                InitialLockSystem.LockFxLayerWeights(fxController, lockResult, assLayerNames.ToArray());
             }
 
             // 8. 保存
@@ -227,7 +207,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     name = Constants.PARAM_PASSWORD_CORRECT,
                     valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
                     defaultValue = 0f,      // 默认锁定
-                    saved = false,          // 不保存，每次加入都锁定
+                    saved = true,           // 保存参数，切换世界后保持解锁状态
                     networkSynced = true    // 同步给其他玩家
                 },
                 // ASS_TimeUp - 本地参数（仅用于触发防御，不同步）
@@ -296,28 +276,20 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            // 加载每步输入成功提示音
-            config.stepSuccessSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_STEP_SUCCESS}");
-            
             // 加载密码成功音效
             config.successSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_PASSWORD_SUCCESS}");
-            
-            // 加载错误音效
-            config.errorSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_INPUT_ERROR}");
             
             // 加载倒计时警告音效
             config.warningBeep = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_COUNTDOWN_WARNING}");
 
             // 验证
             int loadedCount = 0;
-            if (config.stepSuccessSound != null) loadedCount++;
             if (config.successSound != null) loadedCount++;
-            if (config.errorSound != null) loadedCount++;
             if (config.warningBeep != null) loadedCount++;
 
-            Debug.Log($"[ASS] 音频资源加载完成：{loadedCount}/4 个文件");
+            Debug.Log($"[ASS] 音频资源加载完成：{loadedCount}/2 个文件");
             
-            if (loadedCount < 4)
+            if (loadedCount < 2)
             {
                 Debug.LogWarning(I18n.T("log.plugin_audio_missing"));
             }

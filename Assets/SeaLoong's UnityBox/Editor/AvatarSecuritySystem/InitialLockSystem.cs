@@ -8,9 +8,13 @@ using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimationClipGenerator
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
+#if VRC_SDK_VRCSDK3
+using VRC.SDK3.Dynamics.Constraint.Components;
+using VRC.Dynamics;
+#endif
+
 #if NDMF_AVAILABLE
 using nadena.dev.ndmf;
-using VRC.SDK3.Avatars.Components;
 #endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
@@ -77,32 +81,31 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             unlockedState.motion = unlockClip;
             AnimatorUtils.AddSubAsset(controller, unlockClip);
 
-#if VRC_SDK_VRCSDK3
-            // 添加参数驱动
-            if (config.invertParameters)
-            {
-                // 锁定状态：设置参数为反转值
-                var lockedParams = CollectInvertedParameters(avatarRoot);
-                if (lockedParams.Count > 0)
-                {
-                    AnimatorUtils.AddMultiParameterDriverBehaviour(lockedState, lockedParams, localOnly: true);
-                }
-
-                // 解锁状态：恢复参数为默认值
-                var unlockedParams = CollectDefaultParameters(avatarRoot);
-                if (unlockedParams.Count > 0)
-                {
-                    AnimatorUtils.AddMultiParameterDriverBehaviour(unlockedState, unlockedParams, localOnly: true);
-                }
-            }
-#endif
-
-            // 转换：Remote → Locked（IsLocal 时进入锁定状态）
-            var toLocal = AnimatorUtils.CreateTransition(remoteState, lockedState);
-            toLocal.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
+            // 转换：Remote → Unlocked（如果已保存的密码状态为正确，直接进入解锁）
+            var toUnlockedDirect = AnimatorUtils.CreateTransition(remoteState, unlockedState);
+            toUnlockedDirect.hasExitTime = false;
+            toUnlockedDirect.duration = 0f;
+            toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
+            toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_PASSWORD_CORRECT);
+            
+            // 转换：Remote → Locked（IsLocal 时且密码未正确，进入锁定状态）
+            var toLocked = AnimatorUtils.CreateTransition(remoteState, lockedState);
+            toLocked.hasExitTime = false;
+            toLocked.duration = 0f;
+            toLocked.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
+            toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
+            
+            // 转换：Locked → Locked（循环锁定，直到密码正确）
+            var lockedLoop = AnimatorUtils.CreateTransition(lockedState, lockedState);
+            lockedLoop.hasExitTime = true;
+            lockedLoop.exitTime = 0f;
+            lockedLoop.duration = 0f;
+            lockedLoop.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
             
             // 转换：Locked → Unlocked（密码正确时解锁）
             var toUnlocked = AnimatorUtils.CreateTransition(lockedState, unlockedState);
+            toUnlocked.hasExitTime = false;
+            toUnlocked.duration = 0f;
             toUnlocked.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_PASSWORD_CORRECT);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
@@ -172,6 +175,55 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
+        /// 锁定 FX 层权重
+        /// 在 Locked 状态下将所有非 ASS 层的权重设为 0，在 Unlocked 状态下设为 1
+        /// </summary>
+        public static void LockFxLayerWeights(
+            AnimatorController controller,
+            LockLayerResult lockResult,
+            string[] assLayerNames)
+        {
+#if VRC_SDK_VRCSDK3
+            var assLayerSet = new HashSet<string>(assLayerNames);
+            var nonAssLayerIndices = new List<int>();
+
+            for (int i = 0; i < controller.layers.Length; i++)
+            {
+                string layerName = controller.layers[i].name;
+                // 排除 ASS 层（包括锁定层）
+                if (assLayerSet.Contains(layerName))
+                    continue;
+
+                nonAssLayerIndices.Add(i);
+                Debug.Log($"[ASS] FX层锁定：添加非ASS层 '{layerName}' (索引 {i})");
+            }
+
+            if (nonAssLayerIndices.Count > 0)
+            {
+                // 锁定状态：将所有非ASS层权重设为0（锁定FX功能）
+                AnimatorUtils.AddMultiLayerControlBehaviour(
+                    lockResult.LockedState,
+                    nonAssLayerIndices.ToArray(),
+                    goalWeight: 0f,
+                    blendDuration: 0f);
+
+                // 解锁状态：将所有非ASS层权重设为1（恢复FX功能）
+                AnimatorUtils.AddMultiLayerControlBehaviour(
+                    lockResult.UnlockedState,
+                    nonAssLayerIndices.ToArray(),
+                    goalWeight: 1f,
+                    blendDuration: 0f);
+
+                Debug.Log($"[ASS] 已配置FX层锁定：{nonAssLayerIndices.Count} 个非ASS层");
+            }
+            else
+            {
+                Debug.LogWarning("[ASS] FX层锁定：未找到非ASS层");
+            }
+#endif
+        }
+
+        /// <summary>
         /// 创建锁定动画
         /// 始终显示遮挡 Mesh
         /// 如果启用 disableRootChildren，会隐藏：
@@ -181,15 +233,44 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         private static AnimationClip CreateLockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
             var clip = new AnimationClip { name = "ASS_Lock" };
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
 
+            // 本地锁定状态：启用 UI Canvas 和遮挡 Mesh
+            Transform uiCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
+            if (uiCanvas != null)
+            {
+                clip.SetCurve(Constants.GO_UI_CANVAS, typeof(GameObject), "m_IsActive", enableCurve);
+                Debug.Log($"[ASS] 锁定动画：启用 UI Canvas");
+            }
+            
             // 显示遮挡 Mesh（基本功能，始终执行）
             // 使用 m_IsActive 控制，因为这是 ASS 完全控制的对象
             Transform occlusionMesh = avatarRoot.transform.Find(Constants.GO_OCCLUSION_MESH);
             if (occlusionMesh != null)
             {
-                var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
                 clip.SetCurve(Constants.GO_OCCLUSION_MESH, typeof(GameObject), "m_IsActive", enableCurve);
                 Debug.Log($"[ASS] 锁定动画：显示遮挡 Mesh");
+            }
+            
+            // 启用音效对象（Local时可以接收反馈，具体是否播放由其他层控制）
+            Transform feedbackAudio = avatarRoot.transform.Find(Constants.GO_FEEDBACK_AUDIO);
+            if (feedbackAudio != null)
+            {
+                clip.SetCurve(Constants.GO_FEEDBACK_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+            }
+            
+            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_WARNING_AUDIO);
+            if (warningAudio != null)
+            {
+                clip.SetCurve(Constants.GO_WARNING_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+            }
+            
+            // 隐藏防御对象（锁定时不需要防御）
+            Transform defenseRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
+            if (defenseRoot != null)
+            {
+                clip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
             }
 
             // 可选：隐藏对象
@@ -305,20 +386,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var meshObj = new GameObject(Constants.GO_OCCLUSION_MESH);
             meshObj.transform.SetParent(avatarRoot.transform, false);
             
-            // 计算 Avatar 的边界
-            var bounds = CalculateAvatarBounds(avatarRoot);
-            
-            // 设置位置为边界中心（相对于 Avatar Root）
-            meshObj.transform.localPosition = bounds.center - avatarRoot.transform.position;
-            
-            // 创建球体 Mesh
+            // 创建正方形平面遮罩，刚好覆盖摄像机视角
+            // 大小：0.5x0.5（刚好覆盖标准FOV）
             var meshFilter = meshObj.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = CreateSphereMesh(32, 16);
+            meshFilter.sharedMesh = CreateOcclusionQuad();
             
-            // 设置缩放以覆盖整个 Avatar
-            float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
-            float scale = maxExtent * 1.2f; // 增加 20% 确保完全覆盖
-            meshObj.transform.localScale = new Vector3(scale, scale, scale);
+            // 初始位置在根部，由VRCConstraint控制
+            meshObj.transform.localPosition = Vector3.zero;
+            meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
             
             // 添加 MeshRenderer 并设置材质
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
@@ -328,13 +403,63 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             material.color = Color.white;
             meshRenderer.sharedMaterial = material;
             
+#if VRC_SDK_VRCSDK3
+            // VR模式：绑定到头部，始终挡住视角
+            var animator = avatarRoot.GetComponent<Animator>();
+            var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+            if (head != null)
+            {
+                var constraint = meshObj.AddComponent<VRCParentConstraint>();
+                var source = new VRCConstraintSource
+                {
+                    Weight = 1f,
+                    SourceTransform = head,
+                    ParentPositionOffset = new Vector3(0f, 0f, 0.18f),  // 头部前方18cm
+                    ParentRotationOffset = Vector3.zero
+                };
+                constraint.Sources.Add(source);
+                constraint.IsActive = true;
+                constraint.Locked = true;
+            }
+#endif
+            
             // 默认禁用，锁定时通过动画启用
-            // 使用 m_IsActive 控制，因为这是 ASS 完全控制的对象
             meshObj.SetActive(false);
             
-            Debug.Log($"[ASS] 创建遮挡 Mesh：中心={bounds.center}, 大小={scale}");
+            Debug.Log($"[ASS] 创建遮挡 Mesh：四边形平面，大小=0.5x0.5，绑定到头部");
             
             return meshObj;
+        }
+
+        /// <summary>
+        /// 创建正方形遮罩网格（覆盖摄像机视角）
+        /// </summary>
+        private static Mesh CreateOcclusionQuad()
+        {
+            var mesh = new Mesh { name = "OcclusionQuad" };
+            
+            // 创建正方形平面
+            mesh.vertices = new Vector3[]
+            {
+                new Vector3(-0.5f, -0.5f, 0),
+                new Vector3(0.5f, -0.5f, 0),
+                new Vector3(0.5f, 0.5f, 0),
+                new Vector3(-0.5f, 0.5f, 0)
+            };
+
+            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
+            
+            mesh.uv = new Vector2[]
+            {
+                new Vector2(0, 0),
+                new Vector2(1, 0),
+                new Vector2(1, 1),
+                new Vector2(0, 1)
+            };
+
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
         
         /// <summary>
@@ -463,8 +588,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = "ASS_Unlock" };
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
 
-            // 隐藏 UI Canvas
+            // 隐藏 UI Canvas（解锁后永久隐藏）
             Transform uiCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
             if (uiCanvas != null)
             {
@@ -483,6 +609,21 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (defenseRoot != null)
             {
                 clip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
+            }
+            
+            // 启用音效对象（解锁后恢复，我输遇手段可以听到音效）
+            Transform feedbackAudio = avatarRoot.transform.Find(Constants.GO_FEEDBACK_AUDIO);
+            if (feedbackAudio != null)
+            {
+                clip.SetCurve(Constants.GO_FEEDBACK_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                Debug.Log($"[ASS] 解锁动画：启用反馈音效");
+            }
+            
+            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_WARNING_AUDIO);
+            if (warningAudio != null)
+            {
+                clip.SetCurve(Constants.GO_WARNING_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                Debug.Log($"[ASS] 解锁动画：启用警告音效");
             }
 
             Debug.Log(I18n.T("log.lock_unlock_animation_created"));
@@ -506,176 +647,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
 
             return string.Join("/", path);
-        }
-
-        /// <summary>
-        /// 获取需要锁定的目标对象（Avatar Root 的直接子对象）
-        /// 排除 ASS 创建的对象和系统组件
-#if VRC_SDK_VRCSDK3
-        /// <summary>
-        /// 收集所有参数的默认值
-        /// </summary>
-        private static Dictionary<string, float> CollectDefaultParameters(GameObject avatarRoot)
-        {
-            var parameters = new Dictionary<string, float>();
-
-            var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null || descriptor.expressionParameters == null)
-                return parameters;
-
-            foreach (var param in descriptor.expressionParameters.parameters)
-            {
-                if (IsVRChatBuiltInParameter(param.name))
-                    continue;
-
-                // 跳过ASS自己的参数
-                if (param.name.StartsWith("ASS_"))
-                    continue;
-
-                parameters[param.name] = param.defaultValue;
-            }
-
-            return parameters;
-        }
-
-        /// <summary>
-        /// 收集所有参数的反转值
-        /// </summary>
-        private static Dictionary<string, float> CollectInvertedParameters(GameObject avatarRoot)
-        {
-            var parameters = new Dictionary<string, float>();
-
-            var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null || descriptor.expressionParameters == null)
-                return parameters;
-
-            foreach (var param in descriptor.expressionParameters.parameters)
-            {
-                if (IsVRChatBuiltInParameter(param.name))
-                    continue;
-
-                // 跳过ASS自己的参数
-                if (param.name.StartsWith("ASS_"))
-                    continue;
-
-                float invertedValue = InvertParameterValue(param.defaultValue, param.valueType);
-                parameters[param.name] = invertedValue;
-            }
-
-            Debug.Log($"[ASS] 已收集 {parameters.Count} 个参数用于反转");
-            return parameters;
-        }
-#endif
-
-        /// <summary>
-        /// 反转 Avatar 参数默认值（通过 Modular Avatar Parameters）
-        /// 注意：这个功能需要在 Avatar 上添加 ModularAvatarParameters 组件
-        /// </summary>
-        public static void InvertAvatarParameters(GameObject avatarRoot, AvatarSecuritySystemComponent config)
-        {
-            if (!config.invertParameters)
-                return;
-
-#if NDMF_AVAILABLE && MODULAR_AVATAR_AVAILABLE
-            // 查找或创建 ModularAvatarParameters 组件
-            var maParams = avatarRoot.GetComponentInChildren<nadena.dev.modular_avatar.core.ModularAvatarParameters>(true);
-
-            if (maParams == null)
-            {
-                var paramsGO = new GameObject("ASS_ParameterInverter");
-                paramsGO.transform.SetParent(avatarRoot.transform);
-                maParams = paramsGO.AddComponent<nadena.dev.modular_avatar.core.ModularAvatarParameters>();
-            }
-
-            var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null) return;
-
-            var expressionParameters = descriptor.expressionParameters;
-            if (expressionParameters == null) return;
-
-            foreach (var param in expressionParameters.parameters)
-            {
-                if (IsVRChatBuiltInParameter(param.name))
-                    continue;
-
-                var invertedParam = new nadena.dev.modular_avatar.core.ParameterConfig
-                {
-                    nameOrPrefix = param.name,
-                    syncType = ConvertToMAParameterSyncType(param.valueType),
-                    defaultValue = InvertParameterValue(param.defaultValue, param.valueType),
-                    saved = param.saved,
-                    hasExplicitDefaultValue = true
-                };
-
-                maParams.parameters.Add(invertedParam);
-            }
-
-            EditorUtility.SetDirty(maParams);
-            Debug.Log(string.Format(I18n.T("log.lock_parameters_inverted"), expressionParameters.parameters.Length));
-#else
-            Debug.LogWarning(I18n.T("log.lock_ma_missing"));
-#endif
-        }
-
-        private static bool IsVRChatBuiltInParameter(string name)
-        {
-            var builtIns = new HashSet<string>
-            {
-                "IsLocal", "Viseme", "Voice", "GestureLeft", "GestureRight",
-                "GestureLeftWeight", "GestureRightWeight", "AngularY",
-                "VelocityX", "VelocityY", "VelocityZ", "Upright", "Grounded",
-                "Seated", "AFK", "TrackingType", "VRMode", "MuteSelf", "InStation",
-                "Earmuffs", "ScaleModified", "ScaleFactor", "ScaleFactorInverse",
-                "EyeHeightAsMeters", "EyeHeightAsPercent"
-            };
-            return builtIns.Contains(name);
-        }
-
-#if NDMF_AVAILABLE && MODULAR_AVATAR_AVAILABLE
-        private static nadena.dev.modular_avatar.core.ParameterSyncType ConvertToMAParameterSyncType(
-            VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType valueType)
-        {
-            switch (valueType)
-            {
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Int:
-                    return nadena.dev.modular_avatar.core.ParameterSyncType.Int;
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Float:
-                    return nadena.dev.modular_avatar.core.ParameterSyncType.Float;
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool:
-                    return nadena.dev.modular_avatar.core.ParameterSyncType.Bool;
-                default:
-                    return nadena.dev.modular_avatar.core.ParameterSyncType.NotSynced;
-            }
-        }
-#endif
-
-        private static float InvertParameterValue(float value,
-#if NDMF_AVAILABLE
-            VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType valueType
-#else
-            int valueType
-#endif
-        )
-        {
-#if NDMF_AVAILABLE
-            switch (valueType)
-            {
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool:
-                    return value > 0.5f ? 0f : 1f;
-
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Int:
-                    int intVal = Mathf.RoundToInt(value);
-                    return intVal == 0 ? 255f : 0f;
-
-                case VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Float:
-                    return 1f - Mathf.Clamp01(value);
-
-                default:
-                    return value;
-            }
-#else
-            return 1f - Mathf.Clamp01(value);
-#endif
         }
     }
 }

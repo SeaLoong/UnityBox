@@ -53,8 +53,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 添加必要的参数
             AnimatorUtils.AddParameterIfNotExists(controller, Constants.PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
-            AnimatorUtils.AddParameterIfNotExists(controller, Constants.PARAM_PASSWORD_ERROR,
-                AnimatorControllerParameterType.Trigger);
 
             // 创建初始等待状态（也作为任意位置的起始状态）
             var waitState = layer.stateMachine.AddState("Wait_Input", new Vector3(50, 50, 0));

@@ -308,7 +308,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 audioObject = new GameObject(audioObjectName);
                 audioObject.transform.SetParent(avatarRoot.transform, false);
                 audioObject.transform.localPosition = Vector3.zero;
-                audioObject.SetActive(true); // 确保AudioSource默认启用
+                audioObject.SetActive(false);  // 默认禁用，只有正常状态中技能启用
                 
                 var audioSource = audioObject.AddComponent<AudioSource>();
                 audioSource.playOnAwake = false;
@@ -322,7 +322,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             else
             {
                 audioObject = audioTransform.gameObject;
-                audioObject.SetActive(true); // 确保AudioSource启用
+                audioObject.SetActive(false);  // 默认禁用
                 if (audioObject.GetComponent<AudioSource>() == null)
                 {
                     var audioSource = audioObject.AddComponent<AudioSource>();

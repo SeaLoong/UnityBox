@@ -356,8 +356,8 @@ namespace SeaLoongUnityBox
         {
             EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("invertParameters"),
-                new GUIContent(T("advanced.invert_params"), T("advanced.invert_params_tooltip")));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("lockFxLayers"),
+                new GUIContent(T("advanced.lock_fx_layers"), T("advanced.lock_fx_layers_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
                 new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));

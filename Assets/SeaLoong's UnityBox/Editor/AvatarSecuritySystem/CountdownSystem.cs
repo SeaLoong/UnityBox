@@ -106,10 +106,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             settings.loopTime = false;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            // 创建进度条宽度动画（从满到空）
+            // 创建进度条宽度动画（从满到空），3D条使用 localScale.x 控制长度
             string barPath = $"{GO_UI_CANVAS}/CountdownBar/Bar";
-            AnimationCurve anchorCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
-            clip.SetCurve(barPath, typeof(RectTransform), "m_AnchorMax.x", anchorCurve);
+            AnimationCurve scaleCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
+            clip.SetCurve(barPath, typeof(Transform), "m_LocalScale.x", scaleCurve);
 
             Debug.Log($"[ASS] Created countdown animation: duration={duration}s, path={barPath}");
             return clip;

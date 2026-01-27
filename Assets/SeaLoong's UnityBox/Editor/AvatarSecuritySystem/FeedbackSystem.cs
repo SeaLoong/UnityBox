@@ -4,6 +4,11 @@ using UnityEditor.Animations;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
+#if VRC_SDK_VRCSDK3
+using VRC.SDK3.Dynamics.Constraint.Components;
+using VRC.Dynamics;
+#endif
+
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
     /// <summary>
@@ -15,7 +20,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         #region HUD Canvas创建
 
         /// <summary>
-        /// 创建HUD Canvas用于显示倒计时和状态
+        /// 创建3D HUD（替代Canvas），在视角前显示倒计时条
+        /// VRCConstraint绑定到头部，保证UI始终在视野内
         /// </summary>
         public static GameObject CreateHUDCanvas(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
@@ -27,71 +33,70 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 return existingCanvas.gameObject;
             }
 
-            // 创建Canvas GameObject（始终作为avatarRoot的直接子对象）
+            // 创建根对象（直接挂在avatarRoot）
             var canvasObj = new GameObject(Constants.GO_UI_CANVAS);
             canvasObj.transform.SetParent(avatarRoot.transform, false);
-            canvasObj.SetActive(true); // 确保Canvas默认启用
+            canvasObj.SetActive(false);  // 默认禁用，只在Locked状态时启用
 
-            // 添加Canvas组件 - 使用Screen Space Camera模式
-            var canvas = canvasObj.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            // 相机会在运行时自动设置为主相机
-            
-            // 添加CanvasScaler
-            var scaler = canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
-            scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            // 添加GraphicRaycaster（UI交互需要）
-            canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+#if VRC_SDK_VRCSDK3
+            // 绑定到头部，保证UI始终在视野范围内
+            var animator = avatarRoot.GetComponent<Animator>();
+            var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+            if (head != null)
+            {
+                var constraint = canvasObj.AddComponent<VRCParentConstraint>();
+                constraint.Sources.Add(new VRCConstraintSource
+                {
+                    Weight = 1f,
+                    SourceTransform = head,
+                    ParentPositionOffset = new Vector3(0f, -0.02f, 0.15f),  // 头部下方2cm，前方15cm
+                    ParentRotationOffset = Vector3.zero
+                });
+                constraint.IsActive = true;
+                constraint.Locked = true;
+            }
+#endif
 
             Debug.Log(I18n.T("log.visual_canvas_created"));
             return canvasObj;
         }
 
         /// <summary>
-        /// 创建倒计时进度条（显示剩余时间）
-        /// 使用Image.fillAmount实现平滑过渡的进度条效果
+        /// 创建3D倒计时进度条（显示剩余时间）
+        /// VRCConstraint绑定到头部，前方15cm处显示
         /// </summary>
         public static GameObject CreateCountdownBar(GameObject canvasObj, AvatarSecuritySystemComponent config)
         {
-            // 创建容器
+            // 创建容器（挂在HUD canvas下）
             var containerObj = new GameObject("CountdownBar");
             containerObj.transform.SetParent(canvasObj.transform, false);
+            
+            // 容器的位置（相对于头部，由canvasObj的VRCParentConstraint已处理）
+            containerObj.transform.localPosition = Vector3.zero;
+            containerObj.transform.localRotation = Quaternion.identity;
+            // 尺寸：15cm宽，3cm高，3cm厚（3D条）
+            containerObj.transform.localScale = new Vector3(0.15f, 0.03f, 0.03f);
             containerObj.SetActive(true);
 
-            var containerRect = containerObj.AddComponent<RectTransform>();
-            containerRect.anchorMin = new Vector2(0.5f, 0.05f); // 屏幕下方
-            containerRect.anchorMax = new Vector2(0.5f, 0.05f);
-            containerRect.pivot = new Vector2(0.5f, 0.5f);
-            containerRect.anchoredPosition = Vector2.zero;
-            containerRect.sizeDelta = new Vector2(600, 40);
-
-            // 创建背景（黑色半透明）
-            var bgObj = new GameObject("Background");
+            // 背景（白色）
+            var bgObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            bgObj.name = "Background";
             bgObj.transform.SetParent(containerObj.transform, false);
-            var bgImage = bgObj.AddComponent<UnityEngine.UI.Image>();
-            bgImage.color = new Color(0f, 0f, 0f, 0.5f);
-            
-            var bgRect = bgObj.GetComponent<RectTransform>();
-            bgRect.anchorMin = Vector2.zero;
-            bgRect.anchorMax = Vector2.one;
-            bgRect.sizeDelta = Vector2.zero;
-            bgRect.anchoredPosition = Vector2.zero;
+            Object.DestroyImmediate(bgObj.GetComponent<Collider>());
+            var bgRenderer = bgObj.GetComponent<MeshRenderer>();
+            bgRenderer.sharedMaterial = new Material(Shader.Find("Unlit/Color")) { color = new Color(1f, 1f, 1f, 1f) };
+            bgObj.transform.localPosition = new Vector3(0f, 0f, 0.001f); // 背景在后
+            bgObj.transform.localScale = new Vector3(1f, 1f, 1f);
 
-            // 创建进度条（浅红色）
-            var barObj = new GameObject("Bar");
+            // 前景条（红色，通过localScale.x 控制长度）
+            var barObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            barObj.name = "Bar";
             barObj.transform.SetParent(containerObj.transform, false);
-            var barImage = barObj.AddComponent<UnityEngine.UI.Image>();
-            barImage.color = new Color(1f, 0.3f, 0.3f, 0.9f); // 浅红色
-
-            var barRect = barObj.GetComponent<RectTransform>();
-            // 使用anchor来控制宽度：左边固定，右边从0到1变化
-            barRect.anchorMin = new Vector2(0f, 0f);
-            barRect.anchorMax = new Vector2(1f, 1f); // 初始为满（右边在最右侧）
-            barRect.sizeDelta = new Vector2(-4, -4); // 留出边框
-            barRect.anchoredPosition = Vector2.zero;
+            Object.DestroyImmediate(barObj.GetComponent<Collider>());
+            var barRenderer = barObj.GetComponent<MeshRenderer>();
+            barRenderer.sharedMaterial = new Material(Shader.Find("Unlit/Color")) { color = new Color(1f, 0f, 0f, 1f) };
+            barObj.transform.localPosition = new Vector3(0f, 0f, 0f); // 进度条在前
+            barObj.transform.localScale = new Vector3(1f, 0.1f, 1f); // 更细
 
             Debug.Log(I18n.T("log.visual_countdown_created"));
             return containerObj;
