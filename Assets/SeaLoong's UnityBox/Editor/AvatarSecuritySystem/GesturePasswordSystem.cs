@@ -286,8 +286,5 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             return clip;
         }
-
-
-
     }
 }

@@ -362,7 +362,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Defense Configuration" },
                     { SystemLanguage.ChineseSimplified, "防御配置" },
                     { SystemLanguage.Japanese, "防御設定" }
-                },                ["defense.enhancement"] = new Dictionary<SystemLanguage, string>
+                },
+                ["defense.enhancement"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Defense Enhancement" },
                     { SystemLanguage.ChineseSimplified, "防御增强" },

@@ -115,8 +115,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             return clip;
         }
 
-
-
         /// <summary>
         /// 创建独立的警告音效层（在警告阶段循环播放音效）
         /// </summary>
