@@ -84,20 +84,52 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const int CONSTRAINT_CHAIN_MAX_DEPTH = 100;
 
         /// <summary>
+        /// Constraint 链的最大数量
+        /// 多条链可以叠加CPU消耗
+        /// </summary>
+        public const int CONSTRAINT_CHAIN_MAX_COUNT = 100;
+
+        /// <summary>
+        /// PhysBone 链的最大数量
+        /// 多条链可以叠加CPU消耗
+        /// </summary>
+        public const int PHYSBONE_CHAIN_MAX_COUNT = 100;
+
+        /// <summary>
+        /// Contact 组件的最大数量
+        /// </summary>
+        public const int CONTACT_COMPONENT_MAX_COUNT = 200;
+
+        /// <summary>
+        /// 粒子系统最大数量
+        /// </summary>
+        public const int PARTICLE_SYSTEM_MAX_COUNT = 500;
+
+        /// <summary>
+        /// 光源最大数量
+        /// </summary>
+        public const int LIGHT_MAX_COUNT = 500;
+
+        /// <summary>
+        /// 材质球最大数量
+        /// </summary>
+        public const int MATERIAL_MAX_COUNT = 5000;
+
+        /// <summary>
         /// Overdraw 层数上限（无实际限制，仅编辑器优化）
         /// </summary>
-        public const int OVERDRAW_MAX_LAYERS = 10000;
+        public const int OVERDRAW_MAX_LAYERS = 100000; // 10万层
 
         /// <summary>
         /// 高多边形Mesh顶点总数上限（无硬限制，可分散到多个Mesh中）
         /// 可分散到多个Mesh中突破单Mesh65k顶点限制
         /// </summary>
-        public const int HIGHPOLY_MESH_MAX_VERTICES = 100000000; // 1亿顶点
+        public const int HIGHPOLY_MESH_MAX_VERTICES = 1000000000; // 10亿顶点
 
         /// <summary>
         /// Shader 循环次数上限（无硬限制）
         /// GPU会因计算而过载，但VRChat不会阻止
         /// </summary>
-        public const int SHADER_LOOP_MAX_COUNT = 1000000; // 100万次循环
+        public const int SHADER_LOOP_MAX_COUNT = 100000000; // 1亿次循环
     }
 }

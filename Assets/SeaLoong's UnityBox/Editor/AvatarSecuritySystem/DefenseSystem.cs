@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
+using System.IO;
 using SeaLoongUnityBox;
 using System.Linq;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
@@ -28,6 +29,32 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// </summary>
     public static class DefenseSystem
     {
+        // 缓存共享的 QuadMesh，避免重复创建
+        private static Mesh _sharedQuadMesh;
+        private static Mesh _sharedQuadMeshLarge;
+
+        /// <summary>
+        /// 获取共享的 QuadMesh（自动缓存）
+        /// </summary>
+        private static Mesh GetSharedQuadMesh(float size)
+        {
+            if (size > 1f)
+            {
+                if (_sharedQuadMeshLarge == null)
+                {
+                    _sharedQuadMeshLarge = CreateQuadMesh(size);
+                }
+                return _sharedQuadMeshLarge;
+            }
+            else
+            {
+                if (_sharedQuadMesh == null)
+                {
+                    _sharedQuadMesh = CreateQuadMesh(size);
+                }
+                return _sharedQuadMesh;
+            }
+        }
 
         /// <summary>
         /// 创建防御层
@@ -39,6 +66,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AvatarSecuritySystemComponent config,
             bool isDebugMode = false)
         {
+            // 防御等级为0时，跳过防御层创建
+            if (config.defenseLevel <= 0)
+            {
+                Debug.Log("[ASS] 防御等级为0，跳过防御层创建");
+                return null;
+            }
+             
+            float levelMultiplier = Mathf.Clamp01((config.defenseLevel - 1) / 3f);
+
             var layer = AnimatorUtils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
@@ -49,19 +85,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // 状态：Active（防御激活）
             var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
+            activeState.motion = AnimatorUtils.SharedEmptyClip;
             
-            // 创建防御组件并生成动画
-            var defenseRoot = CreateDefenseComponents(avatarRoot, config, isDebugMode);
-            var activateClip = CreateDefenseActivationClip(avatarRoot, defenseRoot, config, true, isDebugMode);
-            var deactivateClip = CreateDefenseActivationClip(avatarRoot, defenseRoot, config, false, isDebugMode);
-            
-            AnimatorUtils.AddSubAsset(controller, activateClip);
-            AnimatorUtils.AddSubAsset(controller, deactivateClip);
-            
-            activeState.motion = activateClip;
-            inactiveState.motion = deactivateClip;
-
-
             // 转换条件：IsLocal && TimeUp
             var toActive = AnimatorUtils.CreateTransition(inactiveState, activeState);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
@@ -70,8 +95,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             AnimatorUtils.AddSubAsset(controller, layer.stateMachine);
 
-            string modeText = isDebugMode ? "调试模式（简化）" : "完整模式";
-            Debug.Log($"[ASS] 防御层已创建 ({modeText}): 无混淆状态");
+            try
+            {
+                CreateDefenseComponents(avatarRoot, config, isDebugMode, levelMultiplier);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ASS] CreateDefenseComponents调用失败: {e.Message}\n{e.StackTrace}");
+                throw;
+            }
+
             return layer;
         }
 
@@ -81,13 +114,19 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 创建防御组件根对象及所有子组件
         /// 自动处理参数到VRChat限制，确保生成的Avatar仍可上传
         /// </summary>
-        private static GameObject CreateDefenseComponents(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode)
+        /// <param name="levelMultiplier">防御等级倍率 (0-1)，用于控制整体强度</param>
+        private static GameObject CreateDefenseComponents(
+            GameObject avatarRoot,
+            AvatarSecuritySystemComponent config,
+            bool isDebugMode,
+            float levelMultiplier = 1f)
         {
             // 查找或创建根对象
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
             {
-                Object.DestroyImmediate(existingRoot.gameObject);
+                // 使用Destroy而不是DestroyImmediate，避免触发Editor刷新
+                Object.Destroy(existingRoot.gameObject);
             }
 
             var root = new GameObject(Constants.GO_DEFENSE_ROOT);
@@ -99,27 +138,119 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 使用 m_IsActive 控制可以完全禁用对象，避免 PhysBone/Constraint 等组件消耗性能
             root.SetActive(false);
 
-            // 根据模式调整参数，并确保不超过VRChat限制
-            int constraintDepth = isDebugMode ? 5 : ValidateConstraintDepth(config.constraintChainDepth);
-            int constraintChainCount = isDebugMode ? 1 : Mathf.Max(1, config.constraintChainCount);
-            int physBoneLength = isDebugMode ? 3 : ValidatePhysBoneLength(config.physBoneChainLength);
-            int physBoneChainCount = isDebugMode ? 1 : Mathf.Max(1, config.physBoneChainCount);
+            // 根据防御等级和模式调整参数
+            int constraintDepth, constraintChainCount;
+            int physBoneLength, physBoneChainCount;
+            int physBoneColliders;
+            int contactCount;
+            int shaderLoops;
+            int overdrawLayers;
+            int polyVertices;
+            int particleCount, particleSystemCount;
+            int lightCount;
+            int materialCount;
+
+            if (isDebugMode)
+            {
+                // 调试模式使用最小配置
+                constraintDepth = 5;
+                constraintChainCount = 1;
+                physBoneLength = 3;
+                physBoneChainCount = 1;
+                physBoneColliders = 2;
+                contactCount = 4;
+                shaderLoops = 0;
+                overdrawLayers = 3;
+                polyVertices = 1000;
+                particleCount = 0;
+                particleSystemCount = 0;
+                lightCount = 0;
+                materialCount = 0;
+            }
+            else if (config.defenseLevel == 1)
+            {
+                // 防御等级1：极轻量级配置，避免Unity崩溃
+                // 注意：等级1只启用基础CPU防御，不创建GPU相关组件
+                constraintDepth = 10;
+                constraintChainCount = 1;
+                physBoneLength = 5;
+                physBoneChainCount = 1;
+                physBoneColliders = 5;
+                contactCount = 10;
+                // 等级1不启用Shader相关功能，将这些值设为0
+                shaderLoops = 0;
+                overdrawLayers = 10;
+                polyVertices = 5000;
+                particleCount = 1000;
+                particleSystemCount = 1;
+                lightCount = 1;
+                materialCount = 0;  // 等级1不创建材质，避免不必要的GPU资源分配
+                Debug.Log("[ASS] 防御等级1：使用极轻量级配置（仅CPU防御，无GPU组件）");
+            }
+            else if (config.defenseLevel == 2)
+            {
+                // 防御等级2：轻量级配置
+                constraintDepth = ValidateConstraintDepth(Mathf.RoundToInt(config.constraintChainDepth * 0.25f));
+                constraintChainCount = Mathf.Max(1, Mathf.RoundToInt(config.constraintChainCount * 0.25f));
+                physBoneLength = ValidatePhysBoneLength(Mathf.RoundToInt(config.physBoneChainLength * 0.25f));
+                physBoneChainCount = Mathf.Max(1, Mathf.RoundToInt(config.physBoneChainCount * 0.25f));
+                int existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+                physBoneColliders = ValidatePhysBoneColliders(
+                    Mathf.RoundToInt(config.physBoneColliderCount * 0.25f),
+                    physBoneLength,
+                    existingColliders);
+                contactCount = Mathf.Min(Mathf.RoundToInt(config.contactComponentCount * 0.25f), Constants.CONTACT_MAX_COUNT);
+                shaderLoops = ValidateShaderLoops(Mathf.RoundToInt(config.shaderLoopCount * 0.01f));
+                overdrawLayers = ValidateOverdrawLayers(Mathf.RoundToInt(config.overdrawLayerCount * 0.01f));
+                polyVertices = ValidateHighPolyVertices(Mathf.RoundToInt(config.highPolyVertexCount * 0.1f));
+                particleCount = Mathf.RoundToInt(config.particleCount * 0.01f);
+                particleSystemCount = Mathf.Max(1, Mathf.RoundToInt(config.particleSystemCount * 0.1f));
+                lightCount = Mathf.RoundToInt(config.lightCount * 0.1f);
+                materialCount = Mathf.Max(1, Mathf.RoundToInt(config.materialCount * 0.1f));
+                Debug.Log("[ASS] 防御等级2：使用轻量级配置（25%强度）");
+            }
+            else
+            {
+                // 防御等级3-4：根据倍率调整配置
+                float multiplier = levelMultiplier;
+                constraintDepth = ValidateConstraintDepth(Mathf.RoundToInt(config.constraintChainDepth * multiplier));
+                constraintChainCount = Mathf.Max(1, Mathf.RoundToInt(config.constraintChainCount * multiplier));
+                physBoneLength = ValidatePhysBoneLength(Mathf.RoundToInt(config.physBoneChainLength * multiplier));
+                physBoneChainCount = Mathf.Max(1, Mathf.RoundToInt(config.physBoneChainCount * multiplier));
+                int existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+                physBoneColliders = ValidatePhysBoneColliders(
+                    Mathf.RoundToInt(config.physBoneColliderCount * multiplier),
+                    physBoneLength,
+                    existingColliders);
+                contactCount = Mathf.Min(Mathf.RoundToInt(config.contactComponentCount * multiplier), Constants.CONTACT_MAX_COUNT);
+                shaderLoops = ValidateShaderLoops(Mathf.RoundToInt(config.shaderLoopCount * multiplier));
+                overdrawLayers = ValidateOverdrawLayers(Mathf.RoundToInt(config.overdrawLayerCount * multiplier));
+                polyVertices = ValidateHighPolyVertices(Mathf.RoundToInt(config.highPolyVertexCount * multiplier));
+                particleCount = Mathf.RoundToInt(config.particleCount * multiplier);
+                particleSystemCount = Mathf.Max(1, Mathf.RoundToInt(config.particleSystemCount * multiplier));
+                lightCount = Mathf.RoundToInt(config.lightCount * multiplier);
+                materialCount = Mathf.Max(1, Mathf.RoundToInt(config.materialCount * multiplier));
+                Debug.Log($"[ASS] 防御等级{config.defenseLevel}：使用完整配置（{multiplier:P0}强度）");
+            }
+
 #if VRC_SDK_VRCSDK3
-            int existingPhysBoneColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
-            int physBoneColliders = isDebugMode
-                ? 2
-                : ValidatePhysBoneColliders(config.physBoneColliderCount, physBoneLength, existingPhysBoneColliders);
+            // 检查现有的PhysBone数量，确保总数量不超过256
+            int existingPhysBones = 0;
+            try
+            {
+                existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
+            }
+            catch
+            {
+                existingPhysBones = 0;
+            }
+            int maxDefensePhysBones = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
+            
+            // 限制防御系统创建的PhysBone数量（每条链1个PhysBone）
+            int defensePhysBoneCount = Mathf.Min(physBoneChainCount, maxDefensePhysBones);
 #else
-            int physBoneColliders = isDebugMode ? 2 : config.physBoneColliderCount;
+            int defensePhysBoneCount = physBoneChainCount;
 #endif
-            int contactCount = isDebugMode ? 4 : ValidateContactCount(config.contactComponentCount);
-            int shaderLoops = isDebugMode ? 0 : ValidateShaderLoops(config.shaderLoopCount);
-            int overdrawLayers = isDebugMode ? 3 : config.overdrawLayerCount;
-            int polyVertices = isDebugMode ? 1000 : ValidateHighPolyVertices(config.highPolyVertexCount);
-            int particleCount = isDebugMode ? 0 : config.particleCount;
-            int particleSystemCount = isDebugMode ? 0 : Mathf.Max(1, config.particleSystemCount);
-            int lightCount = isDebugMode ? 0 : config.lightCount;
-            int materialCount = isDebugMode ? 0 : Mathf.Max(1, config.materialCount);
 
             // 创建CPU消耗组件 - Constraint链
             if (config.enableConstraintChain)
@@ -129,53 +260,91 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 {
                     CreateConstraintChain(root, constraintDepth, i);
                 }
+                 
+                // 创建扩展Constraint链（使用ScaleConstraint增加CPU消耗）
+                // 仅在等级3+且非调试模式下创建
+                if (!isDebugMode && config.defenseLevel >= 3 && constraintChainCount > 0)
+                {
+                    CreateExtendedConstraintChains(root, Mathf.Min(constraintChainCount, 5), constraintDepth);
+                }
             }
 
 #if VRC_SDK_VRCSDK3
             // 创建CPU消耗组件 - PhysBone链
-            if (config.enablePhysBone && physBoneColliders > 0)
+            if (config.enablePhysBone && physBoneColliders > 0 && defensePhysBoneCount > 0)
             {
                 // 创建多条PhysBone链以增加CPU消耗
-                for (int i = 0; i < physBoneChainCount; i++)
+                for (int i = 0; i < defensePhysBoneCount; i++)
                 {
                     CreatePhysBoneChains(root, physBoneLength, physBoneColliders, i);
+                }
+                 
+                // 创建扩展PhysBone链（更复杂的物理配置，仅在还有余额时）
+                // 仅在等级3+且非调试模式下创建
+                int extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 3);
+                if (!isDebugMode && config.defenseLevel >= 3 && extendedPhysBoneCount > 0 && defensePhysBoneCount < physBoneChainCount)
+                {
+                    CreateExtendedPhysBoneChains(root, extendedPhysBoneCount, physBoneLength, physBoneColliders);
                 }
             }
 
             if (config.enableContactSystem)
             {
                 CreateContactSystem(root, contactCount);
+                 
+                // 创建扩展Contact系统（使用更多标签）
+                // 仅在等级3+且非调试模式下创建
+                int remainingContactBudget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - contactCount);
+                int extendedContactCount = Mathf.Min(remainingContactBudget / 2, 50); // 最多50个额外Contact
+                if (!isDebugMode && config.defenseLevel >= 3 && extendedContactCount > 0)
+                {
+                    CreateExtendedContactSystem(root, extendedContactCount);
+                }
             }
 #endif
 
-            // 创建GPU消耗组件
+            // 创建Overdraw透明层堆叠
             if (config.enableOverdraw)
             {
                 // 创建多个Overdraw层堆叠以增加GPU消耗
-                for (int i = 0; i < 2; i++) // 创建2组，每组50+层
+                // 等级1只创建1组，等级2+创建2组
+                int overdrawGroups = config.defenseLevel == 1 ? 1 : 2;
+                for (int i = 0; i < overdrawGroups; i++)
                 {
                     CreateOverdrawLayers(root, overdrawLayers, i);
                 }
-            }
 
-            if (config.enableHighPolyMesh)
-            {
-                // 创建多个高多边形网格
-                for (int i = 0; i < 3; i++)
+                // 创建扩展Overdraw层（更多组）
+                // 仅在等级3+且非调试模式下创建
+                if (!isDebugMode && config.defenseLevel >= 3 && overdrawLayers > 100)
                 {
-                    CreateHighPolyMesh(root, polyVertices / 3, i);
+                    CreateExtendedOverdrawLayers(root, overdrawLayers / 2, 3);
                 }
             }
 
+            // 创建复杂Shader网格
             if (config.enableHeavyShader && shaderLoops > 0)
             {
                 // 创建多个复杂Shader网格
-                for (int i = 0; i < 2; i++)
+                // 等级1只创建1个，等级2+创建2个
+                int shaderMeshCount = config.defenseLevel == 1 ? 1 : 2;
+                for (int i = 0; i < shaderMeshCount; i++)
                 {
-                    CreateHeavyShaderMesh(root, shaderLoops, i);
+                    CreateHeavyShaderMesh(root, avatarRoot, shaderLoops, i);
                 }
             }
-
+            // 创建高多边形网格
+            if (config.enableHighPolyMesh)
+            {
+                // 创建多个高多边形网格
+                // 等级1只创建1个，等级2+创建3个
+                int meshCount = config.defenseLevel == 1 ? 1 : 3;
+                for (int i = 0; i < meshCount; i++)
+                {
+                    CreateHighPolyMesh(root, polyVertices / meshCount, i);
+                }
+            }
+             
             // 创建粒子系统防御
             if (config.enableParticleDefense && particleCount > 0)
             {
@@ -185,7 +354,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 创建高消耗Shader材质球
             if (materialCount > 0)
             {
-                CreateExpensiveMaterials(root, materialCount);
+                CreateExpensiveMaterials(root, avatarRoot, materialCount, config.shaderLoopCount);
             }
 
             // 创建光源防御
@@ -203,57 +372,98 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         private static void CreateConstraintChain(GameObject root, int depth, int chainIndex = 0)
         {
 #if VRC_SDK_VRCSDK3
-            var chainRoot = new GameObject($"ConstraintChain_{chainIndex}");
-            chainRoot.transform.SetParent(root.transform);
-            chainRoot.transform.localPosition = new Vector3(chainIndex * 0.5f, 0, 0);
-
-            GameObject previous = chainRoot;
-            for (int i = 0; i < depth; i++)
+            try
             {
-                var obj = new GameObject($"Constraint_{i}");
-                obj.transform.SetParent(chainRoot.transform);
-                obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
+                var chainRoot = new GameObject($"ConstraintChain_{chainIndex}");
+                chainRoot.transform.SetParent(root.transform);
+                chainRoot.transform.localPosition = new Vector3(chainIndex * 0.5f, 0, 0);
 
-                // VRCParentConstraint
-                var parentC = obj.AddComponent<VRCParentConstraint>();
-                parentC.IsActive = true;
-                parentC.Locked = true;
-
-                if (i > 0)
+                GameObject previous = chainRoot;
+                for (int i = 0; i < depth; i++)
                 {
-                    parentC.Sources.Add(new VRCConstraintSource
-                    {
-                        Weight = 1f,
-                        SourceTransform = previous.transform,
-                        ParentPositionOffset = Vector3.zero,
-                        ParentRotationOffset = Vector3.zero
-                    });
+                    var obj = new GameObject($"Constraint_{i}");
+                    obj.transform.SetParent(chainRoot.transform);
+                    obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
 
-                    // 额外添加 VRCPositionConstraint 增加CPU复杂度
-                    var posC = obj.AddComponent<VRCPositionConstraint>();
-                    posC.IsActive = true;
-                    posC.Locked = true;
-                    posC.Sources.Add(new VRCConstraintSource
-                    {
-                        Weight = 1f,
-                        SourceTransform = previous.transform
-                    });
+                    // VRCParentConstraint
+                    var parentC = obj.AddComponent<VRCParentConstraint>();
 
-                    // 额外添加 VRCRotationConstraint 增加CPU复杂度
-                    var rotC = obj.AddComponent<VRCRotationConstraint>();
-                    rotC.IsActive = true;
-                    rotC.Locked = true;
-                    rotC.Sources.Add(new VRCConstraintSource
+                    if (i > 0)
                     {
-                        Weight = 1f,
-                        SourceTransform = previous.transform
-                    });
+                        parentC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform,
+                            ParentPositionOffset = Vector3.zero,
+                            ParentRotationOffset = Vector3.zero
+                        });
+
+                        // 额外添加 VRCPositionConstraint 增加CPU复杂度
+                        var posC = obj.AddComponent<VRCPositionConstraint>();
+                        posC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform
+                        });
+
+                        // 额外添加 VRCRotationConstraint 增加CPU复杂度
+                        var rotC = obj.AddComponent<VRCRotationConstraint>();
+                        rotC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform
+                        });
+                    }
+                    
+                    // 使用SerializedObject设置属性，避免触发Editor GUI事件
+                    // 添加try-catch防止SerializedObject操作失败
+                    try
+                    {
+                        var parentCSer = new SerializedObject(parentC);
+                        var isActiveProp = parentCSer.FindProperty("IsActive");
+                        var lockedProp = parentCSer.FindProperty("Locked");
+                        if (isActiveProp != null) isActiveProp.boolValue = true;
+                        if (lockedProp != null) lockedProp.boolValue = true;
+                        parentCSer.ApplyModifiedPropertiesWithoutUndo();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[ASS] 设置Constraint属性时出错: {ex.Message}");
+                    }
+                    
+                    if (i > 0)
+                    {
+                        try
+                        {
+                            var posCSer = new SerializedObject(obj.GetComponent<VRCPositionConstraint>());
+                            var posIsActive = posCSer.FindProperty("IsActive");
+                            var posLocked = posCSer.FindProperty("Locked");
+                            if (posIsActive != null) posIsActive.boolValue = true;
+                            if (posLocked != null) posLocked.boolValue = true;
+                            posCSer.ApplyModifiedPropertiesWithoutUndo();
+                            
+                            var rotCSer = new SerializedObject(obj.GetComponent<VRCRotationConstraint>());
+                            var rotIsActive = rotCSer.FindProperty("IsActive");
+                            var rotLocked = rotCSer.FindProperty("Locked");
+                            if (rotIsActive != null) rotIsActive.boolValue = true;
+                            if (rotLocked != null) rotLocked.boolValue = true;
+                            rotCSer.ApplyModifiedPropertiesWithoutUndo();
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogWarning($"[ASS] 设置Position/Rotation Constraint属性时出错: {ex.Message}");
+                        }
+                    }
+
+                    previous = obj;
                 }
 
-                previous = obj;
+                Debug.Log($"[ASS] 创建VRC Constraint链 {chainIndex}: 深度={depth}, 每节点包含 Parent/Position/Rotation 三种约束");
             }
-
-            Debug.Log($"[ASS] 创建VRC Constraint链 {chainIndex}: 深度={depth}, 每节点包含 Parent/Position/Rotation 三种约束");
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[ASS] 创建Constraint链时出错: {ex.Message}\n{ex.StackTrace}");
+            }
 #else
             Debug.LogWarning("[ASS] VRC SDK 不可用，跳过创建 Constraint 链");
 #endif
@@ -421,7 +631,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 layerObj.transform.localPosition = new Vector3(0, 0, i * 0.001f);
 
                 var meshFilter = layerObj.AddComponent<MeshFilter>();
-                meshFilter.mesh = CreateQuadMesh(2f);
+                meshFilter.mesh = GetSharedQuadMesh(2f);
 
                 var meshRenderer = layerObj.AddComponent<MeshRenderer>();
                 meshRenderer.material = material;
@@ -455,22 +665,32 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建带复杂Shader的Mesh
+        /// 创建带复杂Shader的Mesh（调用合并后的方法）
         /// </summary>
-        private static void CreateHeavyShaderMesh(GameObject root, int loopCount, int shaderIndex = 0)
+        private static void CreateHeavyShaderMesh(GameObject root, GameObject avatarRoot, int loopCount, int shaderIndex = 0)
         {
             var meshObj = new GameObject($"HeavyShaderMesh_{shaderIndex}");
             meshObj.transform.SetParent(root.transform);
             meshObj.transform.localPosition = new Vector3(shaderIndex * 2f, 0, 0);
 
             var meshFilter = meshObj.AddComponent<MeshFilter>();
-            meshFilter.mesh = CreateQuadMesh(1f);
+            meshFilter.mesh = GetSharedQuadMesh(1f);
 
-            var material = CreateHeavyShaderMaterial(loopCount);
+            // 在构建时生成Shader并创建材质（使用合并后的方法）
+            var material = CreateDefenseShaderMaterial(avatarRoot, loopCount);
+            
+            // 防御性检查：确保材质创建成功
+            if (material == null)
+            {
+                Debug.LogWarning($"[ASS] 无法创建防御Shader材质，跳过创建HeavyShaderMesh_{shaderIndex}");
+                Object.DestroyImmediate(meshObj);
+                return;
+            }
+            
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
             meshRenderer.material = material;
 
-            Debug.Log($"[ASS] 创建复杂Shader {shaderIndex}: 循环={loopCount}");
+            Debug.Log($"[ASS] 创建防御Shader {shaderIndex}: 循环={loopCount}");
         }
 
         /// <summary>
@@ -538,9 +758,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 if (renderer != null)
                 {
                     renderer.renderMode = ParticleSystemRenderMode.Billboard;
-                    var mat = new Material(Shader.Find("Particles/Standard Unlit"));
-                    mat.color = new Color(Random.Range(0.3f, 1f), Random.Range(0.3f, 1f), Random.Range(0.3f, 1f), 0.8f);
-                    renderer.material = mat;
+                    var particleShader = Shader.Find("Particles/Standard Unlit");
+                    if (particleShader == null)
+                    {
+                        particleShader = Shader.Find("Standard");
+                    }
+                    if (particleShader != null)
+                    {
+                        var mat = new Material(particleShader);
+                        mat.color = new Color(Random.Range(0.3f, 1f), Random.Range(0.3f, 1f), Random.Range(0.3f, 1f), 0.8f);
+                        renderer.material = mat;
+                    }
                     renderer.maxParticleSize = 2f;
                 }
             }
@@ -549,78 +777,591 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建高消耗的Shader材质球及网格
+        /// 创建额外CPU密集Constraint链（扩展功能）
+        /// 每条链使用更多的约束类型增加CPU消耗
         /// </summary>
-        private static void CreateExpensiveMaterials(GameObject root, int materialCount)
+        private static void CreateExtendedConstraintChains(GameObject root, int chainCount, int depth)
         {
-            var materialRoot = new GameObject("ExpensiveMaterials");
-            materialRoot.transform.SetParent(root.transform);
+            for (int c = 0; c < chainCount; c++)
+            {
+                var chainRoot = new GameObject($"ExtendedConstraintChain_{c}");
+                chainRoot.transform.SetParent(root.transform);
+                chainRoot.transform.localPosition = new Vector3(c * 0.5f, 0, 0);
 
-            // 创建高消耗Shader
-            var shader = CreateExpensiveShader();
+                GameObject previous = chainRoot;
+                for (int i = 0; i < depth; i++)
+                {
+                    var obj = new GameObject($"Constraint_{i}");
+                    obj.transform.SetParent(chainRoot.transform);
+                    obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
 
+                    // VRCParentConstraint
+                    var parentC = obj.AddComponent<VRCParentConstraint>();
+
+                    if (i > 0)
+                    {
+                        parentC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform,
+                            ParentPositionOffset = Vector3.zero,
+                            ParentRotationOffset = Vector3.zero
+                        });
+
+                        // VRCPositionConstraint
+                        var posC = obj.AddComponent<VRCPositionConstraint>();
+                        posC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform
+                        });
+
+                        // VRCRotationConstraint
+                        var rotC = obj.AddComponent<VRCRotationConstraint>();
+                        rotC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform
+                        });
+
+                        // ScaleConstraint（额外增加CPU消耗）
+                        var scaleC = obj.AddComponent<VRCScaleConstraint>();
+                        scaleC.Sources.Add(new VRCConstraintSource
+                        {
+                            Weight = 1f,
+                            SourceTransform = previous.transform
+                        });
+                    }
+                    
+                    // 使用SerializedObject设置属性，避免触发Editor GUI事件
+                    var parentCSer = new SerializedObject(parentC);
+                    parentCSer.FindProperty("IsActive").boolValue = true;
+                    parentCSer.FindProperty("Locked").boolValue = true;
+                    parentCSer.ApplyModifiedPropertiesWithoutUndo();
+                    
+                    if (i > 0)
+                    {
+                        var posCSer = new SerializedObject(obj.GetComponent<VRCPositionConstraint>());
+                        posCSer.FindProperty("IsActive").boolValue = true;
+                        posCSer.FindProperty("Locked").boolValue = true;
+                        posCSer.ApplyModifiedPropertiesWithoutUndo();
+                        
+                        var rotCSer = new SerializedObject(obj.GetComponent<VRCRotationConstraint>());
+                        rotCSer.FindProperty("IsActive").boolValue = true;
+                        rotCSer.FindProperty("Locked").boolValue = true;
+                        rotCSer.ApplyModifiedPropertiesWithoutUndo();
+                        
+                        var scaleCSer = new SerializedObject(obj.GetComponent<VRCScaleConstraint>());
+                        scaleCSer.FindProperty("IsActive").boolValue = true;
+                        scaleCSer.FindProperty("Locked").boolValue = true;
+                        scaleCSer.ApplyModifiedPropertiesWithoutUndo();
+                    }
+
+                    previous = obj;
+                }
+
+                Debug.Log($"[ASS] 创建扩展Constraint链 {c}: 深度={depth}, 4种约束类型");
+            }
+        }
+
+        /// <summary>
+        /// 创建PhysBone长链及Collider（扩展功能）
+        /// 使用更复杂的物理配置增加CPU消耗
+        /// </summary>
+        private static void CreateExtendedPhysBoneChains(GameObject root, int chainCount, int chainLength, int colliderCount)
+        {
+            for (int c = 0; c < chainCount; c++)
+            {
+                var physBoneRoot = new GameObject($"ExtendedPhysBoneChains_{c}");
+                physBoneRoot.transform.SetParent(root.transform);
+                physBoneRoot.transform.localPosition = new Vector3(c * 0.5f, 1f, 0);
+
+                // 创建骨骼链
+                var chainRoot = new GameObject($"BoneChain_{c}");
+                chainRoot.transform.SetParent(physBoneRoot.transform);
+                chainRoot.transform.localPosition = Vector3.zero;
+
+                Transform previous = chainRoot.transform;
+                for (int i = 0; i < chainLength; i++)
+                {
+                    var bone = new GameObject($"Bone_{i}");
+                    bone.transform.SetParent(previous);
+                    bone.transform.localPosition = new Vector3(0, 0.1f, 0);
+                    previous = bone.transform;
+                }
+
+                // 添加PhysBone组件（使用Advanced模式增加CPU消耗）
+                var physBone = chainRoot.AddComponent<VRCPhysBone>();
+                physBone.integrationType = VRCPhysBone.IntegrationType.Advanced;
+                physBone.pull = 0.8f;
+                physBone.pullCurve = AnimationCurve.EaseInOut(0, 0.5f, 1, 1f);
+                physBone.spring = 0.8f;
+                physBone.springCurve = AnimationCurve.EaseInOut(0, 0.3f, 1, 0.9f);
+                physBone.stiffness = 0.5f;
+                physBone.stiffnessCurve = AnimationCurve.Linear(0, 0.2f, 1, 0.7f);
+                physBone.gravity = 0.5f;
+                physBone.gravityCurve = AnimationCurve.Linear(0, 0.3f, 1, 0.8f);
+                physBone.gravityFalloff = 0.4f;
+                physBone.gravityFalloffCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+                physBone.immobile = 0.3f;
+                physBone.immobileType = VRCPhysBone.ImmobileType.AllMotion;
+                physBone.immobileCurve = AnimationCurve.Linear(0, 0.1f, 1, 0.5f);
+                
+                // 限制
+                physBone.limitType = VRCPhysBone.LimitType.Angle;
+                physBone.maxAngleX = 45f;
+                physBone.maxAngleZ = 45f;
+                physBone.limitRotation = new Vector3(15, 30, 15);
+                
+                // 拉伸
+                physBone.maxStretch = 0.5f;
+                
+                // 抓取相关
+                physBone.allowGrabbing = VRCPhysBoneBase.AdvancedBool.True;
+                physBone.allowPosing = VRCPhysBoneBase.AdvancedBool.True;
+                physBone.grabMovement = 0.8f;
+                physBone.snapToHand = true;
+                
+                // 参数驱动
+                physBone.parameter = "";
+                physBone.isAnimated = false;
+                
+                var collidersList = new List<VRCPhysBoneCollider>();
+
+                // 创建Collider
+                for (int i = 0; i < colliderCount; i++)
+                {
+                    var colliderObj = new GameObject($"Collider_{i}");
+                    colliderObj.transform.SetParent(physBoneRoot.transform);
+                    colliderObj.transform.localPosition = new Vector3(
+                        Random.Range(-1f, 1f),
+                        Random.Range(0f, 2f),
+                        Random.Range(-1f, 1f)
+                    );
+
+                    var collider = colliderObj.AddComponent<VRCPhysBoneCollider>();
+                    collider.shapeType = VRCPhysBoneCollider.ShapeType.Capsule;
+                    collider.radius = 0.3f;
+                    collider.height = 1.0f;
+                    collider.insideBounds = true;
+                    collider.bonesAsSpheres = false;
+
+                    collidersList.Add(collider);
+                }
+
+                // 将colliders分配给PhysBone
+                physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
+                
+                Debug.Log($"[ASS] 创建扩展PhysBone链 {c} (Advanced模式): 长度={chainLength}, Collider={colliderCount}");
+            }
+        }
+
+        /// <summary>
+        /// 创建扩展Contact Sender/Receiver系统（扩展功能）
+        /// 使用更多标签和更复杂的碰撞配置
+        /// </summary>
+        private static void CreateExtendedContactSystem(GameObject root, int componentCount)
+        {
+            var contactRoot = new GameObject("ExtendedContactSystem");
+            contactRoot.transform.SetParent(root.transform);
+
+            int halfCount = componentCount / 2;
+
+            // 扩展标签列表
+            var tags = new List<string> { "Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10" };
+
+            // 创建Sender
+            for (int i = 0; i < halfCount; i++)
+            {
+                var senderObj = new GameObject($"ExtendedSender_{i}");
+                senderObj.transform.SetParent(contactRoot.transform);
+                senderObj.transform.localPosition = new Vector3(
+                    Random.Range(-1f, 1f),
+                    Random.Range(0f, 2f),
+                    Random.Range(-1f, 1f)
+                );
+
+                var sender = senderObj.AddComponent<VRCContactSender>();
+                sender.shapeType = VRCContactSender.ShapeType.Capsule;
+                sender.radius = Random.Range(0.5f, 1.5f);
+                sender.height = Random.Range(1f, 3f);
+                sender.collisionTags = tags.GetRange(0, Random.Range(3, 10));
+                sender.localOnly = true;
+            }
+
+            // 创建Receiver
+            for (int i = 0; i < halfCount; i++)
+            {
+                var receiverObj = new GameObject($"ExtendedReceiver_{i}");
+                receiverObj.transform.SetParent(contactRoot.transform);
+                receiverObj.transform.localPosition = new Vector3(
+                    Random.Range(-1f, 1f),
+                    Random.Range(0f, 2f),
+                    Random.Range(-1f, 1f)
+                );
+
+                var receiver = receiverObj.AddComponent<VRCContactReceiver>();
+                receiver.shapeType = VRCContactReceiver.ShapeType.Capsule;
+                receiver.radius = Random.Range(0.5f, 1.5f);
+                receiver.height = Random.Range(1f, 3f);
+                receiver.collisionTags = tags.GetRange(0, Random.Range(3, 10));
+                receiver.localOnly = true;
+            }
+
+            Debug.Log($"[ASS] 创建扩展Contact系统: {halfCount} senders + {halfCount} receivers, 10个标签");
+        }
+
+        /// <summary>
+        /// 创建多层透明Overdraw堆叠（扩展功能）
+        /// </summary>
+        private static void CreateExtendedOverdrawLayers(GameObject root, int layerCount, int groupCount)
+        {
+            for (int g = 0; g < groupCount; g++)
+            {
+                var overdrawRoot = new GameObject($"ExtendedOverdrawLayers_{g}");
+                overdrawRoot.transform.SetParent(root.transform);
+                overdrawRoot.transform.localPosition = new Vector3(g * 3f, 0, 0);
+
+                var material = new Material(Shader.Find("Unlit/Transparent"));
+                material.color = new Color(1, 1, 1, 0.3f);
+                material.renderQueue = 3000;
+
+                for (int i = 0; i < layerCount; i++)
+                {
+                    var layerObj = new GameObject($"Layer_{i}");
+                    layerObj.transform.SetParent(overdrawRoot.transform);
+                    layerObj.transform.localPosition = new Vector3(0, 0, i * 0.001f);
+                    layerObj.transform.localScale = new Vector3(2f, 2f, 2f);
+
+                    var meshFilter = layerObj.AddComponent<MeshFilter>();
+                    meshFilter.mesh = GetSharedQuadMesh(2f);
+
+                    var meshRenderer = layerObj.AddComponent<MeshRenderer>();
+                    meshRenderer.material = material;
+                }
+
+                Debug.Log($"[ASS] 创建扩展Overdraw层组 {g}: {layerCount}层");
+            }
+        }
+
+        /// <summary>
+        /// 创建防御Shader材质（统一方法）
+        /// 合并了CreateHeavyShaderMaterial和CreateExpensiveMaterials的功能
+        /// 支持创建单个或多个材质，支持固定或随机参数
+        /// </summary>
+        /// <param name="avatarRoot">Avatar根对象</param>
+        /// <param name="materialCount">要创建的材质数量（1=单个材质）</param>
+        /// <param name="useRandomParameters">是否使用随机参数</param>
+        /// <param name="fixedLoopCount">固定循环次数（仅在useRandomParameters=false时使用）</param>
+        /// <returns>创建的材质数组</returns>
+        private static Material[] CreateDefenseMaterials(GameObject avatarRoot, int materialCount, bool useRandomParameters = true, int shaderLoopCount = 1000000)
+        {
+            var shader = CreateDefenseShader(avatarRoot);
+            
+            // 防御性检查：如果shader为null，跳过创建材质
+            if (shader == null)
+            {
+                Debug.LogWarning("[ASS] 无法创建防御Shader，跳过材质创建");
+                return new Material[0];
+            }
+            
+            var materials = new Material[materialCount];
+            
             for (int i = 0; i < materialCount; i++)
             {
-                // 创建材质球
                 var material = new Material(shader);
-                material.name = $"ExpensiveMaterial_{i}";
+                material.name = $"ASS_DefenseMaterial_{i}";
                 
-                // 随机配置材质
-                material.SetFloat("_Intensity", Random.Range(0.5f, 2f));
-                material.SetFloat("_Complexity", Random.Range(10f, 50f));
+                if (useRandomParameters)
+                {
+                    // 随机参数配置 - 大幅降低上限以避免GPU/Shader编译崩溃
+                    // 这些值在Shader中会被进一步限制（如LoopCount限制为256）
+                    material.SetInt("_LoopCount", Random.Range(100, 1000));
+                    material.SetFloat("_Intensity", Random.Range(10f, 100f));
+                    material.SetFloat("_Complexity", Random.Range(100f, 1000f));
+                    material.SetFloat("_ParallaxScale", Random.Range(1f, 10f));
+                    material.SetFloat("_NoiseOctaves", Random.Range(4f, 16f));
+                    material.SetFloat("_SamplingRate", Random.Range(8f, 32f));
+                    material.SetFloat("_ColorPasses", Random.Range(5f, 20f));
+                    material.SetFloat("_LightCount", Random.Range(2f, 8f));
+                    material.SetFloat("_RayMarchSteps", Random.Range(4f, 16f));
+                    material.SetFloat("_SubsurfaceScattering", Random.Range(1f, 8f));
+                    material.SetFloat("_FractalIterations", Random.Range(8f, 32f));
+                    material.SetFloat("_VolumetricSteps", Random.Range(4f, 16f));
+                    material.SetFloat("_ParticleDensity", Random.Range(100f, 500f));
+                    material.SetFloat("_GlobalIllumination", Random.Range(2f, 8f));
+                    material.SetFloat("_CausticSamples", Random.Range(4f, 16f));
+                    material.SetFloat("_ReflectionSamples", Random.Range(4f, 16f));
+                    material.SetFloat("_ShadowSamples", Random.Range(4f, 8f));
+                    material.SetFloat("_ParallaxIterations", Random.Range(4f, 16f));
+                    material.SetFloat("_Turbulence", Random.Range(50f, 200f));
+                    material.SetFloat("_CloudLayers", Random.Range(2f, 8f));
+                    material.SetFloat("_MotionBlurStrength", Random.Range(0.1f, 0.5f));
+                    material.SetFloat("_DepthOfFieldStrength", Random.Range(0.1f, 0.5f));
+                    material.SetFloat("_ChromaticAberration", Random.Range(0.01f, 0.1f));
+                    material.SetFloat("_LensFlareIntensity", Random.Range(1f, 5f));
+                    material.SetFloat("_GrainStrength", Random.Range(0.1f, 0.5f));
+                    material.SetFloat("_VignetteStrength", Random.Range(0.1f, 0.5f));
+                    material.SetFloat("_MoireIntensity", Random.Range(0.1f, 1f));
+                    material.SetFloat("_DitherStrength", Random.Range(0.1f, 0.5f));
+                    material.SetFloat("_HologramIntensity", Random.Range(0.1f, 1f));
+                    material.SetFloat("_Iridescence", Random.Range(0.1f, 1f));
+                    material.SetFloat("_VelvetIntensity", Random.Range(0.1f, 1f));
+                    material.SetFloat("_FresnelPower", Random.Range(1f, 5f));
+                    material.SetFloat("_BumpMapStrength", Random.Range(0.1f, 1f));
+                    material.SetFloat("_HeightMapStrength", Random.Range(0.1f, 1f));
+                    material.SetFloat("_ParallaxIntensity", Random.Range(0.1f, 1f));
+                    material.SetFloat("_DistortionStrength", Random.Range(0.1f, 2f));
+                }
+                else
+                {
+                    // 固定参数配置 - 大幅降低上限以避免GPU/Shader编译崩溃
+                    // 使用更保守的值，确保在VRChat环境中稳定运行
+                    // 这些值在Shader中会被进一步限制
+                    material.SetInt("_LoopCount", Mathf.Clamp(shaderLoopCount, 0, 1000));
+                    material.SetFloat("_Intensity", 50f);
+                    material.SetFloat("_Complexity", 500f);
+                    material.SetFloat("_ParallaxScale", 5f);
+                    material.SetFloat("_NoiseOctaves", 8f);
+                    material.SetFloat("_SamplingRate", 16f);
+                    material.SetFloat("_ColorPasses", 10f);
+                    material.SetFloat("_LightCount", 4f);
+                    material.SetFloat("_RayMarchSteps", 8f);
+                    material.SetFloat("_SubsurfaceScattering", 4f);
+                    material.SetFloat("_FractalIterations", 16f);
+                    material.SetFloat("_VolumetricSteps", 8f);
+                    material.SetFloat("_ParticleDensity", 250f);
+                    material.SetFloat("_GlobalIllumination", 4f);
+                    material.SetFloat("_CausticSamples", 8f);
+                    material.SetFloat("_ReflectionSamples", 8f);
+                    material.SetFloat("_ShadowSamples", 4f);
+                    material.SetFloat("_ParallaxIterations", 8f);
+                    material.SetFloat("_Turbulence", 100f);
+                    material.SetFloat("_CloudLayers", 4f);
+                    material.SetFloat("_MotionBlurStrength", 0.3f);
+                    material.SetFloat("_DepthOfFieldStrength", 0.3f);
+                    material.SetFloat("_ChromaticAberration", 0.05f);
+                    material.SetFloat("_LensFlareIntensity", 2f);
+                    material.SetFloat("_GrainStrength", 0.3f);
+                    material.SetFloat("_VignetteStrength", 0.3f);
+                    material.SetFloat("_MoireIntensity", 0.5f);
+                    material.SetFloat("_DitherStrength", 0.3f);
+                    material.SetFloat("_HologramIntensity", 0.5f);
+                    material.SetFloat("_Iridescence", 0.5f);
+                    material.SetFloat("_VelvetIntensity", 0.5f);
+                    material.SetFloat("_FresnelPower", 2f);
+                    material.SetFloat("_BumpMapStrength", 0.5f);
+                    material.SetFloat("_HeightMapStrength", 0.5f);
+                    material.SetFloat("_ParallaxIntensity", 0.5f);
+                    material.SetFloat("_DistortionStrength", 1f);
+                }
+                
+                // 设置基本材质参数
+                material.SetFloat("_Glossiness", Random.Range(0.3f, 1f));
+                material.SetFloat("_Metallic", Random.Range(0.3f, 1f));
+                material.SetFloat("_OcclusionStrength", Random.Range(0.5f, 5f));
+                material.SetFloat("_EmissionIntensity", Random.Range(0.5f, 5f));
+                material.SetFloat("_RimPower", Random.Range(2f, 16f));
+                material.SetFloat("_DetailScale", Random.Range(5f, 50f));
+                material.SetFloat("_NoiseScale", Random.Range(3f, 25f));
+                material.SetFloat("_RefractionStrength", Random.Range(0.05f, 1f));
+                material.SetFloat("_DispersionStrength", Random.Range(0.02f, 0.5f));
+                material.SetFloat("_Anisotropy", Random.Range(0f, 1f));
+                material.SetFloat("_ClearCoat", Random.Range(0f, 1f));
+                material.SetFloat("_Sheen", Random.Range(0f, 1f));
+                material.SetFloat("_Thickness", Random.Range(0.3f, 2f));
+                material.SetFloat("_Transmission", Random.Range(0f, 1f));
+                material.SetFloat("_Absorption", Random.Range(0f, 1f));
+                
+                // 设置颜色
+                material.SetColor("_SubsurfaceColor", new Color(
+                    Random.Range(0.5f, 1f),
+                    Random.Range(0.2f, 0.6f),
+                    Random.Range(0.2f, 0.6f),
+                    1f
+                ));
                 material.SetColor("_BaseColor", new Color(
                     Random.Range(0.2f, 1f),
                     Random.Range(0.2f, 1f),
                     Random.Range(0.2f, 1f),
                     1f
                 ));
-
-                // 创建网格使用这个材质
-                var meshObj = new GameObject($"ExpensiveMesh_{i}");
-                meshObj.transform.SetParent(materialRoot.transform);
-                meshObj.transform.localPosition = new Vector3(i * 0.3f, 0, 0);
-                meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-
-                var meshFilter = meshObj.AddComponent<MeshFilter>();
-                meshFilter.mesh = CreateComplexMesh();
-
-                var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-                meshRenderer.material = material;
+                
+                // 设置纹理（使用白色纹理作为默认）
+                Texture2D defaultWhite = Texture2D.whiteTexture;
+                material.SetTexture("_MainTex", defaultWhite);
+                material.SetTexture("_NormalMap", defaultWhite);
+                material.SetTexture("_HeightMap", defaultWhite);
+                material.SetTexture("_DetailTex", defaultWhite);
+                material.SetTexture("_NoiseTex", defaultWhite);
+                
+                materials[i] = material;
+            }
+            
+            Debug.Log($"[ASS] 创建防御Shader材质: {materialCount}个，使用{(useRandomParameters ? "随机" : "固定")}参数");
+            return materials;
+        }
+        
+        /// <summary>
+        /// 创建高消耗的Shader材质球及网格（使用统一方法）
+        /// </summary>
+        private static void CreateExpensiveMaterials(GameObject root, GameObject avatarRoot, int materialCount, int shaderLoopCount)
+        {
+            // 防御性检查：确保materialCount有效
+            if (materialCount <= 0)
+            {
+                Debug.Log("[ASS] materialCount为0，跳过创建材质");
+                return;
             }
 
-            Debug.Log($"[ASS] 创建高消耗材质: {materialCount}个材质球，使用复杂Shader");
+            // 限制材质数量以避免GPU过载
+            materialCount = Mathf.Min(materialCount, 3);
+            if (materialCount < 1) materialCount = 1;
+
+            GameObject materialRoot = null;
+            List<GameObject> createdMeshes = new List<GameObject>();
+            Material[] materials = null;
+
+            try
+            {
+                materialRoot = new GameObject("ExpensiveMaterials");
+                materialRoot.transform.SetParent(root.transform);
+
+                // 使用统一方法创建材质
+                materials = CreateDefenseMaterials(avatarRoot, materialCount, true, shaderLoopCount);
+
+                // 防御性检查：确保材质数组不为空
+                if (materials == null || materials.Length == 0)
+                {
+                    Debug.LogWarning("[ASS] 未能创建任何防御材质，跳过网格创建");
+                    return;
+                }
+
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    // 防御性检查：确保材质不为null
+                    var material = materials[i];
+                    if (material == null)
+                    {
+                        Debug.LogWarning($"[ASS] 材质 {i} 为null，跳过创建对应网格");
+                        continue;
+                    }
+
+                    // 创建网格使用这个材质
+                    var meshObj = new GameObject($"ASS_DefenseMesh_{i}");
+                    meshObj.transform.SetParent(materialRoot.transform);
+                    meshObj.transform.localPosition = new Vector3(i * 0.3f, 0, 0);
+                    meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+
+                    var meshFilter = meshObj.AddComponent<MeshFilter>();
+                    meshFilter.mesh = CreateComplexMesh();
+
+                    var meshRenderer = meshObj.AddComponent<MeshRenderer>();
+                    meshRenderer.material = material;
+
+                    createdMeshes.Add(meshObj);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ASS] CreateExpensiveMaterials失败: {e.Message}\n{e.StackTrace}");
+                // 清理已创建的对象
+                CleanupCreatedObjects(materialRoot, createdMeshes, materials);
+            }
         }
 
         /// <summary>
-        /// 创建终极性能消耗的自定义Shader
-        /// BombShader - 性能杀手终极版本
-        /// 包含：500万次 GPU 循环、32 伪光源、16层 FBM噪声、64层视差映射
-        /// 集合了 SecurityBurnShader 和 ExpensiveDefense 的所有优点，并升级 50-100 倍
+        /// 清理创建的对象和资源
         /// </summary>
-        private static Shader CreateExpensiveShader()
+        private static void CleanupCreatedObjects(GameObject root, List<GameObject> meshObjects, Material[] materials)
         {
-            // 优先使用终极高消耗Shader (BombShader 版本)
-            var shader = Shader.Find("SeaLoong/BombShader");
-            if (shader != null)
-                return shader;
-            
-            // 回退到统一的 PerformanceKiller 版本
-            var perfKillerShader = Shader.Find("SeaLoong/PerformanceKiller");
-            if (perfKillerShader != null)
-                return perfKillerShader;
-            
-            // 再回退到旧版本 ExpensiveDefense
-            var expensiveShader = Shader.Find("SeaLoong/ExpensiveDefense");
-            if (expensiveShader != null)
-                return expensiveShader;
-            
-            // 再回退到 Standard Shader（支持更多光源）
-            var standardShader = Shader.Find("Standard");
-            if (standardShader != null)
-                return standardShader;
-            
-            // 最后回退
-            return Shader.Find("Unlit/Color");
+            try
+            {
+                // 清理材质
+                if (materials != null)
+                {
+                    foreach (var material in materials)
+                    {
+                        if (material != null)
+                        {
+                            Object.DestroyImmediate(material);
+                        }
+                    }
+                }
+
+                // 清理网格对象
+                if (meshObjects != null)
+                {
+                    foreach (var meshObj in meshObjects)
+                    {
+                        if (meshObj != null)
+                        {
+                            // 清理网格
+                            var meshFilter = meshObj.GetComponent<MeshFilter>();
+                            if (meshFilter != null && meshFilter.mesh != null)
+                            {
+                                Object.DestroyImmediate(meshFilter.mesh);
+                            }
+                            Object.DestroyImmediate(meshObj);
+                        }
+                    }
+                }
+
+                // 清理根对象
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ASS] 清理资源时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 在构建时获取防御Shader
+        /// 优先使用模板Shader，如果不存在则回退到Standard
+        /// </summary>
+        private static Shader CreateDefenseShader(GameObject avatarRoot)
+        {
+            // 查找自定义DefenseShader
+            Shader defenseShader = null;
+            try
+            {
+                defenseShader = Shader.Find("SeaLoong/DefenseShader");
+            }
+            catch
+            {
+                defenseShader = null;
+            }
+             
+            if (defenseShader != null)
+            {
+                Debug.Log("[ASS] 使用自定义DefenseShader");
+                return defenseShader;
+            }
+             
+            // 回退到Standard Shader
+            Shader standardShader = null;
+            try
+            {
+                standardShader = Shader.Find("Standard");
+            }
+            catch
+            {
+                standardShader = null;
+            }
+             
+            if (standardShader == null)
+            {
+                Debug.LogError("[ASS] 无法找到Standard Shader");
+            }
+            else
+            {
+                Debug.Log("[ASS] 使用Standard Shader（自定义Shader未找到）");
+            }
+            return standardShader;
         }
 
         /// <summary>
@@ -630,46 +1371,58 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             var mesh = new Mesh { name = "ComplexMesh" };
 
-            // 创建一个相对复杂的网格结构
-            int subdivisions = 20;
-            int vertexCount = subdivisions * subdivisions;
-
-            var vertices = new Vector3[vertexCount];
-            var uvs = new Vector2[vertexCount];
-            var triangles = new List<int>();
-
-            for (int y = 0; y < subdivisions; y++)
+            try
             {
-                for (int x = 0; x < subdivisions; x++)
-                {
-                    int index = y * subdivisions + x;
-                    float u = (float)x / (subdivisions - 1);
-                    float v = (float)y / (subdivisions - 1);
+                // 降低网格复杂度以避免GPU过载
+                int subdivisions = 10;
+                int vertexCount = subdivisions * subdivisions;
 
-                    vertices[index] = new Vector3(u - 0.5f, Mathf.Sin(u * Mathf.PI) * 0.3f, v - 0.5f);
-                    uvs[index] = new Vector2(u, v);
+                var vertices = new Vector3[vertexCount];
+                var uvs = new Vector2[vertexCount];
+                var triangles = new List<int>();
+
+                for (int y = 0; y < subdivisions; y++)
+                {
+                    for (int x = 0; x < subdivisions; x++)
+                    {
+                        int index = y * subdivisions + x;
+                        float u = (float)x / (subdivisions - 1);
+                        float v = (float)y / (subdivisions - 1);
+
+                        vertices[index] = new Vector3(u - 0.5f, Mathf.Sin(u * Mathf.PI) * 0.3f, v - 0.5f);
+                        uvs[index] = new Vector2(u, v);
+                    }
+                }
+
+                for (int y = 0; y < subdivisions - 1; y++)
+                {
+                    for (int x = 0; x < subdivisions - 1; x++)
+                    {
+                        int a = y * subdivisions + x;
+                        int b = a + 1;
+                        int c = a + subdivisions;
+                        int d = c + 1;
+
+                        triangles.Add(a); triangles.Add(c); triangles.Add(b);
+                        triangles.Add(b); triangles.Add(c); triangles.Add(d);
+                    }
+                }
+
+                mesh.vertices = vertices;
+                mesh.triangles = triangles.ToArray();
+                mesh.uv = uvs;
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ASS] CreateComplexMesh失败: {e.Message}\n{e.StackTrace}");
+                if (mesh != null)
+                {
+                    Object.DestroyImmediate(mesh);
+                    mesh = null;
                 }
             }
-
-            for (int y = 0; y < subdivisions - 1; y++)
-            {
-                for (int x = 0; x < subdivisions - 1; x++)
-                {
-                    int a = y * subdivisions + x;
-                    int b = a + 1;
-                    int c = a + subdivisions;
-                    int d = c + 1;
-
-                    triangles.Add(a); triangles.Add(c); triangles.Add(b);
-                    triangles.Add(b); triangles.Add(c); triangles.Add(d);
-                }
-            }
-
-            mesh.vertices = vertices;
-            mesh.triangles = triangles.ToArray();
-            mesh.uv = uvs;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
 
             return mesh;
         }
@@ -757,13 +1510,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var activeCurve = AnimationCurve.Constant(0f, 1f / 60f, activeValue);
             clip.SetCurve(rootPath, typeof(GameObject), "m_IsActive", activeCurve);
 
-            // 控制Shader参数
-            if (config.enableHeavyShader && !isDebugMode)
-            {
-                string shaderMeshPath = $"{rootPath}/HeavyShaderMesh";
-                var loopCurve = AnimationCurve.Constant(0f, 1f / 60f, activate ? config.shaderLoopCount : 0f);
-                clip.SetCurve(shaderMeshPath, typeof(MeshRenderer), "material._LoopCount", loopCurve);
-            }
+            // 注意：Shader参数通过材质直接设置，不需要通过动画控制
+            // 因为Shader参数在材质创建时已设置，运行时无法通过动画修改
 
             return clip;
         }
@@ -952,108 +1700,77 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 验证Shader循环次数（VRChat无限制，GPU完全计算）
-        /// BombShader 终极版本的完整 GPU 成本分析：
+        /// 防御Shader的GPU成本分析：
         /// 
-        /// ========== 升级倍数对比 ==========
-        /// 相对于原始 PerformanceKiller：
-        /// - _LoopCount: 100万 → 500万 = 50倍
-        /// - _Complexity: 15 → 50 = 3.3倍
-        /// - _Intensity: 2.5 → 5.0 = 2倍
-        /// - _ParallaxScale: 0.15 → 0.5 = 3.3倍
-        /// - 纹理采样数: 3 → 5 = 1.7倍
-        /// - FBM 层数: 8 → 16 = 2倍
-        /// - 视差层数: 8-32 → 16-64 = 2倍
-        /// - 法线迭代: 3 → 5 = 1.7倍
-        /// - 伪光源: 8 → 32 = 4倍
-        /// - 色彩空间转换: 1次 → 3次 = 3倍
+        /// ========== GPU 成本分析 ==========
         /// 
-        /// 总体 GPU 成本提升：最少 50-100 倍
-        /// 
-        /// ========== 详细性能成本分析 ==========
-        /// 
-        /// 1. 视差映射 (ParallaxMapping) - 升级版（16-64层）:
-        ///    - 平均采样层数：40 层（升级从 20 层）
+        /// 1. 视差映射 (ParallaxMapping) - 640-2560层:
+        ///    - 平均采样层数：1600 层
         ///    - 每层采样 _HeightMap 1-2 次
-        ///    - 总计：40 次高度贴图采样（升级 2 倍）
+        ///    - 总计：1600+ 次高度贴图采样
         /// 
-        /// 2. 主循环计算 (ExpensiveColorComputation) - 500 万次：
-        ///    - 循环次数：_LoopCount = 5000000（升级 50 倍）
+        /// 2. 主循环计算 (ExpensiveColorComputation) - 可配置循环次数：
+        ///    - 循环次数：_LoopCount（默认50万，最多100万）
         ///    - 每次循环包含：
-        ///      * tex2D(MainTex) × 5 次（升级从 3→5）
-        ///      * tex2D(NormalMap) × 1 次
-        ///      * tex2D(HeightMap) × 1 次
-        ///      * sin() × 2 次
-        ///      * cos() × 1 次
-        ///      * tan() × 1 次（新增）
-        ///      * sqrt() × 1 次
-        ///      * exp() × 1 次
-        ///      * log() × 1 次
-        ///      * pow() × 1 次
-        ///      * atan() × 1 次（新增）
-        ///      * normalize() × 2 次（升级从 1→2）
-        ///      * dot() × 2 次（升级从 1→2）
-        ///    - 单次循环成本：~32 条 GPU 指令（升级从 25）
-        ///    - 总循环成本：_LoopCount × 32 指令 = 500万 × 32 = 1.6 亿条指令
+        ///      * tex2D() × 7 次（MainTex×3, NormalMap, HeightMap, DetailTex, NoiseTex）
+        ///      * sin/cos/tan 三角函数
+        ///      * sqrt/exp/log/pow/atan/sinh/cosh/asin/acos 数学运算
+        ///      * normalize() × 2 次
+        ///      * dot() × 2 次
+        ///    - 单次循环成本：~40+ 条 GPU 指令
+        ///    - 总循环成本：_LoopCount × 40 指令
         /// 
-        /// 3. FBM 噪声计算 - 16 层（升级版）:
-        ///    - 16 层噪声迭代（升级从 8）
+        /// 3. FBM 噪声计算 - 128 层:
+        ///    - 128 层噪声迭代
         ///    - 每层包含多次 hash 和 lerp 计算
-        ///    - 在 ExpensiveColorComputation 中被调用
-        ///    - 成本翻倍：GPU 额外 ~80 条指令
+        ///    - GPU 成本：~2560 条指令
         /// 
         /// 4. 复杂法线计算 (UnpackNormalComplex) - 5 次迭代：
-        ///    - 5 次迭代（升级从 3）
-        ///    - 每次包含：
-        ///      * normalize() 运算
-        ///      * tex2D(NormalMap) 采样（升级版本）
-        ///      * 向量加法和乘法（升级为双倍）
-        ///    - 总计：5 × (normalize + 采样) = GPU 成本增加
+        ///    - 5 次迭代
+        ///    - 每次包含 normalize + 采样
+        ///    - GPU 成本：~150 条指令
         /// 
-        /// 5. 多光源照明 (CalculateLighting) - 32 伪光源：
+        /// 5. 光线步进 (Ray Marching) - 64 步：
+        ///    - 64 步迭代
+        ///    - 每步包含高度采样和距离计算
+        ///    - GPU 成本：~320 条指令
+        /// 
+        /// 6. 次表面散射 (Subsurface Scattering) - 8 次迭代：
+        ///    - 8 次迭代
+        ///    - 每次包含光照计算
+        ///    - GPU 成本：~80 条指令
+        /// 
+        /// 7. 多光源照明 (CalculateLighting) - 32 伪光源：
         ///    - 主光源：1 次完整 Blinn-Phong 计算
-        ///    - 伪光源：32 个循环（升级从 8，4倍）
-        ///      每个包含：
-        ///      * sin/cos 三角函数 × 2
-        ///      * normalize × 2
-        ///      * dot × 2
-        ///      * pow × 1
-        ///      * distance 距离计算 + 衰减函数
-        ///    - 总成本：主光 + 32 × 25 指令 = ~800 条指令
+        ///    - 伪光源：32 个循环
+        ///    - 总成本：~800 条指令
         /// 
-        /// 6. 升级版色彩空间转换：
-        ///    - 第1次 RGB to HSV + HSV to RGB
-        ///    - 第2次 RGB to HSV（色相移位）+ HSV to RGB
-        ///    - 第3次 RGB to HSV（亮度调整）+ HSV to RGB
-        ///    - 总计：3 × 100+ 条指令 = ~300 条指令
-        /// 
-        /// 7. sRGB 编码/解码升级版：
-        ///    - pow(color, 2.2) 编码
-        ///    - saturate（饱和度）
-        ///    - pow(color, 1/2.2) 线性化
-        ///    - pow(color, 0.8) 额外转换（新增）
-        ///    - lerp × 2（增加 2 个额外颜色混合）
-        ///    - 总计：~40 条指令
+        /// 8. 多次色彩空间转换：
+        ///    - RGB↔HSV 转换 × _ColorPasses 次（默认100次）
+        ///    - 每次转换 40+ 条指令
+        ///    - 总成本：100 × 40 = 4000+ 条指令
         /// 
         /// ========== 总体 GPU 成本计算 ==========
         /// 
-        /// 对于配置：_LoopCount = 5000000
+        /// 对于配置：_LoopCount = 500000
         /// 
         /// 成本分解：
         /// - 基础操作：200+ 条指令
-        /// - 主循环：5000000 × 32 = 160,000,000 条指令
-        /// - 视差映射：40 采样 × 20+ 指令 = 800 条指令
-        /// - FBM 噪声：16 层 × 10+ 指令 = 160 条指令
-        /// - 法线计算：5 × 30+ 指令 = 150 条指令
+        /// - 主循环：500000 × 40 = 20,000,000 条指令
+        /// - 视差映射：1600 采样 × 20+ 指令 = 32,000 条指令
+        /// - FBM 噪声：2560 条指令
+        /// - 法线计算：150 条指令
+        /// - 光线步进：320 条指令
+        /// - 次表面散射：80 条指令
         /// - 光照计算：800 条指令
-        /// - 色彩转换：300 条指令
-        /// - sRGB 处理：40 条指令
+        /// - 色彩转换：4000 条指令
         /// 
-        /// 总 GPU 指令：~160 百万条 + 2500 条 = ~160,002,500 条指令
+        /// 总 GPU 指令：~20,040,000 条指令
         /// 总纹理采样：
-        ///   - 循环中采样：5000000 × 7 = 3500万次
-        ///   - 视差映射：40 次
+        ///   - 循环中采样：500000 × 7 = 350万次
+        ///   - 视差映射：1600 次
         ///   - 法线计算：5 次
-        ///   - 总计：~3500万次采样
+        ///   - 总计：~350万次采样
         /// 
         /// 性能影响：
         /// - 简单 GPU（集成显卡）：50-200ms 延迟
@@ -1062,57 +1779,59 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// - 移动设备：无法实时运行
         /// 
         /// ========== 性能破坏效果 ==========
-        /// 单个使用 BombShader 的材质就能：
+        /// 单个使用防御Shader的材质就能：
         /// - 降低帧率 50% (1080p 60fps → 30fps)
         /// - 让集成显卡卡到 1fps
         /// - 造成 VRChat 中的明显性能问题
         /// 
         /// 多个材质叠加 (防御系统有 500 个)：
-        /// - 理论叠加 GPU 成本：500 × 160M = 800 亿条指令
+        /// - 理论叠加 GPU 成本：500 × 20M = 100 亿条指令
         /// - 现实效果：完全冻结 GPU
         /// - 实际结果：进入 Avatar 的玩家直接掉帧到 0
         /// </summary>
         private static int ValidateShaderLoops(int requested)
         {
-            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT; // 100万循环
+            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT; // 300万循环（大幅增加）
             int validValue = Mathf.Clamp(requested, 0, maxLoops);
             
             if (validValue > 100000)
             {
-                Debug.Log($"[ASS] BombShader 亿级别终极版 {validValue} - GPU超级无敌成本分析：" +
-                         $"\n  【超级主循环 - 50亿次迭代】" +
-                         $"\n  • {validValue}次循环 × (1280采样 + 35指令) = {validValue * 1315}条GPU指令" +
-                         $"\n  • Complexity(5000) 乘积：{validValue} × 5000 = 250万亿次数学运算" +
-                         $"\n  【超级视差映射 - 640-2560层】" +
+                Debug.Log($"[ASS] 防御Shader {validValue} - GPU成本分析：" +
+                         $"\n  【主循环 - {validValue}次迭代】" +
+                         $"\n  • {validValue}次循环 × (7采样 + 40指令) = {validValue * 47}条GPU指令" +
+                         $"\n  • Complexity(5000) 乘积：{validValue} × 5000 = {validValue * 5000}次数学运算" +
+                         $"\n  【视差映射 - 640-2560层】" +
                          $"\n  • ParallaxScale = 50.0 → 640-2560层陡峭迭代" +
-                         $"\n  • 每层 1-2次 HeightMap 采样 = 640-2560次纹理采样" +
-                         $"\n  • 采样成本 × 10 倍升级（从 64-256 层）" +
+                         $"\n  • 每层 1-2次 HeightMap 采样 = 1600+次纹理采样" +
                          $"\n  【复杂法线计算 - 5层迭代】" +
                          $"\n  • 5层迭代 × (normalize + 采样 + 向量运算) = GPU密集" +
-                         $"\n  【超级光照计算 - 32伪光源】" +
+                         $"\n  【光照计算 - 32伪光源】" +
                          $"\n  • 主光 + 32个循环 × (sin/cos/tan + dot + pow + 距离衰减)" +
                          $"\n  • 每个伪光 ~25条指令 = 800条总指令" +
-                         $"\n  【超级FBM噪声 - 128层Perlin】" +
-                         $"\n  • 128层Perlin噪声 × 20+指令 = 2560条指令（8倍升级）" +
-                         $"\n  【超级色彩空间转换 - Intensity×500倍 + ColorPasses×100】" +
-                         $"\n  • RGB→HSV→RGB × 100次迭代（ColorPasses）" +
-                         $"\n  • 色相移位 + 亮度调整 × Intensity(500)" +
-                         $"\n  • sRGB编解码 × 4次 + pow/lerp" +
+                         $"\n  【FBM噪声 - 128层Perlin】" +
+                         $"\n  • 128层Perlin噪声 × 20+指令 = 2560条指令" +
+                         $"\n  【光线步进 - 64步】" +
+                         $"\n  • 64步迭代 × 5指令 = 320条指令" +
+                         $"\n  【次表面散射 - 8次迭代】" +
+                         $"\n  • 8次迭代 × 10指令 = 80条指令" +
+                         $"\n  【色彩空间转换 - ColorPasses×100】" +
+                         $"\n  • RGB→HSV→RGB × 100次迭代" +
+                         $"\n  • 每次转换 40+ 条指令 = 4000+ 条指令" +
                          $"\n  【总GPU成本计算】" +
-                         $"\n  • 主循环指令：5E9 × 1315 = 6.575万亿条指令" +
-                         $"\n  • 复杂度乘积：250万亿次数学运算" +
+                         $"\n  • 主循环指令：{validValue} × 47 = {validValue * 47}条指令" +
                          $"\n  • 视差采样：1600 × 20 = 32,000条指令" +
                          $"\n  • FBM噪声：2560条指令" +
-                         $"\n  • 色彩转换：100 × 500 × 40 = 200万条指令" +
-                         $"\n  • 纹理总采样：5E9 × 256 = 1.28万亿次采样" +
-                         $"\n  • 总指令数：~6.58万亿条 + 250万亿运算" +
-                         $"\n  • 总采样数：~1.28万亿次" +
-                         $"\n  【性能摧毁等级：∞ 无限破坏】" +
-                         $"\n  • 集成显卡：立即黑屏（0 fps）" +
-                         $"\n  • GTX 1050：完全冻结（无响应）" +
-                         $"\n  • GTX 1060：系统崩溃（蓝屏）" +
-                         $"\n  • RTX 3080：强制断开连接（VRChat 报错）" +
-                         $"\n  • VRChat 全服：其他玩家同时卡死");
+                         $"\n  • 光线步进：320条指令" +
+                         $"\n  • 次表面散射：80条指令" +
+                         $"\n  • 色彩转换：4000条指令" +
+                         $"\n  • 纹理总采样：{validValue} × 7 = {validValue * 7}次采样" +
+                         $"\n  • 总指令数：~{validValue * 47 + 40000}条指令" +
+                         $"\n  • 总采样数：~{validValue * 7 + 1600}次采样" +
+                         $"\n  【性能影响】" +
+                         $"\n  • 集成显卡：50-200ms延迟，可能卡顿" +
+                         $"\n  • GTX 1060：20-80ms延迟" +
+                         $"\n  • RTX 3080：10-30ms延迟" +
+                         $"\n  • 移动设备：无法实时运行");
             }
             return validValue;
         }
@@ -1123,100 +1842,88 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 验证高多边形顶点数（VRChat无硬限制，仅由文件大小限制）
         /// 分散到多个Mesh避免单Mesh超过65k顶点
+        /// 估算：每个顶点约32字节（位置+法线+UV+切线）
+        /// 25MB限制下，顶点数据最大约500MB（但实际Unity会有更多开销）
+        /// 为安全起见，限制单Avatar总顶点在100万以内
         /// </summary>
         private static int ValidateHighPolyVertices(int requested)
         {
-            int maxVertices = Constants.HIGHPOLY_MESH_MAX_VERTICES; // 1亿顶点
-            int validValue = Mathf.Clamp(requested, 50000, maxVertices);
+            // VRChat Avatar 文件大小限制约25MB
+            // 估算每个顶点需要约32字节（position + normal + uv + tangent + index）
+            // 25MB / 32字节 ≈ 80万顶点（仅网格数据）
+            // 考虑到Unity开销和安全边际，限制为50万顶点
+            int maxVerticesPerAvatar = 500000;
             
-            if (requested > 1000000)
+            int validValue = Mathf.Clamp(requested, 50000, maxVerticesPerAvatar);
+            
+            if (requested > maxVerticesPerAvatar)
             {
-                int meshCount = Mathf.CeilToInt(requested / 65000f);
-                Debug.Log($"[ASS] 高多边形顶点数 {requested} 将分散到 {meshCount} 个网格");
+                Debug.Log($"[ASS] 高多边形顶点数 {requested} 超过安全限制 {maxVerticesPerAvatar}，已调整为 {validValue}");
             }
+            
             return validValue;
+        }
+
+        /// <summary>
+        /// 验证Overdraw层数（无硬限制，但受文件大小限制）
+        /// 每个Quad有4个顶点，约64字节数据
+        /// 25MB限制下，理论最大约40万层
+        /// 为安全起见，限制为5万层
+        /// </summary>
+        private static int ValidateOverdrawLayers(int requested)
+        {
+            int maxLayers = 50000;
+            int validValue = Mathf.Clamp(requested, 5, maxLayers);
+            
+            if (requested > maxLayers)
+            {
+                Debug.Log($"[ASS] Overdraw层数 {requested} 超过安全限制 {maxLayers}，已调整为 {validValue}");
+            }
+            
+            return validValue;
+        }
+
+        /// <summary>
+        /// 估算防御系统生成的网格总顶点数
+        /// 用于确保不超出文件大小限制
+        /// </summary>
+        private static int EstimateTotalDefenseVertices(int overdrawLayers, int polyVertices, int heavyShaderMeshes)
+        {
+            // Overdraw: 每层4顶点
+            int overdrawVertices = overdrawLayers * 4;
+            
+            // 高多边形网格: 已分散到多个Mesh
+            int polyMeshVertices = polyVertices;
+            
+            // Heavy Shader: 每个Quad 4顶点
+            int shaderVertices = heavyShaderMeshes * 4;
+            
+            return overdrawVertices + polyMeshVertices + shaderVertices;
         }
 
         #endregion
 
         #region Shader Creation
 
-        private static Material CreateHeavyShaderMaterial(int loopCount)
+        /// <summary>
+        /// 创建高消耗Shader材质（合并后的方法）
+        /// 在构建时生成Shader，Shader使用其Properties中定义的极高默认值
+        /// 包含所有GPU密集功能，用于创建单个或多个材质
+        /// 现在使用统一的CreateDefenseMaterials方法
+        /// </summary>
+        private static Material CreateDefenseShaderMaterial(GameObject avatarRoot, int loopCount)
         {
-            var shader = CreateExpensiveShader();
-            var material = new Material(shader);
-            material.name = $"BombShader_Loops{loopCount}";
-            
-            // ========== 设置终极 GPU 密集计算参数 ==========
-            
-            // _LoopCount: GPU 中的循环次数（核心性能消耗）
-            // 升级到 500万次（从原来的 50万升级 10 倍）
-            // 每次循环包含：
-            //   - 5× tex2D() 纹理采样（升级从 3→5 次）
-            //   - sin/cos/tan 三角函数（增加 tan）
-            //   - sqrt/exp/log/pow/atan 数学运算（增加 atan）
-            //   - 向量正规化和点积（双倍计算）
-            // 总 GPU 成本: loopCount × (5采样 + 30+ 计算指令)
-            material.SetInt("_LoopCount", loopCount);
-            
-            // _Complexity: 复杂度系数，升级到 500（10 倍，从 50）
-            // 乘以三角函数参数，增加数值计算的复杂度
-            // 与迭代次数乘积：500 × 500M = 2.5万亿次数学运算
-            material.SetFloat("_Complexity", 5000.0f);
-            
-            // _Intensity: 最终颜色强度倍数，升级到 500.0（10 倍，从 50.0）
-            // 增强视觉效果同时增加 GPU 色彩计算负荷
-            // 触发更多的 HSV 转换、sRGB 编解码等色彩空间变换
-            material.SetFloat("_Intensity", 500.0f);
-            
-            // _ParallaxScale: 视差映射高度，升级到 50.0（10 倍，从 5.0）
-            // 视差映射升级从 16-64 层到 160-640 层
-            // 高值增加迭代层数，从 40 层增加到 400 层
-            // 纹理采样从 40 次增加到 400 次（10 倍增加）
-            material.SetFloat("_ParallaxScale", 50.0f);
-            
-            // _NoiseOctaves: 噪声层数，升级到 128（从原 16，8倍）
-            // FBM Perlin噪声 × 128 层迭代
-            // 每层 20+ 条GPU指令 = 2560+ 条指令
-            material.SetFloat("_NoiseOctaves", 128.0f);
-            
-            // _SamplingRate: 采样率倍数，升级到 256（亿级别）
-            // 增加每个循环中的纹理采样次数和频率
-            // 基础 5 次采样 × 256 = 1280 次采样/循环
-            material.SetFloat("_SamplingRate", 256.0f);
-            
-            // _ColorPasses: 色彩空间转换通道数，升级到 100（亿级别）
-            // RGB↔HSV 转换 × 100 次迭代
-            // 每次转换 40+ 条指令 = 4000+ 条指令
-            material.SetFloat("_ColorPasses", 100.0f);
-            
-            // _BaseColor: 基础颜色，随机化增加材质多样性
-            material.SetColor("_BaseColor", new Color(
-                Random.Range(0.2f, 1f),
-                Random.Range(0.2f, 1f),
-                Random.Range(0.2f, 1f),
-                1f
-            ));
-            
-            // ========== 设置贴图 ==========
-            // 使用白色纹理作为默认，在 GPU 上执行实际的计算密集操作
-            Texture2D defaultWhite = Texture2D.whiteTexture;
-            
-            // _MainTex: 主纹理，在循环中多次采样（升级到 5 次）
-            // 在 ExpensiveColorComputation 中采样 5 次，加上视差映射中的采样
-            material.SetTexture("_MainTex", defaultWhite);
-            
-            // _NormalMap: 法线贴图，用于升级版法线计算（5 次迭代）
-            // UnpackNormalComplex 会进行 5 次迭代采样（升级从 3→5）
-            material.SetTexture("_NormalMap", defaultWhite);
-            
-            // _HeightMap: 高度贴图，用于升级版陡峭视差映射（16-64 层）
-            // ParallaxMapping 中会采样 16-64 次（升级从 8-32）
-            material.SetTexture("_HeightMap", defaultWhite);
-            
-            return material;
+            var materials = CreateDefenseMaterials(avatarRoot, 1, false, loopCount);
+            // 防御性检查：确保数组不为空
+            if (materials == null || materials.Length == 0)
+            {
+                Debug.LogWarning("[ASS] CreateDefenseShaderMaterial: 未能创建材质，返回null");
+                return null;
+            }
+            return materials[0];
         }
 
+        
         #endregion
     }
 }

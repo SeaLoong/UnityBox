@@ -52,8 +52,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     ParentPositionOffset = new Vector3(0f, -0.02f, 0.15f),  // 头部下方2cm，前方15cm
                     ParentRotationOffset = Vector3.zero
                 });
-                constraint.IsActive = true;
-                constraint.Locked = true;
+                
+                // 使用SerializedObject设置属性，避免触发Editor GUI事件
+                var constraintSer = new SerializedObject(constraint);
+                constraintSer.FindProperty("IsActive").boolValue = true;
+                constraintSer.FindProperty("Locked").boolValue = true;
+                constraintSer.ApplyModifiedPropertiesWithoutUndo();
             }
 #endif
 
@@ -78,28 +82,55 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             containerObj.transform.localScale = new Vector3(0.15f, 0.03f, 0.03f);
             containerObj.SetActive(true);
 
-            // 背景（白色）
-            var bgObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            bgObj.name = "Background";
-            bgObj.transform.SetParent(containerObj.transform, false);
-            Object.DestroyImmediate(bgObj.GetComponent<Collider>());
+            // 背景（白色）- 手动创建Quad避免CreatePrimitive触发的Editor事件
+            var bgObj = CreateSimpleQuad("Background", containerObj.transform, new Vector3(0f, 0f, 0.001f), Vector3.one);
             var bgRenderer = bgObj.GetComponent<MeshRenderer>();
             bgRenderer.sharedMaterial = new Material(Shader.Find("Unlit/Color")) { color = new Color(1f, 1f, 1f, 1f) };
-            bgObj.transform.localPosition = new Vector3(0f, 0f, 0.001f); // 背景在后
-            bgObj.transform.localScale = new Vector3(1f, 1f, 1f);
 
             // 前景条（红色，通过localScale.x 控制长度）
-            var barObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            barObj.name = "Bar";
-            barObj.transform.SetParent(containerObj.transform, false);
-            Object.DestroyImmediate(barObj.GetComponent<Collider>());
+            var barObj = CreateSimpleQuad("Bar", containerObj.transform, Vector3.zero, new Vector3(1f, 0.1f, 1f));
             var barRenderer = barObj.GetComponent<MeshRenderer>();
             barRenderer.sharedMaterial = new Material(Shader.Find("Unlit/Color")) { color = new Color(1f, 0f, 0f, 1f) };
-            barObj.transform.localPosition = new Vector3(0f, 0f, 0f); // 进度条在前
-            barObj.transform.localScale = new Vector3(1f, 0.1f, 1f); // 更细
 
             Debug.Log(I18n.T("log.visual_countdown_created"));
             return containerObj;
+        }
+
+        /// <summary>
+        /// 手动创建简单Quad，避免使用GameObject.CreatePrimitive触发Editor事件
+        /// </summary>
+        private static GameObject CreateSimpleQuad(string name, Transform parent, Vector3 localPos, Vector3 localScale)
+        {
+            var quad = new GameObject(name);
+            quad.transform.SetParent(parent, false);
+            quad.transform.localPosition = localPos;
+            quad.transform.localScale = localScale;
+            
+            // 手动创建Quad mesh
+            var mesh = new Mesh();
+            mesh.vertices = new Vector3[]
+            {
+                new Vector3(-0.5f, -0.5f, 0),
+                new Vector3(0.5f, -0.5f, 0),
+                new Vector3(-0.5f, 0.5f, 0),
+                new Vector3(0.5f, 0.5f, 0)
+            };
+            mesh.uv = new Vector2[]
+            {
+                new Vector2(0, 0),
+                new Vector2(1, 0),
+                new Vector2(0, 1),
+                new Vector2(1, 1)
+            };
+            mesh.triangles = new int[] { 0, 2, 1, 2, 3, 1 };
+            mesh.RecalculateNormals();
+            
+            var meshFilter = quad.AddComponent<MeshFilter>();
+            meshFilter.mesh = mesh;
+            
+            quad.AddComponent<MeshRenderer>();
+            
+            return quad;
         }
 
         #endregion

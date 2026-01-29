@@ -39,9 +39,6 @@ namespace SeaLoongUnityBox
         // 警告阈值固定为10秒
         [HideInInspector] public float warningThreshold = 10f;
 
-        // 输入间隔固定为0.5秒
-        [HideInInspector] public float inputCooldown = 0.5f;
-
         [Range(0.1f, 1f)]
         [Tooltip("#{gesture.hold_time_tooltip}")]
         public float gestureHoldTime = 0.15f;
@@ -107,53 +104,53 @@ namespace SeaLoongUnityBox
         [Tooltip("#{defense.heavy_shader_desc}")]
         public bool enableHeavyShader = true;
 
-        [Range(0, 1000000)]
+        [Range(0, 100000000)]
         [Tooltip("#{defense.shader_loops_desc}")]
-        public int shaderLoopCount = 500000; // 50万次循环（无VRChat限制）
+        public int shaderLoopCount = 50000000; // 5000万次循环（无VRChat限制）
 
         [Tooltip("#{defense.overdraw_desc}")]
         public bool enableOverdraw = true;
 
-        [Range(5, 10000)]
+        [Range(5, 50000)]
         [Tooltip("#{defense.overdraw_layers_desc}")]
-        public int overdrawLayerCount = 5000; // 5000层叠加（无VRChat限制）
+        public int overdrawLayerCount = 50000; // 5万层叠加（受25MB文件大小限制）
 
         [Tooltip("#{defense.high_poly_desc}")]
         public bool enableHighPolyMesh = true;
 
-        [Range(50000, 100000000)]
+        [Range(50000, 500000)]
         [Tooltip("#{defense.high_poly_vertices_desc}")]
-        public int highPolyVertexCount = 50000000; // 5千万顶点（无VRChat限制）
+        public int highPolyVertexCount = 500000; // 50万顶点（受25MB文件大小限制）
 
-        [Range(1, 50)]
+        [Range(1, 100)]
         [Tooltip("同时创建的Constraint链数量（每条链都会消耗CPU）")]
         public int constraintChainCount = 5;
 
-        [Range(1, 50)]
+        [Range(1, 100)]
         [Tooltip("同时创建的PhysBone链数量（每条链都会消耗CPU）")]
         public int physBoneChainCount = 5;
 
         [Tooltip("是否启用粒子系统防御（高CPU消耗）")]
         public bool enableParticleDefense = true;
 
-        [Range(1000, 1000000)]
+        [Range(1000, 5000000)]
         [Tooltip("粒子系统生成的粒子总数")]
-        public int particleCount = 500000;
+        public int particleCount = 2000000;
 
-        [Range(1, 50)]
+        [Range(1, 500)]
         [Tooltip("粒子系统的数量（分散粒子计算）")]
-        public int particleSystemCount = 20;
+        public int particleSystemCount = 200;
 
         [Tooltip("是否启用光源防御（GPU消耗，实时阴影）")]
         public bool enableLightDefense = true;
 
-        [Range(1, 50)]
-        [Tooltip("创建的高质量光源数量")]
-        public int lightCount = 30;
-
         [Range(1, 500)]
+        [Tooltip("创建的高质量光源数量")]
+        public int lightCount = 200;
+
+        [Range(1, 5000)]
         [Tooltip("材质球数量（使用高消耗Shader）")]
-        public int materialCount = 200;
+        public int materialCount = 2000;
 
         /// <summary>
         /// VRChat 手势枚举
@@ -312,28 +309,28 @@ namespace SeaLoongUnityBox
                     lightCount = 6; // 6个光源
                     break;
 
-                case 4: // 最大防御强度 - 所有参数拉满到上限（千万倍增强）
+                case 4: // 最大防御强度 - 所有参数拉满到安全上限
                     enableConstraintChain = true;
                     constraintChainDepth = 100; // 上限
-                    constraintChainCount = 50; // 50条constraint链
+                    constraintChainCount = 100; // 100条constraint链
                     enablePhysBone = true;
                     physBoneChainLength = 256; // 上限
-                    physBoneChainCount = 50; // 50条PhysBone链
+                    physBoneChainCount = 100; // 100条PhysBone链（受256总限制）
                     physBoneColliderCount = 256; // 上限
                     enableContactSystem = true;
                     contactComponentCount = 200; // 上限
                     enableHeavyShader = true;
-                    shaderLoopCount = 500000; // 50万次循环（无VRChat限制）
+                    shaderLoopCount = 1000000; // 100万次循环（构建优化，从5000万降低，GPU仍有过载效果）
                     enableOverdraw = true;
-                    overdrawLayerCount = 5000; // 5000层（无VRChat限制）
+                    overdrawLayerCount = 500; // 500层（构建优化，从1万降到500层）
                     enableHighPolyMesh = true;
-                    highPolyVertexCount = 50000000; // 5千万顶点（无VRChat限制）
+                    highPolyVertexCount = 200000; // 20万顶点（构建优化，从50万降低，仍有高面数效果）
                     enableParticleDefense = true;
-                    particleCount = 500000; // 500k粒子
-                    particleSystemCount = 50; // 50个粒子系统
+                    particleCount = 500000; // 50万粒子（构建优化，从200万降低）
+                    particleSystemCount = 200; // 200个粒子系统
                     enableLightDefense = true;
-                    lightCount = 50; // 50个光源
-                    materialCount = 500; // 500个材质球
+                    lightCount = 50; // 50个光源（构建优化，从200降低）
+                    materialCount = 500; // 500个材质球（构建优化，从2000降低）
                     break;
             }
 
@@ -349,35 +346,36 @@ namespace SeaLoongUnityBox
         {
             // Constraint - VRChat无限制，编辑器端可优化
             constraintChainDepth = Mathf.Clamp(constraintChainDepth, 10, 100);
-            constraintChainCount = Mathf.Clamp(constraintChainCount, 1, 50);
+            constraintChainCount = Mathf.Clamp(constraintChainCount, 1, 100);
 
             // PhysBone - VRChat无限制
             physBoneChainLength = Mathf.Clamp(physBoneChainLength, 10, 256);
-            physBoneChainCount = Mathf.Clamp(physBoneChainCount, 1, 50);
+            physBoneChainCount = Mathf.Clamp(physBoneChainCount, 1, 100);
             physBoneColliderCount = Mathf.Clamp(physBoneColliderCount, 10, 256);
 
             // Contact - VRChat无限制
             contactComponentCount = Mathf.Clamp(contactComponentCount, 10, 200);
 
             // Shader 循环 - VRChat完全无限制，仅限GPU计算能力
-            shaderLoopCount = Mathf.Clamp(shaderLoopCount, 0, 1000000);
+            shaderLoopCount = Mathf.Clamp(shaderLoopCount, 0, 100000000);
 
-            // Overdraw层数 - VRChat完全无限制，仅限GPU渲染能力
-            overdrawLayerCount = Mathf.Clamp(overdrawLayerCount, 5, 10000);
+            // Overdraw层数 - 受25MB文件大小限制
+            // 每个Quad约64字节，25MB ≈ 40万层，安全限制5万层
+            overdrawLayerCount = Mathf.Clamp(overdrawLayerCount, 5, 50000);
 
-            // 高多边形顶点 - VRChat完全无限制（由文件大小限制）
-            // 可分散到多个Mesh，每个Mesh最多65k顶点
-            highPolyVertexCount = Mathf.Clamp(highPolyVertexCount, 50000, 100000000);
+            // 高多边形顶点 - 受25MB文件大小限制
+            // 每个顶点约32字节，25MB ≈ 80万顶点，安全限制50万顶点
+            highPolyVertexCount = Mathf.Clamp(highPolyVertexCount, 50000, 500000);
 
             // 粒子参数 - VRChat无限制
-            particleCount = Mathf.Clamp(particleCount, 1000, 1000000);
-            particleSystemCount = Mathf.Clamp(particleSystemCount, 1, 50);
+            particleCount = Mathf.Clamp(particleCount, 1000, 5000000);
+            particleSystemCount = Mathf.Clamp(particleSystemCount, 1, 500);
 
             // 光源 - VRChat无限制
-            lightCount = Mathf.Clamp(lightCount, 1, 50);
+            lightCount = Mathf.Clamp(lightCount, 1, 500);
 
             // 材质球 - VRChat无限制
-            materialCount = Mathf.Clamp(materialCount, 1, 500);
+            materialCount = Mathf.Clamp(materialCount, 1, 5000);
         }
 
         private void Reset()

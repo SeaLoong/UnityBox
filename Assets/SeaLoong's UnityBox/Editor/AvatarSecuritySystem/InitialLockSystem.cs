@@ -360,17 +360,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
         
         /// <summary>
-        /// 添加 Scale=1 动画曲线（显示对象）
-        /// </summary>
-        private static void AddScaleOneCurves(AnimationClip clip, string path)
-        {
-            var oneCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", oneCurve);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", oneCurve);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", oneCurve);
-        }
-        
-        /// <summary>
         /// 创建遮挡 Mesh（覆盖整个 Avatar，仅本地可见）
         /// 使用一个简单的球体 Mesh 包裹住 Avatar
         /// </summary>
@@ -380,7 +369,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var existing = avatarRoot.transform.Find(Constants.GO_OCCLUSION_MESH);
             if (existing != null)
             {
-                Object.DestroyImmediate(existing.gameObject);
+                // 使用Destroy而不是DestroyImmediate，避免触发Editor刷新
+                Object.Destroy(existing.gameObject);
             }
             
             var meshObj = new GameObject(Constants.GO_OCCLUSION_MESH);
@@ -418,8 +408,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     ParentRotationOffset = Vector3.zero
                 };
                 constraint.Sources.Add(source);
-                constraint.IsActive = true;
-                constraint.Locked = true;
+                
+                // 使用SerializedObject设置属性，避免触发Editor GUI事件
+                var constraintSer = new SerializedObject(constraint);
+                constraintSer.FindProperty("IsActive").boolValue = true;
+                constraintSer.FindProperty("Locked").boolValue = true;
+                constraintSer.ApplyModifiedPropertiesWithoutUndo();
             }
 #endif
             

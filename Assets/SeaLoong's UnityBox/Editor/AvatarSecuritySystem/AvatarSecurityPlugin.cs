@@ -65,14 +65,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 try
                 {
                     GenerateSystem(ctx, assConfig, isPlayMode);
-
-
                     Debug.Log(I18n.T("log.complete"));
                 }
                 catch (System.Exception ex)
                 {
+                    // 捕获所有异常，记录错误但不抛出，避免Unity崩溃
                     Debug.LogError($"[ASS] Generation failed: {ex.Message}\n{ex.StackTrace}");
-                    throw;
+                    // 不重新抛出异常，允许构建继续
                 }
             });
         }
@@ -137,12 +136,24 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AnimatorControllerLayer defenseLayer = null;
             if (!config.disableDefense)
             {
-                defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
-                fxController.AddLayer(defenseLayer);
-                
-                if (isPlayMode)
+                try
                 {
-                    Debug.Log(I18n.T("log.play_mode_simplified"));
+                    defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
+                    if (defenseLayer != null)
+                    {
+                        fxController.AddLayer(defenseLayer);
+                        
+                        if (isPlayMode)
+                        {
+                            Debug.Log(I18n.T("log.play_mode_simplified"));
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    // 防御层创建失败不应影响其他层
+                    Debug.LogError($"[ASS] 防御层创建失败: {ex.Message}");
+                    // 继续执行，不添加防御层
                 }
             }
 

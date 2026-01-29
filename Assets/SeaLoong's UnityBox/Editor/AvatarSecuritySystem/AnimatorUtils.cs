@@ -107,18 +107,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建退出转换
-        /// </summary>
-        public static AnimatorStateTransition CreateExitTransition(AnimatorState from, float exitTime = 0.95f)
-        {
-            var transition = from.AddExitTransition();
-            transition.hasExitTime = true;
-            transition.exitTime = exitTime;
-            transition.duration = 0f;
-            return transition;
-        }
-
-        /// <summary>
         /// 获取 GameObject 相对于 Avatar Root 的路径
         /// </summary>
         public static string GetRelativePath(GameObject root, GameObject target)
@@ -237,12 +225,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 保存并刷新资产
+        /// 保存资产
+        /// 构建过程中不需要Refresh，Unity会自动处理
         /// </summary>
         public static void SaveAndRefresh()
         {
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
         }
 
         /// <summary>

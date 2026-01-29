@@ -54,23 +54,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建参数反转动画（用于初始锁定）
-        /// </summary>
-        public static AnimationClip CreateParameterInversionClip(Dictionary<string, object> parameterValues)
-        {
-            var clip = new AnimationClip { name = "ASS_ParameterInversion" };
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
-
-            // 这里应该根据实际的参数类型创建曲线
-            // 由于无法直接在AnimationClip中修改Animator参数默认值
-            // 实际实现需要通过其他方式（如Modular Avatar Parameters）
-
-            return clip;
-        }
-
-        /// <summary>
         /// 创建音效触发动画
         /// </summary>
         public static AnimationClip CreateAudioTriggerClip(string audioPath, float duration = 0.1f)
