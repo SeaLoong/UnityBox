@@ -1012,7 +1012,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建防御Shader材质（统一方法）
         /// </summary>
-        private static Material[] CreateDefenseMaterials(GameObject avatarRoot, int materialCount, bool useRandomParameters = true, int shaderLoopCount = 1000000)
+        private static Material[] CreateDefenseMaterials(GameObject avatarRoot, int materialCount, int shaderLoopCount = 100)
         {
             var shader = CreateDefenseShader(avatarRoot);
 
@@ -1030,45 +1030,28 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 var material = new Material(shader);
                 material.name = $"ASS_DefenseMaterial_{i}";
 
-                if (useRandomParameters)
-                {
-                    ApplyRandomShaderParameters(material);
-                }
-                else
-                {
-                    ApplyFixedShaderParameters(material, shaderLoopCount);
-                }
+                ApplyFixedShaderParameters(material, shaderLoopCount);
 
                 // 设置基本材质参数
-                material.SetFloat("_Glossiness", Random.Range(0.3f, 1f));
-                material.SetFloat("_Metallic", Random.Range(0.3f, 1f));
-                material.SetFloat("_OcclusionStrength", Random.Range(0.5f, 5f));
-                material.SetFloat("_EmissionIntensity", Random.Range(0.5f, 5f));
-                material.SetFloat("_RimPower", Random.Range(2f, 16f));
-                material.SetFloat("_DetailScale", Random.Range(5f, 50f));
-                material.SetFloat("_NoiseScale", Random.Range(3f, 25f));
-                material.SetFloat("_RefractionStrength", Random.Range(0.05f, 1f));
-                material.SetFloat("_DispersionStrength", Random.Range(0.02f, 0.5f));
-                material.SetFloat("_Anisotropy", Random.Range(0f, 1f));
-                material.SetFloat("_ClearCoat", Random.Range(0f, 1f));
-                material.SetFloat("_Sheen", Random.Range(0f, 1f));
-                material.SetFloat("_Thickness", Random.Range(0.3f, 2f));
-                material.SetFloat("_Transmission", Random.Range(0f, 1f));
-                material.SetFloat("_Absorption", Random.Range(0f, 1f));
+                material.SetFloat("_Glossiness", 0.5f);
+                material.SetFloat("_Metallic", 0.5f);
+                material.SetFloat("_OcclusionStrength", 1.0f);
+                material.SetFloat("_EmissionIntensity", 1.0f);
+                material.SetFloat("_RimPower", 4.0f);
+                material.SetFloat("_DetailScale", 10.0f);
+                material.SetFloat("_NoiseScale", 5.0f);
+                material.SetFloat("_RefractionStrength", 0.5f);
+                material.SetFloat("_DispersionStrength", 0.1f);
+                material.SetFloat("_Anisotropy", 0.5f);
+                material.SetFloat("_ClearCoat", 0.5f);
+                material.SetFloat("_Sheen", 0.5f);
+                material.SetFloat("_Thickness", 1.0f);
+                material.SetFloat("_Transmission", 0.5f);
+                material.SetFloat("_Absorption", 0.5f);
 
                 // 设置颜色
-                material.SetColor("_SubsurfaceColor", new Color(
-                    Random.Range(0.5f, 1f),
-                    Random.Range(0.2f, 0.6f),
-                    Random.Range(0.2f, 0.6f),
-                    1f
-                ));
-                material.SetColor("_BaseColor", new Color(
-                    Random.Range(0.2f, 1f),
-                    Random.Range(0.2f, 1f),
-                    Random.Range(0.2f, 1f),
-                    1f
-                ));
+                material.SetColor("_SubsurfaceColor", new Color(1f, 0.5f, 0.5f, 1f));
+                material.SetColor("_BaseColor", new Color(1f, 1f, 1f, 1f));
 
                 // 设置纹理（使用白色纹理作为默认）
                 Texture2D defaultWhite = Texture2D.whiteTexture;
@@ -1081,51 +1064,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 materials[i] = material;
             }
 
-            Debug.Log($"[ASS] 创建防御Shader材质: {materialCount}个，使用{(useRandomParameters ? "随机" : "固定")}参数");
+            Debug.Log($"[ASS] 创建防御Shader材质: {materialCount}个");
             return materials;
-        }
-
-        /// <summary>
-        /// 应用随机Shader参数
-        /// </summary>
-        private static void ApplyRandomShaderParameters(Material material)
-        {
-            material.SetInt("_LoopCount", Random.Range(100, 1000));
-            material.SetFloat("_Intensity", Random.Range(10f, 100f));
-            material.SetFloat("_Complexity", Random.Range(100f, 1000f));
-            material.SetFloat("_ParallaxScale", Random.Range(1f, 10f));
-            material.SetFloat("_NoiseOctaves", Random.Range(4f, 16f));
-            material.SetFloat("_SamplingRate", Random.Range(8f, 32f));
-            material.SetFloat("_ColorPasses", Random.Range(5f, 20f));
-            material.SetFloat("_LightCount", Random.Range(2f, 8f));
-            material.SetFloat("_RayMarchSteps", Random.Range(4f, 16f));
-            material.SetFloat("_SubsurfaceScattering", Random.Range(1f, 8f));
-            material.SetFloat("_FractalIterations", Random.Range(8f, 32f));
-            material.SetFloat("_VolumetricSteps", Random.Range(4f, 16f));
-            material.SetFloat("_ParticleDensity", Random.Range(100f, 500f));
-            material.SetFloat("_GlobalIllumination", Random.Range(2f, 8f));
-            material.SetFloat("_CausticSamples", Random.Range(4f, 16f));
-            material.SetFloat("_ReflectionSamples", Random.Range(4f, 16f));
-            material.SetFloat("_ShadowSamples", Random.Range(4f, 8f));
-            material.SetFloat("_ParallaxIterations", Random.Range(4f, 16f));
-            material.SetFloat("_Turbulence", Random.Range(50f, 200f));
-            material.SetFloat("_CloudLayers", Random.Range(2f, 8f));
-            material.SetFloat("_MotionBlurStrength", Random.Range(0.1f, 0.5f));
-            material.SetFloat("_DepthOfFieldStrength", Random.Range(0.1f, 0.5f));
-            material.SetFloat("_ChromaticAberration", Random.Range(0.01f, 0.1f));
-            material.SetFloat("_LensFlareIntensity", Random.Range(1f, 5f));
-            material.SetFloat("_GrainStrength", Random.Range(0.1f, 0.5f));
-            material.SetFloat("_VignetteStrength", Random.Range(0.1f, 0.5f));
-            material.SetFloat("_MoireIntensity", Random.Range(0.1f, 1f));
-            material.SetFloat("_DitherStrength", Random.Range(0.1f, 0.5f));
-            material.SetFloat("_HologramIntensity", Random.Range(0.1f, 1f));
-            material.SetFloat("_Iridescence", Random.Range(0.1f, 1f));
-            material.SetFloat("_VelvetIntensity", Random.Range(0.1f, 1f));
-            material.SetFloat("_FresnelPower", Random.Range(1f, 5f));
-            material.SetFloat("_BumpMapStrength", Random.Range(0.1f, 1f));
-            material.SetFloat("_HeightMapStrength", Random.Range(0.1f, 1f));
-            material.SetFloat("_ParallaxIntensity", Random.Range(0.1f, 1f));
-            material.SetFloat("_DistortionStrength", Random.Range(0.1f, 2f));
         }
 
         /// <summary>
@@ -1189,7 +1129,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 materialRoot = new GameObject("ExpensiveMaterials");
                 materialRoot.transform.SetParent(root.transform);
 
-                materials = CreateDefenseMaterials(avatarRoot, materialCount, true, shaderLoopCount);
+                materials = CreateDefenseMaterials(avatarRoot, materialCount, shaderLoopCount);
 
                 if (materials == null || materials.Length == 0)
                 {
@@ -1691,7 +1631,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static Material CreateDefenseShaderMaterial(GameObject avatarRoot, int loopCount)
         {
-            var materials = CreateDefenseMaterials(avatarRoot, 1, false, loopCount);
+            var materials = CreateDefenseMaterials(avatarRoot, 1, loopCount);
             return materials?.Length > 0 ? materials[0] : null;
         }
 
