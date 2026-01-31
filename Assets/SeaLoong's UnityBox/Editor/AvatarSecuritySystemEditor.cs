@@ -207,125 +207,15 @@ namespace SeaLoongUnityBox
         {
             EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
 
-            SerializedProperty useCustomProp = serializedObject.FindProperty("useCustomDefenseSettings");
-            bool useCustomSettings = useCustomProp.boolValue;
-
-            // 自定义防御设置开关
-            EditorGUILayout.PropertyField(useCustomProp,
-                new GUIContent(T("defense.use_custom"), T("defense.use_custom_tooltip")));
-
-            EditorGUILayout.Space(3);
-
-            // 防御等级（自定义模式下禁用）
-            EditorGUI.BeginDisabledGroup(useCustomSettings);
+            // 防御等级选择
             EditorGUILayout.PropertyField(serializedObject.FindProperty("defenseLevel"),
                 new GUIContent(T("defense.level"), T("defense.level_tooltip")));
-            EditorGUI.EndDisabledGroup();
 
             int defenseLevel = serializedObject.FindProperty("defenseLevel").intValue;
             
             // 显示等级说明
             EditorGUILayout.Space(3);
             EditorGUILayout.HelpBox(GetDefenseLevelDescription(defenseLevel), MessageType.Info);
-
-            if (useCustomSettings)
-            {
-                // 自定义设置模式 - 显示所有参数
-                EditorGUILayout.HelpBox(T("defense.custom_mode_hint"), MessageType.Warning);
-                
-                EditorGUILayout.Space(5);
-
-                var enableCpuProp = serializedObject.FindProperty("enableCpuDefense");
-                var enableGpuProp = serializedObject.FindProperty("enableGpuDefense");
-
-                EditorGUILayout.PropertyField(enableCpuProp,
-                    new GUIContent(T("defense.enable_cpu_defense"), T("defense.enable_cpu_defense_desc")));
-
-                EditorGUILayout.PropertyField(enableGpuProp,
-                    new GUIContent(T("defense.enable_gpu_defense"), T("defense.enable_gpu_defense_desc")));
-
-                EditorGUILayout.Space(5);
-
-                // CPU Defense Methods
-                EditorGUILayout.LabelField(T("defense.cpu_methods"), EditorStyles.boldLabel);
-
-                EditorGUI.BeginDisabledGroup(!enableCpuProp.boolValue);
-                
-                var enableConstraintProp = serializedObject.FindProperty("enableConstraintChain");
-                EditorGUILayout.PropertyField(enableConstraintProp,
-                    new GUIContent(T("defense.constraint_chain"), T("defense.constraint_chain_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enableConstraintProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("constraintChainDepth"),
-                    new GUIContent(T("defense.constraint_depth"), T("defense.constraint_depth_tooltip")));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space(3);
-
-                var enablePhysBoneProp = serializedObject.FindProperty("enablePhysBone");
-                EditorGUILayout.PropertyField(enablePhysBoneProp,
-                    new GUIContent(T("defense.phys_bone"), T("defense.phys_bone_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enablePhysBoneProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("physBoneChainLength"),
-                    new GUIContent(T("defense.phys_bone_length"), T("defense.phys_bone_length_tooltip")));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("physBoneColliderCount"),
-                    new GUIContent(T("defense.phys_bone_colliders"), T("defense.phys_bone_colliders_tooltip")));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space(3);
-
-                var enableContactProp = serializedObject.FindProperty("enableContactSystem");
-                EditorGUILayout.PropertyField(enableContactProp,
-                    new GUIContent(T("defense.contact_system"), T("defense.contact_system_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enableContactProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("contactComponentCount"),
-                    new GUIContent(T("defense.contact_count"), T("defense.contact_count_tooltip")));
-                EditorGUI.EndDisabledGroup();
-                
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space(5);
-
-                // GPU Defense Methods
-                EditorGUILayout.LabelField(T("defense.gpu_methods"), EditorStyles.boldLabel);
-
-                EditorGUI.BeginDisabledGroup(!enableGpuProp.boolValue);
-                
-                var enableShaderProp = serializedObject.FindProperty("enableHeavyShader");
-                EditorGUILayout.PropertyField(enableShaderProp,
-                    new GUIContent(T("defense.heavy_shader"), T("defense.heavy_shader_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enableShaderProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("shaderLoopCount"),
-                    new GUIContent(T("defense.shader_loops"), T("defense.shader_loops_tooltip")));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space(3);
-
-                var enableOverdrawProp = serializedObject.FindProperty("enableOverdraw");
-                EditorGUILayout.PropertyField(enableOverdrawProp,
-                    new GUIContent(T("defense.overdraw"), T("defense.overdraw_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enableOverdrawProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("overdrawLayerCount"),
-                    new GUIContent(T("defense.overdraw_layers"), T("defense.overdraw_layers_tooltip")));
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space(3);
-
-                var enableHighPolyProp = serializedObject.FindProperty("enableHighPolyMesh");
-                EditorGUILayout.PropertyField(enableHighPolyProp,
-                    new GUIContent(T("defense.high_poly"), T("defense.high_poly_tooltip")));
-
-                EditorGUI.BeginDisabledGroup(!enableHighPolyProp.boolValue);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("highPolyVertexCount"),
-                    new GUIContent(T("defense.high_poly_vertices"), T("defense.high_poly_vertices_tooltip")));
-                EditorGUI.EndDisabledGroup();
-                
-                EditorGUI.EndDisabledGroup();
-            }
         }
 
         private string GetDefenseLevelDescription(int level)
@@ -336,7 +226,6 @@ namespace SeaLoongUnityBox
                 1 => T("defense.level_1_desc"),
                 2 => T("defense.level_2_desc"),
                 3 => T("defense.level_3_desc"),
-                4 => T("defense.level_4_desc"),
                 _ => "Unknown Defense Level"
             };
         }

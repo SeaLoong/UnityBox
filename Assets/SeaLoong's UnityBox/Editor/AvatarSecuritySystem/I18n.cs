@@ -557,33 +557,27 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_0_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 0: All defense disabled (file protection only)" },
-                    { SystemLanguage.ChineseSimplified, "等级 0：禁用所有防御（仅文件保护）" },
-                    { SystemLanguage.Japanese, "レベル0：すべての防御無効（ファイル保護のみ）" }
+                    { SystemLanguage.English, "Level 0: Password system only (no defense components)" },
+                    { SystemLanguage.ChineseSimplified, "等级 0：仅密码系统（不生成防御组件）" },
+                    { SystemLanguage.Japanese, "レベル0：パスワードシステムのみ（防御コンポーネントなし）" }
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Basic CPU defense (Constraint Chain, PhysBone, Contact System)" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：基础 CPU 防御（约束链、PhysBone、Contact 系统）" },
-                    { SystemLanguage.Japanese, "レベル1：基本CPU防御（制約チェーン、PhysBone、コンタクトシステム）" }
+                    { SystemLanguage.English, "Level 1: Password + CPU defense (Constraint Chain, PhysBone, Contact - MAX parameters)" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（约束链、PhysBone、Contact - 最高参数）" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（制約チェーン、PhysBone、コンタクト - 最大パラメータ）" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: CPU + Basic GPU defense (adds Heavy Shader, Overdraw)" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：CPU + 基础 GPU 防御（增加重型 Shader、Overdraw）" },
-                    { SystemLanguage.Japanese, "レベル2：CPU+基本GPU防御（ヘビーシェーダー、オーバードロー追加）" }
+                    { SystemLanguage.English, "Level 2: Password + CPU defense (MAX) + GPU defense (medium-low parameters)" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU 防御（最高）+ GPU 防御（中低参数）" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU防御（最大）+GPU防御（中低パラメータ）" }
                 },
                 ["defense.level_3_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 3: CPU + Enhanced GPU defense (adds High Poly Mesh, increases intensity)" },
-                    { SystemLanguage.ChineseSimplified, "等级 3：CPU + 增强 GPU 防御（增加高多边形网格，提高强度）" },
-                    { SystemLanguage.Japanese, "レベル3：CPU+強化GPU防御（高ポリゴンメッシュ追加、強度向上）" }
-                },
-                ["defense.level_4_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Level 4: Maximum defense strength (all parameters set to VRChat limits)" },
-                    { SystemLanguage.ChineseSimplified, "等级 4：最大防御强度（所有参数对应 VRChat 上限）" },
-                    { SystemLanguage.Japanese, "レベル4：最大防御強度（全パラメータがVRChat制限値）" }
+                    { SystemLanguage.English, "Level 3: Password + CPU defense (MAX) + GPU defense (MAX parameters)" },
+                    { SystemLanguage.ChineseSimplified, "等级 3：密码 + CPU 防御（最高）+ GPU 防御（最高参数）" },
+                    { SystemLanguage.Japanese, "レベル3：パスワード+CPU防御（最大）+GPU防御（最大パラメータ）" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {

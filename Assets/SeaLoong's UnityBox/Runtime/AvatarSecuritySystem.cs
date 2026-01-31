@@ -63,94 +63,9 @@ namespace SeaLoongUnityBox
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
-        [Tooltip("倒计时结束后触发的防御强度（调试模式下自动简化）")]
-        [Range(0, 4)]
-        public int defenseLevel = 4;
-
-        [Tooltip("#{defense.use_custom_tooltip}")]
-        public bool useCustomDefenseSettings = false;
-
-        [Tooltip("#{defense.enable_cpu_defense_desc}")]
-        public bool enableCpuDefense = true;
-
-        [Tooltip("#{defense.constraint_chain_desc}")]
-        public bool enableConstraintChain = true;
-
-        [Range(10, 100)]
-        [Tooltip("#{defense.constraint_depth_desc}")]
-        public int constraintChainDepth = 50;
-
-        [Tooltip("#{defense.phys_bone_desc}")]
-        public bool enablePhysBone = true;
-
-        [Range(10, 256)]
-        [Tooltip("#{defense.phys_bone_length_desc}")]
-        public int physBoneChainLength = 50;
-
-        [Range(10, 256)]
-        [Tooltip("#{defense.phys_bone_colliders_desc}")]
-        public int physBoneColliderCount = 100;
-
-        [Tooltip("#{defense.contact_system_desc}")]
-        public bool enableContactSystem = true;
-
-        [Range(10, 200)]
-        [Tooltip("#{defense.contact_count_desc}")]
-        public int contactComponentCount = 150;
-
-        [Tooltip("#{defense.enable_gpu_defense_desc}")]
-        public bool enableGpuDefense = true;
-
-        [Tooltip("#{defense.heavy_shader_desc}")]
-        public bool enableHeavyShader = true;
-
-        [Range(0, 100000000)]
-        [Tooltip("#{defense.shader_loops_desc}")]
-        public int shaderLoopCount = 50000000; // 5000万次循环（无VRChat限制）
-
-        [Tooltip("#{defense.overdraw_desc}")]
-        public bool enableOverdraw = true;
-
-        [Range(5, 50000)]
-        [Tooltip("#{defense.overdraw_layers_desc}")]
-        public int overdrawLayerCount = 50000; // 5万层叠加（受25MB文件大小限制）
-
-        [Tooltip("#{defense.high_poly_desc}")]
-        public bool enableHighPolyMesh = true;
-
-        [Range(50000, 500000)]
-        [Tooltip("#{defense.high_poly_vertices_desc}")]
-        public int highPolyVertexCount = 500000; // 50万顶点（受25MB文件大小限制）
-
-        [Range(1, 100)]
-        [Tooltip("同时创建的Constraint链数量（每条链都会消耗CPU）")]
-        public int constraintChainCount = 5;
-
-        [Range(1, 100)]
-        [Tooltip("同时创建的PhysBone链数量（每条链都会消耗CPU）")]
-        public int physBoneChainCount = 5;
-
-        [Tooltip("是否启用粒子系统防御（高CPU消耗）")]
-        public bool enableParticleDefense = true;
-
-        [Range(1000, 5000000)]
-        [Tooltip("粒子系统生成的粒子总数")]
-        public int particleCount = 2000000;
-
-        [Range(1, 500)]
-        [Tooltip("粒子系统的数量（分散粒子计算）")]
-        public int particleSystemCount = 200;
-
-        [Tooltip("是否启用光源防御（GPU消耗，实时阴影）")]
-        public bool enableLightDefense = true;
-
-        [Range(1, 500)]
-        [Tooltip("创建的高质量光源数量")]
-        public int lightCount = 200;
-
-        [Range(1, 5000)]
-        [Tooltip("材质球数量（使用高消耗Shader）")]
-        public int materialCount = 2000;
+        [Tooltip("防御等级：0=仅密码, 1=密码+CPU防御, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)")]
+        [Range(0, 3)]
+        public int defenseLevel = 3;
 
         /// <summary>
         /// VRChat 手势枚举
@@ -235,147 +150,8 @@ namespace SeaLoongUnityBox
             if (warningThreshold > countdownDuration)
                 warningThreshold = countdownDuration / 2f;
 
-            // 如果不使用自定义设置，则根据防御等级自动配置参数
-            if (!useCustomDefenseSettings)
-            {
-                ApplyDefenseLevelConfiguration();
-            }
-        }
-
-        /// <summary>
-        /// 根据defenseLevel自动应用防御配置
-        /// 如果启用了自定义防御，还会根据enableCpuDefense和enableGpuDefense进行过滤
-        /// </summary>
-        private void ApplyDefenseLevelConfiguration()
-        {
-            switch (defenseLevel)
-            {
-                case 0: // 禁用所有防御
-                    enableConstraintChain = false;
-                    enablePhysBone = false;
-                    enableContactSystem = false;
-                    enableHeavyShader = false;
-                    enableOverdraw = false;
-                    enableHighPolyMesh = false;
-                    break;
-
-                case 1: // 基础CPU防御
-                    enableConstraintChain = true;
-                    constraintChainDepth = 30;
-                    enablePhysBone = true;
-                    physBoneChainLength = 30;
-                    physBoneColliderCount = 50;
-                    enableContactSystem = true;
-                    contactComponentCount = 80;
-                    enableHeavyShader = false;
-                    enableOverdraw = false;
-                    enableHighPolyMesh = false;
-                    break;
-
-                case 2: // CPU + 基础GPU防御
-                    enableConstraintChain = true;
-                    constraintChainDepth = 50;
-                    enablePhysBone = true;
-                    physBoneChainLength = 60;
-                    physBoneColliderCount = 100;
-                    enableContactSystem = true;
-                    contactComponentCount = 120;
-                    enableHeavyShader = true;
-                    shaderLoopCount = 150;
-                    enableOverdraw = true;
-                    overdrawLayerCount = 20;
-                    enableHighPolyMesh = false;
-                    break;
-
-                case 3: // CPU + 加强GPU防御
-                    enableConstraintChain = true;
-                    constraintChainDepth = 75;
-                    constraintChainCount = 3; // 3条constraint链
-                    enablePhysBone = true;
-                    physBoneChainLength = 120;
-                    physBoneChainCount = 3; // 3条PhysBone链
-                    physBoneColliderCount = 150;
-                    enableContactSystem = true;
-                    contactComponentCount = 160;
-                    enableHeavyShader = true;
-                    shaderLoopCount = 300;
-                    enableOverdraw = true;
-                    overdrawLayerCount = 75; // 增加到75层
-                    enableHighPolyMesh = true;
-                    highPolyVertexCount = 600000; // 增加到600000
-                    enableParticleDefense = true;
-                    particleCount = 10000; // 10000个粒子
-                    enableLightDefense = true;
-                    lightCount = 6; // 6个光源
-                    break;
-
-                case 4: // 最大防御强度 - 所有参数拉满到安全上限
-                    enableConstraintChain = true;
-                    constraintChainDepth = 100; // 上限
-                    constraintChainCount = 100; // 100条constraint链
-                    enablePhysBone = true;
-                    physBoneChainLength = 256; // 上限
-                    physBoneChainCount = 100; // 100条PhysBone链（受256总限制）
-                    physBoneColliderCount = 256; // 上限
-                    enableContactSystem = true;
-                    contactComponentCount = 200; // 上限
-                    enableHeavyShader = true;
-                    shaderLoopCount = 1000000; // 100万次循环（构建优化，从5000万降低，GPU仍有过载效果）
-                    enableOverdraw = true;
-                    overdrawLayerCount = 500; // 500层（构建优化，从1万降到500层）
-                    enableHighPolyMesh = true;
-                    highPolyVertexCount = 200000; // 20万顶点（构建优化，从50万降低，仍有高面数效果）
-                    enableParticleDefense = true;
-                    particleCount = 500000; // 50万粒子（构建优化，从200万降低）
-                    particleSystemCount = 200; // 200个粒子系统
-                    enableLightDefense = true;
-                    lightCount = 50; // 50个光源（构建优化，从200降低）
-                    materialCount = 500; // 500个材质球（构建优化，从2000降低）
-                    break;
-            }
-
-            // 确保参数不超过限制
-            EnforceDefenseParameterLimits();
-        }
-
-        /// <summary>
-        /// 强制限制防御参数在合理范围内（无VRChat硬限制）
-        /// VRChat 不限制顶点/Shader/Overdraw，限制来自文件大小(25MB)
-        /// </summary>
-        private void EnforceDefenseParameterLimits()
-        {
-            // Constraint - VRChat无限制，编辑器端可优化
-            constraintChainDepth = Mathf.Clamp(constraintChainDepth, 10, 100);
-            constraintChainCount = Mathf.Clamp(constraintChainCount, 1, 100);
-
-            // PhysBone - VRChat无限制
-            physBoneChainLength = Mathf.Clamp(physBoneChainLength, 10, 256);
-            physBoneChainCount = Mathf.Clamp(physBoneChainCount, 1, 100);
-            physBoneColliderCount = Mathf.Clamp(physBoneColliderCount, 10, 256);
-
-            // Contact - VRChat无限制
-            contactComponentCount = Mathf.Clamp(contactComponentCount, 10, 200);
-
-            // Shader 循环 - VRChat完全无限制，仅限GPU计算能力
-            shaderLoopCount = Mathf.Clamp(shaderLoopCount, 0, 100000000);
-
-            // Overdraw层数 - 受25MB文件大小限制
-            // 每个Quad约64字节，25MB ≈ 40万层，安全限制5万层
-            overdrawLayerCount = Mathf.Clamp(overdrawLayerCount, 5, 50000);
-
-            // 高多边形顶点 - 受25MB文件大小限制
-            // 每个顶点约32字节，25MB ≈ 80万顶点，安全限制50万顶点
-            highPolyVertexCount = Mathf.Clamp(highPolyVertexCount, 50000, 500000);
-
-            // 粒子参数 - VRChat无限制
-            particleCount = Mathf.Clamp(particleCount, 1000, 5000000);
-            particleSystemCount = Mathf.Clamp(particleSystemCount, 1, 500);
-
-            // 光源 - VRChat无限制
-            lightCount = Mathf.Clamp(lightCount, 1, 500);
-
-            // 材质球 - VRChat无限制
-            materialCount = Mathf.Clamp(materialCount, 1, 5000);
+            // 确保防御等级在有效范围内
+            defenseLevel = Mathf.Clamp(defenseLevel, 0, 3);
         }
 
         private void Reset()
@@ -387,7 +163,7 @@ namespace SeaLoongUnityBox
             enableInPlayMode = true;
             lockFxLayers = true;
             disableRootChildren = true;
-            defenseLevel = 4;
+            defenseLevel = 3;
         }
 #endif
     }

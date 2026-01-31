@@ -99,9 +99,14 @@ Warning Threshold: 10秒      # 固定值，警告阶段开始
 #### 步骤 4: 防御配置（可选）
 
 ```yaml
-Defense Level: 4            # 0=禁用, 1=基础, 2=中等, 3=增强, 4=最大
-Use Custom Defense Settings: false  # 使用预设等级
+Defense Level: 3            # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)
 ```
+
+**防御等级说明：**
+- **等级 0**: 仅密码系统，不生成任何防御组件
+- **等级 1**: 密码 + CPU 防御（约束链、PhysBone、Contact - 最高参数）
+- **等级 2**: 密码 + CPU 防御（最高）+ GPU 防御（材质、粒子、光源 - 中低参数）
+- **等级 3**: 密码 + CPU 防御（最高）+ GPU 防御（所有参数最高）
 
 #### 步骤 5: 构建上传
 
@@ -433,33 +438,43 @@ public float inputCooldown;              // 输入间隔（固定0.5秒）
 [Range(0, 4)]
 public int defenseLevel;                  // 防御等级 (0-4)
 public bool useCustomDefenseSettings;    // 使用自定义防御设置
-public bool enableCpuDefense;            // 启用CPU防御
-public bool enableGpuDefense;           // 启用GPU防御
 
-// CPU 防御参数
-public bool enableConstraintChain;       // 启用Constraint链
-public int constraintChainDepth;         // Constraint链深度 (10-100)
-public int constraintChainCount;         // Constraint链数量 (1-50)
-public bool enablePhysBone;              // 启用PhysBone
-public int physBoneChainLength;          // PhysBone链长度 (10-256)
+// ==================== CPU 防御 ====================
+public bool enableCpuDefense;            // 启用CPU防御
+
+// --- 约束链 (Constraint Chain) ---
+public bool enableConstraintChain;       // 启用约束链防御
+public int constraintChainCount;         // 约束链数量 (1-50)
+public int constraintChainDepth;         // 每条约束链深度 (10-100)
+
+// --- PhysBone 链 ---
+public bool enablePhysBone;              // 启用PhysBone链防御
 public int physBoneChainCount;          // PhysBone链数量 (1-50)
+public int physBoneChainLength;          // 每条PhysBone链长度 (10-256)
 public int physBoneColliderCount;       // PhysBone Collider数量 (10-256)
-public bool enableContactSystem;        // 启用Contact系统
+
+// --- Contact ---
+public bool enableContactSystem;        // 启用Contact系统防御
 public int contactComponentCount;       // Contact组件数量 (10-200)
 
-// GPU 防御参数
-public bool enableHeavyShader;          // 启用防御Shader
+// ==================== GPU 防御 ====================
+public bool enableGpuDefense;           // 启用GPU防御
+
+// --- 材质防御 (Material Defense) ---
+public bool enableMaterialDefense;      // 启用材质防御（使用防御Shader）
+public int materialCount;               // 材质数量 (1-100)
 public int shaderLoopCount;             // Shader循环次数 (0-1000000)
-public bool enableOverdraw;             // 启用Overdraw
-public int overdrawLayerCount;          // Overdraw层数 (5-10000)
-public bool enableHighPolyMesh;        // 启用高多边形Mesh
-public int highPolyVertexCount;        // 高多边形顶点数 (50000-100000000)
-public bool enableParticleDefense;     // 启用粒子系统防御
-public int particleCount;               // 粒子总数 (1000-1000000)
-public int particleSystemCount;        // 粒子系统数量 (1-50)
-public bool enableLightDefense;        // 启用光源防御
-public int lightCount;                 // 光源数量 (1-50)
-public int materialCount;              // 材质球数量 (1-500)
+public int overdrawLayerCount;          // Overdraw层数 (5-1000)
+public int highPolyVertexCount;         // 高面数顶点数 (10000-500000)
+
+// --- 粒子防御 (Particle Defense) ---
+public bool enableParticleDefense;      // 启用粒子防御
+public int particleSystemCount;         // 粒子系统数量 (1-100)
+public int particleCount;               // 粒子总数 (1000-500000)
+
+// --- 光源防御 (Light Defense) ---
+public bool enableLightDefense;         // 启用光源防御
+public int lightCount;                  // 光源数量 (1-100)
 ```
 
 #### 高级选项
