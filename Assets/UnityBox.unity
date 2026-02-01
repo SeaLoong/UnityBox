@@ -18383,31 +18383,7 @@ MonoBehaviour:
   disableDefense: 0
   lockFxLayers: 1
   disableRootChildren: 1
-  defenseLevel: 2
-  useCustomDefenseSettings: 0
-  enableCpuDefense: 1
-  enableConstraintChain: 1
-  constraintChainDepth: 50
-  enablePhysBone: 1
-  physBoneChainLength: 60
-  physBoneColliderCount: 100
-  enableContactSystem: 1
-  contactComponentCount: 120
-  enableGpuDefense: 1
-  enableHeavyShader: 1
-  shaderLoopCount: 150
-  enableOverdraw: 1
-  overdrawLayerCount: 20
-  enableHighPolyMesh: 0
-  highPolyVertexCount: 500000
-  constraintChainCount: 3
-  physBoneChainCount: 3
-  enableParticleDefense: 1
-  particleCount: 10000
-  particleSystemCount: 200
-  enableLightDefense: 1
-  lightCount: 6
-  materialCount: 500
+  defenseLevel: 0
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0

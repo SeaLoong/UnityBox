@@ -130,18 +130,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 // 最后一步的 Holding → Success 转换将在创建 Success 状态后添加
 
                 // Holding → Holding（Idle自循环，允许短暂松开）
-                var holdingIdleLoop = AnimatorUtils.CreateTransition(holdingState, holdingState);
-                holdingIdleLoop.hasExitTime = false;
-                holdingIdleLoop.duration = 0f;
-                holdingIdleLoop.AddCondition(AnimatorConditionMode.Equals, 0, gestureParam);
+                ConfigureIdleLoopTransition(AnimatorUtils.CreateTransition(holdingState, holdingState), gestureParam);
 
                 // Holding → Wait（错误手势立即回退，不是当前手势）
                 var holdingErrorToWait = holdingState.AddTransition(waitState);
-                holdingErrorToWait.hasExitTime = false;
-                holdingErrorToWait.duration = 0f;
-                holdingErrorToWait.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
-                holdingErrorToWait.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam); // 不是Idle
-                holdingErrorToWait.hasFixedDuration = true;
+                ConfigureErrorTransition(holdingErrorToWait, gestureValue, gestureParam);
 
                 // ===== Wait和前续状态 → Holding（进入当前步骤）=====
                 if (i == 0)
@@ -156,9 +149,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     // 后续步骤：只能从上一个Confirmed转入（通过正确手势）
                     var previousConfirmed = stepConfirmedStates[i - 1];
                     var correctTransition = AnimatorUtils.CreateTransition(previousConfirmed, holdingState);
-                    correctTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
-                    correctTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
-                    correctTransition.duration = 0f;
+                    ConfigureGestureTransition(correctTransition, gestureValue, gestureParam);
                 }
 
                 // 最后一步不需要 Confirmed 和 ErrorTolerance 的处理
@@ -166,29 +157,18 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 // ===== Confirmed状态处理 =====
                 // Confirmed → Confirmed（Idle自循环，允许松开）
-                var confirmedIdleLoop = AnimatorUtils.CreateTransition(confirmedState, confirmedState);
-                confirmedIdleLoop.hasExitTime = false;
-                confirmedIdleLoop.duration = 0f;
-                confirmedIdleLoop.AddCondition(AnimatorConditionMode.Equals, 0, gestureParam);
+                ConfigureIdleLoopTransition(AnimatorUtils.CreateTransition(confirmedState, confirmedState), gestureParam);
 
                 // Confirmed → ErrorTolerance（错误手势进入容错0.3s）
                 var confirmedToTolerance = confirmedState.AddTransition(errorToleranceState);
-                confirmedToTolerance.hasExitTime = false;
-                confirmedToTolerance.duration = 0f;
-                confirmedToTolerance.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
-                confirmedToTolerance.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam); // 不是Idle
-                confirmedToTolerance.hasFixedDuration = true;
+                ConfigureErrorTransition(confirmedToTolerance, gestureValue, gestureParam);
 
                 // Confirmed → Holding_1（尾部匹配：用户按密码第一位）
                 var firstGesture = password[0];
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
                     var confirmedRestartTransition = confirmedState.AddTransition(stepHoldingStates[0]);
-                    confirmedRestartTransition.hasExitTime = false;
-                    confirmedRestartTransition.duration = 0f;
-                    confirmedRestartTransition.AddCondition(AnimatorConditionMode.Equals, firstGesture, gestureParam);
-                    confirmedRestartTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
-                    confirmedRestartTransition.hasFixedDuration = true;
+                    ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
 
                 // ===== ErrorTolerance状态处理（0.3s容错缓冲）=====
@@ -199,30 +179,19 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 {
                     var nextHoldingState = stepHoldingStates[i + 1];
                     var toleranceCorrectTransition = errorToleranceState.AddTransition(nextHoldingState);
-                    toleranceCorrectTransition.hasExitTime = false;
-                    toleranceCorrectTransition.duration = 0f;
                     int nextGesture = password[i + 1];
-                    toleranceCorrectTransition.AddCondition(AnimatorConditionMode.Equals, nextGesture, gestureParam);
-                    toleranceCorrectTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
-                    toleranceCorrectTransition.hasFixedDuration = true;
+                    ConfigureGestureTransition(toleranceCorrectTransition, nextGesture, gestureParam);
                 }
 
                 // ErrorTolerance → Holding_1（尾部匹配：用户按密码第一位）
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
                     var toleranceRestartTransition = errorToleranceState.AddTransition(stepHoldingStates[0]);
-                    toleranceRestartTransition.hasExitTime = false;
-                    toleranceRestartTransition.duration = 0f;
-                    toleranceRestartTransition.AddCondition(AnimatorConditionMode.Equals, firstGesture, gestureParam);
-                    toleranceRestartTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
-                    toleranceRestartTransition.hasFixedDuration = true;
+                    ConfigureGestureTransition(toleranceRestartTransition, firstGesture, gestureParam);
                 }
 
                 // ErrorTolerance → Idle自循环（允许松开手指）
-                var toleranceIdleLoop = AnimatorUtils.CreateTransition(errorToleranceState, errorToleranceState);
-                toleranceIdleLoop.hasExitTime = false;
-                toleranceIdleLoop.duration = 0f;
-                toleranceIdleLoop.AddCondition(AnimatorConditionMode.Equals, 0, gestureParam);
+                ConfigureIdleLoopTransition(AnimatorUtils.CreateTransition(errorToleranceState, errorToleranceState), gestureParam);
 
                 // ErrorTolerance → Wait（0.3s超时后回到等待，这是唯一的超时出口）
                 var toleranceTimeoutToWait = AnimatorUtils.CreateTransition(errorToleranceState, waitState,
@@ -240,7 +209,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (config.successSound != null)
             {
                 AnimatorUtils.AddPlayAudioBehaviour(successState, 
-                    Constants.GO_FEEDBACK_AUDIO, 
+                    Constants.GO_AUDIO, 
                     config.successSound);
             }
 #endif
@@ -270,21 +239,55 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static AnimationClip CreateHoldClip(string name, float duration)
         {
-            var clip = new AnimationClip 
-            { 
-                name = name,
-                legacy = false
-            };
-            
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            var clip = new AnimationClip { name = name, legacy = false };
+            ConfigureClipSettings(clip);
 
             // 添加虚拟曲线确保动画长度
             AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
             clip.SetCurve("__ASS_Dummy__", typeof(GameObject), "m_IsActive", dummyCurve);
 
             return clip;
+        }
+        
+        private static void ConfigureClipSettings(AnimationClip clip)
+        {
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+        }
+        
+        /// <summary>
+        /// 配置空闲循环转换（允许用户松开手指）
+        /// </summary>
+        private static void ConfigureIdleLoopTransition(AnimatorStateTransition transition, string gestureParam)
+        {
+            transition.hasExitTime = false;
+            transition.duration = 0f;
+            transition.AddCondition(AnimatorConditionMode.Equals, 0, gestureParam);
+        }
+        
+        /// <summary>
+        /// 配置错误/不匹配的手势转换
+        /// </summary>
+        private static void ConfigureErrorTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
+        {
+            transition.hasExitTime = false;
+            transition.duration = 0f;
+            transition.hasFixedDuration = true;
+            transition.AddCondition(AnimatorConditionMode.NotEqual, expectedGesture, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
+        }
+        
+        /// <summary>
+        /// 配置正确的手势转换
+        /// </summary>
+        private static void ConfigureGestureTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
+        {
+            transition.hasExitTime = false;
+            transition.duration = 0f;
+            transition.hasFixedDuration = true;
+            transition.AddCondition(AnimatorConditionMode.Equals, expectedGesture, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
         }
     }
 }

@@ -106,7 +106,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             quad.transform.localPosition = localPos;
             quad.transform.localScale = localScale;
             
-            // 手动创建Quad mesh
             var mesh = new Mesh();
             mesh.vertices = new Vector3[]
             {

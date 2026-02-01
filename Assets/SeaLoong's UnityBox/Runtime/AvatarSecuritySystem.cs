@@ -23,22 +23,25 @@ namespace SeaLoongUnityBox
         , IEditorOnly
 #endif
     {
+        // ============ UI 语言配置 ============
         [Tooltip("#{language.ui_language_tooltip}")]
-        public SystemLanguage uiLanguage = SystemLanguage.Unknown; // Unknown 表示跟随系统语言
+        public SystemLanguage uiLanguage = SystemLanguage.Unknown;
 
+        // ============ 密码配置 ============
         [Tooltip("#{password.gesture_tooltip}")]
-        public List<int> gesturePassword = new List<int> { 1, 7, 2, 4 }; // 默认：拳头→大拉指→张开手→胜利
+        public List<int> gesturePassword = new List<int> { 1, 7, 2, 4 };
 
         [Tooltip("#{password.use_right_hand_tooltip}")]
         public bool useRightHand = false;
 
+        // ============ 倒计时配置 ============
         [Range(30f, 120f)]
         [Tooltip("#{countdown.duration_tooltip}")]
         public float countdownDuration = 30f;
 
-        // 警告阈值固定为10秒
         [HideInInspector] public float warningThreshold = 10f;
 
+        // ============ 手势识别配置 ============
         [Range(0.1f, 1f)]
         [Tooltip("#{gesture.hold_time_tooltip}")]
         public float gestureHoldTime = 0.15f;
@@ -47,10 +50,11 @@ namespace SeaLoongUnityBox
         [Tooltip("#{gesture.error_tolerance_tooltip}")]
         public float gestureErrorTolerance = 0.3f;
 
-        // 音频资源（由 Editor 自动从 Resources 加载）
+        // ============ 音频资源 ============
         [HideInInspector] public AudioClip warningBeep;
         [HideInInspector] public AudioClip successSound;
 
+        // ============ 高级选项 ============
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enableInPlayMode = true;
 
@@ -87,7 +91,14 @@ namespace SeaLoongUnityBox
         /// </summary>
         public static string GetGestureName(int gestureIndex)
         {
-            if (gestureIndex < 0 || gestureIndex > 7) return "Invalid";
+            const int minimumGestureIndex = 0;
+            const int maximumGestureIndex = 7;
+
+            if (gestureIndex < minimumGestureIndex || gestureIndex > maximumGestureIndex)
+            {
+                return "Invalid";
+            }
+
             return ((VRChatGesture)gestureIndex).ToString();
         }
 
@@ -98,13 +109,21 @@ namespace SeaLoongUnityBox
         public bool IsPasswordValid()
         {
             if (gesturePassword == null || gesturePassword.Count == 0)
+            {
                 return true; // 0位密码合法，表示不启用ASS
+            }
 
-            // 有密码时，验证所有手势必须在 1-7 范围内
+            return AreAllGesturesValid();
+        }
+
+        private bool AreAllGesturesValid()
+        {
+            const int minimumGestureValue = 1;
+            const int maximumGestureValue = 7;
+
             foreach (int gesture in gesturePassword)
             {
-                if (gesture < 1 || gesture > 7)
-                    return false;
+                if (gesture < minimumGestureValue || gesture > maximumGestureValue) return false;
             }
 
             return true;
@@ -116,13 +135,15 @@ namespace SeaLoongUnityBox
         public string GetPasswordStrength()
         {
             if (!IsPasswordValid()) return "Invalid";
+            if (gesturePassword.Count == 0) return "Weak";
 
-            int length = gesturePassword.Count;
-            int uniqueGestures = new HashSet<int>(gesturePassword).Count;
+            int passwordLength = gesturePassword.Count;
+            int uniqueGestureCount = new HashSet<int>(gesturePassword).Count;
 
-            if (length < 4) return "Weak";
-            if (length >= 6 && uniqueGestures >= 4) return "Strong";
-            return "Medium";
+            if (passwordLength >= 6 && uniqueGestureCount >= 4) return "Strong";
+            if (passwordLength >= 4) return "Medium";
+
+            return "Weak";
         }
 
         /// <summary>
@@ -130,7 +151,7 @@ namespace SeaLoongUnityBox
         /// </summary>
         public float EstimateFileSizeKB()
         {
-            float baseSize = 100f; // 基础动画和状态机
+            const float baseSize = 100f;
             float audioSize = 0f;
 
             if (warningBeep != null) audioSize += 10f;
@@ -142,28 +163,47 @@ namespace SeaLoongUnityBox
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            // 如果密码为null，设置默认密码
+            InitializePasswordIfNeeded();
+            ValidateWarningThreshold();
+            ClampDefenseLevel();
+        }
+
+        private void InitializePasswordIfNeeded()
+        {
             if (gesturePassword == null)
+            {
                 gesturePassword = new List<int> { 1, 7, 2, 4 };
+            }
+        }
 
-            // 确保阈值逻辑正确
+        private void ValidateWarningThreshold()
+        {
             if (warningThreshold > countdownDuration)
+            {
                 warningThreshold = countdownDuration / 2f;
+            }
+        }
 
-            // 确保防御等级在有效范围内
-            defenseLevel = Mathf.Clamp(defenseLevel, 0, 3);
+        private void ClampDefenseLevel()
+        {
+            const int minimumLevel = 0;
+            const int maximumLevel = 3;
+            defenseLevel = Mathf.Clamp(defenseLevel, minimumLevel, maximumLevel);
         }
 
         private void Reset()
         {
-            // 默认配置
+            const float defaultCountdownDuration = 30f;
+            const float defaultWarningThreshold = 10f;
+            const int defaultDefenseLevel = 3;
+
             gesturePassword = new List<int> { 1, 7, 2, 4 };
-            countdownDuration = 30f;
-            warningThreshold = 10f;
+            countdownDuration = defaultCountdownDuration;
+            warningThreshold = defaultWarningThreshold;
             enableInPlayMode = true;
             lockFxLayers = true;
             disableRootChildren = true;
-            defenseLevel = 3;
+            defenseLevel = defaultDefenseLevel;
         }
 #endif
     }

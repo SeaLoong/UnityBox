@@ -40,9 +40,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public static AnimationClip CreateCountdownTimerClip(float duration)
         {
             var clip = new AnimationClip { name = "ASS_CountdownTimer" };
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            ConfigureAnimationClipSettings(clip);
 
             // 创建一个从 duration 到 0 的曲线（用于剩余时间）
             var curve = AnimationCurve.Linear(0f, duration, duration, 0f);
@@ -59,9 +57,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public static AnimationClip CreateAudioTriggerClip(string audioPath, float duration = 0.1f)
         {
             var clip = new AnimationClip { name = "ASS_AudioTrigger" };
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            ConfigureAnimationClipSettings(clip);
 
             var curve = AnimationCurve.Constant(0f, duration, 1f);
             clip.SetCurve(audioPath, typeof(AudioSource), "m_Enabled", curve);
@@ -77,11 +73,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             string fullPath = $"{Constants.ASSET_FOLDER}/{Constants.ANIMATIONS_FOLDER}/{relativePath}";
             string directory = System.IO.Path.GetDirectoryName(fullPath);
             
-            if (!System.IO.Directory.Exists(directory))
-            {
-                System.IO.Directory.CreateDirectory(directory);
-            }
-
+            if (!System.IO.Directory.Exists(directory)) System.IO.Directory.CreateDirectory(directory);
             AssetDatabase.CreateAsset(clip, fullPath);
         }
 
@@ -97,81 +89,67 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建参数驱动动画（设置 Bool 参数值）
-        /// 注意：在 VRChat 中，Animator 参数由动画剪辑通过虚拟属性驱动
+        /// 创建参数驱动动画（统一的参数驱动方法）
         /// </summary>
         public static AnimationClip CreateParameterDriverClip(string name, string parameterName, bool value)
         {
-            var clip = new AnimationClip { name = name, legacy = false };
-            
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
-
-            // 使用虚拟属性绑定来驱动参数
-            // 在 VRChat 中，这会在运行时被转换为参数设置
-            var curve = AnimationCurve.Constant(0f, 1f / 60f, value ? 1f : 0f);
-            
-            // 绑定到 Animator 的虚拟属性
-            clip.SetCurve("", typeof(Animator), parameterName, curve);
-
-            return clip;
+            return CreateParameterDriverClipInternal(name, parameterName, value ? 1f : 0f);
         }
 
         /// <summary>
         /// 创建参数驱动动画（设置 Float 参数值）
         /// </summary>
-        public static AnimationClip CreateParameterDriverClip(string name, string parameterName, float value)
+        public static AnimationClip CreateParameterDriverClip(string name, string parameterName, float value) =>
+            CreateParameterDriverClipInternal(name, parameterName, value);
+        
+        private static AnimationClip CreateParameterDriverClipInternal(string name, string parameterName, float value)
         {
             var clip = new AnimationClip { name = name, legacy = false };
             
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
-
+            ConfigureAnimationClipSettings(clip);
             var curve = AnimationCurve.Constant(0f, 1f / 60f, value);
             clip.SetCurve("", typeof(Animator), parameterName, curve);
 
             return clip;
         }
+        
+        private static void ConfigureAnimationClipSettings(AnimationClip clip)
+        {
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+        }
 
         /// <summary>
         /// 创建音频触发动画（播放短音效并持续指定时间）
         /// </summary>
-        /// <param name="name">动画名称</param>
-        /// <param name="audioSourcePath">AudioSource 相对路径</param>
-        /// <param name="audioClip">音频剪辑</param>
-        /// <param name="duration">持续时间（秒）</param>
         public static AnimationClip CreateAudioTriggerClip(string name, string audioSourcePath, AudioClip audioClip, float duration)
         {
             var clip = new AnimationClip { name = name, legacy = false };
-            
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            ConfigureAnimationClipSettings(clip);
 
-            // 设置 AudioSource.clip
-            var clipCurve = new AnimationCurve();
-            clipCurve.AddKey(new Keyframe(0f, 0f));
-            clipCurve.AddKey(new Keyframe(duration, 0f));
+            // 设置 AudioSource.clip 和启用状态
+            SetAudioClipReference(clip, audioSourcePath, audioClip, duration);
+            SetAudioSourceEnabled(clip, audioSourcePath, duration);
+
+            return clip;
+        }
+        
+        private static void SetAudioClipReference(AnimationClip clip, string audioSourcePath, AudioClip audioClip, float duration)
+        {
             AnimationUtility.SetObjectReferenceCurve(clip, 
                 EditorCurveBinding.PPtrCurve(audioSourcePath, typeof(AudioSource), "m_audioClip"),
-                new ObjectReferenceKeyframe[] {
+                new ObjectReferenceKeyframe[]
+                {
                     new ObjectReferenceKeyframe { time = 0f, value = audioClip },
                     new ObjectReferenceKeyframe { time = duration, value = audioClip }
                 });
-
-            // 启用 AudioSource (m_Enabled = true)
+        }
+        
+        private static void SetAudioSourceEnabled(AnimationClip clip, string audioSourcePath, float duration)
+        {
             var enableCurve = AnimationCurve.Constant(0f, duration, 1f);
             clip.SetCurve(audioSourcePath, typeof(AudioSource), "m_Enabled", enableCurve);
-
-            // 播放音频 (播放时刻)
-            var playCurve = new AnimationCurve();
-            playCurve.AddKey(new Keyframe(0f, 1f));  // 在动画开始时触发播放
-            playCurve.AddKey(new Keyframe(0.05f, 0f));  // 立即结束触发
-            playCurve.AddKey(new Keyframe(duration, 0f));
-
-            return clip;
         }
     }
 }

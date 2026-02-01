@@ -14,18 +14,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         static I18n()
         {
-            // 自动检测系统语言
-            _currentLanguage = Application.systemLanguage;
-            
-            // 如果不支持的语言，默认使用英文
-            if (_currentLanguage != SystemLanguage.Chinese &&
-                _currentLanguage != SystemLanguage.ChineseSimplified &&
-                _currentLanguage != SystemLanguage.ChineseTraditional &&
-                _currentLanguage != SystemLanguage.Japanese)
-            {
-                _currentLanguage = SystemLanguage.English;
-            }
-
+            _currentLanguage = DetectSystemLanguage();
             InitializeTranslations();
         }
 
@@ -34,22 +23,32 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public static string T(string key)
         {
-            if (_translations.TryGetValue(key, out var languageDict))
+            if (!_translations.TryGetValue(key, out var languageDict))
             {
-                if (languageDict.TryGetValue(_currentLanguage, out var text))
-                    return text;
-                
-                // 简体中文回退
-                if (_currentLanguage == SystemLanguage.ChineseTraditional &&
-                    languageDict.TryGetValue(SystemLanguage.ChineseSimplified, out var simplifiedText))
-                    return simplifiedText;
-                
-                // 英文回退
-                if (languageDict.TryGetValue(SystemLanguage.English, out var englishText))
-                    return englishText;
+                return FormatMissingKey(key);
             }
 
-            return $"[Missing: {key}]";
+            return GetLocalizedText(languageDict);
+        }
+
+        private static string GetLocalizedText(Dictionary<SystemLanguage, string> languageDict)
+        {
+            if (languageDict.TryGetValue(_currentLanguage, out var text))
+            {
+                return text;
+            }
+
+            if (IsChinese(_currentLanguage) && languageDict.TryGetValue(SystemLanguage.ChineseSimplified, out var simplifiedText))
+            {
+                return simplifiedText;
+            }
+
+            if (languageDict.TryGetValue(SystemLanguage.English, out var englishText))
+            {
+                return englishText;
+            }
+
+            return string.Empty;
         }
 
         /// <summary>
@@ -57,25 +56,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public static void SetLanguage(SystemLanguage language)
         {
-            // 如果是 Unknown，使用系统语言
-            if (language == SystemLanguage.Unknown)
-            {
-                _currentLanguage = Application.systemLanguage;
-            }
-            else
-            {
-                _currentLanguage = language;
-            }
-            
-            // 如果不支持的语言，默认使用英文
-            if (_currentLanguage != SystemLanguage.Chinese &&
-                _currentLanguage != SystemLanguage.ChineseSimplified &&
-                _currentLanguage != SystemLanguage.ChineseTraditional &&
-                _currentLanguage != SystemLanguage.Japanese &&
-                _currentLanguage != SystemLanguage.English)
-            {
-                _currentLanguage = SystemLanguage.English;
-            }
+            _currentLanguage = language == SystemLanguage.Unknown
+                ? DetectSystemLanguage()
+                : NormalizeLanguage(language);
         }
 
         /// <summary>
@@ -84,6 +67,37 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public static SystemLanguage GetCurrentLanguage()
         {
             return _currentLanguage;
+        }
+
+        private static SystemLanguage DetectSystemLanguage()
+        {
+            SystemLanguage detectedLanguage = Application.systemLanguage;
+            return IsSupportedLanguage(detectedLanguage) ? detectedLanguage : SystemLanguage.English;
+        }
+
+        private static SystemLanguage NormalizeLanguage(SystemLanguage language)
+        {
+            return IsSupportedLanguage(language) ? language : SystemLanguage.English;
+        }
+
+        private static bool IsSupportedLanguage(SystemLanguage language)
+        {
+            return language == SystemLanguage.ChineseSimplified ||
+                   language == SystemLanguage.ChineseTraditional ||
+                   language == SystemLanguage.Japanese ||
+                   language == SystemLanguage.English ||
+                   language == SystemLanguage.Chinese;
+        }
+
+        private static bool IsChinese(SystemLanguage language)
+        {
+            return language == SystemLanguage.ChineseTraditional ||
+                   language == SystemLanguage.Chinese;
+        }
+
+        private static string FormatMissingKey(string key)
+        {
+            return $"[Missing: {key}]";
         }
 
         private static void InitializeTranslations()

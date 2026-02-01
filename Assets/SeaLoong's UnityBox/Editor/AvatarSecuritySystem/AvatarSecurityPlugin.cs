@@ -27,170 +27,232 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         protected override void Configure()
         {
-            // 在 Optimizing 阶段生成安全系统
             InPhase(BuildPhase.Optimizing).Run("Generate ASS", ctx =>
             {
-                var avatarRoot = ctx.AvatarRootObject;
-                var assConfig = avatarRoot.GetComponent<AvatarSecuritySystemComponent>();
-
-                // 如果没有组件或密码配置无效，跳过
-                if (assConfig == null || !assConfig.IsPasswordValid())
+                var assConfig = ExtractASSConfiguration(ctx);
+                if (assConfig == null)
                 {
-                    Debug.Log(I18n.T("log.not_found"));
                     return;
                 }
 
-                // 如果密码为空（0位），等同于不启用ASS，直接跳过
-                if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
+                if (!HasValidPassword(assConfig))
                 {
                     Debug.Log(I18n.T("log.plugin_password_empty"));
                     return;
                 }
 
-                Debug.Log(I18n.T("log.generating"));
-
-                // 自动加载音频资源
-                LoadAudioResources(assConfig);
-
-                // 检测是否在 Play 模式
-                bool isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-
-                if (isPlayMode && !assConfig.enableInPlayMode)
+                if (!ShouldGenerateInCurrentMode(assConfig))
                 {
-                    Debug.Log(I18n.T("log.plugin_play_disabled"));
                     return;
                 }
 
-                // 生成系统
-                try
-                {
-                    GenerateSystem(ctx, assConfig, isPlayMode);
-                    Debug.Log(I18n.T("log.complete"));
-                }
-                catch (System.Exception ex)
-                {
-                    // 捕获所有异常，记录错误但不抛出，避免Unity崩溃
-                    Debug.LogError($"[ASS] Generation failed: {ex.Message}\n{ex.StackTrace}");
-                    // 不重新抛出异常，允许构建继续
-                }
+                ExecuteGeneration(ctx, assConfig);
             });
         }
+
+        private AvatarSecuritySystemComponent ExtractASSConfiguration(BuildContext ctx)
+        {
+            var avatarRoot = ctx.AvatarRootObject;
+            var assConfig = avatarRoot.GetComponent<AvatarSecuritySystemComponent>();
+
+            if (assConfig == null || !assConfig.IsPasswordValid())
+            {
+                Debug.Log(I18n.T("log.not_found"));
+                return null;
+            }
+
+            return assConfig;
+        }
+
+        private bool HasValidPassword(AvatarSecuritySystemComponent config) => 
+            config.gesturePassword != null && config.gesturePassword.Count > 0;
+
+        private bool ShouldGenerateInCurrentMode(AvatarSecuritySystemComponent config)
+        {
+            bool isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
+            if (isPlayMode && !config.enableInPlayMode)
+            {
+                Debug.Log(I18n.T("log.plugin_play_disabled"));
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ExecuteGeneration(BuildContext ctx, AvatarSecuritySystemComponent config)
+        {
+            Debug.Log(I18n.T("log.generating"));
+            LoadAudioResources(config);
+
+            bool isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
+
+            try
+            {
+                GenerateSystem(ctx, config, isPlayMode);
+                Debug.Log(I18n.T("log.complete"));
+            }
+            catch (System.Exception ex)
+            {
+                HandleGenerationError(ex);
+            }
+        }
+
+        private void HandleGenerationError(System.Exception ex) =>
+            Debug.LogError($"[ASS] Generation failed: {ex.Message}\n{ex.StackTrace}");
 
         /// <summary>
         /// 统一的系统生成方法
         /// </summary>
-        /// <param name="ctx">构建上下文</param>
-        /// <param name="config">配置组件</param>
-        /// <param name="isPlayMode">是否为播放模式（调试用）</param>
         private void GenerateSystem(BuildContext ctx, AvatarSecuritySystemComponent config, bool isPlayMode)
         {
-            Debug.Log(isPlayMode ? I18n.T("log.play_mode_test") : I18n.T("log.build_mode_full"));
+            string modeMsg = isPlayMode ? I18n.T("log.play_mode_test") : I18n.T("log.build_mode_full");
+            Debug.Log(modeMsg);
 
-            var avatarRoot = ctx.AvatarRootObject;
-            var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-
+            var descriptor = ExtractAvatarDescriptor(ctx);
             if (descriptor == null)
             {
-                Debug.LogError(I18n.T("log.plugin_no_descriptor"));
                 return;
             }
 
-            // 1. 获取或创建 FX Controller
             var fxController = GetOrCreateFXController(descriptor);
+            AddVRChatBuiltinParameters(fxController);
+            CreateVisualFeedback(ctx, config);
+            SetupAudioSources(ctx);
+            
+            var lockResult = new LockSystem.LockLayerResult();
+            var layerNames = GenerateSystemLayers(fxController, ctx, config, isPlayMode, ref lockResult);
+            ConfigureLayerWeights(fxController, lockResult, layerNames);
+            RegisterASSParameters(descriptor, config);
+            LockLayerWeights(fxController, lockResult, layerNames, isPlayMode, config);
+            
+            SaveAndOptimize(fxController);
+        }
 
-            // 添加VRChat内置参数（如果不存在）
-            AnimatorUtils.AddParameterIfNotExists(fxController, Constants.PARAM_IS_LOCAL, 
+        private VRCAvatarDescriptor ExtractAvatarDescriptor(BuildContext ctx)
+        {
+            var descriptor = ctx.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
+            if (descriptor == null) Debug.LogError(I18n.T("log.plugin_no_descriptor"));
+            return descriptor;
+        }
+
+        private void AddVRChatBuiltinParameters(AnimatorController fxController) =>
+            AnimatorUtils.AddParameterIfNotExists(fxController, Constants.PARAM_IS_LOCAL,
                 AnimatorControllerParameterType.Bool, defaultBool: false);
 
-            // 2. 创建UI Canvas和视觉反馈
-            var canvasObj = FeedbackSystem.CreateHUDCanvas(avatarRoot, config);
+        private void CreateVisualFeedback(BuildContext ctx, AvatarSecuritySystemComponent config)
+        {
+            var canvasObj = FeedbackSystem.CreateHUDCanvas(ctx.AvatarRootObject, config);
             FeedbackSystem.CreateCountdownBar(canvasObj, config);
+        }
 
-            // 3. 设置AudioSource（必须在生成层之前创建）
+        private void SetupAudioSources(BuildContext ctx)
+        {
 #if VRC_SDK_VRCSDK3
-            AnimatorUtils.SetupAudioSource(avatarRoot, Constants.GO_FEEDBACK_AUDIO);
-            AnimatorUtils.SetupAudioSource(avatarRoot, Constants.GO_WARNING_AUDIO);
+            AnimatorUtils.SetupAudioSource(ctx.AvatarRootObject, Constants.GO_AUDIO);
 #endif
+        }
 
-            // 4. 生成所有系统层
-            // 注意：锁定层需要先创建，但层权重控制需要在所有层添加后配置
-            var lockResult = InitialLockSystem.CreateLockLayer(fxController, avatarRoot, config);
+        private List<string> GenerateSystemLayers(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, bool isPlayMode, ref LockSystem.LockLayerResult lockResult)
+        {
+            var layerNames = new List<string>();
+
+            AddInitialLockLayer(fxController, ctx, config, layerNames, ref lockResult);
+            AddPasswordLayer(fxController, ctx, config, layerNames);
+            AddCountdownLayer(fxController, ctx, config, layerNames);
+            AddWarningAudioLayer(fxController, ctx, config, layerNames);
+            AddDefenseLayer(fxController, ctx, config, isPlayMode, layerNames);
+
+            return layerNames;
+        }
+
+        private void AddInitialLockLayer(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, List<string> layerNames, ref LockSystem.LockLayerResult lockResult)
+        {
+            lockResult = LockSystem.CreateLockLayer(fxController, ctx.AvatarRootObject, config);
             fxController.AddLayer(lockResult.Layer);
+            layerNames.Add(lockResult.Layer.name);
+        }
 
-            var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, avatarRoot, config);
+        private void AddPasswordLayer(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, List<string> layerNames)
+        {
+            var passwordLayer = GesturePasswordSystem.CreatePasswordLayer(fxController, ctx.AvatarRootObject, config);
             fxController.AddLayer(passwordLayer);
+            layerNames.Add(passwordLayer.name);
+        }
 
-            // 倒计时层
-            var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, avatarRoot, config);
+        private void AddCountdownLayer(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, List<string> layerNames)
+        {
+            var countdownLayer = CountdownSystem.CreateCountdownLayer(fxController, ctx.AvatarRootObject, config);
             fxController.AddLayer(countdownLayer);
+            layerNames.Add(countdownLayer.name);
+        }
 
-            // 警告音效层（只要配置了警告音）
-            AnimatorControllerLayer warningAudioLayer = null;
-            if (config.warningBeep != null)
+        private void AddWarningAudioLayer(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, List<string> layerNames)
+        {
+            var warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, ctx.AvatarRootObject, config);
+            fxController.AddLayer(warningAudioLayer);
+            layerNames.Add(warningAudioLayer.name);
+        }
+
+        private void AddDefenseLayer(AnimatorController fxController, BuildContext ctx,
+            AvatarSecuritySystemComponent config, bool isPlayMode, List<string> layerNames)
+        {
+            if (config.disableDefense)
             {
-                warningAudioLayer = CountdownSystem.CreateWarningAudioLayer(fxController, avatarRoot, config);
-                fxController.AddLayer(warningAudioLayer);
+                return;
             }
 
-            // 防御层（所有模式都生成）
-            AnimatorControllerLayer defenseLayer = null;
-            if (!config.disableDefense)
+            try
             {
-                try
+                var defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, ctx.AvatarRootObject, config,
+                    isDebugMode: isPlayMode);
+
+                if (defenseLayer != null)
                 {
-                    defenseLayer = DefenseSystem.CreateDefenseLayer(fxController, avatarRoot, config, isDebugMode: isPlayMode);
-                    if (defenseLayer != null)
+                    fxController.AddLayer(defenseLayer);
+                    layerNames.Add(defenseLayer.name);
+
+                    if (isPlayMode)
                     {
-                        fxController.AddLayer(defenseLayer);
-                        
-                        if (isPlayMode)
-                        {
-                            Debug.Log(I18n.T("log.play_mode_simplified"));
-                        }
+                        Debug.Log(I18n.T("log.play_mode_simplified"));
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    // 防御层创建失败不应影响其他层
-                    Debug.LogError($"[ASS] 防御层创建失败: {ex.Message}");
-                    // 继续执行，不添加防御层
-                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[ASS] 防御层创建失败: {ex.Message}");
+            }
+        }
+
+        private void ConfigureLayerWeights(AnimatorController fxController, LockSystem.LockLayerResult lockResult,
+            List<string> layerNames)
+        {
+            LockSystem.ConfigureLayerWeightControl(fxController, lockResult, layerNames.ToArray());
+        }
+
+        private void LockLayerWeights(AnimatorController fxController, LockSystem.LockLayerResult lockResult,
+            List<string> layerNames, bool isPlayMode, AvatarSecuritySystemComponent config)
+        {
+            if (isPlayMode || !config.lockFxLayers)
+            {
+                return;
             }
 
-            // 5. 配置层权重控制（所有层已添加后）
-            var assLayerNames = new List<string>
-            {
-                Constants.LAYER_INITIAL_LOCK,
-                Constants.LAYER_PASSWORD_INPUT,
-                Constants.LAYER_COUNTDOWN
-            };
-            if (warningAudioLayer != null)
-                assLayerNames.Add(warningAudioLayer.name);
-            if (defenseLayer != null)
-                assLayerNames.Add(defenseLayer.name);
-            
-            InitialLockSystem.ConfigureLayerWeightControl(fxController, lockResult, assLayerNames.ToArray());
+            LockSystem.LockFxLayerWeights(fxController, lockResult, layerNames.ToArray());
+        }
 
-            // 6. 注册 ASS 参数到 VRCExpressionParameters（高优先级位置）
-            RegisterASSParameters(descriptor, config);
-
-            // 7. 锁定 FX 层权重（如果启用）
-            if (!isPlayMode && config.lockFxLayers)
-            {
-                InitialLockSystem.LockFxLayerWeights(fxController, lockResult, assLayerNames.ToArray());
-            }
-
-            // 8. 保存
+        private void SaveAndOptimize(AnimatorController fxController)
+        {
             AnimatorUtils.SaveAndRefresh();
             AnimatorUtils.LogOptimizationStats(fxController);
         }
 
         /// <summary>
         /// 注册 ASS 参数到 VRCExpressionParameters
-        /// 直接修改 VRC 参数列表，将 ASS 参数插入到数组开头（高优先级位置）
-        /// 参数配置说明：
-        /// - ASS_PasswordCorrect: 同步参数(networkSynced=true)，让其他玩家看到解锁状态
-        /// - ASS_TimeUp: 本地参数(networkSynced=false)，仅用于触发防御
         /// </summary>
         private void RegisterASSParameters(VRCAvatarDescriptor descriptor, AvatarSecuritySystemComponent config)
         {
@@ -202,46 +264,73 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            // 获取现有参数列表
-            var existingParams = expressionParameters.parameters?.ToList() 
-                ?? new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>();
+            var existingParams = GetExistingParameters(expressionParameters);
+            RemoveExistingASSParameters(existingParams);
 
-            // 移除已存在的 ASS 参数（避免重复）
-            existingParams.RemoveAll(p => p.name == Constants.PARAM_PASSWORD_CORRECT || p.name == Constants.PARAM_TIME_UP);
-
-            // 创建 ASS 参数
-            var assParams = new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>
-            {
-                // ASS_PasswordCorrect - 同步参数（其他玩家需要看到解锁状态）
-                new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
-                {
-                    name = Constants.PARAM_PASSWORD_CORRECT,
-                    valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
-                    defaultValue = 0f,      // 默认锁定
-                    saved = true,           // 保存参数，切换世界后保持解锁状态
-                    networkSynced = true    // 同步给其他玩家
-                },
-                // ASS_TimeUp - 本地参数（仅用于触发防御，不同步）
-                new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
-                {
-                    name = Constants.PARAM_TIME_UP,
-                    valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
-                    defaultValue = 0f,
-                    saved = false,
-                    networkSynced = false   // 本地参数，不同步
-                }
-            };
-
-            // 将 ASS 参数插入到数组开头（高优先级位置，避免被压缩参数插件影响）
+            var assParams = CreateASSParameters();
             assParams.AddRange(existingParams);
             expressionParameters.parameters = assParams.ToArray();
 
             EditorUtility.SetDirty(expressionParameters);
-            Debug.Log($"[ASS] 已注册 ASS 参数到 VRCExpressionParameters 开头位置: " +
-                     $"{Constants.PARAM_PASSWORD_CORRECT}(同步), {Constants.PARAM_TIME_UP}(本地)");
+            LogParameterRegistration();
 #else
             Debug.LogWarning("[ASS] VRC SDK 不可用，无法注册参数");
 #endif
+        }
+
+        private List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter> GetExistingParameters(
+            VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters expressionParameters)
+        {
+            return expressionParameters.parameters?.ToList()
+                ?? new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>();
+        }
+
+        private void RemoveExistingASSParameters(
+            List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter> parameters)
+        {
+            parameters.RemoveAll(p =>
+                p.name == Constants.PARAM_PASSWORD_CORRECT ||
+                p.name == Constants.PARAM_TIME_UP);
+        }
+
+        private List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter> CreateASSParameters()
+        {
+            return new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>
+            {
+                CreatePasswordCorrectParameter(),
+                CreateTimeUpParameter()
+            };
+        }
+
+        private VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter CreatePasswordCorrectParameter()
+        {
+            return new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+            {
+                name = Constants.PARAM_PASSWORD_CORRECT,
+                valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
+                defaultValue = 0f,
+                saved = true,
+                networkSynced = true
+            };
+        }
+
+        private VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter CreateTimeUpParameter()
+        {
+            return new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+            {
+                name = Constants.PARAM_TIME_UP,
+                valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
+                defaultValue = 0f,
+                saved = false,
+                networkSynced = false
+            };
+        }
+
+        private void LogParameterRegistration()
+        {
+            string message = $"[ASS] 已注册 ASS 参数到 VRCExpressionParameters 开头位置: " +
+                            $"{Constants.PARAM_PASSWORD_CORRECT}(同步), {Constants.PARAM_TIME_UP}(本地)";
+            Debug.Log(message);
         }
 
         /// <summary>
@@ -287,19 +376,31 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            // 加载密码成功音效
-            config.successSound = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_PASSWORD_SUCCESS}");
-            
-            // 加载倒计时警告音效
-            config.warningBeep = Resources.Load<AudioClip>($"{Constants.AUDIO_RESOURCE_PATH}/{Constants.AUDIO_COUNTDOWN_WARNING}");
+            config.successSound = LoadAudioClip(Constants.AUDIO_PASSWORD_SUCCESS);
+            config.warningBeep = LoadAudioClip(Constants.AUDIO_COUNTDOWN_WARNING);
 
-            // 验证
-            int loadedCount = 0;
-            if (config.successSound != null) loadedCount++;
-            if (config.warningBeep != null) loadedCount++;
+            int loadedCount = CountLoadedAudioClips(config);
+            LogAudioLoadingResult(loadedCount);
+        }
 
+        private AudioClip LoadAudioClip(string audioFileName)
+        {
+            string resourcePath = $"{Constants.AUDIO_RESOURCE_PATH}/{audioFileName}";
+            return Resources.Load<AudioClip>(resourcePath);
+        }
+
+        private int CountLoadedAudioClips(AvatarSecuritySystemComponent config)
+        {
+            int count = 0;
+            if (config.successSound != null) count++;
+            if (config.warningBeep != null) count++;
+            return count;
+        }
+
+        private void LogAudioLoadingResult(int loadedCount)
+        {
             Debug.Log($"[ASS] 音频资源加载完成：{loadedCount}/2 个文件");
-            
+
             if (loadedCount < 2)
             {
                 Debug.LogWarning(I18n.T("log.plugin_audio_missing"));

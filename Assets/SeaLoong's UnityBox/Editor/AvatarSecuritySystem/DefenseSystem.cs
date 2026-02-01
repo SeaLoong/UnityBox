@@ -1694,7 +1694,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static int ValidateConstraintDepth(int requested)
         {
-            int maxDepth = Constants.CONSTRAINT_CHAIN_MAX_DEPTH; // 100
+            int maxDepth = Constants.CONSTRAINT_CHAIN_MAX_DEPTH;
             int validValue = Mathf.Clamp(requested, 10, maxDepth);
 
             if (validValue != requested)
@@ -1709,7 +1709,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static int ValidatePhysBoneLength(int requested)
         {
-            int maxLength = Constants.PHYSBONE_CHAIN_MAX_LENGTH; // 256
+            int maxLength = Constants.PHYSBONE_CHAIN_MAX_LENGTH;
             int validValue = Mathf.Clamp(requested, 10, maxLength);
 
             if (validValue != requested)
@@ -1725,7 +1725,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static int ValidatePhysBoneColliders(int requested, int chainLength, int existingColliders)
         {
-            int maxColliders = Constants.PHYSBONE_COLLIDER_MAX_COUNT; // 256
+            int maxColliders = Constants.PHYSBONE_COLLIDER_MAX_COUNT;
             int available = Mathf.Max(0, maxColliders - existingColliders);
             int validValue = Mathf.Clamp(requested, 0, available);
 
@@ -1754,7 +1754,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static int ValidateShaderLoops(int requested)
         {
-            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT; // 300万循环（大幅增加）
+            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT;
             int validValue = Mathf.Clamp(requested, 0, maxLoops);
 
             if (validValue > 100000)

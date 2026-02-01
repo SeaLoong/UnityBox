@@ -13,11 +13,19 @@ namespace SeaLoongUnityBox
     public class AvatarSecuritySystemEditor : Editor
     {
         private AvatarSecuritySystemComponent _target;
-        private static readonly string[] GESTURE_NAMES = new string[]
+        
+        private static readonly string[] GESTURE_NAMES =
         {
-            "1: Fist ✊", "2: HandOpen ✋", "3: Fingerpoint ☝",
-            "4: Victory ✌", "5: RockNRoll 🤘", "6: HandGun 🔫", "7: ThumbsUp 👍"
+            "1: Fist ✊",
+            "2: HandOpen ✋",
+            "3: Fingerpoint ☝",
+            "4: Victory ✌",
+            "5: RockNRoll 🤘",
+            "6: HandGun 🔫",
+            "7: ThumbsUp 👍"
         };
+
+        private static readonly int[] GESTURE_VALUES = { 1, 2, 3, 4, 5, 6, 7 };
 
         private void OnEnable()
         {
@@ -35,12 +43,23 @@ namespace SeaLoongUnityBox
             serializedObject.Update();
 
             EditorGUILayout.Space(10);
-            DrawTitle();
-            EditorGUILayout.Space(5);
-            
-            DrawLanguageSelector();
+            DrawHeaderSection();
             EditorGUILayout.Space(10);
 
+            DrawConfigurationSections();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawHeaderSection()
+        {
+            DrawTitle();
+            EditorGUILayout.Space(5);
+            DrawLanguageSelector();
+        }
+
+        private void DrawConfigurationSections()
+        {
             DrawPasswordSection();
             EditorGUILayout.Space(10);
 
@@ -50,15 +69,17 @@ namespace SeaLoongUnityBox
             DrawDefenseSection();
             EditorGUILayout.Space(10);
 
-            DrawDebugSection();
-            EditorGUILayout.Space(10);
-
-            DrawLockSection();
+            DrawAdvancedSection();
             EditorGUILayout.Space(10);
 
             DrawEstimationSection();
+        }
 
-            serializedObject.ApplyModifiedProperties();
+        private void DrawAdvancedSection()
+        {
+            DrawDebugSection();
+            EditorGUILayout.Space(10);
+            DrawLockSection();
         }
 
         private void DrawTitle()
@@ -68,89 +89,137 @@ namespace SeaLoongUnityBox
                 fontSize = 16,
                 alignment = TextAnchor.MiddleCenter
             };
-            EditorGUILayout.LabelField($"🔒 {T("system.name")} ({T("system.short_name")})", style);
-            EditorGUILayout.LabelField(T("system.subtitle"), EditorStyles.centeredGreyMiniLabel);
-        }
 
-        private void DrawWarningBox()
-        {
-            EditorGUILayout.HelpBox(T("warning.main"), MessageType.Warning);
+            string systemName = T("system.name");
+            string systemShortName = T("system.short_name");
+            string subtitle = T("system.subtitle");
+
+            EditorGUILayout.LabelField($"🔒 {systemName} ({systemShortName})", style);
+            EditorGUILayout.LabelField(subtitle, EditorStyles.centeredGreyMiniLabel);
         }
 
         private void DrawPasswordSection()
         {
             EditorGUILayout.LabelField(T("password.config"), EditorStyles.boldLabel);
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("useRightHand"), 
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("useRightHand"),
                 new GUIContent(T("password.use_right_hand"), T("password.use_right_hand_tooltip")));
 
             EditorGUILayout.Space(5);
             EditorGUILayout.LabelField(T("password.sequence"), EditorStyles.miniLabel);
 
             var passwordProp = serializedObject.FindProperty("gesturePassword");
-            
-            // 显示当前密码
+            DrawPasswordElements(passwordProp);
+            EditorGUILayout.Space(5);
+            DrawPasswordActionButtons(passwordProp);
+            EditorGUILayout.Space(5);
+            DrawPasswordStatus();
+        }
+
+        private void DrawPasswordElements(SerializedProperty passwordProp)
+        {
             for (int i = 0; i < passwordProp.arraySize; i++)
             {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(string.Format(T("password.step"), i + 1), GUILayout.Width(60));
-                
-                var element = passwordProp.GetArrayElementAtIndex(i);
-                int currentValue = element.intValue;
-                int newValue = EditorGUILayout.IntPopup(currentValue, GESTURE_NAMES, 
-                    new int[] { 1, 2, 3, 4, 5, 6, 7 });
-                element.intValue = newValue;
+                DrawPasswordElement(passwordProp, i);
+            }
+        }
 
-                if (GUILayout.Button(new GUIContent("X", T("password.delete_step")), GUILayout.Width(30)))
-                {
-                    passwordProp.DeleteArrayElementAtIndex(i);
-                }
+        private void DrawPasswordElement(SerializedProperty passwordProp, int index)
+        {
+            EditorGUILayout.BeginHorizontal();
+            
+            string stepLabel = string.Format(T("password.step"), index + 1);
+            EditorGUILayout.LabelField(stepLabel, GUILayout.Width(60));
 
-                EditorGUILayout.EndHorizontal();
+            var element = passwordProp.GetArrayElementAtIndex(index);
+            int currentValue = element.intValue;
+            int newValue = EditorGUILayout.IntPopup(currentValue, GESTURE_NAMES, GESTURE_VALUES);
+            element.intValue = newValue;
+
+            if (GUILayout.Button(new GUIContent("X", T("password.delete_step")), GUILayout.Width(30)))
+            {
+                passwordProp.DeleteArrayElementAtIndex(index);
             }
 
-            // 添加按钮
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawPasswordActionButtons(SerializedProperty passwordProp)
+        {
             EditorGUILayout.BeginHorizontal();
+            
             if (GUILayout.Button(T("password.add_gesture")))
             {
                 passwordProp.InsertArrayElementAtIndex(passwordProp.arraySize);
                 passwordProp.GetArrayElementAtIndex(passwordProp.arraySize - 1).intValue = 1;
             }
+
             if (GUILayout.Button(T("password.clear")))
             {
-                if (EditorUtility.DisplayDialog(T("common.warning"), 
-                    T("password.clear_confirm"), 
-                    T("common.confirm"), 
+                if (EditorUtility.DisplayDialog(T("common.warning"),
+                    T("password.clear_confirm"),
+                    T("common.confirm"),
                     T("common.cancel")))
                 {
                     passwordProp.ClearArray();
                 }
             }
-            EditorGUILayout.EndHorizontal();
 
-            // 密码强度或空密码提示
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawPasswordStatus()
+        {
             if (_target.gesturePassword.Count == 0)
             {
-                // 0位密码：显示禁用提示
-                EditorGUILayout.HelpBox("⚠️ " + T("password.empty_warning"), 
-                    MessageType.Warning);
+                DrawPasswordEmptyWarning();
             }
             else
             {
-                // 有密码：显示强度
-                string strength = _target.GetPasswordStrength();
-                string strengthKey = strength == "Strong" ? "password.strength.strong" : 
-                                    strength == "Medium" ? "password.strength.medium" : "password.strength.weak";
-                Color strengthColor = strength == "Strong" ? Color.green : 
-                                      strength == "Medium" ? Color.yellow : Color.red;
-                
-                var oldColor = GUI.color;
-                GUI.color = strengthColor;
-                EditorGUILayout.HelpBox(string.Format(T("password.strength"), 
-                    T(strengthKey), _target.gesturePassword.Count), 
-                    MessageType.Info);
-                GUI.color = oldColor;
+                DrawPasswordStrengthInfo();
             }
+        }
+
+        private void DrawPasswordEmptyWarning()
+        {
+            EditorGUILayout.HelpBox("⚠️ " + T("password.empty_warning"), MessageType.Warning);
+        }
+
+        private void DrawPasswordStrengthInfo()
+        {
+            string strength = _target.GetPasswordStrength();
+            string strengthKey = GetStrengthTranslationKey(strength);
+            Color strengthColor = GetStrengthColor(strength);
+
+            var oldColor = GUI.color;
+            GUI.color = strengthColor;
+
+            string message = string.Format(T("password.strength"),
+                T(strengthKey),
+                _target.gesturePassword.Count);
+
+            EditorGUILayout.HelpBox(message, MessageType.Info);
+            GUI.color = oldColor;
+        }
+
+        private string GetStrengthTranslationKey(string strength)
+        {
+            return strength switch
+            {
+                "Strong" => "password.strength.strong",
+                "Medium" => "password.strength.medium",
+                _ => "password.strength.weak"
+            };
+        }
+
+        private Color GetStrengthColor(string strength)
+        {
+            return strength switch
+            {
+                "Strong" => Color.green,
+                "Medium" => Color.yellow,
+                _ => Color.red
+            };
         }
 
         private void DrawCountdownSection()
@@ -165,57 +234,75 @@ namespace SeaLoongUnityBox
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("🌐 " + T("language.title"), GUILayout.Width(120));
-            
+
             var languageProp = serializedObject.FindProperty("uiLanguage");
-            SystemLanguage currentLang = (SystemLanguage)languageProp.intValue;
-            
-            // 如果是 Unknown，显示当前系统语言
-            if (currentLang == SystemLanguage.Unknown)
-            {
-                currentLang = Application.systemLanguage;
-            }
-            
-            string[] languageNames = { 
-                T("language.auto"), 
-                "简体中文", 
-                "English", 
-                "日本語" 
-            };
-            SystemLanguage[] languageValues = { 
-                SystemLanguage.Unknown, 
-                SystemLanguage.ChineseSimplified, 
-                SystemLanguage.English, 
-                SystemLanguage.Japanese 
-            };
-            
-            int currentIndex = System.Array.IndexOf(languageValues, (SystemLanguage)languageProp.intValue);
-            if (currentIndex < 0) currentIndex = 0;
-            
-            int newIndex = EditorGUILayout.Popup(currentIndex, languageNames);
+            SystemLanguage currentLanguage = GetCurrentLanguage(languageProp);
+
+            int currentIndex = GetLanguageIndex(languageProp);
+            int newIndex = EditorGUILayout.Popup(currentIndex, GetLanguageNames());
+
             if (newIndex != currentIndex)
             {
-                languageProp.intValue = (int)languageValues[newIndex];
-                SetLanguage(languageValues[newIndex]);
-                serializedObject.ApplyModifiedProperties();
-                EditorUtility.SetDirty(_target);
+                ApplyLanguageChange(languageProp, GetLanguageValues()[newIndex]);
             }
-            
+
             EditorGUILayout.EndHorizontal();
+        }
+
+        private SystemLanguage GetCurrentLanguage(SerializedProperty languageProp)
+        {
+            SystemLanguage currentLang = (SystemLanguage)languageProp.intValue;
+            return currentLang == SystemLanguage.Unknown ? Application.systemLanguage : currentLang;
+        }
+
+        private int GetLanguageIndex(SerializedProperty languageProp)
+        {
+            SystemLanguage[] languageValues = GetLanguageValues();
+            int currentIndex = System.Array.IndexOf(languageValues, (SystemLanguage)languageProp.intValue);
+            return currentIndex < 0 ? 0 : currentIndex;
+        }
+
+        private string[] GetLanguageNames()
+        {
+            return new[]
+            {
+                T("language.auto"),
+                "简体中文",
+                "English",
+                "日本語"
+            };
+        }
+
+        private SystemLanguage[] GetLanguageValues()
+        {
+            return new[]
+            {
+                SystemLanguage.Unknown,
+                SystemLanguage.ChineseSimplified,
+                SystemLanguage.English,
+                SystemLanguage.Japanese
+            };
+        }
+
+        private void ApplyLanguageChange(SerializedProperty languageProp, SystemLanguage newLanguage)
+        {
+            languageProp.intValue = (int)newLanguage;
+            SetLanguage(newLanguage);
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_target);
         }
 
         private void DrawDefenseSection()
         {
             EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
 
-            // 防御等级选择
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("defenseLevel"),
+            var defenseLevelProp = serializedObject.FindProperty("defenseLevel");
+            EditorGUILayout.PropertyField(defenseLevelProp,
                 new GUIContent(T("defense.level"), T("defense.level_tooltip")));
 
-            int defenseLevel = serializedObject.FindProperty("defenseLevel").intValue;
-            
-            // 显示等级说明
             EditorGUILayout.Space(3);
-            EditorGUILayout.HelpBox(GetDefenseLevelDescription(defenseLevel), MessageType.Info);
+            int defenseLevelValue = defenseLevelProp.intValue;
+            EditorGUILayout.HelpBox(GetDefenseLevelDescription(defenseLevelValue), MessageType.Info);
         }
 
         private string GetDefenseLevelDescription(int level)
@@ -255,12 +342,18 @@ namespace SeaLoongUnityBox
         private void DrawEstimationSection()
         {
             EditorGUILayout.LabelField(T("estimate.title"), EditorStyles.boldLabel);
-            
+
             float sizeKB = _target.EstimateFileSizeKB();
-            string sizeText = sizeKB > 1024 ? $"{sizeKB / 1024f:F2} MB" : $"{sizeKB:F1} KB";
-            
-            EditorGUILayout.HelpBox($"📊 {T("estimate.file_size")}: {sizeText}", 
-                MessageType.None);
+            string sizeText = FormatFileSize(sizeKB);
+            EditorGUILayout.HelpBox($"📊 {T("estimate.file_size")}: {sizeText}", MessageType.None);
+        }
+
+        private string FormatFileSize(float sizeKB)
+        {
+            const float megabyteThreshold = 1024f;
+            return sizeKB > megabyteThreshold
+                ? $"{sizeKB / megabyteThreshold:F2} MB"
+                : $"{sizeKB:F1} KB";
         }
     }
 }

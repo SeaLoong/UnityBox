@@ -20,13 +20,13 @@ using nadena.dev.ndmf;
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
     /// <summary>
-    /// 初始锁定系统生成器
+    /// 锁定系统生成器
     /// 功能：
     /// 1. 解锁时通过VRC层权重控制禁用其他ASS层
     /// 2. 参数驱动：锁定时设为反转值，解锁时恢复
     /// 3. 材质锁定：锁定时清空材质槽
     /// </summary>
-    public static class InitialLockSystem
+    public static class LockSystem
     {
         /// <summary>
         /// 存储锁定层的状态引用，用于后续配置层权重控制
@@ -131,38 +131,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             string[] assLayerNames)
         {
 #if VRC_SDK_VRCSDK3
-            // 找到所有ASS层的索引（排除锁定层本身）
-            var layerIndices = new List<int>();
-            for (int i = 0; i < controller.layers.Length; i++)
-            {
-                string layerName = controller.layers[i].name;
-                // 排除锁定层本身（锁定层权重必须始终为1才能播放锁定/解锁动画）
-                if (layerName == Constants.LAYER_INITIAL_LOCK)
-                    continue;
-                    
-                if (assLayerNames.Contains(layerName))
-                {
-                    layerIndices.Add(i);
-                    Debug.Log($"[ASS] 层权重控制：添加层 '{layerName}' (索引 {i})");
-                }
-            }
+            var layerIndices = GetLayerIndicesByNames(controller, assLayerNames, 
+                excludeLayer: Constants.LAYER_INITIAL_LOCK, 
+                logPrefix: "层权重控制");
 
             if (layerIndices.Count > 0)
             {
-                // 解锁状态：将所有ASS层权重设为0（禁用ASS效果）
-                AnimatorUtils.AddMultiLayerControlBehaviour(
-                    lockResult.UnlockedState,
-                    layerIndices.ToArray(),
-                    goalWeight: 0f,
-                    blendDuration: 0f);
-
-                // 锁定状态：将所有ASS层权重设为1（启用ASS效果）
-                AnimatorUtils.AddMultiLayerControlBehaviour(
-                    lockResult.LockedState,
-                    layerIndices.ToArray(),
-                    goalWeight: 1f,
-                    blendDuration: 0f);
-
+                ApplyLayerWeightControl(lockResult, layerIndices.ToArray());
                 Debug.Log($"[ASS] 已配置层权重控制：{layerIndices.Count} 个层");
             }
             else
@@ -200,20 +175,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             if (nonAssLayerIndices.Count > 0)
             {
-                // 锁定状态：将所有非ASS层权重设为0（锁定FX功能）
-                AnimatorUtils.AddMultiLayerControlBehaviour(
-                    lockResult.LockedState,
-                    nonAssLayerIndices.ToArray(),
-                    goalWeight: 0f,
-                    blendDuration: 0f);
-
-                // 解锁状态：将所有非ASS层权重设为1（恢复FX功能）
-                AnimatorUtils.AddMultiLayerControlBehaviour(
-                    lockResult.UnlockedState,
-                    nonAssLayerIndices.ToArray(),
-                    goalWeight: 1f,
-                    blendDuration: 0f);
-
+                ApplyLayerWeightControl(lockResult, nonAssLayerIndices.ToArray());
                 Debug.Log($"[ASS] 已配置FX层锁定：{nonAssLayerIndices.Count} 个非ASS层");
             }
             else
@@ -254,16 +216,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
             
             // 启用音效对象（Local时可以接收反馈，具体是否播放由其他层控制）
-            Transform feedbackAudio = avatarRoot.transform.Find(Constants.GO_FEEDBACK_AUDIO);
-            if (feedbackAudio != null)
+            Transform audio = avatarRoot.transform.Find(Constants.GO_AUDIO);
+            if (audio != null)
             {
-                clip.SetCurve(Constants.GO_FEEDBACK_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
-            }
-            
-            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_WARNING_AUDIO);
-            if (warningAudio != null)
-            {
-                clip.SetCurve(Constants.GO_WARNING_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                clip.SetCurve(Constants.GO_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
             }
             
             // 隐藏防御对象（锁定时不需要防御）
@@ -277,62 +233,68 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (config.disableRootChildren)
             {
                 var hiddenPaths = new HashSet<string>();
+                var zeroCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+                var farCurve = AnimationCurve.Constant(0f, 1f / 60f, -9999f);
                 
-                // 1. 隐藏 Avatar Root 的直接子对象（非 ASS 对象）
+                // 查找 Avatar 的 Animator 以获取骨骼信息
+                var animator = avatarRoot.GetComponent<Animator>();
+                Transform armatureRoot = null;
+                if (animator != null && animator.isHuman)
+                {
+                    // 获取 Hips 骨骼的根（通常是 Armature）
+                    var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+                    if (hips != null)
+                    {
+                        armatureRoot = hips.parent;
+                        while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
+                        {
+                            armatureRoot = armatureRoot.parent;
+                        }
+                    }
+                }
+                
+                // 对所有根子对象使用 Scale=0
+                // 非 Armature 对象依赖 WD 恢复
+                // Armature 需要在解锁动画中显式恢复（Scale + Position + m_IsActive）
                 foreach (Transform child in avatarRoot.transform)
                 {
                     if (IsASSObject(child, avatarRoot.transform))
                         continue;
                     
                     string path = child.name;
+                    bool isArmature = (armatureRoot != null && child == armatureRoot);
+                    
                     if (hiddenPaths.Add(path))
                     {
-                        AddScaleZeroCurves(clip, path);
+                        // Scale = 0
+                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", zeroCurve);
+                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", zeroCurve);
+                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", zeroCurve);
+                        
+                        // Armature 额外控制 Position 和 m_IsActive
+                        if (isArmature)
+                        {
+                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", farCurve);
+                            clip.SetCurve(path, typeof(GameObject), "m_IsActive", zeroCurve);
+                        }
+                        
+                        Debug.Log($"[ASS] 添加隐藏曲线: \"{path}\"{(isArmature ? " [Armature: Scale+Position+Active]" : " (Scale=0)")}");
                     }
                 }
                 
                 Debug.Log($"[ASS] 锁定动画：隐藏 {hiddenPaths.Count} 个根子对象");
-                
-                // 2. 隐藏所有 Renderer 对象（用于隐藏骨骼上的 Mesh）
-                // 因为 Humanoid Rig 骨骼的 Transform 被 Animator 控制，无法通过动画修改 Scale
-                // 所以需要直接隐藏 Renderer 所在的对象
-                int rendererCount = 0;
-                var renderers = avatarRoot.GetComponentsInChildren<Renderer>(true);
-                foreach (var renderer in renderers)
-                {
-                    // 跳过 ASS 创建的对象
-                    if (IsASSObject(renderer.transform, avatarRoot.transform))
-                        continue;
-                    
-                    string path = GetRelativePath(avatarRoot.transform, renderer.transform);
-                    if (hiddenPaths.Add(path))
-                    {
-                        AddScaleZeroCurves(clip, path);
-                        rendererCount++;
-                    }
-                }
-                
-                Debug.Log($"[ASS] 锁定动画：隐藏 {rendererCount} 个额外渲染器对象");
-                
-                // 验证动画曲线
-                var bindings = AnimationUtility.GetCurveBindings(clip);
-                Debug.Log($"[ASS] 动画曲线绑定数量: {bindings.Length}");
             }
 
             return clip;
         }
         
-        /// <summary>
-        /// 检查对象是否为 ASS 创建的对象
-        /// </summary>
         private static bool IsASSObject(Transform obj, Transform avatarRoot)
         {
             var assObjectNames = new HashSet<string>
             {
                 Constants.GO_ASS_ROOT,
                 Constants.GO_UI_CANVAS,
-                Constants.GO_FEEDBACK_AUDIO,
-                Constants.GO_WARNING_AUDIO,
+                Constants.GO_AUDIO,
                 Constants.GO_PARTICLES,
                 Constants.GO_DEFENSE_ROOT,
                 Constants.GO_OCCLUSION_MESH
@@ -346,17 +308,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 current = current.parent;
             }
             return false;
-        }
-        
-        /// <summary>
-        /// 添加 Scale=0 动画曲线
-        /// </summary>
-        private static void AddScaleZeroCurves(AnimationClip clip, string path)
-        {
-            var zeroCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", zeroCurve);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", zeroCurve);
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", zeroCurve);
         }
         
         /// <summary>
@@ -554,21 +505,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         private static AnimationClip CreateRemoteClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
             var clip = new AnimationClip { name = "ASS_Remote" };
-            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             
-            // 隐藏遮挡 Mesh（m_IsActive=0）- 其他玩家不应该看到遮挡 Mesh
-            Transform occlusionMesh = avatarRoot.transform.Find(Constants.GO_OCCLUSION_MESH);
-            if (occlusionMesh != null)
-            {
-                clip.SetCurve(Constants.GO_OCCLUSION_MESH, typeof(GameObject), "m_IsActive", disableCurve);
-            }
-            
-            // 隐藏防御对象（m_IsActive=0）- 其他玩家不应该看到防御效果
-            Transform defenseRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
-            if (defenseRoot != null)
-            {
-                clip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
-            }
+            // 隐藏遮挡 Mesh 和防御对象
+            SetGameObjectActiveInClip(clip, Constants.GO_OCCLUSION_MESH, false);
+            SetGameObjectActiveInClip(clip, Constants.GO_DEFENSE_ROOT, false);
             
             Debug.Log("[ASS] 创建 Remote 状态动画：隐藏遮挡 Mesh 和防御对象");
             return clip;
@@ -581,66 +521,128 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         private static AnimationClip CreateUnlockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
             var clip = new AnimationClip { name = "ASS_Unlock" };
-            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
 
-            // 隐藏 UI Canvas（解锁后永久隐藏）
-            Transform uiCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
-            if (uiCanvas != null)
+            // 隐藏 UI Canvas、遮挡 Mesh 和防御对象
+            SetGameObjectActiveInClip(clip, Constants.GO_UI_CANVAS, false);
+            SetGameObjectActiveInClip(clip, Constants.GO_OCCLUSION_MESH, false);
+            SetGameObjectActiveInClip(clip, Constants.GO_DEFENSE_ROOT, false);
+            
+            // 启用音效对象（解锁后恢复，密码正确可以听到音效）
+            Transform audio = avatarRoot.transform.Find(Constants.GO_AUDIO);
+            if (audio != null)
             {
-                clip.SetCurve(Constants.GO_UI_CANVAS, typeof(GameObject), "m_IsActive", disableCurve);
+                clip.SetCurve(Constants.GO_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                Debug.Log($"[ASS] 解锁动画：启用音效");
             }
             
-            // 隐藏遮挡 Mesh（m_IsActive=0）
-            Transform occlusionMesh = avatarRoot.transform.Find(Constants.GO_OCCLUSION_MESH);
-            if (occlusionMesh != null)
+            // Armature 需要显式恢复 Scale + Position + m_IsActive
+            // 因为 Humanoid Rig 会覆盖骨骼 Transform，WD 不可靠
+            // 其他根子对象依赖 WD 自动恢复
+            if (config.disableRootChildren)
             {
-                clip.SetCurve(Constants.GO_OCCLUSION_MESH, typeof(GameObject), "m_IsActive", disableCurve);
-            }
-            
-            // 隐藏防御对象（m_IsActive=0）- 解锁后不需要防御效果
-            Transform defenseRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
-            if (defenseRoot != null)
-            {
-                clip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
-            }
-            
-            // 启用音效对象（解锁后恢复，我输遇手段可以听到音效）
-            Transform feedbackAudio = avatarRoot.transform.Find(Constants.GO_FEEDBACK_AUDIO);
-            if (feedbackAudio != null)
-            {
-                clip.SetCurve(Constants.GO_FEEDBACK_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log($"[ASS] 解锁动画：启用反馈音效");
-            }
-            
-            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_WARNING_AUDIO);
-            if (warningAudio != null)
-            {
-                clip.SetCurve(Constants.GO_WARNING_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log($"[ASS] 解锁动画：启用警告音效");
+                var animator = avatarRoot.GetComponent<Animator>();
+                if (animator != null && animator.isHuman)
+                {
+                    var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+                    if (hips != null)
+                    {
+                        Transform armatureRoot = hips.parent;
+                        while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
+                        {
+                            armatureRoot = armatureRoot.parent;
+                        }
+                        
+                        if (armatureRoot != null)
+                        {
+                            string path = armatureRoot.name;
+                            
+                            // 读取 Armature 的原始值
+                            Vector3 originalScale = armatureRoot.localScale;
+                            Vector3 originalPosition = armatureRoot.localPosition;
+                            
+                            // Scale = 原始值
+                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
+                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
+                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
+                            
+                            // Position = 原始值
+                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
+                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
+                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
+                            
+                            // m_IsActive = 1
+                            clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
+                            
+                            Debug.Log($"[ASS] 解锁动画：恢复 Armature \"{path}\" (Scale={originalScale}, Position={originalPosition}, Active=1)");
+                        }
+                    }
+                }
             }
 
             Debug.Log(I18n.T("log.lock_unlock_animation_created"));
             return clip;
         }
-
+        
         /// <summary>
-        /// 获取相对路径
+        /// 在动画片段中设置 GameObject 的活动状态
         /// </summary>
-        private static string GetRelativePath(Transform root, Transform target)
+        private static void SetGameObjectActiveInClip(AnimationClip clip, string objectPath, bool isActive)
         {
-            if (target == root) return "";
-
-            var path = new List<string>();
-            Transform current = target;
-
-            while (current != null && current != root)
+            var curve = AnimationCurve.Constant(0f, 1f / 60f, isActive ? 1f : 0f);
+            clip.SetCurve(objectPath, typeof(GameObject), "m_IsActive", curve);
+        }
+        
+        /// <summary>
+        /// 获取控制器中匹配名称的层索引列表
+        /// </summary>
+        private static List<int> GetLayerIndicesByNames(
+            AnimatorController controller, 
+            string[] layerNames, 
+            string excludeLayer = null,
+            string logPrefix = "")
+        {
+            var indices = new List<int>();
+            var nameSet = new HashSet<string>(layerNames);
+            
+            for (int i = 0; i < controller.layers.Length; i++)
             {
-                path.Insert(0, current.name);
-                current = current.parent;
+                string layerName = controller.layers[i].name;
+                
+                if (excludeLayer != null && layerName == excludeLayer)
+                    continue;
+                    
+                if (nameSet.Contains(layerName))
+                {
+                    indices.Add(i);
+                    if (!string.IsNullOrEmpty(logPrefix))
+                        Debug.Log($"[ASS] {logPrefix}：添加层 '{layerName}' (索引 {i})");
+                }
             }
+            
+            return indices;
+        }
+        
+        /// <summary>
+        /// 应用层权重控制到两个状态（锁定和解锁）
+        /// </summary>
+        private static void ApplyLayerWeightControl(
+            LockLayerResult lockResult,
+            int[] layerIndices)
+        {
+            // 锁定状态：将所有层权重设为0
+            AnimatorUtils.AddMultiLayerControlBehaviour(
+                lockResult.LockedState,
+                layerIndices,
+                goalWeight: 0f,
+                blendDuration: 0f);
 
-            return string.Join("/", path);
+            // 解锁状态：将所有层权重设为1
+            AnimatorUtils.AddMultiLayerControlBehaviour(
+                lockResult.UnlockedState,
+                layerIndices,
+                goalWeight: 1f,
+                blendDuration: 0f);
         }
     }
 }

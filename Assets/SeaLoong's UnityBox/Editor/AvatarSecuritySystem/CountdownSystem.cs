@@ -101,10 +101,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 legacy = false
             };
             
-            // 设置动画长度为duration
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            ConfigureAnimationClip(clip);
 
             // 创建进度条宽度动画（从满到空），3D条使用 localScale.x 控制长度
             string barPath = $"{GO_UI_CANVAS}/CountdownBar/Bar";
@@ -158,7 +155,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (config.warningBeep != null)
             {
                 AddPlayAudioBehaviour(beepState, 
-                    GO_WARNING_AUDIO, 
+                    GO_AUDIO, 
                     config.warningBeep);
             }
 #endif
@@ -208,9 +205,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 legacy = false
             };
             
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = false;
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            ConfigureAnimationClip(clip);
 
             // 添加一个虚拟曲线来确保动画有正确的长度
             // 使用一个不存在的路径，这样不会影响任何实际对象
@@ -242,6 +237,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log($"[ASS] Created warning loop animation: duration={duration}s");
             return clip;
+        }
+        private static void ConfigureAnimationClip(AnimationClip clip)
+        {
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
         }
     }
 }
