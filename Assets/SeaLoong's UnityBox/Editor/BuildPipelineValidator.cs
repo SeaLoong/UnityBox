@@ -3,7 +3,6 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using VRC.SDKBase.Editor.BuildPipeline;
@@ -18,7 +17,98 @@ namespace SeaLoongUnityBox.Editor
     /// <summary>
     /// Unity 构建进程验证器 - 全面测试所有构建回调接口
     /// 每个接口都测试 -100, 0, 100 三种 callbackOrder
+    /// 通过菜单控制各个管线的日志输出
     /// </summary>
+
+    #region ==================== 设置管理 ====================
+    
+    public static class BuildPipelineValidatorSettings
+    {
+        private const string PREF_PREFIX = "SeaLoong.BuildPipelineValidator.";
+        
+        /// <summary>
+        /// Asset Pipeline - 资产导入管线 (AssetPostprocessor)
+        /// </summary>
+        public static bool AssetPipeline
+        {
+            get => EditorPrefs.GetBool(PREF_PREFIX + "AssetPipeline", false);
+            set => EditorPrefs.SetBool(PREF_PREFIX + "AssetPipeline", value);
+        }
+        
+        /// <summary>
+        /// Build Pipeline - Unity 构建管线 (BuildPlayerProcessor, IPreprocessBuild, IProcessScene, IPreprocessShaders 等)
+        /// </summary>
+        public static bool BuildPipeline
+        {
+            get => EditorPrefs.GetBool(PREF_PREFIX + "BuildPipeline", false);
+            set => EditorPrefs.SetBool(PREF_PREFIX + "BuildPipeline", value);
+        }
+        
+        /// <summary>
+        /// VRCSDK - VRChat SDK 回调 (IVRCSDKBuildRequested, IVRCSDKPreprocessAvatar, IVRCSDKPostprocessAvatar)
+        /// </summary>
+        public static bool VRCSDK
+        {
+            get => EditorPrefs.GetBool(PREF_PREFIX + "VRCSDK", false);
+            set => EditorPrefs.SetBool(PREF_PREFIX + "VRCSDK", value);
+        }
+        
+        /// <summary>
+        /// NDMF - Non-Destructive Modular Framework 阶段 (Resolving, Generating, Transforming, Optimizing)
+        /// </summary>
+        public static bool NDMF
+        {
+            get => EditorPrefs.GetBool(PREF_PREFIX + "NDMF", false);
+            set => EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value);
+        }
+    }
+    
+    public static class BuildPipelineValidatorMenu
+    {
+        private const string MENU_PREFIX = "Tools/Build Pipeline Validator/";
+        
+        [MenuItem(MENU_PREFIX + "Asset Pipeline")]
+        private static void ToggleAssetPipeline() => BuildPipelineValidatorSettings.AssetPipeline = !BuildPipelineValidatorSettings.AssetPipeline;
+        [MenuItem(MENU_PREFIX + "Asset Pipeline", true)]
+        private static bool ValidateAssetPipeline() { Menu.SetChecked(MENU_PREFIX + "Asset Pipeline", BuildPipelineValidatorSettings.AssetPipeline); return true; }
+        
+        [MenuItem(MENU_PREFIX + "Build Pipeline")]
+        private static void ToggleBuildPipeline() => BuildPipelineValidatorSettings.BuildPipeline = !BuildPipelineValidatorSettings.BuildPipeline;
+        [MenuItem(MENU_PREFIX + "Build Pipeline", true)]
+        private static bool ValidateBuildPipeline() { Menu.SetChecked(MENU_PREFIX + "Build Pipeline", BuildPipelineValidatorSettings.BuildPipeline); return true; }
+        
+        [MenuItem(MENU_PREFIX + "VRCSDK")]
+        private static void ToggleVRCSDK() => BuildPipelineValidatorSettings.VRCSDK = !BuildPipelineValidatorSettings.VRCSDK;
+        [MenuItem(MENU_PREFIX + "VRCSDK", true)]
+        private static bool ValidateVRCSDK() { Menu.SetChecked(MENU_PREFIX + "VRCSDK", BuildPipelineValidatorSettings.VRCSDK); return true; }
+        
+        [MenuItem(MENU_PREFIX + "NDMF")]
+        private static void ToggleNDMF() => BuildPipelineValidatorSettings.NDMF = !BuildPipelineValidatorSettings.NDMF;
+        [MenuItem(MENU_PREFIX + "NDMF", true)]
+        private static bool ValidateNDMF() { Menu.SetChecked(MENU_PREFIX + "NDMF", BuildPipelineValidatorSettings.NDMF); return true; }
+        
+        [MenuItem(MENU_PREFIX + "Enable All")]
+        private static void EnableAll()
+        {
+            BuildPipelineValidatorSettings.AssetPipeline = true;
+            BuildPipelineValidatorSettings.BuildPipeline = true;
+            BuildPipelineValidatorSettings.VRCSDK = true;
+            BuildPipelineValidatorSettings.NDMF = true;
+            Debug.Log("[Build Pipeline Validator] 已启用所有管线日志");
+        }
+        
+        [MenuItem(MENU_PREFIX + "Disable All")]
+        private static void DisableAll()
+        {
+            BuildPipelineValidatorSettings.AssetPipeline = false;
+            BuildPipelineValidatorSettings.BuildPipeline = false;
+            BuildPipelineValidatorSettings.VRCSDK = false;
+            BuildPipelineValidatorSettings.NDMF = false;
+            Debug.Log("[Build Pipeline Validator] 已禁用所有管线日志");
+        }
+    }
+    
+    #endregion
 
     #region ==================== BuildPlayerProcessor ====================
     
@@ -27,7 +117,8 @@ namespace SeaLoongUnityBox.Editor
         public override int callbackOrder => -100;
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
-            Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
         }
     }
     
@@ -36,7 +127,8 @@ namespace SeaLoongUnityBox.Editor
         public override int callbackOrder => 0;
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
-            Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
         }
     }
     
@@ -45,7 +137,8 @@ namespace SeaLoongUnityBox.Editor
         public override int callbackOrder => 100;
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
-            Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
         }
     }
     
@@ -58,7 +151,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public void OnPreprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -67,7 +161,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public void OnPreprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -76,7 +171,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public void OnPreprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -89,7 +185,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
-            Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
             return assemblies;
         }
     }
@@ -99,7 +196,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
-            Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
             return assemblies;
         }
     }
@@ -109,7 +207,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
-            Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
             return assemblies;
         }
     }
@@ -123,7 +222,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
         }
     }
     
@@ -132,7 +232,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
         }
     }
     
@@ -141,7 +242,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
         }
     }
     
@@ -154,7 +256,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public void OnProcessScene(Scene scene, BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
         }
     }
     
@@ -163,7 +266,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public void OnProcessScene(Scene scene, BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
         }
     }
     
@@ -172,7 +276,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public void OnProcessScene(Scene scene, BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
         }
     }
     
@@ -187,7 +292,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
                 _logged = true;
@@ -202,7 +307,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
                 _logged = true;
@@ -217,7 +322,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
                 _logged = true;
@@ -236,7 +341,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
                 _logged = true;
@@ -251,7 +356,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
                 _logged = true;
@@ -266,7 +371,7 @@ namespace SeaLoongUnityBox.Editor
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged)
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
                 Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
                 _logged = true;
@@ -278,7 +383,7 @@ namespace SeaLoongUnityBox.Editor
 
     // IUnityLinkerProcessor 需要 Unity.Build.Pipeline 包，在VRChat项目中可能不可用
     // 如需测试，请取消注释并添加包引用
-    
+
     /*
     #region ==================== IUnityLinkerProcessor ====================
     
@@ -325,7 +430,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public void OnPostprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -334,7 +440,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public void OnPostprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -343,7 +450,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public void OnPostprocessBuild(BuildReport report)
         {
-            Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
         }
     }
     
@@ -356,7 +464,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
             return true;
         }
     }
@@ -366,7 +475,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
             return true;
         }
     }
@@ -376,7 +486,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
             return true;
         }
     }
@@ -386,7 +497,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
             return true;
         }
     }
@@ -396,7 +508,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
             return true;
         }
     }
@@ -406,7 +519,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
             return true;
         }
     }
@@ -416,7 +530,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => -100;
         public void OnPostprocessAvatar()
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
         }
     }
     
@@ -425,7 +540,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 0;
         public void OnPostprocessAvatar()
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
         }
     }
     
@@ -434,7 +550,8 @@ namespace SeaLoongUnityBox.Editor
         public int callbackOrder => 100;
         public void OnPostprocessAvatar()
         {
-            Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
         }
     }
     
@@ -452,37 +569,43 @@ namespace SeaLoongUnityBox.Editor
         
         void OnPreprocessTexture()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessModel()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessModel(GameObject g)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessAudio()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (importedAssets.Length > 0 || deletedAssets.Length > 0 || movedAssets.Length > 0)
+            if (BuildPipelineValidatorSettings.AssetPipeline && (importedAssets.Length > 0 || deletedAssets.Length > 0 || movedAssets.Length > 0))
             {
                 Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAllAssets (Early) Imported: {importedAssets.Length}, Deleted: {deletedAssets.Length}, Moved: {movedAssets.Length}");
             }
@@ -495,32 +618,38 @@ namespace SeaLoongUnityBox.Editor
         
         void OnPreprocessTexture()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessModel()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessModel(GameObject g)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessAudio()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
     }
     
@@ -530,32 +659,38 @@ namespace SeaLoongUnityBox.Editor
         
         void OnPreprocessTexture()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessModel()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessModel(GameObject g)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPreprocessAudio()
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
-            Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
         }
     }
     
@@ -579,22 +714,26 @@ namespace SeaLoongUnityBox.Editor
             
             InPhase(BuildPhase.Resolving).Run("Validator_Resolving_Start", ctx =>
             {
-                Debug.Log($"[Build Pipeline] NDMF BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
+                if (BuildPipelineValidatorSettings.NDMF)
+                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Generating).Run("Validator_Generating_Start", ctx =>
             {
-                Debug.Log($"[Build Pipeline] NDMF BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
+                if (BuildPipelineValidatorSettings.NDMF)
+                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Transforming).Run("Validator_Transforming_Start", ctx =>
             {
-                Debug.Log($"[Build Pipeline] NDMF BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
+                if (BuildPipelineValidatorSettings.NDMF)
+                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Optimizing).Run("Validator_Optimizing_Start", ctx =>
             {
-                Debug.Log($"[Build Pipeline] NDMF BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
+                if (BuildPipelineValidatorSettings.NDMF)
+                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
         }
     }
