@@ -15,8 +15,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// Avatar Security System (ASS) VRCSDK 构建处理器 — 系统入口点
     /// 
     /// 实现 IVRCSDKPreprocessAvatarCallback 在 VRChat Avatar 构建/上传时自动注入安全系统。
-    /// callbackOrder = 10000 确保在 NDMF (-1024~0) 和 VRCFury (~0) 之后执行，
-    /// 以避免被其他预处理器覆盖生成的 Animator 层和组件。
+    /// callbackOrder = -1026，在 NDMF PreprocessHook (-11000) 和 VRCFury (-10000) 之后、
+    /// NDMF OptimizeHook (-1025，含 VRCFury 参数压缩) 之前执行。
     /// 
     /// 执行流程：
     /// 1. 从 Avatar 根对象提取 AvatarSecuritySystemComponent 配置
@@ -33,11 +33,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// </summary>
     public class AvatarSecurityBuildProcessor : IVRCSDKPreprocessAvatarCallback
     {
-        // 使用较晚的 callbackOrder，确保在 NDMF/VRCFury 之后执行
-        // NDMF 通常使用 -1024 到 0 的范围
-        // VRCFury 通常使用类似范围
-        // 我们使用 10000 确保在它们之后
-        public int callbackOrder => 10000;
+        // callbackOrder = -1026: 在 NDMF Optimize (-1025) 之前执行
+        // 构建管线执行顺序：
+        //   -11000 : NDMF PreprocessHook (Resolving → Transforming)
+        //   -10000 : VRCFury 主处理
+        //   -1026  : ★ ASS（本插件）← 在这里
+        //   -1025  : NDMF OptimizeHook (Optimizing → Last，含 VRCFury 参数压缩)
+        //   -1024  : VRCSDK RemoveAvatarEditorOnly
+        //   int.MaxValue : MA RemoveIEditorOnly
+        // 这样 ASS 在 NDMF/VRCFury 的主处理完成后注入 Animator 层和参数，
+        // 同时在 VRCFury 参数压缩之前完成，避免参数被压缩后无法识别
+        public int callbackOrder => -1026;
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
