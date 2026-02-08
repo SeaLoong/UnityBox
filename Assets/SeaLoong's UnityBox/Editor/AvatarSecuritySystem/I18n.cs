@@ -847,6 +847,96 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "调试选项" },
                     { SystemLanguage.Japanese, "デバッグオプション" }
                 },
+                ["advanced.debug_advanced"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Advanced Debug Options" },
+                    { SystemLanguage.ChineseSimplified, "高级调试选项" },
+                    { SystemLanguage.Japanese, "高度なデバッグオプション" }
+                },
+                ["advanced.verbose_logging"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Verbose Logging" },
+                    { SystemLanguage.ChineseSimplified, "详细日志" },
+                    { SystemLanguage.Japanese, "詳細ログ" }
+                },
+                ["advanced.verbose_logging_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Enable detailed logging during build" },
+                    { SystemLanguage.ChineseSimplified, "构建时启用详细日志输出" },
+                    { SystemLanguage.Japanese, "ビルド時に詳細なログを出力" }
+                },
+                ["advanced.skip_lock"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip Lock System" },
+                    { SystemLanguage.ChineseSimplified, "跳过锁定系统" },
+                    { SystemLanguage.Japanese, "ロックシステムをスキップ" }
+                },
+                ["advanced.skip_lock_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip lock system generation (for testing)" },
+                    { SystemLanguage.ChineseSimplified, "跳过锁定系统生成（用于测试）" },
+                    { SystemLanguage.Japanese, "ロックシステムの生成をスキップ（テスト用）" }
+                },
+                ["advanced.skip_password"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip Password System" },
+                    { SystemLanguage.ChineseSimplified, "跳过密码系统" },
+                    { SystemLanguage.Japanese, "パスワードシステムをスキップ" }
+                },
+                ["advanced.skip_feedback"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip Feedback System" },
+                    { SystemLanguage.ChineseSimplified, "跳过反馈系统" },
+                    { SystemLanguage.Japanese, "フィードバックシステムをスキップ" }
+                },
+                ["advanced.skip_feedback_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip feedback system generation (UI/Audio)" },
+                    { SystemLanguage.ChineseSimplified, "跳过反馈系统生成（UI/音效）" },
+                    { SystemLanguage.Japanese, "フィードバックシステムの生成をスキップ（UI/音声）" }
+                },
+                ["advanced.skip_password_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip password system generation (for testing)" },
+                    { SystemLanguage.ChineseSimplified, "跳过密码系统生成（用于测试）" },
+                    { SystemLanguage.Japanese, "パスワードシステムの生成をスキップ（テスト用）" }
+                },
+                ["advanced.skip_countdown"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip Countdown System" },
+                    { SystemLanguage.ChineseSimplified, "跳过倒计时系统" },
+                    { SystemLanguage.Japanese, "カウントダウンシステムをスキップ" }
+                },
+                ["advanced.skip_countdown_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip countdown system generation (for testing)" },
+                    { SystemLanguage.ChineseSimplified, "跳过倒计时系统生成（用于测试）" },
+                    { SystemLanguage.Japanese, "カウントダウンシステムの生成をスキップ（テスト用）" }
+                },
+                ["advanced.skip_defense"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip Defense System" },
+                    { SystemLanguage.ChineseSimplified, "跳过防御系统" },
+                    { SystemLanguage.Japanese, "防御システムをスキップ" }
+                },
+                ["advanced.skip_defense_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Skip defense system generation (for testing)" },
+                    { SystemLanguage.ChineseSimplified, "跳过防御系统生成（用于测试）" },
+                    { SystemLanguage.Japanese, "防御システムの生成をスキップ（テスト用）" }
+                },
+                ["advanced.validate_build"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Validate After Build" },
+                    { SystemLanguage.ChineseSimplified, "构建后验证" },
+                    { SystemLanguage.Japanese, "ビルド後に検証" }
+                },
+                ["advanced.validate_build_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Validate animator controller after build" },
+                    { SystemLanguage.ChineseSimplified, "构建后验证动画控制器" },
+                    { SystemLanguage.Japanese, "ビルド後にアニメーターコントローラーを検証" }
+                },
                 ["advanced.lock_options"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Lock Options" },
@@ -876,6 +966,44 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Hide all root level child objects when locked" },
                     { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象" },
                     { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクトを非表示" }
+                },
+                
+                // ========== Write Defaults 模式 ==========
+                ["advanced.wd_mode"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Write Defaults Mode" },
+                    { SystemLanguage.ChineseSimplified, "Write Defaults 模式" },
+                    { SystemLanguage.Japanese, "Write Defaults モード" }
+                },
+                ["advanced.wd_mode_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Animation Write Defaults mode:\nOn = Auto restore (recommended)\nOff = Explicit restore (better compatibility)" },
+                    { SystemLanguage.ChineseSimplified, "动画 Write Defaults 模式：\nOn = 自动恢复（推荐）\nOff = 显式恢复（兼容性更好）" },
+                    { SystemLanguage.Japanese, "アニメーション Write Defaults モード：\nOn = 自動復元（推奨）\nOff = 明示的復元（互換性向上）" }
+                },
+                ["advanced.wd_mode_on"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "WD On (Auto Restore)" },
+                    { SystemLanguage.ChineseSimplified, "WD On（自动恢复）" },
+                    { SystemLanguage.Japanese, "WD On（自動復元）" }
+                },
+                ["advanced.wd_mode_off"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "WD Off (Explicit Restore)" },
+                    { SystemLanguage.ChineseSimplified, "WD Off（显式恢复）" },
+                    { SystemLanguage.Japanese, "WD Off（明示的復元）" }
+                },
+                ["advanced.wd_mode_on_hint"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "💡 WD On: Animation system automatically restores values when state exits. Simpler but may conflict with some avatar setups." },
+                    { SystemLanguage.ChineseSimplified, "💡 WD On：动画系统在状态退出时自动恢复值。更简单，但可能与某些 Avatar 设置冲突。" },
+                    { SystemLanguage.Japanese, "💡 WD On：状態終了時にアニメーションシステムが自動的に値を復元。シンプルですが、一部のアバター設定と競合する可能性があります。" }
+                },
+                ["advanced.wd_mode_off_hint"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "💡 WD Off: Explicitly writes restore values in animations. Better compatibility with other systems but uses more animation curves." },
+                    { SystemLanguage.ChineseSimplified, "💡 WD Off：在动画中显式写入恢复值。与其他系统兼容性更好，但使用更多动画曲线。" },
+                    { SystemLanguage.Japanese, "💡 WD Off：アニメーションに明示的に復元値を書き込み。他のシステムとの互換性が高いですが、より多くのアニメーションカーブを使用します。" }
                 },
 
                 // ========== 视觉反馈 ==========

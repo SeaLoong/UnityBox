@@ -7,15 +7,8 @@ using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimationClipGenerator;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Dynamics.Constraint.Components;
 using VRC.Dynamics;
-#endif
-
-#if NDMF_AVAILABLE
-using nadena.dev.ndmf;
-#endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -47,48 +40,59 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             GameObject avatarRoot,
             AvatarSecuritySystemComponent config)
         {
-            var layer = AnimatorUtils.CreateLayer(Constants.LAYER_INITIAL_LOCK, 1f);
+            var layer = AnimatorUtils.CreateLayer(Constants.LAYER_LOCK, 1f);
+
+            // 为锁定层创建 Transform Mask，避免覆盖其他层的 Transform 动画
+            var lockLayerMask = CreateLockLayerMask(avatarRoot, config);
+            if (lockLayerMask != null)
+            {
+                layer.avatarMask = lockLayerMask;
+                AnimatorUtils.AddSubAsset(controller, lockLayerMask);
+            }
 
             // 创建遮挡 Mesh（基本功能，无论防护等级都需要）
             // 必须在创建动画之前创建，这样动画才能引用到它
             var occlusionMesh = CreateOcclusionMesh(avatarRoot, config);
 
+            // 根据配置决定 Write Defaults 模式
+            bool useWdOn = config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.On;
+
             // 创建状态
             // Remote 状态：其他玩家看到的默认状态（遮挡 Mesh 隐藏，Avatar 正常显示）
             var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, 0, 0));
-            remoteState.writeDefaultValues = true;
-            var remoteClip = CreateRemoteClip(avatarRoot, config);
+            remoteState.writeDefaultValues = useWdOn;
+            var remoteClip = CreateRemoteClip(avatarRoot, config, useWdOn);
             remoteState.motion = remoteClip;
             AnimatorUtils.AddSubAsset(controller, remoteClip);
             
             // Locked 状态：本地玩家锁定时看到的状态（遮挡 Mesh 显示，Avatar 隐藏）
             var lockedState = layer.stateMachine.AddState("Locked", new Vector3(200, 100, 0));
-            lockedState.writeDefaultValues = true;
+            lockedState.writeDefaultValues = useWdOn;
             
             // Unlocked 状态：本地玩家解锁后看到的状态（遮挡 Mesh 隐藏，UI 隐藏）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 200, 0));
-            unlockedState.writeDefaultValues = true;
+            unlockedState.writeDefaultValues = useWdOn;
 
             layer.stateMachine.defaultState = remoteState;
 
             // 生成锁定动画（显示遮挡 Mesh + 可选隐藏 Renderer）
-            var lockClip = CreateLockClip(avatarRoot, config);
+            var lockClip = CreateLockClip(avatarRoot, config, useWdOn);
             lockedState.motion = lockClip;
             AnimatorUtils.AddSubAsset(controller, lockClip);
 
             // 生成解锁动画（隐藏UI + 隐藏遮挡Mesh）
-            var unlockClip = CreateUnlockClip(avatarRoot, config);
+            // WD Off 模式下需要显式写入恢复值
+            var unlockClip = CreateUnlockClip(avatarRoot, config, useWdOn);
             unlockedState.motion = unlockClip;
             AnimatorUtils.AddSubAsset(controller, unlockClip);
 
-            // 转换：Remote → Unlocked（如果已保存的密码状态为正确，直接进入解锁）
+            // 转换：Remote → Unlocked（密码正确时，所有玩家都进入解锁状态，实现同步）
             var toUnlockedDirect = AnimatorUtils.CreateTransition(remoteState, unlockedState);
             toUnlockedDirect.hasExitTime = false;
             toUnlockedDirect.duration = 0f;
-            toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_PASSWORD_CORRECT);
             
-            // 转换：Remote → Locked（IsLocal 时且密码未正确，进入锁定状态）
+            // 转换：Remote → Locked（仅本地玩家：IsLocal=true 且密码未正确时进入锁定状态）
             var toLocked = AnimatorUtils.CreateTransition(remoteState, lockedState);
             toLocked.hasExitTime = false;
             toLocked.duration = 0f;
@@ -102,11 +106,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             lockedLoop.duration = 0f;
             lockedLoop.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
             
-            // 转换：Locked → Unlocked（密码正确时解锁）
+            // 转换：Locked → Unlocked（本地玩家密码正确时解锁）
             var toUnlocked = AnimatorUtils.CreateTransition(lockedState, unlockedState);
             toUnlocked.hasExitTime = false;
             toUnlocked.duration = 0f;
             toUnlocked.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_PASSWORD_CORRECT);
+            
+            // 转换：Unlocked → Remote（密码被重置时，所有玩家返回初始状态）
+            var unlockedToRemote = AnimatorUtils.CreateTransition(unlockedState, remoteState);
+            unlockedToRemote.hasExitTime = false;
+            unlockedToRemote.duration = 0f;
+            unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             AnimatorUtils.AddSubAsset(controller, layer.stateMachine);
@@ -122,31 +132,102 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 配置解锁状态的层权重控制
-        /// 必须在所有层添加到控制器后调用
+        /// 创建锁定层使用的 Transform Mask
+        /// 仅启用被 ASS 锁定层动画影响的 Transform，避免覆盖其他层
         /// </summary>
-        public static void ConfigureLayerWeightControl(
-            AnimatorController controller,
-            LockLayerResult lockResult,
-            string[] assLayerNames)
+        private static AvatarMask CreateLockLayerMask(GameObject avatarRoot, AvatarSecuritySystemComponent config)
         {
-#if VRC_SDK_VRCSDK3
-            var layerIndices = GetLayerIndicesByNames(controller, assLayerNames, 
-                excludeLayer: Constants.LAYER_INITIAL_LOCK, 
-                logPrefix: "层权重控制");
+            if (avatarRoot == null)
+                return null;
 
-            if (layerIndices.Count > 0)
+            var mask = new AvatarMask { name = "ASS_LockLayerMask" };
+
+            // 添加完整层级，随后禁用全部再按需启用
+            mask.AddTransformPath(avatarRoot.transform, true);
+            for (int i = 0; i < mask.transformCount; i++)
             {
-                ApplyLayerWeightControl(lockResult, layerIndices.ToArray());
-                Debug.Log($"[ASS] 已配置层权重控制：{layerIndices.Count} 个层");
+                mask.SetTransformActive(i, false);
             }
-            else
+
+            var allowedPaths = new HashSet<string>();
+
+            // ASS 自己控制的对象
+            AddAllowedPath(allowedPaths, avatarRoot, Constants.GO_UI_CANVAS);
+            AddAllowedPath(allowedPaths, avatarRoot, Constants.GO_OCCLUSION_MESH);
+            AddAllowedPath(allowedPaths, avatarRoot, Constants.GO_DEFENSE_ROOT);
+            AddAllowedPath(allowedPaths, avatarRoot, Constants.GO_AUDIO_WARNING);
+            AddAllowedPath(allowedPaths, avatarRoot, Constants.GO_AUDIO_SUCCESS);
+
+            // 锁定时缩放的根子对象
+            if (config.disableRootChildren)
             {
-                Debug.LogWarning("[ASS] 层权重控制：未找到需要控制的层");
-                Debug.Log($"[ASS] 传入的层名称列表: {string.Join(", ", assLayerNames)}");
-                Debug.Log($"[ASS] 控制器中的层: {string.Join(", ", controller.layers.Select(l => l.name))}");
+                foreach (Transform child in avatarRoot.transform)
+                {
+                    if (IsASSObject(child, avatarRoot.transform))
+                        continue;
+
+                    allowedPaths.Add(AnimatorUtils.GetRelativePath(avatarRoot, child.gameObject));
+                }
             }
-#endif
+
+            // 启用根节点与允许路径
+            for (int i = 0; i < mask.transformCount; i++)
+            {
+                string path = mask.GetTransformPath(i);
+                if (string.IsNullOrEmpty(path))
+                {
+                    mask.SetTransformActive(i, true);
+                    continue;
+                }
+
+                if (allowedPaths.Contains(path))
+                {
+                    mask.SetTransformActive(i, true);
+                }
+            }
+
+            return mask;
+        }
+
+        private static void AddAllowedPath(HashSet<string> allowedPaths, GameObject avatarRoot, string objectName)
+        {
+            var t = avatarRoot.transform.Find(objectName);
+            if (t != null)
+            {
+                allowedPaths.Add(AnimatorUtils.GetRelativePath(avatarRoot, t.gameObject));
+            }
+        }
+
+        /// <summary>
+        /// 配置锁定层自身权重
+        /// Locked 状态：权重=1（生效）
+        /// Unlocked 状态：权重=0（释放Transform影响，避免阻断恢复）
+        /// </summary>
+        public static void ConfigureLockLayerWeight(
+            AnimatorController controller,
+            LockLayerResult lockResult)
+        {
+            if (controller == null || lockResult?.Layer == null)
+                return;
+
+            int lockLayerIndex = -1;
+            for (int i = 0; i < controller.layers.Length; i++)
+            {
+                if (controller.layers[i].name == Constants.LAYER_LOCK)
+                {
+                    lockLayerIndex = i;
+                    break;
+                }
+            }
+
+            if (lockLayerIndex < 0)
+            {
+                Debug.LogWarning("[ASS] 锁定层权重控制：未找到ASS_Lock层");
+                return;
+            }
+
+            AnimatorUtils.AddLayerControlBehaviour(lockResult.LockedState, lockLayerIndex, goalWeight: 1f, blendDuration: 0f);
+            AnimatorUtils.AddLayerControlBehaviour(lockResult.UnlockedState, lockLayerIndex, goalWeight: 0f, blendDuration: 0f);
         }
 
         /// <summary>
@@ -158,7 +239,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             LockLayerResult lockResult,
             string[] assLayerNames)
         {
-#if VRC_SDK_VRCSDK3
             var assLayerSet = new HashSet<string>(assLayerNames);
             var nonAssLayerIndices = new List<int>();
 
@@ -182,7 +262,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.LogWarning("[ASS] FX层锁定：未找到非ASS层");
             }
-#endif
         }
 
         /// <summary>
@@ -192,11 +271,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 1. Avatar Root 的直接子对象（非 ASS 对象）
         /// 2. 所有 Renderer 对象（用于隐藏骨骼上的 Mesh，因为 Humanoid Rig 骨骼无法被动画控制）
         /// </summary>
-        private static AnimationClip CreateLockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
+        /// <param name="avatarRoot">Avatar 根对象</param>
+        /// <param name="config">ASS 配置</param>
+        /// <param name="useWdOn">true = WD On 模式, false = WD Off 模式</param>
+        private static AnimationClip CreateLockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool useWdOn)
         {
             var clip = new AnimationClip { name = "ASS_Lock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+            
+            Debug.Log($"[ASS] 创建锁定动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
 
             // 本地锁定状态：启用 UI Canvas 和遮挡 Mesh
             Transform uiCanvas = avatarRoot.transform.Find(Constants.GO_UI_CANVAS);
@@ -216,10 +300,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
             
             // 启用音效对象（Local时可以接收反馈，具体是否播放由其他层控制）
-            Transform audio = avatarRoot.transform.Find(Constants.GO_AUDIO);
-            if (audio != null)
+            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_AUDIO_WARNING);
+            if (warningAudio != null)
             {
-                clip.SetCurve(Constants.GO_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                clip.SetCurve(Constants.GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
+            }
+
+            Transform successAudio = avatarRoot.transform.Find(Constants.GO_AUDIO_SUCCESS);
+            if (successAudio != null)
+            {
+                clip.SetCurve(Constants.GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
             }
             
             // 隐藏防御对象（锁定时不需要防御）
@@ -294,7 +384,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             {
                 Constants.GO_ASS_ROOT,
                 Constants.GO_UI_CANVAS,
-                Constants.GO_AUDIO,
+                Constants.GO_AUDIO_WARNING,
+                Constants.GO_AUDIO_SUCCESS,
                 Constants.GO_PARTICLES,
                 Constants.GO_DEFENSE_ROOT,
                 Constants.GO_OCCLUSION_MESH
@@ -344,7 +435,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             material.color = Color.white;
             meshRenderer.sharedMaterial = material;
             
-#if VRC_SDK_VRCSDK3
             // VR模式：绑定到头部，始终挡住视角
             var animator = avatarRoot.GetComponent<Animator>();
             var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
@@ -366,7 +456,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 constraintSer.FindProperty("Locked").boolValue = true;
                 constraintSer.ApplyModifiedPropertiesWithoutUndo();
             }
-#endif
             
             // 默认禁用，锁定时通过动画启用
             meshObj.SetActive(false);
@@ -408,101 +497,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
         
         /// <summary>
-        /// 计算 Avatar 的边界框
-        /// </summary>
-        private static Bounds CalculateAvatarBounds(GameObject avatarRoot)
-        {
-            var renderers = avatarRoot.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0)
-            {
-                return new Bounds(avatarRoot.transform.position, Vector3.one);
-            }
-            
-            Bounds bounds = new Bounds();
-            bool first = true;
-            
-            foreach (var renderer in renderers)
-            {
-                // 跳过 ASS 创建的对象
-                if (IsASSObject(renderer.transform, avatarRoot.transform))
-                    continue;
-                
-                if (first)
-                {
-                    bounds = renderer.bounds;
-                    first = false;
-                }
-                else
-                {
-                    bounds.Encapsulate(renderer.bounds);
-                }
-            }
-            
-            return bounds;
-        }
-        
-        /// <summary>
-        /// 创建球体 Mesh
-        /// </summary>
-        private static Mesh CreateSphereMesh(int longitudeSegments, int latitudeSegments)
-        {
-            var mesh = new Mesh { name = "ASS_OcclusionSphere" };
-            
-            var vertices = new List<Vector3>();
-            var normals = new List<Vector3>();
-            var triangles = new List<int>();
-            
-            for (int lat = 0; lat <= latitudeSegments; lat++)
-            {
-                float theta = lat * Mathf.PI / latitudeSegments;
-                float sinTheta = Mathf.Sin(theta);
-                float cosTheta = Mathf.Cos(theta);
-                
-                for (int lon = 0; lon <= longitudeSegments; lon++)
-                {
-                    float phi = lon * 2 * Mathf.PI / longitudeSegments;
-                    float sinPhi = Mathf.Sin(phi);
-                    float cosPhi = Mathf.Cos(phi);
-                    
-                    // 法线朝内（用于遮挡内部视角）
-                    var normal = new Vector3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta);
-                    vertices.Add(normal);
-                    normals.Add(-normal); // 法线朝内
-                }
-            }
-            
-            for (int lat = 0; lat < latitudeSegments; lat++)
-            {
-                for (int lon = 0; lon < longitudeSegments; lon++)
-                {
-                    int current = lat * (longitudeSegments + 1) + lon;
-                    int next = current + longitudeSegments + 1;
-                    
-                    // 逆时针三角形（从内部看是正面）
-                    triangles.Add(current);
-                    triangles.Add(next);
-                    triangles.Add(current + 1);
-                    
-                    triangles.Add(current + 1);
-                    triangles.Add(next);
-                    triangles.Add(next + 1);
-                }
-            }
-            
-            mesh.SetVertices(vertices);
-            mesh.SetNormals(normals);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateBounds();
-            
-            return mesh;
-        }
-
-        /// <summary>
         /// 创建 Remote 状态动画
         /// 用于其他玩家看到的默认状态：遮挡 Mesh 隐藏，Avatar 正常显示
         /// 必须明确控制遮挡 Mesh 的 Scale，不能依赖 Write Defaults
         /// </summary>
-        private static AnimationClip CreateRemoteClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
+        /// <param name="useWdOn">true = WD On 模式, false = WD Off 模式</param>
+        private static AnimationClip CreateRemoteClip(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool useWdOn)
         {
             var clip = new AnimationClip { name = "ASS_Remote" };
             
@@ -510,7 +510,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             SetGameObjectActiveInClip(clip, Constants.GO_OCCLUSION_MESH, false);
             SetGameObjectActiveInClip(clip, Constants.GO_DEFENSE_ROOT, false);
             
-            Debug.Log("[ASS] 创建 Remote 状态动画：隐藏遮挡 Mesh 和防御对象");
+            // WD Off 模式：需要显式写入所有 Avatar 子对象的正常状态
+            if (!useWdOn && config.disableRootChildren)
+            {
+                WriteRootChildrenRestoreValues(clip, avatarRoot, config);
+            }
+            
+            Debug.Log($"[ASS] 创建 Remote 状态动画 (WD {(useWdOn ? "On" : "Off")})：隐藏遮挡 Mesh 和防御对象");
             return clip;
         }
 
@@ -518,10 +524,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 创建解锁动画
         /// 隐藏 UI Canvas 和遮挡 Mesh（ASS 完全控制的组件）
         /// </summary>
-        private static AnimationClip CreateUnlockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config)
+        /// <param name="useWdOn">true = WD On 模式, false = WD Off 模式</param>
+        private static AnimationClip CreateUnlockClip(GameObject avatarRoot, AvatarSecuritySystemComponent config, bool useWdOn)
         {
             var clip = new AnimationClip { name = "ASS_Unlock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+
+            Debug.Log($"[ASS] 创建解锁动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
 
             // 隐藏 UI Canvas、遮挡 Mesh 和防御对象
             SetGameObjectActiveInClip(clip, Constants.GO_UI_CANVAS, false);
@@ -529,59 +538,144 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             SetGameObjectActiveInClip(clip, Constants.GO_DEFENSE_ROOT, false);
             
             // 启用音效对象（解锁后恢复，密码正确可以听到音效）
-            Transform audio = avatarRoot.transform.Find(Constants.GO_AUDIO);
-            if (audio != null)
+            Transform warningAudio = avatarRoot.transform.Find(Constants.GO_AUDIO_WARNING);
+            if (warningAudio != null)
             {
-                clip.SetCurve(Constants.GO_AUDIO, typeof(GameObject), "m_IsActive", enableCurve);
+                clip.SetCurve(Constants.GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
+            }
+
+            Transform successAudio = avatarRoot.transform.Find(Constants.GO_AUDIO_SUCCESS);
+            if (successAudio != null)
+            {
+                clip.SetCurve(Constants.GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
+            }
+
+            if (warningAudio != null || successAudio != null)
+            {
                 Debug.Log($"[ASS] 解锁动画：启用音效");
             }
             
-            // Armature 需要显式恢复 Scale + Position + m_IsActive
-            // 因为 Humanoid Rig 会覆盖骨骼 Transform，WD 不可靠
-            // 其他根子对象依赖 WD 自动恢复
+            // 恢复 Avatar 子对象
             if (config.disableRootChildren)
             {
-                var animator = avatarRoot.GetComponent<Animator>();
-                if (animator != null && animator.isHuman)
+                if (useWdOn)
                 {
-                    var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-                    if (hips != null)
-                    {
-                        Transform armatureRoot = hips.parent;
-                        while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
-                        {
-                            armatureRoot = armatureRoot.parent;
-                        }
-                        
-                        if (armatureRoot != null)
-                        {
-                            string path = armatureRoot.name;
-                            
-                            // 读取 Armature 的原始值
-                            Vector3 originalScale = armatureRoot.localScale;
-                            Vector3 originalPosition = armatureRoot.localPosition;
-                            
-                            // Scale = 原始值
-                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
-                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
-                            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
-                            
-                            // Position = 原始值
-                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
-                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
-                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
-                            
-                            // m_IsActive = 1
-                            clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
-                            
-                            Debug.Log($"[ASS] 解锁动画：恢复 Armature \"{path}\" (Scale={originalScale}, Position={originalPosition}, Active=1)");
-                        }
-                    }
+                    // WD On 模式：仅恢复 Armature（因为 Humanoid Rig 会覆盖，WD 不可靠）
+                    // 其他根子对象依赖 WD 自动恢复
+                    WriteArmatureRestoreValues(clip, avatarRoot);
+                }
+                else
+                {
+                    // WD Off 模式：需要显式写入所有根子对象的恢复值
+                    WriteRootChildrenRestoreValues(clip, avatarRoot, config);
                 }
             }
 
             Debug.Log(I18n.T("log.lock_unlock_animation_created"));
             return clip;
+        }
+        
+        /// <summary>
+        /// 写入 Armature 的恢复值（WD On 模式专用）
+        /// 因为 Humanoid Rig 会覆盖骨骼 Transform，WD 不可靠
+        /// </summary>
+        private static void WriteArmatureRestoreValues(AnimationClip clip, GameObject avatarRoot)
+        {
+            var animator = avatarRoot.GetComponent<Animator>();
+            if (animator == null || !animator.isHuman)
+                return;
+                
+            var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            if (hips == null)
+                return;
+                
+            Transform armatureRoot = hips.parent;
+            while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
+            {
+                armatureRoot = armatureRoot.parent;
+            }
+            
+            if (armatureRoot == null)
+                return;
+                
+            string path = armatureRoot.name;
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            
+            // 读取 Armature 的原始值
+            Vector3 originalScale = armatureRoot.localScale;
+            Vector3 originalPosition = armatureRoot.localPosition;
+            
+            // Scale = 原始值
+            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
+            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
+            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
+            
+            // Position = 原始值
+            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
+            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
+            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
+            
+            // m_IsActive = 1
+            clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
+            
+            Debug.Log($"[ASS] Armature 恢复：\"{path}\" (Scale={originalScale}, Position={originalPosition})");
+        }
+        
+        /// <summary>
+        /// 写入所有根子对象的恢复值（WD Off 模式专用）
+        /// 显式写入每个对象的原始 Scale、Position 和 Active 状态
+        /// </summary>
+        private static void WriteRootChildrenRestoreValues(AnimationClip clip, GameObject avatarRoot, AvatarSecuritySystemComponent config)
+        {
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            var restoredCount = 0;
+            
+            // 获取 Armature 根节点
+            var animator = avatarRoot.GetComponent<Animator>();
+            Transform armatureRoot = null;
+            if (animator != null && animator.isHuman)
+            {
+                var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+                if (hips != null)
+                {
+                    armatureRoot = hips.parent;
+                    while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
+                    {
+                        armatureRoot = armatureRoot.parent;
+                    }
+                }
+            }
+            
+            foreach (Transform child in avatarRoot.transform)
+            {
+                if (IsASSObject(child, avatarRoot.transform))
+                    continue;
+                
+                string path = child.name;
+                bool isArmature = (armatureRoot != null && child == armatureRoot);
+                
+                // 读取原始值
+                Vector3 originalScale = child.localScale;
+                Vector3 originalPosition = child.localPosition;
+                
+                // Scale = 原始值
+                clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
+                clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
+                clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
+                
+                // Armature 额外控制 Position 和 m_IsActive
+                if (isArmature)
+                {
+                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
+                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
+                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
+                    clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
+                }
+                
+                restoredCount++;
+            }
+            
+            Debug.Log($"[ASS] WD Off 恢复：{restoredCount} 个根子对象");
         }
         
         /// <summary>
@@ -625,6 +719,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         
         /// <summary>
         /// 应用层权重控制到两个状态（锁定和解锁）
+        /// Locked状态：层权重=0（禁用其他ASS层）
+        /// Unlocked状态：层权重=1（启用其他ASS层）
         /// </summary>
         private static void ApplyLayerWeightControl(
             LockLayerResult lockResult,

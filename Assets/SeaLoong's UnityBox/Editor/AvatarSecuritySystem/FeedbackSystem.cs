@@ -3,11 +3,8 @@ using UnityEditor;
 using UnityEditor.Animations;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Dynamics.Constraint.Components;
 using VRC.Dynamics;
-#endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -38,7 +35,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             canvasObj.transform.SetParent(avatarRoot.transform, false);
             canvasObj.SetActive(false);  // 默认禁用，只在Locked状态时启用
 
-#if VRC_SDK_VRCSDK3
             // 绑定到头部，保证UI始终在视野范围内
             var animator = avatarRoot.GetComponent<Animator>();
             var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
@@ -59,7 +55,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 constraintSer.FindProperty("Locked").boolValue = true;
                 constraintSer.ApplyModifiedPropertiesWithoutUndo();
             }
-#endif
 
             Debug.Log(I18n.T("log.visual_canvas_created"));
             return canvasObj;

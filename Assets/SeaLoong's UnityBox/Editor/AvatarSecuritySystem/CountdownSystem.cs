@@ -6,10 +6,7 @@ using SeaLoongUnityBox;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
-#endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -66,9 +63,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
             timeUpState.motion = SharedEmptyClip;
             
-#if VRC_SDK_VRCSDK3
             AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
-#endif
             
             // Countdown → TimeUp（倒计时结束）
             var toTimeUp = CreateTransition(countdownState, timeUpState,
@@ -115,12 +110,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建独立的警告音效层（在警告阶段循环播放音效）
         /// </summary>
-        public static AnimatorControllerLayer CreateWarningAudioLayer(
+        public static AnimatorControllerLayer CreateAudioLayer(
             AnimatorController controller,
             GameObject avatarRoot,
             AvatarSecuritySystemComponent config)
         {
-            var layer = CreateLayer(LAYER_WARNING_AUDIO, 1f);
+            var layer = CreateLayer(LAYER_AUDIO, 1f);
             float warningThreshold = config.warningThreshold;
             float duration = config.countdownDuration;
             float warningStartTime = duration - warningThreshold;
@@ -150,15 +145,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             beepState.writeDefaultValues = true;
             AddSubAsset(controller, beepClip);
 
-#if VRC_SDK_VRCSDK3
             // 添加音效播放行为（每次进入状态时播放）
             if (config.warningBeep != null)
             {
                 AddPlayAudioBehaviour(beepState, 
-                    GO_AUDIO, 
+                    GO_AUDIO_WARNING, 
                     config.warningBeep);
             }
-#endif
 
             // 状态：Stop（停止音效）
             var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));

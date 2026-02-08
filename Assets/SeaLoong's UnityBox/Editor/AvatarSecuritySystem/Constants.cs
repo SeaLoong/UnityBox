@@ -31,16 +31,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string PARAM_GESTURE_RIGHT = "GestureRight";
 
         // ============ Animator 层名称 ============
-        public const string LAYER_INITIAL_LOCK = "ASS_InitialLock";
+        public const string LAYER_LOCK = "ASS_Lock";
         public const string LAYER_PASSWORD_INPUT = "ASS_PasswordInput";
         public const string LAYER_COUNTDOWN = "ASS_Countdown";
-        public const string LAYER_WARNING_AUDIO = "ASS_WarningAudio";
+        public const string LAYER_AUDIO = "ASS_Audio";
         public const string LAYER_DEFENSE = "ASS_Defense";
 
         // ============ GameObject 名称 ============
         public const string GO_ASS_ROOT = "__ASS_System__";
         public const string GO_UI_CANVAS = "ASS_UI";
-        public const string GO_AUDIO = "ASS_Audio";
+        public const string GO_AUDIO_WARNING = "ASS_Audio_Warning";
+        public const string GO_AUDIO_SUCCESS = "ASS_Audio_Success";
         public const string GO_PARTICLES = "ASS_Particles";
         public const string GO_DEFENSE_ROOT = "__ASS_Defense__";
         public const string GO_OCCLUSION_MESH = "ASS_OcclusionMesh";

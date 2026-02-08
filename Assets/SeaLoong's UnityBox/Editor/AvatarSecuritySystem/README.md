@@ -71,6 +71,7 @@ Avatar 启动
 #### 步骤 2: 设置密码
 
 **VRChat 手势对照表：**
+
 ```
 手势 0: Idle ✋        手势 4: Victory ✌
 手势 1: Fist ✊        手势 5: RockNRoll 🤘
@@ -79,12 +80,14 @@ Avatar 启动
 ```
 
 **配置示例：**
+
 ```yaml
-Gesture Password: [1, 7, 2, 4]  # Fist → ThumbsUp → HandOpen → Victory
-Use Right Hand: false            # 使用左手
+Gesture Password: [1, 7, 2, 4] # Fist → ThumbsUp → HandOpen → Victory
+Use Right Hand: false # 使用左手
 ```
 
 **密码强度评级：**
+
 - **Weak (弱)**: < 4 位
 - **Medium (中)**: 4-5 位，或手势种类少于 4 种
 - **Strong (强)**: ≥ 6 位，且至少使用 4 种不同手势
@@ -92,17 +95,18 @@ Use Right Hand: false            # 使用左手
 #### 步骤 3: 倒计时配置
 
 ```yaml
-Countdown Duration: 30秒     # 30-120秒可选
-Warning Threshold: 10秒      # 固定值，警告阶段开始
+Countdown Duration: 30秒 # 30-120秒可选
+Warning Threshold: 10秒 # 固定值，警告阶段开始
 ```
 
 #### 步骤 4: 防御配置（可选）
 
 ```yaml
-Defense Level: 3            # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)
+Defense Level: 3 # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)
 ```
 
 **防御等级说明：**
+
 - **等级 0**: 仅密码系统，不生成任何防御组件
 - **等级 1**: 密码 + CPU 防御（约束链、PhysBone、Contact - 最高参数）
 - **等级 2**: 密码 + CPU 防御（最高）+ GPU 防御（材质、粒子、光源 - 中低参数）
@@ -136,12 +140,12 @@ Defense Level: 3            # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU(中低
 AvatarSecuritySystemComponent (MonoBehaviour)
     ↓ 配置参数
 AvatarSecurityPlugin (NDMF Plugin)
-    ↓ BuildPhase.Optimizing
+    ↓ BuildPhase.PlatformFinish (Before VRChat SDK)
 生成 5 个 AnimatorController Layers:
-    ├─ ASS_InitialLock (初始锁定)
+    ├─ ASS_Lock (锁定/解锁)
     ├─ ASS_PasswordInput (手势密码验证)
     ├─ ASS_Countdown (倒计时系统)
-    ├─ ASS_WarningAudio (警告音效)
+    ├─ ASS_Audio (警告音效)
     └─ ASS_Defense (防御措施，可选)
     ↓
 AnimationClips + GameObject Hierarchy + VRC Components
@@ -164,7 +168,7 @@ Assets/SeaLoong's UnityBox/
 │       ├─ AnimationClipGenerator.cs    # 动画剪辑生成器
 │       ├─ I18n.cs                      # 国际化支持（中/英/日）
 │       ├─ AvatarSecurityPlugin.cs      # NDMF 插件入口
-│       ├─ InitialLockSystem.cs         # 初始锁定系统生成器
+│       ├─ LockSystem.cs                # 锁定系统生成器
 │       ├─ GesturePasswordSystem.cs     # 手势密码系统生成器
 │       ├─ CountdownSystem.cs           # 倒计时系统生成器
 │       ├─ FeedbackSystem.cs            # 反馈系统生成器
@@ -190,9 +194,10 @@ NDMF 1.3.0+
 
 ## 功能模块
 
-### 1️⃣ 初始锁定系统 (InitialLockSystem)
+### 1️⃣ 锁定系统 (LockSystem)
 
 #### 功能
+
 - 锁定状态下显示遮挡 Mesh（覆盖视角）
 - 隐藏 Avatar 原有对象（通过 Scale=0）
 - 解锁状态下恢复 Avatar 显示
@@ -201,29 +206,40 @@ NDMF 1.3.0+
 #### 技术实现
 
 **状态机结构：**
+
 ```
-ASS_InitialLock Layer
-├─ Remote (默认) - 其他玩家看到的默认状态
+ASS_Lock Layer
+├─ Remote (默认) - 所有玩家的初始状态
 │   └─ 遮挡Mesh隐藏，Avatar正常显示
-├─ Locked - 本地玩家锁定时
+├─ Locked - 仅本地玩家锁定时
 │   ├─ 显示遮挡Mesh（m_IsActive=1）
 │   ├─ 隐藏Avatar对象（Scale=0）
 │   └─ 显示UI Canvas
-└─ Unlocked - 解锁后
+└─ Unlocked - 所有玩家的解锁状态（同步）
     ├─ 隐藏遮挡Mesh（m_IsActive=0）
     ├─ 恢复Avatar显示（Scale=1）
-    ├─ 隐藏UI Canvas
-    └─ 禁用其他ASS层（权重=0）
+    ├─ 隐藏UI Canvas（仅本地）
+    └─ 启用其他ASS层（权重=1）
 ```
 
 **转换条件：**
+
+所有玩家共享：
+
+- Remote → Unlocked: `ASS_PasswordCorrect == true` (参数同步)
+- Unlocked → Remote: `ASS_PasswordCorrect == false` (密码重置)
+
+仅本地玩家：
+
 - Remote → Locked: `IsLocal == true && ASS_PasswordCorrect == false`
-- Remote → Unlocked: `IsLocal == true && ASS_PasswordCorrect == true`
 - Locked → Unlocked: `ASS_PasswordCorrect == true`
 
 **关键实现：**
+
 - 遮挡 Mesh：使用 VRCParentConstraint 绑定到头部，始终挡住视角
-- 对象隐藏：使用 `Transform.localScale = 0`（支持 Write Defaults 恢复）
+- 对象隐藏：使用 `Transform.localScale = 0`（依赖 Write Defaults 恢复）
+- 变换遮罩：为锁定层应用 Transform Mask，仅启用被锁定的根对象与 ASS 对象，避免覆盖其他层 Transform 动画
+- 锁定层权重：解锁状态将 `ASS_Lock` 层权重设为 0，释放 Transform 影响，确保恢复生效
 - ASS 对象控制：使用 `GameObject.m_IsActive`（ASS 完全控制的对象）
 
 ---
@@ -231,6 +247,7 @@ ASS_InitialLock Layer
 ### 2️⃣ 手势密码系统 (GesturePasswordSystem)
 
 #### 功能
+
 - 检测 VRChat 手势输入（GestureLeft/GestureRight）
 - 尾部序列匹配（输入 123456 可匹配密码 456）
 - 手势稳定时间检测（需保持手势一定时间，默认0.15秒）
@@ -239,6 +256,7 @@ ASS_InitialLock Layer
 #### 技术实现
 
 **状态结构（每步）：**
+
 ```
 Wait_Input ──[正确手势]──> Step_N_Holding (0.15s)
                               ├── [保持正确+超时] → Step_N_Confirmed
@@ -256,10 +274,12 @@ Step_N_ErrorTolerance ──[超时]──> Wait_Input
 ```
 
 **最后一步优化：**
+
 - 最后一步没有 Confirmed/ErrorTolerance 状态
 - Holding → Password_Success 直接转换
 
 **参数驱动：**
+
 - 成功时设置 `ASS_PasswordCorrect = true`（通过 VRCAvatarParameterDriver）
 - 参数同步：`networkSynced = true`（其他玩家可以看到解锁状态）
 
@@ -268,6 +288,7 @@ Step_N_ErrorTolerance ──[超时]──> Wait_Input
 ### 3️⃣ 倒计时系统 (CountdownSystem)
 
 #### 功能
+
 - 倒计时进度条显示（3D UI，绑定到头部）
 - 超时触发 TimeUp 参数
 - 警告阶段循环播放音效（最后10秒）
@@ -275,6 +296,7 @@ Step_N_ErrorTolerance ──[超时]──> Wait_Input
 #### 技术实现
 
 **倒计时层 (ASS_Countdown)：**
+
 ```
 Remote (默认) ──[IsLocal]──> Countdown ──[exitTime=1.0]──> TimeUp
    │                              │                           │
@@ -285,7 +307,8 @@ Remote (默认) ──[IsLocal]──> Countdown ──[exitTime=1.0]──> Tim
                                                           Unlocked
 ```
 
-**警告音效层 (ASS_WarningAudio)：**
+**警告音效层 (ASS_Audio)：**
+
 ```
 Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> WarningBeep (循环播放)
    │                                                                  ├── [PARAM_TIME_UP] → Stop
@@ -294,14 +317,17 @@ Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> Warni
 ```
 
 **动画实现：**
+
 - 倒计时动画：控制进度条的 `localScale.x`（从1到0）
 - 警告音效：使用 VRCAnimatorPlayAudio 行为，每秒播放一次
+- 音效对象拆分：`ASS_Audio_Warning` 与 `ASS_Audio_Success` 独立 AudioSource，避免同时播放冲突
 
 ---
 
 ### 4️⃣ 反馈系统 (FeedbackSystem)
 
 #### 功能
+
 - 创建 3D HUD Canvas（绑定到头部）
 - 倒计时进度条（3D Quad，红色条）
 - UI 锚定到头部（使用 VRCParentConstraint）
@@ -309,6 +335,7 @@ Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> Warni
 #### 技术实现
 
 **UI 结构：**
+
 ```
 ASS_UI (Canvas)
 └─ CountdownBar
@@ -317,6 +344,7 @@ ASS_UI (Canvas)
 ```
 
 **位置控制：**
+
 - 使用 VRCParentConstraint 绑定到头部骨骼
 - 位置偏移：头部前方15cm，下方2cm
 - 默认禁用，锁定时通过动画启用
@@ -326,37 +354,41 @@ ASS_UI (Canvas)
 ### 5️⃣ 防御系统 (DefenseSystem)
 
 #### 功能
+
 - 倒计时结束后激活防御（仅本地生效）
 - CPU/GPU 性能消耗防御
 - 多种防御机制组合
 
 #### 防御机制
 
-| 类型 | 组件 | 作用 |
-|------|------|------|
-| **CPU** | Constraint 链 | 深层嵌套约束计算（VRCParentConstraint）|
-| **CPU** | PhysBone + Collider | 物理模拟消耗（VRCPhysBone + VRCPhysBoneCollider）|
-| **CPU** | Contact Sender/Receiver | 碰撞检测消耗（VRCContactSender + VRCContactReceiver）|
-| **GPU** | Overdraw 层叠 | 多层透明渲染 |
-| **GPU** | 高面数 Mesh | 顶点处理消耗 |
-| **GPU** | 防御 Shader | 片段着色器循环、视差映射、光线步进、次表面散射 |
-| **GPU** | 粒子系统 | 粒子渲染消耗 |
-| **GPU** | 光源 | 实时阴影计算 |
+| 类型    | 组件                    | 作用                                                  |
+| ------- | ----------------------- | ----------------------------------------------------- |
+| **CPU** | Constraint 链           | 深层嵌套约束计算（VRCParentConstraint）               |
+| **CPU** | PhysBone + Collider     | 物理模拟消耗（VRCPhysBone + VRCPhysBoneCollider）     |
+| **CPU** | Contact Sender/Receiver | 碰撞检测消耗（VRCContactSender + VRCContactReceiver） |
+| **GPU** | Overdraw 层叠           | 多层透明渲染                                          |
+| **GPU** | 高面数 Mesh             | 顶点处理消耗                                          |
+| **GPU** | 防御 Shader             | 片段着色器循环、视差映射、光线步进、次表面散射        |
+| **GPU** | 粒子系统                | 粒子渲染消耗                                          |
+| **GPU** | 光源                    | 实时阴影计算                                          |
 
 > **注意**: 简化后的系统不再支持自定义参数配置，所有参数根据防御等级自动计算。
 
 #### 防御等级预设
 
 **Level 0**: 禁用所有防御（仅密码系统）
+
 - 不生成任何防御组件
 - 仅提供手势密码和倒计时功能
 
 **Level 1**: 基础 CPU 防御
+
 - Constraint: 50条链，深度100
 - PhysBone: 50条链，长度256，256个Collider
 - Contact: 200个组件
 
 **Level 2**: CPU + 基础 GPU 防御
+
 - Level 1 的所有 CPU 防御
 - 防御 Shader: 100次循环
 - Overdraw: 500层
@@ -365,6 +397,7 @@ ASS_UI (Canvas)
 - Light: 10个光源
 
 **Level 3**: 最大防御强度（默认）
+
 - Level 1 的所有 CPU 防御（最高参数）
 - 防御 Shader: 500次循环
 - Overdraw: 1000层
@@ -378,6 +411,7 @@ ASS_UI (Canvas)
 #### 技术实现
 
 **状态机：**
+
 ```
 ASS_Defense Layer
 ├─ Inactive (默认) - 防御未激活
@@ -386,11 +420,13 @@ ASS_Defense Layer
 ```
 
 **防御对象控制：**
+
 - 使用 `GameObject.m_IsActive` 控制防御根对象
 - 锁定时禁用（`m_IsActive=0`），避免性能消耗
 - 防御激活时启用（`m_IsActive=1`），触发所有防御组件
 
 **防御 Shader：**
+
 - 在构建时从模板文件 `DefenseShader.shader` 生成
 - 包含多种GPU密集功能：
   - 主循环计算（可配置循环次数，最多100万次）
@@ -404,6 +440,7 @@ ASS_Defense Layer
 - 如果模板不存在，回退到 `Standard` Shader
 
 **VRChat 限制处理：**
+
 - 自动验证参数不超过 VRChat 限制
 - PhysBone Collider 数量考虑现有 Collider
 - 高多边形顶点分散到多个 Mesh（避免单Mesh 65k限制）
@@ -415,6 +452,7 @@ ASS_Defense Layer
 ### AvatarSecuritySystemComponent 属性
 
 #### 密码配置
+
 ```csharp
 public List<int> gesturePassword;        // 手势密码序列 (1-7)
 public bool useRightHand;                // 使用右手(true)或左手(false)
@@ -423,6 +461,7 @@ public float gestureErrorTolerance;      // 容错时间 (0.1-1.0秒)
 ```
 
 #### 倒计时配置
+
 ```csharp
 [Range(30f, 120f)]
 public float countdownDuration;          // 倒计时时长（秒）
@@ -431,6 +470,7 @@ public float inputCooldown;              // 输入间隔（固定0.5秒）
 ```
 
 #### 防御配置
+
 ```csharp
 [Range(0, 3)]
 public int defenseLevel;                  // 防御等级 (0-3)
@@ -443,6 +483,7 @@ public int defenseLevel;                  // 防御等级 (0-3)
 > **注意**: 简化后的系统已移除自定义参数配置，所有防御参数根据等级自动计算。
 
 #### 高级选项
+
 ```csharp
 public bool enableInPlayMode;           // 调试模式（生成最小参数防御）
 public bool disableDefense;             // 禁用所有防御生成（仅保留密码系统）
@@ -457,31 +498,31 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 
 ### Animator 参数
 
-| 参数名 | 类型 | 默认值 | 同步 | 说明 |
-|--------|------|--------|------|------|
-| `ASS_PasswordCorrect` | Bool | false | ✅ 是 | 密码验证成功标志 |
-| `ASS_TimeUp` | Bool | false | ❌ 否 | 倒计时结束标志（本地参数） |
-| `IsLocal` | Bool | - | - | VRChat 内置（穿戴者=true） |
-| `GestureLeft` | Int | 0 | - | VRChat 内置（左手手势 0-7） |
-| `GestureRight` | Int | 0 | - | VRChat 内置（右手手势 0-7） |
+| 参数名                | 类型 | 默认值 | 同步  | 说明                        |
+| --------------------- | ---- | ------ | ----- | --------------------------- |
+| `ASS_PasswordCorrect` | Bool | false  | ✅ 是 | 密码验证成功标志            |
+| `ASS_TimeUp`          | Bool | false  | ❌ 否 | 倒计时结束标志（本地参数）  |
+| `IsLocal`             | Bool | -      | -     | VRChat 内置（穿戴者=true）  |
+| `GestureLeft`         | Int  | 0      | -     | VRChat 内置（左手手势 0-7） |
+| `GestureRight`        | Int  | 0      | -     | VRChat 内置（右手手势 0-7） |
 
 ### Animator 层
 
-| 层名 | 权重 | 功能 |
-|------|------|------|
-| `ASS_InitialLock` | 1.0 | 锁定/解锁控制 |
-| `ASS_PasswordInput` | 1.0 | 密码验证 |
-| `ASS_Countdown` | 1.0 | 倒计时 |
-| `ASS_WarningAudio` | 1.0 | 警告音效 |
-| `ASS_Defense` | 1.0 | 防御激活（可选） |
+| 层名                | 权重 | 功能             |
+| ------------------- | ---- | ---------------- |
+| `ASS_Lock`          | 1.0  | 锁定/解锁控制    |
+| `ASS_PasswordInput` | 1.0  | 密码验证         |
+| `ASS_Countdown`     | 1.0  | 倒计时           |
+| `ASS_Audio`         | 1.0  | 警告音效         |
+| `ASS_Defense`       | 1.0  | 防御激活（可选） |
 
 ### VRC State Behaviours
 
-| 行为 | 使用位置 | 作用 |
-|------|----------|------|
-| `VRCAnimatorPlayAudio` | Password_Success, WarningBeep | 播放音效 |
-| `VRCAvatarParameterDriver` | Password_Success, TimeUp | 设置参数 |
-| `VRCAnimatorLayerControl` | Locked, Unlocked | 控制层权重 |
+| 行为                       | 使用位置                      | 作用       |
+| -------------------------- | ----------------------------- | ---------- |
+| `VRCAnimatorPlayAudio`     | Password_Success, WarningBeep | 播放音效   |
+| `VRCAvatarParameterDriver` | Password_Success, TimeUp      | 设置参数   |
+| `VRCAnimatorLayerControl`  | Locked, Unlocked              | 控制层权重 |
 
 ---
 
@@ -490,7 +531,9 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ### 🔐 安全性问题
 
 #### Q: 密码会被破解吗？
+
 **A**: 可能，但难度较大：
+
 - 8 种手势的 N 位密码：8^N 种组合
   - 4 位：4,096 种
   - 6 位：262,144 种
@@ -498,23 +541,30 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 - 配合 30 秒倒计时，暴力破解不现实
 
 #### Q: 其他玩家会看到防御效果吗？
+
 **A**: 不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是正常 Avatar。
 
 ### 💡 使用问题
 
 #### Q: 我忘记密码了怎么办？
+
 **A**: 三种解决方案：
+
 1. 在 Unity 项目中查看 Inspector 的密码配置
 2. 重新上传没有 ASS 组件的 Avatar
 3. 使用备份的未构建项目
 
 #### Q: 朋友穿我的 Avatar 会被锁吗？
+
 **A**: 会，但只要告诉他们密码就能解锁。建议：
+
 - 为朋友设置简单密码（如 [1, 2, 3]）
 - 或提供"朋友版本"（无 ASS 组件）
 
 #### Q: 系统会影响 Avatar 性能吗？
-**A**: 
+
+**A**:
+
 - 解锁后：几乎无影响（< 1% CPU）
 - 未解锁：轻微影响（Animator 层计算）
 - 防御激活：严重影响（仅对盗取者，10-30 FPS）
@@ -522,13 +572,17 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ### ⚙️ 技术问题
 
 #### Q: 为什么不能用百万状态卡死 Unity？
+
 **A**: 技术限制：
+
 1. Unity 序列化器无法处理百万级 AnimatorState
 2. VRChat 文件大小限制（< 25 MB）
 3. 构建时间过长（> 1 小时）
 
 #### Q: 可以在商业 Avatar 中使用吗？
+
 **A**: 可以，但需要：
+
 1. 确保您拥有 Avatar 版权
 2. 向购买者说明系统存在
 3. 提供解锁密码和技术支持
@@ -537,7 +591,9 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ### 🛠️ 故障排除
 
 #### Q: 构建时报错 "NDMF not found"
-**A**: 
+
+**A**:
+
 ```bash
 1. 安装 NDMF (通过 VCC 或 GitHub)
 2. 重启 Unity
@@ -545,12 +601,16 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ```
 
 #### Q: Inspector 显示 "Password Invalid"
+
 **A**: 检查：
+
 - 密码序列不为空（0位密码表示禁用ASS）
 - 所有手势值在 1-7 范围内（0=Idle，不能作为密码）
 
 #### Q: Play 模式测试无法解锁
+
 **A**: 确认：
+
 1. 启用了 "Enable In Play Mode"
 2. 使用了正确的手势输入
 3. 倒计时未结束
@@ -594,6 +654,7 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ### 报告问题
 
 在 GitHub Issues 中报告问题时，请提供：
+
 1. Unity 版本
 2. VRChat SDK 版本
 3. NDMF 版本
@@ -606,7 +667,9 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ## � 代码优化记录 (2026-02-02)
 
 ### 优化标准
+
 根据 [code-simplifier.md](../../../code-simplifier.md) 文档进行代码优化，遵循以下原则：
+
 - 保留所有功能，只优化实现方式
 - 提高代码清晰度和一致性
 - 遵循项目编码标准
@@ -615,7 +678,9 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 ### 优化内容
 
 #### Runtime 代码 (AvatarSecuritySystem.cs)
+
 ✅ **方法简化**
+
 - `GetPasswordStrength()` - 使用早期返回避免嵌套条件
 - `EstimateFileSizeKB()` - 合并条件检查
 - `ClampDefenseLevel()` - 移除冗余常量，直接使用 Mathf.Clamp
@@ -623,35 +688,43 @@ public SystemLanguage uiLanguage;       // UI语言（Unknown=自动）
 #### Editor 插件代码
 
 ✅ **AvatarSecurityPlugin.cs**
+
 - `HasValidPassword()` - 转换为表达式体方法
 - `HandleGenerationError()` - 转换为表达式体方法
 - `AddVRChatBuiltinParameters()` - 转换为表达式体方法
 - `ExtractAvatarDescriptor()` - 移除不必要的空行
 
 ✅ **AnimatorUtils.cs**
+
 - `ParameterExists()` - 转换为表达式体方法
 - `IsAssetExternalOrDuplicate()` - 移除冗余注释
 - `SaveAndRefresh()` - 转换为表达式体方法
 
 ✅ **LockSystem.cs**
+
 - `IsASSObject()` - 移除不必要的文档注释，方法签名清晰
 
 ✅ **CountdownSystem.cs**
+
 - `ConfigureAnimationClip()` - 移除重复的文档注释
 
 ✅ **AnimationClipGenerator.cs**
+
 - `CreateParameterDriverClip()` - 转换为表达式体方法
 - `SaveClip()` - 移除不必要的空行，使用内联条件
 
 ✅ **FeedbackSystem.cs**
+
 - `CreateSimpleQuad()` - 移除过度详细的注释
 
 ### 编译验证
+
 ✅ 所有文件编译成功，无错误或警告
 ✅ 功能完整性保持不变
 ✅ 与现有项目结构兼容
 
 ### 优化统计
+
 - 优化文件数: 8 个
 - 简化方法数: 15+ 个
 - 减少代码行数: ~40 行

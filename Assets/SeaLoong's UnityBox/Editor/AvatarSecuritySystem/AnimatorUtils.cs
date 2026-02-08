@@ -3,11 +3,8 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
 using System.Linq;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
 using VRC.SDKBase;
-#endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -208,33 +205,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建 Direct BlendTree（用于大量状态压缩）
-        /// </summary>
-        public static BlendTree CreateDirectBlendTree(string name, AnimationClip[] clips, string[] parameters)
-        {
-            var blendTree = new BlendTree
-            {
-                name = name,
-                blendType = BlendTreeType.Direct,
-                hideFlags = HideFlags.HideInHierarchy
-            };
-
-            var children = new ChildMotion[clips.Length];
-            for (int i = 0; i < clips.Length; i++)
-            {
-                children[i] = new ChildMotion
-                {
-                    motion = clips[i],
-                    directBlendParameter = parameters[i],
-                    timeScale = 1f
-                };
-            }
-            blendTree.children = children;
-
-            return blendTree;
-        }
-
-        /// <summary>
         /// 添加子资产到 Controller（自动检查有效性和重复）
         /// </summary>
         public static void AddSubAsset(AnimatorController controller, Object asset)
@@ -353,7 +323,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-#if VRC_SDK_VRCSDK3
         private const float AUDIO_SOURCE_VOLUME = 0.5f;
         private const int AUDIO_SOURCE_PRIORITY = 0;
         
@@ -398,7 +367,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             if (clip == null) return;
 
-#if VRC_SDK_VRCSDK3
             var behaviour = state.AddStateMachineBehaviour<VRCAnimatorPlayAudio>();
             behaviour.SourcePath = audioSourcePath;
             behaviour.Clips = new AudioClip[] { clip };
@@ -409,7 +377,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             behaviour.Loop = false;
             behaviour.Volume = new Vector2(AUDIO_SOURCE_VOLUME, AUDIO_SOURCE_VOLUME);
             behaviour.VolumeApplySettings = VRCAnimatorPlayAudio.ApplySettings.ApplyIfStopped;
-#endif
         }
 
         /// <summary>
@@ -417,10 +384,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public static void AddLayerControlBehaviour(AnimatorState state, int layerIndex, float goalWeight, float blendDuration = 0f)
         {
-#if VRC_SDK_VRCSDK3
             ConfigureLayerControl(state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>(),
                 layerIndex, goalWeight, blendDuration);
-#endif
         }
 
         /// <summary>
@@ -428,22 +393,18 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public static void AddMultiLayerControlBehaviour(AnimatorState state, int[] layerIndices, float goalWeight, float blendDuration = 0f)
         {
-#if VRC_SDK_VRCSDK3
             foreach (int layerIndex in layerIndices)
                 ConfigureLayerControl(state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>(),
                     layerIndex, goalWeight, blendDuration);
-#endif
         }
         
         private static void ConfigureLayerControl(VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl behaviour,
             int layerIndex, float goalWeight, float blendDuration)
         {
-#if VRC_SDK_VRCSDK3
             behaviour.layer = layerIndex;
             behaviour.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
             behaviour.goalWeight = goalWeight;
             behaviour.blendDuration = blendDuration;
-#endif
         }
 
         /// <summary>
@@ -476,6 +437,5 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set
                 });
         }
-#endif
     }
 }

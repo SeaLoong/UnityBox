@@ -2,24 +2,39 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
-using System.IO;
 using SeaLoongUnityBox;
-using System.Linq;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Dynamics.PhysBone.Components;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDK3.Dynamics.Constraint.Components;
-#endif
 using VRC.Dynamics;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
     /// <summary>
-    /// 防御系统生成器 - 基于性能消耗的新一代防御
+    /// 防御系统生成器 - 基于性能消耗的 Avatar 防盗保护
+    /// 
+    /// 在倒计时结束且密码未输入正确时激活，通过消耗盗用者客户端的 CPU/GPU 资源实现防护。
+    /// 
+    /// CPU 防御机制：
+    /// - VRCConstraint 链（深层嵌套约束链消耗 CPU 求解时间）
+    /// - VRCPhysBone 链（长骨骼链 + 多碰撞器消耗物理模拟资源）
+    /// - VRCContact 系统（大量 Sender/Receiver 对消耗碰撞检测资源）
+    /// 
+    /// GPU 防御机制：
+    /// - 高循环次数 Shader 材质（自定义 DefenseShader 的密集计算）
+    /// - Overdraw 层堆叠（多层半透明 Quad 强制重复渲染）
+    /// - 高面数网格（高密度球体 Mesh 增加顶点处理负担）
+    /// - 粒子系统（大量粒子增加排序和渲染开销）
+    /// - 实时光源（多个 Soft Shadow 光源增加阴影计算开销）
+    /// 
+    /// 防御等级：
+    /// 0 = 不创建防御组件（仅密码系统）
+    /// 1 = 仅 CPU 防御（Constraint + PhysBone + Contact，最高参数）
+    /// 2 = CPU + GPU 防御（CPU 最高参数，GPU 中低参数）
+    /// 3 = CPU + GPU 防御（所有参数最高，含扩展链）
     /// </summary>
     public static class DefenseSystem
     {
@@ -140,7 +155,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             bool enableCpu = config.defenseLevel >= 1;  // 等级1及以上启用CPU防御
             bool enableGpu = config.defenseLevel >= 2;  // 等级2及以上启用GPU防御
 
-#if VRC_SDK_VRCSDK3
             // 检查现有的PhysBone数量，确保总数量不超过256
             int existingPhysBones = 0;
             try
@@ -153,9 +167,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
             int maxDefensePhysBones = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
             int defensePhysBoneCount = Mathf.Min(parameters.PhysBoneChainCount, maxDefensePhysBones);
-#else
-            int defensePhysBoneCount = parameters.PhysBoneChainCount;
-#endif
 
             // ==================== CPU 防御 ====================
             if (enableCpu)
@@ -175,7 +186,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     }
                 }
 
-#if VRC_SDK_VRCSDK3
                 // --- PhysBone链 ---
                 if (parameters.PhysBoneColliders > 0 && defensePhysBoneCount > 0)
                 {
@@ -205,7 +215,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                         CreateExtendedContactSystem(root, extendedContactCount);
                     }
                 }
-#endif
             }
 
             // ==================== GPU 防御 ====================
@@ -367,6 +376,53 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log($"[ASS] 创建防御材质: 循环数={shaderLoopCount}");
             return material;
+        }
+
+        /// <summary>
+        /// 应用固定Shader参数到材质
+        /// 设置所有GPU密集计算控制参数（循环计数、采样率、光线步进步数等）
+        /// 以及后处理效果参数（色差、暗角、晕光等）
+        /// </summary>
+        /// <param name="material">目标材质</param>
+        /// <param name="shaderLoopCount">Shader主循环次数，范围0-1000</param>
+        private static void ApplyFixedShaderParameters(Material material, int shaderLoopCount)
+        {
+            material.SetInt("_LoopCount", Mathf.Clamp(shaderLoopCount, 0, 1000));
+            material.SetFloat("_Intensity", 50f);
+            material.SetFloat("_Complexity", 500f);
+            material.SetFloat("_ParallaxScale", 5f);
+            material.SetFloat("_NoiseOctaves", 8f);
+            material.SetFloat("_SamplingRate", 16f);
+            material.SetFloat("_ColorPasses", 10f);
+            material.SetFloat("_LightCount", 4f);
+            material.SetFloat("_RayMarchSteps", 8f);
+            material.SetFloat("_SubsurfaceScattering", 4f);
+            material.SetFloat("_FractalIterations", 16f);
+            material.SetFloat("_VolumetricSteps", 8f);
+            material.SetFloat("_ParticleDensity", 250f);
+            material.SetFloat("_GlobalIllumination", 4f);
+            material.SetFloat("_CausticSamples", 8f);
+            material.SetFloat("_ReflectionSamples", 8f);
+            material.SetFloat("_ShadowSamples", 4f);
+            material.SetFloat("_ParallaxIterations", 8f);
+            material.SetFloat("_Turbulence", 100f);
+            material.SetFloat("_CloudLayers", 4f);
+            material.SetFloat("_MotionBlurStrength", 0.3f);
+            material.SetFloat("_DepthOfFieldStrength", 0.3f);
+            material.SetFloat("_ChromaticAberration", 0.05f);
+            material.SetFloat("_LensFlareIntensity", 2f);
+            material.SetFloat("_GrainStrength", 0.3f);
+            material.SetFloat("_VignetteStrength", 0.3f);
+            material.SetFloat("_MoireIntensity", 0.5f);
+            material.SetFloat("_DitherStrength", 0.3f);
+            material.SetFloat("_HologramIntensity", 0.5f);
+            material.SetFloat("_Iridescence", 0.5f);
+            material.SetFloat("_VelvetIntensity", 0.5f);
+            material.SetFloat("_FresnelPower", 2f);
+            material.SetFloat("_BumpMapStrength", 0.5f);
+            material.SetFloat("_HeightMapStrength", 0.5f);
+            material.SetFloat("_ParallaxIntensity", 0.5f);
+            material.SetFloat("_DistortionStrength", 1f);
         }
 
         /// <summary>
@@ -543,7 +599,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private static void CreateConstraintChain(GameObject root, int depth, int chainIndex = 0)
         {
-#if VRC_SDK_VRCSDK3
             try
             {
                 var chainRoot = new GameObject($"ConstraintChain_{chainIndex}");
@@ -605,9 +660,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.LogError($"[ASS] 创建Constraint链时出错: {ex.Message}\n{ex.StackTrace}");
             }
-#else
-            Debug.LogWarning("[ASS] VRC SDK 不可用，跳过创建 Constraint 链");
-#endif
         }
 
         /// <summary>
@@ -632,7 +684,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-#if VRC_SDK_VRCSDK3
         /// <summary>
         /// 创建PhysBone长链及Collider
         /// </summary>
@@ -777,89 +828,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
 
             Debug.Log($"[ASS] 创建Contact系统: {halfCount} senders + {halfCount} receivers");
-        }
-#endif
-
-        /// <summary>
-        /// 创建Overdraw透明层堆叠
-        /// </summary>
-        private static void CreateOverdrawLayers(GameObject root, int layerCount, int groupIndex = 0)
-        {
-            var overdrawRoot = new GameObject($"OverdrawLayers_{groupIndex}");
-            overdrawRoot.transform.SetParent(root.transform);
-            overdrawRoot.transform.localPosition = new Vector3(groupIndex * 3f, 0, 0);
-
-            var material = new Material(Shader.Find("Unlit/Transparent"));
-            material.color = new Color(1, 1, 1, 0.5f);
-            material.renderQueue = 3000;
-
-            for (int i = 0; i < layerCount; i++)
-            {
-                var layerObj = new GameObject($"Layer_{i}");
-                layerObj.transform.SetParent(overdrawRoot.transform);
-                layerObj.transform.localPosition = new Vector3(0, 0, i * 0.001f);
-
-                var meshFilter = layerObj.AddComponent<MeshFilter>();
-                meshFilter.mesh = GetSharedQuadMesh(2f);
-
-                var meshRenderer = layerObj.AddComponent<MeshRenderer>();
-                meshRenderer.material = material;
-            }
-
-            Debug.Log($"[ASS] 创建Overdraw层组 {groupIndex}: {layerCount}层");
-        }
-
-        /// <summary>
-        /// 创建高面数Mesh
-        /// </summary>
-        private static void CreateHighPolyMesh(GameObject root, int targetVertexCount, int meshIndex = 0)
-        {
-            var meshObj = new GameObject($"HighPolyMesh_{meshIndex}");
-            meshObj.transform.SetParent(root.transform);
-            meshObj.transform.localPosition = new Vector3(meshIndex * 0.2f, 0, 0);
-            meshObj.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-
-            var mesh = CreateHighDensitySphereMesh(targetVertexCount);
-            var meshFilter = meshObj.AddComponent<MeshFilter>();
-            meshFilter.mesh = mesh;
-
-            var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterials = new Material[]
-            {
-                new Material(Shader.Find("Standard")),
-                new Material(Shader.Find("Standard"))
-            };
-
-            Debug.Log($"[ASS] 创建高面数Mesh {meshIndex}: {mesh.vertexCount}顶点, {mesh.triangles.Length / 3}三角形");
-        }
-
-        /// <summary>
-        /// 创建带复杂Shader的Mesh（调用合并后的方法）
-        /// </summary>
-        private static void CreateHeavyShaderMesh(GameObject root, GameObject avatarRoot, int loopCount, int shaderIndex = 0)
-        {
-            var meshObj = new GameObject($"HeavyShaderMesh_{shaderIndex}");
-            meshObj.transform.SetParent(root.transform);
-            meshObj.transform.localPosition = new Vector3(shaderIndex * 2f, 0, 0);
-
-            var meshFilter = meshObj.AddComponent<MeshFilter>();
-            meshFilter.mesh = GetSharedQuadMesh(1f);
-
-            // 在构建时生成Shader并创建材质（使用合并后的方法）
-            var material = CreateDefenseShaderMaterial(avatarRoot, loopCount);
-
-            // 防御性检查：确保材质创建成功
-            if (material == null)
-            {
-                Debug.LogWarning($"[ASS] 无法创建防御Shader材质，跳过创建HeavyShaderMesh_{shaderIndex}");
-                Object.DestroyImmediate(meshObj);
-                return;
-            }
-
-            var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            meshRenderer.material = material;
-
-            Debug.Log($"[ASS] 创建防御Shader {shaderIndex}: 循环={loopCount}");
         }
 
         /// <summary>
@@ -1175,233 +1143,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建多层透明Overdraw堆叠（扩展功能）
-        /// </summary>
-        private static void CreateExtendedOverdrawLayers(GameObject root, int layerCount, int groupCount)
-        {
-            for (int g = 0; g < groupCount; g++)
-            {
-                var overdrawRoot = new GameObject($"ExtendedOverdrawLayers_{g}");
-                overdrawRoot.transform.SetParent(root.transform);
-                overdrawRoot.transform.localPosition = new Vector3(g * 3f, 0, 0);
-
-                var material = new Material(Shader.Find("Unlit/Transparent"));
-                material.color = new Color(1, 1, 1, 0.3f);
-                material.renderQueue = 3000;
-
-                for (int i = 0; i < layerCount; i++)
-                {
-                    var layerObj = new GameObject($"Layer_{i}");
-                    layerObj.transform.SetParent(overdrawRoot.transform);
-                    layerObj.transform.localPosition = new Vector3(0, 0, i * 0.001f);
-                    layerObj.transform.localScale = new Vector3(2f, 2f, 2f);
-
-                    var meshFilter = layerObj.AddComponent<MeshFilter>();
-                    meshFilter.mesh = GetSharedQuadMesh(2f);
-
-                    var meshRenderer = layerObj.AddComponent<MeshRenderer>();
-                    meshRenderer.material = material;
-                }
-
-                Debug.Log($"[ASS] 创建扩展Overdraw层组 {g}: {layerCount}层");
-            }
-        }
-
-        /// <summary>
-        /// 创建防御Shader材质（统一方法）
-        /// </summary>
-        private static Material[] CreateDefenseMaterials(GameObject avatarRoot, int materialCount, int shaderLoopCount = 100)
-        {
-            var shader = CreateDefenseShader(avatarRoot);
-
-            // 防御性检查：如果shader为null，跳过创建材质
-            if (shader == null)
-            {
-                Debug.LogWarning("[ASS] 无法创建防御Shader，跳过材质创建");
-                return new Material[0];
-            }
-
-            var materials = new Material[materialCount];
-
-            for (int i = 0; i < materialCount; i++)
-            {
-                var material = new Material(shader);
-                material.name = $"ASS_DefenseMaterial_{i}";
-
-                ApplyFixedShaderParameters(material, shaderLoopCount);
-
-                // 设置基本材质参数
-                material.SetFloat("_Glossiness", 0.5f);
-                material.SetFloat("_Metallic", 0.5f);
-                material.SetFloat("_OcclusionStrength", 1.0f);
-                material.SetFloat("_EmissionIntensity", 1.0f);
-                material.SetFloat("_RimPower", 4.0f);
-                material.SetFloat("_DetailScale", 10.0f);
-                material.SetFloat("_NoiseScale", 5.0f);
-                material.SetFloat("_RefractionStrength", 0.5f);
-                material.SetFloat("_DispersionStrength", 0.1f);
-                material.SetFloat("_Anisotropy", 0.5f);
-                material.SetFloat("_ClearCoat", 0.5f);
-                material.SetFloat("_Sheen", 0.5f);
-                material.SetFloat("_Thickness", 1.0f);
-                material.SetFloat("_Transmission", 0.5f);
-                material.SetFloat("_Absorption", 0.5f);
-
-                // 设置颜色
-                material.SetColor("_SubsurfaceColor", new Color(1f, 0.5f, 0.5f, 1f));
-                material.SetColor("_BaseColor", new Color(1f, 1f, 1f, 1f));
-
-                // 设置纹理（使用白色纹理作为默认）
-                Texture2D defaultWhite = Texture2D.whiteTexture;
-                material.SetTexture("_MainTex", defaultWhite);
-                material.SetTexture("_NormalMap", defaultWhite);
-                material.SetTexture("_HeightMap", defaultWhite);
-                material.SetTexture("_DetailTex", defaultWhite);
-                material.SetTexture("_NoiseTex", defaultWhite);
-
-                materials[i] = material;
-            }
-
-            Debug.Log($"[ASS] 创建防御Shader材质: {materialCount}个");
-            return materials;
-        }
-
-        /// <summary>
-        /// 应用固定Shader参数
-        /// </summary>
-        private static void ApplyFixedShaderParameters(Material material, int shaderLoopCount)
-        {
-            material.SetInt("_LoopCount", Mathf.Clamp(shaderLoopCount, 0, 1000));
-            material.SetFloat("_Intensity", 50f);
-            material.SetFloat("_Complexity", 500f);
-            material.SetFloat("_ParallaxScale", 5f);
-            material.SetFloat("_NoiseOctaves", 8f);
-            material.SetFloat("_SamplingRate", 16f);
-            material.SetFloat("_ColorPasses", 10f);
-            material.SetFloat("_LightCount", 4f);
-            material.SetFloat("_RayMarchSteps", 8f);
-            material.SetFloat("_SubsurfaceScattering", 4f);
-            material.SetFloat("_FractalIterations", 16f);
-            material.SetFloat("_VolumetricSteps", 8f);
-            material.SetFloat("_ParticleDensity", 250f);
-            material.SetFloat("_GlobalIllumination", 4f);
-            material.SetFloat("_CausticSamples", 8f);
-            material.SetFloat("_ReflectionSamples", 8f);
-            material.SetFloat("_ShadowSamples", 4f);
-            material.SetFloat("_ParallaxIterations", 8f);
-            material.SetFloat("_Turbulence", 100f);
-            material.SetFloat("_CloudLayers", 4f);
-            material.SetFloat("_MotionBlurStrength", 0.3f);
-            material.SetFloat("_DepthOfFieldStrength", 0.3f);
-            material.SetFloat("_ChromaticAberration", 0.05f);
-            material.SetFloat("_LensFlareIntensity", 2f);
-            material.SetFloat("_GrainStrength", 0.3f);
-            material.SetFloat("_VignetteStrength", 0.3f);
-            material.SetFloat("_MoireIntensity", 0.5f);
-            material.SetFloat("_DitherStrength", 0.3f);
-            material.SetFloat("_HologramIntensity", 0.5f);
-            material.SetFloat("_Iridescence", 0.5f);
-            material.SetFloat("_VelvetIntensity", 0.5f);
-            material.SetFloat("_FresnelPower", 2f);
-            material.SetFloat("_BumpMapStrength", 0.5f);
-            material.SetFloat("_HeightMapStrength", 0.5f);
-            material.SetFloat("_ParallaxIntensity", 0.5f);
-            material.SetFloat("_DistortionStrength", 1f);
-        }
-
-        /// <summary>
-        /// 创建高消耗的Shader材质球及网格
-        /// </summary>
-        private static void CreateExpensiveMaterials(GameObject root, GameObject avatarRoot, int materialCount, int shaderLoopCount)
-        {
-            if (materialCount <= 0) return;
-
-            materialCount = Mathf.Clamp(materialCount, 1, 3);
-
-            GameObject materialRoot = null;
-            List<GameObject> createdMeshes = new List<GameObject>();
-            Material[] materials = null;
-
-            try
-            {
-                materialRoot = new GameObject("ExpensiveMaterials");
-                materialRoot.transform.SetParent(root.transform);
-
-                materials = CreateDefenseMaterials(avatarRoot, materialCount, shaderLoopCount);
-
-                if (materials == null || materials.Length == 0)
-                {
-                    Debug.LogWarning("[ASS] 未能创建任何防御材质，跳过网格创建");
-                    return;
-                }
-
-                for (int i = 0; i < materials.Length; i++)
-                {
-                    if (materials[i] == null)
-                    {
-                        Debug.LogWarning($"[ASS] 材质 {i} 为null，跳过创建对应网格");
-                        continue;
-                    }
-
-                    var meshObj = new GameObject($"ASS_DefenseMesh_{i}");
-                    meshObj.transform.SetParent(materialRoot.transform);
-                    meshObj.transform.localPosition = new Vector3(i * 0.3f, 0, 0);
-                    meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-
-                    var meshFilter = meshObj.AddComponent<MeshFilter>();
-                    meshFilter.mesh = CreateComplexMesh();
-
-                    var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-                    meshRenderer.material = materials[i];
-
-                    createdMeshes.Add(meshObj);
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[ASS] CreateExpensiveMaterials失败: {e.Message}\n{e.StackTrace}");
-                CleanupCreatedObjects(materialRoot, createdMeshes, materials);
-            }
-        }
-
-        /// <summary>
-        /// 清理创建的对象和资源
-        /// </summary>
-        private static void CleanupCreatedObjects(GameObject root, List<GameObject> meshObjects, Material[] materials)
-        {
-            try
-            {
-                if (materials != null)
-                {
-                    foreach (var material in materials)
-                    {
-                        if (material != null) Object.DestroyImmediate(material);
-                    }
-                }
-
-                if (meshObjects != null)
-                {
-                    foreach (var meshObj in meshObjects)
-                    {
-                        if (meshObj != null)
-                        {
-                            var meshFilter = meshObj.GetComponent<MeshFilter>();
-                            if (meshFilter?.mesh != null) Object.DestroyImmediate(meshFilter.mesh);
-                            Object.DestroyImmediate(meshObj);
-                        }
-                    }
-                }
-
-                if (root != null) Object.DestroyImmediate(root);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[ASS] 清理资源时出错: {e.Message}");
-            }
-        }
-
-        /// <summary>
         /// 在构建时获取防御Shader
+        /// 优先使用自定义的 SeaLoong/DefenseShader，不存在则回退到 Standard
         /// </summary>
         private static Shader CreateDefenseShader(GameObject avatarRoot)
         {
@@ -1427,70 +1170,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建复杂的网格（高顶点数）
-        /// </summary>
-        private static Mesh CreateComplexMesh()
-        {
-            var mesh = new Mesh { name = "ComplexMesh" };
-
-            try
-            {
-                // 降低网格复杂度以避免GPU过载
-                int subdivisions = 10;
-                int vertexCount = subdivisions * subdivisions;
-
-                var vertices = new Vector3[vertexCount];
-                var uvs = new Vector2[vertexCount];
-                var triangles = new List<int>();
-
-                for (int y = 0; y < subdivisions; y++)
-                {
-                    for (int x = 0; x < subdivisions; x++)
-                    {
-                        int index = y * subdivisions + x;
-                        float u = (float)x / (subdivisions - 1);
-                        float v = (float)y / (subdivisions - 1);
-
-                        vertices[index] = new Vector3(u - 0.5f, Mathf.Sin(u * Mathf.PI) * 0.3f, v - 0.5f);
-                        uvs[index] = new Vector2(u, v);
-                    }
-                }
-
-                for (int y = 0; y < subdivisions - 1; y++)
-                {
-                    for (int x = 0; x < subdivisions - 1; x++)
-                    {
-                        int a = y * subdivisions + x;
-                        int b = a + 1;
-                        int c = a + subdivisions;
-                        int d = c + 1;
-
-                        triangles.Add(a); triangles.Add(c); triangles.Add(b);
-                        triangles.Add(b); triangles.Add(c); triangles.Add(d);
-                    }
-                }
-
-                mesh.vertices = vertices;
-                mesh.triangles = triangles.ToArray();
-                mesh.uv = uvs;
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"[ASS] CreateComplexMesh失败: {e.Message}\n{e.StackTrace}");
-                if (mesh != null)
-                {
-                    Object.DestroyImmediate(mesh);
-                    mesh = null;
-                }
-            }
-
-            return mesh;
-        }
-
-        /// <summary>
         /// 创建光源防御（GPU消耗，实时阴影）
+        /// 在防御根节点下生成多个高质量 Point/Spot 光源，均开启 Soft Shadow
         /// </summary>
         private static void CreateLightDefense(GameObject root, int lightCount)
         {
@@ -1545,30 +1226,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         #endregion
-
-        #region Animation Creation
-
-        /// <summary>
-        /// 创建防御激活/停用动画剪辑
-        /// </summary>
-        private static AnimationClip CreateDefenseActivationClip(GameObject avatarRoot, GameObject defenseRoot, AvatarSecuritySystemComponent config, bool activate, bool isDebugMode)
-        {
-            var clip = new AnimationClip
-            {
-                name = activate ? "ASS_Defense_Activate" : "ASS_Defense_Deactivate",
-                legacy = false
-            };
-
-            string rootPath = AnimatorUtils.GetRelativePath(avatarRoot, defenseRoot);
-            float activeValue = activate ? 1f : 0f;
-            var activeCurve = AnimationCurve.Constant(0f, 1f / 60f, activeValue);
-            clip.SetCurve(rootPath, typeof(GameObject), "m_IsActive", activeCurve);
-
-            return clip;
-        }
-
-        #endregion
-
 
         #region Mesh Generation Utilities
 
@@ -1684,152 +1341,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             return mesh;
         }
-
-        #endregion
-
-        #region VRChat Limit Validation
-
-        /// <summary>
-        /// 验证Constraint深度，确保不超过VRChat限制
-        /// </summary>
-        private static int ValidateConstraintDepth(int requested)
-        {
-            int maxDepth = Constants.CONSTRAINT_CHAIN_MAX_DEPTH;
-            int validValue = Mathf.Clamp(requested, 10, maxDepth);
-
-            if (validValue != requested)
-            {
-                Debug.LogWarning($"[ASS] Constraint深度超出范围: {requested} -> {validValue}");
-            }
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证PhysBone链长度，确保不超过256
-        /// </summary>
-        private static int ValidatePhysBoneLength(int requested)
-        {
-            int maxLength = Constants.PHYSBONE_CHAIN_MAX_LENGTH;
-            int validValue = Mathf.Clamp(requested, 10, maxLength);
-
-            if (validValue != requested)
-            {
-                Debug.LogWarning($"[ASS] PhysBone链长度超出范围: {requested} -> {validValue}");
-            }
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证PhysBone Collider数量，确保不超过256
-        /// 同时考虑链长度以避免过度配置
-        /// </summary>
-        private static int ValidatePhysBoneColliders(int requested, int chainLength, int existingColliders)
-        {
-            int maxColliders = Constants.PHYSBONE_COLLIDER_MAX_COUNT;
-            int available = Mathf.Max(0, maxColliders - existingColliders);
-            int validValue = Mathf.Clamp(requested, 0, available);
-
-            if (requested > available)
-                Debug.LogWarning($"[ASS] PhysBone Collider数量超出范围: 已存在 {existingColliders}, 请求 {requested} -> 实际生成 {validValue} (上限 {maxColliders})");
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证Contact组件数量，确保不超过200
-        /// </summary>
-        private static int ValidateContactCount(int requested)
-        {
-            int maxCount = Constants.CONTACT_MAX_COUNT; // 200
-            int validValue = Mathf.Clamp(requested, 10, maxCount);
-
-            if (validValue != requested)
-            {
-                Debug.LogWarning($"[ASS] Contact组件数量超出范围: {requested} -> {validValue}");
-            }
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证Shader循环次数
-        /// </summary>
-        private static int ValidateShaderLoops(int requested)
-        {
-            int maxLoops = Constants.SHADER_LOOP_MAX_COUNT;
-            int validValue = Mathf.Clamp(requested, 0, maxLoops);
-
-            if (validValue > 100000)
-            {
-                Debug.Log($"[ASS] 防御Shader {validValue} - GPU成本: ~{validValue * 47 + 40000}条指令, ~{validValue * 7 + 1600}次采样");
-            }
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证高多边形顶点数，确保不超过50万
-        /// </summary>
-        private static int ValidateHighPolyVertices(int requested)
-        {
-            int maxVerticesPerAvatar = 500000;
-            int validValue = Mathf.Clamp(requested, 50000, maxVerticesPerAvatar);
-
-            if (requested > maxVerticesPerAvatar)
-            {
-                Debug.Log($"[ASS] 高多边形顶点数 {requested} 超过安全限制 {maxVerticesPerAvatar}，已调整为 {validValue}");
-            }
-
-            return validValue;
-        }
-
-        /// <summary>
-        /// 验证Overdraw层数
-        /// </summary>
-        private static int ValidateOverdrawLayers(int requested)
-        {
-            int maxLayers = 50000;
-            int validValue = Mathf.Clamp(requested, 5, maxLayers);
-
-            if (requested > maxLayers)
-            {
-                Debug.Log($"[ASS] Overdraw层数 {requested} 超过安全限制 {maxLayers}，已调整为 {validValue}");
-            }
-
-            return validValue;
-        }
-
-        /// <summary>
-        /// 估算防御系统生成的网格总顶点数
-        /// 用于确保不超出文件大小限制
-        /// </summary>
-        private static int EstimateTotalDefenseVertices(int overdrawLayers, int polyVertices, int heavyShaderMeshes)
-        {
-            // Overdraw: 每层4顶点
-            int overdrawVertices = overdrawLayers * 4;
-
-            // 高多边形网格: 已分散到多个Mesh
-            int polyMeshVertices = polyVertices;
-
-            // Heavy Shader: 每个Quad 4顶点
-            int shaderVertices = heavyShaderMeshes * 4;
-
-            return overdrawVertices + polyMeshVertices + shaderVertices;
-        }
-
-        #endregion
-
-        #region Shader Creation
-
-        /// <summary>
-        /// 创建高消耗Shader材质（合并后的方法）
-        /// 在构建时生成Shader，Shader使用其Properties中定义的极高默认值
-        /// 包含所有GPU密集功能，用于创建单个或多个材质
-        /// 现在使用统一的CreateDefenseMaterials方法
-        /// </summary>
-        private static Material CreateDefenseShaderMaterial(GameObject avatarRoot, int loopCount)
-        {
-            var materials = CreateDefenseMaterials(avatarRoot, 1, loopCount);
-            return materials?.Length > 0 ? materials[0] : null;
-        }
-
 
         #endregion
     }

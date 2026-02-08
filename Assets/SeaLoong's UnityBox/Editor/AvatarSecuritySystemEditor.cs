@@ -10,9 +10,10 @@ namespace SeaLoongUnityBox
     /// AvatarSecuritySystem Inspector 编辑器
     /// </summary>
     [CustomEditor(typeof(AvatarSecuritySystemComponent))]
-    public class AvatarSecuritySystemEditor : Editor
+    public class AvatarSecuritySystemEditor : UnityEditor.Editor
     {
         private AvatarSecuritySystemComponent _target;
+        private bool _showAdvancedDebug = false;
         
         private static readonly string[] GESTURE_NAMES =
         {
@@ -326,6 +327,36 @@ namespace SeaLoongUnityBox
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
                 new GUIContent(T("advanced.disable_defense"), T("advanced.disable_defense_tooltip")));
+
+            // 折叠的高级调试选项
+            _showAdvancedDebug = EditorGUILayout.Foldout(_showAdvancedDebug, T("advanced.debug_advanced"), true);
+            if (_showAdvancedDebug)
+            {
+                EditorGUI.indentLevel++;
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableVerboseLogging"),
+                    new GUIContent(T("advanced.verbose_logging"), T("advanced.verbose_logging_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugSkipLockSystem"),
+                    new GUIContent(T("advanced.skip_lock"), T("advanced.skip_lock_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugSkipPasswordSystem"),
+                    new GUIContent(T("advanced.skip_password"), T("advanced.skip_password_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugSkipCountdownSystem"),
+                    new GUIContent(T("advanced.skip_countdown"), T("advanced.skip_countdown_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugSkipFeedbackSystem"),
+                    new GUIContent(T("advanced.skip_feedback"), T("advanced.skip_feedback_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugSkipDefenseSystem"),
+                    new GUIContent(T("advanced.skip_defense"), T("advanced.skip_defense_tooltip")));
+                
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("debugValidateAfterBuild"),
+                    new GUIContent(T("advanced.validate_build"), T("advanced.validate_build_tooltip")));
+                
+                EditorGUI.indentLevel--;
+            }
         }
 
         private void DrawLockSection()
@@ -337,6 +368,26 @@ namespace SeaLoongUnityBox
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
                 new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
+            
+            EditorGUILayout.Space(5);
+            
+            // Write Defaults 模式选择
+            var wdModeProp = serializedObject.FindProperty("writeDefaultsMode");
+            var wdContent = new GUIContent(T("advanced.wd_mode"), T("advanced.wd_mode_tooltip"));
+            
+            string[] wdModeNames = new[]
+            {
+                T("advanced.wd_mode_on"),
+                T("advanced.wd_mode_off")
+            };
+            
+            wdModeProp.enumValueIndex = EditorGUILayout.Popup(wdContent, wdModeProp.enumValueIndex, wdModeNames);
+            
+            // 显示当前模式的说明
+            string modeHint = wdModeProp.enumValueIndex == 0 
+                ? T("advanced.wd_mode_on_hint") 
+                : T("advanced.wd_mode_off_hint");
+            EditorGUILayout.HelpBox(modeHint, MessageType.Info);
         }
 
         private void DrawEstimationSection()

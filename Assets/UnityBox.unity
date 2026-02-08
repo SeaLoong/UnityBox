@@ -2943,7 +2943,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 43d33e6d3a0f99a40920ca7ba5bf6ae4, type: 3}
   m_Controller: {fileID: 0}
-  m_CullingMode: 1
+  m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
@@ -18383,7 +18383,15 @@ MonoBehaviour:
   disableDefense: 0
   lockFxLayers: 1
   disableRootChildren: 1
-  defenseLevel: 0
+  defenseLevel: 3
+  writeDefaultsMode: 0
+  enableVerboseLogging: 1
+  debugSkipLockSystem: 0
+  debugSkipPasswordSystem: 0
+  debugSkipCountdownSystem: 0
+  debugSkipFeedbackSystem: 1
+  debugSkipDefenseSystem: 1
+  debugValidateAfterBuild: 1
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0

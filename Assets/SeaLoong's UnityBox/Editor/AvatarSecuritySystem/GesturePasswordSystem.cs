@@ -6,10 +6,7 @@ using SeaLoongUnityBox;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
-
-#if VRC_SDK_VRCSDK3
 using VRC.SDK3.Avatars.Components;
-#endif
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -204,15 +201,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             successState.motion = AnimatorUtils.SharedEmptyClip;
 
-#if VRC_SDK_VRCSDK3
             // 播放成功音效
             if (config.successSound != null)
             {
                 AnimatorUtils.AddPlayAudioBehaviour(successState, 
-                    Constants.GO_AUDIO, 
+                    Constants.GO_AUDIO_SUCCESS, 
                     config.successSound);
             }
-#endif
             
             // 设置密码正确参数（使用 Parameter Driver）
             // 注意：localOnly=true 只影响驱动行为的执行位置

@@ -1,8 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-#if VRC_SDK_VRCSDK3
 using VRC.SDKBase;
-#endif
 
 namespace SeaLoongUnityBox
 {
@@ -18,10 +16,7 @@ namespace SeaLoongUnityBox
 #if UNITY_EDITOR
     [AddComponentMenu("SeaLoong's UnityBox/Avatar Security System (ASS)")]
 #endif
-    public class AvatarSecuritySystemComponent : MonoBehaviour
-#if VRC_SDK_VRCSDK3
-        , IEditorOnly
-#endif
+    public class AvatarSecuritySystemComponent : MonoBehaviour, IEditorOnly
     {
         // ============ UI 语言配置 ============
         [Tooltip("#{language.ui_language_tooltip}")]
@@ -70,6 +65,43 @@ namespace SeaLoongUnityBox
         [Tooltip("防御等级：0=仅密码, 1=密码+CPU防御, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)")]
         [Range(0, 3)]
         public int defenseLevel = 3;
+
+        /// <summary>
+        /// Write Defaults 模式
+        /// </summary>
+        public enum WriteDefaultsMode
+        {
+            /// <summary>WD On: 不写入原始值，依赖动画系统自动恢复</summary>
+            On,
+            /// <summary>WD Off: 显式写入原始值，允许其他系统修改</summary>
+            Off
+        }
+
+        [Tooltip("动画 Write Defaults 模式：\nOn = 自动恢复(推荐)\nOff = 显式恢复(兼容性更好)")]
+        public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.On;
+
+        // ============ 调试选项 ============
+        [Header("调试选项")]
+        [Tooltip("启用详细日志输出")]
+        public bool enableVerboseLogging = false;
+
+        [Tooltip("跳过锁定系统生成")]
+        public bool debugSkipLockSystem = false;
+
+        [Tooltip("跳过密码系统生成")]
+        public bool debugSkipPasswordSystem = false;
+
+        [Tooltip("跳过倒计时系统生成")]
+        public bool debugSkipCountdownSystem = false;
+
+        [Tooltip("跳过反馈系统生成（UI/音效）")]
+        public bool debugSkipFeedbackSystem = false;
+
+        [Tooltip("跳过防御系统生成（等同于 disableDefense）")]
+        public bool debugSkipDefenseSystem = false;
+
+        [Tooltip("构建后验证动画控制器")]
+        public bool debugValidateAfterBuild = false;
 
         /// <summary>
         /// VRChat 手势枚举
