@@ -852,14 +852,21 @@ namespace SeaLoongUnityBox.Editor
      * 
      * 以下是各主要框架在 IVRCSDKPreprocessAvatarCallback 中使用的 callbackOrder 值:
      * 
-     * int.MinValue     : 绝对最早执行
-     * -11000           : NDMF BuildFrameworkPreprocessHook (在 VRCFury 之前)
-     * -10000           : VRCFury
-     * -1025            : NDMF BuildFrameworkOptimizeHook (在 RemoveAvatarEditorOnly 之前)
-     * -1024            : VRCSDK RemoveAvatarEditorOnly / MA ReplacementRemoveAvatarEditorOnly
+     * int.MinValue (+1): VRCFury FailureCheckStart / IsActuallyUploadingHook / WhenBlueprintIdReadyHook
+     * -11000           : NDMF BuildFrameworkPreprocessHook (Resolving → Transforming)
+     * -10000           : VRCFury VrcPreuploadHook (主处理, 调用 VRCFuryBuilder.RunMain)
+     * -1026            : ★ ASS AvatarSecurityBuildProcessor (在此位置注入安全系统)
+     * -1025            : NDMF BuildFrameworkOptimizeHook (Optimizing → Last)
+     * -1024            : VRCFury VrcfRemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
      * 0                : 默认值
      * 100              : 常规后处理
-     * int.MaxValue     : MA ReplacementRemoveIEditorOnly (销毁所有 IEditorOnly 组件，最后执行)
+     * int.MaxValue-100 : VRCFury ParameterCompressorHook (参数压缩，几乎最后执行)
+     * int.MaxValue     : VRCFury FailureCheckEnd / VrcfRemoveEditorOnlyComponents
+     *                  : MA ReplacementRemoveIEditorOnly (销毁所有 IEditorOnly 组件)
+     * 
+     * 参数安全说明：
+     *   ASS 在 -1026 注入参数，VRCFury 参数压缩在 int.MaxValue-100 执行。
+     *   由于参数压缩在 ASS 之后运行，ASS 注入的参数会被 VRCFury 正确处理。
      * 
      * 本验证器在这些关键点的前后都设置了探测器，以便确认执行顺序
      * ======================================================================
@@ -1054,16 +1061,16 @@ namespace SeaLoongUnityBox.Editor
         }
     }
     
-    /// <summary>在 RemoveAvatarEditorOnly 之前 / NDMF OptimizeHook 之后 (-1024.5 不可用，使用 -1024 但依赖类名排序)</summary>
+    /// <summary>在 RemoveAvatarEditorOnly 之前 / NDMF OptimizeHook 之后 (-1024)</summary>
     public class VRCSDKPreprocessAvatarValidator_AfterNDMFOptimize : IVRCSDKPreprocessAvatarCallback
     {
-        // 注意: 由于整数限制，我们使用类名排序来区分同一 order 的执行顺序
-        // 类名以 'A' 开头会在 'R'(RemoveAvatarEditorOnly) 之前执行
+        // 注意: -1024 同时被 VRCSDK RemoveAvatarEditorOnly 和 VRCFury VrcfRemoveEditorOnlyObjects 使用
+        // VRCFury 通过 Harmony Patch 移除了原始 RemoveAvatarEditorOnly，替换为自己的 VrcfRemoveEditorOnlyObjects
         public int callbackOrder => -1024;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "RemoveAvatarEditorOnly (EditorOnly tag cleanup)", "★ REMOVE-EDITOR");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "RemoveEditorOnly (VRCFury replaces VRCSDK's implementation)", "★ REMOVE-EDITOR");
             return true;
         }
     }
@@ -1116,6 +1123,42 @@ namespace SeaLoongUnityBox.Editor
         }
     }
     
+    /// <summary>在 VRCFury ParameterCompressorHook 之前 (int.MaxValue - 101)</summary>
+    public class VRCSDKPreprocessAvatarValidator_BeforeParamCompressor : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue - 101;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "Before VRCFury ParameterCompressor", "↗ BEFORE PARAM-COMPRESS");
+            return true;
+        }
+    }
+    
+    /// <summary>VRCFury ParameterCompressorHook 位置探测 (int.MaxValue - 100)</summary>
+    public class VRCSDKPreprocessAvatarValidator_ParamCompressor : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue - 100;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "VRCFury ParameterCompressorHook (参数压缩)", "★★ PARAM-COMPRESS");
+            return true;
+        }
+    }
+    
+    /// <summary>在 VRCFury ParameterCompressorHook 之后 (int.MaxValue - 99)</summary>
+    public class VRCSDKPreprocessAvatarValidator_AfterParamCompressor : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue - 99;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "After VRCFury ParameterCompressor", "↘ AFTER PARAM-COMPRESS");
+            return true;
+        }
+    }
+    
     /// <summary>在 MaxValue 之前 (int.MaxValue - 1)</summary>
     public class VRCSDKPreprocessAvatarValidator_BeforeMaxValue : IVRCSDKPreprocessAvatarCallback
     {
@@ -1128,14 +1171,14 @@ namespace SeaLoongUnityBox.Editor
         }
     }
     
-    /// <summary>绝对最后 - int.MaxValue (MA ReplacementRemoveIEditorOnly 位置)</summary>
+    /// <summary>绝对最后 - int.MaxValue (VRCFury FailureCheckEnd/VrcfRemoveEditorOnlyComponents, MA RemoveIEditorOnly)</summary>
     public class VRCSDKPreprocessAvatarValidator_MaxValue : IVRCSDKPreprocessAvatarCallback
     {
         public int callbackOrder => int.MaxValue;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "MA RemoveIEditorOnly (destroy IEditorOnly)", "★ REMOVE-IEDITORONLY");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "VRCFury Cleanup + MA RemoveIEditorOnly (destroy IEditorOnly)", "★ FINAL-CLEANUP");
             return true;
         }
     }

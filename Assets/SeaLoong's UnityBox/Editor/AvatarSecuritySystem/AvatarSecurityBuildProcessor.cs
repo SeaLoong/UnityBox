@@ -15,8 +15,10 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// Avatar Security System (ASS) VRCSDK 构建处理器 — 系统入口点
     /// 
     /// 实现 IVRCSDKPreprocessAvatarCallback 在 VRChat Avatar 构建/上传时自动注入安全系统。
-    /// callbackOrder = -1026，在 NDMF PreprocessHook (-11000) 和 VRCFury (-10000) 之后、
-    /// NDMF OptimizeHook (-1025，含 VRCFury 参数压缩) 之前执行。
+    /// callbackOrder = -1026，在 NDMF PreprocessHook (-11000) 和 VRCFury 主处理 (-10000) 之后、
+    /// NDMF OptimizeHook (-1025) 之前执行。
+    /// VRCFury 参数压缩 (ParameterCompressorHook, int.MaxValue - 100) 在 ASS 之后很久才执行，
+    /// 因此 ASS 注入的参数会被 VRCFury 正确识别和处理。
     /// 
     /// 执行流程：
     /// 1. 从 Avatar 根对象提取 AvatarSecuritySystemComponent 配置
@@ -35,14 +37,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     {
         // callbackOrder = -1026: 在 NDMF Optimize (-1025) 之前执行
         // 构建管线执行顺序：
+        //   int.MinValue+1 : VRCFury FailureCheckStart / IsActuallyUploadingHook
         //   -11000 : NDMF PreprocessHook (Resolving → Transforming)
-        //   -10000 : VRCFury 主处理
+        //   -10000 : VRCFury VrcPreuploadHook (主处理)
         //   -1026  : ★ ASS（本插件）← 在这里
-        //   -1025  : NDMF OptimizeHook (Optimizing → Last，含 VRCFury 参数压缩)
-        //   -1024  : VRCSDK RemoveAvatarEditorOnly
-        //   int.MaxValue : MA RemoveIEditorOnly
-        // 这样 ASS 在 NDMF/VRCFury 的主处理完成后注入 Animator 层和参数，
-        // 同时在 VRCFury 参数压缩之前完成，避免参数被压缩后无法识别
+        //   -1025  : NDMF OptimizeHook (Optimizing → Last)
+        //   -1024  : VRCFury VrcfRemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
+        //   int.MaxValue-100 : VRCFury ParameterCompressorHook (参数压缩)
+        //   int.MaxValue : VRCFury Cleanup / MA RemoveIEditorOnly
+        // ASS 在 NDMF/VRCFury 的主处理完成后注入 Animator 层和参数，
+        // VRCFury 参数压缩在 int.MaxValue-100 执行，远在 ASS 之后，
+        // 因此 ASS 新增的参数不会导致压缩后参数超限
         public int callbackOrder => -1026;
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)

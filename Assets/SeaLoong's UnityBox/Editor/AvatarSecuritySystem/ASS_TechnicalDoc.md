@@ -17,7 +17,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 ### 1.2 设计原则
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
-2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury (-10000) 之后、NDMF Optimize (-1025，含 VRCFury 参数压缩) 之前执行
+2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理
 3. **VRChat 限制遵守**：严格遵守 PhysBone (256)、Contact (200) 等组件数量上限
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
@@ -632,6 +632,7 @@ Avatar Root
 
 ### 9.4 构建流程兼容性
 
-- `callbackOrder = -1026` 确保 ASS 在 NDMF Preprocess/VRCFury 主处理之后、VRCFury 参数压缩 (NDMF Optimize) 之前执行
+- `callbackOrder = -1026` 确保 ASS 在 NDMF Preprocess (-11000)/VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行
+- VRCFury 参数压缩 (ParameterCompressorHook) 在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中
