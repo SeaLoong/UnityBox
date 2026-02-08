@@ -62,6 +62,30 @@ namespace SeaLoongUnityBox.Editor
             set => EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value);
         }
     }
+
+    internal static class BuildPipelineValidatorLog
+    {
+        private const string Prefix = "[BPV]";
+
+        public static void Log(string pipeline, int order, string message, string tag = null)
+        {
+            var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
+            var orderColored = $"<color=#00FF00>Order={order}</color>";
+            
+            var middle = string.IsNullOrWhiteSpace(tag) 
+                ? orderColored
+                : $"<color=#FFFF00>{tag}</color> | {orderColored}";
+
+            Debug.Log($"{Prefix} {pipelineColored} | {middle} | {message}");
+        }
+
+        public static void LogRaw(string pipeline, string marker, string message)
+        {
+            var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
+            var markerColored = $"<color=#FFFF00>{marker}</color>";
+            Debug.Log($"{Prefix} {pipelineColored} | {markerColored} | {message}");
+        }
+    }
     
     public static class BuildPipelineValidatorMenu
     {
@@ -94,7 +118,7 @@ namespace SeaLoongUnityBox.Editor
             BuildPipelineValidatorSettings.BuildPipeline = true;
             BuildPipelineValidatorSettings.VRCSDK = true;
             BuildPipelineValidatorSettings.NDMF = true;
-            Debug.Log("[Build Pipeline Validator] 已启用所有管线日志");
+            BuildPipelineValidatorLog.LogRaw("MENU", "⚙", "已启用所有管线日志");
         }
         
         [MenuItem(MENU_PREFIX + "Disable All")]
@@ -104,7 +128,7 @@ namespace SeaLoongUnityBox.Editor
             BuildPipelineValidatorSettings.BuildPipeline = false;
             BuildPipelineValidatorSettings.VRCSDK = false;
             BuildPipelineValidatorSettings.NDMF = false;
-            Debug.Log("[Build Pipeline Validator] 已禁用所有管线日志");
+            BuildPipelineValidatorLog.LogRaw("MENU", "⚙", "已禁用所有管线日志");
         }
     }
     
@@ -112,13 +136,33 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== BuildPlayerProcessor ====================
     
+    public class BuildPlayerProcessor_MinValue : BuildPlayerProcessor
+    {
+        public override int callbackOrder => int.MinValue;
+        public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild");
+        }
+    }
+    
+    public class BuildPlayerProcessor_N10000 : BuildPlayerProcessor
+    {
+        public override int callbackOrder => -10000;
+        public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "⚑ N10000");
+        }
+    }
+    
     public class BuildPlayerProcessor_Early : BuildPlayerProcessor
     {
         public override int callbackOrder => -100;
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "◎");
         }
     }
     
@@ -128,7 +172,7 @@ namespace SeaLoongUnityBox.Editor
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "○");
         }
     }
     
@@ -138,7 +182,27 @@ namespace SeaLoongUnityBox.Editor
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] BuildPlayerProcessor.PrepareForBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "◉");
+        }
+    }
+    
+    public class BuildPlayerProcessor_P10000 : BuildPlayerProcessor
+    {
+        public override int callbackOrder => 10000;
+        public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "⚑ P10000");
+        }
+    }
+    
+    public class BuildPlayerProcessor_MaxValue : BuildPlayerProcessor
+    {
+        public override int callbackOrder => int.MaxValue;
+        public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild", "⛳ END");
         }
     }
     
@@ -146,13 +210,33 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== IPreprocessBuildWithReport ====================
     
+    public class PreBuildValidator_MinValue : IPreprocessBuildWithReport
+    {
+        public int callbackOrder => int.MinValue;
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "🚩 PRE");
+        }
+    }
+    
+    public class PreBuildValidator_N10000 : IPreprocessBuildWithReport
+    {
+        public int callbackOrder => -10000;
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "⚑ N10000");
+        }
+    }
+    
     public class PreBuildValidator_Early : IPreprocessBuildWithReport
     {
         public int callbackOrder => -100;
         public void OnPreprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "◎");
         }
     }
     
@@ -162,7 +246,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnPreprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "○");
         }
     }
     
@@ -172,7 +256,27 @@ namespace SeaLoongUnityBox.Editor
         public void OnPreprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPreprocessBuildWithReport.OnPreprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "◉");
+        }
+    }
+    
+    public class PreBuildValidator_P10000 : IPreprocessBuildWithReport
+    {
+        public int callbackOrder => 10000;
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "⚑ P10000");
+        }
+    }
+    
+    public class PreBuildValidator_MaxValue : IPreprocessBuildWithReport
+    {
+        public int callbackOrder => int.MaxValue;
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "⛳ END");
         }
     }
     
@@ -180,13 +284,35 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== IFilterBuildAssemblies ====================
     
+    public class FilterAssembliesValidator_MinValue : IFilterBuildAssemblies
+    {
+        public int callbackOrder => int.MinValue;
+        public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "🚩 FILTER");
+            return assemblies;
+        }
+    }
+    
+    public class FilterAssembliesValidator_N10000 : IFilterBuildAssemblies
+    {
+        public int callbackOrder => -10000;
+        public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "⚑ N10000");
+            return assemblies;
+        }
+    }
+    
     public class FilterAssembliesValidator_Early : IFilterBuildAssemblies
     {
         public int callbackOrder => -100;
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "◎");
             return assemblies;
         }
     }
@@ -197,7 +323,7 @@ namespace SeaLoongUnityBox.Editor
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "○");
             return assemblies;
         }
     }
@@ -208,7 +334,29 @@ namespace SeaLoongUnityBox.Editor
         public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IFilterBuildAssemblies.OnFilterAssemblies (Order: {callbackOrder}) Assemblies: {assemblies.Length}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "◉");
+            return assemblies;
+        }
+    }
+    
+    public class FilterAssembliesValidator_P10000 : IFilterBuildAssemblies
+    {
+        public int callbackOrder => 10000;
+        public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "⚑ P10000");
+            return assemblies;
+        }
+    }
+    
+    public class FilterAssembliesValidator_MaxValue : IFilterBuildAssemblies
+    {
+        public int callbackOrder => int.MaxValue;
+        public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IFilterBuildAssemblies.OnFilterAssemblies Assemblies: {assemblies.Length}", "⛳ END");
             return assemblies;
         }
     }
@@ -217,13 +365,33 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== IPostBuildPlayerScriptDLLs ====================
     
+    public class PostBuildScriptDLLsValidator_MinValue : IPostBuildPlayerScriptDLLs
+    {
+        public int callbackOrder => int.MinValue;
+        public void OnPostBuildPlayerScriptDLLs(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "🚩 POST-DLL");
+        }
+    }
+    
+    public class PostBuildScriptDLLsValidator_N10000 : IPostBuildPlayerScriptDLLs
+    {
+        public int callbackOrder => -10000;
+        public void OnPostBuildPlayerScriptDLLs(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "⚑ N10000");
+        }
+    }
+    
     public class PostBuildScriptDLLsValidator_Early : IPostBuildPlayerScriptDLLs
     {
         public int callbackOrder => -100;
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "◎");
         }
     }
     
@@ -233,7 +401,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "○");
         }
     }
     
@@ -243,7 +411,27 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostBuildPlayerScriptDLLs(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "◉");
+        }
+    }
+    
+    public class PostBuildScriptDLLsValidator_P10000 : IPostBuildPlayerScriptDLLs
+    {
+        public int callbackOrder => 10000;
+        public void OnPostBuildPlayerScriptDLLs(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "⚑ P10000");
+        }
+    }
+    
+    public class PostBuildScriptDLLsValidator_MaxValue : IPostBuildPlayerScriptDLLs
+    {
+        public int callbackOrder => int.MaxValue;
+        public void OnPostBuildPlayerScriptDLLs(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs", "⛳ END");
         }
     }
     
@@ -251,13 +439,33 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== IProcessSceneWithReport ====================
     
+    public class ProcessSceneValidator_MinValue : IProcessSceneWithReport
+    {
+        public int callbackOrder => int.MinValue;
+        public void OnProcessScene(Scene scene, BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "🎬 SCENE");
+        }
+    }
+    
+    public class ProcessSceneValidator_N10000 : IProcessSceneWithReport
+    {
+        public int callbackOrder => -10000;
+        public void OnProcessScene(Scene scene, BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "⚑ N10000");
+        }
+    }
+    
     public class ProcessSceneValidator_Early : IProcessSceneWithReport
     {
         public int callbackOrder => -100;
         public void OnProcessScene(Scene scene, BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "◎");
         }
     }
     
@@ -267,7 +475,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnProcessScene(Scene scene, BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "○");
         }
     }
     
@@ -277,13 +485,63 @@ namespace SeaLoongUnityBox.Editor
         public void OnProcessScene(Scene scene, BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IProcessSceneWithReport.OnProcessScene (Order: {callbackOrder}) Scene: {scene.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "◉");
+        }
+    }
+    
+    public class ProcessSceneValidator_P10000 : IProcessSceneWithReport
+    {
+        public int callbackOrder => 10000;
+        public void OnProcessScene(Scene scene, BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "⚑ P10000");
+        }
+    }
+    
+    public class ProcessSceneValidator_MaxValue : IProcessSceneWithReport
+    {
+        public int callbackOrder => int.MaxValue;
+        public void OnProcessScene(Scene scene, BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IProcessSceneWithReport.OnProcessScene Scene: {scene.name}", "⛳ END");
         }
     }
     
     #endregion
 
     #region ==================== IPreprocessShaders ====================
+    
+    public class PreprocessShadersValidator_MinValue : IPreprocessShaders
+    {
+        public int callbackOrder => int.MinValue;
+        private static bool _logged = false;
+        
+        public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "🎨 SHADER");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessShadersValidator_N10000 : IPreprocessShaders
+    {
+        public int callbackOrder => -10000;
+        private static bool _logged = false;
+        
+        public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ N10000");
+                _logged = true;
+            }
+        }
+    }
     
     public class PreprocessShadersValidator_Early : IPreprocessShaders
     {
@@ -294,7 +552,7 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◎");
                 _logged = true;
             }
         }
@@ -309,7 +567,7 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "○");
                 _logged = true;
             }
         }
@@ -324,7 +582,37 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessShaders.OnProcessShader (Order: {callbackOrder}) Shader: {shader.name}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◉");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessShadersValidator_P10000 : IPreprocessShaders
+    {
+        public int callbackOrder => 10000;
+        private static bool _logged = false;
+        
+        public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ P10000");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessShadersValidator_MaxValue : IPreprocessShaders
+    {
+        public int callbackOrder => int.MaxValue;
+        private static bool _logged = false;
+        
+        public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⛳ END");
                 _logged = true;
             }
         }
@@ -333,6 +621,36 @@ namespace SeaLoongUnityBox.Editor
     #endregion
 
     #region ==================== IPreprocessComputeShaders ====================
+    
+    public class PreprocessComputeShadersValidator_MinValue : IPreprocessComputeShaders
+    {
+        public int callbackOrder => int.MinValue;
+        private static bool _logged = false;
+        
+        public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "🎛 COMPUTE");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessComputeShadersValidator_N10000 : IPreprocessComputeShaders
+    {
+        public int callbackOrder => -10000;
+        private static bool _logged = false;
+        
+        public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ N10000");
+                _logged = true;
+            }
+        }
+    }
     
     public class PreprocessComputeShadersValidator_Early : IPreprocessComputeShaders
     {
@@ -343,7 +661,7 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◎");
                 _logged = true;
             }
         }
@@ -358,7 +676,7 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "○");
                 _logged = true;
             }
         }
@@ -373,7 +691,37 @@ namespace SeaLoongUnityBox.Editor
         {
             if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
             {
-                Debug.Log($"[Build Pipeline] IPreprocessComputeShaders.OnProcessComputeShader (Order: {callbackOrder}) Shader: {shader.name}, Kernel: {kernelName}");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◉");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessComputeShadersValidator_P10000 : IPreprocessComputeShaders
+    {
+        public int callbackOrder => 10000;
+        private static bool _logged = false;
+        
+        public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ P10000");
+                _logged = true;
+            }
+        }
+    }
+    
+    public class PreprocessComputeShadersValidator_MaxValue : IPreprocessComputeShaders
+    {
+        public int callbackOrder => int.MaxValue;
+        private static bool _logged = false;
+        
+        public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
+        {
+            if (!_logged && BuildPipelineValidatorSettings.BuildPipeline)
+            {
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⛳ END");
                 _logged = true;
             }
         }
@@ -393,7 +741,7 @@ namespace SeaLoongUnityBox.Editor
         
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
-            Debug.Log($"[Build Pipeline] IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile (Order: {callbackOrder})");
+            BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◎");
             return null;
         }
     }
@@ -404,7 +752,7 @@ namespace SeaLoongUnityBox.Editor
         
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
-            Debug.Log($"[Build Pipeline] IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile (Order: {callbackOrder})");
+            BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "○");
             return null;
         }
     }
@@ -415,7 +763,7 @@ namespace SeaLoongUnityBox.Editor
         
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
-            Debug.Log($"[Build Pipeline] IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile (Order: {callbackOrder})");
+            BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◉");
             return null;
         }
     }
@@ -425,13 +773,33 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== IPostprocessBuildWithReport ====================
     
+    public class PostBuildValidator_MinValue : IPostprocessBuildWithReport
+    {
+        public int callbackOrder => int.MinValue;
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "🚩 POST");
+        }
+    }
+    
+    public class PostBuildValidator_N10000 : IPostprocessBuildWithReport
+    {
+        public int callbackOrder => -10000;
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "⚑ N10000");
+        }
+    }
+    
     public class PostBuildValidator_Early : IPostprocessBuildWithReport
     {
         public int callbackOrder => -100;
         public void OnPostprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "◎");
         }
     }
     
@@ -441,7 +809,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "○");
         }
     }
     
@@ -451,7 +819,27 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostprocessBuild(BuildReport report)
         {
             if (BuildPipelineValidatorSettings.BuildPipeline)
-                Debug.Log($"[Build Pipeline] IPostprocessBuildWithReport.OnPostprocessBuild (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "◉");
+        }
+    }
+    
+    public class PostBuildValidator_P10000 : IPostprocessBuildWithReport
+    {
+        public int callbackOrder => 10000;
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "⚑ P10000");
+        }
+    }
+    
+    public class PostBuildValidator_MaxValue : IPostprocessBuildWithReport
+    {
+        public int callbackOrder => int.MaxValue;
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            if (BuildPipelineValidatorSettings.BuildPipeline)
+                BuildPipelineValidatorLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "⛳ END");
         }
     }
     
@@ -459,13 +847,55 @@ namespace SeaLoongUnityBox.Editor
 
     #region ==================== VRCSDK Callbacks ====================
     
+    /*
+     * ===================== 已知框架的 callbackOrder 值 =====================
+     * 
+     * 以下是各主要框架在 IVRCSDKPreprocessAvatarCallback 中使用的 callbackOrder 值:
+     * 
+     * int.MinValue     : 绝对最早执行
+     * -11000           : NDMF BuildFrameworkPreprocessHook (在 VRCFury 之前)
+     * -10000           : VRCFury
+     * -1025            : NDMF BuildFrameworkOptimizeHook (在 RemoveAvatarEditorOnly 之前)
+     * -1024            : VRCSDK RemoveAvatarEditorOnly / MA ReplacementRemoveAvatarEditorOnly
+     * 0                : 默认值
+     * 100              : 常规后处理
+     * int.MaxValue     : MA ReplacementRemoveIEditorOnly (销毁所有 IEditorOnly 组件，最后执行)
+     * 
+     * 本验证器在这些关键点的前后都设置了探测器，以便确认执行顺序
+     * ======================================================================
+     */
+    
+    // ==================== IVRCSDKBuildRequestedCallback ====================
+    
+    public class VRCSDKBuildRequestedValidator_MinValue : IVRCSDKBuildRequestedCallback
+    {
+        public int callbackOrder => int.MinValue;
+        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "🚩 REQ");
+            return true;
+        }
+    }
+    
+    public class VRCSDKBuildRequestedValidator_N10000 : IVRCSDKBuildRequestedCallback
+    {
+        public int callbackOrder => -10000;
+        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⚑ N10000");
+            return true;
+        }
+    }
+    
     public class VRCSDKBuildRequestedValidator_Early : IVRCSDKBuildRequestedCallback
     {
         public int callbackOrder => -100;
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "◎");
             return true;
         }
     }
@@ -476,7 +906,7 @@ namespace SeaLoongUnityBox.Editor
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "○");
             return true;
         }
     }
@@ -487,41 +917,248 @@ namespace SeaLoongUnityBox.Editor
         public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKBuildRequestedCallback.OnBuildRequested (Order: {callbackOrder}) Type: {requestedBuildType}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "◉");
             return true;
         }
     }
     
+    public class VRCSDKBuildRequestedValidator_P10000 : IVRCSDKBuildRequestedCallback
+    {
+        public int callbackOrder => 10000;
+        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⚑ P10000");
+            return true;
+        }
+    }
+    
+    public class VRCSDKBuildRequestedValidator_MaxValue : IVRCSDKBuildRequestedCallback
+    {
+        public int callbackOrder => int.MaxValue;
+        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⛳ END");
+            return true;
+        }
+    }
+    
+    // ==================== IVRCSDKPreprocessAvatarCallback 完整阶段覆盖 ====================
+    
+    /// <summary>绝对最早 - int.MinValue</summary>
+    public class VRCSDKPreprocessAvatarValidator_MinValue : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MinValue;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "🚀 PRE");
+            return true;
+        }
+    }
+    
+    /// <summary>在 NDMF PreprocessHook 之前 (-11001)</summary>
+    public class VRCSDKPreprocessAvatarValidator_BeforeNDMFPreprocess : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -11001;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "Before NDMF PreprocessHook", "↗ BEFORE NDMF-PRE");
+            return true;
+        }
+    }
+    
+    /// <summary>NDMF BuildFrameworkPreprocessHook 位置探测 (-11000)</summary>
+    public class VRCSDKPreprocessAvatarValidator_NDMFPreprocess : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -11000;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "NDMF PreprocessHook (Resolving → Transforming)", "★★ NDMF-PREPROC");
+            return true;
+        }
+    }
+    
+    /// <summary>在 NDMF PreprocessHook 之后、VRCFury 之前 (-10999)</summary>
+    public class VRCSDKPreprocessAvatarValidator_AfterNDMFPreprocess : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -10999;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "After NDMF PreprocessHook", "↘ AFTER NDMF-PRE");
+            return true;
+        }
+    }
+    
+    /// <summary>在 VRCFury 之前 (-10001)</summary>
+    public class VRCSDKPreprocessAvatarValidator_BeforeVRCFury : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -10001;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "Before VRCFury", "↗ BEFORE VRCFURY");
+            return true;
+        }
+    }
+    
+    /// <summary>VRCFury 位置探测 (-10000)</summary>
+    public class VRCSDKPreprocessAvatarValidator_VRCFury : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -10000;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "VRCFury Hook", "★★ VRCFURY");
+            return true;
+        }
+    }
+    
+    /// <summary>在 VRCFury 之后 (-9999)</summary>
+    public class VRCSDKPreprocessAvatarValidator_AfterVRCFury : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -9999;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "After VRCFury", "↘ AFTER VRCFURY");
+            return true;
+        }
+    }
+    
+    /// <summary>在 NDMF OptimizeHook 之前 (-1026)</summary>
+    public class VRCSDKPreprocessAvatarValidator_BeforeNDMFOptimize : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -1026;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "Before NDMF OptimizeHook", "↗ BEFORE NDMF-OPT");
+            return true;
+        }
+    }
+    
+    /// <summary>NDMF BuildFrameworkOptimizeHook 位置探测 (-1025)</summary>
+    public class VRCSDKPreprocessAvatarValidator_NDMFOptimize : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -1025;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "NDMF OptimizeHook (Optimizing → Last)", "★★ NDMF-OPT");
+            return true;
+        }
+    }
+    
+    /// <summary>在 RemoveAvatarEditorOnly 之前 / NDMF OptimizeHook 之后 (-1024.5 不可用，使用 -1024 但依赖类名排序)</summary>
+    public class VRCSDKPreprocessAvatarValidator_AfterNDMFOptimize : IVRCSDKPreprocessAvatarCallback
+    {
+        // 注意: 由于整数限制，我们使用类名排序来区分同一 order 的执行顺序
+        // 类名以 'A' 开头会在 'R'(RemoveAvatarEditorOnly) 之前执行
+        public int callbackOrder => -1024;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "RemoveAvatarEditorOnly (EditorOnly tag cleanup)", "★ REMOVE-EDITOR");
+            return true;
+        }
+    }
+    
+    /// <summary>在 RemoveAvatarEditorOnly 之后 (-1023)</summary>
+    public class VRCSDKPreprocessAvatarValidator_AfterRemoveEditorOnly : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => -1023;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "After RemoveAvatarEditorOnly", "↘ AFTER REMOVE-EDITOR");
+            return true;
+        }
+    }
+    
+    /// <summary>经典测试点 - Early (-100)</summary>
     public class VRCSDKPreprocessAvatarValidator_Early : IVRCSDKPreprocessAvatarCallback
     {
         public int callbackOrder => -100;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "◎");
             return true;
         }
     }
     
+    /// <summary>经典测试点 - Mid (0)</summary>
     public class VRCSDKPreprocessAvatarValidator_Mid : IVRCSDKPreprocessAvatarCallback
     {
         public int callbackOrder => 0;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "○");
             return true;
         }
     }
     
+    /// <summary>经典测试点 - Late (100)</summary>
     public class VRCSDKPreprocessAvatarValidator_Late : IVRCSDKPreprocessAvatarCallback
     {
         public int callbackOrder => 100;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPreprocessAvatarCallback.OnPreprocessAvatar (Order: {callbackOrder}) Avatar: {avatarGameObject.name}");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "◉");
             return true;
+        }
+    }
+    
+    /// <summary>在 MaxValue 之前 (int.MaxValue - 1)</summary>
+    public class VRCSDKPreprocessAvatarValidator_BeforeMaxValue : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue - 1;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "Before MaxValue", "↗ BEFORE END");
+            return true;
+        }
+    }
+    
+    /// <summary>绝对最后 - int.MaxValue (MA ReplacementRemoveIEditorOnly 位置)</summary>
+    public class VRCSDKPreprocessAvatarValidator_MaxValue : IVRCSDKPreprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue;
+        public bool OnPreprocessAvatar(GameObject avatarGameObject)
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "MA RemoveIEditorOnly (destroy IEditorOnly)", "★ REMOVE-IEDITORONLY");
+            return true;
+        }
+    }
+    
+    // ==================== IVRCSDKPostprocessAvatarCallback ====================
+    
+    public class VRCSDKPostprocessAvatarValidator_MinValue : IVRCSDKPostprocessAvatarCallback
+    {
+        public int callbackOrder => int.MinValue;
+        public void OnPostprocessAvatar()
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "🚩 POST");
+        }
+    }
+    
+    public class VRCSDKPostprocessAvatarValidator_N10000 : IVRCSDKPostprocessAvatarCallback
+    {
+        public int callbackOrder => -10000;
+        public void OnPostprocessAvatar()
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⚑ N10000");
         }
     }
     
@@ -531,7 +1168,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostprocessAvatar()
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "◎");
         }
     }
     
@@ -541,7 +1178,7 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostprocessAvatar()
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "○");
         }
     }
     
@@ -551,7 +1188,27 @@ namespace SeaLoongUnityBox.Editor
         public void OnPostprocessAvatar()
         {
             if (BuildPipelineValidatorSettings.VRCSDK)
-                Debug.Log($"[Build Pipeline] IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar (Order: {callbackOrder})");
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "◉");
+        }
+    }
+    
+    public class VRCSDKPostprocessAvatarValidator_P10000 : IVRCSDKPostprocessAvatarCallback
+    {
+        public int callbackOrder => 10000;
+        public void OnPostprocessAvatar()
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⚑ P10000");
+        }
+    }
+    
+    public class VRCSDKPostprocessAvatarValidator_MaxValue : IVRCSDKPostprocessAvatarCallback
+    {
+        public int callbackOrder => int.MaxValue;
+        public void OnPostprocessAvatar()
+        {
+            if (BuildPipelineValidatorSettings.VRCSDK)
+                BuildPipelineValidatorLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⛳ END");
         }
     }
     
@@ -563,6 +1220,97 @@ namespace SeaLoongUnityBox.Editor
     /// AssetPostprocessor 使用 postprocessOrder 而非 callbackOrder
     /// 这些回调在资产导入时触发，而非构建时
     /// </summary>
+    
+    public class AssetPostprocessorValidator_MinValue : AssetPostprocessor
+    {
+        public override int GetPostprocessOrder() => int.MinValue;
+        
+        void OnPreprocessTexture()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        void OnPostprocessTexture(Texture2D texture)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        void OnPreprocessModel()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        void OnPostprocessModel(GameObject g)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        void OnPreprocessAudio()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        void OnPostprocessAudio(AudioClip clip)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "🚩 IMPORT");
+        }
+        
+        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline && (importedAssets.Length > 0 || deletedAssets.Length > 0 || movedAssets.Length > 0))
+            {
+                BuildPipelineValidatorLog.Log("ASSET", int.MinValue, $"AssetPostprocessor.OnPostprocessAllAssets Imported: {importedAssets.Length}, Deleted: {deletedAssets.Length}, Moved: {movedAssets.Length}", "📦 BATCH");
+            }
+        }
+    }
+    
+    public class AssetPostprocessorValidator_N10000 : AssetPostprocessor
+    {
+        public override int GetPostprocessOrder() => -10000;
+        
+        void OnPreprocessTexture()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "⚑ N10000");
+        }
+        
+        void OnPostprocessTexture(Texture2D texture)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "⚑ N10000");
+        }
+        
+        void OnPreprocessModel()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "⚑ N10000");
+        }
+        
+        void OnPostprocessModel(GameObject g)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "⚑ N10000");
+        }
+        
+        void OnPreprocessAudio()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "⚑ N10000");
+        }
+        
+        void OnPostprocessAudio(AudioClip clip)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "⚑ N10000");
+        }
+    }
+    
     public class AssetPostprocessorValidator_Early : AssetPostprocessor
     {
         public override int GetPostprocessOrder() => -100;
@@ -570,45 +1318,37 @@ namespace SeaLoongUnityBox.Editor
         void OnPreprocessTexture()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "◎");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "◎");
         }
         
         void OnPreprocessModel()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "◎");
         }
         
         void OnPostprocessModel(GameObject g)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "◎");
         }
         
         void OnPreprocessAudio()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "◎");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
-        }
-        
-        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
-        {
-            if (BuildPipelineValidatorSettings.AssetPipeline && (importedAssets.Length > 0 || deletedAssets.Length > 0 || movedAssets.Length > 0))
-            {
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAllAssets (Early) Imported: {importedAssets.Length}, Deleted: {deletedAssets.Length}, Moved: {movedAssets.Length}");
-            }
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "◎");
         }
     }
     
@@ -619,37 +1359,37 @@ namespace SeaLoongUnityBox.Editor
         void OnPreprocessTexture()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "○");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "○");
         }
         
         void OnPreprocessModel()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "○");
         }
         
         void OnPostprocessModel(GameObject g)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "○");
         }
         
         void OnPreprocessAudio()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "○");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "○");
         }
     }
     
@@ -660,37 +1400,119 @@ namespace SeaLoongUnityBox.Editor
         void OnPreprocessTexture()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "◉");
         }
         
         void OnPostprocessTexture(Texture2D texture)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessTexture (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "◉");
         }
         
         void OnPreprocessModel()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "◉");
         }
         
         void OnPostprocessModel(GameObject g)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessModel (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "◉");
         }
         
         void OnPreprocessAudio()
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPreprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "◉");
         }
         
         void OnPostprocessAudio(AudioClip clip)
         {
             if (BuildPipelineValidatorSettings.AssetPipeline)
-                Debug.Log($"[Asset Pipeline] AssetPostprocessor.OnPostprocessAudio (Order: {GetPostprocessOrder()}) Asset: {assetPath}");
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "◉");
+        }
+    }
+    
+    public class AssetPostprocessorValidator_P10000 : AssetPostprocessor
+    {
+        public override int GetPostprocessOrder() => 10000;
+        
+        void OnPreprocessTexture()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "⚑ P10000");
+        }
+        
+        void OnPostprocessTexture(Texture2D texture)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "⚑ P10000");
+        }
+        
+        void OnPreprocessModel()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "⚑ P10000");
+        }
+        
+        void OnPostprocessModel(GameObject g)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "⚑ P10000");
+        }
+        
+        void OnPreprocessAudio()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "⚑ P10000");
+        }
+        
+        void OnPostprocessAudio(AudioClip clip)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "⚑ P10000");
+        }
+    }
+    
+    public class AssetPostprocessorValidator_MaxValue : AssetPostprocessor
+    {
+        public override int GetPostprocessOrder() => int.MaxValue;
+        
+        void OnPreprocessTexture()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessTexture Asset: {assetPath}", "⛳ END");
+        }
+        
+        void OnPostprocessTexture(Texture2D texture)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessTexture Asset: {assetPath}", "⛳ END");
+        }
+        
+        void OnPreprocessModel()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessModel Asset: {assetPath}", "⛳ END");
+        }
+        
+        void OnPostprocessModel(GameObject g)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessModel Asset: {assetPath}", "⛳ END");
+        }
+        
+        void OnPreprocessAudio()
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPreprocessAudio Asset: {assetPath}", "⛳ END");
+        }
+        
+        void OnPostprocessAudio(AudioClip clip)
+        {
+            if (BuildPipelineValidatorSettings.AssetPipeline)
+                BuildPipelineValidatorLog.Log("ASSET", GetPostprocessOrder(), $"AssetPostprocessor.OnPostprocessAudio Asset: {assetPath}", "⛳ END");
         }
     }
     
@@ -715,25 +1537,25 @@ namespace SeaLoongUnityBox.Editor
             InPhase(BuildPhase.Resolving).Run("Validator_Resolving_Start", ctx =>
             {
                 if (BuildPipelineValidatorSettings.NDMF)
-                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
+                    BuildPipelineValidatorLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Generating).Run("Validator_Generating_Start", ctx =>
             {
                 if (BuildPipelineValidatorSettings.NDMF)
-                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
+                    BuildPipelineValidatorLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Transforming).Run("Validator_Transforming_Start", ctx =>
             {
                 if (BuildPipelineValidatorSettings.NDMF)
-                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
+                    BuildPipelineValidatorLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
             
             InPhase(BuildPhase.Optimizing).Run("Validator_Optimizing_Start", ctx =>
             {
                 if (BuildPipelineValidatorSettings.NDMF)
-                    Debug.Log($"[Build Pipeline] NDMF BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
+                    BuildPipelineValidatorLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
             });
         }
     }
