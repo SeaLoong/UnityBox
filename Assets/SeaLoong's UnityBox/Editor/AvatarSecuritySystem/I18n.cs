@@ -1273,19 +1273,19 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
 
                 // ========== 插件系统日志 ==========
-                ["log.plugin_password_empty"] = new Dictionary<SystemLanguage, string>
+                ["log.password_empty"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "[ASS] Password is empty (0 digits), ASS is disabled. Skipping generation." },
                     { SystemLanguage.ChineseSimplified, "[ASS] 密码为空（0位），ASS已禁用，跳过生成。" },
                     { SystemLanguage.Japanese, "[ASS] パスワードが空です（0桁）、ASSが無効化されています。生成をスキップします。" }
                 },
-                ["log.plugin_play_disabled"] = new Dictionary<SystemLanguage, string>
+                ["log.disabled_in_playmode"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "[ASS] Play mode disabled, skipping" },
                     { SystemLanguage.ChineseSimplified, "[ASS] Play 模式已禁用，跳过" },
                     { SystemLanguage.Japanese, "[ASS] Playモードが無効化されています、スキップします" }
                 },
-                ["log.plugin_no_descriptor"] = new Dictionary<SystemLanguage, string>
+                ["log.no_descriptor"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "[ASS] VRCAvatarDescriptor not found" },
                     { SystemLanguage.ChineseSimplified, "[ASS] 未找到 VRCAvatarDescriptor" },

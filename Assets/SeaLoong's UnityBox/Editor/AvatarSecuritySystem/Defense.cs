@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
-using SeaLoongUnityBox;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.AnimatorUtils;
+using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Utils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 using VRC.SDK3.Dynamics.PhysBone.Components;
@@ -36,10 +35,23 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
     /// 2 = CPU + GPU 防御（CPU 最高参数，GPU 中低参数）
     /// 3 = CPU + GPU 防御（所有参数最高，含扩展链）
     /// </summary>
-    public static class DefenseSystem
+    public class Defense
     {
+        private readonly AnimatorController controller;
+        private readonly GameObject avatarRoot;
+        private readonly AvatarSecuritySystemComponent config;
+        private readonly bool isDebugMode;
+
         private static Mesh _sharedQuadMesh;
         private static Mesh _sharedQuadMeshLarge;
+
+        public Defense(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode = false)
+        {
+            this.controller = controller;
+            this.avatarRoot = avatarRoot;
+            this.config = config;
+            this.isDebugMode = isDebugMode;
+        }
 
         /// <summary>
         /// 获取共享的 QuadMesh（自动缓存）
@@ -59,54 +71,48 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建防御层
+        /// 生成防御层并添加到控制器
+        /// 如果禁用防御或防御等级为0，不生成任何内容
         /// </summary>
-        /// <param name="isDebugMode">是否是调试模式（生成最小参数版本）</param>
-        public static AnimatorControllerLayer CreateDefenseLayer(
-            AnimatorController controller,
-            GameObject avatarRoot,
-            AvatarSecuritySystemComponent config,
-            bool isDebugMode = false)
+        public void Generate()
         {
-            // 如果勾选了禁用防御选项，跳过防御层创建（仅测试密码系统）
             if (config.disableDefense)
             {
                 Debug.Log("[ASS] 禁用防御选项已勾选，跳过防御层创建（仅测试密码系统）");
-                return null;
+                return;
             }
 
-            // 防御等级为0时，跳过防御层创建（调试模式也遵循等级）
             if (config.defenseLevel <= 0)
             {
                 Debug.Log("[ASS] 防御等级为0，跳过防御层创建");
-                return null;
+                return;
             }
 
             float levelMultiplier = Mathf.Clamp01((config.defenseLevel - 1) / 3f);
 
-            var layer = AnimatorUtils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
+            var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
             // 状态：Inactive（防御未激活）
             var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(100, 50, 0));
-            inactiveState.motion = AnimatorUtils.SharedEmptyClip;
+            inactiveState.motion = Utils.SharedEmptyClip;
             layer.stateMachine.defaultState = inactiveState;
 
             // 状态：Active（防御激活）
             var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
-            activeState.motion = AnimatorUtils.SharedEmptyClip;
+            activeState.motion = Utils.SharedEmptyClip;
 
             // 转换条件：IsLocal && TimeUp
-            var toActive = AnimatorUtils.CreateTransition(inactiveState, activeState);
+            var toActive = Utils.CreateTransition(inactiveState, activeState);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_TIME_UP);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
-            AnimatorUtils.AddSubAsset(controller, layer.stateMachine);
+            Utils.AddSubAsset(controller, layer.stateMachine);
 
             try
             {
-                CreateDefenseComponents(avatarRoot, config, isDebugMode, levelMultiplier);
+                CreateDefenseComponents(levelMultiplier);
             }
             catch (System.Exception e)
             {
@@ -114,7 +120,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 throw;
             }
 
-            return layer;
+            controller.AddLayer(layer);
         }
 
         #region Defense Components Creation
@@ -127,11 +133,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// - 等级2: CPU+GPU防御（CPU最高，GPU中低参数）
         /// - 等级3: CPU+GPU防御（所有参数最高）
         /// </summary>
-        private static GameObject CreateDefenseComponents(
-            GameObject avatarRoot,
-            AvatarSecuritySystemComponent config,
-            bool isDebugMode,
-            float levelMultiplier = 1f)
+        private GameObject CreateDefenseComponents(float levelMultiplier = 1f)
         {
             // 查找或创建根对象
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
@@ -149,7 +151,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             root.SetActive(false);
 
             // 根据防御等级计算参数（内部已固定参数）
-            var parameters = CalculateDefenseParams(config, avatarRoot, isDebugMode, levelMultiplier);
+            var parameters = CalculateDefenseParams(levelMultiplier);
 
             // 根据防御等级决定启用哪些防御类型（调试模式和正常模式逻辑一致）
             bool enableCpu = config.defenseLevel >= 1;  // 等级1及以上启用CPU防御
@@ -223,7 +225,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 // --- 材质防御 ---
                 if (parameters.MaterialCount > 0)
                 {
-                    CreateMaterialDefense(root, avatarRoot, config, parameters, isDebugMode);
+                    CreateMaterialDefense(root, parameters);
                 }
 
                 // --- 粒子防御 ---
@@ -245,19 +247,16 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建材质防御系统（使用防御 Shader + Overdraw + 高面数）
         /// </summary>
-        private static void CreateMaterialDefense(
+        private void CreateMaterialDefense(
             GameObject root,
-            GameObject avatarRoot,
-            AvatarSecuritySystemComponent config,
-            DefenseParams parameters,
-            bool isDebugMode)
+            DefenseParams parameters)
         {
             var materialDefenseRoot = new GameObject("MaterialDefense");
             materialDefenseRoot.transform.SetParent(root.transform);
             materialDefenseRoot.transform.localPosition = Vector3.zero;
 
             // 创建防御材质
-            var defenseMaterial = CreateDefenseMaterial(avatarRoot, parameters.ShaderLoops);
+            var defenseMaterial = CreateDefenseMaterial(parameters.ShaderLoops);
             if (defenseMaterial == null)
             {
                 Debug.LogWarning("[ASS] 无法创建防御材质，跳过材质防御");
@@ -328,9 +327,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建防御材质（使用防御 Shader）
         /// </summary>
-        private static Material CreateDefenseMaterial(GameObject avatarRoot, int shaderLoopCount)
+        private static Material CreateDefenseMaterial(int shaderLoopCount)
         {
-            var shader = CreateDefenseShader(avatarRoot);
+            var shader = CreateDefenseShader();
             if (shader == null)
             {
                 Debug.LogWarning("[ASS] 无法创建防御 Shader，跳过材质创建");
@@ -474,11 +473,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 等级3: 密码+CPU防御+GPU防御（所有参数最高）
         /// 调试模式: 根据等级生成对应防御机制，但使用最小参数值
         /// </summary>
-        private static DefenseParams CalculateDefenseParams(
-            AvatarSecuritySystemComponent config,
-            GameObject avatarRoot,
-            bool isDebugMode,
-            float levelMultiplier)
+        private DefenseParams CalculateDefenseParams(float levelMultiplier)
         {
             // 调试模式：根据等级生成对应防御机制，但使用最小参数值
             if (isDebugMode)
@@ -1146,7 +1141,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// 在构建时获取防御Shader
         /// 优先使用自定义的 SeaLoong/DefenseShader，不存在则回退到 Standard
         /// </summary>
-        private static Shader CreateDefenseShader(GameObject avatarRoot)
+        private static Shader CreateDefenseShader()
         {
             Shader defenseShader = Shader.Find("SeaLoong/DefenseShader");
 

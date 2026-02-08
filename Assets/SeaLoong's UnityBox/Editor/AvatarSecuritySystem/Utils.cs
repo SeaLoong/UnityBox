@@ -5,13 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDKBase;
+using VRCAnimatorPlayAudio = VRC.SDK3.Avatars.Components.VRCAnimatorPlayAudio;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
     /// <summary>
     /// Animator 工具类 - 提供创建和操作 AnimatorController 的辅助方法
     /// </summary>
-    public static class AnimatorUtils
+    public static class Utils
     {
         /// <summary>
         /// 共享的空 AnimationClip（节省文件大小）
@@ -323,62 +324,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private const float AUDIO_SOURCE_VOLUME = 0.5f;
-        private const int AUDIO_SOURCE_PRIORITY = 0;
-        
-        /// <summary>
-        /// 创建或获取AudioSource GameObject
-        /// </summary>
-        public static GameObject SetupAudioSource(GameObject avatarRoot, string audioObjectName)
-        {
-            Transform audioTransform = avatarRoot.transform.Find(audioObjectName);
-            GameObject audioObject = audioTransform?.gameObject ?? CreateAudioObject(avatarRoot, audioObjectName);
-            
-            audioObject.SetActive(false);
-            if (audioObject.GetComponent<AudioSource>() == null)
-                ConfigureAudioSource(audioObject.AddComponent<AudioSource>());
-            
-            return audioObject;
-        }
-        
-        private static GameObject CreateAudioObject(GameObject avatarRoot, string objectName)
-        {
-            var obj = new GameObject(objectName);
-            obj.transform.SetParent(avatarRoot.transform, false);
-            obj.transform.localPosition = Vector3.zero;
-            ConfigureAudioSource(obj.AddComponent<AudioSource>());
-            Debug.Log($"[ASS] 已创建 AudioSource: {objectName}");
-            return obj;
-        }
-        
-        private static void ConfigureAudioSource(AudioSource audioSource)
-        {
-            audioSource.playOnAwake = false;
-            audioSource.loop = false;
-            audioSource.spatialBlend = 0f;
-            audioSource.volume = AUDIO_SOURCE_VOLUME;
-            audioSource.priority = AUDIO_SOURCE_PRIORITY;
-        }
-
-        /// <summary>
-        /// 在状态上添加 VRC Animator Play Audio 行为
-        /// </summary>
-        public static void AddPlayAudioBehaviour(AnimatorState state, string audioSourcePath, AudioClip clip)
-        {
-            if (clip == null) return;
-
-            var behaviour = state.AddStateMachineBehaviour<VRCAnimatorPlayAudio>();
-            behaviour.SourcePath = audioSourcePath;
-            behaviour.Clips = new AudioClip[] { clip };
-            behaviour.PlayOnEnter = true;
-            behaviour.StopOnEnter = false;
-            behaviour.StopOnExit = false;
-            behaviour.PlayOnExit = false;
-            behaviour.Loop = false;
-            behaviour.Volume = new Vector2(AUDIO_SOURCE_VOLUME, AUDIO_SOURCE_VOLUME);
-            behaviour.VolumeApplySettings = VRCAnimatorPlayAudio.ApplySettings.ApplyIfStopped;
-        }
-
         /// <summary>
         /// 在状态上添加 VRC Animator Layer Control 行为（用于控制单个层的权重）
         /// </summary>
@@ -436,6 +381,27 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     value = kvp.Value,
                     type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set
                 });
+        }
+
+        private const float AUDIO_SOURCE_VOLUME = 0.5f;
+
+        /// <summary>
+        /// 在状态上添加 VRC Animator Play Audio 行为
+        /// </summary>
+        public static void AddPlayAudioBehaviour(AnimatorState state, string audioSourcePath, AudioClip clip)
+        {
+            if (clip == null) return;
+
+            var behaviour = state.AddStateMachineBehaviour<VRCAnimatorPlayAudio>();
+            behaviour.SourcePath = audioSourcePath;
+            behaviour.Clips = new AudioClip[] { clip };
+            behaviour.PlayOnEnter = true;
+            behaviour.StopOnEnter = false;
+            behaviour.StopOnExit = false;
+            behaviour.PlayOnExit = false;
+            behaviour.Loop = false;
+            behaviour.Volume = new Vector2(AUDIO_SOURCE_VOLUME, AUDIO_SOURCE_VOLUME);
+            behaviour.VolumeApplySettings = VRCAnimatorPlayAudio.ApplySettings.ApplyIfStopped;
         }
     }
 }

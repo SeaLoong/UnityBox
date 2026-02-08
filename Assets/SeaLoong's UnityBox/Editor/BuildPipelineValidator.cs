@@ -855,7 +855,7 @@ namespace SeaLoongUnityBox.Editor
      * int.MinValue (+1): VRCFury FailureCheckStart / IsActuallyUploadingHook / WhenBlueprintIdReadyHook
      * -11000           : NDMF BuildFrameworkPreprocessHook (Resolving → Transforming)
      * -10000           : VRCFury VrcPreuploadHook (主处理, 调用 VRCFuryBuilder.RunMain)
-     * -1026            : ★ ASS AvatarSecurityBuildProcessor (在此位置注入安全系统)
+     * -1026            : ★ ASS Processor (在此位置注入安全系统)
      * -1025            : NDMF BuildFrameworkOptimizeHook (Optimizing → Last)
      * -1024            : VRCFury VrcfRemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
      * 0                : 默认值

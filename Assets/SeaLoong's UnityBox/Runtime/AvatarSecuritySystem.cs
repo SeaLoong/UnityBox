@@ -51,7 +51,7 @@ namespace SeaLoongUnityBox
 
         // ============ 高级选项 ============
         [Tooltip("#{advanced.play_mode_tooltip}")]
-        public bool enableInPlayMode = true;
+        public bool disabledInPlaymode = true;
 
         [Tooltip("#{advanced.disable_defense_tooltip}")]
         public bool disableDefense = false;
@@ -232,7 +232,7 @@ namespace SeaLoongUnityBox
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
-            enableInPlayMode = true;
+            disabledInPlaymode = true;
             lockFxLayers = true;
             disableRootChildren = true;
             defenseLevel = defaultDefenseLevel;

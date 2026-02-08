@@ -39,7 +39,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         // ============ GameObject 名称 ============
         public const string GO_ASS_ROOT = "__ASS_System__";
-        public const string GO_UI_CANVAS = "ASS_UI";
+        public const string GO_UI = "ASS_UI";
         public const string GO_AUDIO_WARNING = "ASS_Audio_Warning";
         public const string GO_AUDIO_SUCCESS = "ASS_Audio_Success";
         public const string GO_PARTICLES = "ASS_Particles";
@@ -59,7 +59,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public const int CONTACT_MAX_COUNT = 200;
 
-        // ============ DefenseSystem 防御参数上限 ============
+        // ============ Defense 防御参数上限 ============
         /// <summary>
         /// Constraint链深度上限（100）
         /// 每条链的节点深度不超过100，以避免过度复杂的约束链
