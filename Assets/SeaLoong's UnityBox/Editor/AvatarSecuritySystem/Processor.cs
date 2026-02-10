@@ -92,7 +92,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.disabledInPlaymode)
+            if (EditorApplication.isPlayingOrWillChangePlaymode && assConfig.disabledInPlaymode)
             {
                 Debug.Log(T("log.disabled_in_playmode"));
                 return true;
@@ -118,7 +118,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             if (!assConfig.debugSkipLockSystem)
             {
-                lockLayer = new Lock(fxController, avatarGameObject, assConfig);
+                lockLayer = new Lock(fxController, avatarGameObject, assConfig, descriptor);
                 lockLayer.Generate();
                 layerNames.Add(LAYER_LOCK);
             }

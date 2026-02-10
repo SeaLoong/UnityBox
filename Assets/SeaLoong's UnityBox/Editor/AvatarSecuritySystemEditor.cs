@@ -322,7 +322,7 @@ namespace SeaLoongUnityBox
         {
             EditorGUILayout.LabelField(T("advanced.debug_options"), EditorStyles.boldLabel);
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableInPlayMode"),
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disabledInPlaymode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
@@ -377,6 +377,7 @@ namespace SeaLoongUnityBox
             
             string[] wdModeNames = new[]
             {
+                T("advanced.wd_mode_auto"),
                 T("advanced.wd_mode_on"),
                 T("advanced.wd_mode_off")
             };
@@ -384,9 +385,12 @@ namespace SeaLoongUnityBox
             wdModeProp.enumValueIndex = EditorGUILayout.Popup(wdContent, wdModeProp.enumValueIndex, wdModeNames);
             
             // 显示当前模式的说明
-            string modeHint = wdModeProp.enumValueIndex == 0 
-                ? T("advanced.wd_mode_on_hint") 
-                : T("advanced.wd_mode_off_hint");
+            string modeHint = wdModeProp.enumValueIndex switch
+            {
+                0 => T("advanced.wd_mode_auto_hint"),
+                1 => T("advanced.wd_mode_on_hint"),
+                _ => T("advanced.wd_mode_off_hint")
+            };
             EditorGUILayout.HelpBox(modeHint, MessageType.Info);
         }
 

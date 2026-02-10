@@ -49,6 +49,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (existingCanvas != null)
             {
                 Debug.Log(I18n.T("log.visual_existing_canvas"));
+                this.uiGameObject = existingCanvas.gameObject;
                 return existingCanvas.gameObject;
             }
 
@@ -95,8 +96,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             containerObj.transform.localScale = new Vector3(0.15f, 0.03f, 0.03f);
             containerObj.SetActive(true);
 
-            // 背景（白色）
-            var bgObj = CreateSimpleQuad("Background", containerObj.transform, new Vector3(0f, 0f, 0.001f), Vector3.one, new Color(1f, 1f, 1f, 1f));
+            // 背景（透明）
+            var bgObj = CreateSimpleQuad("Background", containerObj.transform, new Vector3(0f, 0f, 0.001f), Vector3.one, new Color(1f, 1f, 1f, 0f));
 
             // 前景条（红色，通过localScale.x 控制长度）
             var barObj = CreateSimpleQuad("Bar", containerObj.transform, Vector3.zero, new Vector3(1f, 0.1f, 1f), new Color(1f, 0f, 0f, 1f));
@@ -137,7 +138,21 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             meshFilter.mesh = mesh;
 
             var meshRenderer = quad.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = new Material(Shader.Find("Standard")) { color = color };
+            var shader = Shader.Find("Standard") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
+            var mat = new Material(shader) { color = color };
+            // 启用透明渲染模式
+            if (color.a < 1f)
+            {
+                mat.SetFloat("_Mode", 3f); // Transparent
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite", 0);
+                mat.DisableKeyword("_ALPHATEST_ON");
+                mat.EnableKeyword("_ALPHABLEND_ON");
+                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                mat.renderQueue = 3000;
+            }
+            meshRenderer.sharedMaterial = mat;
 
             return quad;
         }

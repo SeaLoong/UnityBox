@@ -57,9 +57,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
             unlockedState.motion = Utils.SharedEmptyClip;
 
-            // TimeUp（倒计时结束）
+            // TimeUp（倒计时结束，隐藏进度条）
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
-            timeUpState.motion = Utils.SharedEmptyClip;
+            var timeUpClip = CreateTimeUpClip();
+            timeUpState.motion = timeUpClip;
+            Utils.AddSubAsset(controller, timeUpClip);
             Utils.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
             
             // Countdown → TimeUp
@@ -157,6 +159,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Created warning audio layer: waiting={warningStartTime}s, beeping={warningThreshold}s");
             
             controller.AddLayer(layer);
+        }
+
+        /// <summary>
+        /// 倒计时结束后隐藏进度条 UI
+        /// </summary>
+        private AnimationClip CreateTimeUpClip()
+        {
+            var clip = new AnimationClip { name = "ASS_TimeUp", legacy = false };
+            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+            clip.SetCurve(GO_UI, typeof(GameObject), "m_IsActive", disableCurve);
+            return clip;
         }
 
         private AnimationClip CreateCountdownClip(float duration)

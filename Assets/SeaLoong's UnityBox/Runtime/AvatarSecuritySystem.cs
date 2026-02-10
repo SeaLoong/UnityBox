@@ -71,14 +71,16 @@ namespace SeaLoongUnityBox
         /// </summary>
         public enum WriteDefaultsMode
         {
+            /// <summary>Auto: 自动检测 FX Controller 中已有层的 WD 设置</summary>
+            Auto,
             /// <summary>WD On: 不写入原始值，依赖动画系统自动恢复</summary>
             On,
             /// <summary>WD Off: 显式写入原始值，允许其他系统修改</summary>
             Off
         }
 
-        [Tooltip("动画 Write Defaults 模式：\nOn = 自动恢复(推荐)\nOff = 显式恢复(兼容性更好)")]
-        public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.On;
+        [Tooltip("动画 Write Defaults 模式：\nAuto = 自动检测(推荐)\nOn = 自动恢复\nOff = 显式恢复")]
+        public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
 
         // ============ 调试选项 ============
         [Header("调试选项")]

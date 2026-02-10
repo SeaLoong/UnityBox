@@ -819,15 +819,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.play_mode"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Enable in Play Mode" },
-                    { SystemLanguage.ChineseSimplified, "Play 模式测试" },
-                    { SystemLanguage.Japanese, "プレイモードで有効化" }
+                    { SystemLanguage.English, "Disable in Play Mode" },
+                    { SystemLanguage.ChineseSimplified, "Play 模式中禁用" },
+                    { SystemLanguage.Japanese, "プレイモードで無効化" }
                 },
                 ["advanced.play_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Keep password system in Play Mode (for testing)" },
-                    { SystemLanguage.ChineseSimplified, "在 Play 模式下保留密码系统（用于测试）" },
-                    { SystemLanguage.Japanese, "プレイモードでパスワードシステムを保持（テスト用）" }
+                    { SystemLanguage.English, "Skip ASS generation in Play Mode (uncheck to test in editor)" },
+                    { SystemLanguage.ChineseSimplified, "在 Play 模式下跳过 ASS 生成（取消勾选以在编辑器中测试）" },
+                    { SystemLanguage.Japanese, "プレイモードでASS生成をスキップ（エディタでテストするにはチェックを外す）" }
                 },
                 ["advanced.disable_defense"] = new Dictionary<SystemLanguage, string>
                 {
@@ -977,9 +977,15 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.wd_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Animation Write Defaults mode:\nOn = Auto restore (recommended)\nOff = Explicit restore (better compatibility)" },
-                    { SystemLanguage.ChineseSimplified, "动画 Write Defaults 模式：\nOn = 自动恢复（推荐）\nOff = 显式恢复（兼容性更好）" },
-                    { SystemLanguage.Japanese, "アニメーション Write Defaults モード：\nOn = 自動復元（推奨）\nOff = 明示的復元（互換性向上）" }
+                    { SystemLanguage.English, "Animation Write Defaults mode:\nAuto = Detect from existing FX layers (recommended)\nOn = Auto restore\nOff = Explicit restore" },
+                    { SystemLanguage.ChineseSimplified, "动画 Write Defaults 模式：\nAuto = 从已有 FX 层自动检测（推荐）\nOn = 自动恢复\nOff = 显式恢复" },
+                    { SystemLanguage.Japanese, "アニメーション Write Defaults モード：\nAuto = 既存FXレイヤーから自動検出（推奨）\nOn = 自動復元\nOff = 明示的復元" }
+                },
+                ["advanced.wd_mode_auto"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Auto (Detect from FX)" },
+                    { SystemLanguage.ChineseSimplified, "Auto（从 FX 检测）" },
+                    { SystemLanguage.Japanese, "Auto（FXから検出）" }
                 },
                 ["advanced.wd_mode_on"] = new Dictionary<SystemLanguage, string>
                 {
@@ -1004,6 +1010,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "💡 WD Off: Explicitly writes restore values in animations. Better compatibility with other systems but uses more animation curves." },
                     { SystemLanguage.ChineseSimplified, "💡 WD Off：在动画中显式写入恢复值。与其他系统兼容性更好，但使用更多动画曲线。" },
                     { SystemLanguage.Japanese, "💡 WD Off：アニメーションに明示的に復元値を書き込み。他のシステムとの互換性が高いですが、より多くのアニメーションカーブを使用します。" }
+                },
+                ["advanced.wd_mode_auto_hint"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "💡 Auto: Scans all playable layer controllers. Uses WD Off if any WD Off state exists (Direct BlendTree and Additive layers are excluded from detection as they must always be WD On). Uses WD On only when all states are WD On." },
+                    { SystemLanguage.ChineseSimplified, "💡 Auto：扫描所有 Playable Layer 控制器。只要存在任何 WD Off 状态就使用 WD Off（Direct BlendTree 和 Additive 层不参与检测，因为它们必须始终为 WD On）。仅当所有状态都为 WD On 时才使用 WD On。" },
+                    { SystemLanguage.Japanese, "💡 Auto：すべてのPlayable Layerコントローラーをスキャンします。WD Offの状態が1つでもあればWD Offを使用（Direct BlendTreeとAdditiveレイヤーは常にWD Onであるべきため検出対象外）。すべてのステートがWD Onの場合のみWD Onを使用します。" }
                 },
 
                 // ========== 视觉反馈 ==========

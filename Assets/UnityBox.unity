@@ -18379,17 +18379,17 @@ MonoBehaviour:
   gestureErrorTolerance: 0.3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
-  enableInPlayMode: 1
+  disabledInPlaymode: 0
   disableDefense: 0
   lockFxLayers: 1
   disableRootChildren: 1
   defenseLevel: 3
   writeDefaultsMode: 0
-  enableVerboseLogging: 1
+  enableVerboseLogging: 0
   debugSkipLockSystem: 0
   debugSkipPasswordSystem: 0
   debugSkipCountdownSystem: 0
-  debugSkipFeedbackSystem: 1
+  debugSkipFeedbackSystem: 0
   debugSkipDefenseSystem: 1
   debugValidateAfterBuild: 1
 --- !u!4 &6481295841211110324

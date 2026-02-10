@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
+using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Dynamics.Constraint.Components;
 using VRC.Dynamics;
 
@@ -38,11 +39,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         public LockLayerResult Result { get; private set; }
 
-        public Lock(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config)
+        private readonly VRCAvatarDescriptor descriptor;
+
+        public Lock(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config, VRCAvatarDescriptor descriptor)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
+            this.descriptor = descriptor;
         }
 
         /// <summary>
@@ -63,7 +67,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 创建遮挡 Mesh（必须在创建动画之前，这样动画才能引用到它）
             CreateOcclusionMesh();
 
-            bool useWdOn = config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.On;
+            bool useWdOn = ResolveWriteDefaults();
 
             // Remote 状态：其他玩家看到的默认状态
             var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, 0, 0));
@@ -280,37 +284,18 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             if (config.disableRootChildren)
             {
-                var hiddenPaths = new HashSet<string>();
-                var zeroCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
-                var farCurve = AnimationCurve.Constant(0f, 1f / 60f, -9999f);
-                
-                var animator = avatarRoot.GetComponent<Animator>();
-                Transform armatureRoot = FindArmatureRoot(animator);
+                int hiddenCount = 0;
                 
                 foreach (Transform child in avatarRoot.transform)
                 {
                     if (IsASSObject(child)) continue;
                     
-                    string path = child.name;
-                    bool isArmature = (armatureRoot != null && child == armatureRoot);
-                    
-                    if (hiddenPaths.Add(path))
-                    {
-                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", zeroCurve);
-                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", zeroCurve);
-                        clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", zeroCurve);
-                        
-                        if (isArmature)
-                        {
-                            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", farCurve);
-                            clip.SetCurve(path, typeof(GameObject), "m_IsActive", zeroCurve);
-                        }
-                        
-                        Debug.Log($"[ASS] 添加隐藏曲线: \"{path}\"{(isArmature ? " [Armature: Scale+Position+Active]" : " (Scale=0)")}");
-                    }
+                    clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", disableCurve);
+                    Debug.Log($"[ASS] 锁定动画: \"{child.name}\" (IsActive=0)");
+                    hiddenCount++;
                 }
                 
-                Debug.Log($"[ASS] 锁定动画：隐藏 {hiddenPaths.Count} 个根子对象");
+                Debug.Log($"[ASS] 锁定动画：隐藏 {hiddenCount} 个根子对象");
             }
 
             return clip;
@@ -323,8 +308,9 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             SetGameObjectActiveInClip(clip, GO_OCCLUSION_MESH, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
             
+            // WD Off: 显式恢复所有被修改的属性
             if (!useWdOn && config.disableRootChildren)
-                WriteRootChildrenRestoreValues(clip);
+                WriteRestoreValues(clip);
             
             Debug.Log($"[ASS] 创建 Remote 状态动画 (WD {(useWdOn ? "On" : "Off")})：隐藏遮挡 Mesh 和防御对象");
             return clip;
@@ -347,75 +333,155 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
                 clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
             
-            if (config.disableRootChildren)
-            {
-                if (useWdOn)
-                    WriteArmatureRestoreValues(clip);
-                else
-                    WriteRootChildrenRestoreValues(clip);
-            }
+            // WD On: 不显式恢复，由 WD 自动恢复默认值，避免破坏其他插件
+            // WD Off: 显式写回所有被修改属性的原始值
+            if (!useWdOn && config.disableRootChildren)
+                WriteRestoreValues(clip);
 
             Debug.Log(T("log.lock_unlock_animation_created"));
             return clip;
         }
         
-        private void WriteArmatureRestoreValues(AnimationClip clip)
-        {
-            var animator = avatarRoot.GetComponent<Animator>();
-            if (animator == null || !animator.isHuman) return;
-                
-            Transform armatureRoot = FindArmatureRoot(animator);
-            if (armatureRoot == null) return;
-                
-            string path = armatureRoot.name;
-            Vector3 originalScale = armatureRoot.localScale;
-            Vector3 originalPosition = armatureRoot.localPosition;
-            
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
-            clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
-            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
-            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
-            clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
-            clip.SetCurve(path, typeof(GameObject), "m_IsActive", AnimationCurve.Constant(0f, 1f / 60f, 1f));
-            
-            Debug.Log($"[ASS] Armature 恢复：\"{path}\" (Scale={originalScale}, Position={originalPosition})");
-        }
-        
-        private void WriteRootChildrenRestoreValues(AnimationClip clip)
+        /// <summary>
+        /// WD Off 模式：显式写回所有被修改属性的原始值
+        /// 所有根子对象: 恢复 m_IsActive=1
+        /// </summary>
+        private void WriteRestoreValues(AnimationClip clip)
         {
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
-            var restoredCount = 0;
-            
-            var animator = avatarRoot.GetComponent<Animator>();
-            Transform armatureRoot = FindArmatureRoot(animator);
+            int restoredCount = 0;
             
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
                 
-                string path = child.name;
-                bool isArmature = (armatureRoot != null && child == armatureRoot);
-                
-                Vector3 originalScale = child.localScale;
-                Vector3 originalPosition = child.localPosition;
-                
-                clip.SetCurve(path, typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f / 60f, originalScale.x));
-                clip.SetCurve(path, typeof(Transform), "m_LocalScale.y", AnimationCurve.Constant(0f, 1f / 60f, originalScale.y));
-                clip.SetCurve(path, typeof(Transform), "m_LocalScale.z", AnimationCurve.Constant(0f, 1f / 60f, originalScale.z));
-                
-                if (isArmature)
-                {
-                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.x", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.x));
-                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.y));
-                    clip.SetCurve(path, typeof(Transform), "m_LocalPosition.z", AnimationCurve.Constant(0f, 1f / 60f, originalPosition.z));
-                    clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
-                }
-                
+                clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", enableCurve);
                 restoredCount++;
             }
             
-            Debug.Log($"[ASS] WD Off 恢复：{restoredCount} 个根子对象");
+            Debug.Log($"[ASS] WD Off 恢复：{restoredCount} 个根子对象 IsActive=1");
+        }
+
+        /// <summary>
+        /// 解析 WD 模式：Auto 时参照 VRCFury / Modular Avatar 方案检测已有控制器的 WD 设置
+        /// 规则：
+        /// 1. 跳过 isDefault 的 Playable Layer（未自定义，无分配控制器）
+        /// 2. 跳过 animatorController 为 null 的层（参考 Av3 Manager）
+        /// 3. 跳过 VRChat 内置控制器（名称以 vrc_ 开头）
+        /// 4. 跳过 ASS 自己生成的层（ASS_ 前缀）
+        /// 5. 跳过 Additive 层（必须始终 WD On）
+        /// 6. 跳过 Direct BlendTree 单状态层（必须始终 WD On，参考 Modular Avatar IsWriteDefaultsRequiredLayer）
+        /// 7. 跳过没有 Motion 的空状态（不含有效动画，WD 设置无意义）
+        /// 8. 只要存在任何 WD Off 状态就使用 WD Off
+        /// 9. 全部为 WD On（或无有效状态）才使用 WD On
+        /// </summary>
+        private bool ResolveWriteDefaults()
+        {
+            if (config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.On)
+                return true;
+            if (config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.Off)
+                return false;
+            
+            // 收集所有 Playable Layer 的 AnimatorController（去重）
+            var controllers = new HashSet<AnimatorController>();
+            if (descriptor != null)
+            {
+                foreach (var animLayer in descriptor.baseAnimationLayers
+                    .Concat(descriptor.specialAnimationLayers))
+                {
+                    if (animLayer.isDefault) continue;
+                    if (!(animLayer.animatorController is AnimatorController ac) || ac == null) continue;
+                    // 跳过 VRChat 内置控制器（vrc_AvatarV3*）
+                    if (ac.name.StartsWith("vrc_")) continue;
+                    controllers.Add(ac);
+                }
+            }
+            controllers.Add(controller);
+            
+            bool hasWdOff = false;
+            
+            foreach (var ac in controllers)
+            {
+                foreach (var layer in ac.layers)
+                {
+                    if (layer.name.StartsWith("ASS_")) continue;
+                    if (layer.blendingMode == AnimatorLayerBlendingMode.Additive) continue;
+                    if (layer.stateMachine == null) continue;
+                    if (IsWriteDefaultsRequiredLayer(layer)) continue;
+                    
+                    if (HasWdOffState(layer.stateMachine))
+                    {
+                        hasWdOff = true;
+                        break;
+                    }
+                }
+                if (hasWdOff) break;
+            }
+            
+            bool useWdOn = !hasWdOff;
+            Debug.Log($"[ASS] WD Auto → {(useWdOn ? "On" : "Off")}");
+            return useWdOn;
+        }
+
+        /// <summary>
+        /// 判断一个层是否必须始终 WD On（参考 Modular Avatar IsWriteDefaultsRequiredLayer）
+        /// 条件：Additive 层，或单状态无转换且 Motion 为 Direct BlendTree 的层
+        /// </summary>
+        private static bool IsWriteDefaultsRequiredLayer(AnimatorControllerLayer layer)
+        {
+            if (layer.blendingMode == AnimatorLayerBlendingMode.Additive) return true;
+            
+            var sm = layer.stateMachine;
+            if (sm == null) return false;
+            if (sm.stateMachines.Length != 0) return false;
+            if (sm.states.Length != 1) return false;
+            if (sm.anyStateTransitions.Length != 0) return false;
+            
+            var defaultState = sm.defaultState;
+            if (defaultState == null) return false;
+            if (defaultState.transitions.Length != 0) return false;
+            if (!(defaultState.motion is BlendTree bt)) return false;
+            
+            return HasDirectBlendTree(bt);
+        }
+
+        /// <summary>
+        /// 递归检查 BlendTree 中是否有 Direct 类型
+        /// </summary>
+        private static bool HasDirectBlendTree(BlendTree bt)
+        {
+            if (bt.blendType == BlendTreeType.Direct) return true;
+            foreach (var child in bt.children)
+            {
+                if (child.motion is BlendTree childBt && HasDirectBlendTree(childBt))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 递归扫描状态机，检查是否存在 WD Off 状态
+        /// 跳过无 Motion 的空状态和 Direct BlendTree 状态
+        /// </summary>
+        private static bool HasWdOffState(AnimatorStateMachine sm)
+        {
+            foreach (var childState in sm.states)
+            {
+                var state = childState.state;
+                if (state.motion == null) continue;
+                if (state.motion is BlendTree bt && bt.blendType == BlendTreeType.Direct)
+                    continue;
+                if (!state.writeDefaultValues)
+                    return true;
+            }
+            
+            foreach (var childSm in sm.stateMachines)
+            {
+                if (HasWdOffState(childSm.stateMachine))
+                    return true;
+            }
+            
+            return false;
         }
 
         private void CreateOcclusionMesh()
@@ -434,7 +500,8 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
             
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            var material = new Material(Shader.Find("Unlit/Color"));
+            var shader = Shader.Find("Unlit/Color") ?? Shader.Find("Standard") ?? Shader.Find("Hidden/InternalErrorShader");
+            var material = new Material(shader);
             material.color = Color.white;
             meshRenderer.sharedMaterial = material;
             
@@ -478,18 +545,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 current = current.parent;
             }
             return false;
-        }
-
-        private Transform FindArmatureRoot(Animator animator)
-        {
-            if (animator == null || !animator.isHuman) return null;
-            var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (hips == null) return null;
-            
-            Transform armatureRoot = hips.parent;
-            while (armatureRoot != null && armatureRoot.parent != avatarRoot.transform)
-                armatureRoot = armatureRoot.parent;
-            return armatureRoot;
         }
 
         private static void SetGameObjectActiveInClip(AnimationClip clip, string objectPath, bool isActive)
