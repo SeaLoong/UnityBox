@@ -6,6 +6,7 @@
 
 ## 工具文档
 
+- Advanced Costume Controller (ACC) docs: `Docs/AdvancedCostumeController.md`
 - Blendshape Controller Generator docs: `Docs/BlendshapeControllerGenerator.md`
 
 ## 许可证
