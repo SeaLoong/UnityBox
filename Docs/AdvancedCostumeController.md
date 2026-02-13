@@ -59,7 +59,7 @@ Costumes Root
 | **Enable Parts Control** | `false` | 是否生成部件开关（普通模式下控制各服装的子部件显示/隐藏） |
 | **Enable Custom Mixer** | `false` | 是否启用混搭模式（独立于 Parts Control，拥有自己的部件控制参数） |
 | **Custom Mixer Name** | `CustomMix` | 混搭菜单的名称 |
-| **Output Folder** | `Assets/.../Generated` | 动画和控制器的输出目录 |
+| **Output Folder** | `Assets/UnityBox/Generated/AdvancedCostumeController` | 动画和控制器的输出目录 |
 | **Ignore Names** | `Armature,Bone,Skeleton` | 扫描时跳过的名称关键词 |
 
 ## 生成产物
@@ -103,7 +103,7 @@ Costumes Root
 ### 动画文件
 
 ```
-Generated/
+UnityBox/Generated/AdvancedCostumeController/
 ├── CostumeController.controller
 └── Animations/
     ├── Outfit_000_OutfitA.anim

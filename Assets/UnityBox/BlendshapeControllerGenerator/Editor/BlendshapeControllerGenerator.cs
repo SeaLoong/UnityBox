@@ -18,7 +18,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   private GameObject avatarRoot;
   private Vector2 meshListScroll;
   private string blendshapePropertyPrefix = "blendShape.";
-private string outputFolder = "Assets/UnityBox/BlendshapeControllerGenerator/Generated";
+private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGenerator";
   private string parameterPrefix = "BS_";
   private const string EditorPrefKey_ParameterPrefix = "BlendshapeControllerGenerator.ParameterPrefix";
 

@@ -53,7 +53,7 @@ namespace UnityBox.AdvancedCostumeController
     public GameObject CostumesRoot;
     public string ParamPrefix = "CST";
     public string CostumeParamName = "costume";
-public string GeneratedFolder = "Assets/UnityBox/AdvancedCostumeController/Generated";
+public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeController";
     public string IgnoreNamesCsv = "Armature,Bone,Skeleton";
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
