@@ -56,9 +56,6 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_defense_tooltip}")]
         public bool disableDefense = false;
 
-        [Tooltip("#{advanced.lock_fx_layers_tooltip}")]
-        public bool lockFxLayers = true;
-
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
@@ -180,20 +177,6 @@ namespace UnityBox.AvatarSecuritySystem
             return "Weak";
         }
 
-        /// <summary>
-        /// 预估生成的文件大小（KB）
-        /// </summary>
-        public float EstimateFileSizeKB()
-        {
-            const float baseSize = 100f;
-            float audioSize = 0f;
-
-            if (warningBeep != null) audioSize += 10f;
-            if (successSound != null) audioSize += 20f;
-
-            return baseSize + audioSize;
-        }
-
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -235,7 +218,6 @@ namespace UnityBox.AvatarSecuritySystem
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
             disabledInPlaymode = true;
-            lockFxLayers = true;
             disableRootChildren = true;
             defenseLevel = defaultDefenseLevel;
         }

@@ -11,7 +11,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     /// <summary>
     /// 锁定系统生成器
     /// 功能：
-    /// 1. 解锁时通过VRC层权重控制禁用其他ASS层
+    /// 1. 锁定/解锁状态机（远端/锁定/解锁三态）
     /// 2. 参数驱动：锁定时设为反转值，解锁时恢复
     /// 3. 材质锁定：锁定时清空材质槽
     /// </summary>
@@ -20,21 +20,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly AvatarSecuritySystemComponent config;
-
-        /// <summary>
-        /// 存储锁定层的状态引用，用于后续配置层权重控制
-        /// </summary>
-        public class LockLayerResult
-        {
-            public AnimatorControllerLayer Layer;
-            public AnimatorState LockedState;
-            public AnimatorState UnlockedState;
-        }
-
-        /// <summary>
-        /// Generate() 执行后存储的结果，用于后续配置层权重控制
-        /// </summary>
-        public LockLayerResult Result { get; private set; }
 
         private readonly VRCAvatarDescriptor descriptor;
 
@@ -48,18 +33,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 生成锁定层并添加到控制器
-        /// 注意：层权重控制需要在所有层添加到控制器后调用 ConfigureLockLayerWeight / LockFxLayerWeights
         /// </summary>
         public void Generate()
         {
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
-
-            var lockLayerMask = CreateLockLayerMask();
-            if (lockLayerMask != null)
-            {
-                layer.avatarMask = lockLayerMask;
-                Utils.AddSubAsset(controller, lockLayerMask);
-            }
 
             bool useWdOn = ResolveWriteDefaults();
 
@@ -125,126 +102,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log("[ASS] Initial lock layer created");
 
-            Result = new LockLayerResult
-            {
-                Layer = layer,
-                LockedState = lockedState,
-                UnlockedState = unlockedState
-            };
-
             controller.AddLayer(layer);
         }
 
-        /// <summary>
-        /// 配置锁定层自身权重
-        /// Locked 状态：权重=1，Unlocked 状态：权重=0
-        /// </summary>
-        public void ConfigureLockLayerWeight()
-        {
-            if (Result?.Layer == null) return;
-
-            int lockLayerIndex = -1;
-            for (int i = 0; i < controller.layers.Length; i++)
-            {
-                if (controller.layers[i].name == LAYER_LOCK)
-                {
-                    lockLayerIndex = i;
-                    break;
-                }
-            }
-
-            if (lockLayerIndex < 0)
-            {
-                Debug.LogWarning("[ASS] Lock layer weight control: ASS_Lock layer not found");
-                return;
-            }
-
-            Utils.AddLayerControlBehaviour(Result.LockedState, lockLayerIndex, goalWeight: 1f, blendDuration: 0f);
-            Utils.AddLayerControlBehaviour(Result.UnlockedState, lockLayerIndex, goalWeight: 0f, blendDuration: 0f);
-        }
-
-        /// <summary>
-        /// 锁定 FX 层权重
-        /// Locked 状态下将所有非 ASS 层权重设为 0，Unlocked 状态下设为 1
-        /// </summary>
-        public void LockFxLayerWeights(string[] assLayerNames)
-        {
-            if (Result?.Layer == null) return;
-
-            var assLayerSet = new HashSet<string>(assLayerNames);
-            var nonAssLayerIndices = new List<int>();
-
-            for (int i = 0; i < controller.layers.Length; i++)
-            {
-                string layerName = controller.layers[i].name;
-                if (assLayerSet.Contains(layerName))
-                    continue;
-
-                nonAssLayerIndices.Add(i);
-                Debug.Log($"[ASS] FX layer lock: added non-ASS layer '{layerName}' (index {i})");
-            }
-
-            if (nonAssLayerIndices.Count > 0)
-            {
-                Utils.AddMultiLayerControlBehaviour(
-                    Result.LockedState, nonAssLayerIndices.ToArray(),
-                    goalWeight: 0f, blendDuration: 0f);
-                Utils.AddMultiLayerControlBehaviour(
-                    Result.UnlockedState, nonAssLayerIndices.ToArray(),
-                    goalWeight: 1f, blendDuration: 0f);
-
-                Debug.Log($"[ASS] FX layer lock configured: {nonAssLayerIndices.Count} non-ASS layers");
-            }
-            else
-            {
-                Debug.LogWarning("[ASS] FX layer lock: no non-ASS layers found");
-            }
-        }
-
         #region Private Methods
-
-        private AvatarMask CreateLockLayerMask()
-        {
-            if (avatarRoot == null) return null;
-
-            var mask = new AvatarMask { name = "ASS_LockLayerMask" };
-            mask.AddTransformPath(avatarRoot.transform, true);
-            for (int i = 0; i < mask.transformCount; i++)
-                mask.SetTransformActive(i, false);
-
-            var allowedPaths = new HashSet<string>();
-
-            AddAllowedPath(allowedPaths, GO_UI);
-            AddAllowedPath(allowedPaths, GO_DEFENSE_ROOT);
-            AddAllowedPath(allowedPaths, GO_AUDIO_WARNING);
-            AddAllowedPath(allowedPaths, GO_AUDIO_SUCCESS);
-
-            if (config.disableRootChildren)
-            {
-                foreach (Transform child in avatarRoot.transform)
-                {
-                    if (IsASSObject(child))
-                        continue;
-                    allowedPaths.Add(Utils.GetRelativePath(avatarRoot, child.gameObject));
-                }
-            }
-
-            for (int i = 0; i < mask.transformCount; i++)
-            {
-                string path = mask.GetTransformPath(i);
-                if (string.IsNullOrEmpty(path) || allowedPaths.Contains(path))
-                    mask.SetTransformActive(i, true);
-            }
-
-            return mask;
-        }
-
-        private void AddAllowedPath(HashSet<string> allowedPaths, string objectName)
-        {
-            var t = avatarRoot.transform.Find(objectName);
-            if (t != null)
-                allowedPaths.Add(Utils.GetRelativePath(avatarRoot, t.gameObject));
-        }
 
         private AnimationClip CreateLockClip(bool useWdOn)
         {

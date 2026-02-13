@@ -17,7 +17,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const string SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim";
 
         // ============ 音频资源 ============
-        public const string AUDIO_RESOURCE_PATH = "AvatarSecuritySystem";
         public const string AUDIO_PASSWORD_SUCCESS = "PasswordSuccess";
         public const string AUDIO_COUNTDOWN_WARNING = "CountdownWarning";
 

@@ -724,7 +724,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 4907af662995508458e71bd8cf032048, type: 2}
+  - {fileID: 2100000, guid: 216fd014ba7471e49bcf3f8ca6acae8e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -18367,7 +18367,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 6481149578489306158}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f031505df472e2b408ade84bdf16963e, type: 3}
+  m_Script: {fileID: 11500000, guid: 1c51e6a139920bb4ca12700dc82627ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   uiLanguage: 43
@@ -18381,7 +18381,6 @@ MonoBehaviour:
   successSound: {fileID: 0}
   disabledInPlaymode: 0
   disableDefense: 0
-  lockFxLayers: 1
   disableRootChildren: 1
   defenseLevel: 3
   writeDefaultsMode: 0

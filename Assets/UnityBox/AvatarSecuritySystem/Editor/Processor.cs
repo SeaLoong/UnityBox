@@ -111,32 +111,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             // 各子系统
-            var layerNames = new List<string>();
             var isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-            Lock lockLayer = null;
 
             if (!assConfig.debugSkipLockSystem)
             {
-                lockLayer = new Lock(fxController, avatarGameObject, assConfig, descriptor);
-                lockLayer.Generate();
-                layerNames.Add(LAYER_LOCK);
+                new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
             }
 
             if (!assConfig.debugSkipPasswordSystem)
             {
                 new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
-                layerNames.Add(LAYER_PASSWORD_INPUT);
             }
 
             if (!assConfig.debugSkipCountdownSystem)
             {
                 var countdown = new Countdown(fxController, avatarGameObject, assConfig);
                 countdown.Generate();
-                layerNames.Add(LAYER_COUNTDOWN);
                 if (!assConfig.debugSkipFeedbackSystem)
                 {
                     countdown.GenerateAudioLayer();
-                    layerNames.Add(LAYER_AUDIO);
                 }
             }
 
@@ -145,7 +138,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 try
                 {
                     new Defense(fxController, avatarGameObject, assConfig, isDebugMode: isPlayMode).Generate();
-                    layerNames.Add(LAYER_DEFENSE);
                     if (isPlayMode)
                     {
                         Debug.Log("[ASS] Play mode: Added simplified defense layer");
@@ -154,17 +146,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 catch (System.Exception ex)
                 {
                     Debug.LogError($"[ASS] Defense layer creation failed: {ex.Message}");
-                }
-            }
-
-            // 锁定层权重控制（需要在所有层添加后配置）
-            if (lockLayer?.Result?.Layer != null)
-            {
-                lockLayer.ConfigureLockLayerWeight();
-
-                if (!isPlayMode && assConfig.lockFxLayers)
-                {
-                    lockLayer.LockFxLayerWeights(layerNames.ToArray());
                 }
             }
 
@@ -268,8 +249,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private void LoadAudioResources(AvatarSecuritySystemComponent config)
         {
-            config.successSound = Resources.Load<AudioClip>($"{AUDIO_RESOURCE_PATH}/{AUDIO_PASSWORD_SUCCESS}");
-            config.warningBeep = Resources.Load<AudioClip>($"{AUDIO_RESOURCE_PATH}/{AUDIO_COUNTDOWN_WARNING}");
+            config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
+            config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
         }
     }
 }

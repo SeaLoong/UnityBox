@@ -71,9 +71,6 @@ namespace UnityBox.AvatarSecuritySystem
             EditorGUILayout.Space(10);
 
             DrawAdvancedSection();
-            EditorGUILayout.Space(10);
-
-            DrawEstimationSection();
         }
 
         private void DrawAdvancedSection()
@@ -363,9 +360,6 @@ namespace UnityBox.AvatarSecuritySystem
         {
             EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("lockFxLayers"),
-                new GUIContent(T("advanced.lock_fx_layers"), T("advanced.lock_fx_layers_tooltip")));
-            
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
                 new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
             
@@ -383,32 +377,7 @@ namespace UnityBox.AvatarSecuritySystem
             };
             
             wdModeProp.enumValueIndex = EditorGUILayout.Popup(wdContent, wdModeProp.enumValueIndex, wdModeNames);
-            
-            // 显示当前模式的说明
-            string modeHint = wdModeProp.enumValueIndex switch
-            {
-                0 => T("advanced.wd_mode_auto_hint"),
-                1 => T("advanced.wd_mode_on_hint"),
-                _ => T("advanced.wd_mode_off_hint")
-            };
-            EditorGUILayout.HelpBox(modeHint, MessageType.Info);
         }
 
-        private void DrawEstimationSection()
-        {
-            EditorGUILayout.LabelField(T("estimate.title"), EditorStyles.boldLabel);
-
-            float sizeKB = _target.EstimateFileSizeKB();
-            string sizeText = FormatFileSize(sizeKB);
-            EditorGUILayout.HelpBox($"📊 {T("estimate.file_size")}: {sizeText}", MessageType.None);
-        }
-
-        private string FormatFileSize(float sizeKB)
-        {
-            const float megabyteThreshold = 1024f;
-            return sizeKB > megabyteThreshold
-                ? $"{sizeKB / megabyteThreshold:F2} MB"
-                : $"{sizeKB:F1} KB";
-        }
     }
 }

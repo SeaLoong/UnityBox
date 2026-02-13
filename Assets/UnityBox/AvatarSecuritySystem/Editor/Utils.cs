@@ -228,33 +228,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     }
 
     /// <summary>
-    /// 在状态上添加 VRC Animator Layer Control 行为（用于控制单个层的权重）
-    /// </summary>
-    public static void AddLayerControlBehaviour(AnimatorState state, int layerIndex, float goalWeight, float blendDuration = 0f)
-    {
-      var behaviour = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
-      behaviour.layer = layerIndex;
-      behaviour.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
-      behaviour.goalWeight = goalWeight;
-      behaviour.blendDuration = blendDuration;
-    }
-
-    /// <summary>
-    /// 在状态上添加多个层权重控制行为
-    /// </summary>
-    public static void AddMultiLayerControlBehaviour(AnimatorState state, int[] layerIndices, float goalWeight, float blendDuration = 0f)
-    {
-      foreach (int layerIndex in layerIndices)
-      {
-        var behaviour = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
-        behaviour.layer = layerIndex;
-        behaviour.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
-        behaviour.goalWeight = goalWeight;
-        behaviour.blendDuration = blendDuration;
-      }
-    }
-
-    /// <summary>
     /// 在状态上添加 VRC Avatar Parameter Driver 行为（单个参数）
     /// </summary>
     public static void AddParameterDriverBehaviour(AnimatorState state, string parameterName, float value, bool localOnly = false)

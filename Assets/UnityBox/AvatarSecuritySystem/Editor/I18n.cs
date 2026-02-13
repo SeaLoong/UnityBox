@@ -943,18 +943,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "锁定选项" },
                     { SystemLanguage.Japanese, "ロックオプション" }
                 },
-                ["advanced.lock_fx_layers"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Lock FX Layers" },
-                    { SystemLanguage.ChineseSimplified, "锁定FX层" },
-                    { SystemLanguage.Japanese, "FXレイヤーをロック" }
-                },
-                ["advanced.lock_fx_layers_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Set all non-ASS FX layer weights to 0 when locked" },
-                    { SystemLanguage.ChineseSimplified, "锁定时将所有非ASS的FX层权重设为0" },
-                    { SystemLanguage.Japanese, "ロック時にASS以外のすべてのFXレイヤーのウェイトを0に設定" }
-                },
                 ["advanced.disable_objects"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Hide Objects" },
@@ -999,45 +987,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "WD Off（显式恢复）" },
                     { SystemLanguage.Japanese, "WD Off（明示的復元）" }
                 },
-                ["advanced.wd_mode_on_hint"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "💡 WD On: Animation system automatically restores values when state exits. Simpler but may conflict with some avatar setups." },
-                    { SystemLanguage.ChineseSimplified, "💡 WD On：动画系统在状态退出时自动恢复值。更简单，但可能与某些 Avatar 设置冲突。" },
-                    { SystemLanguage.Japanese, "💡 WD On：状態終了時にアニメーションシステムが自動的に値を復元。シンプルですが、一部のアバター設定と競合する可能性があります。" }
-                },
-                ["advanced.wd_mode_off_hint"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "💡 WD Off: Explicitly writes restore values in animations. Better compatibility with other systems but uses more animation curves." },
-                    { SystemLanguage.ChineseSimplified, "💡 WD Off：在动画中显式写入恢复值。与其他系统兼容性更好，但使用更多动画曲线。" },
-                    { SystemLanguage.Japanese, "💡 WD Off：アニメーションに明示的に復元値を書き込み。他のシステムとの互換性が高いですが、より多くのアニメーションカーブを使用します。" }
-                },
-                ["advanced.wd_mode_auto_hint"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "💡 Auto: Scans all playable layer controllers. Uses WD Off if any WD Off state exists (Direct BlendTree and Additive layers are excluded from detection as they must always be WD On). Uses WD On only when all states are WD On." },
-                    { SystemLanguage.ChineseSimplified, "💡 Auto：扫描所有 Playable Layer 控制器。只要存在任何 WD Off 状态就使用 WD Off（Direct BlendTree 和 Additive 层不参与检测，因为它们必须始终为 WD On）。仅当所有状态都为 WD On 时才使用 WD On。" },
-                    { SystemLanguage.Japanese, "💡 Auto：すべてのPlayable Layerコントローラーをスキャンします。WD Offの状態が1つでもあればWD Offを使用（Direct BlendTreeとAdditiveレイヤーは常にWD Onであるべきため検出対象外）。すべてのステートがWD Onの場合のみWD Onを使用します。" }
-                },
-
-                // ========== 文件大小预估 ==========
-                ["estimate.title"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "File Size Estimation" },
-                    { SystemLanguage.ChineseSimplified, "文件大小预估" },
-                    { SystemLanguage.Japanese, "ファイルサイズの推定" }
-                },
-                ["estimate.details"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Estimated file size: {0}\nState count: {1}\nPassword length: {2} digits" },
-                    { SystemLanguage.ChineseSimplified, "预估文件大小：{0}\n状态数量：{1}\n密码长度：{2} 位" },
-                    { SystemLanguage.Japanese, "推定ファイルサイズ：{0}\n状態数：{1}\nパスワード長：{2} 桁" }
-                },
-                ["estimate.file_size"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Estimated File Size" },
-                    { SystemLanguage.ChineseSimplified, "预估文件大小" },
-                    { SystemLanguage.Japanese, "推定ファイルサイズ" }
-                },
-
                 // ========== 操作按钮 ==========
                 ["actions.title"] = new Dictionary<SystemLanguage, string>
                 {
