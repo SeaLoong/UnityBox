@@ -359,11 +359,10 @@ namespace UnityBox.AvatarSecuritySystem
         private void DrawLockSection()
         {
             EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
                 new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
-            
-            EditorGUILayout.Space(5);
             
             // Write Defaults 模式选择
             var wdModeProp = serializedObject.FindProperty("writeDefaultsMode");
@@ -377,6 +376,8 @@ namespace UnityBox.AvatarSecuritySystem
             };
             
             wdModeProp.enumValueIndex = EditorGUILayout.Popup(wdContent, wdModeProp.enumValueIndex, wdModeNames);
+
+            EditorGUI.indentLevel--;
         }
 
     }
