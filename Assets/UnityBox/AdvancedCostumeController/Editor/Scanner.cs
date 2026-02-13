@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SeaLoongUnityBox.ACC
+namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
   /// 服装扫描器 — 从 CostumesRoot 层级结构中自动发现服装、变体和部件

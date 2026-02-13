@@ -7,7 +7,7 @@ using UnityEngine;
 using nadena.dev.modular_avatar.core;
 using VRC.SDK3.Avatars.Components;
 
-namespace SeaLoongUnityBox.ACC
+namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
   /// 生成器 — 负责菜单构建和整体生成流程的协调

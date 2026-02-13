@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SeaLoongUnityBox.ACC
+namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
   /// 服装数据结构 — 描述一套服装的所有信息
@@ -53,7 +53,7 @@ namespace SeaLoongUnityBox.ACC
     public GameObject CostumesRoot;
     public string ParamPrefix = "CST";
     public string CostumeParamName = "costume";
-    public string GeneratedFolder = "Assets/SeaLoong's UnityBox/Advanced Costume Controller/Generated";
+public string GeneratedFolder = "Assets/UnityBox/AdvancedCostumeController/Generated";
     public string IgnoreNamesCsv = "Armature,Bone,Skeleton";
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;

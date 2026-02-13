@@ -1,4 +1,4 @@
-# Advanced Costume Controller (ACC)
+# Advanced Costume Controller
 
 > VRChat 模型的高级服装控制器——基于 Modular Avatar，自动为服装层级生成 VRC 表情菜单和 Animator 控制器。
 
@@ -13,14 +13,14 @@
 
 ## 快速开始
 
-1. 打开 Unity 菜单栏：`Tools > SeaLoong's UnityBox > Advanced Costume Controller`
+1. 打开 Unity 菜单栏：`Tools > UnityBox > Advanced Costume Controller`
 2. 将服装根节点拖入 **Costumes Root** 字段
 3. 在预览区域中勾选/取消勾选服装和部件
 4. 点击 **Generate** 完成生成
 
 ## 层级结构约定
 
-ACC 通过扫描 Costumes Root 的子层级来自动发现服装：
+Advanced Costume Controller 通过扫描 Costumes Root 的子层级来自动发现服装：
 
 ```
 Costumes Root
@@ -64,7 +64,7 @@ Costumes Root
 
 ## 生成产物
 
-执行 Generate 后，ACC 会在 Costumes Root 下创建以下内容：
+执行 Generate 后，Advanced Costume Controller 会在 Costumes Root 下创建以下内容：
 
 ### 菜单结构（MA MenuItem 层级）
 
@@ -119,7 +119,7 @@ Generated/
 
 ## 混搭模式 (Custom Mixer) 详解
 
-混搭模式是 ACC 的高级功能，允许用户在 VRC 表情菜单中**跨服装组合部件**。
+混搭模式是 Advanced Costume Controller 的高级功能，允许用户在 VRC 表情菜单中**跨服装组合部件**。
 
 ### 工作原理
 
@@ -176,7 +176,7 @@ graph TD
 
 ## 默认服装选择
 
-ACC 按以下优先级自动选择默认服装：
+Advanced Costume Controller 按以下优先级自动选择默认服装：
 
 1. 用户手动指定的 **Default Outfit** 字段
 2. 名称中包含关键词的服装：`origin`, `original`, `default`, `base`, `vanilla`, `standard`, `normal`

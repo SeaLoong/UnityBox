@@ -6,7 +6,7 @@
 
 ## 使用方法
 
-1. 打开：Tools → SeaLoong's UnityBox → Blendshape Controller Generator
+1. 打开：Tools → UnityBox → Blendshape Controller Generator
 2. 将 Avatar（根 GameObject）拖入 Avatar 字段。
 3. 使用 Scan 自动查找 Avatar 下的 SkinnedMeshRenderer，或使用 Add 手动添加。
 4. 展开某个 Mesh，选择需要导出的 Blendshape，确认 Param Prefix（或使用默认），预览会显示最终的参数名。
