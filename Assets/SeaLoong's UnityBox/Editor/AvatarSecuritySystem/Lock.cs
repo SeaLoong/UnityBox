@@ -4,7 +4,6 @@ using UnityEditor.Animations;
 using System.Collections.Generic;
 using System.Linq;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 using VRC.SDK3.Avatars.Components;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
@@ -124,7 +123,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
 
-            Debug.Log(T("log.lock_layer_created"));
+            Debug.Log("[ASS] Initial lock layer created");
 
             Result = new LockLayerResult
             {
@@ -156,7 +155,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             if (lockLayerIndex < 0)
             {
-                Debug.LogWarning("[ASS] 锁定层权重控制：未找到ASS_Lock层");
+                Debug.LogWarning("[ASS] Lock layer weight control: ASS_Lock layer not found");
                 return;
             }
 
@@ -182,7 +181,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     continue;
 
                 nonAssLayerIndices.Add(i);
-                Debug.Log($"[ASS] FX层锁定：添加非ASS层 '{layerName}' (索引 {i})");
+                Debug.Log($"[ASS] FX layer lock: added non-ASS layer '{layerName}' (index {i})");
             }
 
             if (nonAssLayerIndices.Count > 0)
@@ -194,11 +193,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     Result.UnlockedState, nonAssLayerIndices.ToArray(),
                     goalWeight: 1f, blendDuration: 0f);
 
-                Debug.Log($"[ASS] 已配置FX层锁定：{nonAssLayerIndices.Count} 个非ASS层");
+                Debug.Log($"[ASS] FX layer lock configured: {nonAssLayerIndices.Count} non-ASS layers");
             }
             else
             {
-                Debug.LogWarning("[ASS] FX层锁定：未找到非ASS层");
+                Debug.LogWarning("[ASS] FX layer lock: no non-ASS layers found");
             }
         }
 
@@ -253,13 +252,13 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             
-            Debug.Log($"[ASS] 创建锁定动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
+            Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
             // ASS_UI 同时承担遮挡和进度条显示（使用全屏覆盖 Shader）
             if (avatarRoot.transform.Find(GO_UI) != null)
             {
                 clip.SetCurve(GO_UI, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log($"[ASS] 锁定动画：启用 UI（全屏遮挡 + 进度条）");
+                Debug.Log("[ASS] Lock animation: enabled UI (fullscreen overlay + progress bar)");
             }
             
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
@@ -280,11 +279,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     if (IsASSObject(child)) continue;
                     
                     clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", disableCurve);
-                    Debug.Log($"[ASS] 锁定动画: \"{child.name}\" (IsActive=0)");
+                    Debug.Log($"[ASS] Lock animation: \"{child.name}\" (IsActive=0)");
                     hiddenCount++;
                 }
                 
-                Debug.Log($"[ASS] 锁定动画：隐藏 {hiddenCount} 个根子对象");
+                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects");
             }
 
             return clip;
@@ -301,7 +300,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             
-            Debug.Log($"[ASS] 创建 Remote 状态动画 (WD {(useWdOn ? "On" : "Off")})：隐藏 UI 和防御对象");
+            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide UI and defense objects");
             return clip;
         }
 
@@ -310,7 +309,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var clip = new AnimationClip { name = "ASS_Unlock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
 
-            Debug.Log($"[ASS] 创建解锁动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
+            Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
             SetGameObjectActiveInClip(clip, GO_UI, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
@@ -326,7 +325,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
 
-            Debug.Log(T("log.lock_unlock_animation_created"));
+            Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
             return clip;
         }
         
@@ -347,7 +346,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 restoredCount++;
             }
             
-            Debug.Log($"[ASS] WD Off 恢复：{restoredCount} 个根子对象 IsActive=1");
+            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects IsActive=1");
         }
 
         /// <summary>

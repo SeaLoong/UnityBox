@@ -6,7 +6,6 @@ using System.Linq;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDKBase.Editor.BuildPipeline;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -68,14 +67,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
             {
-                Debug.LogError(T("log.no_descriptor"));
+                Debug.LogError("[ASS] VRCAvatarDescriptor not found");
                 return true;
             }
 
             var assConfig = avatarGameObject.GetComponent<AvatarSecuritySystemComponent>();
             if (assConfig == null)
             {
-                Debug.Log(T("log.not_found"));
+                Debug.Log("[ASS] No valid AvatarSecuritySystem component found, skipping");
                 return true;
             }
 
@@ -88,17 +87,17 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
             {
-                Debug.Log(T("log.password_empty"));
+                Debug.Log("[ASS] Password is empty (0 digits), ASS is disabled. Skipping generation.");
                 return true;
             }
 
             if (EditorApplication.isPlayingOrWillChangePlaymode && assConfig.disabledInPlaymode)
             {
-                Debug.Log(T("log.disabled_in_playmode"));
+                Debug.Log("[ASS] Play mode disabled, skipping");
                 return true;
             }
 
-            Debug.Log(T("log.generating"));
+            Debug.Log("[ASS] Starting to generate security system...");
 
             var fxController = GetFXController(descriptor);
             Utils.AddParameterIfNotExists(fxController, PARAM_IS_LOCAL,
@@ -149,7 +148,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                     layerNames.Add(LAYER_DEFENSE);
                     if (isPlayMode)
                     {
-                        Debug.Log(T("log.play_mode_simplified"));
+                        Debug.Log("[ASS] Play mode: Added simplified defense layer");
                     }
                 }
                 catch (System.Exception ex)
@@ -173,7 +172,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             Utils.SaveAndRefresh();
             Utils.LogOptimizationStats(fxController);
-            Debug.Log(T("log.complete"));
+            Debug.Log("[ASS] Security system generation complete!");
             return true;
         }
 

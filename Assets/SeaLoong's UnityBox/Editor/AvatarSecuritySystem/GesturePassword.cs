@@ -3,7 +3,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -40,7 +39,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             
             if (password == null || password.Count == 0)
             {
-                Debug.LogError(T("log.password_empty"));
+                Debug.LogError("[ASS] Password sequence is empty, unable to create password layer");
                 controller.AddLayer(layer);
                 return;
             }

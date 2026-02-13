@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -79,7 +78,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
 
-            Debug.Log(string.Format(T("log.countdown_layer_created"), duration, config.warningThreshold));
+            Debug.Log($"[ASS] Countdown layer created, duration: {duration}s, warning threshold: {config.warningThreshold:F1}s");
             
             controller.AddLayer(layer);
         }
@@ -156,7 +155,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
 
-            Debug.Log($"[ASS] Created warning audio layer: waiting={warningStartTime}s, beeping={warningThreshold}s");
+            Debug.Log($"[ASS] Warning audio layer created: waiting={warningStartTime}s, beeping={warningThreshold}s");
             
             controller.AddLayer(layer);
         }
@@ -189,7 +188,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
             clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._Progress", progressCurve);
 
-            Debug.Log($"[ASS] Created countdown animation: duration={duration}s, path={overlayPath}, property=material._Progress");
+            Debug.Log($"[ASS] Countdown animation created: duration={duration}s, path={overlayPath}");
             return clip;
         }
 

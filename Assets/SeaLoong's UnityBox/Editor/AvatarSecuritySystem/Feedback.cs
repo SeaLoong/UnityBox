@@ -49,7 +49,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             Transform existing = avatarGameObject.transform.Find(Constants.GO_UI);
             if (existing != null)
             {
-                Debug.Log(I18n.T("log.visual_existing_canvas"));
+                Debug.Log("[ASS] Using existing UI object");
                 this.uiGameObject = existing.gameObject;
                 return existing.gameObject;
             }
@@ -62,7 +62,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 全屏渲染模式：不需要 VRCParentConstraint 绑定到头部
             // Shader 的顶点着色器会直接将顶点映射到裁剪空间全屏位置
 
-            Debug.Log(I18n.T("log.visual_canvas_created"));
+            Debug.Log("[ASS] UI object created (fullscreen Shader overlay)");
             this.uiGameObject = uiGameObject;
             return uiGameObject;
         }
@@ -112,7 +112,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             material.SetFloat("_Progress", 1f);  // 初始满进度
             meshRenderer.sharedMaterial = material;
 
-            Debug.Log(I18n.T("log.visual_countdown_created"));
+            Debug.Log("[ASS] UI Mesh overlay created (background + progress bar)");
             return meshObj;
         }
 
@@ -131,7 +131,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             audioSource.spatialBlend = 0f;
             audioSource.volume = AUDIO_SOURCE_VOLUME;
             audioSource.priority = AUDIO_SOURCE_PRIORITY;
-            Debug.Log($"[ASS] 已创建 AudioSource: {objectName}");
+            Debug.Log($"[ASS] AudioSource created: {objectName}");
             return obj;
         }
 
