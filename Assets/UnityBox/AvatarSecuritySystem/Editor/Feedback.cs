@@ -17,6 +17,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// UI Shader 名称（全屏覆盖渲染）
         /// </summary>
         private const string UI_SHADER_NAME = "UnityBox/AvatarSecuritySystem/UI";
+        private const string LOGO_RESOURCE_NAME = "Avatar Security System";
 
         public Feedback(GameObject avatarGameObject, AvatarSecuritySystemComponent config)
         {
@@ -110,6 +111,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             material.SetColor("_BackgroundColor", Color.white);
             material.SetColor("_BarColor", Color.red);
             material.SetFloat("_Progress", 1f);  // 初始满进度
+
+            // 加载并设置 Logo 纹理
+            var logoTex = Resources.Load<Texture2D>(LOGO_RESOURCE_NAME);
+            if (logoTex != null)
+                material.SetTexture("_LogoTex", logoTex);
+
             meshRenderer.sharedMaterial = material;
 
             Debug.Log("[ASS] UI Mesh overlay created (background + progress bar)");
