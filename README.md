@@ -6,7 +6,7 @@
 
 1. 将本仓库添加为 VPM 源：
 
-   - **一键添加（推荐）**：点击链接 → [添加到 VCC](vcc://vpm/addRepo?url=https://sealoong.github.io/UnityBox/vpm.json)
+   - **一键添加（推荐）**：点击链接 → [添加到 VCC](https://sealoong.github.io/UnityBox/)
    - **手动添加**：在 VCC / ALCOM 的设置中添加以下 VPM 源地址：
 
      ```
