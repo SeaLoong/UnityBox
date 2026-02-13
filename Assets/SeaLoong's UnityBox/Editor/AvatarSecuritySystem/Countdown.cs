@@ -38,7 +38,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // Remote（其他玩家默认状态）
             var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
-            remoteState.motion = Utils.SharedEmptyClip;
+            remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
 
@@ -54,7 +54,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // Unlocked（密码正确，停止倒计时）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
-            unlockedState.motion = Utils.SharedEmptyClip;
+            unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             // TimeUp（倒计时结束，隐藏进度条）
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
@@ -96,7 +96,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // Remote
             var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
-            remoteState.motion = Utils.SharedEmptyClip;
+            remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
 
@@ -127,7 +127,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // Stop（停止音效）
             var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));
-            stopState.motion = Utils.SharedEmptyClip;
+            stopState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             stopState.writeDefaultValues = true;
 
             // Waiting → WarningBeep

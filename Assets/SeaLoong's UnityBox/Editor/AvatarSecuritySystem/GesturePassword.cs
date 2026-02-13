@@ -52,12 +52,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // 初始等待状态
             var waitState = layer.stateMachine.AddState("Wait_Input", new Vector3(50, 50, 0));
-            waitState.motion = Utils.SharedEmptyClip;
+            waitState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = waitState;
 
             // 时间到失败状态
             var timeUpFailedState = layer.stateMachine.AddState("TimeUp_Failed", new Vector3(50, -50, 0));
-            timeUpFailedState.motion = Utils.SharedEmptyClip;
+            timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             // Any State → TimeUp_Failed
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
@@ -88,7 +88,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
                 var confirmedState = layer.stateMachine.AddState($"Step_{i + 1}_Confirmed", 
                     new Vector3(50 + (i + 1) * 350, 150, 0));
-                confirmedState.motion = Utils.SharedEmptyClip;
+            confirmedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
                 stepConfirmedStates.Add(confirmedState);
 
                 var errorToleranceState = layer.stateMachine.AddState($"Step_{i + 1}_ErrorTolerance", 
@@ -173,7 +173,7 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             // 成功状态
             var successState = layer.stateMachine.AddState("Password_Success", 
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
-            successState.motion = Utils.SharedEmptyClip;
+            successState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             if (config.successSound != null)
             {

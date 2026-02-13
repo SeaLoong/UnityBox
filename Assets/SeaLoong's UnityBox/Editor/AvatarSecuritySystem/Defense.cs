@@ -2,9 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Utils;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
-using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 using VRC.SDK3.Dynamics.PhysBone.Components;
 using VRC.SDK3.Dynamics.Contact.Components;
 using VRC.SDK3.Dynamics.Constraint.Components;
@@ -95,12 +93,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
             // 状态：Inactive（防御未激活）
             var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(100, 50, 0));
-            inactiveState.motion = Utils.SharedEmptyClip;
+            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = inactiveState;
 
             // 状态：Active（防御激活）
             var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
-            activeState.motion = Utils.SharedEmptyClip;
+            activeState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             // 转换条件：IsLocal && TimeUp
             var toActive = Utils.CreateTransition(inactiveState, activeState);

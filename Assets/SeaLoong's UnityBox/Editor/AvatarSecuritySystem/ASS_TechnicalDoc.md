@@ -9,9 +9,9 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 - **手势密码验证**：通过 VRChat 左/右手手势组合作为密码
 - **倒计时机制**：限时密码输入，超时自动触发防御
 - **多层防御**：CPU 防御（Constraint、PhysBone、Contact）+ GPU 防御（Shader、Overdraw、粒子、光源）
-- **视觉反馈**：3D HUD 倒计时进度条 + 音频警告
+- **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御仅在本地端触发，远端玩家看到正常 Avatar
-- **Write Defaults 兼容**：支持 WD On / WD Off 两种模式
+- **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
 - **国际化**：支持中文简体、英语、日语
 
 ### 1.2 设计原则
@@ -29,42 +29,67 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 ```
 Editor/AvatarSecuritySystem/
-├── AvatarSecurityBuildProcessor.cs   # 系统入口（VRCSDK 回调）
-├── LockSystem.cs                     # 锁定/解锁层生成器
-├── GesturePasswordSystem.cs          # 手势密码验证层生成器
-├── CountdownSystem.cs                # 倒计时 + 音频警告层生成器
-├── FeedbackSystem.cs                 # 视觉反馈（3D HUD）生成器
-├── DefenseSystem.cs                  # CPU/GPU 防御组件生成器
-├── AnimatorUtils.cs                  # Animator 操作工具类
-├── AnimationClipGenerator.cs         # 动画剪辑生成工具
-├── Constants.cs                      # 系统常量定义
-├── I18n.cs                           # 国际化
-└── AvatarSecuritySystemEditor.cs     # Inspector 编辑器 UI
+├── Processor.cs              # 系统入口（VRCSDK 构建回调 IVRCSDKPreprocessAvatarCallback）
+├── Lock.cs                   # 锁定/解锁层生成器
+├── GesturePassword.cs        # 手势密码验证层生成器
+├── Countdown.cs              # 倒计时 + 音频警告层生成器
+├── Feedback.cs               # 视觉反馈（全屏 Shader 覆盖）生成器
+├── Defense.cs                # CPU/GPU 防御组件生成器
+├── Constants.cs              # 系统常量定义
+├── I18n.cs                   # 国际化
+└── README.md                 # 用户说明文档
+
+Editor/
+└── Utils.cs                  # 通用工具类（Animator 操作、VRC 行为、路径处理）
 
 Runtime/
-└── AvatarSecuritySystem.cs           # 运行时配置组件（MonoBehaviour + IEditorOnly）
+└── AvatarSecuritySystem.cs   # 运行时配置组件（AvatarSecuritySystemComponent : MonoBehaviour + IEditorOnly）
 
 Resources/AvatarSecuritySystem/
-├── PasswordSuccess.wav               # 密码成功音效
-└── CountdownWarning.wav              # 倒计时警告音效
+├── PasswordSuccess.wav       # 密码成功音效
+└── CountdownWarning.wav      # 倒计时警告音效
+
+Shaders/AvatarSecuritySystem/
+├── UI.shader                 # 全屏覆盖 UI Shader（遮挡背景 + 进度条）
+└── DefenseShader.shader      # 防御 Shader（GPU 密集计算）
 ```
 
 ### 2.2 类依赖关系
 
 ```
-AvatarSecurityBuildProcessor (入口)
-├── LockSystem.CreateLockLayer()
-│   └── FeedbackSystem.CreateHUDCanvas() / CreateCountdownBar()
-├── GesturePasswordSystem.CreatePasswordLayer()
-├── CountdownSystem.CreateCountdownLayer()
-├── CountdownSystem.CreateAudioLayer()
-└── DefenseSystem.CreateDefenseLayer()
+Processor (入口, IVRCSDKPreprocessAvatarCallback)
+│
+├── Feedback.Generate()
+│   创建全屏 Shader 覆盖 UI + 音频对象
+│
+├── Lock.Generate()
+│   创建锁定/解锁层
+│
+├── GesturePassword.Generate()
+│   创建手势密码验证层
+│
+├── Countdown.Generate()
+│   创建倒计时层
+│
+├── Countdown.GenerateAudioLayer()
+│   创建警告音效层
+│
+├── Defense.Generate()
+│   创建防御层 + 防御组件
+│
+├── Lock.ConfigureLockLayerWeight()
+│   配置 Lock 层自身权重控制
+│
+├── Lock.LockFxLayerWeights()
+│   锁定非 ASS 的 FX 层权重
+│
+└── Processor.RegisterASSParameters()
+    注册 ASS 参数到 VRCExpressionParameters
 
 共享工具：
-├── AnimatorUtils        (Animator 操作)
-├── AnimationClipGenerator (动画剪辑生成)
-├── Constants            (常量)
-└── I18n                 (国际化)
+├── Utils (全局)       — Animator 操作、VRC 行为、路径处理、空 Clip 缓存
+├── Constants          — 系统常量
+└── I18n               — 国际化
 ```
 
 ### 2.3 生成的 Animator 层结构
@@ -92,61 +117,66 @@ AvatarSecurityBuildProcessor (入口)
 
 ## 3. 执行流程
 
-### 3.1 构建时序 (`AvatarSecurityBuildProcessor`)
+### 3.1 构建时序 (`Processor`)
 
 ```
-OnPreprocessAvatar(avatarGameObject)
+OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
 │
-├─ 1. ExtractASSConfiguration()
-│     提取 AvatarSecuritySystemComponent 组件
+├─ 1. 获取 VRCAvatarDescriptor
+│     获取 AvatarSecuritySystemComponent 配置
 │     验证密码配置有效性 (IsPasswordValid)
 │
-├─ 2. HasValidPassword()
-│     检查 gesturePassword 列表非空
+├─ 2. 检查密码是否为空
+│     gesturePassword 为空 (0位) → 跳过，不启用 ASS
 │
-├─ 3. ShouldGenerateInCurrentMode()
-│     PlayMode 时检查 enableInPlayMode 开关
+├─ 3. 检查 PlayMode 禁用开关
+│     disabledInPlaymode = true 且当前为 PlayMode → 跳过
 │
-└─ 4. ExecuteGeneration()
+└─ 4. ProcessAvatar() 主流程
       │
-      ├─ LoadAudioResources()
+      ├─ GetFXController(descriptor)
+      │   获取或创建 FX AnimatorController
+      │
+      ├─ AddParameterIfNotExists(IsLocal)
+      │   注册 VRChat 内置参数
+      │
+      ├─ [可选] LoadAudioResources()
       │   从 Resources/AvatarSecuritySystem/ 加载音频
       │
-      └─ GenerateSystem()
-          │
-          ├─ GetOrCreateFXController()
-          │   获取 VRCAvatarDescriptor 的 FX Controller，不存在则创建
-          │
-          ├─ AddVRChatBuiltinParameters()
-          │   注册 IsLocal 参数
-          │
-          ├─ CreateVisualFeedback()
-          │   ├─ FeedbackSystem.CreateHUDCanvas()
-          │   └─ FeedbackSystem.CreateCountdownBar()
-          │
-          ├─ SetupAudioSources()
-          │   创建 ASS_Audio_Warning / ASS_Audio_Success 对象
-          │
-          ├─ GenerateSystemLayers()
-          │   ├─ [1] LockSystem.CreateLockLayer()
-          │   ├─ [2] GesturePasswordSystem.CreatePasswordLayer()
-          │   ├─ [3] CountdownSystem.CreateCountdownLayer()
-          │   ├─ [4] CountdownSystem.CreateAudioLayer()
-          │   └─ [5] DefenseSystem.CreateDefenseLayer()
-          │
-          ├─ LockSystem.ConfigureLockLayerWeight()
-          │   配置 Lock 层自身权重（Locked=1, Unlocked=0）
-          │
-          ├─ RegisterASSParameters()
-          │   注册 ASS_PasswordCorrect(synced) 和 ASS_TimeUp(local)
-          │   到 VRCExpressionParameters
-          │
-          ├─ LockSystem.LockFxLayerWeights()
-          │   锁定非 ASS 层权重（Locked=0, Unlocked=1）
-          │
-          └─ SaveAndOptimize()
-              保存资产，输出统计
+      ├─ [可选] Feedback.Generate()
+      │   创建 UI 根对象 (ASS_UI) + Shader 覆盖 Mesh + 音频对象
+      │
+      ├─ [可选] Lock.Generate()
+      │   创建锁定层 (ASS_Lock)
+      │
+      ├─ [可选] GesturePassword.Generate()
+      │   创建密码验证层 (ASS_PasswordInput)
+      │
+      ├─ [可选] Countdown.Generate()
+      │   创建倒计时层 (ASS_Countdown)
+      │
+      ├─ [可选] Countdown.GenerateAudioLayer()
+      │   创建音效层 (ASS_Audio)
+      │
+      ├─ [可选] Defense.Generate()
+      │   创建防御层 (ASS_Defense) + 防御组件
+      │
+      ├─ Lock.ConfigureLockLayerWeight()
+      │   配置 Lock 层自身权重（Locked=1, Unlocked=0）
+      │
+      ├─ [可选] Lock.LockFxLayerWeights(layerNames)
+      │   锁定非 ASS 层权重（Locked=0, Unlocked=1）
+      │   仅在非 PlayMode 且 lockFxLayers=true 时执行
+      │
+      ├─ RegisterASSParameters(descriptor)
+      │   注册 ASS_PasswordCorrect(synced,saved) 和 ASS_TimeUp(local)
+      │   到 VRCExpressionParameters
+      │
+      └─ SaveAndRefresh() + LogOptimizationStats()
+          保存资产，输出统计
 ```
+
+> 注：每个子系统都可通过 `debugSkip*` 选项单独跳过。
 
 ### 3.2 运行时状态流
 
@@ -154,7 +184,7 @@ OnPreprocessAvatar(avatarGameObject)
 Avatar 加载
 │
 ├─ [远端玩家] Remote 状态
-│   遮挡 Mesh 隐藏，Avatar 正常显示
+│   UI 隐藏，Avatar 正常显示
 │   ┌─────────────────────────────┐
 │   │ 当 PasswordCorrect = true  │──→ Unlocked
 │   └─────────────────────────────┘
@@ -162,8 +192,8 @@ Avatar 加载
 ├─ [本地玩家] IsLocal = true
 │   │
 │   ├─ Locked 状态（初始）
-│   │   遮挡 Mesh 显示（白屏），Avatar 隐藏
-│   │   UI Canvas 显示（倒计时进度条）
+│   │   全屏 Shader 覆盖（白色背景 + 红色进度条）
+│   │   Avatar 对象被禁用/隐藏
 │   │
 │   │   同时：
 │   │   ├─ Countdown 层开始计时
@@ -177,7 +207,7 @@ Avatar 加载
 │   │   └─ Defense 层：保持 Inactive
 │   │
 │   └─ 倒计时结束 → TimeUp = true
-│       ├─ Countdown 层：设置 TimeUp 参数
+│       ├─ Countdown 层：设置 TimeUp 参数，隐藏 UI
 │       ├─ Password 层：Any State → TimeUp_Failed（禁止继续输入）
 │       └─ Defense 层：Inactive → Active（防御组件激活）
 ```
@@ -186,9 +216,9 @@ Avatar 加载
 
 ## 4. 子系统详解
 
-### 4.1 锁定系统 (LockSystem)
+### 4.1 锁定系统 (Lock)
 
-**文件**: `LockSystem.cs`
+**文件**: `Lock.cs`
 
 **功能**: 控制 Avatar 的可见性和层权重
 
@@ -197,7 +227,7 @@ Avatar 加载
 ```
                     ┌──────────┐
            IsLocal──→│  Locked  │──PasswordCorrect──→┐
-                    │(显示遮挡) │←──!PasswordCorrect──┤
+        !Password   │ (遮挡)   │←──!PasswordCorrect──┤
                     └──────────┘                      │
 ┌──────────┐                              ┌──────────┐
 │  Remote  │──PasswordCorrect────────────→│ Unlocked │
@@ -205,33 +235,41 @@ Avatar 加载
 └──────────┘                              └──────────┘
 ```
 
+转换条件详解：
+- **Remote → Locked**：`IsLocal = true` 且 `PasswordCorrect = false`
+- **Remote → Unlocked**：`PasswordCorrect = true`（所有玩家都能进入解锁状态）
+- **Locked → Locked**：自循环（`hasExitTime=true, exitTime=0`），`PasswordCorrect = false`
+- **Locked → Unlocked**：`PasswordCorrect = true`
+- **Unlocked → Remote**：`PasswordCorrect = false`（密码被重置）
+
 #### 4.1.2 锁定动画 (CreateLockClip)
 
-- **启用**: UI Canvas (`ASS_UI`)、遮挡 Mesh (`ASS_OcclusionMesh`)、音频对象
-- **禁用**: 防御根对象 (`__ASS_Defense__`)
-- **隐藏 Avatar**: 当 `disableRootChildren = true`
-  - 非 Armature 子对象：`Scale = (0, 0, 0)`
-  - Armature 子对象：`Scale = (0, 0, 0)` + `Position.y = -9999` + `m_IsActive = false`
+- **启用**: `ASS_UI` (全屏 Shader 覆盖)、`ASS_Audio_Warning`、`ASS_Audio_Success`
+- **禁用**: `__ASS_Defense__` (防御根对象)
+- **隐藏 Avatar**: 当 `disableRootChildren = true` 时，禁用所有非 ASS 根子对象 (`m_IsActive = 0`)
 
 #### 4.1.3 解锁动画 (CreateUnlockClip)
 
-- **禁用**: UI Canvas、遮挡 Mesh、防御根对象
-- **启用**: 音频对象
+- **禁用**: `ASS_UI`、`__ASS_Defense__`
+- **启用**: `ASS_Audio_Warning`、`ASS_Audio_Success`（用于解锁音效播放）
 - **恢复 Avatar**:
-  - **WD On 模式**: 仅显式恢复 Armature（Scale/Position/Active = 原始值），其他依赖 WD 自动恢复
-  - **WD Off 模式**: 显式写入所有根子对象的原始 Scale/Position/Active
+  - **WD On 模式**: 不显式恢复，由 WD 自动恢复默认值
+  - **WD Off 模式**: 显式写入所有根子对象 `m_IsActive = 1`
 
-#### 4.1.4 遮挡 Mesh
+#### 4.1.4 Remote 动画 (CreateRemoteClip)
 
-- 在 Avatar 根对象下创建 `ASS_OcclusionMesh`
-- 使用 VRCParentConstraint 绑定到头部骨骼（Head），偏移 Z=+0.18m（前方 18cm）
-- 材质：Unlit/Color 白色不透明
-- 大小：0.5×0.5，覆盖标准 FOV
-- 默认 `SetActive(false)`，由锁定动画控制显示
+- **禁用**: `ASS_UI`、`__ASS_Defense__`
+- **WD Off**: 显式恢复所有根子对象
+- 用途：远端玩家和密码重置后的默认状态
 
 #### 4.1.5 Transform Mask
 
-创建 `AvatarMask` 限制 Lock 层仅影响 ASS 自身对象和根子对象，不干扰骨骼动画。
+创建 `AvatarMask` (`ASS_LockLayerMask`) 限制 Lock 层仅影响以下对象：
+- `ASS_UI`
+- `__ASS_Defense__`
+- `ASS_Audio_Warning`
+- `ASS_Audio_Success`
+- 当 `disableRootChildren = true` 时，包含所有非 ASS 根子对象
 
 #### 4.1.6 FX 层权重锁定
 
@@ -239,11 +277,26 @@ Avatar 加载
 - `LockFxLayerWeights()`: 非 ASS 层权重（Locked=0, Unlocked=1）
   - 防止盗用者通过修改 FX Controller 绕过保护
 
+#### 4.1.7 Write Defaults 自动检测 (ResolveWriteDefaults)
+
+Auto 模式下扫描所有 Playable Layer 的 AnimatorController：
+
+**跳过规则**:
+1. `isDefault` 的 Playable Layer（未自定义）
+2. `animatorController` 为 null 的层
+3. VRChat 内置控制器（名称以 `vrc_` 开头）
+4. ASS 自己生成的层（`ASS_` 前缀）
+5. Additive 层（必须始终 WD On）
+6. Direct BlendTree 单状态层（必须始终 WD On，参考 Modular Avatar）
+7. 无 Motion 的空状态
+
+**判断逻辑**: 只要存在任何 WD Off 状态就使用 WD Off；全部为 WD On（或无有效状态）才使用 WD On
+
 ---
 
-### 4.2 手势密码系统 (GesturePasswordSystem)
+### 4.2 手势密码系统 (GesturePassword)
 
-**文件**: `GesturePasswordSystem.cs`
+**文件**: `GesturePassword.cs`
 
 **功能**: 通过 VRChat 手势参数实现密码序列验证
 
@@ -273,34 +326,35 @@ Wait_Input ──(手势=密码[0])──→ Step_1_Holding ──(保持 holdTi
 
 #### 4.2.2 状态类型
 
-| 状态                    | 功能                                                     |
-| ----------------------- | -------------------------------------------------------- |
-| `Wait_Input`            | 初始状态，等待第一位密码输入                             |
-| `Step_N_Holding`        | 正在保持第 N 位手势，需保持 `gestureHoldTime` 秒         |
-| `Step_N_Confirmed`      | 第 N 位已确认，等待下一位                                |
-| `Step_N_ErrorTolerance` | 容错缓冲（`gestureErrorTolerance` 秒），短暂误触后可继续 |
-| `Password_Success`      | 密码正确，设置 `PasswordCorrect = true`                  |
-| `TimeUp_Failed`         | 倒计时结束，禁止继续输入                                 |
+| 状态                    | Motion                           | 功能                                                     |
+| ----------------------- | -------------------------------- | -------------------------------------------------------- |
+| `Wait_Input`            | SharedEmptyClip                  | 初始状态，等待第一位密码输入                             |
+| `Step_N_Holding`        | ASS_Hold_N (gestureHoldTime 秒)  | 正在保持第 N 位手势，需保持指定时间                      |
+| `Step_N_Confirmed`      | SharedEmptyClip                  | 第 N 位已确认，等待下一位                                |
+| `Step_N_ErrorTolerance` | ASS_Tolerance_N (errorTolerance) | 容错缓冲，短暂误触后可继续                               |
+| `Password_Success`      | SharedEmptyClip                  | 密码正确，设置 `PasswordCorrect = true`，播放成功音效     |
+| `TimeUp_Failed`         | SharedEmptyClip                  | 倒计时结束，禁止继续输入（Any State → 此状态）           |
 
 #### 4.2.3 转换规则
 
-- **Idle 手势 (0) 自循环**: 允许松开手指后回到 Idle 而不重置进度
+- **Idle 手势 (0) 自循环**: Holding/Confirmed/ErrorTolerance 状态遇到 Idle 手势时自循环，允许松开手指而不重置进度
 - **错误手势容错**: 短暂误触进入 ErrorTolerance 状态，在容错时间内输入正确手势可继续
-- **尾部匹配重启**: 在错误后如果按下密码第一位手势，回到 Step_1_Holding 重新开始
-- **TimeUp 全局中断**: Any State → TimeUp_Failed，倒计时结束立即禁止输入
+- **尾部匹配重启**: 在 Confirmed 和 ErrorTolerance 状态中，如果按下密码第一位手势，回到 Step_1_Holding 重新开始
+- **TimeUp 全局中断**: Any State → TimeUp_Failed，条件为 `ASS_TimeUp = true`
 
 #### 4.2.4 时间控制
 
-手势保持和容错通过**定长动画剪辑**实现：
+手势保持和容错通过**定长动画剪辑**实现（使用 dummy curve `__ASS_Dummy__/m_IsActive`）：
 
-- Holding 状态使用 `gestureHoldTime` 秒长度的空动画，`exitTime=1.0` 表示动画播完后转换
-- ErrorTolerance 状态使用 `gestureErrorTolerance` 秒长度的空动画
+- Holding 状态使用 `gestureHoldTime` 秒长度的动画，`exitTime=1.0` 表示动画播完后转换
+- ErrorTolerance 状态使用 `gestureErrorTolerance` 秒长度的动画
+- 最后一步 Holding → Password_Success 也通过 `exitTime=1.0` 确保手势保持足够时间
 
 ---
 
-### 4.3 倒计时系统 (CountdownSystem)
+### 4.3 倒计时系统 (Countdown)
 
-**文件**: `CountdownSystem.cs`
+**文件**: `Countdown.cs`
 
 **功能**: 提供限时机制和音频警告
 
@@ -314,48 +368,64 @@ Remote ──(IsLocal)──→ Countdown ──(exitTime=1.0)──→ TimeUp
                         Unlocked ←──────────────────────┘
 ```
 
+- **Remote 状态**: SharedEmptyClip，`writeDefaultValues = true`
 - **Countdown 状态**: 播放 `countdownDuration` 秒的进度条动画
-  - 动画控制 `ASS_UI/CountdownBar/Bar` 的 `localScale.x` 从 1 到 0
+  - 动画控制 `ASS_UI/Overlay` 的 `material._Progress` 从 1 到 0（驱动 Shader 进度条属性）
 - **TimeUp 状态**: 通过 ParameterDriver 设置 `ASS_TimeUp = true`
+  - 同时播放 TimeUp 动画，禁用 `ASS_UI` (`m_IsActive = 0`)
+- **Unlocked 状态**: SharedEmptyClip，密码正确后停止倒计时
 
 #### 4.3.2 音频层 (`ASS_Audio`)
 
 ```
 Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBeep ──(自循环,每秒)
-                                                  │
-                                            (TimeUp 或 PasswordCorrect)
-                                                  ↓
-                                                Stop
+                         │                         │
+                    (PasswordCorrect)         (TimeUp 或 PasswordCorrect)
+                         ↓                         ↓
+                       Stop ←──────────────────────┘
 ```
 
 - **Waiting 状态**: 播放 `(countdownDuration - warningThreshold + 0.1)` 秒的空动画
   - +0.1s 延迟防止最后一次循环在 TimeUp 之后触发
 - **WarningBeep 状态**: 1 秒动画自循环，每次进入时通过 `VRCAnimatorPlayAudio` 播放警告蜂鸣
+  - 音频对象: `ASS_Audio_Warning`
+- **Stop 状态**: SharedEmptyClip，停止所有音效
 
 ---
 
-### 4.4 反馈系统 (FeedbackSystem)
+### 4.4 反馈系统 (Feedback)
 
-**文件**: `FeedbackSystem.cs`
+**文件**: `Feedback.cs`
 
-**功能**: 创建 3D HUD 显示元素
+**功能**: 创建全屏 Shader 覆盖显示元素和音频对象
 
-#### 4.4.1 HUD Canvas (`ASS_UI`)
+#### 4.4.1 全屏覆盖 UI (`ASS_UI`)
 
-- 位置：头部下方 2cm、前方 15cm（通过 VRCParentConstraint 绑定到 Head 骨骼）
-- 默认 `SetActive(false)`，仅 Locked 状态时启用
+- **渲染方式**: 使用自定义 Shader (`SeaLoong/AvatarSecuritySystem/UI`) 直接渲染到摄像机全屏
+  - Shader 在顶点着色器中将 Quad 顶点直接映射到裁剪空间覆盖整个屏幕
+  - **不需要** VRCParentConstraint 绑定到头部骨骼
+  - **不需要** 世界空间定位
+- **位置**: 作为 Avatar 根对象的直接子对象
+- **默认状态**: `SetActive(false)`，仅 Locked 状态时由动画启用
+- **Mesh**: 简单 Quad（4 顶点），顶点位置无关紧要（由 Shader 重新映射）
+- **材质属性**:
+  - `_BackgroundColor`: 白色（遮挡背景）
+  - `_BarColor`: 红色（进度条）
+  - `_Progress`: 1.0（满进度，由倒计时动画驱动到 0）
+- **Shader 回退**: `SeaLoong/AvatarSecuritySystem/UI` → `Unlit/Color` → `Hidden/InternalErrorShader`
 
-#### 4.4.2 倒计时进度条 (`CountdownBar`)
+#### 4.4.2 音频对象
 
-- 结构：`ASS_UI / CountdownBar / Background(白) + Bar(红)`
-- 尺寸：15cm 宽 × 3cm 高 × 3cm 厚（3D 条形）
-- 通过 `localScale.x` 动画控制 Bar 长度（1 → 0）
+| 对象名             | 父对象      | 配置                                                    |
+| ------------------ | ----------- | ------------------------------------------------------- |
+| `ASS_Audio_Warning`| Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
+| `ASS_Audio_Success`| Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
 
 ---
 
-### 4.5 防御系统 (DefenseSystem)
+### 4.5 防御系统 (Defense)
 
-**文件**: `DefenseSystem.cs`
+**文件**: `Defense.cs`
 
 **功能**: 创建消耗客户端资源的防御组件
 
@@ -365,91 +435,120 @@ Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBee
 Inactive ──(IsLocal && TimeUp)──→ Active
 ```
 
-防御组件挂载在 `__ASS_Defense__` 对象下，默认 `SetActive(false)`。
-Active 状态由 Lock 层的动画控制激活。
+- 层 blending 模式: `Override`
+- 两个状态均使用 SharedEmptyClip
+- 防御组件挂载在 `__ASS_Defense__` 对象下，默认 `SetActive(false)`
+- Active 状态由 Lock 层的动画控制激活
 
 #### 4.5.2 防御等级参数表
 
-| 参数                 | 等级 1 (CPU) | 等级 2 (CPU+GPU 中低) | 等级 3 (CPU+GPU 最高) | 调试模式 |
-| -------------------- | ------------ | --------------------- | --------------------- | -------- |
-| ConstraintDepth      | 100          | 100                   | 100                   | 3        |
-| ConstraintChainCount | 10           | 10                    | 10                    | 1        |
-| PhysBoneLength       | 256          | 256                   | 256                   | 3        |
-| PhysBoneChainCount   | 10           | 10                    | 10                    | 1        |
-| PhysBoneColliders    | 256          | 256                   | 256                   | 2        |
-| ContactCount         | 200          | 200                   | 200                   | 4        |
-| ShaderLoops          | —            | 200                   | 1,000                 | 10       |
-| OverdrawLayers       | —            | 50                    | 200                   | 3        |
-| PolyVertices         | —            | 50,000                | 200,000               | 1,000    |
-| ParticleCount        | —            | 10,000                | 100,000               | 100      |
-| ParticleSystemCount  | —            | 3                     | 10                    | 1        |
-| LightCount           | —            | 5                     | 20                    | 1        |
-| MaterialCount        | —            | 2                     | 3                     | 1        |
+| 参数                 | 等级 1 (CPU) | 等级 2 (CPU+GPU 中低) | 等级 3 (CPU+GPU 最高) | 调试模式(等级1) | 调试模式(等级2/3) |
+| -------------------- | ------------ | --------------------- | --------------------- | --------------- | ----------------- |
+| ConstraintDepth      | 100          | 100                   | 100                   | 3               | 3                 |
+| ConstraintChainCount | 10           | 10                    | 10                    | 1               | 1                 |
+| PhysBoneLength       | 256          | 256                   | 256                   | 3               | 3                 |
+| PhysBoneChainCount   | 10           | 10                    | 10                    | 1               | 1                 |
+| PhysBoneColliders    | 256          | 256                   | 256                   | 2               | 2                 |
+| ContactCount         | 200          | 200                   | 200                   | 4               | 4                 |
+| ShaderLoops          | 0            | 200                   | 1,000                 | 0               | 10                |
+| OverdrawLayers       | 0            | 50                    | 200                   | 0               | 3                 |
+| PolyVertices         | 0            | 50,000                | 200,000               | 0               | 1,000             |
+| ParticleCount        | 0            | 10,000                | 100,000               | 0               | 100               |
+| ParticleSystemCount  | 0            | 3                     | 20                    | 0               | 1                 |
+| LightCount           | 0            | 5                     | 30                    | 0               | 1                 |
+| MaterialCount        | 0            | 2                     | 5                     | 0               | 1                 |
 
 #### 4.5.3 CPU 防御详解
 
-**VRCConstraint 链** (`CreateConstraintChain` / `CreateExtendedConstraintChains`)
+**VRCConstraint 链** (`CreateConstraintChain`)
 
-每条链由 `depth` 个嵌套节点组成，每个节点附加 5 种 VRC 约束组件：
+每条基础链由 `depth` 个嵌套节点组成，每个节点（首节点除外）附加 3 种 VRC 约束组件：
+
+- VRCParentConstraint（所有节点）
+- VRCPositionConstraint（非首节点）
+- VRCRotationConstraint（非首节点）
+
+约束属性：`IsActive = true`, `Locked = true`（通过 SerializedObject 设置）
+
+**扩展约束链** (`CreateExtendedConstraintChains`，等级 3 独有)
+
+额外创建的链，每个节点附加 4 种约束组件：
 
 - VRCParentConstraint
 - VRCPositionConstraint
 - VRCRotationConstraint
 - VRCScaleConstraint
-- VRCAimConstraint
 
-约束属性：`IsActive = true`, `Locked = true`, `FreezeToWorld = true`
+链数量：`min(ConstraintChainCount, 5)` 条
 
-扩展链（等级 3）：额外创建多条链，使用更多约束类型组合。
-
-**VRCPhysBone 链** (`CreatePhysBoneChains` / `CreateExtendedPhysBoneChains`)
+**VRCPhysBone 链** (`CreatePhysBoneChains`)
 
 每条链由 `chainLength` 个骨骼节点组成，配置：
 
-- `Pull = 0.8`, `Stiffness = 0.5`, `Gravity = 0.2`
-- `MaxStretch = 0.5`, `MaxAngleX/Z = 30°`
-- 每条链附加 `colliderCount` 个 VRCPhysBoneCollider（Sphere 类型，半径 0.1m）
-- 参数禁止用户运行时修改：`parameter = ""`, `allowPosing/Grabbing/Collision = false`
+- 积分类型：`Advanced`（最高计算复杂度）
+- `Pull = 0.8`, `Spring = 0.8`, `Stiffness = 0.5`, `Gravity = 0.5`
+- 每个参数都配有 AnimationCurve（共 6 条 Curve：pull/spring/stiffness/gravity/gravityFalloff/immobile）
+- 限制：`LimitType.Angle`, `MaxAngleX/Z = 45°`, `LimitRotation = (15, 30, 15)`
+- 拉伸：`MaxStretch = 0.5`
+- 抓取：`AllowGrabbing = True`, `AllowPosing = True`, `GrabMovement = 0.8`, `SnapToHand = true`
+- 每条链附加 `colliderCount` 个 VRCPhysBoneCollider（Capsule 类型，半径 0.3m，高度 1.0m，`InsideBounds = true`）
+- 碰撞器圆形分布排列
 
-扩展链（等级 3）：额外链使用更极端参数（Pull=1, Stiffness=0, Gravity=0.5）。
+**扩展 PhysBone 链** (`CreateExtendedPhysBoneChains`，等级 3 独有)
 
-**VRCContact 系统** (`CreateContactSystem` / `CreateExtendedContactSystem`)
+与基础链配置相同，额外创建 `min(defensePhysBoneCount, 3)` 条链。
 
-成对创建 Sender + Receiver：
+**VRCContact 系统** (`CreateContactSystem`)
 
-- Sender：`collisionTags = ["ASS_Defense_{i}"]`
-- Receiver：`collisionTags = ["ASS_Defense_{i}"]`, `receiverType = Constant`, `minVelocity = 0.05f`
-- 球体碰撞半径：0.1m（基础）/ 0.15m（扩展）
+成对创建 Sender + Receiver（各 `ContactCount / 2` 个）：
+
+- 形状：Capsule（半径 1.0m，高度 2.0m）
+- 碰撞标签：`["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"]`
+- `localOnly = true`
+- 圆形分布排列（Receiver 偏移半个角度）
+
+**扩展 Contact 系统** (`CreateExtendedContactSystem`，等级 3 独有)
+
+- 碰撞标签扩展为 10 个：`["Tag1" ~ "Tag10"]`
+- 数量：`min((CONTACT_MAX_COUNT - ContactCount) / 2, 50)` 对
+
+> **注意**: 系统自动检测已有 PhysBone 数量，确保总数不超过 `PHYSBONE_MAX_COUNT (256)`。
 
 #### 4.5.4 GPU 防御详解
 
 **材质防御** (`CreateMaterialDefense`)
 
-1. 创建防御 Shader（优先使用 `SeaLoong/DefenseShader`，回退到 `Standard`）
-2. 创建高循环次数材质（`ApplyFixedShaderParameters` 设置 36 个 GPU 密集参数）
-3. 创建高面数球体 Mesh（`CreateHighDensitySphereMesh`）
-   - 2 个子网格（subMesh）增加批次
+1. 防御 Shader 获取（`CreateDefenseShader`）：优先使用 `SeaLoong/DefenseShader`，回退到 `Standard`
+2. 防御材质创建（`CreateDefenseMaterial`）：
+   - 通过 `ApplyFixedShaderParameters` 设置 36 个 GPU 密集参数（循环计数、采样率、光线步进步数、后处理效果等）
+   - `_LoopCount` = ShaderLoops（范围 0-1000）
+   - 透明渲染队列 = 3000
+3. 高面数球体 Mesh（`CreateHighDensitySphereMesh`）：
+   - 2 个子网格（subMesh）增加 draw call
    - 双 UV 通道 + 顶点色
-4. Overdraw 层堆叠（`CreateOverdrawLayersWithMaterial`）
-   - 多层半透明 Quad，z 间距 0.001m
-   - 使用相同的防御材质，透明渲染队列 3000
+   - 顶点数通过 subdivisions 控制
+4. Overdraw 层堆叠（`CreateOverdrawLayersWithMaterial`）：
+   - 多层 Quad，z 间距 0.001m
+   - 使用相同的防御材质
+   - 等级 2: 2 组 Overdraw，等级 3: 2 组 + 1 额外组（总数 > 100 时）
 
 **粒子防御** (`CreateParticleDefense`)
 
-- 总粒子数分配到多个 ParticleSystem
+- 总粒子数分配到多个 ParticleSystem（每个系统至少 1000 粒子）
 - 每个系统配置：
-  - 发射形状：Sphere，半径 2m，随机方向
-  - Burst 发射：0.5s 内发射 `particlesPerSystem` 个粒子
-  - 持续发射：`rateOverTime = particlesPerSystem / 2`
-  - 生命周期：10s
-  - 模拟空间：World
+  - `loop = true`, `prewarm = true`, `startLifetime = 8s`, `startSpeed = 3`
+  - 发射率：`particlesPerSystem / 3`
+  - 启用模块：VelocityOverLifetime、SizeOverLifetime、RotationOverLifetime
+  - 碰撞：`type = Planes`, `dampen = 0.8`, `bounce = 0.7~1.0`
+  - 渲染器：Billboard 模式，HSV 色彩分布
+  - `gravityModifier = 0.8`
 
 **光源防御** (`CreateLightDefense`)
 
-- 交替创建 Point / Spot 光源
+- 交替创建 Point（range=10）/ Spot（range=15, spotAngle=60°）光源
 - 环形排列（360°/lightCount 间距，半径 2m）
+- `intensity = 2`, HSV 色彩分布
 - 全部启用 `Soft Shadow`，`shadowResolution = VeryHigh`
-- HSV 色彩分布（色相随索引等分）
 
 ---
 
@@ -481,14 +580,14 @@ Active 状态由 Lock 层的动画控制激活。
 
 #### 高级选项
 
-| 参数                  | 类型 | 默认值 | 说明                                           |
-| --------------------- | ---- | ------ | ---------------------------------------------- |
-| `enableInPlayMode`    | bool | true   | PlayMode 时是否生成安全系统                    |
-| `disableDefense`      | bool | false  | 禁用防御组件（仅保留密码系统，用于测试）       |
-| `lockFxLayers`        | bool | true   | 锁定时将非 ASS 的 FX 层权重设为 0              |
-| `disableRootChildren` | bool | true   | 锁定时隐藏 Avatar 根子对象                     |
-| `defenseLevel`        | int  | 3      | 防御等级 0-3（见 §4.5.2）                      |
-| `writeDefaultsMode`   | enum | On     | WD On = 依赖自动恢复 / WD Off = 显式写入恢复值 |
+| 参数                | 类型               | 默认值 | 说明                                                       |
+| ------------------- | ------------------ | ------ | ---------------------------------------------------------- |
+| `disabledInPlaymode`| bool               | true   | PlayMode 时是否跳过安全系统生成                            |
+| `disableDefense`    | bool               | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
+| `lockFxLayers`      | bool               | true   | 锁定时将非 ASS 的 FX 层权重设为 0                          |
+| `disableRootChildren`| bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
+| `defenseLevel`      | int                | 3      | 防御等级 0-3（见 §4.5.2）                                  |
+| `writeDefaultsMode` | WriteDefaultsMode  | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 
 #### 调试选项
 
@@ -513,42 +612,57 @@ Active 状态由 Lock 层的动画控制激活。
 
 ## 6. 工具类
 
-### 6.1 AnimatorUtils
+### 6.1 Utils (全局)
 
-最核心的工具类，提供 Animator 层、参数、转换、VRC 行为的创建方法。
+通用工具类，位于 `Editor/Utils.cs`，提供 Animator 操作、VRC 行为和路径处理方法。
 
-| 方法                            | 说明                                             |
-| ------------------------------- | ------------------------------------------------ |
-| `SharedEmptyClip`               | 共享的空 AnimationClip（磁盘缓存，节省文件大小） |
-| `CreateLayer()`                 | 创建 AnimatorControllerLayer + StateMachine      |
-| `AddParameterIfNotExists()`     | 避免重复添加参数                                 |
-| `CreateTransition()`            | 创建状态转换，统一配置 hasExitTime/duration      |
-| `CreateAnyStateTransition()`    | 创建 Any State 转换                              |
-| `GetRelativePath()`             | 获取对象相对于 Avatar 根的路径                   |
-| `AddSubAsset()`                 | 安全地将资产嵌入 Controller（防重复）            |
-| `SetupAudioSource()`            | 创建 AudioSource 对象并配置                      |
-| `AddPlayAudioBehaviour()`       | 添加 VRCAnimatorPlayAudio 状态行为               |
-| `AddLayerControlBehaviour()`    | 添加 VRCAnimatorLayerControl 状态行为            |
-| `AddParameterDriverBehaviour()` | 添加 VRCAvatarParameterDriver 状态行为           |
-| `LogOptimizationStats()`        | 输出 Controller 统计（状态数、转换数、文件大小） |
+#### Animator 层和参数
 
-### 6.2 AnimationClipGenerator
+| 方法                              | 说明                                             |
+| --------------------------------- | ------------------------------------------------ |
+| `CreateLayer(name, weight)`       | 创建 AnimatorControllerLayer + StateMachine      |
+| `AddParameterIfNotExists()`       | 添加 Animator 参数（避免重复）                   |
+| `CreateTransition()`              | 创建状态转换，统一配置 hasExitTime/duration      |
+| `CreateAnyStateTransition()`      | 创建 Any State 转换                              |
+| `GetOrCreateEmptyClip()`          | 获取或创建共享的空 AnimationClip（按路径缓存）   |
+| `OptimizeStates()`                | 将 null motion 替换为指定的空 clip               |
 
-| 方法                                                 | 说明                   |
-| ---------------------------------------------------- | ---------------------- |
-| `CreateParameterDriverClip(name, param, bool/float)` | 创建驱动参数的动画剪辑 |
-| `CreateAudioTriggerClip(name, path, clip, duration)` | 创建音频触发动画       |
+#### 子资产管理
 
-### 6.3 Constants
+| 方法                              | 说明                                             |
+| --------------------------------- | ------------------------------------------------ |
+| `AddSubAsset(controller, asset)`  | 安全地将资产嵌入 Controller（自动检查重复和外部路径）|
+| `AddSubAssets(controller, assets)`| 批量添加子资产                                   |
+
+#### VRC 行为
+
+| 方法                                 | 说明                                          |
+| ------------------------------------ | --------------------------------------------- |
+| `AddLayerControlBehaviour()`         | 添加 VRCAnimatorLayerControl（单层权重控制）  |
+| `AddMultiLayerControlBehaviour()`    | 添加多个层权重控制行为                        |
+| `AddParameterDriverBehaviour()`      | 添加 VRCAvatarParameterDriver（单参数驱动）   |
+| `AddMultiParameterDriverBehaviour()` | 添加多参数驱动                                |
+| `AddPlayAudioBehaviour()`            | 添加 VRCAnimatorPlayAudio 行为                |
+
+#### 路径和统计
+
+| 方法                              | 说明                                             |
+| --------------------------------- | ------------------------------------------------ |
+| `GetRelativePath(root, node)`     | 获取对象相对于 root 的路径                       |
+| `SaveAndRefresh()`                | 保存资产                                         |
+| `LogOptimizationStats(controller)`| 输出 Controller 统计（状态数、转换数、文件大小） |
+
+### 6.2 Constants
 
 系统级常量，包括：
 
-- 资源路径 (`ASSET_FOLDER`, `AUDIO_RESOURCE_PATH`)
-- Animator 参数名 (`PARAM_*`)
-- 层名称 (`LAYER_*`)
-- GameObject 名称 (`GO_*`)
+- 系统信息 (`SYSTEM_NAME`, `SYSTEM_SHORT_NAME`, `PLUGIN_QUALIFIED_NAME`)
+- 资源路径 (`ASSET_FOLDER = "Assets/SeaLoong's UnityBox/Generated/ASS"`, `AUDIO_RESOURCE_PATH`)
+- Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
+- 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
+- GameObject 名称 (`GO_ASS_ROOT`, `GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_PARTICLES`, `GO_DEFENSE_ROOT`)
 - VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=200`)
-- 防御参数上限 (`CONSTRAINT_CHAIN_MAX_DEPTH=100`, `SHADER_LOOP_MAX_COUNT=3000000`)
+- 防御参数上限 (`CONSTRAINT_CHAIN_MAX_DEPTH=100`, `PHYSBONE_CHAIN_MAX_LENGTH=256`, `PHYSBONE_COLLIDER_MAX_COUNT=256`, `SHADER_LOOP_MAX_COUNT=3000000`)
 
 ---
 
@@ -572,38 +686,49 @@ Active 状态由 Lock 层的动画控制激活。
 ```
 Avatar Root
 ├── ASS_UI (默认禁用)
-│   └── CountdownBar
-│       ├── Background (白色 Quad)
-│       └── Bar (红色 Quad, Scale.x 由动画控制)
+│   └── Overlay
+│       MeshFilter (Quad) + MeshRenderer
+│       Material: SeaLoong/AvatarSecuritySystem/UI
+│       _BackgroundColor=白, _BarColor=红, _Progress=1→0
 │
-├── ASS_OcclusionMesh (默认禁用)
-│   VRCParentConstraint → Head (+0.18m z)
+├── ASS_Audio_Warning
+│   AudioSource (spatialBlend=0, volume=0.5)
 │
-├── ASS_Audio_Warning (默认禁用)
-│   AudioSource
-│
-├── ASS_Audio_Success (默认禁用)
-│   AudioSource
+├── ASS_Audio_Success
+│   AudioSource (spatialBlend=0, volume=0.5)
 │
 └── __ASS_Defense__ (默认禁用)
     ├── ConstraintChain_0/
-    │   └── Node_0 ~ Node_{depth} (5种VRC约束)
+    │   └── Constraint_0 ~ Constraint_{depth}
+    │       每节点: VRCParentConstraint + VRCPositionConstraint + VRCRotationConstraint
     ├── ConstraintChain_1/ ...
-    ├── PhysBoneChain_0/
-    │   ├── Bone_0 ~ Bone_{length} (VRCPhysBone)
-    │   └── Collider_0 ~ Collider_{count} (VRCPhysBoneCollider)
+    ├── ExtendedConstraintChain_0/ ... (等级3)
+    │   └── 每节点: Parent + Position + Rotation + ScaleConstraint
+    │
+    ├── PhysBoneChains_0/
+    │   ├── BoneChain_0/
+    │   │   └── Bone_0 ~ Bone_{length} (VRCPhysBone, Advanced模式)
+    │   └── Collider_0 ~ Collider_{count} (VRCPhysBoneCollider, Capsule)
+    ├── ExtendedPhysBoneChains_0/ ... (等级3)
+    │
     ├── ContactSystem/
-    │   ├── Sender_0 + Receiver_0
-    │   └── ...
+    │   ├── Sender_0 ~ Sender_{half} (VRCContactSender, 5标签)
+    │   └── Receiver_0 ~ Receiver_{half} (VRCContactReceiver, 5标签)
+    ├── ExtendedContactSystem/ ... (等级3, 10标签)
+    │
     ├── MaterialDefense/
-    │   ├── DefenseMesh_0 ~ DefenseMesh_{count} (高面数球体)
+    │   ├── DefenseMesh_0 ~ DefenseMesh_{count} (高面数球体, 2子网格)
     │   ├── OverdrawLayers_0/
-    │   │   └── Layer_0 ~ Layer_{count} (透明 Quad)
+    │   │   └── Layer_0 ~ Layer_{count} (透明 Quad, z间距0.001)
     │   └── OverdrawLayers_1/ ...
+    │
     ├── ParticleDefense/
     │   └── ParticleSystem_0 ~ ParticleSystem_{count}
+    │       (Billboard, 碰撞, 速度/大小/旋转随生命周期变化)
+    │
     └── LightDefense/
-        └── Light_0 ~ Light_{count} (Point/Spot, Soft Shadow)
+        └── Light_0 ~ Light_{count}
+            (Point/Spot交替, Soft Shadow, VeryHigh分辨率)
 ```
 
 ---
@@ -618,8 +743,9 @@ Avatar Root
 
 ### 9.2 Write Defaults 模式
 
-- **WD On（推荐）**：动画结束后参数自动恢复默认值，更简洁
-- **WD Off（兼容性）**：每个状态需要显式写入所有受控属性的恢复值
+- **Auto（推荐）**：自动检测已有 Controller 的 WD 设置，遵循大多数状态的设置
+- **WD On**：动画结束后参数自动恢复默认值，更简洁
+- **WD Off**：每个状态需要显式写入所有受控属性的恢复值
 - 系统自动根据配置选择对应的动画生成策略
 
 ### 9.3 参数同步
