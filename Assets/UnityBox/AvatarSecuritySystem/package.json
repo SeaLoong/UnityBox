@@ -1,0 +1,24 @@
+{
+  "name": "top.sealoong.unitybox.avatar-security-system",
+  "displayName": "Avatar Security System",
+  "version": "0.1.0",
+  "description": "A VRChat avatar editor tool for protecting avatars with gesture-based password security system.",
+  "unity": "2022.3",
+  "author": {
+    "name": "SeaLoong",
+    "url": "https://github.com/SeaLoong"
+  },
+  "url": "https://github.com/SeaLoong/UnityBox",
+  "license": "MIT",
+  "keywords": [
+    "vrchat",
+    "avatar",
+    "editor",
+    "security",
+    "password"
+  ],
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.7.0",
+    "nadena.dev.modular-avatar": ">=1.10.0"
+  }
+}

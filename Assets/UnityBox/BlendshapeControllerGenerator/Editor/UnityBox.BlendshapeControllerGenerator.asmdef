@@ -1,0 +1,27 @@
+{
+  "name": "UnityBox.BlendshapeControllerGenerator",
+  "rootNamespace": "",
+  "references": [
+    "VRC.SDK3A",
+    "VRC.SDK3A.Editor",
+    "nadena.dev.modular-avatar.core",
+    "nadena.dev.modular-avatar.core.editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "",
+      "define": "MODULAR_AVATAR_AVAILABLE"
+    }
+  ],
+  "noEngineReferences": false
+}

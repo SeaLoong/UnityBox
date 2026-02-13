@@ -4,8 +4,8 @@
 #
 
 /[Aa]ssets/*
-!/[Aa]ssets/SeaLoong's UnityBox/
-/[Aa]ssets/SeaLoong's UnityBox/**/Generated/**/*
+!/[Aa]ssets/UnityBox/
+!/[Aa]ssets/csc.rsp
 
 
 .utmp/
@@ -113,3 +113,5 @@ InitTestScene*.unity*
 
 *.unity
 /[Aa]ssets/*.unity
+
+**/Generated/
