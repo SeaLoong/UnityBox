@@ -1,0 +1,119 @@
+name: Build VPM Repository Listing
+
+on:
+  push:
+    tags: ['*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  GITHUB_OWNER: ${{ github.repository_owner }}
+  GITHUB_REPO: ${{ github.event.repository.name }}
+
+jobs:
+  build-listing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build VPM Listing
+        run: |
+          set -e
+
+          REPO_URL="https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}"
+
+          # 定义所有包的目录（相对于仓库根）
+          PACKAGE_DIRS=(
+            "Assets/UnityBox/AdvancedCostumeController"
+            "Assets/UnityBox/BlendshapeControllerGenerator"
+            "Assets/UnityBox/AvatarColliderMonitor"
+            "Assets/UnityBox/BuildPipelineLogger"
+          )
+
+          mkdir -p _site
+
+          # 获取当前 tag（如有），否则使用 package.json 中的 version
+          GIT_TAG="${GITHUB_REF_NAME}"
+
+          # 构建每个包的 zip
+          PACKAGES_JSON="{"
+          FIRST_PKG=true
+
+          for pkg_dir in "${PACKAGE_DIRS[@]}"; do
+            if [ ! -f "${pkg_dir}/package.json" ]; then
+              echo "跳过 ${pkg_dir}：未找到 package.json"
+              continue
+            fi
+
+            PKG_NAME=$(jq -r '.name' "${pkg_dir}/package.json")
+            PKG_VERSION=$(jq -r '.version' "${pkg_dir}/package.json")
+            PKG_DISPLAY_NAME=$(jq -r '.displayName' "${pkg_dir}/package.json")
+
+            # 如果是 tag 推送，用 tag 作为版本号（去掉前缀 v）
+            if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+              TAG_VERSION="${GIT_TAG#v}"
+              # 更新 package.json 中的版本号
+              jq --arg v "$TAG_VERSION" '.version = $v' "${pkg_dir}/package.json" > "${pkg_dir}/package.json.tmp"
+              mv "${pkg_dir}/package.json.tmp" "${pkg_dir}/package.json"
+              PKG_VERSION="$TAG_VERSION"
+            fi
+
+            echo "打包: ${PKG_NAME} v${PKG_VERSION}"
+
+            # 创建 zip 包
+            ZIP_NAME="${PKG_NAME}-${PKG_VERSION}.zip"
+            (cd "${pkg_dir}" && zip -r "../../../_site/${ZIP_NAME}" . -x "*.meta" -x "*/Generated/*")
+
+            ZIP_URL="${REPO_URL}/${ZIP_NAME}"
+            ZIP_SHA256=$(sha256sum "_site/${ZIP_NAME}" | cut -d' ' -f1)
+
+            # 读取完整的 package.json 并添加 zipSHA256 和 url
+            PKG_JSON=$(jq --arg url "$ZIP_URL" --arg sha "$ZIP_SHA256" \
+              '. + {"zipSHA256": $sha, "url": $url}' "${pkg_dir}/package.json")
+
+            # 构建 packages 对象
+            if [ "$FIRST_PKG" = true ]; then
+              FIRST_PKG=false
+            else
+              PACKAGES_JSON="${PACKAGES_JSON},"
+            fi
+            PACKAGES_JSON="${PACKAGES_JSON}\"${PKG_NAME}\":{\"versions\":{\"${PKG_VERSION}\":${PKG_JSON}}}"
+          done
+
+          PACKAGES_JSON="${PACKAGES_JSON}}"
+
+          # 构建最终的 VPM listing vpm.json
+          printf '{\n  "name": "UnityBox",\n  "id": "top.sealoong.unitybox.listing",\n  "url": "%s/vpm.json",\n  "author": "SeaLoong",\n  "packages": %s\n}' "${REPO_URL}" "${PACKAGES_JSON}" > _site/vpm.json
+
+          # 使用 jq 格式化
+          jq '.' _site/vpm.json > _site/vpm.json.tmp && mv _site/vpm.json.tmp _site/vpm.json
+
+          echo "VPM listing 已构建完成"
+          cat _site/vpm.json
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build-listing
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

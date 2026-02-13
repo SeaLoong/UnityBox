@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace SeaLoongUnityBox.ACC
+namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
   /// Advanced Costume Controller 编辑器窗口
@@ -25,7 +25,7 @@ namespace SeaLoongUnityBox.ACC
     private bool previewFoldout = true;
     private Vector2 scrollPosition = Vector2.zero;
 
-    [MenuItem("Tools/SeaLoong's UnityBox/Advanced Costume Controller")]
+[MenuItem("Tools/UnityBox/Advanced Costume Controller")]
     public static void ShowWindow() => GetWindow<Window>("Advanced Costume Controller");
 
     private void OnEnable()

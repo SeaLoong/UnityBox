@@ -9,10 +9,10 @@ using VRC.SDKBase.Editor.BuildPipeline;
 
 #if NDMF_AVAILABLE
 using nadena.dev.ndmf;
-[assembly: ExportsPlugin(typeof(SeaLoongUnityBox.Editor.BuildPipelineLoggerPlugin))]
+[assembly: ExportsPlugin(typeof(UnityBox.BuildPipelineLogger.BuildPipelineLoggerPlugin))]
 #endif
 
-namespace SeaLoongUnityBox.Editor
+namespace UnityBox.BuildPipelineLogger
 {
     /// <summary>
     /// Unity 构建进程日志记录器 - 全面测试所有构建回调接口
@@ -24,7 +24,7 @@ namespace SeaLoongUnityBox.Editor
     
     public static class BuildPipelineLoggerSettings
     {
-        private const string PREF_PREFIX = "SeaLoong.BuildPipelineLogger.";
+private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         
         /// <summary>
         /// Asset Pipeline - 资产导入管线 (AssetPostprocessor)
@@ -89,7 +89,7 @@ namespace SeaLoongUnityBox.Editor
     
     public static class BuildPipelineLoggerMenu
     {
-        private const string MENU_PREFIX = "Tools/Build Pipeline Logger/";
+        private const string MENU_PREFIX = "Tools/UnityBox/Build Pipeline Logger/";
         
         [MenuItem(MENU_PREFIX + "Asset Pipeline")]
         private static void ToggleAssetPipeline() => BuildPipelineLoggerSettings.AssetPipeline = !BuildPipelineLoggerSettings.AssetPipeline;
@@ -1603,7 +1603,7 @@ namespace SeaLoongUnityBox.Editor
     /// </summary>
     public class BuildPipelineLoggerPlugin : Plugin<BuildPipelineLoggerPlugin>
     {
-        public override string QualifiedName => "top.sealoong.unitybox.build-pipeline-logger";
+public override string QualifiedName => "top.sealoong.unitybox.build-pipeline-logger";
         public override string DisplayName => "Build Pipeline Logger";
 
         protected override void Configure()

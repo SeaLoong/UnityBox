@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using nadena.dev.modular_avatar.core;
 
-namespace SeaLoongUnityBox.ACC
+namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
   /// 混搭器 — 负责 CustomMixer 的菜单构建和参数注册
