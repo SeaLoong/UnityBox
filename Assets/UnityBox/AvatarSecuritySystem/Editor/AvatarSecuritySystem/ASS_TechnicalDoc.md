@@ -236,6 +236,7 @@ Avatar 加载
 ```
 
 转换条件详解：
+
 - **Remote → Locked**：`IsLocal = true` 且 `PasswordCorrect = false`
 - **Remote → Unlocked**：`PasswordCorrect = true`（所有玩家都能进入解锁状态）
 - **Locked → Locked**：自循环（`hasExitTime=true, exitTime=0`），`PasswordCorrect = false`
@@ -265,6 +266,7 @@ Avatar 加载
 #### 4.1.5 Transform Mask
 
 创建 `AvatarMask` (`ASS_LockLayerMask`) 限制 Lock 层仅影响以下对象：
+
 - `ASS_UI`
 - `__ASS_Defense__`
 - `ASS_Audio_Warning`
@@ -282,6 +284,7 @@ Avatar 加载
 Auto 模式下扫描所有 Playable Layer 的 AnimatorController：
 
 **跳过规则**:
+
 1. `isDefault` 的 Playable Layer（未自定义）
 2. `animatorController` 为 null 的层
 3. VRChat 内置控制器（名称以 `vrc_` 开头）
@@ -326,14 +329,14 @@ Wait_Input ──(手势=密码[0])──→ Step_1_Holding ──(保持 holdTi
 
 #### 4.2.2 状态类型
 
-| 状态                    | Motion                           | 功能                                                     |
-| ----------------------- | -------------------------------- | -------------------------------------------------------- |
-| `Wait_Input`            | SharedEmptyClip                  | 初始状态，等待第一位密码输入                             |
-| `Step_N_Holding`        | ASS_Hold_N (gestureHoldTime 秒)  | 正在保持第 N 位手势，需保持指定时间                      |
-| `Step_N_Confirmed`      | SharedEmptyClip                  | 第 N 位已确认，等待下一位                                |
-| `Step_N_ErrorTolerance` | ASS_Tolerance_N (errorTolerance) | 容错缓冲，短暂误触后可继续                               |
-| `Password_Success`      | SharedEmptyClip                  | 密码正确，设置 `PasswordCorrect = true`，播放成功音效     |
-| `TimeUp_Failed`         | SharedEmptyClip                  | 倒计时结束，禁止继续输入（Any State → 此状态）           |
+| 状态                    | Motion                           | 功能                                                  |
+| ----------------------- | -------------------------------- | ----------------------------------------------------- |
+| `Wait_Input`            | SharedEmptyClip                  | 初始状态，等待第一位密码输入                          |
+| `Step_N_Holding`        | ASS_Hold_N (gestureHoldTime 秒)  | 正在保持第 N 位手势，需保持指定时间                   |
+| `Step_N_Confirmed`      | SharedEmptyClip                  | 第 N 位已确认，等待下一位                             |
+| `Step_N_ErrorTolerance` | ASS_Tolerance_N (errorTolerance) | 容错缓冲，短暂误触后可继续                            |
+| `Password_Success`      | SharedEmptyClip                  | 密码正确，设置 `PasswordCorrect = true`，播放成功音效 |
+| `TimeUp_Failed`         | SharedEmptyClip                  | 倒计时结束，禁止继续输入（Any State → 此状态）        |
 
 #### 4.2.3 转换规则
 
@@ -416,10 +419,10 @@ Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBee
 
 #### 4.4.2 音频对象
 
-| 对象名             | 父对象      | 配置                                                    |
-| ------------------ | ----------- | ------------------------------------------------------- |
-| `ASS_Audio_Warning`| Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
-| `ASS_Audio_Success`| Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
+| 对象名              | 父对象      | 配置                                                     |
+| ------------------- | ----------- | -------------------------------------------------------- |
+| `ASS_Audio_Warning` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
+| `ASS_Audio_Success` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
 
 ---
 
@@ -580,14 +583,14 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### 高级选项
 
-| 参数                | 类型               | 默认值 | 说明                                                       |
-| ------------------- | ------------------ | ------ | ---------------------------------------------------------- |
-| `disabledInPlaymode`| bool               | true   | PlayMode 时是否跳过安全系统生成                            |
-| `disableDefense`    | bool               | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
-| `lockFxLayers`      | bool               | true   | 锁定时将非 ASS 的 FX 层权重设为 0                          |
-| `disableRootChildren`| bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
-| `defenseLevel`      | int                | 3      | 防御等级 0-3（见 §4.5.2）                                  |
-| `writeDefaultsMode` | WriteDefaultsMode  | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
+| 参数                  | 类型              | 默认值 | 说明                                                       |
+| --------------------- | ----------------- | ------ | ---------------------------------------------------------- |
+| `disabledInPlaymode`  | bool              | true   | PlayMode 时是否跳过安全系统生成                            |
+| `disableDefense`      | bool              | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
+| `lockFxLayers`        | bool              | true   | 锁定时将非 ASS 的 FX 层权重设为 0                          |
+| `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
+| `defenseLevel`        | int               | 3      | 防御等级 0-3（见 §4.5.2）                                  |
+| `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 
 #### 调试选项
 
@@ -618,39 +621,39 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### Animator 层和参数
 
-| 方法                              | 说明                                             |
-| --------------------------------- | ------------------------------------------------ |
-| `CreateLayer(name, weight)`       | 创建 AnimatorControllerLayer + StateMachine      |
-| `AddParameterIfNotExists()`       | 添加 Animator 参数（避免重复）                   |
-| `CreateTransition()`              | 创建状态转换，统一配置 hasExitTime/duration      |
-| `CreateAnyStateTransition()`      | 创建 Any State 转换                              |
-| `GetOrCreateEmptyClip()`          | 获取或创建共享的空 AnimationClip（按路径缓存）   |
-| `OptimizeStates()`                | 将 null motion 替换为指定的空 clip               |
+| 方法                         | 说明                                           |
+| ---------------------------- | ---------------------------------------------- |
+| `CreateLayer(name, weight)`  | 创建 AnimatorControllerLayer + StateMachine    |
+| `AddParameterIfNotExists()`  | 添加 Animator 参数（避免重复）                 |
+| `CreateTransition()`         | 创建状态转换，统一配置 hasExitTime/duration    |
+| `CreateAnyStateTransition()` | 创建 Any State 转换                            |
+| `GetOrCreateEmptyClip()`     | 获取或创建共享的空 AnimationClip（按路径缓存） |
+| `OptimizeStates()`           | 将 null motion 替换为指定的空 clip             |
 
 #### 子资产管理
 
-| 方法                              | 说明                                             |
-| --------------------------------- | ------------------------------------------------ |
-| `AddSubAsset(controller, asset)`  | 安全地将资产嵌入 Controller（自动检查重复和外部路径）|
-| `AddSubAssets(controller, assets)`| 批量添加子资产                                   |
+| 方法                               | 说明                                                  |
+| ---------------------------------- | ----------------------------------------------------- |
+| `AddSubAsset(controller, asset)`   | 安全地将资产嵌入 Controller（自动检查重复和外部路径） |
+| `AddSubAssets(controller, assets)` | 批量添加子资产                                        |
 
 #### VRC 行为
 
-| 方法                                 | 说明                                          |
-| ------------------------------------ | --------------------------------------------- |
-| `AddLayerControlBehaviour()`         | 添加 VRCAnimatorLayerControl（单层权重控制）  |
-| `AddMultiLayerControlBehaviour()`    | 添加多个层权重控制行为                        |
-| `AddParameterDriverBehaviour()`      | 添加 VRCAvatarParameterDriver（单参数驱动）   |
-| `AddMultiParameterDriverBehaviour()` | 添加多参数驱动                                |
-| `AddPlayAudioBehaviour()`            | 添加 VRCAnimatorPlayAudio 行为                |
+| 方法                                 | 说明                                         |
+| ------------------------------------ | -------------------------------------------- |
+| `AddLayerControlBehaviour()`         | 添加 VRCAnimatorLayerControl（单层权重控制） |
+| `AddMultiLayerControlBehaviour()`    | 添加多个层权重控制行为                       |
+| `AddParameterDriverBehaviour()`      | 添加 VRCAvatarParameterDriver（单参数驱动）  |
+| `AddMultiParameterDriverBehaviour()` | 添加多参数驱动                               |
+| `AddPlayAudioBehaviour()`            | 添加 VRCAnimatorPlayAudio 行为               |
 
 #### 路径和统计
 
-| 方法                              | 说明                                             |
-| --------------------------------- | ------------------------------------------------ |
-| `GetRelativePath(root, node)`     | 获取对象相对于 root 的路径                       |
-| `SaveAndRefresh()`                | 保存资产                                         |
-| `LogOptimizationStats(controller)`| 输出 Controller 统计（状态数、转换数、文件大小） |
+| 方法                               | 说明                                             |
+| ---------------------------------- | ------------------------------------------------ |
+| `GetRelativePath(root, node)`      | 获取对象相对于 root 的路径                       |
+| `SaveAndRefresh()`                 | 保存资产                                         |
+| `LogOptimizationStats(controller)` | 输出 Controller 统计（状态数、转换数、文件大小） |
 
 ### 6.2 Constants
 
