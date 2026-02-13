@@ -44,7 +44,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         public const string GO_AUDIO_SUCCESS = "ASS_Audio_Success";
         public const string GO_PARTICLES = "ASS_Particles";
         public const string GO_DEFENSE_ROOT = "__ASS_Defense__";
-        public const string GO_OCCLUSION_MESH = "ASS_OcclusionMesh";
 
         // ============ VRChat 组件上限 ============
         /// <summary>

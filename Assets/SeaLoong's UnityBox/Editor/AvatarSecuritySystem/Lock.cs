@@ -6,8 +6,6 @@ using System.Linq;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.I18n;
 using VRC.SDK3.Avatars.Components;
-using VRC.SDK3.Dynamics.Constraint.Components;
-using VRC.Dynamics;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
@@ -63,9 +61,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
                 layer.avatarMask = lockLayerMask;
                 Utils.AddSubAsset(controller, lockLayerMask);
             }
-
-            // 创建遮挡 Mesh（必须在创建动画之前，这样动画才能引用到它）
-            CreateOcclusionMesh();
 
             bool useWdOn = ResolveWriteDefaults();
 
@@ -221,7 +216,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             var allowedPaths = new HashSet<string>();
 
             AddAllowedPath(allowedPaths, GO_UI);
-            AddAllowedPath(allowedPaths, GO_OCCLUSION_MESH);
             AddAllowedPath(allowedPaths, GO_DEFENSE_ROOT);
             AddAllowedPath(allowedPaths, GO_AUDIO_WARNING);
             AddAllowedPath(allowedPaths, GO_AUDIO_SUCCESS);
@@ -261,16 +255,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             
             Debug.Log($"[ASS] 创建锁定动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
 
+            // ASS_UI 同时承担遮挡和进度条显示（使用全屏覆盖 Shader）
             if (avatarRoot.transform.Find(GO_UI) != null)
             {
                 clip.SetCurve(GO_UI, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log($"[ASS] 锁定动画：启用 UI Canvas");
-            }
-            
-            if (avatarRoot.transform.Find(GO_OCCLUSION_MESH) != null)
-            {
-                clip.SetCurve(GO_OCCLUSION_MESH, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log($"[ASS] 锁定动画：显示遮挡 Mesh");
+                Debug.Log($"[ASS] 锁定动画：启用 UI（全屏遮挡 + 进度条）");
             }
             
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
@@ -305,14 +294,14 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = "ASS_Remote" };
             
-            SetGameObjectActiveInClip(clip, GO_OCCLUSION_MESH, false);
+            SetGameObjectActiveInClip(clip, GO_UI, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
             
             // WD Off: 显式恢复所有被修改的属性
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             
-            Debug.Log($"[ASS] 创建 Remote 状态动画 (WD {(useWdOn ? "On" : "Off")})：隐藏遮挡 Mesh 和防御对象");
+            Debug.Log($"[ASS] 创建 Remote 状态动画 (WD {(useWdOn ? "On" : "Off")})：隐藏 UI 和防御对象");
             return clip;
         }
 
@@ -324,7 +313,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] 创建解锁动画 (WD {(useWdOn ? "On" : "Off")} 模式)");
 
             SetGameObjectActiveInClip(clip, GO_UI, false);
-            SetGameObjectActiveInClip(clip, GO_OCCLUSION_MESH, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
             
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
@@ -484,57 +472,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             return false;
         }
 
-        private void CreateOcclusionMesh()
-        {
-            var existing = avatarRoot.transform.Find(GO_OCCLUSION_MESH);
-            if (existing != null)
-                Object.Destroy(existing.gameObject);
-            
-            var meshObj = new GameObject(GO_OCCLUSION_MESH);
-            meshObj.transform.SetParent(avatarRoot.transform, false);
-            
-            var meshFilter = meshObj.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = CreateOcclusionQuad();
-            
-            meshObj.transform.localPosition = Vector3.zero;
-            meshObj.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
-            
-            var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            var shader = Shader.Find("Unlit/Color") ?? Shader.Find("Standard") ?? Shader.Find("Hidden/InternalErrorShader");
-            var material = new Material(shader);
-            material.color = Color.white;
-            meshRenderer.sharedMaterial = material;
-            
-            var animator = avatarRoot.GetComponent<Animator>();
-            var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
-            if (head != null)
-            {
-                var constraint = meshObj.AddComponent<VRCParentConstraint>();
-                constraint.Sources.Add(new VRCConstraintSource
-                {
-                    Weight = 1f,
-                    SourceTransform = head,
-                    ParentPositionOffset = new Vector3(0f, 0f, 0.18f),
-                    ParentRotationOffset = Vector3.zero
-                });
-                
-                var constraintSer = new SerializedObject(constraint);
-                constraintSer.FindProperty("IsActive").boolValue = true;
-                constraintSer.FindProperty("Locked").boolValue = true;
-                constraintSer.ApplyModifiedPropertiesWithoutUndo();
-            }
-            
-            meshObj.SetActive(false);
-            Debug.Log($"[ASS] 创建遮挡 Mesh：四边形平面，大小=0.5x0.5，绑定到头部");
-        }
-
         private bool IsASSObject(Transform obj)
         {
             var assObjectNames = new HashSet<string>
             {
                 GO_ASS_ROOT, GO_UI, GO_AUDIO_WARNING,
-                GO_AUDIO_SUCCESS, GO_PARTICLES, GO_DEFENSE_ROOT,
-                GO_OCCLUSION_MESH
+                GO_AUDIO_SUCCESS, GO_PARTICLES, GO_DEFENSE_ROOT
             };
             
             Transform current = obj;
@@ -551,29 +494,6 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         {
             var curve = AnimationCurve.Constant(0f, 1f / 60f, isActive ? 1f : 0f);
             clip.SetCurve(objectPath, typeof(GameObject), "m_IsActive", curve);
-        }
-
-        private static Mesh CreateOcclusionQuad()
-        {
-            var mesh = new Mesh { name = "OcclusionQuad" };
-            mesh.vertices = new Vector3[]
-            {
-                new Vector3(-0.5f, -0.5f, 0),
-                new Vector3(0.5f, -0.5f, 0),
-                new Vector3(0.5f, 0.5f, 0),
-                new Vector3(-0.5f, 0.5f, 0)
-            };
-            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
-            mesh.uv = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(1, 0),
-                new Vector2(1, 1),
-                new Vector2(0, 1)
-            };
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
         }
 
         #endregion

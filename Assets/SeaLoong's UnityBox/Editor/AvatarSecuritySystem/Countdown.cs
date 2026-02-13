@@ -184,11 +184,12 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
             settings.loopTime = false;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            string barPath = $"{GO_UI}/CountdownBar/Bar";
-            AnimationCurve scaleCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
-            clip.SetCurve(barPath, typeof(Transform), "m_LocalScale.x", scaleCurve);
+            // 驱动 Overlay 上 MeshRenderer 的材质属性 _Progress（从 1 到 0）
+            string overlayPath = $"{GO_UI}/Overlay";
+            AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
+            clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._Progress", progressCurve);
 
-            Debug.Log($"[ASS] Created countdown animation: duration={duration}s, path={barPath}");
+            Debug.Log($"[ASS] Created countdown animation: duration={duration}s, path={overlayPath}, property=material._Progress");
             return clip;
         }
 

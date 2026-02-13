@@ -1,21 +1,22 @@
 using UnityEngine;
-using UnityEditor;
-using UnityEditor.Animations;
-using VRC.SDK3.Dynamics.Constraint.Components;
-using VRC.Dynamics;
 using static SeaLoongUnityBox.AvatarSecuritySystem.Editor.Constants;
 
 namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 {
     /// <summary>
     /// 视觉和音频反馈系统生成器
-    /// 功能：倒计时警告、错误提示、成功反馈、HUD显示
+    /// 功能：全屏遮挡 + 倒计时进度条（使用自定义 Shader 直接渲染在摄像机上）
     /// </summary>
     public class Feedback
     {
         private readonly GameObject avatarGameObject;
         private readonly AvatarSecuritySystemComponent config;
         private GameObject uiGameObject;
+
+        /// <summary>
+        /// UI Shader 名称（全屏覆盖渲染）
+        /// </summary>
+        private const string UI_SHADER_NAME = "SeaLoong/AvatarSecuritySystem/UI";
 
         public Feedback(GameObject avatarGameObject, AvatarSecuritySystemComponent config)
         {
@@ -26,11 +27,11 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
         public void Generate()
         {
-            // 创建或获取UI根对象
+            // 创建 UI 根对象
             CreateUIGameObject();
 
-            // 创建倒计时条
-            CreateCountdownBar();
+            // 创建 UI Mesh（使用自定义 Shader 全屏渲染遮挡背景 + 进度条）
+            CreateUIMesh();
 
             // 创建音频对象
             CreateAudioObject(Constants.GO_AUDIO_SUCCESS);
@@ -39,41 +40,27 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
 
 
         /// <summary>
-        /// 创建3D HUD（替代Canvas），在视角前显示倒计时条
-        /// VRCConstraint绑定到头部，保证UI始终在视野内
+        /// 创建 UI 根对象
+        /// Shader 会直接渲染到摄像机全屏，不需要世界空间定位或头部绑定
         /// </summary>
         private GameObject CreateUIGameObject()
         {
-            // 查找或创建Canvas
-            Transform existingCanvas = avatarGameObject.transform.Find(Constants.GO_UI);
-            if (existingCanvas != null)
+            // 查找已有对象
+            Transform existing = avatarGameObject.transform.Find(Constants.GO_UI);
+            if (existing != null)
             {
                 Debug.Log(I18n.T("log.visual_existing_canvas"));
-                this.uiGameObject = existingCanvas.gameObject;
-                return existingCanvas.gameObject;
+                this.uiGameObject = existing.gameObject;
+                return existing.gameObject;
             }
 
-            // 创建根对象（直接挂在avatarGameObject）
+            // 创建根对象
             var uiGameObject = new GameObject(Constants.GO_UI);
-            uiGameObject.SetActive(false);  // 默认禁用，只在Locked状态时启用
+            uiGameObject.SetActive(false);  // 默认禁用，只在 Locked 状态时由动画启用
             uiGameObject.transform.SetParent(avatarGameObject.transform, false);
 
-            // 绑定到头部，保证UI始终在视野范围内
-            var animator = avatarGameObject.GetComponent<Animator>();
-            var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
-            if (head != null)
-            {
-                var constraint = uiGameObject.AddComponent<VRCParentConstraint>();
-                constraint.Sources.Add(new VRCConstraintSource
-                {
-                    Weight = 1f,
-                    SourceTransform = head,
-                    ParentPositionOffset = new Vector3(0f, -0.02f, 0.15f),  // 头部下方2cm，前方15cm
-                    ParentRotationOffset = Vector3.zero
-                });
-                constraint.Locked = true;
-                constraint.IsActive = true;
-            }
+            // 全屏渲染模式：不需要 VRCParentConstraint 绑定到头部
+            // Shader 的顶点着色器会直接将顶点映射到裁剪空间全屏位置
 
             Debug.Log(I18n.T("log.visual_canvas_created"));
             this.uiGameObject = uiGameObject;
@@ -81,80 +68,52 @@ namespace SeaLoongUnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建3D倒计时进度条（显示剩余时间）
-        /// VRCConstraint绑定到头部，前方15cm处显示
+        /// 创建 UI Mesh：使用自定义 Shader 全屏渲染遮挡背景和进度条
+        /// Shader 在顶点着色器中将 Quad 直接映射到裁剪空间覆盖整个屏幕
+        /// 进度条通过动画驱动材质属性 _Progress（1→0）
         /// </summary>
-        private GameObject CreateCountdownBar()
+        private GameObject CreateUIMesh()
         {
-            // 创建容器（挂在uiGameObject下）
-            var containerObj = new GameObject("CountdownBar");
-            containerObj.transform.SetParent(uiGameObject.transform, false);
-            // 容器的位置（相对于头部，由uiGameObject的VRCParentConstraint已处理）
-            containerObj.transform.localPosition = Vector3.zero;
-            containerObj.transform.localRotation = Quaternion.identity;
-            // 尺寸：15cm宽，3cm高，3cm厚（3D条）
-            containerObj.transform.localScale = new Vector3(0.15f, 0.03f, 0.03f);
-            containerObj.SetActive(true);
+            var meshObj = new GameObject("Overlay");
+            meshObj.transform.SetParent(uiGameObject.transform, false);
+            meshObj.transform.localPosition = Vector3.zero;
+            meshObj.transform.localRotation = Quaternion.identity;
+            meshObj.transform.localScale = Vector3.one;
 
-            // 背景（透明）
-            var bgObj = CreateSimpleQuad("Background", containerObj.transform, new Vector3(0f, 0f, 0.001f), Vector3.one, new Color(1f, 1f, 1f, 0f));
-
-            // 前景条（红色，通过localScale.x 控制长度）
-            var barObj = CreateSimpleQuad("Bar", containerObj.transform, Vector3.zero, new Vector3(1f, 0.1f, 1f), new Color(1f, 0f, 0f, 1f));
-
-            Debug.Log(I18n.T("log.visual_countdown_created"));
-            return containerObj;
-        }
-
-        /// <summary>
-        /// 手动创建简单Quad
-        /// </summary>
-        private GameObject CreateSimpleQuad(string name, Transform parent, Vector3 localPos, Vector3 localScale, Color color)
-        {
-            var quad = new GameObject(name);
-            quad.transform.SetParent(parent, false);
-            quad.transform.localPosition = localPos;
-            quad.transform.localScale = localScale;
-            quad.transform.localRotation = Quaternion.identity;
-            var mesh = new Mesh();
+            // 创建 Quad Mesh（顶点位置无所谓，Shader 会重新映射到全屏）
+            var mesh = new Mesh { name = "ASS_UI_Quad" };
             mesh.vertices = new Vector3[]
             {
                 new Vector3(-0.5f, -0.5f, 0),
                 new Vector3(0.5f, -0.5f, 0),
-                new Vector3(-0.5f, 0.5f, 0),
-                new Vector3(0.5f, 0.5f, 0)
+                new Vector3(0.5f, 0.5f, 0),
+                new Vector3(-0.5f, 0.5f, 0)
             };
             mesh.uv = new Vector2[]
             {
                 new Vector2(0, 0),
                 new Vector2(1, 0),
-                new Vector2(0, 1),
-                new Vector2(1, 1)
+                new Vector2(1, 1),
+                new Vector2(0, 1)
             };
-            mesh.triangles = new int[] { 0, 2, 1, 2, 3, 1 };
+            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
             mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
 
-            var meshFilter = quad.AddComponent<MeshFilter>();
-            meshFilter.mesh = mesh;
+            var meshFilter = meshObj.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = mesh;
 
-            var meshRenderer = quad.AddComponent<MeshRenderer>();
-            var shader = Shader.Find("Standard") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
-            var mat = new Material(shader) { color = color };
-            // 启用透明渲染模式
-            if (color.a < 1f)
-            {
-                mat.SetFloat("_Mode", 3f); // Transparent
-                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                mat.SetInt("_ZWrite", 0);
-                mat.DisableKeyword("_ALPHATEST_ON");
-                mat.EnableKeyword("_ALPHABLEND_ON");
-                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                mat.renderQueue = 3000;
-            }
-            meshRenderer.sharedMaterial = mat;
+            // 使用全屏覆盖 Shader
+            var meshRenderer = meshObj.AddComponent<MeshRenderer>();
+            var shader = Shader.Find(UI_SHADER_NAME) ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
+            var material = new Material(shader);
+            material.SetColor("_BackgroundColor", Color.white);
+            material.SetColor("_BarColor", Color.red);
+            material.SetFloat("_Progress", 1f);  // 初始满进度
+            meshRenderer.sharedMaterial = material;
 
-            return quad;
+            Debug.Log(I18n.T("log.visual_countdown_created"));
+            return meshObj;
         }
 
 
