@@ -2,7 +2,6 @@ name: Build VPM Repository Listing
 
 on:
   push:
-    branches: [master]
     tags: ['*']
   workflow_dispatch:
 
@@ -95,15 +94,7 @@ jobs:
           PACKAGES_JSON="${PACKAGES_JSON}}"
 
           # 构建最终的 VPM listing vpm.json
-          cat > _site/vpm.json <<LISTING_EOF
-{
-  "name": "UnityBox",
-  "id": "top.sealoong.unitybox.listing",
-  "url": "${REPO_URL}/vpm.json",
-  "author": "SeaLoong",
-  "packages": ${PACKAGES_JSON}
-}
-LISTING_EOF
+          printf '{\n  "name": "UnityBox",\n  "id": "top.sealoong.unitybox.listing",\n  "url": "%s/vpm.json",\n  "author": "SeaLoong",\n  "packages": %s\n}' "${REPO_URL}" "${PACKAGES_JSON}" > _site/vpm.json
 
           # 使用 jq 格式化
           jq '.' _site/vpm.json > _site/vpm.json.tmp && mv _site/vpm.json.tmp _site/vpm.json
