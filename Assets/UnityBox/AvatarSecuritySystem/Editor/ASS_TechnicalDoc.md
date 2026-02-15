@@ -167,7 +167,7 @@ OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
           保存资产，输出统计
 ```
 
-> 注：每个子系统都可通过 `debugSkip*` 选项单独跳过。
+> 注：防御系统可通过 `disableDefense` 选项单独禁用。
 
 ### 3.2 运行时状态流
 
@@ -605,18 +605,6 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | `defenseLevel`        | int               | 2      | 防御等级 0-2（0=仅密码, 1=CPU, 2=CPU+GPU，见 §4.5.2）      |
 | `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 
-#### 调试选项
-
-| 参数                       | 类型 | 默认值 | 说明                        |
-| -------------------------- | ---- | ------ | --------------------------- |
-| `enableVerboseLogging`     | bool | false  | 详细日志输出                |
-| `debugSkipLockSystem`      | bool | false  | 跳过锁定系统生成            |
-| `debugSkipPasswordSystem`  | bool | false  | 跳过密码系统生成            |
-| `debugSkipCountdownSystem` | bool | false  | 跳过倒计时系统生成          |
-| `debugSkipFeedbackSystem`  | bool | false  | 跳过反馈系统（UI/音效）生成 |
-| `debugSkipDefenseSystem`   | bool | false  | 跳过防御系统生成            |
-| `debugValidateAfterBuild`  | bool | false  | 构建后验证动画控制器        |
-
 #### 音频资源（隐藏字段，自动从 Resources 加载）
 
 | 参数           | 类型      | 说明               |
@@ -768,12 +756,9 @@ Avatar Root
 │  调试选项                                    │
 │    [✓] PlayMode 时禁用                       │
 │    [✓] 禁用防御                              │
-│    ▶ 高级调试选项                            │
-│      [✓] 详细日志                            │
-│      [✓] 跳过锁定 / 密码 / 倒计时 / ...     │
 │  锁定选项                                    │
-│    [✓] 隐藏对象                              │
-│    WD模式: [Auto ▼]                          │
+│  [✓] 隐藏对象                                │
+│  WD模式: [Auto ▼]                          │
 └──────────────────────────────────────────────┘
 ```
 

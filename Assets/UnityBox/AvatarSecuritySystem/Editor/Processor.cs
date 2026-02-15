@@ -103,37 +103,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddParameterIfNotExists(fxController, PARAM_IS_LOCAL,
                 AnimatorControllerParameterType.Bool, defaultBool: false);
 
-            // 视觉反馈系统（HUD + 音频对象）
-            if (!assConfig.debugSkipFeedbackSystem)
-            {
-                LoadAudioResources(assConfig);
-                new Feedback(avatarGameObject, assConfig).Generate();
-            }
+            LoadAudioResources(assConfig);
+            new Feedback(avatarGameObject, assConfig).Generate();
 
-            // 各子系统
             var isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
-            if (!assConfig.debugSkipLockSystem)
-            {
-                new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
-            }
+            new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
+            new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
 
-            if (!assConfig.debugSkipPasswordSystem)
-            {
-                new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
-            }
+            var countdown = new Countdown(fxController, avatarGameObject, assConfig);
+            countdown.Generate();
+            countdown.GenerateAudioLayer();
 
-            if (!assConfig.debugSkipCountdownSystem)
-            {
-                var countdown = new Countdown(fxController, avatarGameObject, assConfig);
-                countdown.Generate();
-                if (!assConfig.debugSkipFeedbackSystem)
-                {
-                    countdown.GenerateAudioLayer();
-                }
-            }
-
-            if (!assConfig.debugSkipDefenseSystem && !assConfig.disableDefense)
+            if (!assConfig.disableDefense)
             {
                 try
                 {

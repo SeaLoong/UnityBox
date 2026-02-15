@@ -79,28 +79,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("动画 Write Defaults 模式：\nAuto = 自动检测(推荐)\nOn = 自动恢复\nOff = 显式恢复")]
         public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
 
-        // ============ 调试选项 ============
-        [Header("调试选项")]
-        [Tooltip("启用详细日志输出")]
-        public bool enableVerboseLogging = false;
 
-        [Tooltip("跳过锁定系统生成")]
-        public bool debugSkipLockSystem = false;
-
-        [Tooltip("跳过密码系统生成")]
-        public bool debugSkipPasswordSystem = false;
-
-        [Tooltip("跳过倒计时系统生成")]
-        public bool debugSkipCountdownSystem = false;
-
-        [Tooltip("跳过反馈系统生成（UI/音效）")]
-        public bool debugSkipFeedbackSystem = false;
-
-        [Tooltip("跳过防御系统生成（等同于 disableDefense）")]
-        public bool debugSkipDefenseSystem = false;
-
-        [Tooltip("构建后验证动画控制器")]
-        public bool debugValidateAfterBuild = false;
 
         /// <summary>
         /// VRChat 手势枚举
