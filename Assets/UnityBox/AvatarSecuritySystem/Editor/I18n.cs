@@ -577,15 +577,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU defense\n- Constraint: 10 chains × depth 100 (3 components per node)\n- PhysBone: 10 chains × 256 bones + 256 colliders\n- Contact: 200 (100 Sender + 100 Receiver)" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御\n- 约束链：10 条 × 深度 100（每节点 3 个约束组件）\n- PhysBone：10 条 × 256 骨骼 + 256 碰撞器\n- Contact：200 个（100 Sender + 100 Receiver）" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御\n- 制約チェーン：10本×深度100（ノードごとに3コンポーネント）\n- PhysBone：10本×256ボーン+256コライダー\n- Contact：200個（100 Sender+100 Receiver）" }
+                    { SystemLanguage.English, "Level 1: Password + CPU defense\n- Constraint: 10 chains × depth 256 (3 components per node)\n- PhysBone: 256 chains × 256 bones + 256 colliders\n- Contact: 200 (100 Sender + 100 Receiver)" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御\n- 约束链：10 条 × 深度 256（每节点 3 个约束组件）\n- PhysBone：256 条 × 256 骨骼 + 256 碰撞器\n- Contact：200 个（100 Sender + 100 Receiver）" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御\n- 制約チェーン：10本×深度256（ノードごとに3コンポーネント）\n- PhysBone：256本×256ボーン+256コライダー\n- Contact：200個（100 Sender+100 Receiver）" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Same as Level 1 + extended chains (5 Constraint + 3 PhysBone + 50 Contact)\n- Material: 5 meshes (200K vertices each, 16×4096² textures per mesh \u2248 5GB VRAM)\n- Particle: 20 systems × 5000 particles\n- Light: 30 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ property heavy compute shader" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：同等级 1 + 扩展链（5 约束 + 3 PhysBone + 50 Contact）\n- 材质：5 个网格（每个 20万顶点，每个 16 张 4096² 纹理 ≈ 5GB 显存）\n- 粒子：20 个系统 × 5000 粒子\n- 光源：30 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性的重型计算 Shader" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：レベル1と同様+拡張チェーン（5制約+3 PhysBone+50 Contact）\n- マテリアル：5メッシュ（各20万頂点、16×4096²テクスチャ≈ 5GB VRAM）\n- パーティクル：20システム×5000粒子\n- ライト：30個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティの重い計算シェーダー" }
+                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Constraint 256×10, PhysBone 256 chains, extended chains (5 Constraint + 50 PhysBone + Contact)\n- GPU: 256 materials (20K high-density vertices each) + 128 RenderTextures (4096²) for VRAM bomb\n- Particles: 50 systems × 200K particles = 10M total\n- Lights: 256 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ properties, heavy compute loops (compression bomb)" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：约束链 256×10 + PhysBone 256 条 + 扩展链（5 约束 + 50 PhysBone + Contact）\n- GPU：256 个材质（每个 2 万顶点高密度网格）+ 128 个 RenderTexture（4096²）VRAM 炸弹\n- 粒子：50 个系统 × 20 万粒子 = 千万级\n- 光源：256 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性，重型计算循环（压缩炸弹策略）" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：制約256×10+PhysBone256本+拡張チェーン（5制約+50PhysBone+Contact）\n- GPU：256マテリアル（各2万頂点高密度メッシュ）+128 RenderTexture（4096²）VRAM爆弾\n- パーティクル：50システム×20万粒子=千万級\n- ライト：256個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティ、重い計算ループ（展開爆弾戦略）" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {

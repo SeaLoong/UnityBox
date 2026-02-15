@@ -76,8 +76,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             controller.AddLayer(layer);
         }
 
-        #region Defense Components Creation
-
         private GameObject CreateDefenseComponents(float levelMultiplier = 1f)
         {
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
@@ -154,7 +152,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                     int usedColliders = defensePhysBoneCount * collidersPerChain;
 
-                    int extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 3);
+                    int extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 50);
                     if (!isDebugMode && config.defenseLevel >= 2 && extendedPhysBoneCount > 0)
                     {
                         int remainingColliders = Mathf.Max(0, colliderBudget - usedColliders);
@@ -207,9 +205,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             int verticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
 
+            const int texturePoolSize = 256;
+            var texturePool = new RenderTexture[texturePoolSize];
+            for (int t = 0; t < texturePoolSize; t++)
+            {
+                texturePool[t] = CreateVRAMBombTexture(t);
+            }
+
             for (int i = 0; i < parameters.MaterialCount; i++)
             {
-                var defenseMaterial = CreateDefenseMaterial(i);
+                var defenseMaterial = CreateDefenseMaterial(i, texturePool);
                 if (defenseMaterial == null)
                 {
                     Debug.LogWarning($"[ASS] 无法创建防御材质 #{i}，跳过");
@@ -239,7 +244,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] 创建材质防御: {parameters.MaterialCount} 个网格, 每个 {verticesPerMesh} 顶点");
         }
 
-        private static Material CreateDefenseMaterial(int seed = 0)
+        private static Material CreateDefenseMaterial(int seed, RenderTexture[] texturePool)
         {
             var shader = CreateDefenseShader();
             if (shader == null)
@@ -256,46 +261,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                                   "_xA8", "_xA9", "_xAA", "_xAB", "_xAC", "_xAD", "_xAE", "_xAF" };
             for (int i = 0; i < texProps.Length; i++)
             {
-                var tex = GenerateLargeProceduralTexture(4096, seed * 100 + i);
-                material.SetTexture(texProps[i], tex);
+                material.SetTexture(texProps[i], texturePool[(seed * 3 + i) % texturePool.Length]);
             }
 
             return material;
         }
 
-        private static Texture2D GenerateLargeProceduralTexture(int size, int seed)
+        private static RenderTexture CreateVRAMBombTexture(int seed)
         {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
-            tex.name = $"ASS_ProceduralTex_{seed}";
-            tex.wrapMode = TextureWrapMode.Repeat;
-            tex.filterMode = FilterMode.Bilinear;
-
-            var pixels = new Color32[size * size];
-            uint state = (uint)(seed * 2654435761 + 1);
-            for (int j = 0; j < pixels.Length; j++)
-            {
-                state ^= state << 13;
-                state ^= state >> 17;
-                state ^= state << 5;
-                pixels[j] = new Color32(
-                    (byte)(state & 0xFF),
-                    (byte)((state >> 8) & 0xFF),
-                    (byte)((state >> 16) & 0xFF),
-                    255
-                );
-            }
-            tex.SetPixels32(pixels);
-            tex.Apply(true, false);
-
-            var so = new UnityEditor.SerializedObject(tex);
-            var prop = so.FindProperty("m_StreamingMipmaps");
-            if (prop != null)
-            {
-                prop.boolValue = true;
-                so.ApplyModifiedPropertiesWithoutUndo();
-            }
-
-            return tex;
+            var rt = new RenderTexture(4096, 4096, 0, RenderTextureFormat.ARGB32);
+            rt.name = $"ASS_RT_{seed}";
+            rt.useMipMap = true;
+            rt.autoGenerateMips = false;
+            rt.filterMode = FilterMode.Bilinear;
+            rt.wrapMode = TextureWrapMode.Repeat;
+            rt.Create();
+            return rt;
         }
 
         private readonly struct DefenseParams
@@ -380,10 +361,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.Log("[ASS] 防御等级1");
                 return new DefenseParams(
-                    constraintDepth: 100,
+                    constraintDepth: 256,
                     constraintChainCount: 10,
                     physBoneLength: 256,
-                    physBoneChainCount: 10,
+                    physBoneChainCount: 256,
                     physBoneColliders: 256,
                     contactCount: 200,
                     polyVertices: 0,
@@ -396,17 +377,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log("[ASS] 防御等级2");
             return new DefenseParams(
-                constraintDepth: 100,
+                constraintDepth: 256,
                 constraintChainCount: 10,
                 physBoneLength: 256,
-                physBoneChainCount: 10,
+                physBoneChainCount: 256,
                 physBoneColliders: 256,
                 contactCount: 200,
                 polyVertices: 200000,
-                particleCount: 100000,
-                particleSystemCount: 20,
-                lightCount: 30,
-                materialCount: 5
+                particleCount: 10000000,
+                particleSystemCount: 50,
+                lightCount: 256,
+                materialCount: 256
             );
         }
 
@@ -463,7 +444,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     previous = obj;
                 }
 
-                Debug.Log($"[ASS] 创建VRC Constraint链 {chainIndex}: 深度={depth}, 每节点包含 Parent/Position/Rotation 三种约束");
+                Debug.Log($"[ASS] 创建VRC Constraint链 {chainIndex}: 深度={depth}");
             }
             catch (System.Exception ex)
             {
@@ -565,8 +546,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
 
-            Debug.Log($"[ASS] 创建PhysBone链 {chainIndex} (Advanced模式): 长度={chainLength}, Collider={colliderCount}, " +
-                     $"启用限制/拉伸/挤压/抓取, Curve数=6");
+            Debug.Log($"[ASS] 创建PhysBone链 {chainIndex}: 长度={chainLength}, Collider={colliderCount}");
         }
 
         private static void CreateContactSystem(GameObject root, int componentCount)
@@ -757,7 +737,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     previous = obj;
                 }
 
-                Debug.Log($"[ASS] 创建扩展Constraint链 {c}: 深度={depth}, 4种约束类型");
+                Debug.Log($"[ASS] 创建扩展Constraint链 {c}: 深度={depth}");
             }
         }
 
@@ -838,7 +818,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
 
-                Debug.Log($"[ASS] 创建扩展PhysBone链 {c} (Advanced模式): 长度={chainLength}, Collider={colliderCount}");
+                Debug.Log($"[ASS] 创建扩展PhysBone链 {c}: 长度={chainLength}, Collider={colliderCount}");
             }
         }
 
@@ -889,7 +869,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 receiver.localOnly = true;
             }
 
-            Debug.Log($"[ASS] 创建扩展Contact系统: {halfCount} senders + {halfCount} receivers, 10个标签");
+            Debug.Log($"[ASS] 创建扩展Contact系统: {halfCount} senders + {halfCount} receivers");
         }
 
         private static Shader CreateDefenseShader()
@@ -958,12 +938,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 light.shadowNormalBias = 0.4f;
             }
 
-            Debug.Log($"[ASS] 创建光源防御: {lightCount}个高质量光源，启用实时阴影");
+            Debug.Log($"[ASS] 创建光源防御: {lightCount}个光源");
         }
-
-        #endregion
-
-        #region Mesh Generation Utilities
 
         private static Mesh CreateHighDensitySphereMesh(int targetVertexCount)
         {
@@ -1039,7 +1015,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return mesh;
         }
 
-        #endregion
     }
 }
 

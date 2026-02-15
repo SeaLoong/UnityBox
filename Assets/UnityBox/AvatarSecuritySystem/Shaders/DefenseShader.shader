@@ -906,7 +906,7 @@ Shader "UnityBox/ASS_DefenseShader"
                 float3 wav = _ws(pu, wt);
                 float3 shc = _sh(n, so);
                 float3 brd = _bd(n, vd, ld, bs);
-                float3 ptc = _pt(i.worldPos, vd, pd, max(fo / 2, 4));
+                float3 ptc = _pt(i.worldPos, vd, pd, max(fo >> 1, 4));
                 float3 cnv = _cv(pu, cv);
                 float3 blm = _bl(pu, bp);
                 float3 trb = _td(pu, _Time.y, tl);
@@ -971,7 +971,7 @@ Shader "UnityBox/ASS_DefenseShader"
                 for (int si = 0; si < sw; si++)
                 {
                     float3 of = float3(sin(float(si) * 0.123 + _Time.y), cos(float(si) * 0.456 + _Time.y), sin(float(si) * 0.789 + _Time.y)) * 0.01;
-                    sa *= saturate(0.5 + _fb(i.worldPos + of, max(fo / 2, 4)) * 0.5);
+                    sa *= saturate(0.5 + _fb(i.worldPos + of, max(fo >> 1, 4)) * 0.5);
                 }
 
                 float3 fc2 = (bc.rgb + ec * 0.3 + sss * 0.2) * lt * sh;
