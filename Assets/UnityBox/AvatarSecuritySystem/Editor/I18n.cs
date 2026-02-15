@@ -577,15 +577,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU defense (Constraint Chain, PhysBone, Contact)" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（约束链、PhysBone、Contact）" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（制約チェーン、PhysBone、コンタクト）" }
+                    { SystemLanguage.English, "Level 1: Password + CPU defense\n- Constraint: 10 chains × depth 100 (3 components per node)\n- PhysBone: 10 chains × 256 bones + 256 colliders\n- Contact: 200 (100 Sender + 100 Receiver)" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御\n- 约束链：10 条 × 深度 100（每节点 3 个约束组件）\n- PhysBone：10 条 × 256 骨骼 + 256 碰撞器\n- Contact：200 个（100 Sender + 100 Receiver）" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御\n- 制約チェーン：10本×深度100（ノードごとに3コンポーネント）\n- PhysBone：10本×256ボーン+256コライダー\n- Contact：200個（100 Sender+100 Receiver）" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU defense + GPU defense (with extended chains and VRAM textures)" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU 防御 + GPU 防御（含扩展链和显存纹理）" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU防御+GPU防御（拡張チェーンとVRAMテクスチャ含む）" }
+                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Same as Level 1 + extended chains (5 Constraint + 3 PhysBone + 50 Contact)\n- Material: 20 meshes (200K vertices each, 16×4096² textures per mesh \u2248 20GB VRAM)\n- Particle: 20 systems × 5000 particles\n- Light: 30 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ property heavy compute shader" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：同等级 1 + 扩展链（5 约束 + 3 PhysBone + 50 Contact）\n- 材质：20 个网格（每个 20万顶点，每个 16 张 4096² 纹理 ≈ 20GB 显存）\n- 粒子：20 个系统 × 5000 粒子\n- 光源：30 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性的重型计算 Shader" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：レベル1と同様+拡張チェーン（5制約+3 PhysBone+50 Contact）\n- マテリアル：20メッシュ（各20万頂点、16×4096²テクスチャ≈ 20GB VRAM）\n- パーティクル：20システム×5000粒子\n- ライト：30個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティの重い計算シェーダー" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {
@@ -783,9 +783,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.play_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Skip ASS generation in Play Mode (uncheck to test in editor)" },
-                    { SystemLanguage.ChineseSimplified, "在 Play 模式下跳过 ASS 生成（取消勾选以在编辑器中测试）" },
-                    { SystemLanguage.Japanese, "プレイモードでASS生成をスキップ（エディタでテストするにはチェックを外す）" }
+                    { SystemLanguage.English, "Skip ASS generation in Play Mode. When unchecked, defense components use minimal parameters (1 each) for quick testing." },
+                    { SystemLanguage.ChineseSimplified, "在 Play 模式下跳过 ASS 生成。取消勾选后，防御组件会使用最小参数（各 1 个）以快速测试。" },
+                    { SystemLanguage.Japanese, "プレイモードでASS生成をスキップ。チェックを外すと、防御コンポーネントは最小パラメータ（各 1 個）で素早くテストできます。" }
                 },
                 ["advanced.disable_defense"] = new Dictionary<SystemLanguage, string>
                 {

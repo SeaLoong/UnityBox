@@ -262,6 +262,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             tex.SetPixels32(pixels);
             tex.Apply(true, false);
+
+            var so = new UnityEditor.SerializedObject(tex);
+            var prop = so.FindProperty("m_StreamingMipmaps");
+            if (prop != null)
+            {
+                prop.boolValue = true;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             return tex;
         }
 

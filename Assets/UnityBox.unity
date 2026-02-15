@@ -503,7 +503,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 222744746}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -18490,13 +18490,6 @@ MonoBehaviour:
   disableRootChildren: 1
   defenseLevel: 2
   writeDefaultsMode: 0
-  enableVerboseLogging: 0
-  debugSkipLockSystem: 0
-  debugSkipPasswordSystem: 0
-  debugSkipCountdownSystem: 0
-  debugSkipFeedbackSystem: 0
-  debugSkipDefenseSystem: 0
-  debugValidateAfterBuild: 1
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0
