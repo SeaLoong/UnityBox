@@ -11,7 +11,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const string PLUGIN_QUALIFIED_NAME = "top.sealoong.unitybox.avatar-security-system";
 
         // ============ 资源路径 ============
-        public const string ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated/ASS";
+        public const string ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated";
         public const string CONTROLLER_NAME = "ASS_Controller.controller";
         public const string ANIMATIONS_FOLDER = "Animations";
         public const string SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim";
@@ -78,7 +78,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// Shader循环次数上限（3000000）
-        /// 防御Shader的最大循环次数，用于GPU端的复杂计算防御
+        /// 防御Shader循环次数，用于GPU端的复杂计算防御
         /// </summary>
         public const int SHADER_LOOP_MAX_COUNT = 3000000;
     }

@@ -170,10 +170,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             settings.loopTime = false;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            // 驱动 Overlay 上 MeshRenderer 的材质属性 _Progress（从 1 到 0）
+            // 驱动 Overlay 上 MeshRenderer 的材质属性 _C9D4（从 1 到 0）
             string overlayPath = $"{GO_UI}/Overlay";
             AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
-            clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._Progress", progressCurve);
+            clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._C9D4", progressCurve);
 
             Debug.Log($"[ASS] Countdown animation created: duration={duration}s, path={overlayPath}");
             return clip;

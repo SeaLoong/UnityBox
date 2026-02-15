@@ -16,7 +16,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// UI Shader 名称（全屏覆盖渲染）
         /// </summary>
-        private const string UI_SHADER_NAME = "UnityBox/AvatarSecuritySystem/UI";
+        private const string UI_SHADER_NAME = "UnityBox/ASS_UI";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
 
         public Feedback(GameObject avatarGameObject, AvatarSecuritySystemComponent config)
@@ -71,7 +71,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建 UI Mesh：使用自定义 Shader 全屏渲染遮挡背景和进度条
         /// Shader 在顶点着色器中将 Quad 直接映射到裁剪空间覆盖整个屏幕
-        /// 进度条通过动画驱动材质属性 _Progress（1→0）
+        /// 进度条通过动画驱动材质属性 _C9D4（1→0）
         /// </summary>
         private GameObject CreateUIMesh()
         {
@@ -108,14 +108,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
             var shader = Shader.Find(UI_SHADER_NAME) ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
             var material = new Material(shader);
-            material.SetColor("_BackgroundColor", Color.white);
-            material.SetColor("_BarColor", Color.red);
-            material.SetFloat("_Progress", 1f);  // 初始满进度
+            material.SetColor("_A7F3", Color.white);
+            material.SetColor("_B2E1", Color.red);
+            material.SetFloat("_C9D4", 1f);  // 初始满进度
 
             // 加载并设置 Logo 纹理
             var logoTex = Resources.Load<Texture2D>(LOGO_RESOURCE_NAME);
             if (logoTex != null)
-                material.SetTexture("_LogoTex", logoTex);
+                material.SetTexture("_G4D9", logoTex);
 
             meshRenderer.sharedMaterial = material;
 

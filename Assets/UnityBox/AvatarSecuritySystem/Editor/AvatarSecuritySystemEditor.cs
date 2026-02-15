@@ -310,7 +310,6 @@ namespace UnityBox.AvatarSecuritySystem
                 0 => T("defense.level_0_desc"),
                 1 => T("defense.level_1_desc"),
                 2 => T("defense.level_2_desc"),
-                3 => T("defense.level_3_desc"),
                 _ => "Unknown Defense Level"
             };
         }

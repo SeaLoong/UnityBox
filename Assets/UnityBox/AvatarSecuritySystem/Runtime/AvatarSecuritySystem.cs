@@ -59,9 +59,9 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
-        [Tooltip("防御等级：0=仅密码, 1=密码+CPU防御, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)")]
-        [Range(0, 3)]
-        public int defenseLevel = 3;
+        [Tooltip("防御等级：0=仅密码, 1=密码+CPU防御, 2=密码+CPU+GPU防御")]
+        [Range(0, 2)]
+        public int defenseLevel = 2;
 
         /// <summary>
         /// Write Defaults 模式
@@ -204,7 +204,7 @@ namespace UnityBox.AvatarSecuritySystem
         private void ClampDefenseLevel()
         {
             const int minimumLevel = 0;
-            const int maximumLevel = 3;
+            const int maximumLevel = 2;
             defenseLevel = Mathf.Clamp(defenseLevel, minimumLevel, maximumLevel);
         }
 
@@ -212,7 +212,7 @@ namespace UnityBox.AvatarSecuritySystem
         {
             const float defaultCountdownDuration = 30f;
             const float defaultWarningThreshold = 10f;
-            const int defaultDefenseLevel = 3;
+            const int defaultDefenseLevel = 2;
 
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = defaultCountdownDuration;

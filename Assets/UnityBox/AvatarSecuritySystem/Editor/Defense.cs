@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
@@ -22,16 +23,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     /// 
     /// GPU 防御机制：
     /// - 高循环次数 Shader 材质（自定义 DefenseShader 的密集计算）
-    /// - Overdraw 层堆叠（多层半透明 Quad 强制重复渲染）
     /// - 高面数网格（高密度球体 Mesh 增加顶点处理负担）
     /// - 粒子系统（大量粒子增加排序和渲染开销）
     /// - 实时光源（多个 Soft Shadow 光源增加阴影计算开销）
     /// 
     /// 防御等级：
     /// 0 = 不创建防御组件（仅密码系统）
-    /// 1 = 仅 CPU 防御（Constraint + PhysBone + Contact，最高参数）
-    /// 2 = CPU + GPU 防御（CPU 最高参数，GPU 中低参数）
-    /// 3 = CPU + GPU 防御（所有参数最高，含扩展链）
+    /// 1 = 仅 CPU 防御（Constraint + PhysBone + Contact）
+    /// 2 = CPU + GPU 防御（含扩展链和显存纹理）
     /// </summary>
     public class Defense
     {
@@ -40,32 +39,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AvatarSecuritySystemComponent config;
         private readonly bool isDebugMode;
 
-        private static Mesh _sharedQuadMesh;
-        private static Mesh _sharedQuadMeshLarge;
-
         public Defense(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode = false)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
             this.isDebugMode = isDebugMode;
-        }
-
-        /// <summary>
-        /// 获取共享的 QuadMesh（自动缓存）
-        /// </summary>
-        private static Mesh GetSharedQuadMesh(float size)
-        {
-            if (size > 1f)
-            {
-                _sharedQuadMeshLarge ??= CreateQuadMesh(size);
-                return _sharedQuadMeshLarge;
-            }
-            else
-            {
-                _sharedQuadMesh ??= CreateQuadMesh(size);
-                return _sharedQuadMesh;
-            }
         }
 
         /// <summary>
@@ -86,7 +65,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            float levelMultiplier = Mathf.Clamp01((config.defenseLevel - 1) / 3f);
+            float levelMultiplier = Mathf.Clamp01((config.defenseLevel - 1) / 1f);
 
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
@@ -96,9 +75,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = inactiveState;
 
-            // 状态：Active（防御激活）
+            // 状态：Active（防御激活）— 使用激活动画启用防御根对象
             var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
-            activeState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            var activateClip = new AnimationClip { name = "ASS_DefenseActivate" };
+            activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
+                AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            Utils.AddSubAsset(controller, activateClip);
+            activeState.motion = activateClip;
 
             // 转换条件：IsLocal && TimeUp
             var toActive = Utils.CreateTransition(inactiveState, activeState);
@@ -127,9 +110,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// 创建防御组件根对象及所有子组件
         /// 根据防御等级自动配置：
         /// - 等级0: 不创建任何防御组件
-        /// - 等级1: 仅CPU防御（最高参数）
-        /// - 等级2: CPU+GPU防御（CPU最高，GPU中低参数）
-        /// - 等级3: CPU+GPU防御（所有参数最高）
+        /// - 等级1: 仅CPU防御
+        /// - 等级2: CPU+GPU防御（含扩展链和显存纹理）
         /// </summary>
         private GameObject CreateDefenseComponents(float levelMultiplier = 1f)
         {
@@ -137,7 +119,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
             {
-                Object.Destroy(existingRoot.gameObject);
+                Object.DestroyImmediate(existingRoot.gameObject);
             }
 
             var root = new GameObject(Constants.GO_DEFENSE_ROOT);
@@ -179,8 +161,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         CreateConstraintChain(root, parameters.ConstraintDepth, i);
                     }
 
-                    // 扩展约束链（等级3时创建）
-                    if (!isDebugMode && config.defenseLevel >= 3)
+                    // 扩展约束链（等级2时创建）
+                    if (!isDebugMode && config.defenseLevel >= 2)
                     {
                         CreateExtendedConstraintChains(root, Mathf.Min(parameters.ConstraintChainCount, 5), parameters.ConstraintDepth);
                     }
@@ -194,9 +176,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         CreatePhysBoneChains(root, parameters.PhysBoneLength, parameters.PhysBoneColliders, i);
                     }
 
-                    // 扩展PhysBone链（等级3时创建）
+                    // 扩展PhysBone链（等级2时创建）
                     int extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 3);
-                    if (!isDebugMode && config.defenseLevel >= 3 && extendedPhysBoneCount > 0)
+                    if (!isDebugMode && config.defenseLevel >= 2 && extendedPhysBoneCount > 0)
                     {
                         CreateExtendedPhysBoneChains(root, extendedPhysBoneCount, parameters.PhysBoneLength, parameters.PhysBoneColliders);
                     }
@@ -207,10 +189,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     CreateContactSystem(root, parameters.ContactCount);
 
-                    // 扩展Contact系统（等级3时创建）
+                    // 扩展Contact系统（等级2时创建）
                     int remainingContactBudget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - parameters.ContactCount);
                     int extendedContactCount = Mathf.Min(remainingContactBudget / 2, 50);
-                    if (!isDebugMode && config.defenseLevel >= 3 && extendedContactCount > 0)
+                    if (!isDebugMode && config.defenseLevel >= 2 && extendedContactCount > 0)
                     {
                         CreateExtendedContactSystem(root, extendedContactCount);
                     }
@@ -243,7 +225,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 创建材质防御系统（使用防御 Shader + Overdraw + 高面数）
+        /// 创建材质防御系统（使用防御 Shader + 高面数网格）
         /// </summary>
         private void CreateMaterialDefense(
             GameObject root,
@@ -253,79 +235,47 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             materialDefenseRoot.transform.SetParent(root.transform);
             materialDefenseRoot.transform.localPosition = Vector3.zero;
 
-            // 创建防御材质
-            var defenseMaterial = CreateDefenseMaterial(parameters.ShaderLoops);
-            if (defenseMaterial == null)
-            {
-                Debug.LogWarning("[ASS] 无法创建防御材质，跳过材质防御");
-                Object.DestroyImmediate(materialDefenseRoot);
-                return;
-            }
-
-            // 1. 创建多个使用防御材质的高面数网格
+            // 创建多个使用防御材质的高面数网格（每个独立材质 + 独立大纹理）
             int verticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
+
             for (int i = 0; i < parameters.MaterialCount; i++)
             {
+                // 每个网格创建独立材质，携带独立大纹理以消耗显存
+                var defenseMaterial = CreateDefenseMaterial(i);
+                if (defenseMaterial == null)
+                {
+                    Debug.LogWarning($"[ASS] 无法创建防御材质 #{i}，跳过");
+                    continue;
+                }
+
                 var meshObj = new GameObject($"DefenseMesh_{i}");
                 meshObj.transform.SetParent(materialDefenseRoot.transform);
                 meshObj.transform.localPosition = new Vector3(i * 0.2f, 0, 0);
                 meshObj.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
 
                 var mesh = CreateHighDensitySphereMesh(verticesPerMesh);
+
                 var meshFilter = meshObj.AddComponent<MeshFilter>();
-                meshFilter.mesh = mesh;
+                meshFilter.sharedMesh = mesh;
 
                 var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-                meshRenderer.material = defenseMaterial;
+                meshRenderer.sharedMaterial = defenseMaterial;
+                meshRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
+                meshRenderer.receiveShadows = true;
+                meshRenderer.lightProbeUsage = LightProbeUsage.BlendProbes;
+                meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox;
+                meshRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.Object;
+                meshRenderer.allowOcclusionWhenDynamic = false;
             }
 
-            Debug.Log($"[ASS] 创建材质防御: {parameters.MaterialCount} 个网格, 每个 {verticesPerMesh} 顶点, Shader 循环={parameters.ShaderLoops}");
-
-            // 2. 创建 Overdraw 层堆叠（使用防御材质）
-            if (parameters.OverdrawLayers > 0)
-            {
-                int overdrawGroups = config.defenseLevel == 1 ? 1 : 2;
-                for (int i = 0; i < overdrawGroups; i++)
-                {
-                    CreateOverdrawLayersWithMaterial(materialDefenseRoot, parameters.OverdrawLayers / overdrawGroups, defenseMaterial, i);
-                }
-
-                if (!isDebugMode && config.defenseLevel >= 3 && parameters.OverdrawLayers > 100)
-                {
-                    CreateOverdrawLayersWithMaterial(materialDefenseRoot, parameters.OverdrawLayers / 4, defenseMaterial, 3);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 创建 Overdraw 层，使用指定的材质
-        /// </summary>
-        private static void CreateOverdrawLayersWithMaterial(GameObject parent, int layerCount, Material material, int groupIndex)
-        {
-            var overdrawRoot = new GameObject($"OverdrawLayers_{groupIndex}");
-            overdrawRoot.transform.SetParent(parent.transform);
-            overdrawRoot.transform.localPosition = new Vector3(groupIndex * 3f, 0, 0);
-
-            for (int i = 0; i < layerCount; i++)
-            {
-                var layerObj = new GameObject($"Layer_{i}");
-                layerObj.transform.SetParent(overdrawRoot.transform);
-                layerObj.transform.localPosition = new Vector3(0, 0, i * 0.001f);
-
-                var meshFilter = layerObj.AddComponent<MeshFilter>();
-                meshFilter.mesh = GetSharedQuadMesh(2f);
-
-                var meshRenderer = layerObj.AddComponent<MeshRenderer>();
-                meshRenderer.material = material;
-            }
-
-            Debug.Log($"[ASS] 创建 Overdraw 层组 {groupIndex}: {layerCount} 层（使用防御材质）");
+            Debug.Log($"[ASS] 创建材质防御: {parameters.MaterialCount} 个网格, 每个 {verticesPerMesh} 顶点");
         }
 
         /// <summary>
         /// 创建防御材质（使用防御 Shader）
+        /// 为每个材质生成独立的大尺寸程序化纹理以消耗显存
         /// </summary>
-        private static Material CreateDefenseMaterial(int shaderLoopCount)
+        private static Material CreateDefenseMaterial(int seed = 0)
         {
             var shader = CreateDefenseShader();
             if (shader == null)
@@ -335,91 +285,51 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             var material = new Material(shader);
-            material.name = "ASS_DefenseMaterial";
-
-            ApplyFixedShaderParameters(material, shaderLoopCount);
-
-            // 设置基本材质参数
-            material.SetFloat("_Glossiness", 0.5f);
-            material.SetFloat("_Metallic", 0.5f);
-            material.SetFloat("_OcclusionStrength", 1.0f);
-            material.SetFloat("_EmissionIntensity", 1.0f);
-            material.SetFloat("_RimPower", 4.0f);
-            material.SetFloat("_DetailScale", 10.0f);
-            material.SetFloat("_NoiseScale", 5.0f);
-            material.SetFloat("_RefractionStrength", 0.5f);
-            material.SetFloat("_DispersionStrength", 0.1f);
-            material.SetFloat("_Anisotropy", 0.5f);
-            material.SetFloat("_ClearCoat", 0.5f);
-            material.SetFloat("_Sheen", 0.5f);
-            material.SetFloat("_Thickness", 1.0f);
-            material.SetFloat("_Transmission", 0.5f);
-            material.SetFloat("_Absorption", 0.5f);
-
-            // 设置颜色
-            material.SetColor("_SubsurfaceColor", new Color(1f, 0.5f, 0.5f, 1f));
-            material.SetColor("_BaseColor", new Color(1f, 1f, 1f, 1f));
-
-            // 设置透明渲染队列用于 Overdraw
+            material.name = $"ASS_DefenseMaterial_{seed}";
             material.renderQueue = 3000;
 
-            // 设置纹理
-            Texture2D defaultWhite = Texture2D.whiteTexture;
-            material.SetTexture("_MainTex", defaultWhite);
-            material.SetTexture("_NormalMap", defaultWhite);
-            material.SetTexture("_HeightMap", defaultWhite);
-            material.SetTexture("_DetailTex", defaultWhite);
-            material.SetTexture("_NoiseTex", defaultWhite);
+            // 为16个纹理槽位生成大尺寸程序化纹理，消耗显存
+            string[] texProps = { "_xA0", "_xA1", "_xA2", "_xA3", "_xA4", "_xA5", "_xA6", "_xA7",
+                                  "_xA8", "_xA9", "_xAA", "_xAB", "_xAC", "_xAD", "_xAE", "_xAF" };
+            for (int i = 0; i < texProps.Length; i++)
+            {
+                var tex = GenerateLargeProceduralTexture(4096, seed * 100 + i);
+                material.SetTexture(texProps[i], tex);
+            }
 
-            Debug.Log($"[ASS] 创建防御材质: 循环数={shaderLoopCount}");
             return material;
         }
 
         /// <summary>
-        /// 应用固定Shader参数到材质
-        /// 设置所有GPU密集计算控制参数（循环计数、采样率、光线步进步数等）
-        /// 以及后处理效果参数（色差、暗角、晕光等）
+        /// 生成大尺寸程序化纹理（RGBA32, 4096x4096 = 64MB per texture）
+        /// 每个纹理使用不同的种子确保内容唯一，防止GPU去重优化
         /// </summary>
-        /// <param name="material">目标材质</param>
-        /// <param name="shaderLoopCount">Shader主循环次数，范围0-1000</param>
-        private static void ApplyFixedShaderParameters(Material material, int shaderLoopCount)
+        private static Texture2D GenerateLargeProceduralTexture(int size, int seed)
         {
-            material.SetInt("_LoopCount", Mathf.Clamp(shaderLoopCount, 0, 1000));
-            material.SetFloat("_Intensity", 50f);
-            material.SetFloat("_Complexity", 500f);
-            material.SetFloat("_ParallaxScale", 5f);
-            material.SetFloat("_NoiseOctaves", 8f);
-            material.SetFloat("_SamplingRate", 16f);
-            material.SetFloat("_ColorPasses", 10f);
-            material.SetFloat("_LightCount", 4f);
-            material.SetFloat("_RayMarchSteps", 8f);
-            material.SetFloat("_SubsurfaceScattering", 4f);
-            material.SetFloat("_FractalIterations", 16f);
-            material.SetFloat("_VolumetricSteps", 8f);
-            material.SetFloat("_ParticleDensity", 250f);
-            material.SetFloat("_GlobalIllumination", 4f);
-            material.SetFloat("_CausticSamples", 8f);
-            material.SetFloat("_ReflectionSamples", 8f);
-            material.SetFloat("_ShadowSamples", 4f);
-            material.SetFloat("_ParallaxIterations", 8f);
-            material.SetFloat("_Turbulence", 100f);
-            material.SetFloat("_CloudLayers", 4f);
-            material.SetFloat("_MotionBlurStrength", 0.3f);
-            material.SetFloat("_DepthOfFieldStrength", 0.3f);
-            material.SetFloat("_ChromaticAberration", 0.05f);
-            material.SetFloat("_LensFlareIntensity", 2f);
-            material.SetFloat("_GrainStrength", 0.3f);
-            material.SetFloat("_VignetteStrength", 0.3f);
-            material.SetFloat("_MoireIntensity", 0.5f);
-            material.SetFloat("_DitherStrength", 0.3f);
-            material.SetFloat("_HologramIntensity", 0.5f);
-            material.SetFloat("_Iridescence", 0.5f);
-            material.SetFloat("_VelvetIntensity", 0.5f);
-            material.SetFloat("_FresnelPower", 2f);
-            material.SetFloat("_BumpMapStrength", 0.5f);
-            material.SetFloat("_HeightMapStrength", 0.5f);
-            material.SetFloat("_ParallaxIntensity", 0.5f);
-            material.SetFloat("_DistortionStrength", 1f);
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            tex.name = $"ASS_ProceduralTex_{seed}";
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.filterMode = FilterMode.Bilinear;
+
+            var pixels = new Color32[size * size];
+            // 使用伪随机算法填充像素，确保每个纹理内容不同
+            uint state = (uint)(seed * 2654435761 + 1);
+            for (int j = 0; j < pixels.Length; j++)
+            {
+                // xorshift32
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                pixels[j] = new Color32(
+                    (byte)(state & 0xFF),
+                    (byte)((state >> 8) & 0xFF),
+                    (byte)((state >> 16) & 0xFF),
+                    255
+                );
+            }
+            tex.SetPixels32(pixels);
+            tex.Apply(true, false); // 生成 mipmap
+            return tex;
         }
 
         /// <summary>
@@ -433,8 +343,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int PhysBoneChainCount;
             public readonly int PhysBoneColliders;
             public readonly int ContactCount;
-            public readonly int ShaderLoops;
-            public readonly int OverdrawLayers;
             public readonly int PolyVertices;
             public readonly int ParticleCount;
             public readonly int ParticleSystemCount;
@@ -444,7 +352,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public DefenseParams(
                 int constraintDepth, int constraintChainCount,
                 int physBoneLength, int physBoneChainCount, int physBoneColliders,
-                int contactCount, int shaderLoops, int overdrawLayers, int polyVertices,
+                int contactCount, int polyVertices,
                 int particleCount, int particleSystemCount, int lightCount, int materialCount)
             {
                 ConstraintDepth = constraintDepth;
@@ -453,8 +361,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 PhysBoneChainCount = physBoneChainCount;
                 PhysBoneColliders = physBoneColliders;
                 ContactCount = contactCount;
-                ShaderLoops = shaderLoops;
-                OverdrawLayers = overdrawLayers;
                 PolyVertices = polyVertices;
                 ParticleCount = particleCount;
                 ParticleSystemCount = particleSystemCount;
@@ -466,9 +372,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 根据防御等级计算参数
         /// 等级0: 仅密码系统（不创建防御组件）
-        /// 等级1: 密码+CPU防御（最高参数）
-        /// 等级2: 密码+CPU防御+GPU防御（中低参数）
-        /// 等级3: 密码+CPU防御+GPU防御（所有参数最高）
+        /// 等级1: 密码+CPU防御
+        /// 等级2: 密码+CPU防御+GPU防御（含扩展链和显存纹理）
         /// 调试模式: 根据等级生成对应防御机制，但使用最小参数值
         /// </summary>
         private DefenseParams CalculateDefenseParams(float levelMultiplier)
@@ -480,7 +385,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (config.defenseLevel <= 0)
                 {
                     Debug.Log("[ASS] 调试模式 - 等级0：不生成防御组件");
-                    return new DefenseParams(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                    return new DefenseParams(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 }
                 
                 // 等级1：仅CPU防御（最小参数）
@@ -494,8 +399,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         physBoneChainCount: 1,
                         physBoneColliders: 2,
                         contactCount: 4,
-                        shaderLoops: 0,
-                        overdrawLayers: 0,
                         polyVertices: 0,
                         particleCount: 0,
                         particleSystemCount: 0,
@@ -504,7 +407,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     );
                 }
                 
-                // 等级2/3：CPU+GPU防御（最小参数，2和3没区别）
+                // 等级2：CPU+GPU防御（最小参数）
                 Debug.Log($"[ASS] 调试模式 - 等级{config.defenseLevel}：CPU+GPU防御（最小参数）");
                 return new DefenseParams(
                     constraintDepth: 3,
@@ -513,8 +416,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     physBoneChainCount: 1,
                     physBoneColliders: 2,
                     contactCount: 4,
-                    shaderLoops: 10,
-                    overdrawLayers: 3,
                     polyVertices: 1000,
                     particleCount: 100,
                     particleSystemCount: 1,
@@ -526,19 +427,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             // 等级0：仅密码系统，不需要防御组件
             // 这里返回全0参数，CreateDefenseComponents会被跳过
             
-            // 等级1：密码+CPU防御（最高参数）
+            // 等级1：密码+CPU防御
             if (config.defenseLevel == 1)
             {
-                Debug.Log("[ASS] 防御等级1：密码+CPU防御（最高参数，无GPU）");
+                Debug.Log("[ASS] 防御等级1：密码+CPU防御（无GPU）");
                 return new DefenseParams(
-                    constraintDepth: 100,              // CPU: 最大约束深度
-                    constraintChainCount: 10,          // CPU: 最大约束链数
-                    physBoneLength: 256,               // CPU: 最大PhysBone长度
-                    physBoneChainCount: 10,            // CPU: 最大PhysBone链数
-                    physBoneColliders: 256,            // CPU: 最大碰撞器数
-                    contactCount: 200,                 // CPU: 最大Contact数
-                    shaderLoops: 0,                    // GPU: 关闭
-                    overdrawLayers: 0,                 // GPU: 关闭
+                    constraintDepth: 100,              // CPU: 约束深度
+                    constraintChainCount: 10,          // CPU: 约束链数
+                    physBoneLength: 256,               // CPU: PhysBone长度
+                    physBoneChainCount: 10,            // CPU: PhysBone链数
+                    physBoneColliders: 256,            // CPU: 碰撞器数
+                    contactCount: 200,                 // CPU: Contact数
                     polyVertices: 0,                   // GPU: 关闭
                     particleCount: 0,                  // GPU: 关闭
                     particleSystemCount: 0,            // GPU: 关闭
@@ -547,43 +446,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 );
             }
 
-            // 等级2：密码+CPU防御+GPU防御（中低参数）
-            if (config.defenseLevel == 2)
-            {
-                Debug.Log("[ASS] 防御等级2：密码+CPU+GPU防御（CPU最高，GPU中低参数）");
-                return new DefenseParams(
-                    constraintDepth: 100,              // CPU: 最大约束深度
-                    constraintChainCount: 10,          // CPU: 最大约束链数
-                    physBoneLength: 256,               // CPU: 最大PhysBone长度
-                    physBoneChainCount: 10,            // CPU: 最大PhysBone链数
-                    physBoneColliders: 256,            // CPU: 最大碰撞器数
-                    contactCount: 200,                 // CPU: 最大Contact数
-                    shaderLoops: 200,                  // GPU: 中低 Shader循环
-                    overdrawLayers: 50,                // GPU: 中低 Overdraw层
-                    polyVertices: 50000,               // GPU: 中低 顶点数
-                    particleCount: 10000,              // GPU: 中低 粒子数
-                    particleSystemCount: 3,            // GPU: 中低 粒子系统数
-                    lightCount: 5,                     // GPU: 中低 光源数
-                    materialCount: 2                   // GPU: 中低 材质数
-                );
-            }
-
-            // 等级3：密码+CPU防御+GPU防御（所有参数最高）
-            Debug.Log("[ASS] 防御等级3：密码+CPU+GPU防御（所有参数最高）");
+            // 等级2：密码+CPU防御+GPU防御
+            Debug.Log("[ASS] 防御等级2：密码+CPU+GPU防御");
             return new DefenseParams(
-                constraintDepth: 100,              // CPU: 最大约束深度
-                constraintChainCount: 10,          // CPU: 最大约束链数
-                physBoneLength: 256,               // CPU: 最大PhysBone长度
-                physBoneChainCount: 10,            // CPU: 最大PhysBone链数
-                physBoneColliders: 256,            // CPU: 最大碰撞器数
-                contactCount: 200,                 // CPU: 最大Contact数
-                shaderLoops: 1000,                 // GPU: 最大 Shader循环
-                overdrawLayers: 200,               // GPU: 最大 Overdraw层
-                polyVertices: 200000,              // GPU: 最大 顶点数
-                particleCount: 100000,             // GPU: 最大 粒子数
-                particleSystemCount: 20,           // GPU: 最大 粒子系统数
-                lightCount: 30,                    // GPU: 最大 光源数
-                materialCount: 5                   // GPU: 最大 材质数
+                constraintDepth: 100,              // CPU: 约束深度
+                constraintChainCount: 10,          // CPU: 约束链数
+                physBoneLength: 256,               // CPU: PhysBone长度
+                physBoneChainCount: 10,            // CPU: PhysBone链数
+                physBoneColliders: 256,            // CPU: 碰撞器数
+                contactCount: 200,                 // CPU: Contact数
+                polyVertices: 200000,              // GPU: 顶点数
+                particleCount: 100000,             // GPU: 粒子数
+                particleSystemCount: 20,           // GPU: 粒子系统数
+                lightCount: 30,                    // GPU: 光源数
+                materialCount: 20                  // GPU: 材质数（每个独立大纹理）
             );
         }
 
@@ -899,9 +775,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         // 使用基于索引的固定颜色
                         float hue = (float)s / systemCount;
                         mat.color = Color.HSVToRGB(hue, 0.7f, 0.9f);
-                        renderer.material = mat;
+                        renderer.sharedMaterial = mat;
                     }
                     renderer.maxParticleSize = 2f;
+                    renderer.shadowCastingMode = ShadowCastingMode.TwoSided;
+                    renderer.receiveShadows = true;
+                    renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
+                    renderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox;
+                    renderer.motionVectorGenerationMode = MotionVectorGenerationMode.Object;
+                    renderer.allowOcclusionWhenDynamic = false;
                 }
             }
 
@@ -1137,11 +1019,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         /// <summary>
         /// 在构建时获取防御Shader
-        /// 优先使用自定义的 UnityBox/DefenseShader，不存在则回退到 Standard
+        /// 优先使用自定义的 UnityBox/ASS_DefenseShader，不存在则回退到 Standard
         /// </summary>
         private static Shader CreateDefenseShader()
         {
-            Shader defenseShader = Shader.Find("UnityBox/DefenseShader");
+            Shader defenseShader = Shader.Find("UnityBox/ASS_DefenseShader");
 
             if (defenseShader != null)
             {
@@ -1222,32 +1104,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         #region Mesh Generation Utilities
 
-        private static Mesh CreateQuadMesh(float size)
-        {
-            var mesh = new Mesh { name = "Quad" };
-
-            mesh.vertices = new Vector3[]
-            {
-                new Vector3(-size/2, -size/2, 0),
-                new Vector3(size/2, -size/2, 0),
-                new Vector3(size/2, size/2, 0),
-                new Vector3(-size/2, size/2, 0)
-            };
-
-            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
-            mesh.uv = new Vector2[]
-            {
-                new Vector2(0, 0),
-                new Vector2(1, 0),
-                new Vector2(1, 1),
-                new Vector2(0, 1)
-            };
-
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
         private static Mesh CreateHighDensitySphereMesh(int targetVertexCount)
         {
             var mesh = new Mesh { name = "HighPolySphere" };
@@ -1298,18 +1154,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // 顶点/索引
             mesh.SetVertices(vertices);
-
-            // 切分为两个子网格以增加复杂度
-            var tris0 = new List<int>();
-            var tris1 = new List<int>();
-            for (int i = 0; i < triangles.Count; i += 3)
-            {
-                if (((i / 3) % 2) == 0) { tris0.Add(triangles[i]); tris0.Add(triangles[i + 1]); tris0.Add(triangles[i + 2]); }
-                else { tris1.Add(triangles[i]); tris1.Add(triangles[i + 1]); tris1.Add(triangles[i + 2]); }
-            }
-            mesh.subMeshCount = 2;
-            mesh.SetTriangles(tris0, 0);
-            mesh.SetTriangles(tris1, 1);
+            mesh.SetTriangles(triangles, 0);
 
             // UV与颜色
             var uv = new List<Vector2>(vertices.Count);

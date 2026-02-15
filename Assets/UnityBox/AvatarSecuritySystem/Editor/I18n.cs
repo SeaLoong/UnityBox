@@ -451,9 +451,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Timeout triggers defense strength (0=minimal, 4=maximum)\n0: Basic file protection\n1: CPU methods only\n2: CPU+GPU basic\n3: CPU+GPU balanced\n4: CPU+GPU maximum (default)" },
-                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度（0=最小，4=最强）\n0: 基础文件保护\n1: 仅CPU防御\n2: CPU+GPU基础\n3: CPU+GPU均衡\n4: CPU+GPU最强（默认）" },
-                    { SystemLanguage.Japanese, "タイムアウト後に起動する防御強度（0=最小、4=最大）\n0: 基本ファイル保護\n1: CPU防御のみ\n2: CPU+GPU基本\n3: CPU+GPU均衡\n4: CPU+GPU最大（デフォルト）" }
+                    { SystemLanguage.English, "Defense strength after timeout\n0: Password system only\n1: CPU defense only\n2: CPU+GPU defense (default)" },
+                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0: 仅密码系统\n1: 仅CPU防御\n2: CPU+GPU防御（默认）" },
+                    { SystemLanguage.Japanese, "タイムアウト後に起動する防御強度\n0: パスワードシステムのみ\n1: CPU防御のみ\n2: CPU+GPU防御（デフォルト）" }
                 },
                 ["defense.cpu_methods"] = new Dictionary<SystemLanguage, string>
                 {
@@ -577,21 +577,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU defense (Constraint Chain, PhysBone, Contact - MAX parameters)" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（约束链、PhysBone、Contact - 最高参数）" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（制約チェーン、PhysBone、コンタクト - 最大パラメータ）" }
+                    { SystemLanguage.English, "Level 1: Password + CPU defense (Constraint Chain, PhysBone, Contact)" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（约束链、PhysBone、Contact）" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（制約チェーン、PhysBone、コンタクト）" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU defense (MAX) + GPU defense (medium-low parameters)" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU 防御（最高）+ GPU 防御（中低参数）" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU防御（最大）+GPU防御（中低パラメータ）" }
-                },
-                ["defense.level_3_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Level 3: Password + CPU defense (MAX) + GPU defense (MAX parameters)" },
-                    { SystemLanguage.ChineseSimplified, "等级 3：密码 + CPU 防御（最高）+ GPU 防御（最高参数）" },
-                    { SystemLanguage.Japanese, "レベル3：パスワード+CPU防御（最大）+GPU防御（最大パラメータ）" }
+                    { SystemLanguage.English, "Level 2: Password + CPU defense + GPU defense (with extended chains and VRAM textures)" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU 防御 + GPU 防御（含扩展链和显存纹理）" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU防御+GPU防御（拡張チェーンとVRAMテクスチャ含む）" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {
@@ -616,30 +610,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Number of shader loops (0-200)" },
                     { SystemLanguage.ChineseSimplified, "Shader 循环数量（0-200）" },
                     { SystemLanguage.Japanese, "シェーダーループ数（0-200）" }
-                },
-                ["defense.overdraw"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Overdraw Layers" },
-                    { SystemLanguage.ChineseSimplified, "过度绘制层" },
-                    { SystemLanguage.Japanese, "オーバードロウレイヤー" }
-                },
-                ["defense.overdraw_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable overdraw layers defense" },
-                    { SystemLanguage.ChineseSimplified, "启用过度绘制层防御" },
-                    { SystemLanguage.Japanese, "オーバードロウレイヤー防御を有効化" }
-                },
-                ["defense.overdraw_layers"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Overdraw Layer Count" },
-                    { SystemLanguage.ChineseSimplified, "过度绘制层数量" },
-                    { SystemLanguage.Japanese, "オーバードロウレイヤー数" }
-                },
-                ["defense.overdraw_layers_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Layer count (5-50)" },
-                    { SystemLanguage.ChineseSimplified, "层数量（5-50）" },
-                    { SystemLanguage.Japanese, "レイヤー数（5-50）" }
                 },
                 ["defense.high_poly"] = new Dictionary<SystemLanguage, string>
                 {
@@ -679,9 +649,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.enable_gpu_defense_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Enable GPU Defense (Shader, Overdraw, HighPoly)" },
-                    { SystemLanguage.ChineseSimplified, "启用GPU防御（Shader、Overdraw、高多边形）" },
-                    { SystemLanguage.Japanese, "GPU防御を有効化（Shader、Overdraw、ハイポリゴン）" }
+                    { SystemLanguage.English, "Enable GPU Defense (Shader, HighPoly, Particles, Lights)" },
+                    { SystemLanguage.ChineseSimplified, "启用GPU防御（Shader、高多边形、粒子、光源）" },
+                    { SystemLanguage.Japanese, "GPU防御を有効化（Shader、ハイポリゴン、パーティクル、ライト）" }
                 },
                 ["defense.enable_gpu_defense"] = new Dictionary<SystemLanguage, string>
                 {
@@ -748,18 +718,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Shader loop count (fixed at 0, disabled in debug mode)" },
                     { SystemLanguage.ChineseSimplified, "Shader循环次数（调试模式下固定为0，不启用）" },
                     { SystemLanguage.Japanese, "シェーダーループ数（デバッグモードでは0に固定、無効）" }
-                },
-                ["defense.overdraw_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Overdraw layer stacking" },
-                    { SystemLanguage.ChineseSimplified, "启用Overdraw层堆叠" },
-                    { SystemLanguage.Japanese, "Overdrawレイヤースタッキングを有効化" }
-                },
-                ["defense.overdraw_layers_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Overdraw transparency layer count (fixed at 3 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "Overdraw透明层数量（调试模式下固定为3）" },
-                    { SystemLanguage.Japanese, "オーバードロウ透明レイヤー数（デバッグモードでは3に固定）" }
                 },
                 ["defense.high_poly_desc"] = new Dictionary<SystemLanguage, string>
                 {

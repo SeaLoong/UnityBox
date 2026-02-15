@@ -102,15 +102,14 @@ Warning Threshold: 10秒 # 固定值，警告阶段开始
 #### 步骤 4: 防御配置（可选）
 
 ```yaml
-Defense Level: 3 # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU(中低), 3=密码+CPU+GPU(最高)
+Defense Level: 2 # 0=仅密码, 1=密码+CPU, 2=密码+CPU+GPU
 ```
 
 **防御等级说明：**
 
 - **等级 0**: 仅密码系统，不生成任何防御组件
-- **等级 1**: 密码 + CPU 防御（约束链、PhysBone、Contact - 最高参数）
-- **等级 2**: 密码 + CPU 防御（最高）+ GPU 防御（材质、粒子、光源 - 中低参数）
-- **等级 3**: 密码 + CPU 防御（最高）+ GPU 防御（所有参数最高）
+- **等级 1**: 密码 + CPU 防御（约束链、PhysBone、Contact）
+- **等级 2**: 密码 + CPU 防御 + GPU 防御（材质、粒子、光源、显存纹理）
 
 #### 步骤 5: 构建上传
 
@@ -366,9 +365,8 @@ ASS_UI (Canvas)
 | **CPU** | Constraint 链           | 深层嵌套约束计算（VRCParentConstraint）               |
 | **CPU** | PhysBone + Collider     | 物理模拟消耗（VRCPhysBone + VRCPhysBoneCollider）     |
 | **CPU** | Contact Sender/Receiver | 碰撞检测消耗（VRCContactSender + VRCContactReceiver） |
-| **GPU** | Overdraw 层叠           | 多层透明渲染                                          |
 | **GPU** | 高面数 Mesh             | 顶点处理消耗                                          |
-| **GPU** | 防御 Shader             | 片段着色器循环、视差映射、光线步进、次表面散射        |
+| **GPU** | 防御 Shader             | 分形、路径追踪、流体模拟、光线步进、后处理            |
 | **GPU** | 粒子系统                | 粒子渲染消耗                                          |
 | **GPU** | 光源                    | 实时阴影计算                                          |
 
@@ -387,23 +385,15 @@ ASS_UI (Canvas)
 - PhysBone: 50条链，长度256，256个Collider
 - Contact: 200个组件
 
-**Level 2**: CPU + 基础 GPU 防御
+**Level 2**: CPU + GPU 防御（默认）
 
 - Level 1 的所有 CPU 防御
-- 防御 Shader: 100次循环
-- Overdraw: 500层
-- High Poly: 100k顶点
-- Particle: 5000个粒子, 5个系统
-- Light: 10个光源
-
-**Level 3**: 最大防御强度（默认）
-
-- Level 1 的所有 CPU 防御（最高参数）
-- 防御 Shader: 500次循环
-- Overdraw: 1000层
-- High Poly: 500k顶点
-- Particle: 10000个粒子, 10个系统
-- Light: 20个光源
+- 含扩展约束链、扩展 PhysBone 链、扩展 Contact 系统
+- 防御 Shader: 极度 GPU 密集（分形、路径追踪、流体模拟等），参数名全部混淆
+- High Poly: 200k顶点
+- Particle: 100000个粒子, 20个系统
+- Light: 30个光源
+- Material: 20个独立材质，每个携带16张 4096x4096 程序化纹理（消耗约 20GB 显存）
 
 > **注意**: 简化后的系统不再支持自定义参数配置，所有参数根据防御等级自动计算。
 > 调试模式下会生成与等级对应的防御类型，但使用最小参数值以便测试。
@@ -472,12 +462,11 @@ public float inputCooldown;              // 输入间隔（固定0.5秒）
 #### 防御配置
 
 ```csharp
-[Range(0, 3)]
-public int defenseLevel;                  // 防御等级 (0-3)
+[Range(0, 2)]
+public int defenseLevel;                  // 防御等级 (0-2)
                                           // 0: 仅密码系统
                                           // 1: 密码 + CPU防御
-                                          // 2: 密码 + CPU + GPU防御（中低）
-                                          // 3: 密码 + CPU + GPU防御（最高）
+                                          // 2: 密码 + CPU + GPU防御
 ```
 
 > **注意**: 简化后的系统已移除自定义参数配置，所有防御参数根据等级自动计算。
