@@ -192,22 +192,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         
         /// <summary>
         /// WD Off 模式：显式写回所有被修改属性的原始值
-        /// 所有根子对象: 恢复 m_IsActive=1
+        /// 所有根子对象: 恢复 m_IsActive 为原始值
         /// </summary>
         private void WriteRestoreValues(AnimationClip clip)
         {
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             int restoredCount = 0;
             
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
                 
-                clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", enableCurve);
+                clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", child.gameObject.activeSelf ? enableCurve : disableCurve);
                 restoredCount++;
             }
             
-            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects IsActive=1");
+            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (preserving original active state)");
         }
 
         /// <summary>
