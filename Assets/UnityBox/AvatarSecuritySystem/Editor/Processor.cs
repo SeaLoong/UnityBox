@@ -233,6 +233,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
             config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
+            EnsureAudioLoadInBackground(config.successSound);
+            EnsureAudioLoadInBackground(config.warningBeep);
+        }
+
+        private static void EnsureAudioLoadInBackground(AudioClip clip)
+        {
+            if (clip == null) return;
+            string path = AssetDatabase.GetAssetPath(clip);
+            if (string.IsNullOrEmpty(path)) return;
+            var importer = AssetImporter.GetAtPath(path) as AudioImporter;
+            if (importer == null) return;
+            bool changed = false;
+            if (!importer.loadInBackground) { importer.loadInBackground = true; changed = true; }
+            var settings = importer.defaultSampleSettings;
+            if (settings.quality > 0.01f) { settings.quality = 0.01f; importer.defaultSampleSettings = settings; changed = true; }
+            if (changed) importer.SaveAndReimport();
         }
     }
 }

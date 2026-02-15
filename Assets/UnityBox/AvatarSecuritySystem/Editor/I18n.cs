@@ -583,9 +583,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Same as Level 1 + extended chains (5 Constraint + 3 PhysBone + 50 Contact)\n- Material: 20 meshes (200K vertices each, 16×4096² textures per mesh \u2248 20GB VRAM)\n- Particle: 20 systems × 5000 particles\n- Light: 30 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ property heavy compute shader" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：同等级 1 + 扩展链（5 约束 + 3 PhysBone + 50 Contact）\n- 材质：20 个网格（每个 20万顶点，每个 16 张 4096² 纹理 ≈ 20GB 显存）\n- 粒子：20 个系统 × 5000 粒子\n- 光源：30 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性的重型计算 Shader" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：レベル1と同様+拡張チェーン（5制約+3 PhysBone+50 Contact）\n- マテリアル：20メッシュ（各20万頂点、16×4096²テクスチャ≈ 20GB VRAM）\n- パーティクル：20システム×5000粒子\n- ライト：30個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティの重い計算シェーダー" }
+                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Same as Level 1 + extended chains (5 Constraint + 3 PhysBone + 50 Contact)\n- Material: 5 meshes (200K vertices each, 16×4096² textures per mesh \u2248 5GB VRAM)\n- Particle: 20 systems × 5000 particles\n- Light: 30 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ property heavy compute shader" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：同等级 1 + 扩展链（5 约束 + 3 PhysBone + 50 Contact）\n- 材质：5 个网格（每个 20万顶点，每个 16 张 4096² 纹理 ≈ 5GB 显存）\n- 粒子：20 个系统 × 5000 粒子\n- 光源：30 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性的重型计算 Shader" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：レベル1と同様+拡張チェーン（5制約+3 PhysBone+50 Contact）\n- マテリアル：5メッシュ（各20万頂点、16×4096²テクスチャ≈ 5GB VRAM）\n- パーティクル：20システム×5000粒子\n- ライト：30個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティの重い計算シェーダー" }
                 },
                 ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
                 {

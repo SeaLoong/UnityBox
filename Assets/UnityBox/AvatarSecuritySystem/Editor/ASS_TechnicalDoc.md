@@ -18,7 +18,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
 2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理
-3. **VRChat 限制遵守**：严格遵守 PhysBone (256)、Contact (200) 等组件数量上限
+3. **VRChat 限制遵守**：严格遵守 PhysBone (256)、Contact (200)、Constraint (2000)、PhysBone Collider (256) 等组件数量上限，自动检测已有组件预算
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
 ---
@@ -56,6 +56,9 @@ Resources/
 Shaders/
 ├── UI.shader                 # 全屏覆盖 UI Shader（UnityBox/ASS_UI）
 └── DefenseShader.shader      # 防御 Shader（UnityBox/ASS_DefenseShader）
+                              # 3 Pass: ForwardBase, ForwardAdd, ShadowCaster
+                              # Texture2D + 共享 SamplerState（解决 16 sampler 寄存器限制）
+                              # 16 张纹理使用 1 个采样器，#pragma target 5.0
 ```
 
 ### 2.2 类依赖关系
@@ -660,11 +663,11 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 - 资源路径 (`ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated"`)
 - 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim"`)
-- 音频资源 (`AUDIO_PASSWORD_SUCCESS`, `AUDIO_COUNTDOWN_WARNING`，直接按文件名从 Resources 加载)
+- 音频资源 (`AUDIO_PASSWORD_SUCCESS`, `AUDIO_COUNTDOWN_WARNING`，直接按文件名从 Resources 加载，导入设置 `loadInBackground=true`)
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
 - GameObject 名称 (`GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_DEFENSE_ROOT`)
-- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=200`)
+- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=200`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`)
 
 ---
 
@@ -770,7 +773,9 @@ Avatar Root
 
 - PhysBone 总数（含模型自带）不超过 256，系统会自动检测已有数量并调整
 - Contact Sender + Receiver 总数不超过 200
-- Constraint 链深度上限 100
+- Constraint 总数（VRCParentConstraint + VRCPositionConstraint + VRCRotationConstraint + VRCScaleConstraint）不超过 2000，系统自动计算预算
+- PhysBone Collider 总数不超过 256，系统按链数量等比分配
+- 系统在生成防御组件前会扫描 Avatar 已有的组件数量，计算剩余预算后动态调整链数和每链组件数
 
 ### 10.2 Write Defaults 模式
 

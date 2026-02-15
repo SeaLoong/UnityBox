@@ -37,17 +37,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const string GO_DEFENSE_ROOT = "ASS_Defense";
 
         // ============ VRChat 组件上限 ============
-        /// <summary>
-        /// PhysBone 数量上限（256个）
-        /// 需要考虑：模型本身的PhysBone + ASS防御的PhysBone不能超过此值
-        /// </summary>
         public const int PHYSBONE_MAX_COUNT = 256;
-
-        /// <summary>
-        /// Contact 组件总数上限（200个）
-        /// Sender + Receiver 总计不超过200个
-        /// </summary>
         public const int CONTACT_MAX_COUNT = 200;
+        public const int CONSTRAINT_MAX_COUNT = 2000;
+        public const int PHYSBONE_COLLIDER_MAX_COUNT = 256;
 
 
     }

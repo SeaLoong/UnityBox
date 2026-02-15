@@ -99,43 +99,67 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             bool enableGpu = config.defenseLevel >= 2;
 
             int existingPhysBones = 0;
+            int existingColliders = 0;
+            int existingConstraints = 0;
             try
             {
                 existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
+                existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+                existingConstraints = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
             }
             catch
             {
                 existingPhysBones = 0;
+                existingColliders = 0;
+                existingConstraints = 0;
             }
             int maxDefensePhysBones = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
             int defensePhysBoneCount = Mathf.Min(parameters.PhysBoneChainCount, maxDefensePhysBones);
+            int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
+            int constraintBudget = Mathf.Max(0, Constants.CONSTRAINT_MAX_COUNT - existingConstraints);
 
             if (enableCpu)
             {
-                if (parameters.ConstraintChainCount > 0)
+                if (parameters.ConstraintChainCount > 0 && constraintBudget > 0)
                 {
-                    for (int i = 0; i < parameters.ConstraintChainCount; i++)
+                    int constraintsPerChain = 3 * parameters.ConstraintDepth - 2;
+                    int maxChains = Mathf.Max(1, constraintBudget / constraintsPerChain);
+                    int chainCount = Mathf.Min(parameters.ConstraintChainCount, maxChains);
+                    int usedConstraints = chainCount * constraintsPerChain;
+
+                    for (int i = 0; i < chainCount; i++)
                     {
                         CreateConstraintChain(root, parameters.ConstraintDepth, i);
                     }
 
                     if (!isDebugMode && config.defenseLevel >= 2)
                     {
-                        CreateExtendedConstraintChains(root, Mathf.Min(parameters.ConstraintChainCount, 5), parameters.ConstraintDepth);
+                        int remainingBudget = constraintBudget - usedConstraints;
+                        int extConstraintsPerChain = 4 * parameters.ConstraintDepth;
+                        int extChainCount = Mathf.Min(Mathf.Min(chainCount, 5), Mathf.Max(0, remainingBudget / extConstraintsPerChain));
+                        if (extChainCount > 0)
+                        {
+                            CreateExtendedConstraintChains(root, extChainCount, parameters.ConstraintDepth);
+                        }
                     }
                 }
 
                 if (parameters.PhysBoneColliders > 0 && defensePhysBoneCount > 0)
                 {
+                    int collidersPerChain = Mathf.Min(parameters.PhysBoneColliders, Mathf.Max(1, colliderBudget / defensePhysBoneCount));
+
                     for (int i = 0; i < defensePhysBoneCount; i++)
                     {
-                        CreatePhysBoneChains(root, parameters.PhysBoneLength, parameters.PhysBoneColliders, i);
+                        CreatePhysBoneChains(root, parameters.PhysBoneLength, collidersPerChain, i);
                     }
+                    int usedColliders = defensePhysBoneCount * collidersPerChain;
 
                     int extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 3);
                     if (!isDebugMode && config.defenseLevel >= 2 && extendedPhysBoneCount > 0)
                     {
-                        CreateExtendedPhysBoneChains(root, extendedPhysBoneCount, parameters.PhysBoneLength, parameters.PhysBoneColliders);
+                        int remainingColliders = Mathf.Max(0, colliderBudget - usedColliders);
+                        int extCollidersPerChain = Mathf.Min(collidersPerChain, Mathf.Max(1, remainingColliders / extendedPhysBoneCount));
+                        CreateExtendedPhysBoneChains(root, extendedPhysBoneCount, parameters.PhysBoneLength, extCollidersPerChain);
                     }
                 }
 
@@ -382,7 +406,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 particleCount: 100000,
                 particleSystemCount: 20,
                 lightCount: 30,
-                materialCount: 20
+                materialCount: 5
             );
         }
 

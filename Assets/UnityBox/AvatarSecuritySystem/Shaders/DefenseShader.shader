@@ -134,8 +134,9 @@ Shader "UnityBox/ASS_DefenseShader"
             #include "Lighting.cginc"
             #include "AutoLight.cginc"
 
-            sampler2D _xA0, _xA1, _xA2, _xA3, _xA4, _xA5, _xA6, _xA7;
-            sampler2D _xA8, _xA9, _xAA, _xAB, _xAC, _xAD, _xAE, _xAF;
+            Texture2D _xA0, _xA1, _xA2, _xA3, _xA4, _xA5, _xA6, _xA7;
+            Texture2D _xA8, _xA9, _xAA, _xAB, _xAC, _xAD, _xAE, _xAF;
+            SamplerState sampler_xA0;
             float4 _xA0_ST, _xA1_ST, _xA2_ST, _xA3_ST, _xA4_ST;
             float _xB0, _xB1, _xB2, _xB3;
             float _xB4, _xB5, _xB6;
@@ -438,10 +439,10 @@ Shader "UnityBox/ASS_DefenseShader"
                     float fi = float(i) / float(st);
                     float3 sp = wp + rd * fi * 5.0;
                     float2 su = uv + rd.xy * fi * 0.1;
-                    c += tex2Dlod(_xA0, float4(frac(su), 0, fi * 4.0)).rgb * exp(-fi * 2.0);
-                    c += tex2Dlod(_xA4, float4(frac(su * 2.0), 0, fi * 4.0)).rgb * exp(-fi * 3.0) * 0.5;
-                    c += tex2Dlod(_xA8, float4(frac(su * 1.5), 0, fi * 3.0)).rgb * exp(-fi * 2.5) * 0.3;
-                    c += tex2Dlod(_xAC, float4(frac(su * 0.8), 0, fi * 5.0)).rgb * exp(-fi * 4.0) * 0.2;
+                    c += _xA0.SampleLevel(sampler_xA0, frac(su), fi * 4.0).rgb * exp(-fi * 2.0);
+                    c += _xA4.SampleLevel(sampler_xA0, frac(su * 2.0), fi * 4.0).rgb * exp(-fi * 3.0) * 0.5;
+                    c += _xA8.SampleLevel(sampler_xA0, frac(su * 1.5), fi * 3.0).rgb * exp(-fi * 2.5) * 0.3;
+                    c += _xAC.SampleLevel(sampler_xA0, frac(su * 0.8), fi * 5.0).rgb * exp(-fi * 4.0) * 0.2;
                 }
                 return c / float(max(st, 1));
             }
@@ -570,11 +571,11 @@ Shader "UnityBox/ASS_DefenseShader"
                     {
                         float2 of = float2(x, y) * 0.002;
                         float w = exp(-(x*x + y*y) / (2.0 * float(ks)));
-                        r += tex2Dlod(_xA0, float4(uv + of, 0, 0)).rgb * w;
-                        r += tex2Dlod(_xA3, float4(uv + of * 1.5, 0, 0)).rgb * w * 0.3;
-                        r += tex2Dlod(_xA4, float4(uv + of * 2.0, 0, 0)).rgb * w * 0.2;
-                        r += tex2Dlod(_xA8, float4(uv + of * 1.2, 0, 0)).rgb * w * 0.15;
-                        r += tex2Dlod(_xAC, float4(uv + of * 0.8, 0, 0)).rgb * w * 0.1;
+                        r += _xA0.SampleLevel(sampler_xA0, uv + of, 0).rgb * w;
+                        r += _xA3.SampleLevel(sampler_xA0, uv + of * 1.5, 0).rgb * w * 0.3;
+                        r += _xA4.SampleLevel(sampler_xA0, uv + of * 2.0, 0).rgb * w * 0.2;
+                        r += _xA8.SampleLevel(sampler_xA0, uv + of * 1.2, 0).rgb * w * 0.15;
+                        r += _xAC.SampleLevel(sampler_xA0, uv + of * 0.8, 0).rgb * w * 0.1;
                         tw += w;
                     }
                 }
@@ -592,10 +593,10 @@ Shader "UnityBox/ASS_DefenseShader"
                     {
                         float ag = float(i) * 0.3927;
                         float2 of = float2(cos(ag), sin(ag)) * rd;
-                        pc += tex2Dlod(_xA0, float4(uv + of, 0, float(p))).rgb;
-                        pc += tex2Dlod(_xA5, float4(uv + of * 1.3, 0, float(p))).rgb * 0.5;
-                        pc += tex2Dlod(_xA9, float4(uv + of * 0.7, 0, float(p))).rgb * 0.3;
-                        pc += tex2Dlod(_xAD, float4(uv + of * 1.1, 0, float(p))).rgb * 0.2;
+                        pc += _xA0.SampleLevel(sampler_xA0, uv + of, float(p)).rgb;
+                        pc += _xA5.SampleLevel(sampler_xA0, uv + of * 1.3, float(p)).rgb * 0.5;
+                        pc += _xA9.SampleLevel(sampler_xA0, uv + of * 0.7, float(p)).rgb * 0.3;
+                        pc += _xAD.SampleLevel(sampler_xA0, uv + of * 1.1, float(p)).rgb * 0.2;
                     }
                     bm += pc / 64.0 * exp(-float(p) * 0.3);
                 }
@@ -625,10 +626,10 @@ Shader "UnityBox/ASS_DefenseShader"
                 {
                     float fi = float(i);
                     float2 offset = float2(sin(fi * 7.13 + _Time.y), cos(fi * 11.37 + _Time.y)) * 0.003;
-                    float4 s0 = tex2Dlod(_xA0, float4(frac(uv + offset), 0, fi * 0.5));
-                    float4 s1 = tex2Dlod(_xA6, float4(frac(uv * 1.5 + offset), 0, fi * 0.3));
-                    float4 s2 = tex2Dlod(_xAA, float4(frac(uv * 2.0 + offset * 2.0), 0, fi * 0.7));
-                    float4 s3 = tex2Dlod(_xAE, float4(frac(uv * 0.7 + offset * 3.0), 0, fi * 0.4));
+                    float4 s0 = _xA0.SampleLevel(sampler_xA0, frac(uv + offset), fi * 0.5);
+                    float4 s1 = _xA6.SampleLevel(sampler_xA0, frac(uv * 1.5 + offset), fi * 0.3);
+                    float4 s2 = _xAA.SampleLevel(sampler_xA0, frac(uv * 2.0 + offset * 2.0), fi * 0.7);
+                    float4 s3 = _xAE.SampleLevel(sampler_xA0, frac(uv * 0.7 + offset * 3.0), fi * 0.4);
                     float w = sin(fi * 0.1 + _Time.y * 0.05) * 0.5 + 0.5;
                     result += (s0.rgb * 0.3 + s1.rgb * 0.25 + s2.rgb * 0.2 + s3.rgb * 0.15) * w * 0.01;
                 }
@@ -655,17 +656,17 @@ Shader "UnityBox/ASS_DefenseShader"
                 float clh = 0.0;
                 float2 dt = vt.xy / vt.z * _xB3 * lh;
                 float2 cu = uv;
-                float ch = tex2Dlod(_xA2, float4(uv, 0, 0)).r;
+                float ch = _xA2.SampleLevel(sampler_xA0, uv, 0).r;
                 for (int i = 0; i < la; i++)
                 {
                     if (clh >= ch) break;
                     clh += lh;
                     cu -= dt;
-                    ch = tex2Dlod(_xA2, float4(cu, 0, 0)).r;
+                    ch = _xA2.SampleLevel(sampler_xA0, cu, 0).r;
                 }
                 float2 pu = cu + dt;
                 float ah = ch - clh;
-                float bh = tex2Dlod(_xA2, float4(pu, 0, 0)).r - clh + lh;
+                float bh = _xA2.SampleLevel(sampler_xA0, pu, 0).r - clh + lh;
                 float w = ah / (ah - bh + 0.0001);
                 return lerp(cu, pu, w);
             }
@@ -676,9 +677,9 @@ Shader "UnityBox/ASS_DefenseShader"
                 for (int i = 0; i < it; i++)
                 {
                     nm = normalize(nm * nm + 0.1);
-                    float3 p1 = UnpackNormal(tex2Dlod(_xA1, float4(uv * (2.0 + i * 0.5), 0, 0)));
-                    float3 p2 = UnpackNormal(tex2Dlod(_xA3, float4(uv * (3.0 + i * 0.7), 0, float(i))));
-                    float3 p3 = UnpackNormal(tex2Dlod(_xA9, float4(uv * (1.5 + i * 0.3), 0, float(i))));
+                    float3 p1 = UnpackNormal(_xA1.SampleLevel(sampler_xA0, uv * (2.0 + i * 0.5), 0));
+                    float3 p2 = UnpackNormal(_xA3.SampleLevel(sampler_xA0, uv * (3.0 + i * 0.7), float(i)));
+                    float3 p3 = UnpackNormal(_xA9.SampleLevel(sampler_xA0, uv * (1.5 + i * 0.3), float(i)));
                     nm = normalize(nm + (p1 + p2 * 0.5 + p3 * 0.3) * _xE9);
                 }
                 return normalize(nm);
@@ -690,7 +691,7 @@ Shader "UnityBox/ASS_DefenseShader"
                 for (int i = 0; i < st; i++)
                 {
                     float3 p = ro + rd * t;
-                    float ht = tex2Dlod(_xA2, float4(frac(uv + p.xy * 0.1), 0, 0)).r;
+                    float ht = _xA2.SampleLevel(sampler_xA0, frac(uv + p.xy * 0.1), 0).r;
                     float sn = _fb(p * 0.5, fo) * 2.0 - 1.0;
                     float ds = p.z - ht + sn * 0.1;
                     if (abs(ds) < 0.0001) break;
@@ -712,22 +713,22 @@ Shader "UnityBox/ASS_DefenseShader"
                     float cv = cos(of * 2.71828);
                     float tv = clamp(tan(of * 1.5708), -100.0, 100.0);
                     float2 su = uv + float2(sv, cv) * 0.02;
-                    float4 t0 = tex2Dlod(_xA0, float4(su, 0, 0));
-                    float4 t1 = tex2Dlod(_xA0, float4(su * 2.0 + of, 0, 0));
-                    float4 t2 = tex2Dlod(_xA3, float4(su * 0.5 + of * 2.0, 0, 0));
-                    float4 t3 = tex2Dlod(_xA1, float4(su * 3.0, 0, 0));
-                    float4 t4 = tex2Dlod(_xA2, float4(su * 1.5 + of, 0, 0));
-                    float4 t5 = tex2Dlod(_xA3, float4(su * _xC5 + of, 0, 0));
-                    float4 t6 = tex2Dlod(_xA4, float4(su * _xC6 + of, 0, 0));
-                    float4 t7 = tex2Dlod(_xA5, float4(su * 1.7 + of * 0.5, 0, 0));
-                    float4 t8 = tex2Dlod(_xA6, float4(su * 2.3 + of * 0.7, 0, 0));
-                    float4 t9 = tex2Dlod(_xA7, float4(su * 1.1 + of * 1.3, 0, 0));
-                    float4 tA = tex2Dlod(_xA8, float4(su * 1.4 + of * 0.9, 0, 0));
-                    float4 tB = tex2Dlod(_xA9, float4(su * 0.9 + of * 1.1, 0, 0));
-                    float4 tC = tex2Dlod(_xAA, float4(su * 1.8 + of * 0.6, 0, 0));
-                    float4 tD = tex2Dlod(_xAB, float4(su * 2.1 + of * 0.4, 0, 0));
-                    float4 tE = tex2Dlod(_xAC, float4(su * 1.3 + of * 1.5, 0, 0));
-                    float4 tF = tex2Dlod(_xAD, float4(su * 0.7 + of * 1.7, 0, 0));
+                    float4 t0 = _xA0.SampleLevel(sampler_xA0, su, 0);
+                    float4 t1 = _xA0.SampleLevel(sampler_xA0, su * 2.0 + of, 0);
+                    float4 t2 = _xA3.SampleLevel(sampler_xA0, su * 0.5 + of * 2.0, 0);
+                    float4 t3 = _xA1.SampleLevel(sampler_xA0, su * 3.0, 0);
+                    float4 t4 = _xA2.SampleLevel(sampler_xA0, su * 1.5 + of, 0);
+                    float4 t5 = _xA3.SampleLevel(sampler_xA0, su * _xC5 + of, 0);
+                    float4 t6 = _xA4.SampleLevel(sampler_xA0, su * _xC6 + of, 0);
+                    float4 t7 = _xA5.SampleLevel(sampler_xA0, su * 1.7 + of * 0.5, 0);
+                    float4 t8 = _xA6.SampleLevel(sampler_xA0, su * 2.3 + of * 0.7, 0);
+                    float4 t9 = _xA7.SampleLevel(sampler_xA0, su * 1.1 + of * 1.3, 0);
+                    float4 tA = _xA8.SampleLevel(sampler_xA0, su * 1.4 + of * 0.9, 0);
+                    float4 tB = _xA9.SampleLevel(sampler_xA0, su * 0.9 + of * 1.1, 0);
+                    float4 tC = _xAA.SampleLevel(sampler_xA0, su * 1.8 + of * 0.6, 0);
+                    float4 tD = _xAB.SampleLevel(sampler_xA0, su * 2.1 + of * 0.4, 0);
+                    float4 tE = _xAC.SampleLevel(sampler_xA0, su * 1.3 + of * 1.5, 0);
+                    float4 tF = _xAD.SampleLevel(sampler_xA0, su * 0.7 + of * 1.7, 0);
                     float mv = sin(of * _xB2) * cos(of * _xB1) + sqrt(abs(sv + bf * 0.2)) + clamp(tan(of * 0.5), -100.0, 100.0);
                     float ev = exp(clamp(mv * 0.5, -10.0, 10.0));
                     float lv = log(abs(mv) + 1.5);
@@ -791,10 +792,10 @@ Shader "UnityBox/ASS_DefenseShader"
                         _h(float3(of * 7.0, of * 8.0, of * 9.0)) * 2.0 - 1.0
                     ) * 0.1 * _xC0);
                     float3 rd = reflect(-vd, pn);
-                    r += tex2Dlod(_xA0, float4(uv + rd.xy * 0.1, 0, of * 8.0)).rgb;
-                    r += tex2Dlod(_xA5, float4(uv + rd.xz * 0.05, 0, of * 4.0)).rgb * 0.5;
-                    r += tex2Dlod(_xAA, float4(uv + rd.yz * 0.08, 0, of * 6.0)).rgb * 0.3;
-                    r += tex2Dlod(_xAF, float4(uv + rd.xy * 0.03, 0, of * 3.0)).rgb * 0.2;
+                    r += _xA0.SampleLevel(sampler_xA0, uv + rd.xy * 0.1, of * 8.0).rgb;
+                    r += _xA5.SampleLevel(sampler_xA0, uv + rd.xz * 0.05, of * 4.0).rgb * 0.5;
+                    r += _xAA.SampleLevel(sampler_xA0, uv + rd.yz * 0.08, of * 6.0).rgb * 0.3;
+                    r += _xAF.SampleLevel(sampler_xA0, uv + rd.xy * 0.03, of * 3.0).rgb * 0.2;
                 }
                 return r / float(max(sa, 1));
             }
@@ -805,9 +806,9 @@ Shader "UnityBox/ASS_DefenseShader"
                 float3 rG = refract(float3(0,0,1), nm, 1.0 / (1.0 + _xC9 + _xCA));
                 float3 rB = refract(float3(0,0,1), nm, 1.0 / (1.0 + _xC9 + _xCA * 2.0));
                 float3 ref;
-                ref.r = tex2Dlod(_xA0, float4(uv + rR.xy * 0.05, 0, 0)).r;
-                ref.g = tex2Dlod(_xA0, float4(uv + rG.xy * 0.05, 0, 0)).g;
-                ref.b = tex2Dlod(_xA0, float4(uv + rB.xy * 0.05, 0, 0)).b;
+                ref.r = _xA0.SampleLevel(sampler_xA0, uv + rR.xy * 0.05, 0).r;
+                ref.g = _xA0.SampleLevel(sampler_xA0, uv + rG.xy * 0.05, 0).g;
+                ref.b = _xA0.SampleLevel(sampler_xA0, uv + rB.xy * 0.05, 0).b;
                 return lerp(c, ref, _xC9);
             }
 
@@ -881,8 +882,8 @@ Shader "UnityBox/ASS_DefenseShader"
                 float3 vdt = mul(TBN, normalize(i.viewDir));
                 float2 pu = _pm(i.uv, vdt, pl) * _xEB;
 
-                float4 bc = tex2D(_xA0, pu) * _xBA;
-                float4 nm = tex2D(_xA1, pu);
+                float4 bc = _xA0.Sample(sampler_xA0, pu) * _xBA;
+                float4 nm = _xA1.Sample(sampler_xA0, pu);
                 float3 n = normalize(mul(_un(nm, pu, 8), TBN));
 
                 float3 vd = normalize(i.viewDir);
@@ -941,9 +942,9 @@ Shader "UnityBox/ASS_DefenseShader"
                     float dfi = float(di);
                     float2 dof = float2(sin(dfi * 3.7 + _Time.y * 0.1), cos(dfi * 5.3 + _Time.y * 0.13)) * 0.001;
                     dp += dof;
-                    float4 ds0 = tex2Dlod(_xA0, float4(frac(dp), 0, 0));
-                    float4 ds1 = tex2Dlod(_xA8, float4(frac(dp * 2.0), 0, 0));
-                    float4 ds2 = tex2Dlod(_xAF, float4(frac(dp * 0.5), 0, 0));
+                    float4 ds0 = _xA0.SampleLevel(sampler_xA0, frac(dp), 0);
+                    float4 ds1 = _xA8.SampleLevel(sampler_xA0, frac(dp * 2.0), 0);
+                    float4 ds2 = _xAF.SampleLevel(sampler_xA0, frac(dp * 0.5), 0);
                     dsv += (ds0.r + ds1.g + ds2.b) * 0.001;
                     dp = frac(dp + float2(ds0.g, ds1.r) * 0.01);
                 }
@@ -961,8 +962,8 @@ Shader "UnityBox/ASS_DefenseShader"
                 {
                     float cfi = float(ci);
                     float3 cp2 = i.worldPos + n * cfi * 0.01;
-                    float4 cs0 = tex2Dlod(_xA2, float4(frac(pu + cfi * 0.001), 0, cfi * 0.1));
-                    float4 cs1 = tex2Dlod(_xAC, float4(frac(pu * 1.5 + cfi * 0.002), 0, cfi * 0.2));
+                    float4 cs0 = _xA2.SampleLevel(sampler_xA0, frac(pu + cfi * 0.001), cfi * 0.1);
+                    float4 cs1 = _xAC.SampleLevel(sampler_xA0, frac(pu * 1.5 + cfi * 0.002), cfi * 0.2);
                     csv += (cs0.r * cs1.g + sin(cfi * 0.7)) * 0.0005;
                 }
 
@@ -1006,8 +1007,9 @@ Shader "UnityBox/ASS_DefenseShader"
                 fc2 = pow(abs(fc2), 0.85);
                 fc2 = lerp(fc2, 1.0 - fc2, sin(_Time.y * 0.75) * 0.1 + 0.05);
 
-                UNITY_APPLY_FOG(i.fogCoord, float4(fc2, bc.a));
-                return float4(fc2, bc.a);
+                float4 fogResult = float4(fc2, bc.a);
+                UNITY_APPLY_FOG(i.fogCoord, fogResult);
+                return fogResult;
             }
             ENDCG
         }
@@ -1030,8 +1032,9 @@ Shader "UnityBox/ASS_DefenseShader"
             #include "Lighting.cginc"
             #include "AutoLight.cginc"
 
-            sampler2D _xA0, _xA1, _xA2, _xA3, _xA4, _xA5, _xA6, _xA7;
-            sampler2D _xA8, _xA9, _xAA, _xAB, _xAC, _xAD, _xAE, _xAF;
+            Texture2D _xA0, _xA1, _xA2, _xA3, _xA4, _xA5, _xA6, _xA7;
+            Texture2D _xA8, _xA9, _xAA, _xAB, _xAC, _xAD, _xAE, _xAF;
+            SamplerState sampler_xA0;
             float4 _xA0_ST;
             float _xB0, _xB1, _xB2, _xC6;
             float _xB4, _xB7, _xB8;
@@ -1094,7 +1097,7 @@ Shader "UnityBox/ASS_DefenseShader"
                 int fi = clamp(int(_xF5), 8, 4096);
                 int wt = clamp(int(_xF7), 8, 2048);
 
-                float4 bc = tex2D(_xA0, i.uv) * _xBA;
+                float4 bc = _xA0.Sample(sampler_xA0, i.uv) * _xBA;
                 float3 nm = normalize(i.normal);
                 float3 vd = normalize(i.viewDir);
 
@@ -1115,12 +1118,12 @@ Shader "UnityBox/ASS_DefenseShader"
                     float s = sin(of * 3.14159);
                     float cv = cos(of * 2.71828);
                     float2 su = i.uv + float2(s, cv) * 0.02;
-                    float4 t0 = tex2Dlod(_xA0, float4(su, 0, 0));
-                    float4 t1 = tex2Dlod(_xA3, float4(su * 2.0 + of, 0, 0));
-                    float4 t2 = tex2Dlod(_xA4, float4(su * _xC6 + of, 0, 0));
-                    float4 t3 = tex2Dlod(_xA5, float4(su * 1.5 + of, 0, 0));
-                    float4 t4 = tex2Dlod(_xA8, float4(su * 1.3 + of * 0.7, 0, 0));
-                    float4 t5 = tex2Dlod(_xAC, float4(su * 0.9 + of * 1.1, 0, 0));
+                    float4 t0 = _xA0.SampleLevel(sampler_xA0, su, 0);
+                    float4 t1 = _xA3.SampleLevel(sampler_xA0, su * 2.0 + of, 0);
+                    float4 t2 = _xA4.SampleLevel(sampler_xA0, su * _xC6 + of, 0);
+                    float4 t3 = _xA5.SampleLevel(sampler_xA0, su * 1.5 + of, 0);
+                    float4 t4 = _xA8.SampleLevel(sampler_xA0, su * 1.3 + of * 0.7, 0);
+                    float4 t5 = _xAC.SampleLevel(sampler_xA0, su * 0.9 + of * 1.1, 0);
                     float mv = sin(of * _xB2) * cos(of * _xB1) + sqrt(abs(s)) + exp(clamp(s * 0.5, -10.0, 10.0)) * 0.1;
                     c += (t0.rgb + t1.rgb * 0.5 + t2.rgb * 0.3 + t3.rgb * 0.2 + t4.rgb * 0.15 + t5.rgb * 0.1) * mv * lf;
                 }
@@ -1155,8 +1158,9 @@ Shader "UnityBox/ASS_DefenseShader"
 
                 float3 r = (bc.rgb * nl + sp * 0.3 + c * 0.2 + sss * 0.15 + brdf * 0.1) * _LightColor0.rgb * at;
                 r *= SHADOW_ATTENUATION(i);
-                UNITY_APPLY_FOG(i.fogCoord, float4(r, 0));
-                return float4(r, 0);
+                float4 fogResult = float4(r, 0);
+                UNITY_APPLY_FOG(i.fogCoord, fogResult);
+                return fogResult;
             }
             ENDCG
         }
@@ -1179,18 +1183,26 @@ Shader "UnityBox/ASS_DefenseShader"
             float _hs(float3 p) { p = frac(p * 0.3183099 + 0.1); p *= 17.0; return frac(p.x * p.y * p.z * (p.x + p.y + p.z)); }
             float _ns(float3 x) { float3 p = floor(x); float3 f = frac(x); f = f * f * (3.0 - 2.0 * f); return lerp(lerp(lerp(_hs(p), _hs(p + float3(1,0,0)), f.x), lerp(_hs(p + float3(0,1,0)), _hs(p + float3(1,1,0)), f.x), f.y), lerp(lerp(_hs(p + float3(0,0,1)), _hs(p + float3(1,0,1)), f.x), lerp(_hs(p + float3(0,1,1)), _hs(p + float3(1,1,1)), f.x), f.y), f.z); }
 
+            struct appdata_shadow
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
             struct v2f_shadow { V2F_SHADOW_CASTER; UNITY_VERTEX_OUTPUT_STEREO };
 
-            v2f_shadow vert_shadow(float4 vertex : POSITION, float3 normal : NORMAL, float2 uv : TEXCOORD0 UNITY_VERTEX_INPUT_INSTANCE_ID_PARAM)
+            v2f_shadow vert_shadow(appdata_shadow v)
             {
                 v2f_shadow o;
-                UNITY_SETUP_INSTANCE_ID_PARAM;
+                UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                float3 wp = mul(unity_ObjectToWorld, vertex).xyz;
+                float3 wp = mul(unity_ObjectToWorld, v.vertex).xyz;
                 int loops = clamp(int(_xF6), 4, 256);
-                float3 dp = vertex.xyz;
-                for (int i = 0; i < loops; i++) { float n = _ns(wp * (1.0 + float(i) * 0.1) + _Time.y * 0.05); dp += normal * n * 0.001 * _xEA; }
-                vertex.xyz = dp;
+                float3 dp = v.vertex.xyz;
+                for (int i = 0; i < loops; i++) { float n = _ns(wp * (1.0 + float(i) * 0.1) + _Time.y * 0.05); dp += v.normal * n * 0.001 * _xEA; }
+                v.vertex.xyz = dp;
                 TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
                 return o;
             }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEditor;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
 
 namespace UnityBox.AvatarSecuritySystem.Editor
@@ -115,7 +116,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             // 加载并设置 Logo 纹理
             var logoTex = Resources.Load<Texture2D>(LOGO_RESOURCE_NAME);
             if (logoTex != null)
+            {
+                EnsureTextureOptimized(logoTex);
                 material.SetTexture("_G4D9", logoTex);
+            }
 
             meshRenderer.sharedMaterial = material;
 
@@ -142,5 +146,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return obj;
         }
 
+        private static void EnsureTextureOptimized(Texture2D tex)
+        {
+            string path = AssetDatabase.GetAssetPath(tex);
+            if (string.IsNullOrEmpty(path)) return;
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return;
+            bool changed = false;
+            if (importer.maxTextureSize > 512) { importer.maxTextureSize = 512; changed = true; }
+            if (importer.mipmapEnabled) { importer.mipmapEnabled = false; changed = true; }
+            if (!importer.crunchedCompression) { importer.crunchedCompression = true; changed = true; }
+            if (importer.anisoLevel > 0) { importer.anisoLevel = 0; changed = true; }
+            if (changed) importer.SaveAndReimport();
+        }
     }
 }
