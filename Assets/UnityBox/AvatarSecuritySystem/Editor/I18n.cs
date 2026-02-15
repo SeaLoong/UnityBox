@@ -929,21 +929,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.wd_mode_auto"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Auto (Detect from FX)" },
-                    { SystemLanguage.ChineseSimplified, "Auto（从 FX 检测）" },
-                    { SystemLanguage.Japanese, "Auto（FXから検出）" }
+                    { SystemLanguage.English, "Auto" },
+                    { SystemLanguage.ChineseSimplified, "自动" },
+                    { SystemLanguage.Japanese, "自動" }
                 },
                 ["advanced.wd_mode_on"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "WD On (Auto Restore)" },
-                    { SystemLanguage.ChineseSimplified, "WD On（自动恢复）" },
-                    { SystemLanguage.Japanese, "WD On（自動復元）" }
+                    { SystemLanguage.English, "WD On" },
+                    { SystemLanguage.ChineseSimplified, "WD On" },
+                    { SystemLanguage.Japanese, "WD On" }
                 },
                 ["advanced.wd_mode_off"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "WD Off (Explicit Restore)" },
-                    { SystemLanguage.ChineseSimplified, "WD Off（显式恢复）" },
-                    { SystemLanguage.Japanese, "WD Off（明示的復元）" }
+                    { SystemLanguage.English, "WD Off" },
+                    { SystemLanguage.ChineseSimplified, "WD Off" },
+                    { SystemLanguage.Japanese, "WD Off" }
                 },
                 // ========== 操作按钮 ==========
                 ["actions.title"] = new Dictionary<SystemLanguage, string>

@@ -336,8 +336,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var assObjectNames = new HashSet<string>
             {
-                GO_ASS_ROOT, GO_UI, GO_AUDIO_WARNING,
-                GO_AUDIO_SUCCESS, GO_PARTICLES, GO_DEFENSE_ROOT
+                GO_UI, GO_AUDIO_WARNING,
+                GO_AUDIO_SUCCESS, GO_DEFENSE_ROOT
             };
             
             Transform current = obj;

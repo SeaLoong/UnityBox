@@ -237,12 +237,12 @@ Avatar 加载
 #### 4.1.2 锁定动画 (CreateLockClip)
 
 - **启用**: `ASS_UI` (全屏 Shader 覆盖)、`ASS_Audio_Warning`、`ASS_Audio_Success`
-- **禁用**: `__ASS_Defense__` (防御根对象)
+- **禁用**: `ASS_Defense` (防御根对象)
 - **隐藏 Avatar**: 当 `disableRootChildren = true` 时，禁用所有非 ASS 根子对象 (`m_IsActive = 0`)
 
 #### 4.1.3 解锁动画 (CreateUnlockClip)
 
-- **禁用**: `ASS_UI`、`__ASS_Defense__`
+- **禁用**: `ASS_UI`、`ASS_Defense`
 - **启用**: `ASS_Audio_Warning`、`ASS_Audio_Success`（用于解锁音效播放）
 - **恢复 Avatar**:
   - **WD On 模式**: 不显式恢复，由 WD 自动恢复默认值
@@ -250,7 +250,7 @@ Avatar 加载
 
 #### 4.1.4 Remote 动画 (CreateRemoteClip)
 
-- **禁用**: `ASS_UI`、`__ASS_Defense__`
+- **禁用**: `ASS_UI`、`ASS_Defense`
 - **WD Off**: 显式恢复所有根子对象
 - 用途：远端玩家和密码重置后的默认状态
 
@@ -423,8 +423,8 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 - 层 blending 模式: `Override`
 - Inactive 状态使用 SharedEmptyClip
-- Active 状态使用 `ASS_DefenseActivate` 动画剪辑（设置 `__ASS_Defense__` 的 `m_IsActive = 1`）
-- 防御组件挂载在 `__ASS_Defense__` 对象下，默认 `SetActive(false)`
+- Active 状态使用 `ASS_DefenseActivate` 动画剪辑（设置 `ASS_Defense` 的 `m_IsActive = 1`）
+- 防御组件挂载在 `ASS_Defense` 对象下，默认 `SetActive(false)`
 - Active 状态通过激活动画启用防御根对象
 
 #### 4.5.2 防御等级参数表
@@ -670,15 +670,13 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 系统级常量，包括：
 
-- 系统信息 (`SYSTEM_NAME`, `SYSTEM_SHORT_NAME`, `PLUGIN_QUALIFIED_NAME`)
 - 资源路径 (`ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated"`)
-- 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `ANIMATIONS_FOLDER = "Animations"`, `SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim"`)
+- 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim"`)
 - 音频资源 (`AUDIO_PASSWORD_SUCCESS`, `AUDIO_COUNTDOWN_WARNING`，直接按文件名从 Resources 加载)
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
-- GameObject 名称 (`GO_ASS_ROOT`, `GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_PARTICLES`, `GO_DEFENSE_ROOT`)
+- GameObject 名称 (`GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_DEFENSE_ROOT`)
 - VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=200`)
-- 防御参数上限 (`CONSTRAINT_CHAIN_MAX_DEPTH=100`, `PHYSBONE_CHAIN_MAX_LENGTH=256`, `PHYSBONE_COLLIDER_MAX_COUNT=256`, `SHADER_LOOP_MAX_COUNT=3000000`)
 
 ---
 
@@ -713,7 +711,7 @@ Avatar Root
 ├── ASS_Audio_Success
 │   AudioSource (spatialBlend=0, volume=0.5)
 │
-└── __ASS_Defense__ (默认禁用)
+└── ASS_Defense (默认禁用)
     ├── ConstraintChain_0/
     │   └── Constraint_0 ~ Constraint_{depth}
     │       每节点: VRCParentConstraint + VRCPositionConstraint + VRCRotationConstraint
