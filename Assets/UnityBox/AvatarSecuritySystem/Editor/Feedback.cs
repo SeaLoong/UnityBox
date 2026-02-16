@@ -98,9 +98,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector2(1, 1),
                 new Vector2(0, 1)
             };
-            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
+            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
             mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
+            mesh.RecalculateTangents();
+            // 设置超大 Bounds 防止 Unity 视锥体剔除（Shader 负责全屏映射）
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100000f);
 
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
@@ -122,6 +124,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             meshRenderer.sharedMaterial = material;
+
+            // 强制设置极高渲染队列，确保在镜子、地图物体等之上渲染
+            material.renderQueue = 5000;  // Overlay+5000
+
+            // 禁用所有可能导致被剔除的功能
+            meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            meshRenderer.receiveShadows = false;
+            meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            meshRenderer.allowOcclusionWhenDynamic = false;
+            meshRenderer.sortingOrder = 32767;  // 最高排序优先级
 
             Debug.Log("[ASS] UI Mesh overlay created (background + progress bar)");
             return meshObj;

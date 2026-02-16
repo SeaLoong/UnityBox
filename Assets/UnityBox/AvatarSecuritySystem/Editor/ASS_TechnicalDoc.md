@@ -391,6 +391,9 @@ Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBee
 - **位置**: 作为 Avatar 根对象的直接子对象
 - **默认状态**: `SetActive(false)`，仅 Locked 状态时由动画启用
 - **Mesh**: 简单 Quad（4 顶点），顶点位置无关紧要（由 Shader 重新映射）
+  - 三角形绕序：`{0, 1, 2, 0, 2, 3}`（统一逆时针，Unity 标准正面定义）
+  - 调用 `RecalculateNormals()` 和 `RecalculateTangents()` 确保法线/切线正确
+  - **Bounds 设置为 100000 单位**（`mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100000f)`），防止 Unity 视锥体剔除导致 UI 在特定视角不可见
 - **材质属性**（已混淆，属性名不可读）:
   - 背景颜色: 白色（遮挡背景）
   - 进度条颜色: 红色
@@ -402,6 +405,15 @@ Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBee
   - 进度条水平内边距: Range 0-0.4，默认 0.1
 - **Logo 渲染**: 居中显示在进度条上方的可用空间中央，自动适配屏幕宽高比和纹理宽高比，支持 Alpha 透明混合
 - **Shader 回退**: `UnityBox/ASS_UI` → `Unlit/Color` → `Hidden/InternalErrorShader`
+- **Shader 渲染状态**:
+  - Tags: `"RenderType"="Overlay" "Queue"="Overlay+5000" "IgnoreProjector"="True" "ForceNoShadowCasting"="True" "DisableBatching"="True"`
+  - `ZTest Always`, `ZWrite Off`, `Cull Off`
+  - `Blend SrcAlpha OneMinusSrcAlpha`（透明度混合）
+  - `Stencil { Ref 255 Comp Always Pass Replace }`（强制覆盖所有 Stencil，防止被镜子/地图剔除）
+  - `Offset -1, -1`（深度偏移确保最前）
+  - Material `renderQueue = 5000`（C# 端强制设置）
+  - MeshRenderer `sortingOrder = 32767`（最高排序优先级）
+  - 禁用 ShadowCasting/ReceiveShadows/LightProbe/ReflectionProbe/OcclusionCulling
 
 #### 4.4.2 音频对象
 
@@ -432,19 +444,23 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### 4.5.2 防御等级参数表
 
-| 参数                 | 等级 1 (CPU) | 等级 2 (CPU+GPU) | 调试模式(等级1) | 调试模式(等级2) |
-| -------------------- | ------------ | ---------------- | --------------- | --------------- |
-| ConstraintDepth      | 100          | 100              | 3               | 3               |
-| ConstraintChainCount | 10           | 10               | 1               | 1               |
-| PhysBoneLength       | 256          | 256              | 3               | 3               |
-| PhysBoneChainCount   | 10           | 10               | 1               | 1               |
-| PhysBoneColliders    | 256          | 256              | 2               | 2               |
-| ContactCount         | 200          | 200              | 4               | 4               |
-| PolyVertices         | 0            | 200,000          | 0               | 1,000           |
-| ParticleCount        | 0            | 100,000          | 0               | 100             |
-| ParticleSystemCount  | 0            | 20               | 0               | 1               |
-| LightCount           | 0            | 30               | 0               | 1               |
-| MaterialCount        | 0            | 20               | 0               | 1               |
+| 参数                   | 等级 1 (CPU) | 等级 2 (CPU+GPU) | 调试模式(等级1) | 调试模式(等级2) |
+| ---------------------- | ------------ | ---------------- | --------------- | --------------- |
+| ConstraintDepth        | 256          | 256              | 3               | 3               |
+| ConstraintChainCount   | 10           | 10               | 1               | 1               |
+| PhysBoneLength         | 256          | 256              | 3               | 3               |
+| PhysBoneChainCount     | 256          | 256              | 1               | 1               |
+| PhysBoneColliders      | 256          | 256              | 2               | 2               |
+| PhysXRigidbodyCount    | 0            | 256              | 0               | 1               |
+| PhysXColliderCount     | 0            | 256              | 0               | 1               |
+| ClothComponentCount    | 0            | 256              | 0               | 1               |
+| AnimatorComponentCount | 0            | 256              | 0               | 1               |
+| ContactCount           | 256          | 256              | 4               | 4               |
+| PolyVertices           | 0            | 100,000          | 0               | 1,000           |
+| ParticleCount          | 0            | 100,000          | 0               | 100             |
+| ParticleSystemCount    | 0            | 8                | 0               | 1               |
+| LightCount             | 0            | 16               | 0               | 1               |
+| MaterialCount          | 0            | 4                | 0               | 1               |
 
 #### 4.5.3 CPU 防御详解
 
@@ -484,7 +500,13 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 **扩展 PhysBone 链** (`CreateExtendedPhysBoneChains`，等级 2)
 
-与基础链配置相同，额外创建 `min(defensePhysBoneCount, 3)` 条链。
+与基础链配置相同，额外创建 `min(defensePhysBoneCount, 50)` 条链。
+
+预算统一分配逻辑：
+
+- 扩展链的 PhysBone 数量从 `maxDefensePhysBones` 预算中扣除：`extendedPhysBoneCount = min(min(defensePhysBoneCount, 50), maxDefensePhysBones - defensePhysBoneCount)`
+- Collider 预算按总链数（基础链 + 扩展链）统一分配 `collidersPerChain = min(PhysBoneColliders, colliderBudget / totalChains)`
+- 扩展链使用剩余 Collider 预算分配，若预算不足则不分配 Collider（`extCollidersPerChain = 0`）
 
 **VRCContact 系统** (`CreateContactSystem`)
 
@@ -498,9 +520,43 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 **扩展 Contact 系统** (`CreateExtendedContactSystem`，等级 2)
 
 - 碰撞标签扩展为 10 个：`["Tag1" ~ "Tag10"]`
-- 数量：`min((CONTACT_MAX_COUNT - ContactCount) / 2, 50)` 对
+- 数量：`min((contactBudget - actualContactCount) / 2, 50)` 对（基于剩余 Contact 预算）
 
-> **注意**: 系统自动检测已有 PhysBone 数量，确保总数不超过 `PHYSBONE_MAX_COUNT (256)`。
+**PhysX Rigidbody + Collider 防御** (`CreatePhysXDefense`，等级 2)
+
+利用物理引擎计算来增加 CPU 开销：
+
+- 创建 `PhysXRigidbodyCount` 个 Rigidbody 对象（旋转刚体化），每个配置：
+  - `mass = 100`, `drag = 50`, `angularDrag = 50`（高阻力）
+  - `useGravity = false`, `isKinematic = false`
+  - `collisionDetectionMode = ContinuousSpeculative`
+  - `constraints = FreezeAll`（冻结所有轴仍强制物理计算）
+- 每个 Rigidbody 附加 `PhysXColliderCount / PhysXRigidbodyCount` 个 Collider（BoxCollider 和 SphereCollider 交替）
+- 物理引擎会不断执行约束求解、碰撞检测等操作，实现 CPU 开销
+
+**Cloth 布料防御** (`CreateClothDefense`，等级 2)
+
+布料模拟是 CPU 密集操作，每帧进行顶点约束求解：
+
+- 创建 `ClothComponentCount` 个布料对象（等级 2 为 1 个）
+- 每个布料为 10×10 顶点网格（121 顶点，200 三角形）
+- 布料配置：
+  - `clothSolverFrequency = 240`（高频率求解）
+  - `stiffness = 1.0`, `damping = 0.9`
+  - `collision = true`, `selfCollision = 0.2`
+  - `worldVelocityScale = 0` 禁用世界速度以强制布料约束计算
+- SkinnedMeshRenderer 支持布料形变，每帧重新计算顶点位置
+
+**额外 Animator 组件防御** (`CreateAnimatorDefense`，等级 2)
+
+多个 Animator 实例会增加动画系统同步和更新开销：
+
+- 创建 `AnimatorComponentCount` 个独立 Animator 组件（等级 2 为 31 个）
+- 每个 Animator 绑定空的 RuntimeAnimatorController（占用资源但无实际动画播放）
+- 配置：`cullingMode = AlwaysAnimate`（禁用剔除强制更新）
+- VRChat 同步系统会强制同步所有 Animator 的参数状态，造成网络带宽和 CPU 开销
+
+> **注意**: 系统自动检测 Avatar 上已有的 PhysBone、PhysBone Collider、Constraint、Contact (Sender + Receiver)、Rigidbody、Cloth、Animator 数量，计算可用预算后动态调整防御组件数量，确保总数不超过 VRChat 上限（PhysBone 256、Collider 256、Constraint 2000、Contact 200、Rigidbody 8、Cloth 1、Animator 32）。
 
 #### 4.5.4 GPU 防御详解
 
@@ -543,9 +599,8 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 2. 防御材质创建（`CreateDefenseMaterial`）：
    - 每个网格创建独立材质（不共享），附带独立大纹理
    - 透明渲染队列 = 3000
-   - 每个材质生成 16 张 4096×4096 RGBA32 程序化纹理（每张约 64MB，含 mipmap）
-   - 纹理通过 xorshift32 伪随机算法生成，不同种子确保内容唯一，防止去重优化
-   - 20 个材质 × 16 张纹理 ≈ 20GB 显存占用
+   - 透明渲染队列 = 3000
+   - 每个材质从RenderTexture纹理池（16张 1024×1024 RGBA32，运行时占用显存但不膨胀 Asset Bundle）中取纹理
 3. 高面数球体 Mesh（`CreateHighDensitySphereMesh`）：
    - 单 subMesh
    - 双 UV 通道 + 顶点色
@@ -556,12 +611,30 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 - 总粒子数分配到多个 ParticleSystem（每个系统至少 1000 粒子）
 - 每个系统配置：
-  - `loop = true`, `prewarm = true`, `startLifetime = 8s`, `startSpeed = 3`
-  - 发射率：`particlesPerSystem / 3`
-  - 启用模块：VelocityOverLifetime、SizeOverLifetime、RotationOverLifetime
-  - 碰撞：`type = Planes`, `dampen = 0.8`, `bounce = 0.7~1.0`
-  - 渲染器：Billboard 模式，HSV 色彩分布，使用 `sharedMaterial` 赋值
-  - `gravityModifier = 0.8`
+  - `loop = true`, `prewarm = true`, `startLifetime = 6~12s`, `startSpeed = 1~5`
+  - 发射率：`particlesPerSystem / 2`，附带 Burst 发射（瞬间大量粒子）
+  - 3D Start Size/Rotation（每轴独立随机范围）
+  - World 模拟空间，随机重力修改器 0.3~1.2
+  - **渲染器**：Mesh 模式（每个粒子渲染高面数球体 2000~10000 顶点，生成大量三角面）
+    - Standard Shader + Metallic/Smoothness + Emission
+    - GPU Instancing 启用
+    - World 对齐，Distance 排序
+  - **启用模块**：
+    - VelocityOverLifetime（线性+轨道+径向+速度修改器）
+    - ForceOverLifetime（随机化 3 轴力）
+    - ColorOverLifetime（3 段 HSV 渐变 + Alpha 淡入淡出）
+    - SizeOverLifetime（3 轴分离，AnimationCurve）
+    - RotationOverLifetime（3 轴 ±360°）
+    - **Noise**（4 octave 高质量湍流，影响位置/旋转/大小）
+    - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息）
+    - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线）
+    - **TextureSheetAnimation**（4×4 网格，3 周期循环）
+    - **LimitVelocityOverLifetime**（3 轴限制+阻力）
+    - **InheritVelocity**（继承发射器速度）
+    - **LifetimeByEmitterSpeed**
+    - **Sub-emitters**（碰撞+死亡事件创建子粒子系统，子系统也使用 Mesh 模式+Trails+Noise+WorldCollision）
+  - 每个主粒子系统创建 1 个子粒子发射器（Collision + Death 类型）
+  - Trail Material 独立材质（不同 HSV 色相 + 自发光）
 
 **光源防御** (`CreateLightDefense`)
 
@@ -667,7 +740,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
 - GameObject 名称 (`GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_DEFENSE_ROOT`)
-- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=200`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`)
+- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=256`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`)
 
 ---
 
@@ -771,11 +844,47 @@ Avatar Root
 
 ### 10.1 VRChat 组件限制
 
-- PhysBone 总数（含模型自带）不超过 256，系统会自动检测已有数量并调整
-- Contact Sender + Receiver 总数不超过 200
-- Constraint 总数（VRCParentConstraint + VRCPositionConstraint + VRCRotationConstraint + VRCScaleConstraint）不超过 2000，系统自动计算预算
-- PhysBone Collider 总数不超过 256，系统按链数量等比分配
-- 系统在生成防御组件前会扫描 Avatar 已有的组件数量，计算剩余预算后动态调整链数和每链组件数
+系统在生成防御组件前会扫描 Avatar 上已有的组件数量，计算剩余预算后动态调整防御组件数量：
+
+- **PhysBone**: 上限 256，系统检测 `GetComponentsInChildren<VRCPhysBone>()` 计算可用预算
+- **PhysBone Collider**: 上限 256，系统检测 `GetComponentsInChildren<VRCPhysBoneCollider>()` 后按链数量等比分配
+- **Constraint**: 上限 2000（包含所有约束类型），系统检测 `GetComponentsInChildren<VRCConstraintBase>()` 计算可用预算
+- **Contact**: 上限 200（Sender + Receiver 总数），系统检测 `GetComponentsInChildren<VRCContactSender>() + GetComponentsInChildren<VRCContactReceiver>()` 计算可用预算
+
+**预算检查代码逻辑** (`Defense.cs CreateDefenseComponents()`):
+
+```csharp
+// 统计已有组件
+existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
+existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+existingConstraints = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
+existingContacts = avatarRoot.GetComponentsInChildren<VRCContactSender>(true).Length
+                 + avatarRoot.GetComponentsInChildren<VRCContactReceiver>(true).Length;
+
+// 计算可用预算
+int maxDefensePhysBones = Mathf.Max(0, PHYSBONE_MAX_COUNT - existingPhysBones);
+int colliderBudget = Mathf.Max(0, PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
+int constraintBudget = Mathf.Max(0, CONSTRAINT_MAX_COUNT - existingConstraints);
+int contactBudget = Mathf.Max(0, CONTACT_MAX_COUNT - existingContacts);
+
+// 根据预算调整实际生成数量（基础链）
+int defensePhysBoneCount = Mathf.Min(parameters.PhysBoneChainCount, maxDefensePhysBones);
+int actualContactCount = Mathf.Min(parameters.ContactCount, contactBudget);
+
+// 扩展链预算：从 maxDefensePhysBones 中扣除基础链后的剩余
+int extendedPhysBoneCount = Mathf.Max(0, maxDefensePhysBones - defensePhysBoneCount);
+extendedPhysBoneCount = Mathf.Min(Mathf.Min(defensePhysBoneCount, 50), extendedPhysBoneCount);
+
+// Collider 按总链数（基础 + 扩展）统一分配
+int totalChains = defensePhysBoneCount + extendedPhysBoneCount;
+int collidersPerChain = Mathf.Min(PhysBoneColliders, colliderBudget / totalChains);
+```
+
+这确保了即使 Avatar 本身已接近组件上限，ASS 也不会导致构建失败。关键原则：
+
+- **PhysBone 预算**：基础链 + 扩展链的 PhysBone 总数不超过 `maxDefensePhysBones`
+- **Collider 预算**：按所有链的总数统一分配，避免基础链占满预算后扩展链溢出
+- **Contact 预算**：先统计已有 Sender + Receiver 数量，再分配给基础和扩展 Contact 系统
 
 ### 10.2 Write Defaults 模式
 

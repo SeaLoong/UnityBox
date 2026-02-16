@@ -14,12 +14,23 @@ Shader "UnityBox/ASS_UI"
 
     SubShader
     {
-        Tags { "RenderType"="Overlay" "Queue"="Overlay+100" }
+        Tags { "RenderType"="Overlay" "Queue"="Overlay+5000" "IgnoreProjector"="True" "ForceNoShadowCasting"="True" "PreviewType"="Plane" "DisableBatching"="True" }
         LOD 100
 
         ZTest Always
         ZWrite Off
         Cull Off
+        Blend SrcAlpha OneMinusSrcAlpha
+        ColorMask RGBA
+        Offset -1, -1
+
+        // Stencil: 强制写入最高值，确保不被任何后续 Stencil 操作剔除
+        Stencil
+        {
+            Ref 255
+            Comp Always
+            Pass Replace
+        }
 
         Pass
         {

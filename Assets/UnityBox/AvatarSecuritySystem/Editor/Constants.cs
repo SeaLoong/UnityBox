@@ -38,7 +38,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         // ============ VRChat 组件上限 ============
         public const int PHYSBONE_MAX_COUNT = 256;
-        public const int CONTACT_MAX_COUNT = 200;
+        public const int CONTACT_MAX_COUNT = 256;
         public const int CONSTRAINT_MAX_COUNT = 2000;
         public const int PHYSBONE_COLLIDER_MAX_COUNT = 256;
 
