@@ -41,7 +41,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const int CONTACT_MAX_COUNT = 256;
         public const int CONSTRAINT_MAX_COUNT = 2000;
         public const int PHYSBONE_COLLIDER_MAX_COUNT = 256;
-
-
+        public const int PHYSBONE_COLLIDER_CHECK_MAX_COUNT = 10000;
+        public const int RIGIDBODY_MAX_COUNT = 256;
+        public const int CLOTH_MAX_COUNT = 256;
+        public const int ANIMATOR_MAX_COUNT = 256;
+        public const int POLY_VERTICES_MAX_COUNT = 2560000;
+        public const int PARTICLE_MAX_COUNT = 2560000;
+        public const int PARTICLE_SYSTEM_MAX_COUNT = 256;
+        public const int LIGHT_MAX_COUNT = 256;
+        public const int MATERIAL_MAX_COUNT = 4;
     }
 }

@@ -40,8 +40,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            float levelMultiplier = Mathf.Clamp01((config.defenseLevel - 1) / 1f);
-
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
@@ -65,7 +63,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             try
             {
-                CreateDefenseComponents(levelMultiplier);
+                CreateDefenseComponents();
             }
             catch (System.Exception e)
             {
@@ -76,13 +74,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             controller.AddLayer(layer);
         }
 
-        private GameObject CreateDefenseComponents(float levelMultiplier = 1f)
+        private GameObject CreateDefenseComponents()
         {
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
-            {
                 Object.DestroyImmediate(existingRoot.gameObject);
-            }
+
+            int existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
+            int existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+            int existingConstraints = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
+            int existingContacts = avatarRoot.GetComponentsInChildren<VRCContactSender>(true).Length
+                                 + avatarRoot.GetComponentsInChildren<VRCContactReceiver>(true).Length;
+            int existingRigidbodies = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
+            int existingCloth = avatarRoot.GetComponentsInChildren<Cloth>(true).Length;
+            int existingAnimators = avatarRoot.GetComponentsInChildren<Animator>(true).Length;
 
             var root = new GameObject(Constants.GO_DEFENSE_ROOT);
             root.transform.SetParent(avatarRoot.transform);
@@ -91,186 +96,137 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             root.transform.localScale = Vector3.one;
             root.SetActive(false);
 
-            var parameters = CalculateDefenseParams(levelMultiplier);
+            var parameters = ComputeDefenseParams();
 
             bool enableCpu = config.defenseLevel >= 1;
             bool enableGpu = config.defenseLevel >= 2;
 
-            int existingPhysBones = 0;
-            int existingColliders = 0;
-            int existingConstraints = 0;
-            int existingContacts = 0;
-            try
-            {
-                existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
-                existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
-                existingConstraints = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
-                existingContacts = avatarRoot.GetComponentsInChildren<VRCContactSender>(true).Length 
-                                 + avatarRoot.GetComponentsInChildren<VRCContactReceiver>(true).Length;
-            }
-            catch
-            {
-                existingPhysBones = 0;
-                existingColliders = 0;
-                existingConstraints = 0;
-                existingContacts = 0;
-            }
-            int maxDefensePhysBones = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
-            int defensePhysBoneCount = Mathf.Min(parameters.PhysBoneChainCount, maxDefensePhysBones);
-            int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
             int constraintBudget = Mathf.Max(0, Constants.CONSTRAINT_MAX_COUNT - existingConstraints);
+            int pbBudget = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
+            int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
+
+            int existingCollisionChecks = 0;
+            foreach (var pb in avatarRoot.GetComponentsInChildren<VRCPhysBone>(true))
+            {
+                int colCount = 0;
+                if (pb.colliders != null)
+                    foreach (var col in pb.colliders)
+                        if (col != null) colCount++;
+                if (colCount == 0) continue;
+                Transform pbRoot = pb.rootTransform != null ? pb.rootTransform : pb.transform;
+                existingCollisionChecks += colCount * CountTransformsInHierarchy(pbRoot);
+            }
+            int colliderCheckBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_CHECK_MAX_COUNT - existingCollisionChecks);
             int contactBudget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - existingContacts);
+            int rigidbodyBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRigidbodies);
+            int clothBudget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existingCloth);
+            int animatorBudget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existingAnimators);
 
             if (enableCpu)
             {
                 if (parameters.ConstraintChainCount > 0 && constraintBudget > 0)
+                    FillConstraintChains(root, parameters.ConstraintChainCount, parameters.ConstraintDepth, constraintBudget);
+
+                if (parameters.PhysBoneChainCount > 0 && pbBudget > 0)
                 {
-                    int constraintsPerChain = 3 * parameters.ConstraintDepth - 2;
-                    int maxChains = Mathf.Max(1, constraintBudget / constraintsPerChain);
-                    int chainCount = Mathf.Min(parameters.ConstraintChainCount, maxChains);
-                    int usedConstraints = chainCount * constraintsPerChain;
+                    int chainBudget = Mathf.Min(parameters.PhysBoneChainCount, pbBudget);
+                    int colliderBudgetRemaining = Mathf.Min(parameters.PhysBoneColliders, colliderBudget);
+                    int checksRemaining = colliderCheckBudget;
+                    int chainsCreated = 0;
 
-                    for (int i = 0; i < chainCount; i++)
+                    while (chainsCreated < chainBudget)
                     {
-                        CreateConstraintChain(root, parameters.ConstraintDepth, i);
-                    }
+                        int remainingChains = chainBudget - chainsCreated;
 
-                    if (!isDebugMode && config.defenseLevel >= 2)
-                    {
-                        int remainingBudget = constraintBudget - usedConstraints;
-                        int extConstraintsPerChain = 4 * parameters.ConstraintDepth;
-                        int extChainCount = Mathf.Min(Mathf.Min(chainCount, 5), Mathf.Max(0, remainingBudget / extConstraintsPerChain));
-                        if (extChainCount > 0)
+                        // 逐条分配 collider（均分剩余）
+                        int collidersForThis = colliderBudgetRemaining / remainingChains;
+
+                        // 由 collision check 预算均分后约束链长
+                        int checkAllowance = checksRemaining / remainingChains;
+                        int chainLength = parameters.PhysBoneLength;
+                        if (collidersForThis > 0 && checkAllowance > 0)
                         {
-                            CreateExtendedConstraintChains(root, extChainCount, parameters.ConstraintDepth);
+                            chainLength = Mathf.Min(chainLength, checkAllowance / collidersForThis);
                         }
-                    }
-                }
-
-                if (parameters.PhysBoneColliders > 0 && defensePhysBoneCount > 0)
-                {
-                    // 计算扩展链数量（提前计算，以便统一分配预算）
-                    int extendedPhysBoneCount = 0;
-                    if (!isDebugMode && config.defenseLevel >= 2)
-                    {
-                        extendedPhysBoneCount = Mathf.Min(defensePhysBoneCount, 50);
-                        // 确保 PhysBone 总数（基础链 + 扩展链）不超过预算
-                        int totalPhysBoneCount = defensePhysBoneCount + extendedPhysBoneCount;
-                        if (totalPhysBoneCount > maxDefensePhysBones)
+                        else if (collidersForThis > 0)
                         {
-                            extendedPhysBoneCount = Mathf.Max(0, maxDefensePhysBones - defensePhysBoneCount);
+                            collidersForThis = 0;
                         }
-                    }
-                    int totalChains = defensePhysBoneCount + extendedPhysBoneCount;
+                        chainLength = Mathf.Max(1, chainLength);
 
-                    // 按总链数统一分配 Collider 预算
-                    int collidersPerChain = Mathf.Min(parameters.PhysBoneColliders, Mathf.Max(1, colliderBudget / totalChains));
+                        CreatePhysBoneChain(root, chainLength, collidersForThis, chainsCreated);
 
-                    for (int i = 0; i < defensePhysBoneCount; i++)
-                    {
-                        CreatePhysBoneChains(root, parameters.PhysBoneLength, collidersPerChain, i);
-                    }
-                    int usedColliders = defensePhysBoneCount * collidersPerChain;
-
-                    if (extendedPhysBoneCount > 0)
-                    {
-                        int remainingColliders = Mathf.Max(0, colliderBudget - usedColliders);
-                        int extCollidersPerChain = (remainingColliders >= extendedPhysBoneCount)
-                            ? Mathf.Min(collidersPerChain, remainingColliders / extendedPhysBoneCount)
-                            : 0;
-                        CreateExtendedPhysBoneChains(root, extendedPhysBoneCount, parameters.PhysBoneLength, extCollidersPerChain);
+                        int checksUsed = collidersForThis * chainLength;
+                        checksRemaining -= checksUsed;
+                        colliderBudgetRemaining -= collidersForThis;
+                        chainsCreated++;
                     }
                 }
 
                 if (parameters.ContactCount > 0 && contactBudget > 0)
-                {
-                    int actualContactCount = Mathf.Min(parameters.ContactCount, contactBudget);
-                    CreateContactSystem(root, actualContactCount);
+                    FillContacts(root, Mathf.Min(parameters.ContactCount, contactBudget));
 
-                    int remainingContactBudget = Mathf.Max(0, contactBudget - actualContactCount);
-                    int extendedContactCount = Mathf.Min(remainingContactBudget / 2, 50);
-                    if (!isDebugMode && config.defenseLevel >= 2 && extendedContactCount > 0)
-                    {
-                        CreateExtendedContactSystem(root, extendedContactCount);
-                    }
-                }
+                if (parameters.AnimatorComponentCount > 0 && animatorBudget > 0)
+                    CreateAnimatorComponents(root, Mathf.Min(parameters.AnimatorComponentCount, animatorBudget));
             }
 
             if (enableGpu)
             {
                 if (parameters.MaterialCount > 0)
-                {
-                    CreateMaterialDefense(root, parameters);
-                }
+                    CreateMaterialComponents(root, parameters);
 
                 if (parameters.ParticleCount > 0)
-                {
-                    CreateParticleDefense(root, parameters.ParticleCount, parameters.ParticleSystemCount);
-                }
+                    CreateParticleComponents(root, parameters.ParticleSystemCount, parameters.ParticleCount);
 
                 if (parameters.LightCount > 0)
-                {
-                    CreateLightDefense(root, parameters.LightCount);
-                }
-            }
+                    CreateLightComponents(root, parameters.LightCount);
 
-            // 额外 PhysX 和 Cloth 组件（提高 CPU 开销）
-            if (parameters.PhysXRigidbodyCount > 0)
-            {
-                CreatePhysXDefense(root, parameters.PhysXRigidbodyCount, parameters.PhysXColliderCount);
-            }
+                if (parameters.PhysXRigidbodyCount > 0 && rigidbodyBudget > 0)
+                    CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rigidbodyBudget), parameters.PhysXColliderCount);
 
-            if (parameters.ClothComponentCount > 0)
-            {
-                CreateClothDefense(root, parameters.ClothComponentCount);
-            }
-
-            if (parameters.AnimatorComponentCount > 0)
-            {
-                CreateAnimatorDefense(root, parameters.AnimatorComponentCount);
+                if (parameters.ClothComponentCount > 0 && clothBudget > 0)
+                    CreateClothComponents(root, Mathf.Min(parameters.ClothComponentCount, clothBudget));
             }
 
             return root;
         }
 
-        private void CreateMaterialDefense(
-            GameObject root,
-            DefenseParams parameters)
+        private void CreateMaterialComponents(GameObject root, DefenseParams parameters)
         {
-            var materialDefenseRoot = new GameObject("MaterialDefense");
-            materialDefenseRoot.transform.SetParent(root.transform);
-            materialDefenseRoot.transform.localPosition = Vector3.zero;
+            var materialRoot = new GameObject("MaterialDefense");
+            materialRoot.transform.SetParent(root.transform);
+            materialRoot.transform.localPosition = Vector3.zero;
 
-            int verticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
+            int baseVerticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
+            int extraVertices = parameters.PolyVertices % Mathf.Max(1, parameters.MaterialCount);
 
             const int texturePoolSize = 16;
             var texturePool = new RenderTexture[texturePoolSize];
             for (int t = 0; t < texturePoolSize; t++)
-            {
-                texturePool[t] = CreateVRAMBombTexture(t);
-            }
+                texturePool[t] = CreateRenderTexture(t);
 
             for (int i = 0; i < parameters.MaterialCount; i++)
             {
-                var defenseMaterial = CreateDefenseMaterial(i, texturePool);
-                if (defenseMaterial == null)
+                var material = CreateMaterial(i, texturePool);
+                if (material == null)
                 {
                     Debug.LogWarning($"[ASS] 无法创建防御材质 #{i}，跳过");
                     continue;
                 }
 
                 var meshObj = new GameObject($"Mesh_{i}");
-                meshObj.transform.SetParent(materialDefenseRoot.transform);
-                meshObj.transform.localPosition = new Vector3(i * 0.2f, 0, 0);
-                meshObj.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+                meshObj.transform.SetParent(materialRoot.transform);
+                meshObj.transform.localPosition = Vector3.zero;
+                meshObj.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
 
-                var mesh = CreateHighDensitySphereMesh(verticesPerMesh);
+                int verticesForThisMesh = baseVerticesPerMesh + (i < extraVertices ? 1 : 0);
+                var mesh = GenerateSphereMesh(verticesForThisMesh);
 
                 var meshFilter = meshObj.AddComponent<MeshFilter>();
                 meshFilter.sharedMesh = mesh;
 
                 var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-                meshRenderer.sharedMaterial = defenseMaterial;
+                meshRenderer.sharedMaterial = material;
                 meshRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                 meshRenderer.receiveShadows = true;
                 meshRenderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -279,12 +235,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 meshRenderer.allowOcclusionWhenDynamic = false;
             }
 
-            Debug.Log($"[ASS] 创建材质防御: {parameters.MaterialCount} 个网格, 每个 {verticesPerMesh} 顶点");
         }
 
-        private static Material CreateDefenseMaterial(int seed, RenderTexture[] texturePool)
+        private static Material CreateMaterial(int seed, RenderTexture[] texturePool)
         {
-            var shader = CreateDefenseShader();
+            var shader = GetDefenseShader();
             if (shader == null)
             {
                 Debug.LogWarning("[ASS] 无法创建防御 Shader，跳过材质创建");
@@ -298,14 +253,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             string[] texProps = { "_xA0", "_xA1", "_xA2", "_xA3", "_xA4", "_xA5", "_xA6", "_xA7",
                                   "_xA8", "_xA9", "_xAA", "_xAB", "_xAC", "_xAD", "_xAE", "_xAF" };
             for (int i = 0; i < texProps.Length; i++)
-            {
                 material.SetTexture(texProps[i], texturePool[(seed * 3 + i) % texturePool.Length]);
-            }
 
             return material;
         }
 
-        private static RenderTexture CreateVRAMBombTexture(int seed)
+        private static RenderTexture CreateRenderTexture(int seed)
         {
             var rt = new RenderTexture(1024, 1024, 0, RenderTextureFormat.ARGB32);
             rt.name = $"ASS_RT_{seed}";
@@ -324,10 +277,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int PhysBoneLength;
             public readonly int PhysBoneChainCount;
             public readonly int PhysBoneColliders;
-            public readonly int PhysXRigidbodyCount;  // PhysX 子元 Rigidbody
-            public readonly int PhysXColliderCount;    // PhysX 子元 Collider
-            public readonly int ClothComponentCount;   // Cloth 组件
-            public readonly int AnimatorComponentCount; // 预备 Animator 组件
+            public readonly int PhysXRigidbodyCount;
+            public readonly int PhysXColliderCount;
+            public readonly int ClothComponentCount;
+            public readonly int AnimatorComponentCount;
             public readonly int ContactCount;
             public readonly int PolyVertices;
             public readonly int ParticleCount;
@@ -360,30 +313,28 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private DefenseParams CalculateDefenseParams(float levelMultiplier)
+        private DefenseParams ComputeDefenseParams()
         {
             if (isDebugMode)
             {
                 if (config.defenseLevel <= 0)
                 {
-                    Debug.Log("[ASS] 调试模式 - 等级0：不生成防御组件");
                     return new DefenseParams(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 }
-                
+
                 if (config.defenseLevel == 1)
                 {
-                    Debug.Log("[ASS] 调试模式 - 等级1：CPU防御（最小参数）");
                     return new DefenseParams(
-                        constraintDepth: 3,
+                        constraintDepth: 1,
                         constraintChainCount: 1,
-                        physBoneLength: 3,
+                        physBoneLength: 1,
                         physBoneChainCount: 1,
-                        physBoneColliders: 2,
+                        physBoneColliders: 1,
                         physXRigidbodyCount: 0,
                         physXColliderCount: 0,
                         clothComponentCount: 0,
-                        animatorComponentCount: 0,
-                        contactCount: 4,
+                        animatorComponentCount: 1,
+                        contactCount: 1,
                         polyVertices: 0,
                         particleCount: 0,
                         particleSystemCount: 0,
@@ -391,21 +342,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         materialCount: 0
                     );
                 }
-                
-                Debug.Log($"[ASS] 调试模式 - 等级{config.defenseLevel}");
+
                 return new DefenseParams(
-                    constraintDepth: 3,
+                    constraintDepth: 1,
                     constraintChainCount: 1,
-                    physBoneLength: 3,
+                    physBoneLength: 1,
                     physBoneChainCount: 1,
-                    physBoneColliders: 2,
+                    physBoneColliders: 1,
                     physXRigidbodyCount: 1,
                     physXColliderCount: 1,
                     clothComponentCount: 1,
                     animatorComponentCount: 1,
-                    contactCount: 4,
-                    polyVertices: 1000,
-                    particleCount: 100,
+                    contactCount: 1,
+                    polyVertices: 100,
+                    particleCount: 1,
                     particleSystemCount: 1,
                     lightCount: 1,
                     materialCount: 1
@@ -414,18 +364,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (config.defenseLevel == 1)
             {
-                Debug.Log("[ASS] 防御等级1");
                 return new DefenseParams(
-                    constraintDepth: 256,
-                    constraintChainCount: 10,
-                    physBoneLength: 256,
-                    physBoneChainCount: 256,
-                    physBoneColliders: 256,
+                    constraintDepth: Constants.CONSTRAINT_MAX_COUNT,
+                    constraintChainCount: Constants.CONSTRAINT_MAX_COUNT,
+                    physBoneLength: Constants.PHYSBONE_MAX_COUNT,
+                    physBoneChainCount: Constants.PHYSBONE_MAX_COUNT,
+                    physBoneColliders: Constants.PHYSBONE_COLLIDER_MAX_COUNT,
                     physXRigidbodyCount: 0,
                     physXColliderCount: 0,
                     clothComponentCount: 0,
-                    animatorComponentCount: 0,
-                    contactCount: 256,
+                    animatorComponentCount: Constants.ANIMATOR_MAX_COUNT,
+                    contactCount: Constants.CONTACT_MAX_COUNT,
                     polyVertices: 0,
                     particleCount: 0,
                     particleSystemCount: 0,
@@ -434,88 +383,68 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 );
             }
 
-            Debug.Log("[ASS] 防御等级2");
             return new DefenseParams(
-                constraintDepth: 256,
-                constraintChainCount: 10,
-                physBoneLength: 256,
-                physBoneChainCount: 256,
-                physBoneColliders: 256,
-                physXRigidbodyCount: 8,
-                physXColliderCount: 8,
-                clothComponentCount: 8,
-                animatorComponentCount: 8,
-                contactCount: 256,
-                polyVertices: 100000,
-                particleCount: 10000,
-                particleSystemCount: 8,
-                lightCount: 16,
-                materialCount: 4
+                constraintDepth: Constants.CONSTRAINT_MAX_COUNT,
+                constraintChainCount: Constants.CONSTRAINT_MAX_COUNT,
+                physBoneLength: Constants.PHYSBONE_MAX_COUNT,
+                physBoneChainCount: Constants.PHYSBONE_MAX_COUNT,
+                physBoneColliders: Constants.PHYSBONE_COLLIDER_MAX_COUNT,
+                physXRigidbodyCount: Constants.RIGIDBODY_MAX_COUNT,
+                physXColliderCount: Constants.RIGIDBODY_MAX_COUNT * 4,
+                clothComponentCount: Constants.CLOTH_MAX_COUNT,
+                animatorComponentCount: Constants.ANIMATOR_MAX_COUNT,
+                contactCount: Constants.CONTACT_MAX_COUNT,
+                polyVertices: Constants.POLY_VERTICES_MAX_COUNT,
+                particleCount: Constants.PARTICLE_MAX_COUNT,
+                particleSystemCount: Constants.PARTICLE_SYSTEM_MAX_COUNT,
+                lightCount: Constants.LIGHT_MAX_COUNT,
+                materialCount: Constants.MATERIAL_MAX_COUNT
             );
         }
 
-        private static void CreateConstraintChain(GameObject root, int depth, int chainIndex = 0)
+        private int FillConstraintChains(GameObject root, int chainCount, int maxDepth, int budget)
         {
-            try
+            int used = 0;
+
+            for (int c = 0; c < chainCount && used < budget; c++)
             {
-                var chainRoot = new GameObject($"ConstraintChain_{chainIndex}");
+                var chainRoot = new GameObject($"Chain_{c}");
                 chainRoot.transform.SetParent(root.transform);
-                chainRoot.transform.localPosition = new Vector3(chainIndex * 0.5f, 0, 0);
+                chainRoot.transform.localPosition = Vector3.zero;
 
                 GameObject previous = chainRoot;
-                for (int i = 0; i < depth; i++)
+                int actualDepth = 0;
+
+                for (int i = 0; i < maxDepth; i++)
                 {
-                    var obj = new GameObject($"C_{i}");
-                    obj.transform.SetParent(chainRoot.transform);
-                    obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
+                    if (used + 1 > budget) break;
 
-                    var parentC = obj.AddComponent<VRCParentConstraint>();
+                    var node = new GameObject($"C_{i}");
+                    node.transform.SetParent(chainRoot.transform);
+                    node.transform.localPosition = new Vector3(0, i * 0.01f, 0);
 
-                    if (i > 0)
+                    var constraint = node.AddComponent<VRCParentConstraint>();
+                    constraint.Sources.Add(new VRCConstraintSource
                     {
-                        parentC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform,
-                            ParentPositionOffset = Vector3.zero,
-                            ParentRotationOffset = Vector3.zero
-                        });
+                        Weight = 1f,
+                        SourceTransform = previous.transform,
+                        ParentPositionOffset = Vector3.zero,
+                        ParentRotationOffset = Vector3.zero
+                    });
+                    ActivateConstraint(constraint, true, true);
 
-                        var posC = obj.AddComponent<VRCPositionConstraint>();
-                        posC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform
-                        });
-
-                        var rotC = obj.AddComponent<VRCRotationConstraint>();
-                        rotC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform
-                        });
-                    }
-
-                    SetConstraintProperties(parentC, true, true);
-
-                    if (i > 0)
-                    {
-                        SetConstraintProperties(obj.GetComponent<VRCPositionConstraint>(), true, true);
-                        SetConstraintProperties(obj.GetComponent<VRCRotationConstraint>(), true, true);
-                    }
-
-                    previous = obj;
+                    used++;
+                    actualDepth++;
+                    previous = node;
                 }
 
-                Debug.Log($"[ASS] 创建VRC Constraint链 {chainIndex}: 深度={depth}");
+
             }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[ASS] 创建Constraint链时出错: {ex.Message}\n{ex.StackTrace}");
-            }
+
+            return used;
         }
 
-        private static void SetConstraintProperties<T>(T constraint, bool isActive, bool isLocked) where T : VRCConstraintBase
+        private static void ActivateConstraint<T>(T constraint, bool isActive, bool isLocked) where T : VRCConstraintBase
         {
             if (constraint == null) return;
 
@@ -534,18 +463,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private static void CreatePhysBoneChains(GameObject root, int chainLength, int colliderCount, int chainIndex = 0)
+        private static void CreatePhysBoneChain(GameObject root, int chainLength, int colliderCount, int chainIndex)
         {
             var physBoneRoot = new GameObject($"PhysBone_{chainIndex}");
             physBoneRoot.transform.SetParent(root.transform);
-            physBoneRoot.transform.localPosition = new Vector3(chainIndex * 0.5f, 1f, 0);
+            physBoneRoot.transform.localPosition = Vector3.zero;
 
             var chainRoot = new GameObject($"BoneChain_{chainIndex}");
             chainRoot.transform.SetParent(physBoneRoot.transform);
             chainRoot.transform.localPosition = Vector3.zero;
 
             Transform previous = chainRoot.transform;
-            for (int i = 0; i < chainLength; i++)
+            for (int i = 0; i < chainLength - 1; i++)
             {
                 var bone = new GameObject($"B_{i}");
                 bone.transform.SetParent(previous);
@@ -590,12 +519,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var colliderObj = new GameObject($"Col_{i}");
                 colliderObj.transform.SetParent(physBoneRoot.transform);
-                float angle = (float)i / colliderCount * Mathf.PI * 2f;
-                colliderObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle),
-                    (float)i / colliderCount * 2f,
-                    Mathf.Sin(angle)
-                );
+                colliderObj.transform.localPosition = Vector3.zero;
 
                 var collider = colliderObj.AddComponent<VRCPhysBoneCollider>();
                 collider.shapeType = VRCPhysBoneCollider.ShapeType.Capsule;
@@ -608,27 +532,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
-
-            Debug.Log($"[ASS] 创建PhysBone链 {chainIndex}: 长度={chainLength}, Collider={colliderCount}");
         }
 
-        private static void CreateContactSystem(GameObject root, int componentCount)
+        private static void FillContacts(GameObject root, int componentCount)
         {
             var contactRoot = new GameObject("ContactSystem");
             contactRoot.transform.SetParent(root.transform);
 
-            int halfCount = componentCount / 2;
+            int senderCount = (componentCount + 1) / 2;
+            int receiverCount = componentCount / 2;
 
-            for (int i = 0; i < halfCount; i++)
+            for (int i = 0; i < senderCount; i++)
             {
                 var senderObj = new GameObject($"S_{i}");
                 senderObj.transform.SetParent(contactRoot.transform);
-                float angle = (float)i / halfCount * Mathf.PI * 2f;
-                senderObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle),
-                    (float)i / halfCount * 2f,
-                    Mathf.Sin(angle)
-                );
+                senderObj.transform.localPosition = Vector3.zero;
 
                 var sender = senderObj.AddComponent<VRCContactSender>();
                 sender.shapeType = VRCContactSender.ShapeType.Capsule;
@@ -638,16 +556,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sender.localOnly = true;
             }
 
-            for (int i = 0; i < halfCount; i++)
+            for (int i = 0; i < receiverCount; i++)
             {
                 var receiverObj = new GameObject($"R_{i}");
                 receiverObj.transform.SetParent(contactRoot.transform);
-                float angle = ((float)i / halfCount + 0.5f / halfCount) * Mathf.PI * 2f;
-                receiverObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle) * 0.8f,
-                    (float)i / halfCount * 2f + 0.1f,
-                    Mathf.Sin(angle) * 0.8f
-                );
+                receiverObj.transform.localPosition = Vector3.zero;
 
                 var receiver = receiverObj.AddComponent<VRCContactReceiver>();
                 receiver.shapeType = VRCContactReceiver.ShapeType.Capsule;
@@ -657,30 +570,38 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 receiver.localOnly = true;
             }
 
-            Debug.Log($"[ASS] 创建Contact系统: {halfCount} senders + {halfCount} receivers");
         }
 
-        private static void CreateParticleDefense(GameObject root, int totalParticleCount, int systemCount)
+        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget)
         {
             var particleRoot = new GameObject("ParticleDefense");
             particleRoot.transform.SetParent(root.transform);
 
-            int particlesPerSystem = Mathf.Max(1000, totalParticleCount / systemCount);
+            var sharedParticleMesh = GenerateSphereMesh(50);
+            var sharedSubEmitterMesh = GenerateSphereMesh(20);
 
-            // 共享粒子 Mesh（避免每个系统创建独立高面数 Mesh 导致 bundle 膨胀）
-            var sharedParticleMesh = CreateHighDensitySphereMesh(500);
-            var sharedSubEmitterMesh = CreateHighDensitySphereMesh(200);
+            int systemsUsed = 0;
+            int particlesUsed = 0;
 
-            for (int s = 0; s < systemCount; s++)
+            var mainSystems = new List<ParticleSystem>();
+            var mainObjects = new List<GameObject>();
+
+            // 第一轮：顺序填充主粒子系统
+            while (systemsUsed < systemBudget && particlesUsed < particleBudget)
             {
+                int remaining = particleBudget - particlesUsed;
+                int remainingSystems = systemBudget - systemsUsed;
+                int particlesForThis = remaining / remainingSystems;
+                if (particlesForThis <= 0) break;
+
+                int s = mainSystems.Count;
                 var psObj = new GameObject($"PS_{s}");
                 psObj.transform.SetParent(particleRoot.transform);
-                psObj.transform.localPosition = new Vector3(s * 0.5f, 1f, s * 0.3f);
+                psObj.transform.localPosition = Vector3.zero;
 
                 var ps = psObj.AddComponent<ParticleSystem>();
                 var renderer = psObj.GetComponent<ParticleSystemRenderer>();
 
-                // ===== Main Module =====
                 var main = ps.main;
                 main.duration = 10f;
                 main.loop = true;
@@ -690,10 +611,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.5f);
                 main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
                 main.startColor = new ParticleSystem.MinMaxGradient(
-                    Color.HSVToRGB((float)s / systemCount, 0.8f, 1f),
-                    Color.HSVToRGB(((float)s / systemCount + 0.3f) % 1f, 0.6f, 0.8f)
+                    Color.HSVToRGB((float)s / systemBudget, 0.8f, 1f),
+                    Color.HSVToRGB(((float)s / systemBudget + 0.3f) % 1f, 0.6f, 0.8f)
                 );
-                main.maxParticles = particlesPerSystem;
+                main.maxParticles = particlesForThis;
                 main.gravityModifier = new ParticleSystem.MinMaxCurve(0.3f, 1.2f);
                 main.simulationSpace = ParticleSystemSimulationSpace.World;
                 main.startSize3D = true;
@@ -705,17 +626,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 main.startRotationY = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
                 main.startRotationZ = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
 
-                // ===== Emission =====
                 var emission = ps.emission;
                 emission.enabled = true;
-                emission.rateOverTime = particlesPerSystem / 2f;
-                // Burst emission for heavy instantaneous load
+                emission.rateOverTime = particlesForThis / 2f;
                 emission.SetBursts(new ParticleSystem.Burst[] {
-                    new ParticleSystem.Burst(0f, (short)(particlesPerSystem / 10), (short)(particlesPerSystem / 5), 3, 0.5f),
-                    new ParticleSystem.Burst(2f, (short)(particlesPerSystem / 8), (short)(particlesPerSystem / 4), 2, 1f)
+                    new ParticleSystem.Burst(0f, (short)(particlesForThis / 10), (short)(particlesForThis / 5), 3, 0.5f),
+                    new ParticleSystem.Burst(2f, (short)(particlesForThis / 8), (short)(particlesForThis / 4), 2, 1f)
                 });
 
-                // ===== Shape Module =====
                 var shape = ps.shape;
                 shape.enabled = true;
                 shape.shapeType = (s % 3 == 0) ? ParticleSystemShapeType.Sphere :
@@ -726,7 +644,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 shape.randomDirectionAmount = 0.5f;
                 shape.randomPositionAmount = 1f;
 
-                // ===== Velocity over Lifetime =====
                 var velocityOverLifetime = ps.velocityOverLifetime;
                 velocityOverLifetime.enabled = true;
                 velocityOverLifetime.space = ParticleSystemSimulationSpace.World;
@@ -739,7 +656,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(-1f, 1f);
                 velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(0.5f, 2f);
 
-                // ===== Force over Lifetime =====
                 var forceOverLifetime = ps.forceOverLifetime;
                 forceOverLifetime.enabled = true;
                 forceOverLifetime.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
@@ -747,15 +663,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 forceOverLifetime.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
                 forceOverLifetime.randomized = true;
 
-                // ===== Color over Lifetime =====
                 var colorOverLifetime = ps.colorOverLifetime;
                 colorOverLifetime.enabled = true;
                 var gradient = new Gradient();
                 gradient.SetKeys(
                     new GradientColorKey[] {
-                        new GradientColorKey(Color.HSVToRGB((float)s / systemCount, 1f, 1f), 0f),
-                        new GradientColorKey(Color.HSVToRGB(((float)s / systemCount + 0.5f) % 1f, 1f, 1f), 0.5f),
-                        new GradientColorKey(Color.HSVToRGB(((float)s / systemCount + 0.8f) % 1f, 0.8f, 0.6f), 1f)
+                        new GradientColorKey(Color.HSVToRGB((float)s / systemBudget, 1f, 1f), 0f),
+                        new GradientColorKey(Color.HSVToRGB(((float)s / systemBudget + 0.5f) % 1f, 1f, 1f), 0.5f),
+                        new GradientColorKey(Color.HSVToRGB(((float)s / systemBudget + 0.8f) % 1f, 0.8f, 0.6f), 1f)
                     },
                     new GradientAlphaKey[] {
                         new GradientAlphaKey(0f, 0f),
@@ -766,7 +681,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 );
                 colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
 
-                // ===== Size over Lifetime =====
                 var sizeOverLifetime = ps.sizeOverLifetime;
                 sizeOverLifetime.enabled = true;
                 sizeOverLifetime.separateAxes = true;
@@ -774,7 +688,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sizeOverLifetime.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.3f, 1, 1.2f));
                 sizeOverLifetime.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
 
-                // ===== Rotation over Lifetime (3D) =====
                 var rotationOverLifetime = ps.rotationOverLifetime;
                 rotationOverLifetime.enabled = true;
                 rotationOverLifetime.separateAxes = true;
@@ -782,7 +695,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 rotationOverLifetime.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
 
-                // ===== Noise Module (Turbulence) =====
                 var noise = ps.noise;
                 noise.enabled = true;
                 noise.strength = new ParticleSystem.MinMaxCurve(1f, 3f);
@@ -801,7 +713,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 noise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 noise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
 
-                // ===== Collision (World) =====
                 var collision = ps.collision;
                 collision.enabled = true;
                 collision.type = ParticleSystemCollisionType.World;
@@ -813,13 +724,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 collision.quality = ParticleSystemCollisionQuality.High;
                 collision.maxCollisionShapes = 256;
                 collision.enableDynamicColliders = true;
-                collision.collidesWith = ~0; // All layers
+                collision.collidesWith = ~0;
                 collision.sendCollisionMessages = true;
                 collision.multiplyColliderForceByCollisionAngle = true;
                 collision.multiplyColliderForceByParticleSize = true;
                 collision.multiplyColliderForceByParticleSpeed = true;
 
-                // ===== Trails Module =====
                 var trails = ps.trails;
                 trails.enabled = true;
                 trails.mode = ParticleSystemTrailMode.PerParticle;
@@ -839,7 +749,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     new Keyframe(0f, 1f), new Keyframe(0.5f, 0.5f), new Keyframe(1f, 0f));
                 trails.widthOverTrail = new ParticleSystem.MinMaxCurve(1f, trailWidthCurve);
 
-                // ===== Texture Sheet Animation =====
                 var textureSheet = ps.textureSheetAnimation;
                 textureSheet.enabled = true;
                 textureSheet.mode = ParticleSystemAnimationMode.Grid;
@@ -850,7 +759,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 textureSheet.startFrame = new ParticleSystem.MinMaxCurve(0f, 15f);
                 textureSheet.cycleCount = 3;
 
-                // ===== Limit Velocity over Lifetime =====
                 var limitVelocity = ps.limitVelocityOverLifetime;
                 limitVelocity.enabled = true;
                 limitVelocity.separateAxes = true;
@@ -862,35 +770,30 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 limitVelocity.multiplyDragByParticleSize = true;
                 limitVelocity.multiplyDragByParticleVelocity = true;
 
-                // ===== Inherit Velocity =====
                 var inheritVelocity = ps.inheritVelocity;
                 inheritVelocity.enabled = true;
                 inheritVelocity.mode = ParticleSystemInheritVelocityMode.Current;
                 inheritVelocity.curve = new ParticleSystem.MinMaxCurve(0.5f);
 
-                // ===== Lifetime by Emitter Speed =====
                 var lifetimeBySpeed = ps.lifetimeByEmitterSpeed;
                 lifetimeBySpeed.enabled = true;
                 lifetimeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
                 lifetimeBySpeed.range = new Vector2(0f, 10f);
 
-                // ===== Renderer Setup (Mesh Mode) =====
                 if (renderer != null)
                 {
                     renderer.renderMode = ParticleSystemRenderMode.Mesh;
-                    // 共享 Mesh，减少 bundle 体积（运行时 GPU 开销不变）
                     renderer.mesh = sharedParticleMesh;
                     renderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
 
                     var particleShader = Shader.Find("Standard");
                     if (particleShader == null)
-                    {
                         particleShader = Shader.Find("Particles/Standard Unlit");
-                    }
+
                     if (particleShader != null)
                     {
                         var mat = new Material(particleShader);
-                        float hue = (float)s / systemCount;
+                        float hue = (float)s / systemBudget;
                         mat.color = Color.HSVToRGB(hue, 0.7f, 0.9f);
                         mat.SetFloat("_Metallic", 0.8f);
                         mat.SetFloat("_Glossiness", 0.9f);
@@ -898,7 +801,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         mat.SetColor("_EmissionColor", Color.HSVToRGB(hue, 0.5f, 0.3f));
                         renderer.sharedMaterial = mat;
 
-                        // Trail material (separate)
                         var trailMat = new Material(particleShader);
                         trailMat.color = Color.HSVToRGB((hue + 0.15f) % 1f, 0.9f, 1f);
                         trailMat.EnableKeyword("_EMISSION");
@@ -918,8 +820,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     renderer.enableGPUInstancing = true;
                 }
 
-                // ===== Sub-emitters =====
-                // Create a child sub-emitter for collision events
+                mainSystems.Add(ps);
+                mainObjects.Add(psObj);
+                systemsUsed++;
+                particlesUsed += particlesForThis;
+            }
+
+            // 第二轮：为每个主系统顺序填充子粒子系统
+            int mainCount = mainSystems.Count;
+            for (int s = 0; s < mainCount && systemsUsed < systemBudget && particlesUsed < particleBudget; s++)
+            {
+                int remaining = particleBudget - particlesUsed;
+                int remainingSubs = Mathf.Min(mainCount - s, systemBudget - systemsUsed);
+                int subParticles = remaining / Mathf.Max(1, remainingSubs);
+                if (subParticles <= 0) break;
+
+                var ps = mainSystems[s];
+                var psObj = mainObjects[s];
+
                 var subEmitterObj = new GameObject($"SubEmitter_{s}");
                 subEmitterObj.transform.SetParent(psObj.transform);
                 subEmitterObj.transform.localPosition = Vector3.zero;
@@ -928,11 +846,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 var subMain = subPs.main;
                 subMain.duration = 2f;
-                subMain.loop = false;
+                subMain.loop = true;
                 subMain.startLifetime = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 subMain.startSpeed = new ParticleSystem.MinMaxCurve(1f, 4f);
                 subMain.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
-                subMain.maxParticles = Mathf.Min(500, particlesPerSystem / 10);
+                subMain.maxParticles = subParticles;
                 subMain.gravityModifier = 1.5f;
                 subMain.startColor = new ParticleSystem.MinMaxGradient(Color.yellow, Color.red);
                 subMain.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -969,7 +887,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     if (subShader != null)
                     {
                         var subMat = new Material(subShader);
-                        subMat.color = Color.HSVToRGB(((float)s / systemCount + 0.5f) % 1f, 1f, 1f);
+                        subMat.color = Color.HSVToRGB(((float)s / mainCount + 0.5f) % 1f, 1f, 1f);
                         subMat.EnableKeyword("_EMISSION");
                         subMat.SetColor("_EmissionColor", Color.white * 2f);
                         subRenderer.sharedMaterial = subMat;
@@ -979,236 +897,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subRenderer.enableGPUInstancing = true;
                 }
 
-                // 将子粒子系统注册为碰撞子发射器
                 var subEmitters = ps.subEmitters;
                 subEmitters.enabled = true;
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Collision, ParticleSystemSubEmitterProperties.InheritColor);
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Death, ParticleSystemSubEmitterProperties.InheritColor | ParticleSystemSubEmitterProperties.InheritSize);
+
+                systemsUsed++;
+                particlesUsed += subParticles;
             }
 
-            Debug.Log($"[ASS] 创建粒子防御: {totalParticleCount}粒子 ({systemCount}个系统，每个{particlesPerSystem}粒子) - Mesh模式+Trails+SubEmitters+WorldCollision+Noise");
         }
 
-        private static void CreateExtendedConstraintChains(GameObject root, int chainCount, int depth)
-        {
-            for (int c = 0; c < chainCount; c++)
-            {
-                var chainRoot = new GameObject($"ExConstraintChain_{c}");
-                chainRoot.transform.SetParent(root.transform);
-                chainRoot.transform.localPosition = new Vector3(c * 0.5f, 0, 0);
-
-                GameObject previous = chainRoot;
-                for (int i = 0; i < depth; i++)
-                {
-                    var obj = new GameObject($"C_{i}");
-                    obj.transform.SetParent(chainRoot.transform);
-                    obj.transform.localPosition = new Vector3(0, i * 0.01f, 0);
-
-                    var parentC = obj.AddComponent<VRCParentConstraint>();
-
-                    if (i > 0)
-                    {
-                        parentC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform,
-                            ParentPositionOffset = Vector3.zero,
-                            ParentRotationOffset = Vector3.zero
-                        });
-
-                        var posC = obj.AddComponent<VRCPositionConstraint>();
-                        posC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform
-                        });
-
-                        var rotC = obj.AddComponent<VRCRotationConstraint>();
-                        rotC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform
-                        });
-
-                        var scaleC = obj.AddComponent<VRCScaleConstraint>();
-                        scaleC.Sources.Add(new VRCConstraintSource
-                        {
-                            Weight = 1f,
-                            SourceTransform = previous.transform
-                        });
-                    }
-
-                    SetConstraintProperties(parentC, true, true);
-
-                    if (i > 0)
-                    {
-                        SetConstraintProperties(obj.GetComponent<VRCPositionConstraint>(), true, true);
-                        SetConstraintProperties(obj.GetComponent<VRCRotationConstraint>(), true, true);
-                        SetConstraintProperties(obj.GetComponent<VRCScaleConstraint>(), true, true);
-                    }
-
-                    previous = obj;
-                }
-
-                Debug.Log($"[ASS] 创建扩展Constraint链 {c}: 深度={depth}");
-            }
-        }
-
-        private static void CreateExtendedPhysBoneChains(GameObject root, int chainCount, int chainLength, int colliderCount)
-        {
-            for (int c = 0; c < chainCount; c++)
-            {
-                var physBoneRoot = new GameObject($"ExPhysBone_{c}");
-                physBoneRoot.transform.SetParent(root.transform);
-                physBoneRoot.transform.localPosition = new Vector3(c * 0.5f, 1f, 0);
-
-                var chainRoot = new GameObject($"ExBoneChain_{c}");
-                chainRoot.transform.SetParent(physBoneRoot.transform);
-                chainRoot.transform.localPosition = Vector3.zero;
-
-                Transform previous = chainRoot.transform;
-                for (int i = 0; i < chainLength; i++)
-                {
-                    var bone = new GameObject($"B_{i}");
-                    bone.transform.SetParent(previous);
-                    bone.transform.localPosition = new Vector3(0, 0.1f, 0);
-                    previous = bone.transform;
-                }
-
-                var physBone = chainRoot.AddComponent<VRCPhysBone>();
-                physBone.integrationType = VRCPhysBone.IntegrationType.Advanced;
-                physBone.pull = 0.8f;
-                physBone.pullCurve = AnimationCurve.EaseInOut(0, 0.5f, 1, 1f);
-                physBone.spring = 0.8f;
-                physBone.springCurve = AnimationCurve.EaseInOut(0, 0.3f, 1, 0.9f);
-                physBone.stiffness = 0.5f;
-                physBone.stiffnessCurve = AnimationCurve.Linear(0, 0.2f, 1, 0.7f);
-                physBone.gravity = 0.5f;
-                physBone.gravityCurve = AnimationCurve.Linear(0, 0.3f, 1, 0.8f);
-                physBone.gravityFalloff = 0.4f;
-                physBone.gravityFalloffCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-                physBone.immobile = 0.3f;
-                physBone.immobileType = VRCPhysBone.ImmobileType.AllMotion;
-                physBone.immobileCurve = AnimationCurve.Linear(0, 0.1f, 1, 0.5f);
-
-                physBone.limitType = VRCPhysBone.LimitType.Angle;
-                physBone.maxAngleX = 45f;
-                physBone.maxAngleZ = 45f;
-                physBone.limitRotation = new Vector3(15, 30, 15);
-
-                physBone.maxStretch = 0.5f;
-
-                physBone.allowGrabbing = VRCPhysBoneBase.AdvancedBool.True;
-                physBone.allowPosing = VRCPhysBoneBase.AdvancedBool.True;
-                physBone.grabMovement = 0.8f;
-                physBone.snapToHand = true;
-
-                physBone.parameter = "";
-                physBone.isAnimated = false;
-
-                var collidersList = new List<VRCPhysBoneCollider>();
-
-                for (int i = 0; i < colliderCount; i++)
-                {
-                    var colliderObj = new GameObject($"Col_{i}");
-                    colliderObj.transform.SetParent(physBoneRoot.transform);
-                    float angle = (float)i / colliderCount * Mathf.PI * 2f;
-                    colliderObj.transform.localPosition = new Vector3(
-                        Mathf.Cos(angle),
-                        (float)i / colliderCount * 2f,
-                        Mathf.Sin(angle)
-                    );
-
-                    var collider = colliderObj.AddComponent<VRCPhysBoneCollider>();
-                    collider.shapeType = VRCPhysBoneCollider.ShapeType.Capsule;
-                    collider.radius = 0.3f;
-                    collider.height = 1.0f;
-                    collider.insideBounds = true;
-                    collider.bonesAsSpheres = false;
-
-                    collidersList.Add(collider);
-                }
-
-                physBone.colliders = collidersList.ConvertAll(x => x as VRCPhysBoneColliderBase);
-
-                Debug.Log($"[ASS] 创建扩展PhysBone链 {c}: 长度={chainLength}, Collider={colliderCount}");
-            }
-        }
-
-        private static void CreateExtendedContactSystem(GameObject root, int componentCount)
-        {
-            var contactRoot = new GameObject("ExContactSystem");
-            contactRoot.transform.SetParent(root.transform);
-
-            int halfCount = componentCount / 2;
-
-            var tags = new List<string> { "Tag1", "Tag2", "Tag3", "Tag4", "Tag5", "Tag6", "Tag7", "Tag8", "Tag9", "Tag10" };
-
-            for (int i = 0; i < halfCount; i++)
-            {
-                var senderObj = new GameObject($"ExS_{i}");
-                senderObj.transform.SetParent(contactRoot.transform);
-                float angle = (float)i / halfCount * Mathf.PI * 2f;
-                senderObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle),
-                    (float)i / halfCount * 2f,
-                    Mathf.Sin(angle)
-                );
-
-                var sender = senderObj.AddComponent<VRCContactSender>();
-                sender.shapeType = VRCContactSender.ShapeType.Capsule;
-                sender.radius = 1.0f;
-                sender.height = 2f;
-                sender.collisionTags = tags;
-                sender.localOnly = true;
-            }
-
-            for (int i = 0; i < halfCount; i++)
-            {
-                var receiverObj = new GameObject($"ExR_{i}");
-                receiverObj.transform.SetParent(contactRoot.transform);
-                float angle = ((float)i / halfCount + 0.5f / halfCount) * Mathf.PI * 2f;
-                receiverObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle) * 0.8f,
-                    (float)i / halfCount * 2f + 0.1f,
-                    Mathf.Sin(angle) * 0.8f
-                );
-
-                var receiver = receiverObj.AddComponent<VRCContactReceiver>();
-                receiver.shapeType = VRCContactReceiver.ShapeType.Capsule;
-                receiver.radius = 1.0f;
-                receiver.height = 2f;
-                receiver.collisionTags = tags;
-                receiver.localOnly = true;
-            }
-
-            Debug.Log($"[ASS] 创建扩展Contact系统: {halfCount} senders + {halfCount} receivers");
-        }
-
-        private static Shader CreateDefenseShader()
+        private static Shader GetDefenseShader()
         {
             Shader defenseShader = Shader.Find("UnityBox/ASS_DefenseShader");
-
             if (defenseShader != null)
-            {
-                Debug.Log("[ASS] 使用自定义DefenseShader");
                 return defenseShader;
-            }
 
             Shader standardShader = Shader.Find("Standard");
-
             if (standardShader == null)
-            {
                 Debug.LogError("[ASS] 无法找到Standard Shader");
-            }
-            else
-            {
-                Debug.Log("[ASS] 使用Standard Shader（自定义Shader未找到）");
-            }
+
             return standardShader;
         }
 
-        private static void CreateLightDefense(GameObject root, int lightCount)
+        private static void CreateLightComponents(GameObject root, int lightCount)
         {
             var lightRoot = new GameObject("LightDefense");
             lightRoot.transform.SetParent(root.transform);
@@ -1217,14 +930,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var lightObj = new GameObject($"L_{i}");
                 lightObj.transform.SetParent(lightRoot.transform);
-
-                float angle = (360f / lightCount) * i;
-                float radius = 2f;
-                lightObj.transform.localPosition = new Vector3(
-                    Mathf.Cos(angle * Mathf.Deg2Rad) * radius,
-                    1f + (i % 3) * 0.5f,
-                    Mathf.Sin(angle * Mathf.Deg2Rad) * radius
-                );
+                lightObj.transform.localPosition = Vector3.zero;
 
                 var light = lightObj.AddComponent<Light>();
 
@@ -1251,15 +957,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 light.shadowNormalBias = 0.4f;
             }
 
-            Debug.Log($"[ASS] 创建光源防御: {lightCount}个光源");
         }
 
-        private static Mesh CreateHighDensitySphereMesh(int targetVertexCount)
+        private static Mesh GenerateSphereMesh(int targetVertexCount)
         {
             var mesh = new Mesh { name = "ASS_Mesh" };
 
             int subdivisions = Mathf.CeilToInt(Mathf.Sqrt(targetVertexCount / 6f));
-            subdivisions = Mathf.Clamp(subdivisions, 10, 200);
+            subdivisions = Mathf.Clamp(subdivisions, 2, 200);
 
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
@@ -1328,11 +1033,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return mesh;
         }
 
-        /// <summary>
-        /// 创建 PhysX Rigidbody + Collider 防御
-        /// 利用物理引擎计算增加 CPU 开销
-        /// </summary>
-        private static void CreatePhysXDefense(GameObject root, int rigidbodyCount, int colliderCount)
+        private static void CreatePhysXComponents(GameObject root, int rigidbodyCount, int colliderCount)
         {
             var physXRoot = new GameObject("PhysXDefense");
             physXRoot.transform.SetParent(root.transform);
@@ -1341,7 +1042,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var rbObj = new GameObject($"Rigidbody_{i}");
                 rbObj.transform.SetParent(physXRoot.transform);
-                rbObj.transform.localPosition = new Vector3(i * 0.5f, 0, 0);
+                rbObj.transform.localPosition = Vector3.zero;
 
                 var rb = rbObj.AddComponent<Rigidbody>();
                 rb.mass = 100f;
@@ -1352,13 +1053,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 rb.constraints = RigidbodyConstraints.FreezeAll;
 
-                // 添加 Collider
                 int collidersPerBody = Mathf.Max(1, colliderCount / Mathf.Max(1, rigidbodyCount));
                 for (int j = 0; j < collidersPerBody; j++)
                 {
                     var colliderObj = new GameObject($"Collider_{j}");
                     colliderObj.transform.SetParent(rbObj.transform);
-                    colliderObj.transform.localPosition = new Vector3(j * 0.2f, 0, 0);
+                    colliderObj.transform.localPosition = Vector3.zero;
 
                     if (j % 2 == 0)
                     {
@@ -1373,14 +1073,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
             }
 
-            Debug.Log($"[ASS] 创建 PhysX 防御: {rigidbodyCount} Rigidbodies");
         }
 
-        /// <summary>
-        /// 创建 Cloth 布料防御
-        /// 布料模拟是 CPU 密集操作，可有效增加 CPU 开销
-        /// </summary>
-        private static void CreateClothDefense(GameObject root, int clothCount)
+        private static void CreateClothComponents(GameObject root, int clothCount)
         {
             var clothRoot = new GameObject("ClothDefense");
             clothRoot.transform.SetParent(root.transform);
@@ -1389,15 +1084,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var clothObj = new GameObject($"Cloth_{c}");
                 clothObj.transform.SetParent(clothRoot.transform);
-                clothObj.transform.localPosition = new Vector3(c * 1f, 0, 0);
+                clothObj.transform.localPosition = Vector3.zero;
 
-                // 创建布料网格（简单四边形网格）
                 var meshFilter = clothObj.AddComponent<MeshFilter>();
                 var mesh = new Mesh { name = $"ClothMesh_{c}" };
 
-                // 创建 10x10 网格
-                Vector3[] vertices = new Vector3[121]; // 11x11
-                int[] triangles = new int[200 * 6];    // 10x10 * 2个三角形 * 3个顶点
+                Vector3[] vertices = new Vector3[121];
+                int[] triangles = new int[200 * 6];
 
                 for (int x = 0; x <= 10; x++)
                 {
@@ -1418,12 +1111,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         int v2 = v0 + 11;
                         int v3 = v2 + 1;
 
-                        // 第一个三角形
                         triangles[triIdx++] = v0;
                         triangles[triIdx++] = v2;
                         triangles[triIdx++] = v1;
 
-                        // 第二个三角形
                         triangles[triIdx++] = v1;
                         triangles[triIdx++] = v2;
                         triangles[triIdx++] = v3;
@@ -1437,11 +1128,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 meshFilter.mesh = mesh;
 
-                // 添加 SkinnedMeshRenderer（为了支持 Cloth）
                 var meshRenderer = clothObj.AddComponent<SkinnedMeshRenderer>();
                 meshRenderer.sharedMesh = mesh;
 
-                // 添加 Cloth 组件
                 var cloth = clothObj.AddComponent<Cloth>();
 #if UNITY_2021_2_OR_NEWER
                 cloth.clothSolverFrequency = 240f;
@@ -1463,35 +1152,35 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 #endif
             }
 
-            Debug.Log($"[ASS] 创建 Cloth 防御: {clothCount} 布料");
         }
 
-        /// <summary>
-        /// 创建额外 Animator 组件防御
-        /// 多个 Animator 会增加动画系统开销，特别是当它们互相同步参数时
-        /// </summary>
-        private static void CreateAnimatorDefense(GameObject root, int animatorCount)
+        private static void CreateAnimatorComponents(GameObject root, int animatorCount)
         {
             var animatorRoot = new GameObject("AnimatorDefense");
             animatorRoot.transform.SetParent(root.transform);
 
             for (int i = 0; i < animatorCount; i++)
             {
-                var animObj = new GameObject($"DefenseAnimator_{i}");
+                var animObj = new GameObject($"Animator_{i}");
                 animObj.transform.SetParent(animatorRoot.transform);
 
                 var animator = animObj.AddComponent<Animator>();
-                // 创建空的 RuntimeAnimatorController（占用资源但无实际动画）
-                var controller = new AnimatorController();
-                controller.name = $"DefenseController_{i}";
-                animator.runtimeAnimatorController = controller;
+                var animController = new AnimatorController();
+                animController.name = $"DefenseController_{i}";
+                animator.runtimeAnimatorController = animController;
                 animator.applyRootMotion = false;
                 animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }
 
-            Debug.Log($"[ASS] 创建 Animator 防御: {animatorCount} 组件");
         }
 
+        private static int CountTransformsInHierarchy(Transform root)
+        {
+            int count = 1;
+            for (int i = 0; i < root.childCount; i++)
+                count += CountTransformsInHierarchy(root.GetChild(i));
+            return count;
+        }
     }
 }
 
