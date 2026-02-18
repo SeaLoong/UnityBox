@@ -390,7 +390,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 physBoneChainCount: Constants.PHYSBONE_MAX_COUNT,
                 physBoneColliders: Constants.PHYSBONE_COLLIDER_MAX_COUNT,
                 physXRigidbodyCount: Constants.RIGIDBODY_MAX_COUNT,
-                physXColliderCount: Constants.RIGIDBODY_MAX_COUNT * 4,
+                physXColliderCount: Constants.RIGIDBODY_COLLIDER_MAX_COUNT,
                 clothComponentCount: Constants.CLOTH_MAX_COUNT,
                 animatorComponentCount: Constants.ANIMATOR_MAX_COUNT,
                 contactCount: Constants.CONTACT_MAX_COUNT,
