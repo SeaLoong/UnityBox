@@ -200,7 +200,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int baseVerticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
             int extraVertices = parameters.PolyVertices % Mathf.Max(1, parameters.MaterialCount);
 
-            const int texturePoolSize = 16;
+            int texturePoolSize = parameters.MaterialCount;
             var texturePool = new RenderTexture[texturePoolSize];
             for (int t = 0; t < texturePoolSize; t++)
                 texturePool[t] = CreateRenderTexture(t);
@@ -577,8 +577,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var particleRoot = new GameObject("ParticleDefense");
             particleRoot.transform.SetParent(root.transform);
 
-            var sharedParticleMesh = GenerateSphereMesh(50);
-            var sharedSubEmitterMesh = GenerateSphereMesh(20);
+            // 根据多边形预算动态计算粒子 Mesh 复杂度
+            // 先用最小 subdivisions=2 计算最少三角面数（8面），反推粒子预算上限
+            int meshSubdivisions = 2;
+            int meshTriangles = meshSubdivisions * meshSubdivisions * 2; // 8
+
+            if (particleBudget > 0 && particleBudget <= Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles)
+            {
+                // 粒子数不多，可以提高 Mesh 复杂度
+                int maxTrisPerParticle = Constants.MESH_PARTICLE_MAX_POLYGONS / particleBudget;
+                meshSubdivisions = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(maxTrisPerParticle / 2f)), 2, 200);
+                meshTriangles = meshSubdivisions * meshSubdivisions * 2;
+            }
+            else if (particleBudget > 0)
+            {
+                // 粒子数太多，即使最简 Mesh 也会超多边形预算，需要削减粒子总数
+                particleBudget = Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles;
+            }
+
+            int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
+            var sharedParticleMesh = GenerateSphereMesh(meshVertexTarget);
+            var sharedSubEmitterMesh = GenerateSphereMesh(meshVertexTarget);
 
             int systemsUsed = 0;
             int particlesUsed = 0;
@@ -1089,26 +1108,30 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var meshFilter = clothObj.AddComponent<MeshFilter>();
                 var mesh = new Mesh { name = $"ClothMesh_{c}" };
 
-                Vector3[] vertices = new Vector3[121];
-                int[] triangles = new int[200 * 6];
+                // 根据顶点预算动态计算 Cloth 网格复杂度
+                int verticesPerCloth = Constants.TOTAL_CLOTH_VERTICES_MAX / Mathf.Max(1, clothCount);
+                int gridSizePlus1 = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(verticesPerCloth)), 3, 500);
+                int gridSize = gridSizePlus1 - 1;
+                Vector3[] vertices = new Vector3[gridSizePlus1 * gridSizePlus1];
+                int[] triangles = new int[gridSize * gridSize * 6];
 
-                for (int x = 0; x <= 10; x++)
+                for (int x = 0; x <= gridSize; x++)
                 {
-                    for (int y = 0; y <= 10; y++)
+                    for (int y = 0; y <= gridSize; y++)
                     {
-                        int idx = x * 11 + y;
-                        vertices[idx] = new Vector3(x * 0.1f, y * 0.1f, 0);
+                        int idx = x * gridSizePlus1 + y;
+                        vertices[idx] = new Vector3((float)x / gridSize, (float)y / gridSize, 0);
                     }
                 }
 
                 int triIdx = 0;
-                for (int x = 0; x < 10; x++)
+                for (int x = 0; x < gridSize; x++)
                 {
-                    for (int y = 0; y < 10; y++)
+                    for (int y = 0; y < gridSize; y++)
                     {
-                        int v0 = x * 11 + y;
+                        int v0 = x * gridSizePlus1 + y;
                         int v1 = v0 + 1;
-                        int v2 = v0 + 11;
+                        int v2 = v0 + gridSizePlus1;
                         int v3 = v2 + 1;
 
                         triangles[triIdx++] = v0;

@@ -46,9 +46,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const int CLOTH_MAX_COUNT = 256;
         public const int ANIMATOR_MAX_COUNT = 256;
         public const int POLY_VERTICES_MAX_COUNT = 2560000;
-        public const int PARTICLE_MAX_COUNT = 2560000;
+        public const int PARTICLE_MAX_COUNT = 2147483647;
         public const int PARTICLE_SYSTEM_MAX_COUNT = 256;
         public const int LIGHT_MAX_COUNT = 256;
-        public const int MATERIAL_MAX_COUNT = 4;
+        public const int MATERIAL_MAX_COUNT = 256;
+        public const int MESH_PARTICLE_MAX_POLYGONS = 2147483647;
+        public const int TOTAL_CLOTH_VERTICES_MAX = 2560000;
     }
 }
