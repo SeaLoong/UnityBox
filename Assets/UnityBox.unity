@@ -123,6 +123,359 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &9154032
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9154033}
+  - component: {fileID: 9154034}
+  m_Layer: 0
+  m_Name: ClothShoes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9154033
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9154032}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 329029497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9154034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9154032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/Orignial/ClothShoes
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 1
+  label: 
+--- !u!1 &155449076
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 155449077}
+  - component: {fileID: 155449078}
+  m_Layer: 0
+  m_Name: Main
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &155449077
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 155449076}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448175172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &155449078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 155449076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/ViolenceRabbit/Main
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 1
+  automaticValue: 1
+  label: 
+--- !u!1 &187821079
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 187821080}
+  - component: {fileID: 187821081}
+  m_Layer: 0
+  m_Name: Kase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &187821080
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 187821079}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448175172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &187821081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 187821079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/ViolenceRabbit/Kase
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 1
+  automaticValue: 1
+  label: 
+--- !u!1 &215234188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 215234189}
+  - component: {fileID: 215234190}
+  m_Layer: 0
+  m_Name: ClothOutwear
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &215234189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 215234188}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 329029497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &215234190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 215234188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/Orignial/ClothOutwear
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 1
+  label: 
+--- !u!1 &222744746
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 222744747}
+  - component: {fileID: 222744750}
+  - component: {fileID: 222744749}
+  - component: {fileID: 222744748}
+  m_Layer: 0
+  m_Name: Cube
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &222744747
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 222744746}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &222744748
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 222744746}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &222744749
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 222744746}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 0
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 68b3a32c9bc370e41a7f8323facc27cf, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &222744750
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 222744746}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1001 &237068048
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -318,7 +671,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1975829576297352292, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
   m_PrefabInstance: {fileID: 237068048}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &314122200
+--- !u!1 &322284335
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -326,8 +679,91 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 314122201}
-  - component: {fileID: 314122202}
+  - component: {fileID: 322284336}
+  - component: {fileID: 322284338}
+  - component: {fileID: 322284337}
+  m_Layer: 0
+  m_Name: LOGO
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &322284336
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 322284335}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 5961212981230913172}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!23 &322284337
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 322284335}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 216fd014ba7471e49bcf3f8ca6acae8e, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &322284338
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 322284335}
+  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &329029496
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 329029497}
+  - component: {fileID: 329029498}
   m_Layer: 0
   m_Name: Parts
   m_TagString: Untagged
@@ -335,34 +771,34 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &314122201
+--- !u!4 &329029497
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 314122200}
+  m_GameObject: {fileID: 329029496}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2073252732}
-  - {fileID: 2056211715}
-  - {fileID: 1143754422}
-  - {fileID: 1635846226}
-  - {fileID: 1618750501}
-  - {fileID: 1529652789}
-  m_Father: {fileID: 877048541}
+  - {fileID: 2023022702}
+  - {fileID: 215234189}
+  - {fileID: 9154033}
+  - {fileID: 884734749}
+  - {fileID: 891823001}
+  - {fileID: 458420278}
+  m_Father: {fileID: 1319460055}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &314122202
+--- !u!114 &329029498
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 314122200}
+  m_GameObject: {fileID: 329029496}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -386,7 +822,7 @@ MonoBehaviour:
   isDefault: 0
   automaticValue: 1
   label: 
---- !u!1 &357781337
+--- !u!1 &434486335
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -394,38 +830,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 357781338}
-  - component: {fileID: 357781339}
-  - component: {fileID: 357781340}
+  - component: {fileID: 434486336}
+  - component: {fileID: 434486337}
   m_Layer: 0
-  m_Name: Choker
+  m_Name: Orignial
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &357781338
+--- !u!4 &434486336
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357781337}
+  m_GameObject: {fileID: 434486335}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1199538832}
+  m_Father: {fileID: 1319460055}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &357781339
+--- !u!114 &434486337
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357781337}
+  m_GameObject: {fileID: 434486335}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -436,7 +871,138 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
+      name: costume
+    value: 0
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 0
+  label: 
+--- !u!1 &448175171
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 448175172}
+  - component: {fileID: 448175173}
+  m_Layer: 0
+  m_Name: Parts
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &448175172
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448175171}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 509844173}
+  - {fileID: 824219821}
+  - {fileID: 658648807}
+  - {fileID: 187821080}
+  - {fileID: 1194133549}
+  - {fileID: 155449077}
+  - {fileID: 1996178572}
+  m_Father: {fileID: 741713134}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &448175173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448175171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 103
+    parameter:
       name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 1
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 1
+  label: 
+--- !u!1 &458420277
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 458420278}
+  - component: {fileID: 458420279}
+  m_Layer: 0
+  m_Name: ClothSocks
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &458420278
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458420277}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 329029497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &458420279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458420277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/Orignial/ClothSocks
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -449,25 +1015,7 @@ MonoBehaviour:
   isDefault: 0
   automaticValue: 1
   label: 
---- !u!114 &357781340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357781337}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/Choker
-      targetObject: {fileID: 237068056}
-    Active: 1
---- !u!1 &877048540
+--- !u!1 &509844172
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -475,39 +1023,226 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 877048541}
-  - component: {fileID: 877048542}
+  - component: {fileID: 509844173}
+  - component: {fileID: 509844174}
   m_Layer: 0
-  m_Name: Orignial
+  m_Name: Bottom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &877048541
+--- !u!4 &509844173
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 877048540}
+  m_GameObject: {fileID: 509844172}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448175172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &509844174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 509844172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/ViolenceRabbit/Bottom
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 1
+  automaticValue: 1
+  label: 
+--- !u!1 &589150143
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 589150144}
+  - component: {fileID: 589150145}
+  m_Layer: 0
+  m_Name: Pink
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &589150144
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 589150143}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 741713134}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &589150145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 589150143}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: costume
+    value: 2
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 0
+  label: 
+--- !u!1 &658648806
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 658648807}
+  - component: {fileID: 658648808}
+  m_Layer: 0
+  m_Name: Choker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &658648807
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 658648806}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448175172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &658648808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 658648806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/ViolenceRabbit/Choker
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 1
+  automaticValue: 1
+  label: 
+--- !u!1 &741713133
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 741713134}
+  - component: {fileID: 741713135}
+  m_Layer: 0
+  m_Name: ViolenceRabbit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &741713134
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 741713133}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 314122201}
-  - {fileID: 1654186503}
-  m_Father: {fileID: 882970124}
+  - {fileID: 448175172}
+  - {fileID: 1362340963}
+  - {fileID: 589150144}
+  m_Father: {fileID: 1667789785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &877048542
+--- !u!114 &741713135
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 877048540}
+  m_GameObject: {fileID: 741713133}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -529,6 +1264,68 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 0
+  automaticValue: 1
+  label: 
+--- !u!1 &824219820
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 824219821}
+  - component: {fileID: 824219822}
+  m_Layer: 0
+  m_Name: Breast
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &824219821
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 824219820}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 448175172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &824219822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 824219820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/ViolenceRabbit/Breast
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 1
   automaticValue: 1
   label: 
 --- !u!1 &877572299
@@ -631,7 +1428,7 @@ MonoBehaviour:
       referencePath: Costumes/ViolenceRabbit/Skyblue
       targetObject: {fileID: 2060933233}
     Active: 1
---- !u!1 &882970123
+--- !u!1 &884734748
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -639,117 +1436,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 882970124}
-  - component: {fileID: 882970128}
-  - component: {fileID: 882970125}
+  - component: {fileID: 884734749}
+  - component: {fileID: 884734750}
   m_Layer: 0
-  m_Name: Costumes Menu
+  m_Name: ClothSkirt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &882970124
+--- !u!4 &884734749
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 882970123}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 877048541}
-  - {fileID: 1213805759}
-  m_Father: {fileID: 1230535414}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &882970125
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 882970123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 103
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 1
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: Costumes
---- !u!114 &882970128
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 882970123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ef83cb0c23d4d7c9d41021e544a1978, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  menuToAppend: {fileID: 0}
-  installTargetMenu: {fileID: 0}
---- !u!1 &938380858
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 938380859}
-  - component: {fileID: 938380860}
-  - component: {fileID: 938380861}
-  m_Layer: 0
-  m_Name: Main
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &938380859
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 938380858}
+  m_GameObject: {fileID: 884734748}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1199538832}
+  m_Father: {fileID: 329029497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &938380860
+--- !u!114 &884734750
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 938380858}
+  m_GameObject: {fileID: 884734748}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -760,7 +1477,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: 
+      name: CST/Orignial/ClothSkirt
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -773,25 +1490,7 @@ MonoBehaviour:
   isDefault: 0
   automaticValue: 1
   label: 
---- !u!114 &938380861
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 938380858}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 1
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/Main
-      targetObject: {fileID: 237068053}
-    Active: 1
---- !u!1 &975205812
+--- !u!1 &891823000
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -799,38 +1498,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 975205813}
-  - component: {fileID: 975205814}
-  - component: {fileID: 975205815}
+  - component: {fileID: 891823001}
+  - component: {fileID: 891823002}
   m_Layer: 0
-  m_Name: Bottom
+  m_Name: ClothSkirtIn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &975205813
+--- !u!4 &891823001
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 975205812}
+  m_GameObject: {fileID: 891823000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1199538832}
+  m_Father: {fileID: 329029497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &975205814
+--- !u!114 &891823002
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 975205812}
+  m_GameObject: {fileID: 891823000}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -841,7 +1539,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: 
+      name: CST/Orignial/ClothSkirtIn
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -854,24 +1552,6 @@ MonoBehaviour:
   isDefault: 0
   automaticValue: 1
   label: 
---- !u!114 &975205815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 975205812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/Bottom
-      targetObject: {fileID: 237068058}
-    Active: 1
 --- !u!1 &986817874
 GameObject:
   m_ObjectHideFlags: 1
@@ -1046,7 +1726,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1077,7 +1757,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
+  m_TargetTexture: {fileID: 8400000, guid: abbe9332cbff4a143812d98775e04a72, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -1102,7 +1782,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
---- !u!1 &1143754421
+--- !u!1 &1194133548
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1110,38 +1790,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1143754422}
-  - component: {fileID: 1143754423}
-  - component: {fileID: 1143754424}
+  - component: {fileID: 1194133549}
+  - component: {fileID: 1194133550}
   m_Layer: 0
-  m_Name: ClothShoes
+  m_Name: LegBelt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1143754422
+--- !u!4 &1194133549
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1143754421}
+  m_GameObject: {fileID: 1194133548}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 314122201}
+  m_Father: {fileID: 448175172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1143754423
+--- !u!114 &1194133550
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1143754421}
+  m_GameObject: {fileID: 1194133548}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -1152,7 +1831,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: 
+      name: CST/ViolenceRabbit/LegBelt
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -1163,158 +1842,6 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 1
-  automaticValue: 1
-  label: 
---- !u!114 &1143754424
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1143754421}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
-    Active: 1
---- !u!1 &1199538831
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1199538832}
-  - component: {fileID: 1199538833}
-  m_Layer: 0
-  m_Name: Parts
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1199538832
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1199538831}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 975205813}
-  - {fileID: 1443863704}
-  - {fileID: 357781338}
-  - {fileID: 1685273134}
-  - {fileID: 1640083523}
-  - {fileID: 938380859}
-  - {fileID: 1746090067}
-  m_Father: {fileID: 1213805759}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1199538833
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1199538831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 103
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 1
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!1 &1213805758
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1213805759}
-  - component: {fileID: 1213805760}
-  m_Layer: 0
-  m_Name: ViolenceRabbit
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1213805759
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1213805758}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1199538832}
-  - {fileID: 1706819943}
-  - {fileID: 1299411285}
-  m_Father: {fileID: 882970124}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1213805760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1213805758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 103
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 1
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
   automaticValue: 1
   label: 
 --- !u!1 &1230535413
@@ -1333,7 +1860,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1230535414
 Transform:
   m_ObjectHideFlags: 0
@@ -1342,15 +1869,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1230535413}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 882970124}
+  - {fileID: 1667789785}
   - {fileID: 1394447156}
   - {fileID: 237068049}
-  m_Father: {fileID: 5961212981230913172}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1230535415
 MonoBehaviour:
@@ -1375,7 +1902,7 @@ MonoBehaviour:
   Bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 1, y: 1, z: 1}
---- !u!1 &1299411284
+--- !u!1 &1319460054
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1383,38 +1910,101 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1299411285}
-  - component: {fileID: 1299411286}
-  - component: {fileID: 1299411287}
+  - component: {fileID: 1319460055}
+  - component: {fileID: 1319460056}
   m_Layer: 0
-  m_Name: Pink
+  m_Name: Orignial
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1299411285
+--- !u!4 &1319460055
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1299411284}
+  m_GameObject: {fileID: 1319460054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 329029497}
+  - {fileID: 434486336}
+  m_Father: {fileID: 1667789785}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1319460056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1319460054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 103
+    parameter:
+      name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 1
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 1
+  label: 
+--- !u!1 &1362340962
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1362340963}
+  - component: {fileID: 1362340964}
+  m_Layer: 0
+  m_Name: Skyblue
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1362340963
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362340962}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1213805759}
+  m_Father: {fileID: 741713134}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1299411286
+--- !u!114 &1362340964
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1299411284}
+  m_GameObject: {fileID: 1362340962}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -1425,8 +2015,8 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: 
-    value: 0
+      name: costume
+    value: 1
     style: 0
     subMenu: {fileID: 0}
     subParameters: []
@@ -1436,26 +2026,8 @@ MonoBehaviour:
   isSynced: 1
   isSaved: 1
   isDefault: 0
-  automaticValue: 1
+  automaticValue: 0
   label: 
---- !u!114 &1299411287
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1299411284}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Pink
-      targetObject: {fileID: 877572299}
-    Active: 1
 --- !u!1 &1394447155
 GameObject:
   m_ObjectHideFlags: 0
@@ -1471,7 +2043,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1394447156
 Transform:
   m_ObjectHideFlags: 0
@@ -1484,16 +2056,10 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 7782366122169307568}
-  - {fileID: 4891213569566927445}
-  - {fileID: 3576896502815472940}
-  - {fileID: 725707441280132089}
-  - {fileID: 6470433012548394482}
-  - {fileID: 519847157310967799}
+  m_Children: []
   m_Father: {fileID: 1230535414}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1443863703
+--- !u!1 &1667789784
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1501,38 +2067,42 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1443863704}
-  - component: {fileID: 1443863705}
-  - component: {fileID: 1443863706}
+  - component: {fileID: 1667789785}
+  - component: {fileID: 1667789789}
+  - component: {fileID: 1667789788}
+  - component: {fileID: 1667789787}
+  - component: {fileID: 1667789786}
   m_Layer: 0
-  m_Name: Breast
+  m_Name: Costumes Menu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1443863704
+--- !u!4 &1667789785
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1443863703}
+  m_GameObject: {fileID: 1667789784}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1199538832}
+  m_Children:
+  - {fileID: 1319460055}
+  - {fileID: 741713134}
+  m_Father: {fileID: 1230535414}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1443863705
+--- !u!114 &1667789786
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1443863703}
+  m_GameObject: {fileID: 1667789784}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -1541,7 +2111,7 @@ MonoBehaviour:
   Control:
     name: 
     icon: {fileID: 0}
-    type: 102
+    type: 103
     parameter:
       name: 
     value: 1
@@ -1549,436 +2119,202 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  MenuSource: 0
+  MenuSource: 1
   menuSource_otherObjectChildren: {fileID: 0}
   isSynced: 1
   isSaved: 1
   isDefault: 0
   automaticValue: 1
-  label: 
---- !u!114 &1443863706
+  label: Costumes
+--- !u!114 &1667789787
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1443863703}
+  m_GameObject: {fileID: 1667789784}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Script: {fileID: 11500000, guid: 71a96d4ea0c344f39e277d82035bf9bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/Breast
-      targetObject: {fileID: 237068057}
-    Active: 1
---- !u!1 &1529652788
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1529652789}
-  - component: {fileID: 1529652790}
-  - component: {fileID: 1529652791}
-  m_Layer: 0
-  m_Name: ClothSocks
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1529652789
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1529652788}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 314122201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1529652790
+  parameters:
+  - nameOrPrefix: costume
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 1
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothGloves
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothOutwear
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothShoes
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothSkirt
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothSkirtIn
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/Orignial/ClothSocks
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 0
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/Bottom
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/Breast
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/Choker
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/Kase
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/LegBelt
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/Main
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+  - nameOrPrefix: CST/ViolenceRabbit/MainArm
+    remapTo: 
+    internalParameter: 0
+    isPrefix: 0
+    syncType: 3
+    localOnly: 0
+    defaultValue: 1
+    saved: 1
+    hasExplicitDefaultValue: 1
+    m_overrideAnimatorDefaults: 0
+--- !u!114 &1667789788
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1529652788}
+  m_GameObject: {fileID: 1667789784}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
+  m_Script: {fileID: 11500000, guid: 1bb122659f724ebf85fe095ac02dc339, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 1
-  automaticValue: 1
-  label: 
---- !u!114 &1529652791
+  animator: {fileID: 9100000, guid: 24ab6a6e91c448e4fbf5016470ea1248, type: 2}
+  layerType: 5
+  deleteAttachedAnimator: 0
+  pathMode: 0
+  matchAvatarWriteDefaults: 1
+  relativePathRoot:
+    referencePath: Costumes
+    targetObject: {fileID: 1230535413}
+  layerPriority: 0
+  mergeAnimatorMode: 0
+--- !u!114 &1667789789
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1529652788}
+  m_GameObject: {fileID: 1667789784}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Script: {fileID: 11500000, guid: 7ef83cb0c23d4d7c9d41021e544a1978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
-    Active: 0
---- !u!1 &1618750500
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1618750501}
-  - component: {fileID: 1618750502}
-  - component: {fileID: 1618750503}
-  m_Layer: 0
-  m_Name: ClothSkirtIn
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1618750501
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618750500}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 314122201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1618750502
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618750500}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 1
-  automaticValue: 1
-  label: 
---- !u!114 &1618750503
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618750500}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
-    Active: 1
---- !u!1 &1635846225
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1635846226}
-  - component: {fileID: 1635846227}
-  - component: {fileID: 1635846228}
-  m_Layer: 0
-  m_Name: ClothSkirt
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1635846226
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1635846225}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 314122201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1635846227
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1635846225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 1
-  automaticValue: 1
-  label: 
---- !u!114 &1635846228
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1635846225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
-    Active: 1
---- !u!1 &1640083522
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1640083523}
-  - component: {fileID: 1640083524}
-  - component: {fileID: 1640083525}
-  m_Layer: 0
-  m_Name: LegBelt
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1640083523
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1640083522}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1199538832}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1640083524
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1640083522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!114 &1640083525
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1640083522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/LegBelt
-      targetObject: {fileID: 237068054}
-    Active: 1
---- !u!1 &1654186502
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1654186503}
-  - component: {fileID: 1654186504}
-  - component: {fileID: 1654186505}
-  m_Layer: 0
-  m_Name: Orignial
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1654186503
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1654186502}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 877048541}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1654186504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1654186502}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 0
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!114 &1654186505
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1654186502}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial
-      targetObject: {fileID: 1394447155}
-    Active: 1
+  menuToAppend: {fileID: 0}
+  installTargetMenu: {fileID: 0}
 --- !u!1001 &1670618697
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2036,7 +2372,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2cd7c2d73a12a214b930125a1ca4ed33, type: 3}
---- !u!1 &1685273133
+--- !u!1 &1996178571
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2044,171 +2380,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1685273134}
-  - component: {fileID: 1685273135}
-  - component: {fileID: 1685273136}
-  m_Layer: 0
-  m_Name: Kase
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1685273134
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1685273133}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1199538832}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1685273135
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1685273133}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!114 &1685273136
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1685273133}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/Kase
-      targetObject: {fileID: 237068055}
-    Active: 1
---- !u!1 &1706819942
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1706819943}
-  - component: {fileID: 1706819944}
-  - component: {fileID: 1706819945}
-  m_Layer: 0
-  m_Name: Skyblue
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1706819943
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1706819942}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1213805759}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1706819944
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1706819942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 0
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!114 &1706819945
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1706819942}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue
-      targetObject: {fileID: 2060933233}
-    Active: 1
---- !u!1 &1746090066
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1746090067}
-  - component: {fileID: 1746090068}
-  - component: {fileID: 1746090069}
+  - component: {fileID: 1996178572}
+  - component: {fileID: 1996178573}
   m_Layer: 0
   m_Name: MainArm
   m_TagString: Untagged
@@ -2216,28 +2389,28 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1746090067
+--- !u!4 &1996178572
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1746090066}
+  m_GameObject: {fileID: 1996178571}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1199538832}
+  m_Father: {fileID: 448175172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1746090068
+--- !u!114 &1996178573
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1746090066}
+  m_GameObject: {fileID: 1996178571}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
@@ -2248,88 +2421,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     type: 102
     parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 0
-  automaticValue: 1
-  label: 
---- !u!114 &1746090069
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1746090066}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 1
-  m_objects:
-  - Object:
-      referencePath: Costumes/ViolenceRabbit/Skyblue/MainArm
-      targetObject: {fileID: 237068052}
-    Active: 0
---- !u!1 &2056211714
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2056211715}
-  - component: {fileID: 2056211716}
-  - component: {fileID: 2056211717}
-  m_Layer: 0
-  m_Name: ClothOutwear
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2056211715
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2056211714}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 314122201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2056211716
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2056211714}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
+      name: CST/ViolenceRabbit/MainArm
     value: 1
     style: 0
     subMenu: {fileID: 0}
@@ -2342,24 +2434,68 @@ MonoBehaviour:
   isDefault: 1
   automaticValue: 1
   label: 
---- !u!114 &2056211717
+--- !u!1 &2023022701
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2023022702}
+  - component: {fileID: 2023022703}
+  m_Layer: 0
+  m_Name: ClothGloves
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2023022702
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2023022701}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 329029497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2023022703
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2056211714}
+  m_GameObject: {fileID: 2023022701}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
-    Active: 1
+  Control:
+    name: 
+    icon: {fileID: 0}
+    type: 102
+    parameter:
+      name: CST/Orignial/ClothGloves
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
+  MenuSource: 0
+  menuSource_otherObjectChildren: {fileID: 0}
+  isSynced: 1
+  isSaved: 1
+  isDefault: 0
+  automaticValue: 1
+  label: 
 --- !u!1 &2060933233 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
@@ -2382,87 +2518,6 @@ MonoBehaviour:
   - Object:
       referencePath: Costumes/ViolenceRabbit/Armature.1
       targetObject: {fileID: 237068050}
-    Active: 1
---- !u!1 &2073252731
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2073252732}
-  - component: {fileID: 2073252733}
-  - component: {fileID: 2073252734}
-  m_Layer: 0
-  m_Name: ClothGloves
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2073252732
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2073252731}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 314122201}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2073252733
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2073252731}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b29d45007c5493d926d2cd45a489529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Control:
-    name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 1
-    style: 0
-    subMenu: {fileID: 0}
-    subParameters: []
-    labels: []
-  MenuSource: 0
-  menuSource_otherObjectChildren: {fileID: 0}
-  isSynced: 1
-  isSaved: 1
-  isDefault: 1
-  automaticValue: 1
-  label: 
---- !u!114 &2073252734
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2073252731}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a162bb8ec7e24a5abcf457887f1df3fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_inverted: 0
-  m_objects:
-  - Object:
-      referencePath: Costumes/Orignial/ClothGloves
-      targetObject: {fileID: 5367843770339341070}
     Active: 1
 --- !u!4 &17289617837038350
 Transform:
@@ -2888,7 +2943,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 43d33e6d3a0f99a40920ca7ba5bf6ae4, type: 3}
   m_Controller: {fileID: 0}
-  m_CullingMode: 1
+  m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
@@ -3118,7 +3173,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &529017390885972551
 Transform:
@@ -3284,6 +3339,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &639918877828951843
 Transform:
   m_ObjectHideFlags: 0
@@ -3455,6 +3511,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -3503,10 +3560,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -3580,7 +3639,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &756713970683975788
 Transform:
@@ -4513,7 +4572,7 @@ MonoBehaviour:
   - vrc.v_ih
   - vrc.v_oh
   - vrc.v_ou
-  unityVersion: 2022.3.6f1
+  unityVersion: 2022.3.22f1
   portraitCameraPositionOffset: {x: 0, y: 0, z: 0}
   portraitCameraRotationOffset: {x: 0, y: 1, z: 0, w: -0.00000004371139}
   networkIDs: []
@@ -4661,106 +4720,106 @@ MonoBehaviour:
     name: Lock
   - hash: -823652659
     name: Unlock
-  - hash: -1523483919
-    name: RockNRoll_ok
-  - hash: 428918467
-    name: Peace_peace2
-  - hash: 256636336
-    name: PeaceForceAnim_peace2
-  - hash: 1950897585
-    name: OpenForceAnim
   - hash: 2108076675
     name: Idle
-  - hash: -1963515926
-    name: Fist
-  - hash: 1949755150
-    name: Thumbs up
-  - hash: 1955644030
-    name: RockNRollForceAnim_Love
-  - hash: 228400315
-    name: RockNRoll_Love
-  - hash: 436577491
-    name: Thumbs upForceAnim
-  - hash: 99779634
-    name: Open
-  - hash: 1855452757
-    name: Peace_peace3
-  - hash: 100140617
-    name: RockNRoll_peace3
-  - hash: -769743972
-    name: RockNRollForceAnim_peace3
-  - hash: 1147597917
-    name: PeaceForceAnim_peace
-  - hash: -463381346
-    name: PointForceAnim
-  - hash: 420425210
-    name: Gun
-  - hash: 997432950
-    name: RockNRoll_rocknroll
-  - hash: -1276603969
-    name: GunForceAnim
-  - hash: -1368897710
-    name: Point
-  - hash: -207961470
-    name: Peace_peace
   - hash: -1462115272
     name: RockNRollForceAnim_Rocknroll
   - hash: -690125249
     name: RockNRollForceAnim_OK
-  - hash: 2018297126
-    name: PeaceForceAnim_peace3
+  - hash: 1955644030
+    name: RockNRollForceAnim_Love
   - hash: 643348215
     name: HandLock
+  - hash: -463381346
+    name: PointForceAnim
+  - hash: 228400315
+    name: RockNRoll_Love
+  - hash: 1950897585
+    name: OpenForceAnim
+  - hash: -207961470
+    name: Peace_peace
+  - hash: 428918467
+    name: Peace_peace2
+  - hash: -1963515926
+    name: Fist
+  - hash: 436577491
+    name: Thumbs upForceAnim
+  - hash: 420425210
+    name: Gun
+  - hash: 1855452757
+    name: Peace_peace3
+  - hash: 2018297126
+    name: PeaceForceAnim_peace3
+  - hash: 1949755150
+    name: Thumbs up
+  - hash: 1147597917
+    name: PeaceForceAnim_peace
+  - hash: 997432950
+    name: RockNRoll_rocknroll
+  - hash: -1368897710
+    name: Point
+  - hash: 100140617
+    name: RockNRoll_peace3
+  - hash: -769743972
+    name: RockNRollForceAnim_peace3
+  - hash: -1523483919
+    name: RockNRoll_ok
+  - hash: 99779634
+    name: Open
+  - hash: -1276603969
+    name: GunForceAnim
+  - hash: 256636336
+    name: PeaceForceAnim_peace2
+  - hash: 1570067740
+    name: PeaceForceAnim_Peace2
+  - hash: 1967369750
+    name: RockNRollForceAnim_RocknRoll
+  - hash: -303912816
+    name: PointForceAnim
+  - hash: -488267544
+    name: Thumbs up
+  - hash: 1781153929
+    name: Fist
+  - hash: -758646004
+    name: Peace_Peace
+  - hash: 1501733627
+    name: RockNRollForceAnim_Love
+  - hash: 1689650507
+    name: Peace_Peace3
+  - hash: 106334387
+    name: RockNRoll_OK
+  - hash: -55058755
+    name: HandLock
+  - hash: 637997431
+    name: RockNRoll_Peace3
+  - hash: -1652822560
+    name: Idle
+  - hash: -449848495
+    name: Open
+  - hash: -2085674075
+    name: RockNRollForceAnim_OK
+  - hash: -232493330
+    name: PeaceForceAnim_Peace
+  - hash: -1100650601
+    name: GunForceAnim
+  - hash: -554400018
+    name: RockNRollForceAnim_Peace3
+  - hash: 297357552
+    name: Gun
+  - hash: 330380765
+    name: Peace_Peace2
+  - hash: 1559543278
+    name: RockNRoll_RockNRoll
+  - hash: 714237322
+    name: PeaceForceAnim_Peace3
+  - hash: 69134517
+    name: RockNRoll_Love
   - hash: 1106276541
     name: OpenForceAnim
   - hash: 560298944
     name: Thumbs upForceAnim
   - hash: 2050206447
     name: Point
-  - hash: -554400018
-    name: RockNRollForceAnim_Peace3
-  - hash: 1501733627
-    name: RockNRollForceAnim_Love
-  - hash: -2085674075
-    name: RockNRollForceAnim_OK
-  - hash: -1652822560
-    name: Idle
-  - hash: 1570067740
-    name: PeaceForceAnim_Peace2
-  - hash: 330380765
-    name: Peace_Peace2
-  - hash: 637997431
-    name: RockNRoll_Peace3
-  - hash: 1559543278
-    name: RockNRoll_RockNRoll
-  - hash: 714237322
-    name: PeaceForceAnim_Peace3
-  - hash: 1689650507
-    name: Peace_Peace3
-  - hash: -55058755
-    name: HandLock
-  - hash: 297357552
-    name: Gun
-  - hash: -488267544
-    name: Thumbs up
-  - hash: -449848495
-    name: Open
-  - hash: -1100650601
-    name: GunForceAnim
-  - hash: -303912816
-    name: PointForceAnim
-  - hash: -758646004
-    name: Peace_Peace
-  - hash: 1967369750
-    name: RockNRollForceAnim_RocknRoll
-  - hash: 1781153929
-    name: Fist
-  - hash: -232493330
-    name: PeaceForceAnim_Peace
-  - hash: 106334387
-    name: RockNRoll_OK
-  - hash: 69134517
-    name: RockNRoll_Love
   - hash: 1267987864
     name: die_hold
   - hash: -1487177324
@@ -5288,6 +5347,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &1111628871507467043
 Transform:
   m_ObjectHideFlags: 0
@@ -5317,7 +5377,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   launchedFromSDKPipeline: 0
   completedSDKPipeline: 0
-  blueprintId: 
+  blueprintId: avtr_4f137404-fa35-4686-ad8c-97b1014e11da
   contentType: 0
   assetBundleUnityVersion: 
   fallbackStatus: 1
@@ -5373,6 +5433,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &1158687782878057731
 GameObject:
   m_ObjectHideFlags: 0
@@ -5712,6 +5773,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &1382305178239277481
 GameObject:
   m_ObjectHideFlags: 0
@@ -5873,6 +5935,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &1550233363157964847
 GameObject:
   m_ObjectHideFlags: 0
@@ -5938,7 +6001,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &1600088984965275484
 GameObject:
   m_ObjectHideFlags: 0
@@ -6061,6 +6124,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -6108,10 +6172,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 1
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -6600,6 +6666,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -6650,10 +6717,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -7527,6 +7596,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -7575,10 +7645,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -7678,6 +7750,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &2300236405552707418
 Transform:
   m_ObjectHideFlags: 0
@@ -7912,6 +7985,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.05
   radiusCurve:
     serializedVersion: 2
@@ -7976,10 +8050,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -8315,7 +8391,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &2486893759005448857
 GameObject:
   m_ObjectHideFlags: 0
@@ -9502,6 +9578,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -9568,10 +9645,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -9802,6 +9881,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -9852,10 +9932,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -10376,6 +10458,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &3485408562916720574
 GameObject:
   m_ObjectHideFlags: 0
@@ -10789,7 +10872,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3577010597284564918
 GameObject:
@@ -10944,6 +11027,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -11010,10 +11094,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -11355,6 +11441,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -11401,10 +11488,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 1
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -11556,6 +11645,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -11603,10 +11693,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -11710,6 +11802,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -11757,10 +11850,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -11870,7 +11965,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &3960763038517479599
 Transform:
   m_ObjectHideFlags: 0
@@ -12121,6 +12216,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -12171,10 +12267,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -12398,6 +12496,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -12444,10 +12543,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 1
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -12738,6 +12839,7 @@ MonoBehaviour:
   position: {x: -0.04, y: 0, z: -0.015}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &4520282712591659028
 Transform:
   m_ObjectHideFlags: 0
@@ -13197,6 +13299,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -13247,10 +13350,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -14216,7 +14321,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4893023425681829263
 Transform:
@@ -15438,6 +15543,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -15485,10 +15591,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -15554,6 +15662,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &5332529491869532745
 Transform:
   m_ObjectHideFlags: 0
@@ -15644,6 +15753,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -15691,10 +15801,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -15760,6 +15872,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &5352630402654131878
 GameObject:
   m_ObjectHideFlags: 0
@@ -15823,7 +15936,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5371686871732964475
 Transform:
   m_ObjectHideFlags: 0
@@ -15862,6 +15975,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &5403099302633778571
 GameObject:
   m_ObjectHideFlags: 0
@@ -16033,6 +16147,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -16081,10 +16196,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -16236,6 +16353,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -16283,10 +16401,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -16352,6 +16472,7 @@ MonoBehaviour:
   position: {x: -0.04000001, y: 0, z: -0.01500001}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &5604445171866061610
 Transform:
   m_ObjectHideFlags: 0
@@ -16515,6 +16636,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &5694509538654940318
 Transform:
   m_ObjectHideFlags: 0
@@ -16700,6 +16822,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.003
   radiusCurve:
     serializedVersion: 2
@@ -16746,10 +16869,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -16812,7 +16937,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5812131508180760348
 Transform:
   m_ObjectHideFlags: 0
@@ -16917,6 +17042,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -16964,10 +17090,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -17061,7 +17189,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &5900460369922693682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17082,6 +17210,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &5919164527611514201
 GameObject:
   m_ObjectHideFlags: 0
@@ -17161,6 +17290,12 @@ Transform:
   - {fileID: 7846929867929398085}
   - {fileID: 6085511215620006506}
   - {fileID: 8223521989662623622}
+  - {fileID: 7782366122169307568}
+  - {fileID: 4891213569566927445}
+  - {fileID: 3576896502815472940}
+  - {fileID: 725707441280132089}
+  - {fileID: 6470433012548394482}
+  - {fileID: 519847157310967799}
   - {fileID: 3547804838863143117}
   - {fileID: 97358022286569272}
   - {fileID: 9141179226162371197}
@@ -17170,7 +17305,7 @@ Transform:
   - {fileID: 271603264097148921}
   - {fileID: 2357575297397319722}
   - {fileID: 7906363031112624680}
-  - {fileID: 1230535414}
+  - {fileID: 322284336}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &5967140057193875985
@@ -17686,6 +17821,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &6312228989823922535
 GameObject:
   m_ObjectHideFlags: 0
@@ -18155,6 +18291,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &6467086648906578891
 Transform:
   m_ObjectHideFlags: 0
@@ -18183,7 +18320,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &6473559094328643818
 Transform:
@@ -18213,6 +18350,7 @@ GameObject:
   - component: {fileID: 313659107545095406}
   - component: {fileID: 1124634812806735779}
   - component: {fileID: 1097081895637002651}
+  - component: {fileID: 6481149578489306159}
   m_Layer: 0
   m_Name: SapphyParts Variant
   m_TagString: Untagged
@@ -18220,6 +18358,32 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &6481149578489306159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6481149578489306158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c51e6a139920bb4ca12700dc82627ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiLanguage: 43
+  gesturePassword: 01000000070000000200000004000000
+  useRightHand: 0
+  countdownDuration: 30
+  warningThreshold: 10
+  gestureHoldTime: 0.15
+  gestureErrorTolerance: 0.3
+  warningBeep: {fileID: 0}
+  successSound: {fileID: 0}
+  disabledInPlaymode: 0
+  disableDefense: 1
+  disableRootChildren: 1
+  defenseLevel: 2
+  writeDefaultsMode: 0
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0
@@ -18399,6 +18563,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &6602791571717825848
 Transform:
   m_ObjectHideFlags: 0
@@ -18505,6 +18670,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.05
   radiusCurve:
     serializedVersion: 2
@@ -18569,10 +18735,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -18966,6 +19134,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -19033,10 +19202,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -19194,6 +19365,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &6902021746766177054
 GameObject:
   m_ObjectHideFlags: 0
@@ -19302,6 +19474,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -19350,10 +19523,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -19555,6 +19730,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -19622,10 +19798,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 1
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -20312,6 +20490,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!4 &7412774332636968409
 Transform:
   m_ObjectHideFlags: 0
@@ -20426,6 +20605,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -20476,10 +20656,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -21115,7 +21297,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1394447156}
+  m_Father: {fileID: 5961212981230913172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7796000822493248441
 GameObject:
@@ -21256,6 +21438,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.02
   radiusCurve:
     serializedVersion: 2
@@ -21323,10 +21506,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 1
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -21617,6 +21802,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -21663,10 +21849,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -21974,6 +22162,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.01
   radiusCurve:
     serializedVersion: 2
@@ -22024,10 +22213,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -22757,6 +22948,7 @@ MonoBehaviour:
   collisionFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   radius: 0.006
   radiusCurve:
     serializedVersion: 2
@@ -22805,10 +22997,12 @@ MonoBehaviour:
   grabFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   allowPosing: 0
   poseFilter:
     allowSelf: 1
     allowOthers: 1
+    contentTypes: -1
   snapToHand: 0
   grabMovement: 0.5
   maxStretch: 0
@@ -23416,6 +23610,7 @@ MonoBehaviour:
   position: {x: 0, y: 0, z: 0}
   rotation: {x: 0, y: 0, z: 0, w: 1}
   bonesAsSpheres: 0
+  globalCollisionFlags: 0
 --- !u!1 &9192660598045279620
 GameObject:
   m_ObjectHideFlags: 0
@@ -23472,3 +23667,5 @@ SceneRoots:
   - {fileID: 986817876}
   - {fileID: 1670618697}
   - {fileID: 5961212981230913172}
+  - {fileID: 1230535414}
+  - {fileID: 222744747}

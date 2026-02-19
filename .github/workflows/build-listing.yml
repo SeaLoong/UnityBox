@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 env:
@@ -41,6 +41,7 @@ jobs:
             "Assets/UnityBox/BlendshapeControllerGenerator"
             "Assets/UnityBox/AvatarColliderMonitor"
             "Assets/UnityBox/BuildPipelineLogger"
+            "Assets/UnityBox/AvatarSecuritySystem"
           )
 
           mkdir -p _site
