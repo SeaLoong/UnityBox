@@ -441,6 +441,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Active 状态使用 `ASS_DefenseActivate` 动画剪辑（设置 `ASS_Defense` 的 `m_IsActive = 1`）
 - 防御组件挂载在 `ASS_Defense` 对象下，默认 `SetActive(false)`
 - Active 状态通过激活动画启用防御根对象
+- **Head Bone 跟随**：`ASS_Defense` 根对象添加 VRCParentConstraint → Head 骨骼（Z+0.05m 偏移），所有防御子组件跟随头部，确保始终位于视角前方。占用 1 个 Constraint 预算。
 
 #### 4.5.2 防御等级参数表
 
@@ -457,10 +458,10 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | AnimatorComponentCount | 256          | 256              | 1               | 1               |
 | ContactCount           | 256          | 256              | 1               | 1               |
 | PolyVertices           | 0            | 2,560,000        | 0               | 100             |
-| ParticleCount          | 0            | 2,560,000        | 0               | 1               |
+| ParticleCount          | 0            | 2,147,483,647    | 0               | 1               |
 | ParticleSystemCount    | 0            | 256              | 0               | 1               |
 | LightCount             | 0            | 256              | 0               | 1               |
-| MaterialCount          | 0            | 4                | 0               | 1               |
+| MaterialCount          | 0            | 256              | 0               | 1               |
 
 > 所有参数目标值设为 `Constants.cs` 定义的组件上限，实际生成数量由预算系统动态截断。调试模式下所有参数均为 1（仅验证代码路径）。
 
@@ -499,7 +500,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Sender 数 = `(componentCount + 1) / 2`，Receiver 数 = `componentCount / 2`
 - 形状：Capsule（半径 1.0m，高度 2.0m）
 - 碰撞标签：`["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"]`
-- `localOnly = true`
+- `localOnly = false`（VRC ContactPerformanceScanner 仅计入 `localOnly == false` 的 Contact）
 
 **Animator 组件** (`CreateAnimatorComponents`，等级 1+，`enableCpu` 保护)
 
@@ -520,9 +521,13 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 布料模拟 CPU 密集，受 Cloth 预算限制：
 
-- 每个布料为 10×10 顶点网格（121 顶点，200 三角形）
+- 每个布料网格顶点数动态计算：`gridSizePlus1 = clamp(floor(sqrt(TOTAL_CLOTH_VERTICES_MAX / clothCount)), 3, 500)`
 - `clothSolverFrequency = 240`，`damping = 0.9`，`selfCollisionStiffness = 0.2`，`worldVelocityScale = 0`
 - SkinnedMeshRenderer 支持布料形变
+  - `updateWhenOffscreen = true`（禁用视锥体剔除，始终更新）
+  - `shadowCastingMode = TwoSided`，`receiveShadows = true`
+  - `allowOcclusionWhenDynamic = false`（禁止遮挡剔除）
+  - `mesh.bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
 
 > **注意**: 系统自动检测 Avatar 上已有的 PhysBone、PhysBone Collider、Constraint、Contact (Sender + Receiver)、Rigidbody、Cloth、Animator 数量，计算可用预算后动态调整防御组件数量，确保总数不超过配置上限。Animator 在等级 1+ (`enableCpu`) 下创建，PhysX、Cloth 组件仅在等级 2 (`enableGpu`) 下创建。
 
@@ -572,29 +577,38 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 3. 高面数球体 Mesh（`GenerateSphereMesh`）：
    - 单 subMesh
    - 双 UV 通道 + 顶点色
-   - 顶点数通过 subdivisions 控制（`clamp(ceil(sqrt(targetVertices/6)), 10, 200)`）
+   - 顶点数通过 subdivisions 控制（`clamp(ceil(sqrt(targetVertices/6)), 2, 200)`）
+   - `mesh.bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
    - 使用 `sharedMesh` 赋值（避免不必要的实例化）
+   - MeshRenderer: `shadowCastingMode = TwoSided`, `receiveShadows = true`, `allowOcclusionWhenDynamic = false`
 
 **粒子防御** (`CreateParticleComponents`)
 
-- 总粒子数分配到多个 ParticleSystem（每个系统至少 1000 粒子）
-- 每个主系统创建 1 个 SubEmitter，因此实际 ParticleSystem 数 = 主系统数 × 2，配置时自动将目标数除以 2
-- SubEmitter 的 maxParticles 预先从总预算中扣除（`subEmitterMax = min(500, initialPerSystem/10)`），确保主系统+子系统总粒子数 ≤ 总预算
+- 两阶段顺序填充：第一阶段创建主粒子系统，第二阶段为每个主系统创建子发射器
+- 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算（溢出保护）
+- `GenerateSphereMesh` 生成的 Mesh `bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
+- **粒子光源复用**：不再为每个粒子系统创建独立 Light 子对象，而是引用 `CreateLightComponents` 已创建的 Light 数组（循环取用），避免 Light 总数超出 `LIGHT_MAX_COUNT` 上限
+- **创建顺序**：LightDefense 在 ParticleDefense 之前创建，以确保粒子光源模块能引用已有的 Light 组件
 - 每个系统配置：
-  - `loop = true`, `prewarm = true`, `startLifetime = 6~12s`, `startSpeed = 1~5`
-  - 发射率：`particlesPerSystem / 2`，附带 Burst 发射（瞬间大量粒子）
-  - 3D Start Size/Rotation（每轴独立随机范围）
+  - `loop = true`, `prewarm = true`, `playOnAwake = true`, `simulationSpeed = 10000000`（千万级）
+  - `ringBufferMode = PauseUntilReplaced`
+  - 发射率：`particlesForThis * 10`（rateOverTime），`particlesForThis`（rateOverDistance），附带 Burst 发射
+  - 3D Start Size/Rotation（每轴独立随机范围），`flipRotation = 1`
   - World 模拟空间，随机重力修改器 0.3~1.2
-  - **渲染器**：Mesh 模式（每个粒子渲染高面数球体 2000~10000 顶点，生成大量三角面）
-    - Standard Shader + Metallic/Smoothness + Emission
-    - GPU Instancing 启用
-    - World 对齐，Distance 排序
-  - **启用模块**：
-    - VelocityOverLifetime（线性+轨道+径向+速度修改器）
-    - ForceOverLifetime（随机化 3 轴力）
-    - ColorOverLifetime（3 段 HSV 渐变 + Alpha 淡入淡出）
-    - SizeOverLifetime（3 轴分离，AnimationCurve）
-    - RotationOverLifetime（3 轴 ±360°）
+  - **渲染器**：Mesh 模式（UniformRandom），每个粒子渲染动态复杂度球体
+    - Standard Shader + Metallic(0.8)/Smoothness(0.9) + Emission
+    - `shadowCastingMode = TwoSided`, `receiveShadows = true`
+    - `allowOcclusionWhenDynamic = false`（禁止遮挡剔除）
+    - GPU Instancing 启用，World 对齐，Distance 排序
+    - Trail Material 独立材质（不同 HSV 色相 + 自发光）
+  - **启用模块（18个）**：
+    - **Emission**（rateOverTime + rateOverDistance + Burst × 2）
+    - **Shape**（Sphere/Cone/Box 交替，randomDirection/Position）
+    - **VelocityOverLifetime**（线性+轨道+径向+速度修改器）
+    - **ForceOverLifetime**（随机化 3 轴力）
+    - **ColorOverLifetime**（3 段 HSV 渐变 + Alpha 淡入淡出）
+    - **SizeOverLifetime**（3 轴分离，AnimationCurve）
+    - **RotationOverLifetime**（3 轴 ±360°）
     - **Noise**（4 octave 高质量湍流，影响位置/旋转/大小）
     - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息）
     - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线）
@@ -602,16 +616,31 @@ Inactive ──(IsLocal && TimeUp)──→ Active
     - **LimitVelocityOverLifetime**（3 轴限制+阻力）
     - **InheritVelocity**（继承发射器速度）
     - **LifetimeByEmitterSpeed**
-    - **Sub-emitters**（碰撞+死亡事件创建子粒子系统，子系统也使用 Mesh 模式+Trails+Noise+WorldCollision）
-  - 每个主粒子系统创建 1 个子粒子发射器（Collision + Death 类型）
-  - Trail Material 独立材质（不同 HSV 色相 + 自发光）
+    - **ColorBySpeed**（蓝→黄→红速度渐变）
+    - **SizeBySpeed**（3 轴分离，速度缩放）
+    - **RotationBySpeed**（3 轴 ±360°）
+    - **ExternalForces**（`multiplier = 10000000`，千万级外部力场影响）
+    - **Lights**（复用 LightDefense 的 Light 组件，`rangeMultiplier = 10000000`，`intensityMultiplier = 10000000`，每粒子发光）
+    - **CustomData**（Custom1 + Custom2 各 4 通道 Vector 数据，增加 GPU 数据传输负担）
+    - **Trigger**（Inside/Outside/Enter/Exit 全回调）
+- **子发射器**（第二阶段顺序填充，全模块对等）：
+  - `simulationSpeed = 10000000`，`prewarm = true`，`ringBufferMode = PauseUntilReplaced`
+  - 启用全部 18 个模块（与主系统完全对等）
+  - 独立 Emission（rateOverTime + rateOverDistance + Burst），Shape，VelocityOverLifetime，ForceOverLifetime，ColorOverLifetime，SizeOverLifetime，RotationOverLifetime，Noise（4 octave），Collision（World 3D High），Trails，TextureSheetAnimation，LimitVelocityOverLifetime，InheritVelocity，LifetimeByEmitterSpeed，ColorBySpeed，SizeBySpeed，RotationBySpeed，ExternalForces（10000000），Lights（复用 LightDefense），CustomData，Trigger
+  - 渲染器配置与主系统对等：Mesh 模式，TwoSided Shadow，allowOcclusionWhenDynamic=false，GPU Instancing，World 对齐，Distance 排序
+  - Collision + Death 类型子发射器（InheritColor + InheritSize）
 
 **光源防御** (`CreateLightComponents`)
 
-- 交替创建 Point（range=10）/ Spot（range=15, spotAngle=60°）光源
-- 环形排列（360°/lightCount 间距，半径 2m）
-- `intensity = 2`, HSV 色彩分布
+返回 `Light[]` 数组，供粒子系统 Lights 模块复用：
+
+- 交替创建 Point / Spot 光源（Spot: `spotAngle = 179°`, `innerSpotAngle = 170°`）
+- `intensity = 10000000`，`bounceIntensity = 10000000`，`range = 10000000`（千万级极端消耗）
+- `renderMode = ForcePixel`（强制逐像素渲染，禁止 Unity 降级为顶点光）
+- `shadowBias = 0.001`，`cullingMask = ~0`（影响所有层）
+- HSV 色彩分布
 - 全部启用 `Soft Shadow`，`shadowResolution = VeryHigh`
+- **创建顺序**：在 ParticleDefense 之前创建，确保粒子光源模块可引用
 
 ---
 
@@ -710,7 +739,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
 - GameObject 名称 (`GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_DEFENSE_ROOT`)
-- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=256`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`, `PHYSBONE_COLLIDER_CHECK_MAX_COUNT=10000`, `RIGIDBODY_MAX_COUNT=256`, `CLOTH_MAX_COUNT=256`, `ANIMATOR_MAX_COUNT=256`, `POLY_VERTICES_MAX_COUNT=2560000`, `PARTICLE_MAX_COUNT=2560000`, `PARTICLE_SYSTEM_MAX_COUNT=256`, `LIGHT_MAX_COUNT=256`, `MATERIAL_MAX_COUNT=4`)
+- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=256`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`, `PHYSBONE_COLLIDER_CHECK_MAX_COUNT=10000`, `RIGIDBODY_MAX_COUNT=256`, `CLOTH_MAX_COUNT=256`, `ANIMATOR_MAX_COUNT=256`, `POLY_VERTICES_MAX_COUNT=2560000`, `PARTICLE_MAX_COUNT=2147483647`, `PARTICLE_SYSTEM_MAX_COUNT=256`, `LIGHT_MAX_COUNT=256`, `MATERIAL_MAX_COUNT=256`, `MESH_PARTICLE_MAX_POLYGONS=2147483647`, `TOTAL_CLOTH_VERTICES_MAX=2560000`)
 
 ---
 
@@ -745,7 +774,7 @@ Avatar Root
 ├── ASS_Audio_Success
 │   AudioSource (spatialBlend=0, volume=0.5)
 │
-└── ASS_Defense (默认禁用)
+└── ASS_Defense (默认禁用, VRCParentConstraint → Head骨骼 Z+0.05m)
     ├── Chain_0/
     │   └── C_0 ~ C_{depth} (每节点仅 VRCParentConstraint)
     ├── Chain_1/ ...
@@ -756,29 +785,29 @@ Avatar Root
     │   └── Col_0 ~ Col_{count} (VRCPhysBoneCollider, Capsule)
     │
     ├── ContactSystem/
-    │   ├── S_0 ~ S_{half} (VRCContactSender, 5标签)
-    │   └── R_0 ~ R_{half} (VRCContactReceiver, 5标签)
+    │   ├── S_0 ~ S_{half} (VRCContactSender, 5标签, localOnly=false)
+    │   └── R_0 ~ R_{half} (VRCContactReceiver, 5标签, localOnly=false)
     │
     ├── PhysXDefense/ (等级2)
     │   └── Rigidbody_0 ~ Rigidbody_{count}
     │       └── Collider_0 ~ Collider_{n} (Box/Sphere交替)
     │
     ├── ClothDefense/ (等级2)
-    │   └── Cloth_0 ~ Cloth_{count} (10×10顶点网格)
+    │   └── Cloth_0 ~ Cloth_{count} (动态网格, updateWhenOffscreen, bounds=1)
     │
     ├── AnimatorDefense/ (等级1+)
     │   └── Animator_0 ~ Animator_{count} (空Controller, AlwaysAnimate)
     │
     ├── MaterialDefense/ (等级2)
-    │   └── Mesh_0 ~ Mesh_{count} (高面数球体, 单subMesh)
+    │   └── Mesh_0 ~ Mesh_{count} (高面数球体, bounds=1, allowOcclusionWhenDynamic=false)
     │
-    ├── ParticleDefense/ (等级2)
-    │   └── PS_0 ~ PS_{count}
-    │       └── SubEmitter_0 (碰撞+死亡子发射器)
+    ├── LightDefense/ (等级2, 在ParticleDefense之前创建)
+    │   └── L_0 ~ L_{count}
+    │       (Point/Spot交替, intensity/range=10M, ForcePixel, Soft Shadow VeryHigh)
     │
-    └── LightDefense/ (等级2)
-        └── L_0 ~ L_{count}
-            (Point/Spot交替, Soft Shadow, VeryHigh分辨率)
+    └── ParticleDefense/ (等级2)
+        └── PS_0 ~ PS_{count} (simulationSpeed=10M, 18模块全启用)
+            └── SubEmitter_0 (全模块对等, 复用LightDefense光源)
 ```
 
 ---
@@ -876,3 +905,8 @@ int animatorBudget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existingAnimato
 - **静态 Mesh 缓存**: 使用 Unity 的 `==` 运算符检测已销毁对象（而非 `??=` 的 C# null 语义），防止使用已销毁的 Mesh 导致原生崩溃
 - **材质赋值**: 使用 `sharedMaterial` 而非 `material`，避免创建不必要的材质副本
 - **对象清理**: 使用 `Object.DestroyImmediate`（而非 `Object.Destroy`），确保在编辑器同步回调中立即销毁对象
+
+### 10.6 代码规范
+
+- Defense.cs 不包含任何注释（代码足够自文档化，注释在技术文档中维护）
+- 粒子光源复用策略：不创建额外 Light 组件，复用 LightDefense 已有的 Light 引用，避免超出 LIGHT_MAX_COUNT 上限

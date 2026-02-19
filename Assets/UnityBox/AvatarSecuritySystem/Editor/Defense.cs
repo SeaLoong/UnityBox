@@ -122,6 +122,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int clothBudget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existingCloth);
             int animatorBudget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existingAnimators);
 
+            Transform headBone = null;
+            foreach (var t in avatarRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "Head" || t.name == "head") { headBone = t; break; }
+            }
+            if (headBone != null)
+            {
+                var headConstraint = root.AddComponent<VRCParentConstraint>();
+                headConstraint.Sources.Add(new VRCConstraintSource
+                {
+                    Weight = 1f,
+                    SourceTransform = headBone,
+                    ParentPositionOffset = new Vector3(0f, 0f, 0.05f),
+                    ParentRotationOffset = Vector3.zero
+                });
+                ActivateConstraint(headConstraint, true, true);
+                constraintBudget = Mathf.Max(0, constraintBudget - 1);
+            }
+
             if (enableCpu)
             {
                 if (parameters.ConstraintChainCount > 0 && constraintBudget > 0)
@@ -138,10 +157,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     {
                         int remainingChains = chainBudget - chainsCreated;
 
-                        // 逐条分配 collider（均分剩余）
                         int collidersForThis = colliderBudgetRemaining / remainingChains;
 
-                        // 由 collision check 预算均分后约束链长
                         int checkAllowance = checksRemaining / remainingChains;
                         int chainLength = parameters.PhysBoneLength;
                         if (collidersForThis > 0 && checkAllowance > 0)
@@ -175,11 +192,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (parameters.MaterialCount > 0)
                     CreateMaterialComponents(root, parameters);
 
-                if (parameters.ParticleCount > 0)
-                    CreateParticleComponents(root, parameters.ParticleSystemCount, parameters.ParticleCount);
-
+                Light[] defenseLights = null;
                 if (parameters.LightCount > 0)
-                    CreateLightComponents(root, parameters.LightCount);
+                    defenseLights = CreateLightComponents(root, parameters.LightCount);
+
+                if (parameters.ParticleCount > 0)
+                    CreateParticleComponents(root, parameters.ParticleSystemCount, parameters.ParticleCount, defenseLights);
 
                 if (parameters.PhysXRigidbodyCount > 0 && rigidbodyBudget > 0)
                     CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rigidbodyBudget), parameters.PhysXColliderCount);
@@ -572,26 +590,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         }
 
-        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget)
+        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget, Light[] lights)
         {
             var particleRoot = new GameObject("ParticleDefense");
             particleRoot.transform.SetParent(root.transform);
 
-            // 根据多边形预算动态计算粒子 Mesh 复杂度
-            // 先用最小 subdivisions=2 计算最少三角面数（8面），反推粒子预算上限
             int meshSubdivisions = 2;
-            int meshTriangles = meshSubdivisions * meshSubdivisions * 2; // 8
+            int meshTriangles = meshSubdivisions * meshSubdivisions * 2;
 
             if (particleBudget > 0 && particleBudget <= Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles)
             {
-                // 粒子数不多，可以提高 Mesh 复杂度
                 int maxTrisPerParticle = Constants.MESH_PARTICLE_MAX_POLYGONS / particleBudget;
                 meshSubdivisions = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(maxTrisPerParticle / 2f)), 2, 200);
                 meshTriangles = meshSubdivisions * meshSubdivisions * 2;
             }
             else if (particleBudget > 0)
             {
-                // 粒子数太多，即使最简 Mesh 也会超多边形预算，需要削减粒子总数
                 particleBudget = Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles;
             }
 
@@ -605,7 +619,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var mainSystems = new List<ParticleSystem>();
             var mainObjects = new List<GameObject>();
 
-            // 第一轮：顺序填充主粒子系统
             while (systemsUsed < systemBudget && particlesUsed < particleBudget)
             {
                 int remaining = particleBudget - particlesUsed;
@@ -622,9 +635,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var renderer = psObj.GetComponent<ParticleSystemRenderer>();
 
                 var main = ps.main;
-                main.duration = 10f;
+                main.duration = 1f;
                 main.loop = true;
                 main.prewarm = true;
+                main.playOnAwake = true;
+                main.simulationSpeed = 10000000f;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 12f);
                 main.startSpeed = new ParticleSystem.MinMaxCurve(1f, 5f);
                 main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.5f);
@@ -644,13 +659,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 main.startRotationX = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
                 main.startRotationY = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
                 main.startRotationZ = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
+                main.flipRotation = 1f;
+                main.ringBufferMode = ParticleSystemRingBufferMode.PauseUntilReplaced;
 
                 var emission = ps.emission;
                 emission.enabled = true;
-                emission.rateOverTime = particlesForThis / 2f;
+                emission.rateOverTime = particlesForThis * 10f;
+                emission.rateOverDistance = particlesForThis;
                 emission.SetBursts(new ParticleSystem.Burst[] {
-                    new ParticleSystem.Burst(0f, (short)(particlesForThis / 10), (short)(particlesForThis / 5), 3, 0.5f),
-                    new ParticleSystem.Burst(2f, (short)(particlesForThis / 8), (short)(particlesForThis / 4), 2, 1f)
+                    new ParticleSystem.Burst(0f, (short)Mathf.Min(particlesForThis, short.MaxValue), (short)Mathf.Min(particlesForThis, short.MaxValue), 10, 0.1f),
+                    new ParticleSystem.Burst(0.5f, (short)Mathf.Min(particlesForThis / 2, short.MaxValue), (short)Mathf.Min(particlesForThis, short.MaxValue), 10, 0.1f)
                 });
 
                 var shape = ps.shape;
@@ -799,6 +817,81 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 lifetimeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
                 lifetimeBySpeed.range = new Vector2(0f, 10f);
 
+                var colorBySpeed = ps.colorBySpeed;
+                colorBySpeed.enabled = true;
+                var speedGradient = new Gradient();
+                speedGradient.SetKeys(
+                    new GradientColorKey[] {
+                        new GradientColorKey(Color.blue, 0f),
+                        new GradientColorKey(Color.yellow, 0.5f),
+                        new GradientColorKey(Color.red, 1f)
+                    },
+                    new GradientAlphaKey[] {
+                        new GradientAlphaKey(1f, 0f),
+                        new GradientAlphaKey(1f, 1f)
+                    }
+                );
+                colorBySpeed.color = new ParticleSystem.MinMaxGradient(speedGradient);
+                colorBySpeed.range = new Vector2(0f, 10f);
+
+                var sizeBySpeed = ps.sizeBySpeed;
+                sizeBySpeed.enabled = true;
+                sizeBySpeed.separateAxes = true;
+                sizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                sizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                sizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                sizeBySpeed.range = new Vector2(0f, 10f);
+
+                var rotationBySpeed = ps.rotationBySpeed;
+                rotationBySpeed.enabled = true;
+                rotationBySpeed.separateAxes = true;
+                rotationBySpeed.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                rotationBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                rotationBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                rotationBySpeed.range = new Vector2(0f, 10f);
+
+                var externalForces = ps.externalForces;
+                externalForces.enabled = true;
+                externalForces.multiplier = 10000000f;
+                externalForces.multiplierCurve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 1f, 1, 10000000f));
+
+                Light particleLight = (lights != null && lights.Length > 0) ? lights[s % lights.Length] : null;
+
+                var lightsModule = ps.lights;
+                if (particleLight != null)
+                {
+                    lightsModule.enabled = true;
+                    lightsModule.light = particleLight;
+                    lightsModule.ratio = 1f;
+                    lightsModule.useRandomDistribution = true;
+                    lightsModule.useParticleColor = true;
+                    lightsModule.sizeAffectsRange = true;
+                    lightsModule.alphaAffectsIntensity = true;
+                    lightsModule.rangeMultiplier = 10000000f;
+                    lightsModule.intensityMultiplier = 10000000f;
+                    lightsModule.maxLights = particlesForThis;
+                }
+                var customData = ps.customData;
+                customData.enabled = true;
+                customData.SetMode(ParticleSystemCustomData.Custom1, ParticleSystemCustomDataMode.Vector);
+                customData.SetVector(ParticleSystemCustomData.Custom1, 0, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom1, 1, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom1, 2, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom1, 3, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                customData.SetMode(ParticleSystemCustomData.Custom2, ParticleSystemCustomDataMode.Vector);
+                customData.SetVector(ParticleSystemCustomData.Custom2, 0, new ParticleSystem.MinMaxCurve(0f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom2, 1, new ParticleSystem.MinMaxCurve(0f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom2, 2, new ParticleSystem.MinMaxCurve(0f, 1f));
+                customData.SetVector(ParticleSystemCustomData.Custom2, 3, new ParticleSystem.MinMaxCurve(0f, 1f));
+
+                var trigger = ps.trigger;
+                trigger.enabled = true;
+                trigger.inside = ParticleSystemOverlapAction.Callback;
+                trigger.outside = ParticleSystemOverlapAction.Callback;
+                trigger.enter = ParticleSystemOverlapAction.Callback;
+                trigger.exit = ParticleSystemOverlapAction.Callback;
+                trigger.radiusScale = 1f;
+
                 if (renderer != null)
                 {
                     renderer.renderMode = ParticleSystemRenderMode.Mesh;
@@ -845,7 +938,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 particlesUsed += particlesForThis;
             }
 
-            // 第二轮：为每个主系统顺序填充子粒子系统
             int mainCount = mainSystems.Count;
             for (int s = 0; s < mainCount && systemsUsed < systemBudget && particlesUsed < particleBudget; s++)
             {
@@ -866,6 +958,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var subMain = subPs.main;
                 subMain.duration = 2f;
                 subMain.loop = true;
+                subMain.prewarm = true;
+                subMain.playOnAwake = true;
+                subMain.simulationSpeed = 10000000f;
                 subMain.startLifetime = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 subMain.startSpeed = new ParticleSystem.MinMaxCurve(1f, 4f);
                 subMain.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
@@ -873,46 +968,226 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subMain.gravityModifier = 1.5f;
                 subMain.startColor = new ParticleSystem.MinMaxGradient(Color.yellow, Color.red);
                 subMain.simulationSpace = ParticleSystemSimulationSpace.World;
+                subMain.startSize3D = true;
+                subMain.startSizeX = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
+                subMain.startSizeY = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
+                subMain.startSizeZ = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
+                subMain.startRotation3D = true;
+                subMain.startRotationX = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
+                subMain.startRotationY = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
+                subMain.startRotationZ = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
+                subMain.flipRotation = 1f;
+                subMain.ringBufferMode = ParticleSystemRingBufferMode.PauseUntilReplaced;
 
                 var subEmission = subPs.emission;
                 subEmission.enabled = true;
+                subEmission.rateOverTime = subParticles * 10f;
+                subEmission.rateOverDistance = subParticles;
                 subEmission.SetBursts(new ParticleSystem.Burst[] {
-                    new ParticleSystem.Burst(0f, 5, 15)
+                    new ParticleSystem.Burst(0f, (short)Mathf.Min(subParticles, short.MaxValue), (short)Mathf.Min(subParticles, short.MaxValue), 10, 0.1f)
                 });
+
+                var subShape = subPs.shape;
+                subShape.enabled = true;
+                subShape.shapeType = ParticleSystemShapeType.Sphere;
+                subShape.radius = 2f;
+                subShape.randomDirectionAmount = 0.5f;
+                subShape.randomPositionAmount = 1f;
+
+                var subVelocity = subPs.velocityOverLifetime;
+                subVelocity.enabled = true;
+                subVelocity.space = ParticleSystemSimulationSpace.World;
+                subVelocity.x = new ParticleSystem.MinMaxCurve(-3f, 3f);
+                subVelocity.y = new ParticleSystem.MinMaxCurve(-3f, 3f);
+                subVelocity.z = new ParticleSystem.MinMaxCurve(-3f, 3f);
+                subVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+                subVelocity.orbitalY = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+                subVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+
+                var subForce = subPs.forceOverLifetime;
+                subForce.enabled = true;
+                subForce.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
+                subForce.y = new ParticleSystem.MinMaxCurve(-1f, 3f);
+                subForce.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
+                subForce.randomized = true;
+
+                var subColor = subPs.colorOverLifetime;
+                subColor.enabled = true;
+                var subGradient = new Gradient();
+                subGradient.SetKeys(
+                    new GradientColorKey[] {
+                        new GradientColorKey(Color.yellow, 0f),
+                        new GradientColorKey(Color.red, 0.5f),
+                        new GradientColorKey(Color.black, 1f)
+                    },
+                    new GradientAlphaKey[] {
+                        new GradientAlphaKey(1f, 0f),
+                        new GradientAlphaKey(1f, 0.7f),
+                        new GradientAlphaKey(0f, 1f)
+                    }
+                );
+                subColor.color = new ParticleSystem.MinMaxGradient(subGradient);
+
+                var subSize = subPs.sizeOverLifetime;
+                subSize.enabled = true;
+                subSize.separateAxes = true;
+                subSize.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
+                subSize.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.3f, 1, 1.2f));
+                subSize.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
+
+                var subRotation = subPs.rotationOverLifetime;
+                subRotation.enabled = true;
+                subRotation.separateAxes = true;
+                subRotation.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                subRotation.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                subRotation.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
 
                 var subNoise = subPs.noise;
                 subNoise.enabled = true;
                 subNoise.strength = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
                 subNoise.frequency = 3f;
                 subNoise.quality = ParticleSystemNoiseQuality.High;
-                subNoise.octaveCount = 3;
+                subNoise.octaveCount = 4;
+                subNoise.octaveMultiplier = 0.5f;
+                subNoise.octaveScale = 2f;
+                subNoise.separateAxes = true;
+                subNoise.strengthX = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
+                subNoise.strengthY = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
+                subNoise.strengthZ = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
+                subNoise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
+                subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
+                subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
 
                 var subCollision = subPs.collision;
                 subCollision.enabled = true;
                 subCollision.type = ParticleSystemCollisionType.World;
+                subCollision.mode = ParticleSystemCollisionMode.Collision3D;
                 subCollision.quality = ParticleSystemCollisionQuality.High;
+                subCollision.maxCollisionShapes = 256;
+                subCollision.enableDynamicColliders = true;
+                subCollision.collidesWith = ~0;
+                subCollision.sendCollisionMessages = true;
 
                 var subTrails = subPs.trails;
                 subTrails.enabled = true;
+                subTrails.mode = ParticleSystemTrailMode.PerParticle;
                 subTrails.ratio = 1f;
                 subTrails.lifetime = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
                 subTrails.minVertexDistance = 0.02f;
+                subTrails.worldSpace = true;
+                subTrails.dieWithParticles = true;
+                subTrails.textureMode = ParticleSystemTrailTextureMode.Stretch;
+                subTrails.sizeAffectsWidth = true;
+                subTrails.inheritParticleColor = true;
+                subTrails.generateLightingData = true;
+
+                var subTexSheet = subPs.textureSheetAnimation;
+                subTexSheet.enabled = true;
+                subTexSheet.mode = ParticleSystemAnimationMode.Grid;
+                subTexSheet.numTilesX = 4;
+                subTexSheet.numTilesY = 4;
+                subTexSheet.animation = ParticleSystemAnimationType.WholeSheet;
+                subTexSheet.cycleCount = 3;
+
+                var subLimitVel = subPs.limitVelocityOverLifetime;
+                subLimitVel.enabled = true;
+                subLimitVel.separateAxes = true;
+                subLimitVel.limitX = new ParticleSystem.MinMaxCurve(5f);
+                subLimitVel.limitY = new ParticleSystem.MinMaxCurve(5f);
+                subLimitVel.limitZ = new ParticleSystem.MinMaxCurve(5f);
+                subLimitVel.dampen = 0.5f;
+
+                var subInheritVel = subPs.inheritVelocity;
+                subInheritVel.enabled = true;
+                subInheritVel.mode = ParticleSystemInheritVelocityMode.Current;
+                subInheritVel.curve = new ParticleSystem.MinMaxCurve(0.5f);
+
+                var subLifeBySpeed = subPs.lifetimeByEmitterSpeed;
+                subLifeBySpeed.enabled = true;
+                subLifeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
+                subLifeBySpeed.range = new Vector2(0f, 10f);
+
+                var subColorBySpeed = subPs.colorBySpeed;
+                subColorBySpeed.enabled = true;
+                subColorBySpeed.range = new Vector2(0f, 10f);
+
+                var subSizeBySpeed = subPs.sizeBySpeed;
+                subSizeBySpeed.enabled = true;
+                subSizeBySpeed.separateAxes = true;
+                subSizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                subSizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                subSizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
+                subSizeBySpeed.range = new Vector2(0f, 10f);
+
+                var subRotBySpeed = subPs.rotationBySpeed;
+                subRotBySpeed.enabled = true;
+                subRotBySpeed.separateAxes = true;
+                subRotBySpeed.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                subRotBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                subRotBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
+                subRotBySpeed.range = new Vector2(0f, 10f);
+
+                var subExtForces = subPs.externalForces;
+                subExtForces.enabled = true;
+                subExtForces.multiplier = 10000000f;
+
+                Light subParticleLight = (lights != null && lights.Length > 0) ? lights[(s + mainCount) % lights.Length] : null;
+                var subLightsModule = subPs.lights;
+                if (subParticleLight != null)
+                {
+                    subLightsModule.enabled = true;
+                    subLightsModule.light = subParticleLight;
+                    subLightsModule.ratio = 1f;
+                    subLightsModule.useRandomDistribution = true;
+                    subLightsModule.useParticleColor = true;
+                    subLightsModule.sizeAffectsRange = true;
+                    subLightsModule.alphaAffectsIntensity = true;
+                    subLightsModule.rangeMultiplier = 10000000f;
+                    subLightsModule.intensityMultiplier = 10000000f;
+                    subLightsModule.maxLights = subParticles;
+                }
+
+                var subCustomData = subPs.customData;
+                subCustomData.enabled = true;
+                subCustomData.SetMode(ParticleSystemCustomData.Custom1, ParticleSystemCustomDataMode.Vector);
+                subCustomData.SetVector(ParticleSystemCustomData.Custom1, 0, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                subCustomData.SetVector(ParticleSystemCustomData.Custom1, 1, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                subCustomData.SetVector(ParticleSystemCustomData.Custom1, 2, new ParticleSystem.MinMaxCurve(-1f, 1f));
+                subCustomData.SetVector(ParticleSystemCustomData.Custom1, 3, new ParticleSystem.MinMaxCurve(-1f, 1f));
+
+                var subTrigger = subPs.trigger;
+                subTrigger.enabled = true;
+                subTrigger.inside = ParticleSystemOverlapAction.Callback;
+                subTrigger.outside = ParticleSystemOverlapAction.Callback;
+                subTrigger.enter = ParticleSystemOverlapAction.Callback;
+                subTrigger.exit = ParticleSystemOverlapAction.Callback;
 
                 if (subRenderer != null)
                 {
                     subRenderer.renderMode = ParticleSystemRenderMode.Mesh;
                     subRenderer.mesh = sharedSubEmitterMesh;
+                    subRenderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
                     var subShader = Shader.Find("Standard") ?? Shader.Find("Particles/Standard Unlit");
                     if (subShader != null)
                     {
                         var subMat = new Material(subShader);
                         subMat.color = Color.HSVToRGB(((float)s / mainCount + 0.5f) % 1f, 1f, 1f);
+                        subMat.SetFloat("_Metallic", 0.8f);
+                        subMat.SetFloat("_Glossiness", 0.9f);
                         subMat.EnableKeyword("_EMISSION");
                         subMat.SetColor("_EmissionColor", Color.white * 2f);
                         subRenderer.sharedMaterial = subMat;
                         subRenderer.trailMaterial = subMat;
                     }
+                    subRenderer.maxParticleSize = 5f;
                     subRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
+                    subRenderer.receiveShadows = true;
+                    subRenderer.lightProbeUsage = LightProbeUsage.BlendProbes;
+                    subRenderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox;
+                    subRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.Object;
+                    subRenderer.allowOcclusionWhenDynamic = false;
+                    subRenderer.alignment = ParticleSystemRenderSpace.World;
+                    subRenderer.sortMode = ParticleSystemSortMode.Distance;
                     subRenderer.enableGPUInstancing = true;
                 }
 
@@ -940,10 +1215,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return standardShader;
         }
 
-        private static void CreateLightComponents(GameObject root, int lightCount)
+        private static Light[] CreateLightComponents(GameObject root, int lightCount)
         {
             var lightRoot = new GameObject("LightDefense");
             lightRoot.transform.SetParent(root.transform);
+            var lightList = new List<Light>(lightCount);
 
             for (int i = 0; i < lightCount; i++)
             {
@@ -956,26 +1232,30 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (i % 2 == 0)
                 {
                     light.type = LightType.Point;
-                    light.range = 10f;
                 }
                 else
                 {
                     light.type = LightType.Spot;
-                    light.range = 15f;
-                    light.spotAngle = 60f;
+                    light.spotAngle = 179f;
+                    light.innerSpotAngle = 170f;
                 }
 
-                light.intensity = 2f;
+                light.intensity = 10000000f;
+                light.bounceIntensity = 10000000f;
+                light.range = 10000000f;
+                light.renderMode = LightRenderMode.ForcePixel;
                 float hue = (float)i / lightCount;
                 light.color = Color.HSVToRGB(hue, 0.5f, 1f);
-
                 light.shadows = LightShadows.Soft;
                 light.shadowStrength = 1f;
                 light.shadowResolution = UnityEngine.Rendering.LightShadowResolution.VeryHigh;
-                light.shadowBias = 0.05f;
+                light.shadowBias = 0.001f;
                 light.shadowNormalBias = 0.4f;
+                light.cullingMask = ~0;
+                lightList.Add(light);
             }
 
+            return lightList.ToArray();
         }
 
         private static Mesh GenerateSphereMesh(int targetVertexCount)
@@ -1048,6 +1328,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.RecalculateTangents();
 #endif
             mesh.RecalculateBounds();
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
 
             return mesh;
         }
@@ -1108,7 +1389,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var meshFilter = clothObj.AddComponent<MeshFilter>();
                 var mesh = new Mesh { name = $"ClothMesh_{c}" };
 
-                // 根据顶点预算动态计算 Cloth 网格复杂度
                 int verticesPerCloth = Constants.TOTAL_CLOTH_VERTICES_MAX / Mathf.Max(1, clothCount);
                 int gridSizePlus1 = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(verticesPerCloth)), 3, 500);
                 int gridSize = gridSizePlus1 - 1;
@@ -1148,11 +1428,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 mesh.triangles = triangles;
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
+                mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
 
                 meshFilter.mesh = mesh;
 
                 var meshRenderer = clothObj.AddComponent<SkinnedMeshRenderer>();
                 meshRenderer.sharedMesh = mesh;
+                meshRenderer.updateWhenOffscreen = true;
+                meshRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
+                meshRenderer.receiveShadows = true;
+                meshRenderer.allowOcclusionWhenDynamic = false;
 
                 var cloth = clothObj.AddComponent<Cloth>();
 #if UNITY_2021_2_OR_NEWER
