@@ -59,7 +59,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
-        [Tooltip("防御等级：0=仅密码, 1=密码+CPU防御, 2=密码+CPU+GPU防御")]
+        [Tooltip("#{defense.level_tooltip}")]
         [Range(0, 2)]
         public int defenseLevel = 2;
 
@@ -76,7 +76,7 @@ namespace UnityBox.AvatarSecuritySystem
             Off
         }
 
-        [Tooltip("动画 Write Defaults 模式：\nAuto = 自动检测(推荐)\nOn = 自动恢复\nOff = 显式恢复")]
+        [Tooltip("#{advanced.wd_mode_tooltip}")]
         public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
 
 

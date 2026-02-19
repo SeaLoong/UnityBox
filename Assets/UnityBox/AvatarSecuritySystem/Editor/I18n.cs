@@ -182,14 +182,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.Japanese, "盗難防止パスワード保護システム" }
                 },
 
-                // ========== 警告信息 ==========
-                ["warning.main"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "⚠️ WARNING ⚠️\n\nThis system is for protecting your Avatar from malicious theft. Please ensure:\n1. You own the legal rights to this Avatar\n2. You understand the performance impact of defense mechanisms\n3. You comply with VRChat Terms of Service and relevant laws\n\nBy using this system, you agree to take all responsibility." },
-                    { SystemLanguage.ChineseSimplified, "⚠️ 警告 ⚠️\n\n此系统仅用于保护您的 Avatar 免受恶意盗取。请确保：\n1. 您拥有此 Avatar 的合法权利\n2. 理解防御机制可能影响性能\n3. 遵守 VRChat 服务条款和相关法律\n\n使用此系统即表示您同意承担所有责任。" },
-                    { SystemLanguage.Japanese, "⚠️ 警告 ⚠️\n\nこのシステムは、悪意のある盗難からアバターを保護するためのものです。以下を確認してください：\n1. このアバターの合法的な権利を所有していること\n2. 防御メカニズムがパフォーマンスに影響を与える可能性があることを理解していること\n3. VRChatの利用規約と関連法を遵守していること\n\nこのシステムを使用することで、すべての責任を負うことに同意したものとします。" }
-                },
-
                 // ========== 密码配置 ==========
                 ["password.config"] = new Dictionary<SystemLanguage, string>
                 {
@@ -227,6 +219,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "手势密码序列，使用1-7表示VRChat手势:\n1=Fist, 2=HandOpen, 3=Fingerpoint\n4=Victory, 5=RockNRoll, 6=HandGun, 7=ThumbsUp" },
                     { SystemLanguage.Japanese, "ジェスチャーパスワードシーケンス、1-7でVRChatジェスチャーを表す:\n1=Fist, 2=HandOpen, 3=Fingerpoint\n4=Victory, 5=RockNRoll, 6=HandGun, 7=ThumbsUp" }
                 },
+                // ========== 手势识别配置 ==========
+                ["gesture.config"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Gesture Recognition" },
+                    { SystemLanguage.ChineseSimplified, "手势识别配置" },
+                    { SystemLanguage.Japanese, "ジェスチャー認識設定" }
+                },
+                ["gesture.hold_time"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Hold Time (sec)" },
+                    { SystemLanguage.ChineseSimplified, "保持时间 (秒)" },
+                    { SystemLanguage.Japanese, "保持時間 (秒)" }
+                },
+                ["gesture.error_tolerance"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Error Tolerance (sec)" },
+                    { SystemLanguage.ChineseSimplified, "容错时间 (秒)" },
+                    { SystemLanguage.Japanese, "エラー許容時間 (秒)" }
+                },
+
                 ["password.sequence"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Gesture Password Sequence:" },
@@ -319,56 +331,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "警告阈值 (秒)" },
                     { SystemLanguage.Japanese, "警告しきい値 (秒)" }
                 },
-                ["countdown.urgent_threshold"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Urgent Threshold (sec)" },
-                    { SystemLanguage.ChineseSimplified, "紧急阈值 (秒)" },
-                    { SystemLanguage.Japanese, "緊急しきい値 (秒)" }
-                },
-
-                // ========== 反馈配置 ==========
-                ["feedback.config"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Feedback Configuration" },
-                    { SystemLanguage.ChineseSimplified, "反馈配置" },
-                    { SystemLanguage.Japanese, "フィードバック設定" }
-                },
-                ["feedback.error_sound"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Error Sound" },
-                    { SystemLanguage.ChineseSimplified, "错误音效" },
-                    { SystemLanguage.Japanese, "エラーサウンド" }
-                },
-                ["feedback.warning_beep"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Warning Beep" },
-                    { SystemLanguage.ChineseSimplified, "警告哔哔声" },
-                    { SystemLanguage.Japanese, "警告ビープ音" }
-                },
-                ["feedback.success_sound"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Success Sound" },
-                    { SystemLanguage.ChineseSimplified, "成功音效" },
-                    { SystemLanguage.Japanese, "成功サウンド" }
-                },
-                ["feedback.particle_effects"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Particle Effects" },
-                    { SystemLanguage.ChineseSimplified, "启用粒子特效" },
-                    { SystemLanguage.Japanese, "パーティクルエフェクトを有効化" }
-                },
-                ["feedback.asset_specs"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "See ASS_RequiredAssets.md for asset specifications" },
-                    { SystemLanguage.ChineseSimplified, "查看 ASS_RequiredAssets.md 了解素材规格" },
-                    { SystemLanguage.Japanese, "アセット仕様については ASS_RequiredAssets.md を参照" }
-                },
-                ["feedback.use_default"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "🔊 Use Default Audio" },
-                    { SystemLanguage.ChineseSimplified, "🔊 使用默认音效" },
-                    { SystemLanguage.Japanese, "🔊 デフォルトオーディオを使用" }
-                },
 
                 // ========== 防御配置 ==========
                 ["defense.config"] = new Dictionary<SystemLanguage, string>
@@ -376,72 +338,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Defense Configuration" },
                     { SystemLanguage.ChineseSimplified, "防御配置" },
                     { SystemLanguage.Japanese, "防御設定" }
-                },
-                ["defense.enhancement"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Defense Enhancement" },
-                    { SystemLanguage.ChineseSimplified, "防御增强" },
-                    { SystemLanguage.Japanese, "防御強化" }
-                },
-                ["defense.particle_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Particle System Count" },
-                    { SystemLanguage.ChineseSimplified, "粒子系统数量" },
-                    { SystemLanguage.Japanese, "パーティクルシステム数" }
-                },
-                ["defense.particle_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Number of particle systems to generate (1000 particles each)\nIncreases GPU load and frame time" },
-                    { SystemLanguage.ChineseSimplified, "生成的粒子系统数量（每个 1000 粒子）\n增加 GPU 负载和帧时间消耗" },
-                    { SystemLanguage.Japanese, "生成するパーティクルシステムの数（各1000パーティクル）\nGPU負荷とフレーム時間が増加します" }
-                },
-                ["defense.material_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Extra Material Count" },
-                    { SystemLanguage.ChineseSimplified, "额外材质数量" },
-                    { SystemLanguage.Japanese, "追加マテリアル数" }
-                },
-                ["defense.material_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Number of extra materials to generate (increase Draw Calls)\n1000 Draw Calls ≈ 2ms" },
-                    { SystemLanguage.ChineseSimplified, "额外生成的材质数量（增加 Draw Calls）\n1000 Draw Calls ≈ 2ms" },
-                    { SystemLanguage.Japanese, "追加で生成されるマテリアル数（Draw Callsを増やす）\n1000 Draw Calls ≈ 2ms" }
-                },
-                ["defense.light_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Point Light Count" },
-                    { SystemLanguage.ChineseSimplified, "点光源数量" },
-                    { SystemLanguage.Japanese, "ポイントライト数" }
-                },
-                ["defense.light_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Number of point lights to generate\nIncreases lighting calculation overhead" },
-                    { SystemLanguage.ChineseSimplified, "生成的点光源数量\n增加光照计算开销" },
-                    { SystemLanguage.Japanese, "生成するポイントライトの数\nライティング計算のオーバーヘッドが増加します" }
-                },
-                ["defense.cloth_enabled"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Cloth Defense" },
-                    { SystemLanguage.ChineseSimplified, "启用 Cloth 防御" },
-                    { SystemLanguage.Japanese, "Cloth防御を有効化" }
-                },
-                ["defense.cloth_enabled_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Cloth component (very performance-intensive)\n0.2 ms per 1000 vertices" },
-                    { SystemLanguage.ChineseSimplified, "启用 Cloth 组件（非常消耗性能）\n0.2 ms per 1000 vertices" },
-                    { SystemLanguage.Japanese, "Clothコンポーネントを有効化（非常にパフォーマンス集約的）\n0.2 ms per 1000 vertices" }
-                },
-                ["defense.cloth_vertex_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Cloth Vertex Count" },
-                    { SystemLanguage.ChineseSimplified, "Cloth 顶点数" },
-                    { SystemLanguage.Japanese, "Cloth頂点数" }
-                },
-                ["defense.cloth_vertex_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Total vertex count for Cloth component" },
-                    { SystemLanguage.ChineseSimplified, "Cloth 组件的总顶点数" },
-                    { SystemLanguage.Japanese, "Clothコンポーネントの総頂点数" }
                 },
                 ["defense.level"] = new Dictionary<SystemLanguage, string>
                 {
@@ -451,123 +347,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense strength after timeout\n0: Password system only\n1: CPU defense only\n2: CPU+GPU defense (default)" },
-                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0: 仅密码系统\n1: 仅CPU防御\n2: CPU+GPU防御（默认）" },
-                    { SystemLanguage.Japanese, "タイムアウト後に起動する防御強度\n0: パスワードシステムのみ\n1: CPU防御のみ\n2: CPU+GPU防御（デフォルト）" }
-                },
-                ["defense.cpu_methods"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "CPU Defense Methods" },
-                    { SystemLanguage.ChineseSimplified, "CPU 防御方法" },
-                    { SystemLanguage.Japanese, "CPU防御方式" }
-                },
-                ["defense.constraint_chain"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Constraint Chain" },
-                    { SystemLanguage.ChineseSimplified, "约束链" },
-                    { SystemLanguage.Japanese, "制約チェーン" }
-                },
-                ["defense.constraint_chain_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Constraint Chain defense" },
-                    { SystemLanguage.ChineseSimplified, "启用约束链防御" },
-                    { SystemLanguage.Japanese, "制約チェーン防御を有効化" }
-                },
-                ["defense.constraint_depth"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Constraint Depth" },
-                    { SystemLanguage.ChineseSimplified, "约束深度" },
-                    { SystemLanguage.Japanese, "制約の深さ" }
-                },
-                ["defense.constraint_depth_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Chain depth (10-100)" },
-                    { SystemLanguage.ChineseSimplified, "链深度（10-100）" },
-                    { SystemLanguage.Japanese, "チェーンの深さ（10-100）" }
-                },
-                ["defense.phys_bone"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "PhysBone Defense" },
-                    { SystemLanguage.ChineseSimplified, "PhysBone 防御" },
-                    { SystemLanguage.Japanese, "PhysBone防御" }
-                },
-                ["defense.phys_bone_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable PhysBone defense" },
-                    { SystemLanguage.ChineseSimplified, "启用 PhysBone 防御" },
-                    { SystemLanguage.Japanese, "PhysBone防御を有効化" }
-                },
-                ["defense.phys_bone_length"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "PhysBone Chain Length" },
-                    { SystemLanguage.ChineseSimplified, "PhysBone 链长度" },
-                    { SystemLanguage.Japanese, "PhysBoneチェーン長" }
-                },
-                ["defense.phys_bone_length_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Chain length (5-50)" },
-                    { SystemLanguage.ChineseSimplified, "链长度（5-50）" },
-                    { SystemLanguage.Japanese, "チェーン長（5-50）" }
-                },
-                ["defense.phys_bone_colliders"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "PhysBone Colliders" },
-                    { SystemLanguage.ChineseSimplified, "PhysBone 碰撞体数量" },
-                    { SystemLanguage.Japanese, "PhysBoneコライダー数" }
-                },
-                ["defense.phys_bone_colliders_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Collider count (0-100)" },
-                    { SystemLanguage.ChineseSimplified, "碰撞体数量（0-100）" },
-                    { SystemLanguage.Japanese, "コライダー数（0-100）" }
-                },
-                ["defense.contact_system"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Contact System" },
-                    { SystemLanguage.ChineseSimplified, "接触系统防御" },
-                    { SystemLanguage.Japanese, "接触システム防御" }
-                },
-                ["defense.contact_system_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Contact System defense" },
-                    { SystemLanguage.ChineseSimplified, "启用接触系统防御" },
-                    { SystemLanguage.Japanese, "接触システム防御を有効化" }
-                },
-                ["defense.contact_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Contact Count" },
-                    { SystemLanguage.ChineseSimplified, "接触组件数量" },
-                    { SystemLanguage.Japanese, "接触コンポーネント数" }
-                },
-                ["defense.contact_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Number of contact components (10-200)" },
-                    { SystemLanguage.ChineseSimplified, "接触组件数量（10-200）" },
-                    { SystemLanguage.Japanese, "接触コンポーネント数（10-200）" }
-                },
-                ["defense.gpu_methods"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "GPU Defense Methods" },
-                    { SystemLanguage.ChineseSimplified, "GPU 防御方法" },
-                    { SystemLanguage.Japanese, "GPU防御方式" }
-                },
-                ["defense.use_custom"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Use Custom Defense Settings" },
-                    { SystemLanguage.ChineseSimplified, "使用自定义防御设置" },
-                    { SystemLanguage.Japanese, "カスタム防御設定を使用" }
-                },
-                ["defense.use_custom_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable to manually configure all defense parameters (Defense Level will be ignored)" },
-                    { SystemLanguage.ChineseSimplified, "启用后可手动配置所有防御参数（防御等级将失效）" },
-                    { SystemLanguage.Japanese, "有効にするとすべての防御パラメータを手動設定できます（防御レベルは無視されます）" }
-                },
-                ["defense.custom_mode_hint"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Custom mode enabled. Configure each defense method individually. Defense Level is ignored." },
-                    { SystemLanguage.ChineseSimplified, "已启用自定义模式。请单独配置每个防御方法。防御等级将被忽略。" },
-                    { SystemLanguage.Japanese, "カスタムモードが有効です。各防御方法を個別に設定してください。防御レベルは無視されます。" }
+                    { SystemLanguage.English, "Defense strength after timeout\n0: Password system only\n1: CPU defense (fill to VRChat limits)\n2: CPU+GPU defense (default, fill to VRChat limits)" },
+                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0: 仅密码系统\n1: CPU 防御（填满至 VRChat 上限）\n2: CPU+GPU 防御（默认，填满至 VRChat 上限）" },
+                    { SystemLanguage.Japanese, "タイムアウト後に起動する防御強度\n0: パスワードシステムのみ\n1: CPU防御（VRChat上限まで充填）\n2: CPU+GPU防御（デフォルト、VRChat上限まで充填）" }
                 },
                 ["defense.level_0_desc"] = new Dictionary<SystemLanguage, string>
                 {
@@ -577,189 +359,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU defense\n- Constraint: 10 chains × depth 256 (3 components per node)\n- PhysBone: 256 chains × 256 bones + 256 colliders\n- Contact: 200 (100 Sender + 100 Receiver)" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御\n- 约束链：10 条 × 深度 256（每节点 3 个约束组件）\n- PhysBone：256 条 × 256 骨骼 + 256 碰撞器\n- Contact：200 个（100 Sender + 100 Receiver）" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御\n- 制約チェーン：10本×深度256（ノードごとに3コンポーネント）\n- PhysBone：256本×256ボーン+256コライダー\n- Contact：200個（100 Sender+100 Receiver）" }
+                    { SystemLanguage.English, "Level 1: Password + CPU Defense (fill to VRChat limits)\n- Constraint: up to 2000 (budget minus existing)\n- PhysBone: up to 256 chains × 256 bones, 256 colliders\n- Contact: up to 256 components\n- Animator: up to 256 extra components" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（填满至 VRChat 上限）\n- 约束链：最多 2000 个（扣除已有组件）\n- PhysBone：最多 256 条 × 256 骨骼 + 256 碰撞器\n- Contact：最多 256 个组件\n- Animator：最多 256 个额外组件" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（VRChat上限まで充填）\n- 制約：最大2000（既存コンポーネントを差し引き）\n- PhysBone：最大256チェーン×256ボーン+256コライダー\n- Contact：最大256コンポーネント\n- Animator：最大256追加コンポーネント" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU + GPU defense\n- CPU: Constraint 256×10, PhysBone 256 chains, extended chains (5 Constraint + 50 PhysBone + Contact)\n- GPU: 256 materials (20K high-density vertices each) + 128 RenderTextures (4096²) for VRAM bomb\n- Particles: 50 systems × 200K particles = 10M total\n- Lights: 256 (Point/Spot, Soft Shadow, VeryHigh)\n- Shader: 100+ properties, heavy compute loops (compression bomb)" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御\n- CPU：约束链 256×10 + PhysBone 256 条 + 扩展链（5 约束 + 50 PhysBone + Contact）\n- GPU：256 个材质（每个 2 万顶点高密度网格）+ 128 个 RenderTexture（4096²）VRAM 炸弹\n- 粒子：50 个系统 × 20 万粒子 = 千万级\n- 光源：256 个（Point/Spot，软阴影，超高分辨率）\n- Shader：100+ 属性，重型计算循环（压缩炸弹策略）" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御\n- CPU：制約256×10+PhysBone256本+拡張チェーン（5制約+50PhysBone+Contact）\n- GPU：256マテリアル（各2万頂点高密度メッシュ）+128 RenderTexture（4096²）VRAM爆弾\n- パーティクル：50システム×20万粒子=千万級\n- ライト：256個（Point/Spot、ソフトシャドウ、VeryHigh）\n- Shader：100+プロパティ、重い計算ループ（展開爆弾戦略）" }
-                },
-                ["defense.heavy_shader"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Heavy Shader" },
-                    { SystemLanguage.ChineseSimplified, "重型 Shader" },
-                    { SystemLanguage.Japanese, "ヘビーシェーダー" }
-                },
-                ["defense.heavy_shader_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable heavy shader defense" },
-                    { SystemLanguage.ChineseSimplified, "启用重型 Shader 防御" },
-                    { SystemLanguage.Japanese, "ヘビーシェーダー防御を有効化" }
-                },
-                ["defense.shader_loops"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Shader Loop Count" },
-                    { SystemLanguage.ChineseSimplified, "Shader 循环数量" },
-                    { SystemLanguage.Japanese, "シェーダーループ数" }
-                },
-                ["defense.shader_loops_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Number of shader loops (0-200)" },
-                    { SystemLanguage.ChineseSimplified, "Shader 循环数量（0-200）" },
-                    { SystemLanguage.Japanese, "シェーダーループ数（0-200）" }
-                },
-                ["defense.high_poly"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "High Poly Mesh" },
-                    { SystemLanguage.ChineseSimplified, "高多边形网格" },
-                    { SystemLanguage.Japanese, "高ポリゴンメッシュ" }
-                },
-                ["defense.high_poly_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable high poly mesh defense" },
-                    { SystemLanguage.ChineseSimplified, "启用高多边形网格防御" },
-                    { SystemLanguage.Japanese, "高ポリゴンメッシュ防御を有効化" }
-                },
-                ["defense.high_poly_vertices"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "High Poly Vertex Count" },
-                    { SystemLanguage.ChineseSimplified, "高多边形顶点数量" },
-                    { SystemLanguage.Japanese, "高ポリゴン頂点数" }
-                },
-                ["defense.high_poly_vertices_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Vertex count (10k-200k)" },
-                    { SystemLanguage.ChineseSimplified, "顶点数量（10k-200k）" },
-                    { SystemLanguage.Japanese, "頂点数（10k-200k）" }
-                },
-                ["defense.enable_cpu_defense_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable CPU Defense (Constraint, PhysBone, Contact)" },
-                    { SystemLanguage.ChineseSimplified, "启用CPU防御（Constraint、PhysBone、Contact）" },
-                    { SystemLanguage.Japanese, "CPU防御を有効化（Constraint、PhysBone、Contact）" }
-                },
-                ["defense.enable_cpu_defense"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable CPU Defense" },
-                    { SystemLanguage.ChineseSimplified, "启用CPU防御" },
-                    { SystemLanguage.Japanese, "CPU防御を有効化" }
-                },
-                ["defense.enable_gpu_defense_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable GPU Defense (Shader, HighPoly, Particles, Lights)" },
-                    { SystemLanguage.ChineseSimplified, "启用GPU防御（Shader、高多边形、粒子、光源）" },
-                    { SystemLanguage.Japanese, "GPU防御を有効化（Shader、ハイポリゴン、パーティクル、ライト）" }
-                },
-                ["defense.enable_gpu_defense"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable GPU Defense" },
-                    { SystemLanguage.ChineseSimplified, "启用GPU防御" },
-                    { SystemLanguage.Japanese, "GPU防御を有効化" }
-                },
-                ["defense.constraint_chain_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Constraint chain consumption" },
-                    { SystemLanguage.ChineseSimplified, "启用Constraint链式消耗" },
-                    { SystemLanguage.Japanese, "Constraint連鎖消費を有効化" }
-                },
-                ["defense.constraint_depth_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Constraint chain depth (fixed at 5 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "Constraint链深度（调试模式下固定为5）" },
-                    { SystemLanguage.Japanese, "制約チェーン深度（デバッグモードでは5に固定）" }
-                },
-                ["defense.phys_bone_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable PhysBone physics consumption" },
-                    { SystemLanguage.ChineseSimplified, "启用PhysBone物理骨骼消耗" },
-                    { SystemLanguage.Japanese, "PhysBone物理骨格消費を有効化" }
-                },
-                ["defense.phys_bone_length_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "PhysBone chain length (fixed at 3 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "PhysBone链长度（调试模式下固定为3）" },
-                    { SystemLanguage.Japanese, "PhysBoneチェーン長（デバッグモードでは3に固定）" }
-                },
-                ["defense.phys_bone_colliders_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "PhysBone Collider count (fixed at 2 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "PhysBone Collider数量（调试模式下固定为2）" },
-                    { SystemLanguage.Japanese, "PhysBoneコライダー数（デバッグモードでは2に固定）" }
-                },
-                ["defense.contact_system_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable Contact component consumption" },
-                    { SystemLanguage.ChineseSimplified, "启用Contact组件消耗" },
-                    { SystemLanguage.Japanese, "Contactコンポーネント消費を有効化" }
-                },
-                ["defense.contact_count_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Contact Sender/Receiver count (fixed at 4 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "Contact Sender/Receiver数量（调试模式下固定为4）" },
-                    { SystemLanguage.Japanese, "Contact Sender/Receiver数（デバッグモードでは4に固定）" }
-                },
-                ["defense.heavy_shader_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable complex Shader consumption" },
-                    { SystemLanguage.ChineseSimplified, "启用复杂Shader消耗" },
-                    { SystemLanguage.Japanese, "複雑なシェーダー消費を有効化" }
-                },
-                ["defense.heavy_shader_explanation"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "\"Heavy Shader\" means a shader with complex calculations that increases GPU workload:\n• Multiple texture samples\n• Floating-point math operations\n• Loops in fragment/vertex shader\n• Multiple render passes\n\nThis doesn't directly protect against model theft, but makes the avatar perform very poorly for anyone wearing it without the correct password, discouraging use." },
-                    { SystemLanguage.ChineseSimplified, "\"重型Shader\"是指拥有复杂计算的着色器，会增加GPU工作量：\n• 多次纹理采样\n• 浮点数学运算\n• 在片元/顶点着色器中循环\n• 多个渲染通道\n\n这并不能直接防止模型被盗，但会让没有输入正确密码的人穿着该Avatar时性能极差，从而起到威慑作用。" },
-                    { SystemLanguage.Japanese, "\"重いシェーダー\"は複雑な計算を持つシェーダーで、GPUワークロードを増加させます：\n• 複数のテクスチャサンプリング\n• 浮動小数点演算\n• フラグメント/頂点シェーダー内のループ\n• 複数のレンダリングパス\n\nこれはモデルの盗難を直接防ぐものではありませんが、正しいパスワードなしで着用した人のアバターのパフォーマンスを大幅に低下させ、使用を阻止します。" }
-                },
-                ["defense.shader_loops_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Shader loop count (fixed at 0, disabled in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "Shader循环次数（调试模式下固定为0，不启用）" },
-                    { SystemLanguage.Japanese, "シェーダーループ数（デバッグモードでは0に固定、無効）" }
-                },
-                ["defense.high_poly_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Enable high polygon mesh" },
-                    { SystemLanguage.ChineseSimplified, "启用高面数Mesh" },
-                    { SystemLanguage.Japanese, "高ポリゴンメッシュを有効化" }
-                },
-                ["defense.high_poly_vertices_desc"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "High-poly mesh vertex count (fixed at 1000 in debug mode)" },
-                    { SystemLanguage.ChineseSimplified, "高面数Mesh顶点数（调试模式下固定为1000）" },
-                    { SystemLanguage.Japanese, "高ポリゴンメッシュ頂点数（デバッグモードでは1000に固定）" }
-                },
-                ["defense.state_count"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "State Count" },
-                    { SystemLanguage.ChineseSimplified, "状态数量" },
-                    { SystemLanguage.Japanese, "状態数" }
-                },
-                ["defense.state_count_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Higher count = larger file size and greater impact on thieves" },
-                    { SystemLanguage.ChineseSimplified, "数量越多，文件越大，对盗取者的影响越大" },
-                    { SystemLanguage.Japanese, "数が多いほどファイルサイズが大きくなり、盗難者への影響が大きくなる" }
-                },
-                ["defense.hide_avatar"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Hide Avatar on Defense" },
-                    { SystemLanguage.ChineseSimplified, "防御时隐藏 Avatar" },
-                    { SystemLanguage.Japanese, "防御時にアバターを非表示" }
-                },
-                ["defense.shader"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "GPU Intensive Shader" },
-                    { SystemLanguage.ChineseSimplified, "GPU 密集 Shader" },
-                    { SystemLanguage.Japanese, "GPU 集約型シェーダー" }
-                },
-                ["defense.shader_auto"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "GPU Shader will be auto-generated during build." },
-                    { SystemLanguage.ChineseSimplified, "GPU Shader 将在构建时自动生成。" },
-                    { SystemLanguage.Japanese, "GPU シェーダーはビルド時に自動生成されます。" }
+                    { SystemLanguage.English, "Level 2: Password + CPU + GPU Defense (fill to VRChat limits)\n- CPU: All Level 1 + Rigidbody (256) + Colliders (1024) + Cloth (256)\n- GPU: 256 Materials (2.56M total vertices + RenderTextures)\n- Particles: 256 systems (max particles each)\n- Lights: 256 (Point/Spot with shadows)\n- Defense Shader with heavy compute loops" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御（填满至 VRChat 上限）\n- CPU：包含等级 1 全部 + 刚体 (256) + 碰撞器 (1024) + Cloth (256)\n- GPU：256 个材质（总计 256 万顶点 + RenderTexture）\n- 粒子：256 个系统（每个最大粒子数）\n- 光源：256 个（Point/Spot + 阴影）\n- 防御 Shader 重型计算循环" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御（VRChat上限まで充填）\n- CPU：レベル1全て+Rigidbody(256)+Collider(1024)+Cloth(256)\n- GPU：256マテリアル（合計256万頂点+RenderTexture）\n- パーティクル：256システム（各最大粒子数）\n- ライト：256個（Point/Spot+シャドウ）\n- 防御シェーダーの重い計算ループ" }
                 },
                 ["defense.note"] = new Dictionary<SystemLanguage, string>
                 {
@@ -854,37 +462,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "WD Off" },
                     { SystemLanguage.ChineseSimplified, "WD Off" },
                     { SystemLanguage.Japanese, "WD Off" }
-                },
-                // ========== 操作按钮 ==========
-                ["actions.title"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Actions" },
-                    { SystemLanguage.ChineseSimplified, "操作" },
-                    { SystemLanguage.Japanese, "操作" }
-                },
-                ["actions.test"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "🧪 Test Password Flow" },
-                    { SystemLanguage.ChineseSimplified, "🧪 测试密码流程" },
-                    { SystemLanguage.Japanese, "🧪 パスワードフローをテスト" }
-                },
-                ["actions.docs"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "📖 View Documentation" },
-                    { SystemLanguage.ChineseSimplified, "📖 查看文档" },
-                    { SystemLanguage.Japanese, "📖 ドキュメントを表示" }
-                },
-                ["actions.build"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "🔨 Manual Build (Requires VRChat SDK)" },
-                    { SystemLanguage.ChineseSimplified, "🔨 手动构建 (需要 VRChat SDK)" },
-                    { SystemLanguage.Japanese, "🔨 手動ビルド (VRChat SDK が必要)" }
-                },
-                ["actions.build_message"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Please use VRChat SDK's Build & Publish feature to build the Avatar.\nThe ASS system will be generated automatically during the build." },
-                    { SystemLanguage.ChineseSimplified, "请使用 VRChat SDK 的 Build & Publish 功能构建 Avatar。\nASS 系统会在构建时自动生成。" },
-                    { SystemLanguage.Japanese, "VRChat SDKのBuild & Publish機能を使用してアバターをビルドしてください。\nASSシステムはビルド時に自動的に生成されます。" }
                 },
             };
         }

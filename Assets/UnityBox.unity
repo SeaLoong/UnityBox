@@ -1726,7 +1726,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1757,7 +1757,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
+  m_TargetTexture: {fileID: 8400000, guid: abbe9332cbff4a143812d98775e04a72, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -5377,7 +5377,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   launchedFromSDKPipeline: 0
   completedSDKPipeline: 0
-  blueprintId: avtr_6563ffc5-fc79-4556-99ea-96f50d5351d5
+  blueprintId: avtr_4f137404-fa35-4686-ad8c-97b1014e11da
   contentType: 0
   assetBundleUnityVersion: 
   fallbackStatus: 1
@@ -18371,7 +18371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiLanguage: 43
-  gesturePassword: 01000000020000000300000004000000
+  gesturePassword: 01000000070000000200000004000000
   useRightHand: 0
   countdownDuration: 30
   warningThreshold: 10
@@ -18380,7 +18380,7 @@ MonoBehaviour:
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
   disabledInPlaymode: 0
-  disableDefense: 0
+  disableDefense: 1
   disableRootChildren: 1
   defenseLevel: 2
   writeDefaultsMode: 0

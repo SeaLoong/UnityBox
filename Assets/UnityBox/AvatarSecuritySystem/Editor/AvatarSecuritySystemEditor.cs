@@ -63,6 +63,9 @@ namespace UnityBox.AvatarSecuritySystem
             DrawPasswordSection();
             EditorGUILayout.Space(10);
 
+            DrawGestureRecognitionSection();
+            EditorGUILayout.Space(10);
+
             DrawCountdownSection();
             EditorGUILayout.Space(10);
 
@@ -217,6 +220,17 @@ namespace UnityBox.AvatarSecuritySystem
                 "Medium" => Color.yellow,
                 _ => Color.red
             };
+        }
+
+        private void DrawGestureRecognitionSection()
+        {
+            EditorGUILayout.LabelField(T("gesture.config"), EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureHoldTime"),
+                new GUIContent(T("gesture.hold_time"), T("gesture.hold_time_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureErrorTolerance"),
+                new GUIContent(T("gesture.error_tolerance"), T("gesture.error_tolerance_tooltip")));
         }
 
         private void DrawCountdownSection()
