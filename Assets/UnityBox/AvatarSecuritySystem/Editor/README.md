@@ -119,9 +119,9 @@ Avatar 启动
 
 ### 步骤 5：防御配置（可选）
 
-- **Defense Level 0**: 仅密码系统，不生成任何防御组件
-- **Defense Level 1**: 密码 + CPU 防御（Constraint、PhysBone、Contact、Animator 填充到 VRChat 上限）
-- **Defense Level 2**（默认）: Level 1 + GPU 防御（Rigidbody、高面数 Mesh、粒子系统、光源、防御 Shader 材质）
+- **Defense Level 0**: 仅密码系统（不生成任何防御组件）
+- **Defense Level 1**: 密码 + CPU 防御（所有 CPU 组件填满至 VRChat 上限）
+- **Defense Level 2**（默认）: 密码 + CPU + GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
 
 ### 步骤 6：构建上传
 
@@ -204,7 +204,7 @@ Assets/UnityBox/AvatarSecuritySystem/
 │
 └─ Shaders/
     ├─ UI.shader                                         # 全屏遮罩 + 进度条 Shader
-    └─ DefenseShader.shader                              # 防御 Shader 模板（GPU 密集）
+    └─ DefenseShader.shader                              # 防御 Shader（GPU 密集）
 ```
 
 ### 依赖关系
@@ -385,38 +385,36 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 
 #### 防御机制
 
-| 类型    | 组件                       | 等级 | 作用                                             |
-| ------- | -------------------------- | ---- | ------------------------------------------------ |
-| **CPU** | VRCParentConstraint 链     | ≥1   | 填充到上限 2000                                  |
-| **CPU** | VRCPhysBone + Collider     | ≥1   | PhysBone 填充到 256，Collider 填充到 256         |
-| **CPU** | VRCContact Sender/Receiver | ≥1   | 填充到上限 256                                   |
-| **CPU** | Animator                   | ≥1   | 填充到上限 256                                   |
-| **GPU** | Rigidbody + Collider       | 2    | Rigidbody 256，Collider 1024                     |
-| **GPU** | Cloth                      | 2    | 填充到上限 256                                   |
-| **GPU** | 高面数 Mesh + 防御材质     | 2    | 2,560,000 顶点 + 256 个携带 RenderTexture 的材质 |
-| **GPU** | 粒子系统                   | 2    | 最大粒子数 × 355 系统（自适应 Mesh 面数）        |
-| **GPU** | 光源                       | 2    | 256 个实时光源                                   |
+| 类型    | 组件                       | 等级 | 作用                                      |
+| ------- | -------------------------- | ---- | ----------------------------------------- |
+| **CPU** | VRCParentConstraint 链     | ≥1   | 填充到上限 2000                           |
+| **CPU** | VRCPhysBone + Collider     | ≥1   | PhysBone 填充到 256，Collider 填充到 256  |
+| **CPU** | VRCContact Sender/Receiver | ≥1   | 填充到上限 256                            |
+| **CPU** | Animator                   | ≥1   | 填充到上限 256                            |
+| **GPU** | Rigidbody + Collider       | 2    | Rigidbody 256，Collider 1024              |
+| **GPU** | Cloth                      | 2    | 填充到上限 256                            |
+| **GPU** | 粒子系统                   | 2    | 最大粒子数 × 355 系统（自适应 Mesh 面数） |
+| **GPU** | 光源                       | 2    | 256 个实时光源                            |
+| **GPU** | 防御 Shader                | 2    | 8 个 GPU 密集材质                         |
 
 #### 防御等级
 
-**Level 0**: 禁用所有防御，仅密码系统
+**Level 0**: 仅密码系统（不生成任何防御组件）
 
-**Level 1**: CPU 防御 — 所有 CPU 组件填充到 VRChat 上限
+**Level 1**: CPU 防御（所有 CPU 组件填满至 VRChat 上限）
 
 - Constraint: 最多 2000
-- PhysBone: 最多 256，Collider: 最多 256
+- PhysBone: 最多 256 条 × 256 骨骼 + 256 碰撞器
 - Contact: 最多 256
 - Animator: 最多 256
 
-**Level 2**（默认）: CPU + GPU 防御
+**Level 2**（默认）: CPU + GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
 
 - Level 1 所有 CPU 防御
 - Rigidbody: 256，Collider: 1024，Cloth: 256
-- 高面数 Mesh: 2,560,000 顶点，分散到多个 Mesh（避免单 Mesh 65k 限制）
-- 防御 Shader: GPU 密集（分形、路径追踪、流体模拟、光线步进等），参数名混淆
-- 粒子: MAX_INT 粒子 × 355 系统（自适应 Mesh：当粒子数与三角面数预算接近时使用最小三角扇面，实现 1:1 粒子-三角面映射；预算充裕时自动提升 Mesh 复杂度）
+- 粒子: MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）
 - 光源: 256
-- 材质: 256 个，每个携带 16 张 4096×4096 ARGBFloat RenderTexture（8×MSAA）
+- 防御 Shader: 8 个 GPU 密集材质
 
 > 调试模式（Play Mode）下会生成同类型防御，但使用最小参数值（每类 1 个）以便测试。
 

@@ -8,7 +8,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 - **手势密码验证**：通过 VRChat 左/右手手势组合作为密码
 - **倒计时机制**：限时密码输入，超时自动触发防御
-- **多层防御**：CPU 防御（Constraint、PhysBone、Contact）+ GPU 防御（Shader、粒子、光源、高面数Mesh）
+- **多层防御**：CPU 防御（Constraint、PhysBone、Contact）+ GPU 防御（防御 Shader、粒子、光源、布料、物理）
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御仅在本地端触发，远端玩家看到正常 Avatar
 - **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
@@ -56,9 +56,7 @@ Resources/
 Shaders/
 ├── UI.shader                 # 全屏覆盖 UI Shader（UnityBox/ASS_UI）
 └── DefenseShader.shader      # 防御 Shader（UnityBox/ASS_DefenseShader）
-                              # 3 Pass: ForwardBase, ForwardAdd, ShadowCaster
-                              # Texture2D + 共享 SamplerState（解决 16 sampler 寄存器限制）
-                              # 16 张纹理使用 1 个采样器，#pragma target 5.0
+                              # GPU 密集：分形、路径追踪、流体模拟等
 ```
 
 ### 2.2 类依赖关系
@@ -472,11 +470,10 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | ClothComponentCount    | 0            | 256              | 0               | 1               |
 | AnimatorComponentCount | 256          | 256              | 1               | 1               |
 | ContactCount           | 256          | 256              | 1               | 1               |
-| PolyVertices           | 0            | 2,560,000        | 0               | 100             |
-| ParticleCount          | 0            | 2,147,483,647    | 0               | 1               |
-| ParticleSystemCount    | 0            | 256              | 0               | 1               |
+| ParticleCount          | 0            | MAX_INT          | 0               | 1               |
+| ParticleSystemCount    | 0            | 355              | 0               | 1               |
 | LightCount             | 0            | 256              | 0               | 1               |
-| MaterialCount          | 0            | 256              | 0               | 1               |
+| ShaderMaterialCount    | 0            | 8                | 0               | 1               |
 
 > 所有参数目标值设为 `Constants.cs` 定义的组件上限，实际生成数量由预算系统动态截断。调试模式下所有参数均为 1（仅验证代码路径）。
 
@@ -548,58 +545,10 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### 4.5.4 GPU 防御详解
 
-**防御 Shader** (`UnityBox/ASS_DefenseShader`)
-
-极其 GPU 密集的自定义 Shader，设计目标为单材质即可耗尽所有 GPU 资源：
-
-- **Shader Model**: `#pragma target 5.0`（Shader Model 5.0）
-- **渲染通道**: 3 个 Pass（ForwardBase、ForwardAdd、ShadowCaster）
-- **属性**: 100+ 个可配置属性（16 个纹理采样器、大量浮点/颜色参数），属性名全部混淆
-- **GPU 密集特性**:
-  - Mandelbrot 分形（8192 次迭代）
-  - Julia 集（4096 次迭代）
-  - Burning Ship 分形（4096 次迭代）
-  - Tricorn 分形（2048 次迭代）
-  - 路径追踪（128 次反弹，每次 6 个 fbm 调用）
-  - 流体模拟（2048 次迭代）
-  - 波动模拟（1024 步）
-  - 球谐函数（O(n²)，32 阶）
-  - BRDF 积分（1024 个采样）
-  - 环境光遮蔽（512 个采样）
-  - 屏幕空间反射（512 步）
-  - 卷积模糊（O(n²) 核，128）
-  - Bloom 后处理（128 轮 × 16 采样）
-  - 体积云（嵌套循环）
-  - 次表面散射（SSS）
-  - 虹彩光泽
-  - Parallax 视差 Mapping
-  - Caustics 光线营造
-  - 主循环 65536 次迭代（每次含 16 个纹理采样）
-  - 顶点位移（128 次迭代）
-  - 额外显存消耗循环（4096 次反复纹理采样）
-  - 噪声累加循环（1024 次 fbm 计算）
-  - 碰撞积分循环（512 次）
-  - 软阴影累积（128 次）
-
-**材质防御** (`CreateMaterialComponents`)
-
-1. 防御 Shader 获取（`GetDefenseShader`）：优先使用 `UnityBox/ASS_DefenseShader`，回退到 `Standard`
-2. 防御材质创建（`CreateMaterial`）：
-   - 每个网格创建独立材质（不共享），附带独立大纹理
-   - 透明渲染队列 = 3000
-   - 透明渲染队列 = 3000
-   - 每个材质从RenderTexture纹理池（16张 1024×1024 RGBA32，运行时占用显存但不膨胀 Asset Bundle）中取纹理
-3. 高面数球体 Mesh（`GenerateSphereMesh`）：
-   - 单 subMesh
-   - 双 UV 通道 + 顶点色
-   - 顶点数通过 subdivisions 控制（`clamp(ceil(sqrt(targetVertices/6)), 2, 200)`）
-   - `mesh.bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
-   - 使用 `sharedMesh` 赋值（避免不必要的实例化）
-   - MeshRenderer: `shadowCastingMode = TwoSided`, `receiveShadows = true`, `allowOcclusionWhenDynamic = false`
-
 **粒子防御** (`CreateParticleComponents`)
 
 - 两阶段顺序填充：第一阶段创建主粒子系统，第二阶段为每个主系统创建子发射器
+- **材质池优化**：所有粒子系统共享 8 个材质池（主材质 8 个 + Trail 材质 8 个），避免创建数百个独立 Material 实例
 - 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算（溢出保护）
 - `GenerateSphereMesh` 生成的 Mesh `bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
 - **粒子光源复用**：不再为每个粒子系统创建独立 Light 子对象，而是引用 `CreateLightComponents` 已创建的 Light 数组（循环取用），避免 Light 总数超出 `LIGHT_MAX_COUNT` 上限
@@ -656,6 +605,17 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - HSV 色彩分布
 - 全部启用 `Soft Shadow`，`shadowResolution = VeryHigh`
 - **创建顺序**：在 ParticleDefense 之前创建，确保粒子光源模块可引用
+
+**防御 Shader 材质** (`CreateShaderDefenseComponents`)
+
+使用 `UnityBox/ASS_DefenseShader`（GPU 密集 Shader：分形、路径追踪、流体模拟等），仅创建 8 个小型 MeshRenderer：
+
+- **Mesh**：共享一个 4 顶点 Quad（极小内存占用），`bounds = 100000`（禁止视锥体剔除）
+- **材质**：每个 MeshRenderer 独立 Material 实例（`renderQueue = 3000`）
+- **渲染**：`shadowCastingMode = TwoSided`，`receiveShadows = true`，`allowOcclusionWhenDynamic = false`
+- **Shader 回退**：找不到 `UnityBox/ASS_DefenseShader` 时回退到 `Standard`
+- **可控性**：防御根对象未激活时 MeshRenderer 不渲染，不消耗 GPU。激活后每像素触发极重的 Shader 计算
+- **数量**：正常模式 8 个，调试模式 1 个
 
 ---
 

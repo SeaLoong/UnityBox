@@ -17240,7 +17240,7 @@ MonoBehaviour:
   disableRootChildren: 1
   defenseLevel: 2
   hideUI: 0
-  overflowTrick: 0
+  overflowTrick: 1
   writeDefaultsMode: 0
 --- !u!114 &1679610428
 MonoBehaviour:

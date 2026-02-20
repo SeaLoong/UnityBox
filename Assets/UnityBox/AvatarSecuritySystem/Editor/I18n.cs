@@ -347,27 +347,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.level_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense strength after timeout\n0: Password system only\n1: CPU defense (fill to VRChat limits)\n2: CPU+GPU defense (default, fill to VRChat limits)" },
-                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0: 仅密码系统\n1: CPU 防御（填满至 VRChat 上限）\n2: CPU+GPU 防御（默认，填满至 VRChat 上限）" },
-                    { SystemLanguage.Japanese, "タイムアウト後に起動する防御強度\n0: パスワードシステムのみ\n1: CPU防御（VRChat上限まで充填）\n2: CPU+GPU防御（デフォルト、VRChat上限まで充填）" }
+                    { SystemLanguage.English, "Defense strength after timeout\n0: Only password system (no defense)\n1: CPU defense (all CPU components filled to VRChat limits)\n2: CPU+GPU defense (all CPU+GPU components filled to VRChat limits, including MAX_INT particles, 256 lights, etc.)" },
+                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0：仅密码系统（不生成防御）\n1：CPU 防御（所有 CPU 组件填满至 VRChat 上限）\n2：CPU+GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）" },
+                    { SystemLanguage.Japanese, "タイムアウト後の防御強度\n0: パスワードシステムのみ（防御なし）\n1: CPU防御（全CPUコンポーネントをVRChat上限まで充填）\n2: CPU+GPU防御（全CPU+GPUコンポーネントをVRChat上限まで充填、MAX_INTパーティクル・256ライト等含む）" }
                 },
                 ["defense.level_0_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 0: Password system only (no defense components)" },
-                    { SystemLanguage.ChineseSimplified, "等级 0：仅密码系统（不生成防御组件）" },
+                    { SystemLanguage.English, "Level 0: Only password system (no defense components)" },
+                    { SystemLanguage.ChineseSimplified, "等级 0：仅密码系统（不生成任何防御组件）" },
                     { SystemLanguage.Japanese, "レベル0：パスワードシステムのみ（防御コンポーネントなし）" }
                 },
                 ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU Defense (fill to VRChat limits)\n- Constraint: up to 2000 (budget minus existing)\n- PhysBone: up to 256 chains × 256 bones, 256 colliders\n- Contact: up to 256 components\n- Animator: up to 256 extra components" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（填满至 VRChat 上限）\n- 约束链：最多 2000 个（扣除已有组件）\n- PhysBone：最多 256 条 × 256 骨骼 + 256 碰撞器\n- Contact：最多 256 个组件\n- Animator：最多 256 个额外组件" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（VRChat上限まで充填）\n- 制約：最大2000（既存コンポーネントを差し引き）\n- PhysBone：最大256チェーン×256ボーン+256コライダー\n- Contact：最大256コンポーネント\n- Animator：最大256追加コンポーネント" }
+                    { SystemLanguage.English, "Level 1: Password + CPU Defense (all CPU components filled to VRChat limits)\n- Constraint: up to 2000\n- PhysBone: up to 256 chains × 256 bones, 256 colliders\n- Contact: up to 256\n- Animator: up to 256" },
+                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（所有 CPU 组件填满至 VRChat 上限）\n- 约束链：最多 2000\n- PhysBone：最多 256 条 × 256 骨骼 + 256 碰撞器\n- Contact：最多 256\n- Animator：最多 256" },
+                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（全CPUコンポーネントをVRChat上限まで充填）\n- 制約：最大2000\n- PhysBone：最大256チェーン×256ボーン+256コライダー\n- Contact：最大256\n- Animator：最大256" }
                 },
                 ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU + GPU Defense (fill to VRChat limits)\n- CPU: All Level 1 + Rigidbody (256) + Colliders (1024) + Cloth (256)\n- GPU: 256 Materials (2.56M total vertices + RenderTextures)\n- Particles: 256 systems (max particles each)\n- Lights: 256 (Point/Spot with shadows)\n- Defense Shader with heavy compute loops" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御（填满至 VRChat 上限）\n- CPU：包含等级 1 全部 + 刚体 (256) + 碰撞器 (1024) + Cloth (256)\n- GPU：256 个材质（总计 256 万顶点 + RenderTexture）\n- 粒子：256 个系统（每个最大粒子数）\n- 光源：256 个（Point/Spot + 阴影）\n- 防御 Shader 重型计算循环" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御（VRChat上限まで充填）\n- CPU：レベル1全て+Rigidbody(256)+Collider(1024)+Cloth(256)\n- GPU：256マテリアル（合計256万頂点+RenderTexture）\n- パーティクル：256システム（各最大粒子数）\n- ライト：256個（Point/Spot+シャドウ）\n- 防御シェーダーの重い計算ループ" }
+                    { SystemLanguage.English, "Level 2: Password + CPU + GPU Defense (all CPU+GPU components filled to VRChat limits)\n- CPU: All Level 1 + Rigidbody (256) + Colliders (1024) + Cloth (256)\n- Particles: MAX_INT × 355 systems (auto mesh complexity)\n- Lights: 256\n- Defense Shader: 8 GPU-intensive materials" },
+                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限）\n- CPU：等级 1 全部 + 刚体 (256) + 碰撞器 (1024) + 布料 (256)\n- 粒子：MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）\n- 光源：256\n- 防御 Shader：8 个 GPU 密集材质" },
+                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御（全CPU+GPUコンポーネントをVRChat上限まで充填）\n- CPU：レベル1全て+Rigidbody(256)+Collider(1024)+Cloth(256)\n- パーティクル：MAX_INTパーティクル×355システム（自動メッシュ複雑度）\n- ライト：256\n- 防御シェーダー：GPU高負荷マテリアル×8" }
                 },
                 ["defense.note"] = new Dictionary<SystemLanguage, string>
                 {
@@ -427,9 +427,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.overflow_trick_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Add an extra particle to overflow VRChat stats past int.MaxValue, displaying -2147483648 in performance stats" },
-                    { SystemLanguage.ChineseSimplified, "额外添加一个粒子使 VRChat 统计数值超过 int.MaxValue，在性能统计中显示 -2147483648" },
-                    { SystemLanguage.Japanese, "追加パーティクルを1つ追加してVRChat統計をint.MaxValueを超えさせ、パフォーマンス統計に-2147483648を表示" }
+                    { SystemLanguage.English, "Overflow Trick: The last particle system and mesh will have their max particles and triangle count increased by 1, causing VRChat stats to overflow past int.MaxValue and display -2147483648." },
+                    { SystemLanguage.ChineseSimplified, "溢出技巧：最后一个粒子系统和Mesh的最大粒子数与三角面数各+1，使VRChat统计超出int.MaxValue，显示-2147483648。" },
+                    { SystemLanguage.Japanese, "オーバーフロートリック：最後のパーティクルシステムとメッシュの最大パーティクル数・三角数を+1し、VRChat統計をint.MaxValue超えにして-2147483648を表示。" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {
