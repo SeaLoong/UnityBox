@@ -125,6 +125,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (i == 0)
                 {
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
+                    firstTransition.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
                     firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
                     firstTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
                 }

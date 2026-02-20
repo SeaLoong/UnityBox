@@ -270,11 +270,12 @@ ASS_Lock Layer
 - 尾部序列匹配（输入 123456 可匹配密码 456）
 - 手势稳定时间检测（需保持手势一定时间，默认 0.15 秒）
 - 容错机制（短暂误触不会重置，容错时间默认 0.3 秒）
+- 本地隔离：入口转换要求 `IsLocal == true`，远端客户端不执行密码检测和音效播放
 
 #### 状态结构（每步）
 
 ```
-Wait_Input ───[正确手势]───> Step_N_Holding (gestureHoldTime)
+Wait_Input ───[IsLocal + 正确手势]───> Step_N_Holding (gestureHoldTime)
                                 ├── [保持正确 + 超时] → Step_N_Confirmed
                                 ├── [Idle] → 自循环
                                 └── [错误] → Wait_Input
@@ -390,7 +391,7 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 | **GPU** | Rigidbody + Collider       | 2    | Rigidbody 256，Collider 1024                     |
 | **GPU** | Cloth                      | 2    | 填充到上限 256                                   |
 | **GPU** | 高面数 Mesh + 防御材质     | 2    | 2,560,000 顶点 + 256 个携带 RenderTexture 的材质 |
-| **GPU** | 粒子系统                   | 2    | 最大粒子数 × 256 系统                            |
+| **GPU** | 粒子系统                   | 2    | 最大粒子数 × 256 系统（自适应 Mesh 面数）        |
 | **GPU** | 光源                       | 2    | 256 个实时光源                                   |
 
 #### 防御等级
@@ -410,7 +411,7 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 - Rigidbody: 256，Collider: 1024，Cloth: 256
 - 高面数 Mesh: 2,560,000 顶点，分散到多个 Mesh（避免单 Mesh 65k 限制）
 - 防御 Shader: GPU 密集（分形、路径追踪、流体模拟、光线步进等），参数名混淆
-- 粒子: MAX_INT 粒子 × 256 系统
+- 粒子: MAX_INT 粒子 × 256 系统（自适应 Mesh：当粒子数与三角面数预算接近时使用最小三角扇面，实现 1:1 粒子-三角面映射；预算充裕时自动提升 Mesh 复杂度）
 - 光源: 256
 - 材质: 256 个，每个携带 16 张 1024×1024 RenderTexture
 
