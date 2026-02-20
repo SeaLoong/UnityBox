@@ -34,9 +34,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            if (config.defenseLevel <= 0)
+            if (!config.enableCpuDefense && !config.enableGpuDefense)
             {
-                Debug.Log("[ASS] 防御等级为0，跳过防御层创建");
+                Debug.Log("[ASS] CPU 和 GPU 防御均未启用，跳过防御层创建");
                 return;
             }
 
@@ -89,8 +89,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var parameters = ComputeDefenseParams();
 
-            bool enableCpu = config.defenseLevel >= 1;
-            bool enableGpu = config.defenseLevel >= 2;
+            bool enableCpu = config.enableCpuDefense;
+            bool enableGpu = config.enableGpuDefense;
 
             if (enableCpu)
             {
@@ -284,82 +284,47 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private DefenseParams ComputeDefenseParams()
         {
+            bool cpuOn = config.enableCpuDefense;
+            bool gpuOn = config.enableGpuDefense;
+
             if (isDebugMode)
             {
-                if (config.defenseLevel <= 0)
+                if (!cpuOn && !gpuOn)
                 {
                     return new DefenseParams(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 }
 
-                if (config.defenseLevel == 1)
-                {
-                    return new DefenseParams(
-                        constraintDepth: 1,
-                        constraintChainCount: 1,
-                        physBoneLength: 1,
-                        physBoneChainCount: 1,
-                        physBoneColliders: 1,
-                        physXRigidbodyCount: 0,
-                        physXColliderCount: 0,
-                        clothComponentCount: 0,
-                        animatorComponentCount: 1,
-                        contactCount: 1,
-                        particleCount: 0,
-                        particleSystemCount: 0,
-                        lightCount: 0
-                    );
-                }
-
                 return new DefenseParams(
-                    constraintDepth: 1,
-                    constraintChainCount: 1,
-                    physBoneLength: 1,
-                    physBoneChainCount: 1,
-                    physBoneColliders: 1,
-                    physXRigidbodyCount: 1,
-                    physXColliderCount: 1,
-                    clothComponentCount: 1,
-                    animatorComponentCount: 1,
-                    contactCount: 1,
-                    particleCount: 1,
-                    particleSystemCount: 1,
-                    lightCount: 1
-                );
-            }
-
-            if (config.defenseLevel == 1)
-            {
-                return new DefenseParams(
-                    constraintDepth: Constants.CONSTRAINT_MAX_COUNT,
-                    constraintChainCount: Constants.CONSTRAINT_MAX_COUNT,
-                    physBoneLength: Constants.PHYSBONE_MAX_COUNT,
-                    physBoneChainCount: Constants.PHYSBONE_MAX_COUNT,
-                    physBoneColliders: Constants.PHYSBONE_COLLIDER_MAX_COUNT,
-                    physXRigidbodyCount: 0,
-                    physXColliderCount: 0,
-                    clothComponentCount: 0,
-                    animatorComponentCount: Constants.ANIMATOR_MAX_COUNT,
-                    contactCount: Constants.CONTACT_MAX_COUNT,
-                    particleCount: 0,
-                    particleSystemCount: 0,
-                    lightCount: 0
+                    constraintDepth: cpuOn ? 1 : 0,
+                    constraintChainCount: cpuOn ? 1 : 0,
+                    physBoneLength: cpuOn ? 1 : 0,
+                    physBoneChainCount: cpuOn ? 1 : 0,
+                    physBoneColliders: cpuOn ? 1 : 0,
+                    physXRigidbodyCount: gpuOn ? 1 : 0,
+                    physXColliderCount: gpuOn ? 1 : 0,
+                    clothComponentCount: gpuOn ? 1 : 0,
+                    animatorComponentCount: cpuOn ? 1 : 0,
+                    contactCount: cpuOn ? 1 : 0,
+                    particleCount: gpuOn ? 1 : 0,
+                    particleSystemCount: gpuOn ? 1 : 0,
+                    lightCount: gpuOn ? 1 : 0
                 );
             }
 
             return new DefenseParams(
-                constraintDepth: Constants.CONSTRAINT_MAX_COUNT,
-                constraintChainCount: Constants.CONSTRAINT_MAX_COUNT,
-                physBoneLength: Constants.PHYSBONE_MAX_COUNT,
-                physBoneChainCount: Constants.PHYSBONE_MAX_COUNT,
-                physBoneColliders: Constants.PHYSBONE_COLLIDER_MAX_COUNT,
-                physXRigidbodyCount: Constants.RIGIDBODY_MAX_COUNT,
-                physXColliderCount: Constants.RIGIDBODY_COLLIDER_MAX_COUNT,
-                clothComponentCount: Constants.CLOTH_MAX_COUNT,
-                animatorComponentCount: Constants.ANIMATOR_MAX_COUNT,
-                contactCount: Constants.CONTACT_MAX_COUNT,
-                particleCount: Constants.PARTICLE_MAX_COUNT,
-                particleSystemCount: Constants.PARTICLE_SYSTEM_MAX_COUNT,
-                lightCount: Constants.LIGHT_MAX_COUNT
+                constraintDepth: cpuOn ? Constants.CONSTRAINT_MAX_COUNT : 0,
+                constraintChainCount: cpuOn ? Constants.CONSTRAINT_MAX_COUNT : 0,
+                physBoneLength: cpuOn ? Constants.PHYSBONE_MAX_COUNT : 0,
+                physBoneChainCount: cpuOn ? Constants.PHYSBONE_MAX_COUNT : 0,
+                physBoneColliders: cpuOn ? Constants.PHYSBONE_COLLIDER_MAX_COUNT : 0,
+                physXRigidbodyCount: gpuOn ? Constants.RIGIDBODY_MAX_COUNT : 0,
+                physXColliderCount: gpuOn ? Constants.RIGIDBODY_COLLIDER_MAX_COUNT : 0,
+                clothComponentCount: gpuOn ? Constants.CLOTH_MAX_COUNT : 0,
+                animatorComponentCount: cpuOn ? Constants.ANIMATOR_MAX_COUNT : 0,
+                contactCount: cpuOn ? Constants.CONTACT_MAX_COUNT : 0,
+                particleCount: gpuOn ? Constants.PARTICLE_MAX_COUNT : 0,
+                particleSystemCount: gpuOn ? Constants.PARTICLE_SYSTEM_MAX_COUNT : 0,
+                lightCount: gpuOn ? Constants.LIGHT_MAX_COUNT : 0
             );
         }
 

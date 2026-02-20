@@ -377,7 +377,7 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 #### 功能
 
 - 倒计时结束后激活防御（仅本地生效）
-- 根据防御等级自动计算参数，填充到 VRChat 组件上限
+- 根据 CPU/GPU 防御开关自动计算参数，填充到 VRChat 组件上限
 - 惰性预算统计：仅在对应功能启用时才统计已有组件数量
 - 所有组件类型均有已有数量统计和预算控制，包括：
   - CPU: Constraint、PhysBone、PhysBoneCollider、Contact、Animator
@@ -385,36 +385,36 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 
 #### 防御机制
 
-| 类型    | 组件                       | 等级 | 作用                                      |
-| ------- | -------------------------- | ---- | ----------------------------------------- |
-| **CPU** | VRCParentConstraint 链     | ≥1   | 填充到上限 2000                           |
-| **CPU** | VRCPhysBone + Collider     | ≥1   | PhysBone 填充到 256，Collider 填充到 256  |
-| **CPU** | VRCContact Sender/Receiver | ≥1   | 填充到上限 256                            |
-| **CPU** | Animator                   | ≥1   | 填充到上限 256                            |
-| **GPU** | Rigidbody + Collider       | 2    | Rigidbody 256，Collider 1024              |
-| **GPU** | Cloth                      | 2    | 填充到上限 256                            |
-| **GPU** | 粒子系统                   | 2    | 最大粒子数 × 355 系统（自适应 Mesh 面数） |
-| **GPU** | 光源                       | 2    | 256 个实时光源                            |
-| **GPU** | 防御 Shader                | 2    | 8 个 GPU 密集材质                         |
+| 类型    | 组件                       | 开关     | 作用                                      |
+| ------- | -------------------------- | -------- | ----------------------------------------- |
+| **CPU** | VRCParentConstraint 链     | CPU 防御 | 填充到上限 2000                           |
+| **CPU** | VRCPhysBone + Collider     | CPU 防御 | PhysBone 填充到 256，Collider 填充到 256  |
+| **CPU** | VRCContact Sender/Receiver | CPU 防御 | 填充到上限 256                            |
+| **CPU** | Animator                   | CPU 防御 | 填充到上限 256                            |
+| **GPU** | Rigidbody + Collider       | GPU 防御 | Rigidbody 256，Collider 1024              |
+| **GPU** | Cloth                      | GPU 防御 | 填充到上限 256                            |
+| **GPU** | 粒子系统                   | GPU 防御 | 最大粒子数 × 355 系统（自适应 Mesh 面数） |
+| **GPU** | 光源                       | GPU 防御 | 256 个实时光源                            |
+| **GPU** | 防御 Shader                | GPU 防御 | 8 个 GPU 密集材质                         |
 
-#### 防御等级
+#### 防御模式
 
-**Level 0**: 仅密码系统（不生成任何防御组件）
-
-**Level 1**: CPU 防御（所有 CPU 组件填满至 VRChat 上限）
+**CPU 防御** (`enableCpuDefense`): 填满所有 CPU 组件至 VRChat 上限
 
 - Constraint: 最多 2000
 - PhysBone: 最多 256 条 × 256 骨骼 + 256 碰撞器
 - Contact: 最多 256
 - Animator: 最多 256
+- ⚠ 可能导致 FPS 下降（VRChat 会扫描 65000+ 非活跃 Transform 和 2500+ 非活跃组件）
 
-**Level 2**（默认）: CPU + GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
+**GPU 防御** (`enableGpuDefense`): 填满所有 GPU 组件至 VRChat 上限
 
-- Level 1 所有 CPU 防御
 - Rigidbody: 256，Collider: 1024，Cloth: 256
 - 粒子: MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）
 - 光源: 256
 - 防御 Shader: 8 个 GPU 密集材质
+
+两者可独立开关，也可同时启用。
 
 > 调试模式（Play Mode）下会生成同类型防御，但使用最小参数值（每类 1 个）以便测试。
 
@@ -458,10 +458,11 @@ ASS_Defense Layer
 
 #### 防御配置
 
-| 属性             | 类型   | 范围 | 默认值  | 说明                       |
-| ---------------- | ------ | ---- | ------- | -------------------------- |
-| `defenseLevel`   | `int`  | 0-2  | `2`     | 0=仅密码, 1=CPU, 2=CPU+GPU |
-| `disableDefense` | `bool` | —    | `false` | 完全禁用防御生成           |
+| 属性               | 类型   | 默认值  | 说明                                                               |
+| ------------------ | ------ | ------- | ------------------------------------------------------------------ |
+| `enableCpuDefense` | `bool` | `true`  | 启用 CPU 防御（约束/PhysBone/Contact/Animator 填满至 VRChat 上限） |
+| `enableGpuDefense` | `bool` | `true`  | 启用 GPU 防御（粒子/光源/刚体/布料/防御 Shader）                   |
+| `disableDefense`   | `bool` | `false` | 完全禁用防御生成                                                   |
 
 #### 高级选项
 

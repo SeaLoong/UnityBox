@@ -59,9 +59,11 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
-        [Tooltip("#{defense.level_tooltip}")]
-        [Range(0, 2)]
-        public int defenseLevel = 2;
+        [Tooltip("#{defense.cpu_tooltip}")]
+        public bool enableCpuDefense = true;
+
+        [Tooltip("#{defense.gpu_tooltip}")]
+        public bool enableGpuDefense = true;
 
         [Tooltip("#{advanced.hide_ui_tooltip}")]
         public bool hideUI = false;
@@ -167,7 +169,6 @@ namespace UnityBox.AvatarSecuritySystem
         {
             InitializePasswordIfNeeded();
             ValidateWarningThreshold();
-            ClampDefenseLevel();
         }
 
         private void InitializePasswordIfNeeded()
@@ -186,25 +187,18 @@ namespace UnityBox.AvatarSecuritySystem
             }
         }
 
-        private void ClampDefenseLevel()
-        {
-            const int minimumLevel = 0;
-            const int maximumLevel = 2;
-            defenseLevel = Mathf.Clamp(defenseLevel, minimumLevel, maximumLevel);
-        }
-
         private void Reset()
         {
             const float defaultCountdownDuration = 30f;
             const float defaultWarningThreshold = 10f;
-            const int defaultDefenseLevel = 2;
 
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
             disabledInPlaymode = true;
             disableRootChildren = true;
-            defenseLevel = defaultDefenseLevel;
+            enableCpuDefense = true;
+            enableGpuDefense = true;
         }
 #endif
     }

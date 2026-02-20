@@ -339,35 +339,53 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "防御配置" },
                     { SystemLanguage.Japanese, "防御設定" }
                 },
-                ["defense.level"] = new Dictionary<SystemLanguage, string>
+                ["defense.cpu"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense Level" },
-                    { SystemLanguage.ChineseSimplified, "防御等级" },
-                    { SystemLanguage.Japanese, "防御レベル" }
+                    { SystemLanguage.English, "CPU Defense" },
+                    { SystemLanguage.ChineseSimplified, "CPU 防御" },
+                    { SystemLanguage.Japanese, "CPU防御" }
                 },
-                ["defense.level_tooltip"] = new Dictionary<SystemLanguage, string>
+                ["defense.cpu_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense strength after timeout\n0: Only password system (no defense)\n1: CPU defense (all CPU components filled to VRChat limits)\n2: CPU+GPU defense (all CPU+GPU components filled to VRChat limits, including MAX_INT particles, 256 lights, etc.)" },
-                    { SystemLanguage.ChineseSimplified, "倒计时结束后触发的防御强度\n0：仅密码系统（不生成防御）\n1：CPU 防御（所有 CPU 组件填满至 VRChat 上限）\n2：CPU+GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）" },
-                    { SystemLanguage.Japanese, "タイムアウト後の防御強度\n0: パスワードシステムのみ（防御なし）\n1: CPU防御（全CPUコンポーネントをVRChat上限まで充填）\n2: CPU+GPU防御（全CPU+GPUコンポーネントをVRChat上限まで充填、MAX_INTパーティクル・256ライト等含む）" }
+                    { SystemLanguage.English, "Enable CPU defense: fills VRChat CPU component limits (Constraint, PhysBone, Contact, Animator).\nWarning: may cause noticeable FPS drop due to VRChat scanning 65000+ transforms and 2500+ inactive components per frame." },
+                    { SystemLanguage.ChineseSimplified, "启用 CPU 防御：填满 VRChat CPU 组件上限（约束、PhysBone、Contact、Animator）。\n警告：VRChat 每帧扫描 65000+ Transform 和 2500+ 非活跃组件，可能造成明显的 FPS 下降。" },
+                    { SystemLanguage.Japanese, "CPU防御を有効化：VRChat CPUコンポーネント上限を充填（Constraint、PhysBone、Contact、Animator）。\n警告：VRChatが毎フレーム65000以上のTransformと2500以上の非アクティブコンポーネントをスキャンするため、顕著なFPS低下が発生する可能性があります。" }
                 },
-                ["defense.level_0_desc"] = new Dictionary<SystemLanguage, string>
+                ["defense.gpu"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 0: Only password system (no defense components)" },
-                    { SystemLanguage.ChineseSimplified, "等级 0：仅密码系统（不生成任何防御组件）" },
-                    { SystemLanguage.Japanese, "レベル0：パスワードシステムのみ（防御コンポーネントなし）" }
+                    { SystemLanguage.English, "GPU Defense" },
+                    { SystemLanguage.ChineseSimplified, "GPU 防御" },
+                    { SystemLanguage.Japanese, "GPU防御" }
                 },
-                ["defense.level_1_desc"] = new Dictionary<SystemLanguage, string>
+                ["defense.gpu_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 1: Password + CPU Defense (all CPU components filled to VRChat limits)\n- Constraint: up to 2000\n- PhysBone: up to 256 chains × 256 bones, 256 colliders\n- Contact: up to 256\n- Animator: up to 256" },
-                    { SystemLanguage.ChineseSimplified, "等级 1：密码 + CPU 防御（所有 CPU 组件填满至 VRChat 上限）\n- 约束链：最多 2000\n- PhysBone：最多 256 条 × 256 骨骼 + 256 碰撞器\n- Contact：最多 256\n- Animator：最多 256" },
-                    { SystemLanguage.Japanese, "レベル1：パスワード+CPU防御（全CPUコンポーネントをVRChat上限まで充填）\n- 制約：最大2000\n- PhysBone：最大256チェーン×256ボーン+256コライダー\n- Contact：最大256\n- Animator：最大256" }
+                    { SystemLanguage.English, "Enable GPU defense: fills VRChat GPU component limits (Particle, Light, Rigidbody, Cloth, Defense Shader)." },
+                    { SystemLanguage.ChineseSimplified, "启用 GPU 防御：填满 VRChat GPU 组件上限（粒子、光源、刚体、布料、防御 Shader）。" },
+                    { SystemLanguage.Japanese, "GPU防御を有効化：VRChat GPUコンポーネント上限を充填（パーティクル、ライト、Rigidbody、Cloth、防御シェーダー）。" }
                 },
-                ["defense.level_2_desc"] = new Dictionary<SystemLanguage, string>
+                ["defense.desc_none"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Level 2: Password + CPU + GPU Defense (all CPU+GPU components filled to VRChat limits)\n- CPU: All Level 1 + Rigidbody (256) + Colliders (1024) + Cloth (256)\n- Particles: MAX_INT × 355 systems (auto mesh complexity)\n- Lights: 256\n- Defense Shader: 8 GPU-intensive materials" },
-                    { SystemLanguage.ChineseSimplified, "等级 2：密码 + CPU + GPU 防御（所有 CPU+GPU 组件填满至 VRChat 上限）\n- CPU：等级 1 全部 + 刚体 (256) + 碰撞器 (1024) + 布料 (256)\n- 粒子：MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）\n- 光源：256\n- 防御 Shader：8 个 GPU 密集材质" },
-                    { SystemLanguage.Japanese, "レベル2：パスワード+CPU+GPU防御（全CPU+GPUコンポーネントをVRChat上限まで充填）\n- CPU：レベル1全て+Rigidbody(256)+Collider(1024)+Cloth(256)\n- パーティクル：MAX_INTパーティクル×355システム（自動メッシュ複雑度）\n- ライト：256\n- 防御シェーダー：GPU高負荷マテリアル×8" }
+                    { SystemLanguage.English, "No defense enabled. Only password system is active." },
+                    { SystemLanguage.ChineseSimplified, "未启用任何防御。仅密码系统生效。" },
+                    { SystemLanguage.Japanese, "防御なし。パスワードシステムのみ有効。" }
+                },
+                ["defense.desc_cpu"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "CPU Defense only:\n- Constraint: up to 2000\n- PhysBone: up to 256 chains × 256 bones, 256 colliders\n- Contact: up to 256\n- Animator: up to 256\n⚠ May cause FPS drop (VRChat scans inactive components)" },
+                    { SystemLanguage.ChineseSimplified, "仅 CPU 防御：\n- 约束链：最多 2000\n- PhysBone：最多 256 条 × 256 骨骼 + 256 碰撞器\n- Contact：最多 256\n- Animator：最多 256\n⚠ 可能导致 FPS 下降（VRChat 会扫描非活跃组件）" },
+                    { SystemLanguage.Japanese, "CPU防御のみ：\n- 制約：最大2000\n- PhysBone：最大256チェーン×256ボーン+256コライダー\n- Contact：最大256\n- Animator：最大256\n⚠ FPS低下の可能性あり（VRChatが非アクティブコンポーネントをスキャン）" }
+                },
+                ["defense.desc_gpu"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "GPU Defense only:\n- Particles: MAX_INT × 355 systems (auto mesh complexity)\n- Lights: 256\n- Rigidbody: 256 + Colliders: 1024\n- Cloth: 256\n- Defense Shader: 8 GPU-intensive materials" },
+                    { SystemLanguage.ChineseSimplified, "仅 GPU 防御：\n- 粒子：MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）\n- 光源：256\n- 刚体：256 + 碰撞器：1024\n- 布料：256\n- 防御 Shader：8 个 GPU 密集材质" },
+                    { SystemLanguage.Japanese, "GPU防御のみ：\n- パーティクル：MAX_INTパーティクル×355システム（自動メッシュ複雑度）\n- ライト：256\n- Rigidbody：256+Collider：1024\n- Cloth：256\n- 防御シェーダー：GPU高負荷マテリアル×8" }
+                },
+                ["defense.desc_both"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "CPU + GPU Defense (all components filled to VRChat limits):\n- Constraint: 2000 / PhysBone: 256×256 / Contact: 256 / Animator: 256\n- Particles: MAX_INT×355 / Lights: 256 / Rigidbody: 256 / Cloth: 256\n- Defense Shader: 8 GPU-intensive materials\n⚠ CPU defense may cause FPS drop" },
+                    { SystemLanguage.ChineseSimplified, "CPU + GPU 防御（所有组件填满至 VRChat 上限）：\n- 约束：2000 / PhysBone：256×256 / Contact：256 / Animator：256\n- 粒子：MAX_INT×355 / 光源：256 / 刚体：256 / 布料：256\n- 防御 Shader：8 个 GPU 密集材质\n⚠ CPU 防御可能导致 FPS 下降" },
+                    { SystemLanguage.Japanese, "CPU+GPU防御（全コンポーネントをVRChat上限まで充填）：\n- 制約：2000 / PhysBone：256×256 / Contact：256 / Animator：256\n- パーティクル：MAX_INT×355 / ライト：256 / Rigidbody：256 / Cloth：256\n- 防御シェーダー：GPU高負荷マテリアル×8\n⚠ CPU防御はFPS低下の可能性あり" }
                 },
                 ["defense.note"] = new Dictionary<SystemLanguage, string>
                 {

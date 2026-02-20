@@ -456,24 +456,24 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Active 状态通过激活动画启用防御根对象
 - **Head Bone 跟随**：`ASS_Defense` 根对象添加 VRCParentConstraint → Head 骨骼（Z+0.05m 偏移），所有防御子组件跟随头部，确保始终位于视角前方。占用 1 个 Constraint 预算。
 
-#### 4.5.2 防御等级参数表
+#### 4.5.2 防御参数表
 
-| 参数                   | 等级 1 (CPU) | 等级 2 (CPU+GPU) | 调试模式(等级1) | 调试模式(等级2) |
-| ---------------------- | ------------ | ---------------- | --------------- | --------------- |
-| ConstraintDepth        | 2000         | 2000             | 1               | 1               |
-| ConstraintChainCount   | 2000         | 2000             | 1               | 1               |
-| PhysBoneLength         | 256          | 256              | 1               | 1               |
-| PhysBoneChainCount     | 256          | 256              | 1               | 1               |
-| PhysBoneColliders      | 256          | 256              | 1               | 1               |
-| PhysXRigidbodyCount    | 0            | 256              | 0               | 1               |
-| PhysXColliderCount     | 0            | 1024             | 0               | 1               |
-| ClothComponentCount    | 0            | 256              | 0               | 1               |
-| AnimatorComponentCount | 256          | 256              | 1               | 1               |
-| ContactCount           | 256          | 256              | 1               | 1               |
-| ParticleCount          | 0            | MAX_INT          | 0               | 1               |
-| ParticleSystemCount    | 0            | 355              | 0               | 1               |
-| LightCount             | 0            | 256              | 0               | 1               |
-| ShaderMaterialCount    | 0            | 8                | 0               | 1               |
+| 参数                   | CPU 防御 | GPU 防御 | CPU+GPU | 调试模式(CPU) | 调试模式(GPU) |
+| ---------------------- | -------- | -------- | ------- | ------------- | ------------- |
+| ConstraintDepth        | 2000     | 0        | 2000    | 1             | 0             |
+| ConstraintChainCount   | 2000     | 0        | 2000    | 1             | 0             |
+| PhysBoneLength         | 256      | 0        | 256     | 1             | 0             |
+| PhysBoneChainCount     | 256      | 0        | 256     | 1             | 0             |
+| PhysBoneColliders      | 256      | 0        | 256     | 1             | 0             |
+| PhysXRigidbodyCount    | 0        | 256      | 256     | 0             | 1             |
+| PhysXColliderCount     | 0        | 1024     | 1024    | 0             | 1             |
+| ClothComponentCount    | 0        | 256      | 256     | 0             | 1             |
+| AnimatorComponentCount | 256      | 0        | 256     | 1             | 0             |
+| ContactCount           | 256      | 0        | 256     | 1             | 0             |
+| ParticleCount          | 0        | MAX_INT  | MAX_INT | 0             | 1             |
+| ParticleSystemCount    | 0        | 355      | 355     | 0             | 1             |
+| LightCount             | 0        | 256      | 256     | 0             | 1             |
+| ShaderMaterialCount    | 0        | 8        | 8       | 0             | 1             |
 
 > 所有参数目标值设为 `Constants.cs` 定义的组件上限，实际生成数量由预算系统动态截断。调试模式下所有参数均为 1（仅验证代码路径）。
 
@@ -651,10 +651,11 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | --------------------- | ----------------- | ------ | ---------------------------------------------------------- |
 | `disabledInPlaymode`  | bool              | true   | PlayMode 时是否跳过安全系统生成                            |
 | `disableDefense`      | bool              | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
+| `enableCpuDefense`    | bool              | true   | 启用 CPU 防御（约束/PhysBone/Contact/Animator）            |
+| `enableGpuDefense`    | bool              | true   | 启用 GPU 防御（粒子/光源/刚体/布料/防御 Shader）           |
 | `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
 | `hideUI`              | bool              | false  | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈         |
 | `overflowTrick`       | bool              | false  | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648             |
-| `defenseLevel`        | int               | 2      | 防御等级 0-2（0=仅密码, 1=CPU, 2=CPU+GPU，见 §4.5.2）      |
 | `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 
 #### 音频资源（隐藏字段，自动从 Resources 加载）
@@ -807,8 +808,9 @@ Avatar Root
 ├─ 倒计时配置 ────────────────────────────────┤
 │  倒计时时间: [30━━━━━━━━━120]                │
 ├─ 防御配置 ──────────────────────────────────┤
-│  防御等级: [0-2]                             │
-│  ℹ️ 等级说明                                 │
+│  [CPU 防御]: [✓]                                │
+│  [GPU 防御]: [✓]                                │
+│  ℹ️ 防御说明                                 │
 ├─ 高级设置 ──────────────────────────────────┤
 │  调试选项                                    │
 │    [✓] PlayMode 时禁用                       │

@@ -307,24 +307,26 @@ namespace UnityBox.AvatarSecuritySystem
         {
             EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
 
-            var defenseLevelProp = serializedObject.FindProperty("defenseLevel");
-            EditorGUILayout.PropertyField(defenseLevelProp,
-                new GUIContent(T("defense.level"), T("defense.level_tooltip")));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableCpuDefense"),
+                new GUIContent(T("defense.cpu"), T("defense.cpu_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableGpuDefense"),
+                new GUIContent(T("defense.gpu"), T("defense.gpu_tooltip")));
 
             EditorGUILayout.Space(3);
-            int defenseLevelValue = defenseLevelProp.intValue;
-            EditorGUILayout.HelpBox(GetDefenseLevelDescription(defenseLevelValue), MessageType.Info);
+
+            bool cpu = serializedObject.FindProperty("enableCpuDefense").boolValue;
+            bool gpu = serializedObject.FindProperty("enableGpuDefense").boolValue;
+            string desc = GetDefenseDescription(cpu, gpu);
+            EditorGUILayout.HelpBox(desc, MessageType.Info);
         }
 
-        private string GetDefenseLevelDescription(int level)
+        private string GetDefenseDescription(bool cpu, bool gpu)
         {
-            return level switch
-            {
-                0 => T("defense.level_0_desc"),
-                1 => T("defense.level_1_desc"),
-                2 => T("defense.level_2_desc"),
-                _ => "Unknown Defense Level"
-            };
+            if (!cpu && !gpu) return T("defense.desc_none");
+            if (cpu && !gpu) return T("defense.desc_cpu");
+            if (!cpu && gpu) return T("defense.desc_gpu");
+            return T("defense.desc_both");
         }
 
         private void DrawAdvancedOptionsSection()
