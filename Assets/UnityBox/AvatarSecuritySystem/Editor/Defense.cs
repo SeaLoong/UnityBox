@@ -220,7 +220,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     int psBudget = Mathf.Max(0, Constants.PARTICLE_SYSTEM_MAX_COUNT - existingPS);
                     long existingParticleMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
                     int meshPolyBudget = (int)System.Math.Max(0L,
-                        (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingParticleMeshTris - 10_000_000L);
+                        (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingParticleMeshTris);
                     if (psBudget > 0)
                         CreateParticleComponents(root, Mathf.Min(parameters.ParticleSystemCount, psBudget),
                             parameters.ParticleCount, meshPolyBudget, defenseLights);

@@ -31,7 +31,7 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 
 - **手势密码保护** — 使用 VRChat 的 8 种手势组合作为密码
 - **倒计时机制** — 限时输入（默认 30 秒），增加破解难度
-- **视觉/音频反馈** — 全屏 Shader 遮罩 + 进度条 + 警告音效
+- **视觉/音频反馈** — 全屏 Shader 遮罩 + 进度条 + 警告音效（支持 VR 立体渲染）
 - **初始锁定** — Avatar 启动时所有功能被禁用
 - **智能防御** — 仅对穿戴者生效（IsLocal），不影响其他玩家
 - **非破坏性** — 编辑时零影响，仅在 VRChat 构建时自动生成
@@ -342,6 +342,8 @@ Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> Warni
 - 创建全屏 Shader 覆盖遮罩（`UnityBox/ASS_UI`）
 - 倒计时进度条（通过 Shader 材质属性动画驱动）
 - 不依赖 Canvas 或 VRCParentConstraint，通过 Shader 顶点变换直接覆盖全屏
+- VR 立体渲染支持（Single Pass Instanced 模式）
+- 表情镜遮挡（通过 Stencil 写入 255）
 
 #### UI 结构
 
@@ -349,9 +351,20 @@ Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> Warni
 ASS_UI (默认禁用，锁定时通过动画启用)
 ├─ Overlay (MeshRenderer + MeshFilter)
 │   └─ Material: UnityBox/ASS_UI Shader（全屏遮罩 + 进度条）
+│       ├─ GPU Instancing 启用
+│       └─ renderQueue = 5000 (Overlay+5000)
 ├─ ASS_Audio_Success (AudioSource)
 └─ ASS_Audio_Warning (AudioSource)
 ```
+
+#### VR 渲染方案
+
+Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
+
+1. **顶点着色器**：从 UV 计算目标 NDC，反推 view-space 位置（距相机 100m），再用逐眼 `UNITY_MATRIX_P` 正向投影回 clip space。此方式同时产生正确的深度值（使 Stencil 和深度交互正常工作）。
+2. **片段着色器**：通过 `eyeShift = P[0][2] * 0.5` 补偿左右眼的投影偏移（SPI 模式下逐眼 P 矩阵含不对称偏移），使两眼看到居中的相同内容（零视差 HUD 效果）。
+3. **FOV 自适应缩放**：使用 `unity_CameraProjection[1][1]`（中心眼，双眼相同）计算缩放因子。桌面端（60° FOV）内容接近全屏，VR（100°+ FOV）内容缩到屏幕中央 ~40%，远离镜片边缘畸变区。
+4. **表情镜遮挡**：反向投影产生的真实深度值 + Stencil Ref 255 写入，破坏了 VRChat 表情镜的渲染条件。
 
 ---
 
@@ -361,7 +374,10 @@ ASS_UI (默认禁用，锁定时通过动画启用)
 
 - 倒计时结束后激活防御（仅本地生效）
 - 根据防御等级自动计算参数，填充到 VRChat 组件上限
-- 考虑 Avatar 已有组件数量，仅填充剩余空间
+- 惰性预算统计：仅在对应功能启用时才统计已有组件数量
+- 所有组件类型均有已有数量统计和预算控制，包括：
+  - CPU: Constraint、PhysBone、PhysBoneCollider、Contact、Animator
+  - GPU: Material、Vertex、Light、ParticleSystem、ParticleMeshTriangle、Rigidbody、Collider、Cloth
 
 #### 防御机制
 
