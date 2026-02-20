@@ -125,9 +125,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             meshRenderer.sharedMaterial = material;
+            material.enableInstancing = true;
 
-            // 强制设置极高渲染队列，确保在镜子、地图物体等之上渲染
-            material.renderQueue = 5000;  // Overlay+5000
+            material.renderQueue = 5000;
 
             // 禁用所有可能导致被剔除的功能
             meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

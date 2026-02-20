@@ -24,7 +24,6 @@ Shader "UnityBox/ASS_UI"
         ColorMask RGBA
         Offset -1, -1
 
-        // Stencil: 强制写入最高值，确保不被任何后续 Stencil 操作剔除
         Stencil
         {
             Ref 255
@@ -39,6 +38,7 @@ Shader "UnityBox/ASS_UI"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
 
@@ -46,12 +46,15 @@ Shader "UnityBox/ASS_UI"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
             {
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             fixed4 _A7F3;
@@ -68,6 +71,10 @@ Shader "UnityBox/ASS_UI"
             v2f vert(appdata v)
             {
                 v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 o.pos = float4(v.uv * 2.0 - 1.0, 0, 1);
                 #if UNITY_UV_STARTS_AT_TOP
                 o.pos.y = -o.pos.y;
@@ -78,7 +85,13 @@ Shader "UnityBox/ASS_UI"
 
             fixed4 frag(v2f i) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(i);
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
                 float2 uv = i.uv;
+
+                float _cs = clamp(1.2 / max(unity_CameraProjection[1][1], 0.01), 1.0, 2.0);
+                float2 cUV = (uv - 0.5) * _cs + 0.5;
+
                 float barCenterY = 0.5 + _E3B5;
                 float barBottom = barCenterY - _D1A8 * 0.5;
                 float barTop = barCenterY + _D1A8 * 0.5;
@@ -86,8 +99,8 @@ Shader "UnityBox/ASS_UI"
                 float barLeft = _F0C2;
                 float barRight = _F0C2 + (1.0 - 2.0 * _F0C2) * _C9D4;
 
-                bool inBar = (uv.y >= barBottom && uv.y <= barTop &&
-                              uv.x >= barLeft && uv.x <= barRight);
+                bool inBar = (cUV.y >= barBottom && cUV.y <= barTop &&
+                              cUV.x >= barLeft && cUV.x <= barRight);
 
                 fixed4 baseColor = inBar ? _B2E1 : _A7F3;
 
@@ -101,12 +114,12 @@ Shader "UnityBox/ASS_UI"
                 float2 logoMin = float2(0.5 - logoWidth * 0.5, logoCenterY - logoHeight * 0.5);
                 float2 logoMax = float2(0.5 + logoWidth * 0.5, logoCenterY + logoHeight * 0.5);
 
-                bool inLogo = (uv.x >= logoMin.x && uv.x <= logoMax.x &&
-                               uv.y >= logoMin.y && uv.y <= logoMax.y);
+                bool inLogo = (cUV.x >= logoMin.x && cUV.x <= logoMax.x &&
+                               cUV.y >= logoMin.y && cUV.y <= logoMax.y);
 
                 if (inLogo && _H6E7 > 0.001)
                 {
-                    float2 logoUV = (uv - logoMin) / (logoMax - logoMin);
+                    float2 logoUV = (cUV - logoMin) / (logoMax - logoMin);
                     fixed4 logoColor = tex2D(_G4D9, logoUV);
                     baseColor = lerp(baseColor, logoColor, logoColor.a);
                 }

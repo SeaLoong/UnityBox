@@ -80,15 +80,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (existingRoot != null)
                 Object.DestroyImmediate(existingRoot.gameObject);
 
-            int existingPhysBones = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
-            int existingColliders = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
-            int existingConstraints = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
-            int existingContacts = avatarRoot.GetComponentsInChildren<VRCContactSender>(true).Length
-                                 + avatarRoot.GetComponentsInChildren<VRCContactReceiver>(true).Length;
-            int existingRigidbodies = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
-            int existingCloth = avatarRoot.GetComponentsInChildren<Cloth>(true).Length;
-            int existingAnimators = avatarRoot.GetComponentsInChildren<Animator>(true).Length;
-
             var root = new GameObject(Constants.GO_DEFENSE_ROOT);
             root.transform.SetParent(avatarRoot.transform);
             root.transform.localPosition = Vector3.zero;
@@ -101,129 +92,178 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             bool enableCpu = config.defenseLevel >= 1;
             bool enableGpu = config.defenseLevel >= 2;
 
-            int constraintBudget = Mathf.Max(0, Constants.CONSTRAINT_MAX_COUNT - existingConstraints);
-            int pbBudget = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
-            int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
-
-            int existingCollisionChecks = 0;
-            foreach (var pb in avatarRoot.GetComponentsInChildren<VRCPhysBone>(true))
-            {
-                int colCount = 0;
-                if (pb.colliders != null)
-                    foreach (var col in pb.colliders)
-                        if (col != null) colCount++;
-                if (colCount == 0) continue;
-                Transform pbRoot = pb.rootTransform != null ? pb.rootTransform : pb.transform;
-                existingCollisionChecks += colCount * CountTransformsInHierarchy(pbRoot);
-            }
-            int colliderCheckBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_CHECK_MAX_COUNT - existingCollisionChecks);
-            int contactBudget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - existingContacts);
-            int rigidbodyBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRigidbodies);
-            int clothBudget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existingCloth);
-            int animatorBudget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existingAnimators);
-
-            Transform headBone = null;
-            foreach (var t in avatarRoot.GetComponentsInChildren<Transform>(true))
-            {
-                if (t.name == "Head" || t.name == "head") { headBone = t; break; }
-            }
-            if (headBone != null)
-            {
-                var headConstraint = root.AddComponent<VRCParentConstraint>();
-                headConstraint.Sources.Add(new VRCConstraintSource
-                {
-                    Weight = 1f,
-                    SourceTransform = headBone,
-                    ParentPositionOffset = new Vector3(0f, 0f, 0.05f),
-                    ParentRotationOffset = Vector3.zero
-                });
-                ActivateConstraint(headConstraint, true, true);
-                constraintBudget = Mathf.Max(0, constraintBudget - 1);
-            }
-
             if (enableCpu)
             {
-                if (parameters.ConstraintChainCount > 0 && constraintBudget > 0)
-                    FillConstraintChains(root, parameters.ConstraintChainCount, parameters.ConstraintDepth, constraintBudget);
-
-                if (parameters.PhysBoneChainCount > 0 && pbBudget > 0)
+                if (parameters.ConstraintChainCount > 0)
                 {
-                    int chainBudget = Mathf.Min(parameters.PhysBoneChainCount, pbBudget);
-                    int colliderBudgetRemaining = Mathf.Min(parameters.PhysBoneColliders, colliderBudget);
-                    int checksRemaining = colliderCheckBudget;
-                    int chainsCreated = 0;
+                    int existing = avatarRoot.GetComponentsInChildren<VRCConstraintBase>(true).Length;
+                    int budget = Mathf.Max(0, Constants.CONSTRAINT_MAX_COUNT - existing);
 
-                    while (chainsCreated < chainBudget)
+                    Transform headBone = null;
+                    foreach (var t in avatarRoot.GetComponentsInChildren<Transform>(true))
                     {
-                        int remainingChains = chainBudget - chainsCreated;
-
-                        int collidersForThis = colliderBudgetRemaining / remainingChains;
-
-                        int checkAllowance = checksRemaining / remainingChains;
-                        int chainLength = parameters.PhysBoneLength;
-                        if (collidersForThis > 0 && checkAllowance > 0)
+                        if (t.name == "Head" || t.name == "head") { headBone = t; break; }
+                    }
+                    if (headBone != null && budget > 0)
+                    {
+                        var headConstraint = root.AddComponent<VRCParentConstraint>();
+                        headConstraint.Sources.Add(new VRCConstraintSource
                         {
-                            chainLength = Mathf.Min(chainLength, checkAllowance / collidersForThis);
-                        }
-                        else if (collidersForThis > 0)
+                            Weight = 1f,
+                            SourceTransform = headBone,
+                            ParentPositionOffset = new Vector3(0f, 0f, 0.05f),
+                            ParentRotationOffset = Vector3.zero
+                        });
+                        ActivateConstraint(headConstraint, true, true);
+                        budget--;
+                    }
+
+                    if (budget > 0)
+                        FillConstraintChains(root, parameters.ConstraintChainCount, parameters.ConstraintDepth, budget);
+                }
+
+                if (parameters.PhysBoneChainCount > 0)
+                {
+                    int existingPB = avatarRoot.GetComponentsInChildren<VRCPhysBone>(true).Length;
+                    int existingCol = avatarRoot.GetComponentsInChildren<VRCPhysBoneCollider>(true).Length;
+                    int pbBudget = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPB);
+                    int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingCol);
+
+                    int existingCollisionChecks = 0;
+                    foreach (var pb in avatarRoot.GetComponentsInChildren<VRCPhysBone>(true))
+                    {
+                        int colCount = 0;
+                        if (pb.colliders != null)
+                            foreach (var col in pb.colliders)
+                                if (col != null) colCount++;
+                        if (colCount == 0) continue;
+                        Transform pbRoot = pb.rootTransform != null ? pb.rootTransform : pb.transform;
+                        existingCollisionChecks += colCount * CountTransformsInHierarchy(pbRoot);
+                    }
+                    int colliderCheckBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_CHECK_MAX_COUNT - existingCollisionChecks);
+
+                    if (pbBudget > 0)
+                    {
+                        int chainBudget = Mathf.Min(parameters.PhysBoneChainCount, pbBudget);
+                        int colliderBudgetRemaining = Mathf.Min(parameters.PhysBoneColliders, colliderBudget);
+                        int checksRemaining = colliderCheckBudget;
+                        int chainsCreated = 0;
+
+                        while (chainsCreated < chainBudget)
                         {
-                            collidersForThis = 0;
+                            int remainingChains = chainBudget - chainsCreated;
+                            int collidersForThis = colliderBudgetRemaining / remainingChains;
+                            int checkAllowance = checksRemaining / remainingChains;
+                            int chainLength = parameters.PhysBoneLength;
+                            if (collidersForThis > 0 && checkAllowance > 0)
+                            {
+                                chainLength = Mathf.Min(chainLength, checkAllowance / collidersForThis);
+                            }
+                            else if (collidersForThis > 0)
+                            {
+                                collidersForThis = 0;
+                            }
+                            chainLength = Mathf.Max(1, chainLength);
+
+                            CreatePhysBoneChain(root, chainLength, collidersForThis, chainsCreated);
+
+                            int checksUsed = collidersForThis * chainLength;
+                            checksRemaining -= checksUsed;
+                            colliderBudgetRemaining -= collidersForThis;
+                            chainsCreated++;
                         }
-                        chainLength = Mathf.Max(1, chainLength);
-
-                        CreatePhysBoneChain(root, chainLength, collidersForThis, chainsCreated);
-
-                        int checksUsed = collidersForThis * chainLength;
-                        checksRemaining -= checksUsed;
-                        colliderBudgetRemaining -= collidersForThis;
-                        chainsCreated++;
                     }
                 }
 
-                if (parameters.ContactCount > 0 && contactBudget > 0)
-                    FillContacts(root, Mathf.Min(parameters.ContactCount, contactBudget));
+                if (parameters.ContactCount > 0)
+                {
+                    int existing = avatarRoot.GetComponentsInChildren<VRCContactSender>(true).Length
+                                 + avatarRoot.GetComponentsInChildren<VRCContactReceiver>(true).Length;
+                    int budget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - existing);
+                    if (budget > 0)
+                        FillContacts(root, Mathf.Min(parameters.ContactCount, budget));
+                }
 
-                if (parameters.AnimatorComponentCount > 0 && animatorBudget > 0)
-                    CreateAnimatorComponents(root, Mathf.Min(parameters.AnimatorComponentCount, animatorBudget));
+                if (parameters.AnimatorComponentCount > 0)
+                {
+                    int existing = avatarRoot.GetComponentsInChildren<Animator>(true).Length;
+                    int budget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existing);
+                    if (budget > 0)
+                        CreateAnimatorComponents(root, Mathf.Min(parameters.AnimatorComponentCount, budget));
+                }
             }
 
             if (enableGpu)
             {
                 if (parameters.MaterialCount > 0)
-                    CreateMaterialComponents(root, parameters);
+                {
+                    int existingMats = CountExistingMaterialSlots(avatarRoot);
+                    int materialBudget = Mathf.Max(0, Constants.MATERIAL_MAX_COUNT - existingMats);
+                    int existingVerts = CountExistingVertices(avatarRoot);
+                    int vertexBudget = Mathf.Max(0, Constants.POLY_VERTICES_MAX_COUNT - existingVerts);
+                    if (materialBudget > 0 && vertexBudget > 0)
+                        CreateMaterialComponents(root, Mathf.Min(parameters.MaterialCount, materialBudget), vertexBudget);
+                }
 
                 Light[] defenseLights = null;
                 if (parameters.LightCount > 0)
-                    defenseLights = CreateLightComponents(root, parameters.LightCount);
+                {
+                    int existing = avatarRoot.GetComponentsInChildren<Light>(true).Length;
+                    int budget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existing);
+                    if (budget > 0)
+                        defenseLights = CreateLightComponents(root, Mathf.Min(parameters.LightCount, budget));
+                }
 
                 if (parameters.ParticleCount > 0)
-                    CreateParticleComponents(root, parameters.ParticleSystemCount, parameters.ParticleCount, defenseLights);
+                {
+                    int existingPS = avatarRoot.GetComponentsInChildren<ParticleSystem>(true).Length;
+                    int psBudget = Mathf.Max(0, Constants.PARTICLE_SYSTEM_MAX_COUNT - existingPS);
+                    long existingParticleMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
+                    int meshPolyBudget = (int)System.Math.Max(0L,
+                        (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingParticleMeshTris - 10_000_000L);
+                    if (psBudget > 0)
+                        CreateParticleComponents(root, Mathf.Min(parameters.ParticleSystemCount, psBudget),
+                            parameters.ParticleCount, meshPolyBudget, defenseLights);
+                }
 
-                if (parameters.PhysXRigidbodyCount > 0 && rigidbodyBudget > 0)
-                    CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rigidbodyBudget), parameters.PhysXColliderCount);
+                if (parameters.PhysXRigidbodyCount > 0)
+                {
+                    int existingRB = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
+                    int rbBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRB);
+                    int existingCol = avatarRoot.GetComponentsInChildren<Collider>(true).Length;
+                    int colBudget = Mathf.Max(0, Constants.RIGIDBODY_COLLIDER_MAX_COUNT - existingCol);
+                    if (rbBudget > 0)
+                        CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rbBudget),
+                            Mathf.Min(parameters.PhysXColliderCount, colBudget));
+                }
 
-                if (parameters.ClothComponentCount > 0 && clothBudget > 0)
-                    CreateClothComponents(root, Mathf.Min(parameters.ClothComponentCount, clothBudget));
+                if (parameters.ClothComponentCount > 0)
+                {
+                    int existing = avatarRoot.GetComponentsInChildren<Cloth>(true).Length;
+                    int budget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existing);
+                    if (budget > 0)
+                        CreateClothComponents(root, Mathf.Min(parameters.ClothComponentCount, budget));
+                }
             }
 
             return root;
         }
 
-        private void CreateMaterialComponents(GameObject root, DefenseParams parameters)
+        private void CreateMaterialComponents(GameObject root, int materialCount, int polyVertices)
         {
             var materialRoot = new GameObject("MaterialDefense");
             materialRoot.transform.SetParent(root.transform);
             materialRoot.transform.localPosition = Vector3.zero;
 
-            int baseVerticesPerMesh = parameters.PolyVertices / Mathf.Max(1, parameters.MaterialCount);
-            int extraVertices = parameters.PolyVertices % Mathf.Max(1, parameters.MaterialCount);
+            int baseVerticesPerMesh = polyVertices / Mathf.Max(1, materialCount);
+            int extraVertices = polyVertices % Mathf.Max(1, materialCount);
 
-            int texturePoolSize = parameters.MaterialCount;
+            int texturePoolSize = materialCount;
             var texturePool = new RenderTexture[texturePoolSize];
             for (int t = 0; t < texturePoolSize; t++)
                 texturePool[t] = CreateRenderTexture(t);
 
-            for (int i = 0; i < parameters.MaterialCount; i++)
+            for (int i = 0; i < materialCount; i++)
             {
                 var material = CreateMaterial(i, texturePool);
                 if (material == null)
@@ -590,23 +630,75 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         }
 
-        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget, Light[] lights)
+        private static int CountExistingMaterialSlots(GameObject avatarRoot)
         {
+            int count = 0;
+            foreach (var renderer in avatarRoot.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.sharedMaterials != null)
+                    count += renderer.sharedMaterials.Length;
+            }
+            return count;
+        }
+
+        private static int CountExistingVertices(GameObject avatarRoot)
+        {
+            int total = 0;
+            foreach (var smr in avatarRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh != null)
+                    total += smr.sharedMesh.vertexCount;
+            }
+            foreach (var mf in avatarRoot.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (mf.sharedMesh != null)
+                    total += mf.sharedMesh.vertexCount;
+            }
+            return total;
+        }
+
+        private static long CountExistingParticleMeshTriangles(GameObject avatarRoot)
+        {
+            long total = 0;
+            foreach (var ps in avatarRoot.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var r = ps.GetComponent<ParticleSystemRenderer>();
+                if (r == null) continue;
+
+                long trisPerParticle;
+                if (r.renderMode == ParticleSystemRenderMode.Mesh && r.mesh != null)
+                    trisPerParticle = r.mesh.triangles.Length / 3;
+                else
+                    trisPerParticle = 2;
+
+                total += (long)ps.main.maxParticles * trisPerParticle;
+            }
+            return total;
+        }
+
+        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget, int meshPolyBudget, Light[] lights)
+        {
+            if (meshPolyBudget <= 0)
+            {
+                Debug.LogWarning("[ASS] Particle mesh polygon budget exhausted by existing avatar particles, skipping particle defense");
+                return;
+            }
+
             var particleRoot = new GameObject("ParticleDefense");
             particleRoot.transform.SetParent(root.transform);
 
             int meshSubdivisions = 2;
             int meshTriangles = meshSubdivisions * meshSubdivisions * 2;
 
-            if (particleBudget > 0 && particleBudget <= Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles)
+            if (particleBudget > 0 && particleBudget <= meshPolyBudget / meshTriangles)
             {
-                int maxTrisPerParticle = Constants.MESH_PARTICLE_MAX_POLYGONS / particleBudget;
+                int maxTrisPerParticle = meshPolyBudget / particleBudget;
                 meshSubdivisions = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(maxTrisPerParticle / 2f)), 2, 200);
                 meshTriangles = meshSubdivisions * meshSubdivisions * 2;
             }
             else if (particleBudget > 0)
             {
-                particleBudget = Constants.MESH_PARTICLE_MAX_POLYGONS / meshTriangles;
+                particleBudget = meshPolyBudget / meshTriangles;
             }
 
             int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
