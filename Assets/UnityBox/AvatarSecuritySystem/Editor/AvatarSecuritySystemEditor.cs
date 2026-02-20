@@ -307,26 +307,8 @@ namespace UnityBox.AvatarSecuritySystem
         {
             EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableCpuDefense"),
-                new GUIContent(T("defense.cpu"), T("defense.cpu_tooltip")));
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableGpuDefense"),
-                new GUIContent(T("defense.gpu"), T("defense.gpu_tooltip")));
-
             EditorGUILayout.Space(3);
-
-            bool cpu = serializedObject.FindProperty("enableCpuDefense").boolValue;
-            bool gpu = serializedObject.FindProperty("enableGpuDefense").boolValue;
-            string desc = GetDefenseDescription(cpu, gpu);
-            EditorGUILayout.HelpBox(desc, MessageType.Info);
-        }
-
-        private string GetDefenseDescription(bool cpu, bool gpu)
-        {
-            if (!cpu && !gpu) return T("defense.desc_none");
-            if (cpu && !gpu) return T("defense.desc_cpu");
-            if (!cpu && gpu) return T("defense.desc_gpu");
-            return T("defense.desc_both");
+            EditorGUILayout.HelpBox(T("defense.desc_gpu"), MessageType.Info);
         }
 
         private void DrawAdvancedOptionsSection()

@@ -59,12 +59,6 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
-        [Tooltip("#{defense.cpu_tooltip}")]
-        public bool enableCpuDefense = true;
-
-        [Tooltip("#{defense.gpu_tooltip}")]
-        public bool enableGpuDefense = true;
-
         [Tooltip("#{advanced.hide_ui_tooltip}")]
         public bool hideUI = false;
 
@@ -197,8 +191,6 @@ namespace UnityBox.AvatarSecuritySystem
             warningThreshold = defaultWarningThreshold;
             disabledInPlaymode = true;
             disableRootChildren = true;
-            enableCpuDefense = true;
-            enableGpuDefense = true;
         }
 #endif
     }

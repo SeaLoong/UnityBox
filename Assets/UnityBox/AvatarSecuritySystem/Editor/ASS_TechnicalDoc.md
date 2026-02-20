@@ -2,13 +2,13 @@
 
 ## 1. 系统概述
 
-Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在 Avatar 构建/上传时自动注入密码验证和防御机制，当密码未正确输入时，通过消耗盗用者客户端的 CPU/GPU 资源使被盗 Avatar 无法正常使用。
+Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在 Avatar 构建/上传时自动注入密码验证和防御机制，当密码未正确输入时，通过消耗盗用者客户端的 GPU 资源使被盗 Avatar 无法正常使用。
 
 ### 1.1 核心特性
 
 - **手势密码验证**：通过 VRChat 左/右手手势组合作为密码
 - **倒计时机制**：限时密码输入，超时自动触发防御
-- **多层防御**：CPU 防御（Constraint、PhysBone、Contact）+ GPU 防御（防御 Shader、粒子、光源、布料、物理）
+- **GPU 防御**：防御 Shader、粒子、光源、布料、物理等组件填满至 VRChat 上限
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御仅在本地端触发，远端玩家看到正常 Avatar
 - **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
@@ -18,7 +18,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
 2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理
-3. **VRChat 限制遵守**：严格遵守 PhysBone (256)、Contact (200)、Constraint (2000)、PhysBone Collider (256) 等组件数量上限，自动检测已有组件预算
+3. **VRChat 限制遵守**：严格遵守 Rigidbody (256)、Cloth (256)、Light (256)、ParticleSystem (355) 等组件数量上限，自动检测已有组件预算
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
 ---
@@ -34,7 +34,7 @@ Editor/
 ├── GesturePassword.cs        # 手势密码验证层生成器
 ├── Countdown.cs              # 倒计时 + 音频警告层生成器
 ├── Feedback.cs               # 视觉反馈（全屏 Shader 覆盖 + Logo）生成器
-├── Defense.cs                # CPU/GPU 防御组件生成器
+├── Defense.cs                # GPU 防御组件生成器
 ├── Constants.cs              # 系统常量定义
 ├── Utils.cs                  # 通用工具类（Animator 操作、VRC 行为、路径处理）
 ├── I18n.cs                   # 国际化
@@ -399,7 +399,6 @@ Remote ──(PasswordCorrect)────────────────�
 
 - **渲染方式**: 使用自定义 Shader (`UnityBox/ASS_UI`) 直接渲染到摄像机全屏
   - Shader 在顶点着色器中将 Quad 顶点直接映射到裁剪空间覆盖整个屏幕
-  - **不需要** VRCParentConstraint 绑定到头部骨骼
   - **不需要** 世界空间定位
 - **位置**: 作为 Avatar 根对象的直接子对象
 - **默认状态**: `SetActive(false)`，仅 Locked 状态时由动画启用
@@ -454,84 +453,33 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Active 状态使用 `ASS_DefenseActivate` 动画剪辑（设置 `ASS_Defense` 的 `m_IsActive = 1`）
 - 防御组件挂载在 `ASS_Defense` 对象下，默认 `SetActive(false)`
 - Active 状态通过激活动画启用防御根对象
-- **Head Bone 跟随**：`ASS_Defense` 根对象添加 VRCParentConstraint → Head 骨骼（Z+0.05m 偏移），所有防御子组件跟随头部，确保始终位于视角前方。占用 1 个 Constraint 预算。
 
 #### 4.5.2 防御参数表
 
-| 参数                   | CPU 防御 | GPU 防御 | CPU+GPU | 调试模式(CPU) | 调试模式(GPU) |
-| ---------------------- | -------- | -------- | ------- | ------------- | ------------- |
-| ConstraintDepth        | 2000     | 0        | 2000    | 1             | 0             |
-| ConstraintChainCount   | 2000     | 0        | 2000    | 1             | 0             |
-| PhysBoneLength         | 256      | 0        | 256     | 1             | 0             |
-| PhysBoneChainCount     | 256      | 0        | 256     | 1             | 0             |
-| PhysBoneColliders      | 256      | 0        | 256     | 1             | 0             |
-| PhysXRigidbodyCount    | 0        | 256      | 256     | 0             | 1             |
-| PhysXColliderCount     | 0        | 1024     | 1024    | 0             | 1             |
-| ClothComponentCount    | 0        | 256      | 256     | 0             | 1             |
-| AnimatorComponentCount | 256      | 0        | 256     | 1             | 0             |
-| ContactCount           | 256      | 0        | 256     | 1             | 0             |
-| ParticleCount          | 0        | MAX_INT  | MAX_INT | 0             | 1             |
-| ParticleSystemCount    | 0        | 355      | 355     | 0             | 1             |
-| LightCount             | 0        | 256      | 256     | 0             | 1             |
-| ShaderMaterialCount    | 0        | 8        | 8       | 0             | 1             |
+| 参数                | 正常模式 | 调试模式 |
+| ------------------- | -------- | -------- |
+| PhysXRigidbodyCount | 256      | 1        |
+| PhysXColliderCount  | 1024     | 1        |
+| ClothComponentCount | 256      | 1        |
+| ParticleCount       | MAX_INT  | 1        |
+| ParticleSystemCount | 355      | 1        |
+| LightCount          | 256      | 1        |
+| ShaderMaterialCount | 8        | 1        |
 
 > 所有参数目标值设为 `Constants.cs` 定义的组件上限，实际生成数量由预算系统动态截断。调试模式下所有参数均为 1（仅验证代码路径）。
 
-#### 4.5.3 CPU 防御详解
+#### 4.5.3 GPU 防御详解
 
-所有 CPU 防御组件采用统一的预算填充分配方式：检测已有组件数量 → 计算剩余预算 → 按目标值与预算取较小值生成。
+**PhysX Rigidbody + Collider** (`CreatePhysXComponents`)
 
-**VRCParentConstraint 链** (`FillConstraintChains`)
-
-逐链顺序填充，每个节点仅附加 1 个 VRCParentConstraint（包含位置+旋转约束，CPU 开销最高的约束类型），每个节点消耗 1 个约束预算。预算耗尽即停止创建。
-
-- 每节点的 ParentConstraint 源指向链中前一个节点
-- 约束属性：`IsActive = true`, `Locked = true`（通过 `ActivateConstraint` 使用 SerializedObject 设置）
-- ConstraintChainCount 设为 CONSTRAINT_MAX_COUNT，由预算截断实际链数
-- ConstraintDepth=CONSTRAINT_MAX_COUNT，每链最大深度由预算截断
-
-**VRCPhysBone 链** (`CreatePhysBoneChain`)
-
-每条链由 `chainLength` 个骨骼节点组成，配置：
-
-- 积分类型：`Advanced`（高计算复杂度）
-- `Pull = 0.8`, `Spring = 0.8`, `Stiffness = 0.5`, `Gravity = 0.5`
-- 每个参数都配有 AnimationCurve（共 6 条 Curve：pull/spring/stiffness/gravity/gravityFalloff/immobile）
-- 限制：`LimitType.Angle`, `MaxAngleX/Z = 45°`, `LimitRotation = (15, 30, 15)`
-- 拉伸：`MaxStretch = 0.5`
-- 抓取：`AllowGrabbing = True`, `AllowPosing = True`, `GrabMovement = 0.8`, `SnapToHand = true`
-- 每条链附加 `collidersPerChain` 个 VRCPhysBoneCollider（Capsule 类型，半径 0.3m，高度 1.0m，`InsideBounds = true`）
-- Collider 按总链数均匀分配，余数依次分配给前几条链
-- Collider 实际生成数量取 `min(PhysBoneColliders参数, colliderBudget)` 确保不超过参数目标值和系统预算
-- PB Collider Check Count = `总碰撞器数 × physBoneLength`，上限 10000：先遍历现有 PhysBone 计算已占用的 Collision Check 数（每个 PB 的 colliders 数 × 链内 Transform 数），从预算中扣除后，若仍超限则自动减少总碰撞器数为 `colliderCheckBudget / physBoneLength`
-
-**VRCContact 系统** (`FillContacts`)
-
-成对创建 Sender + Receiver，总数不超过 Contact 预算：
-
-- Sender 数 = `(componentCount + 1) / 2`，Receiver 数 = `componentCount / 2`
-- 形状：Capsule（半径 1.0m，高度 2.0m）
-- 碰撞标签：`["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"]`
-- `localOnly = false`（VRC ContactPerformanceScanner 仅计入 `localOnly == false` 的 Contact）
-
-**Animator 组件** (`CreateAnimatorComponents`，等级 1+，`enableCpu` 保护)
-
-受 Animator 预算限制：
-
-- 每个 Animator 绑定空的 RuntimeAnimatorController
-- `cullingMode = AlwaysAnimate`（禁用剔除强制更新）
-- VRChat 同步系统会强制同步所有 Animator 参数状态
-
-**PhysX Rigidbody + Collider** (`CreatePhysXComponents`，等级 2，`enableGpu` 保护)
-
-利用物理引擎计算增加 CPU 开销，受 Rigidbody 预算限制：
+受 Rigidbody 预算限制：
 
 - 每个 Rigidbody：`mass = 100`, `drag = 50`, `angularDrag = 50`, `useGravity = false`, `isKinematic = false`, `ContinuousSpeculative`, `FreezeAll`
 - 每个 Rigidbody 附加 `PhysXColliderCount / rigidbodyCount` 个 Collider（BoxCollider 和 SphereCollider 交替）
 
-**Cloth 布料** (`CreateClothComponents`，等级 2，`enableGpu` 保护)
+**Cloth 布料** (`CreateClothComponents`)
 
-布料模拟 CPU 密集，受 Cloth 预算限制：
+受 Cloth 预算限制：
 
 - 每个布料网格顶点数动态计算：`gridSizePlus1 = clamp(floor(sqrt(TOTAL_CLOTH_VERTICES_MAX / clothCount)), 3, 500)`
 - `clothSolverFrequency = 240`，`damping = 0.9`，`selfCollisionStiffness = 0.2`，`worldVelocityScale = 0`
@@ -541,9 +489,9 @@ Inactive ──(IsLocal && TimeUp)──→ Active
   - `allowOcclusionWhenDynamic = false`（禁止遮挡剔除）
   - `mesh.bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
 
-> **注意**: 系统自动检测 Avatar 上已有的 PhysBone、PhysBone Collider、Constraint、Contact (Sender + Receiver)、Rigidbody、Cloth、Animator 数量，计算可用预算后动态调整防御组件数量，确保总数不超过配置上限。Animator 在等级 1+ (`enableCpu`) 下创建，PhysX、Cloth 组件仅在等级 2 (`enableGpu`) 下创建。
+> **注意**: 系统自动检测 Avatar 上已有的 Rigidbody、Cloth、Light、ParticleSystem 数量，计算可用预算后动态调整防御组件数量，确保总数不超过配置上限。
 
-#### 4.5.4 GPU 防御详解
+#### 4.5.4 粒子/光源/Shader 防御详解
 
 **粒子防御** (`CreateParticleComponents`)
 
@@ -651,8 +599,6 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | --------------------- | ----------------- | ------ | ---------------------------------------------------------- |
 | `disabledInPlaymode`  | bool              | true   | PlayMode 时是否跳过安全系统生成                            |
 | `disableDefense`      | bool              | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
-| `enableCpuDefense`    | bool              | true   | 启用 CPU 防御（约束/PhysBone/Contact/Animator）            |
-| `enableGpuDefense`    | bool              | true   | 启用 GPU 防御（粒子/光源/刚体/布料/防御 Shader）           |
 | `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
 | `hideUI`              | bool              | false  | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈         |
 | `overflowTrick`       | bool              | false  | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648             |
@@ -717,7 +663,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
 - GameObject 名称 (`GO_UI`, `GO_AUDIO_WARNING`, `GO_AUDIO_SUCCESS`, `GO_DEFENSE_ROOT`)
-- VRChat 组件上限 (`PHYSBONE_MAX_COUNT=256`, `CONTACT_MAX_COUNT=256`, `CONSTRAINT_MAX_COUNT=2000`, `PHYSBONE_COLLIDER_MAX_COUNT=256`, `PHYSBONE_COLLIDER_CHECK_MAX_COUNT=10000`, `RIGIDBODY_MAX_COUNT=256`, `CLOTH_MAX_COUNT=256`, `ANIMATOR_MAX_COUNT=256`, `POLY_VERTICES_MAX_COUNT=2560000`, `PARTICLE_MAX_COUNT=2147483647`, `PARTICLE_SYSTEM_MAX_COUNT=355`, `LIGHT_MAX_COUNT=256`, `MATERIAL_MAX_COUNT=256`, `MESH_PARTICLE_MAX_POLYGONS=2147483647`, `TOTAL_CLOTH_VERTICES_MAX=2560000`)
+- VRChat 组件上限 (`RIGIDBODY_MAX_COUNT=256`, `RIGIDBODY_COLLIDER_MAX_COUNT=1024`, `CLOTH_MAX_COUNT=256`, `PARTICLE_MAX_COUNT=2147483647`, `PARTICLE_SYSTEM_MAX_COUNT=355`, `LIGHT_MAX_COUNT=256`, `SHADER_DEFENSE_COUNT=8`, `MESH_PARTICLE_MAX_POLYGONS=2147483647`, `TOTAL_CLOTH_VERTICES_MAX=2560000`)
 
 ---
 
@@ -752,38 +698,22 @@ Avatar Root
 ├── ASS_Audio_Success
 │   AudioSource (spatialBlend=0, volume=0.5)
 │
-└── ASS_Defense (默认禁用, VRCParentConstraint → Head骨骼 Z+0.05m)
-    ├── Chain_0/
-    │   └── C_0 ~ C_{depth} (每节点仅 VRCParentConstraint)
-    ├── Chain_1/ ...
-    │
-    ├── PhysBone_0/
-    │   ├── BoneChain_0/
-    │   │   └── B_0 ~ B_{length} (VRCPhysBone, Advanced模式)
-    │   └── Col_0 ~ Col_{count} (VRCPhysBoneCollider, Capsule)
-    │
-    ├── ContactSystem/
-    │   ├── S_0 ~ S_{half} (VRCContactSender, 5标签, localOnly=false)
-    │   └── R_0 ~ R_{half} (VRCContactReceiver, 5标签, localOnly=false)
-    │
-    ├── PhysXDefense/ (等级2)
+└── ASS_Defense (默认禁用)
+    ├── PhysXDefense/
     │   └── Rigidbody_0 ~ Rigidbody_{count}
     │       └── Collider_0 ~ Collider_{n} (Box/Sphere交替)
     │
-    ├── ClothDefense/ (等级2)
+    ├── ClothDefense/
     │   └── Cloth_0 ~ Cloth_{count} (动态网格, updateWhenOffscreen, bounds=1)
     │
-    ├── AnimatorDefense/ (等级1+)
-    │   └── Animator_0 ~ Animator_{count} (空Controller, AlwaysAnimate)
-    │
-    ├── MaterialDefense/ (等级2)
+    ├── MaterialDefense/
     │   └── Mesh_0 ~ Mesh_{count} (高面数球体, bounds=1, allowOcclusionWhenDynamic=false)
     │
-    ├── LightDefense/ (等级2, 在ParticleDefense之前创建)
+    ├── LightDefense/ (在ParticleDefense之前创建)
     │   └── L_0 ~ L_{count}
     │       (Point/Spot交替, intensity/range=10M, ForcePixel, Soft Shadow VeryHigh)
     │
-    └── ParticleDefense/ (等级2)
+    └── ParticleDefense/
         └── PS_0 ~ PS_{count} (simulationSpeed=10M, 18模块全启用)
             └── SubEmitter_0 (全模块对等, 复用LightDefense光源)
 ```
@@ -808,9 +738,7 @@ Avatar Root
 ├─ 倒计时配置 ────────────────────────────────┤
 │  倒计时时间: [30━━━━━━━━━120]                │
 ├─ 防御配置 ──────────────────────────────────┤
-│  [CPU 防御]: [✓]                                │
-│  [GPU 防御]: [✓]                                │
-│  ℹ️ 防御说明                                 │
+│  ℹ️ GPU 防御说明                                 │
 ├─ 高级设置 ──────────────────────────────────┤
 │  调试选项                                    │
 │    [✓] PlayMode 时禁用                       │
@@ -829,33 +757,23 @@ Avatar Root
 
 系统对所有 VRC 受限组件采用统一预算分配方式：检测已有数量 → 计算剩余预算 → `min(目标值, 预算)` 确定实际生成数量。
 
-| 组件类型          | 配置上限 | 检测方式                                                                                     |
-| ----------------- | -------- | -------------------------------------------------------------------------------------------- |
-| PhysBone          | 256      | `GetComponentsInChildren<VRCPhysBone>()`                                                     |
-| PhysBone Collider | 256      | `GetComponentsInChildren<VRCPhysBoneCollider>()`，按链数均匀分配，取 `min(参数目标值, 预算)` |
-| PB Collider Check | 10000    | 总碰撞检查数 = 总Collider数 × physBoneLength，超限时自动减少总Collider数                     |
-| Constraint        | 2000     | `GetComponentsInChildren<VRCConstraintBase>()`，仅使用 VRCParentConstraint                   |
-| Contact           | 256      | `GetComponentsInChildren<VRCContactSender>() + <VRCContactReceiver>()`                       |
-| Rigidbody         | 256      | `GetComponentsInChildren<Rigidbody>()`                                                       |
-| Cloth             | 256      | `GetComponentsInChildren<Cloth>()`                                                           |
-| Animator          | 256      | `GetComponentsInChildren<Animator>()`                                                        |
+| 组件类型  | 配置上限 | 检测方式                                    |
+| --------- | -------- | ------------------------------------------- |
+| Rigidbody | 256      | `GetComponentsInChildren<Rigidbody>()`      |
+| Cloth     | 256      | `GetComponentsInChildren<Cloth>()`          |
+| Light     | 256      | `GetComponentsInChildren<Light>()`          |
+| Particle  | MAX_INT  | `GetComponentsInChildren<ParticleSystem>()` |
 
 **预算检查代码逻辑** (`Defense.cs CreateDefenseComponents()`):
 
 ```csharp
-int constraintBudget = Mathf.Max(0, Constants.CONSTRAINT_MAX_COUNT - existingConstraints);
-int pbBudget = Mathf.Max(0, Constants.PHYSBONE_MAX_COUNT - existingPhysBones);
-int colliderBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_MAX_COUNT - existingColliders);
-// 遍历现有PhysBone计算已占用的Collision Check数
-int existingCollisionChecks = Σ(pb.colliders.Count × CountTransforms(pb.root));
-int colliderCheckBudget = Mathf.Max(0, Constants.PHYSBONE_COLLIDER_CHECK_MAX_COUNT - existingCollisionChecks);
-int contactBudget = Mathf.Max(0, Constants.CONTACT_MAX_COUNT - existingContacts);
 int rigidbodyBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRigidbodies);
 int clothBudget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existingCloth);
-int animatorBudget = Mathf.Max(0, Constants.ANIMATOR_MAX_COUNT - existingAnimators);
+int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
+int particleBudget = Mathf.Max(0, Constants.PARTICLE_MAX_COUNT - existingParticles);
 ```
 
-这确保了即使 Avatar 本身已接近组件上限，ASS 也不会导致构建失败。所有组件类型遵循相同的预算分配原则：目标值设为配置上限（`Constants.cs` 定义），由预算截断实际生成数量。PB Collider 额外使用 `min(PhysBoneColliders参数, colliderBudget)` 双重限制。
+这确保了即使 Avatar 本身已接近组件上限，ASS 也不会导致构建失败。所有组件类型遵循相同的预算分配原则：目标值设为配置上限（`Constants.cs` 定义），由预算截断实际生成数量。
 
 ### 10.2 Write Defaults 模式
 

@@ -37,15 +37,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const string GO_DEFENSE_ROOT = "ASS_Defense";
 
         // ============ VRChat 组件上限 ============
-        public const int PHYSBONE_MAX_COUNT = 256;
-        public const int CONTACT_MAX_COUNT = 256;
-        public const int CONSTRAINT_MAX_COUNT = 2000;
-        public const int PHYSBONE_COLLIDER_MAX_COUNT = 256;
-        public const int PHYSBONE_COLLIDER_CHECK_MAX_COUNT = 10000;
         public const int RIGIDBODY_MAX_COUNT = 256;
         public const int RIGIDBODY_COLLIDER_MAX_COUNT = 1024;
         public const int CLOTH_MAX_COUNT = 256;
-        public const int ANIMATOR_MAX_COUNT = 256;
         public const int PARTICLE_MAX_COUNT = 2147483647;
         public const int PARTICLE_SYSTEM_MAX_COUNT = 355;
         public const int LIGHT_MAX_COUNT = 256;
