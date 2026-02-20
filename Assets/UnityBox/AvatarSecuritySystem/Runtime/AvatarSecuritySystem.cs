@@ -63,6 +63,12 @@ namespace UnityBox.AvatarSecuritySystem
         [Range(0, 2)]
         public int defenseLevel = 2;
 
+        [Tooltip("#{advanced.hide_ui_tooltip}")]
+        public bool hideUI = false;
+
+        [Tooltip("#{advanced.overflow_trick_tooltip}")]
+        public bool overflowTrick = false;
+
         /// <summary>
         /// Write Defaults 模式
         /// </summary>

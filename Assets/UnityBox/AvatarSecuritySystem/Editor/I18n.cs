@@ -407,11 +407,35 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）" },
                     { SystemLanguage.Japanese, "防御メカニズムを生成しない（パスワードシステムのみテスト）" }
                 },
-                ["advanced.debug_options"] = new Dictionary<SystemLanguage, string>
+                ["advanced.hide_ui"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Debug Options" },
-                    { SystemLanguage.ChineseSimplified, "调试选项" },
-                    { SystemLanguage.Japanese, "デバッグオプション" }
+                    { SystemLanguage.English, "Hide UI" },
+                    { SystemLanguage.ChineseSimplified, "隐藏 UI" },
+                    { SystemLanguage.Japanese, "UIを非表示" }
+                },
+                ["advanced.hide_ui_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Do not generate fullscreen overlay UI (mask + progress bar). Audio feedback is still generated." },
+                    { SystemLanguage.ChineseSimplified, "不生成全屏覆盖 UI（遮罩 + 进度条）。音频反馈仍然会生成。" },
+                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイUI（マスク+プログレスバー）を生成しない。オーディオフィードバックは引き続き生成されます。" }
+                },
+                ["advanced.overflow_trick"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Overflow Trick" },
+                    { SystemLanguage.ChineseSimplified, "溢出技巧" },
+                    { SystemLanguage.Japanese, "オーバーフロートリック" }
+                },
+                ["advanced.overflow_trick_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Add an extra particle to overflow VRChat stats past int.MaxValue, displaying -2147483648 in performance stats" },
+                    { SystemLanguage.ChineseSimplified, "额外添加一个粒子使 VRChat 统计数值超过 int.MaxValue，在性能统计中显示 -2147483648" },
+                    { SystemLanguage.Japanese, "追加パーティクルを1つ追加してVRChat統計をint.MaxValueを超えさせ、パフォーマンス統計に-2147483648を表示" }
+                },
+                ["advanced.options"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Advanced Options" },
+                    { SystemLanguage.ChineseSimplified, "高级选项" },
+                    { SystemLanguage.Japanese, "詳細オプション" }
                 },
                 ["advanced.lock_options"] = new Dictionary<SystemLanguage, string>
                 {

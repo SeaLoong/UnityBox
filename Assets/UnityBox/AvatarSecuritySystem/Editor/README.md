@@ -310,22 +310,25 @@ Step_N_ErrorTolerance ───[超时]───> Wait_Input
 #### 倒计时层 (ASS_Countdown)
 
 ```
-Remote (默认) ──[IsLocal]──> Countdown ──[exitTime=1.0]──> TimeUp
-   │                              │                           │
-(其他玩家)                   [ASS_PasswordCorrect]    [设置 ASS_TimeUp=1]
-                                  ↓                           ↓
-                              Unlocked                    [ASS_PasswordCorrect]
-                                                              ↓
-                                                          Unlocked
+Remote (默认) ──[PasswordCorrect]──> Unlocked（已保存的解锁状态，跳过倒计时）
+   │
+   └──[IsLocal && !PasswordCorrect]──> Countdown ──[exitTime=1.0]──> TimeUp
+                                            │                           │
+                                       [ASS_PasswordCorrect]    [设置 ASS_TimeUp=1]
+                                            ↓                           ↓
+                                        Unlocked                    [ASS_PasswordCorrect]
+                                                                        ↓
+                                                                    Unlocked
 ```
 
 #### 音频层 (ASS_Audio)
 
 ```
-Remote (默认) ──[IsLocal]──> Waiting ──[exitTime=1.0]──> WarningBeep（循环播放）
-   │                                                        ├── [ASS_TimeUp] → Stop
-   │                                                        └── [exitTime] → 自循环
-(其他玩家)
+Remote (默认) ──[PasswordCorrect]──> Stop（已保存的解锁状态，跳过音效）
+   │
+   └──[IsLocal && !PasswordCorrect]──> Waiting ──[exitTime=1.0]──> WarningBeep（循环播放）
+                                                                       ├── [ASS_TimeUp] → Stop
+                                                                       └── [exitTime] → 自循环
 ```
 
 **动画实现：**
@@ -464,12 +467,14 @@ ASS_Defense Layer
 
 #### 高级选项
 
-| 属性                  | 类型                | 默认值    | 说明                               |
-| --------------------- | ------------------- | --------- | ---------------------------------- |
-| `disabledInPlaymode`  | `bool`              | `true`    | Play Mode 跳过 ASS 生成            |
-| `disableRootChildren` | `bool`              | `true`    | 锁定时隐藏 Avatar 根级子对象       |
-| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto`    | Auto=自动检测 / On / Off           |
-| `uiLanguage`          | `SystemLanguage`    | `Unknown` | Inspector 语言（Unknown=自动检测） |
+| 属性                  | 类型                | 默认值    | 说明                                               |
+| --------------------- | ------------------- | --------- | -------------------------------------------------- |
+| `disabledInPlaymode`  | `bool`              | `true`    | Play Mode 跳过 ASS 生成                            |
+| `disableRootChildren` | `bool`              | `true`    | 锁定时隐藏 Avatar 根级子对象                       |
+| `hideUI`              | `bool`              | `false`   | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈 |
+| `overflowTrick`       | `bool`              | `false`   | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648     |
+| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto`    | Auto=自动检测 / On / Off                           |
+| `uiLanguage`          | `SystemLanguage`    | `Unknown` | Inspector 语言（Unknown=自动检测）                 |
 
 ---
 

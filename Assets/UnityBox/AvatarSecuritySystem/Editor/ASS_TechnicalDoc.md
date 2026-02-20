@@ -183,7 +183,13 @@ Avatar 加载
 │   │ 当 PasswordCorrect = true  │──→ Unlocked
 │   └─────────────────────────────┘
 │
-├─ [本地玩家] IsLocal = true
+├─ [本地玩家 + PasswordCorrect = true]（跨世界保持解锁）
+│   ├─ Lock 层：Remote → Unlocked（PasswordCorrect = true）
+│   ├─ Countdown 层：Remote → Unlocked（跳过倒计时）
+│   ├─ Audio 层：Remote → Stop（跳过音效）
+│   └─ Password 层：Wait_Input 不响应（PasswordCorrect 阻止入口）
+│
+├─ [本地玩家 + PasswordCorrect = false]
 │   │
 │   ├─ Locked 状态（初始）
 │   │   全屏 Shader 覆盖（白色背景 + Logo + 红色进度条）
@@ -290,7 +296,7 @@ Auto 模式下扫描所有 Playable Layer 的 AnimatorController：
 每个密码位有 3 个状态：
 
 ```
-Wait_Input ──(手势=密码[0])──→ Step_1_Holding ──(保持 holdTime)──→ Step_1_Confirmed
+Wait_Input ──(IsLocal && !PasswordCorrect && 手势=密码[0])──→ Step_1_Holding ──(保持 holdTime)──→ Step_1_Confirmed
                                     │                                    │
                                (错误手势)                         (手势=密码[1])
                                     ↓                                    ↓
@@ -344,14 +350,18 @@ Step_N_Confirmed ──(错误手势,非Idle)──→ Step_N_ErrorTolerance
 #### 4.3.1 倒计时层 (`ASS_Countdown`)
 
 ```
-Remote ──(IsLocal)──→ Countdown ──(exitTime=1.0)──→ TimeUp
-                           │                           │
-                      (PasswordCorrect)           (PasswordCorrect)
-                           ↓                           ↓
-                        Unlocked ←──────────────────────┘
+Remote ──(PasswordCorrect)──────────────────→ Unlocked
+  │
+  └──(IsLocal && !PasswordCorrect)──→ Countdown ──(exitTime=1.0)──→ TimeUp
+                                          │                           │
+                                     (PasswordCorrect)           (PasswordCorrect)
+                                          ↓                           ↓
+                                       Unlocked ←──────────────────────┘
 ```
 
 - **Remote 状态**: SharedEmptyClip，`writeDefaultValues = true`
+- **Remote → Unlocked**: `PasswordCorrect = true`（已保存的解锁状态，跳过倒计时）
+- **Remote → Countdown**: `IsLocal = true` 且 `PasswordCorrect = false`（仅本地且未解锁时）
 - **Countdown 状态**: 播放 `countdownDuration` 秒的进度条动画
   - 动画控制 `ASS_UI/Overlay` 的材质进度条属性从 1 到 0
 - **TimeUp 状态**: 通过 ParameterDriver 设置 `ASS_TimeUp = true`
@@ -361,12 +371,17 @@ Remote ──(IsLocal)──→ Countdown ──(exitTime=1.0)──→ TimeUp
 #### 4.3.2 音频层 (`ASS_Audio`)
 
 ```
-Remote ──(IsLocal)──→ Waiting ──(动画播完)──→ WarningBeep ──(自循环,每秒)
-                         │                         │
-                    (PasswordCorrect)         (TimeUp 或 PasswordCorrect)
-                         ↓                         ↓
-                       Stop ←──────────────────────┘
+Remote ──(PasswordCorrect)──────────────────→ Stop
+  │
+  └──(IsLocal && !PasswordCorrect)──→ Waiting ──(动画播完)──→ WarningBeep ──(自循环,每秒)
+                                          │                         │
+                                     (PasswordCorrect)         (TimeUp 或 PasswordCorrect)
+                                          ↓                         ↓
+                                        Stop ←──────────────────────┘
 ```
+
+- **Remote → Stop**: `PasswordCorrect = true`（已保存的解锁状态，跳过音效）
+- **Remote → Waiting**: `IsLocal = true` 且 `PasswordCorrect = false`（仅本地且未解锁时）
 
 - **Waiting 状态**: 播放 `(countdownDuration - warningThreshold + 0.1)` 秒的空动画
   - +0.1s 延迟防止最后一次循环在 TimeUp 之后触发
@@ -677,6 +692,8 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | `disabledInPlaymode`  | bool              | true   | PlayMode 时是否跳过安全系统生成                            |
 | `disableDefense`      | bool              | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
 | `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
+| `hideUI`              | bool              | false  | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈         |
+| `overflowTrick`       | bool              | false  | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648             |
 | `defenseLevel`        | int               | 2      | 防御等级 0-2（0=仅密码, 1=CPU, 2=CPU+GPU，见 §4.5.2）      |
 | `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 

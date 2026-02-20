@@ -226,6 +226,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                             parameters.ParticleCount, meshPolyBudget, defenseLights);
                 }
 
+                // Overflow Trick: 额外 +1 粒子使 VRChat 统计溢出为负数
+                if (config.overflowTrick)
+                {
+                    CreateOverflowParticle(root);
+                }
+
                 if (parameters.PhysXRigidbodyCount > 0)
                 {
                     int existingRB = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
@@ -1480,6 +1486,45 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
 
             return mesh;
+        }
+
+        /// <summary>
+        /// Overflow Trick: 创建 1 个额外粒子系统（maxParticles=1, 1 三角形 Mesh）
+        /// 使 VRChat 统计的粒子数和 Mesh 多边形数超过 int.MaxValue，溢出显示为 -2147483648
+        /// </summary>
+        private static void CreateOverflowParticle(GameObject root)
+        {
+            var overflowObj = new GameObject("PS_Overflow");
+            overflowObj.transform.SetParent(root.transform);
+            overflowObj.transform.localPosition = Vector3.zero;
+
+            var ps = overflowObj.AddComponent<ParticleSystem>();
+            var renderer = overflowObj.GetComponent<ParticleSystemRenderer>();
+
+            var main = ps.main;
+            main.duration = 1f;
+            main.loop = true;
+            main.prewarm = true;
+            main.playOnAwake = true;
+            main.maxParticles = 1;
+            main.startLifetime = 1f;
+            main.startSpeed = 0f;
+            main.startSize = 0.001f;
+            main.simulationSpeed = 10000000f;
+            main.ringBufferMode = ParticleSystemRingBufferMode.PauseUntilReplaced;
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 1000f;
+
+            var shape = ps.shape;
+            shape.enabled = false;
+
+            renderer.renderMode = ParticleSystemRenderMode.Mesh;
+            renderer.mesh = GenerateFanMesh(1);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            Debug.Log("[ASS] Overflow trick: created +1 particle system to overflow VRChat stats");
         }
 
         private static void CreatePhysXComponents(GameObject root, int rigidbodyCount, int colliderCount)

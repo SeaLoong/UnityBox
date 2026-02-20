@@ -29,11 +29,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         public void Generate()
         {
-            // 创建 UI 根对象
-            CreateUIGameObject();
+            if (!config.hideUI)
+            {
+                // 创建 UI 根对象
+                CreateUIGameObject();
 
-            // 创建 UI Mesh（使用自定义 Shader 全屏渲染遮挡背景 + 进度条）
-            CreateUIMesh();
+                // 创建 UI Mesh（使用自定义 Shader 全屏渲染遮挡背景 + 进度条）
+                CreateUIMesh();
+            }
 
             // 创建音频对象
             CreateAudioObject(Constants.GO_AUDIO_SUCCESS);

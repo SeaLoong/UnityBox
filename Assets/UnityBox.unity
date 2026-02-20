@@ -17239,6 +17239,8 @@ MonoBehaviour:
   disableDefense: 0
   disableRootChildren: 1
   defenseLevel: 2
+  hideUI: 0
+  overflowTrick: 0
   writeDefaultsMode: 0
 --- !u!114 &1679610428
 MonoBehaviour:
@@ -39605,6 +39607,8 @@ MonoBehaviour:
   disableDefense: 1
   disableRootChildren: 1
   defenseLevel: 2
+  hideUI: 0
+  overflowTrick: 0
   writeDefaultsMode: 0
 --- !u!4 &6481295841211110324
 Transform:

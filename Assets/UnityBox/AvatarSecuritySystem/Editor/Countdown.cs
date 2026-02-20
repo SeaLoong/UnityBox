@@ -48,13 +48,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             countdownState.speed = 1f;
             countdownState.writeDefaultValues = true;
 
-            // Remote → Countdown
-            var toCountdown = Utils.CreateTransition(remoteState, countdownState);
-            toCountdown.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
-
             // Unlocked（密码正确，停止倒计时）
             var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
             unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+
+            // Remote → Unlocked（已解锁状态，跳过倒计时；PasswordCorrect 是 networkSynced，远端也会同步）
+            var remoteToUnlocked = Utils.CreateTransition(remoteState, unlockedState);
+            remoteToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+
+            // Remote → Countdown（仅本地且未解锁时）
+            var toCountdown = Utils.CreateTransition(remoteState, countdownState);
+            toCountdown.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
+            toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // TimeUp（倒计时结束，触发防御但保持 UI 显示作为遮罩）
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
@@ -104,10 +109,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             waitingState.motion = waitingClip;
             waitingState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, waitingClip);
+
+            // Stop（停止音效）
+            var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));
+            stopState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            stopState.writeDefaultValues = true;
             
-            // Remote → Waiting
+            // Remote → Stop（已解锁状态，跳过音效；PasswordCorrect 是 networkSynced，远端也会同步）
+            var remoteToStop = Utils.CreateTransition(remoteState, stopState);
+            remoteToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+
+            // Remote → Waiting（仅本地且未解锁时）
             var toWaiting = Utils.CreateTransition(remoteState, waitingState);
             toWaiting.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
+            toWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // WarningBeep（播放警告音，1秒自循环）
             var beepState = layer.stateMachine.AddState("WarningBeep", new Vector3(200, 150, 0));
@@ -122,11 +137,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     GO_AUDIO_WARNING, 
                     config.warningBeep);
             }
-
-            // Stop（停止音效）
-            var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));
-            stopState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
-            stopState.writeDefaultValues = true;
 
             // Waiting → WarningBeep
             var waitingToBeep = Utils.CreateTransition(waitingState, beepState,

@@ -72,12 +72,12 @@ namespace UnityBox.AvatarSecuritySystem
             DrawDefenseSection();
             EditorGUILayout.Space(10);
 
-            DrawAdvancedSection();
+            DrawAdvancedSections();
         }
 
-        private void DrawAdvancedSection()
+        private void DrawAdvancedSections()
         {
-            DrawDebugSection();
+            DrawAdvancedOptionsSection();
             EditorGUILayout.Space(10);
             DrawLockSection();
         }
@@ -327,15 +327,21 @@ namespace UnityBox.AvatarSecuritySystem
             };
         }
 
-        private void DrawDebugSection()
+        private void DrawAdvancedOptionsSection()
         {
-            EditorGUILayout.LabelField(T("advanced.debug_options"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("advanced.options"), EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disabledInPlaymode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
                 new GUIContent(T("advanced.disable_defense"), T("advanced.disable_defense_tooltip")));
+            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("hideUI"),
+                new GUIContent(T("advanced.hide_ui"), T("advanced.hide_ui_tooltip")));
+            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("overflowTrick"),
+                new GUIContent(T("advanced.overflow_trick"), T("advanced.overflow_trick_tooltip")));
         }
 
         private void DrawLockSection()
