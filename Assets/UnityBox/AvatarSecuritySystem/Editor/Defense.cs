@@ -687,23 +687,32 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var particleRoot = new GameObject("ParticleDefense");
             particleRoot.transform.SetParent(root.transform);
 
-            int meshSubdivisions = 2;
-            int meshTriangles = meshSubdivisions * meshSubdivisions * 2;
+            int meshTriangles;
+            Mesh sharedParticleMesh;
+            Mesh sharedSubEmitterMesh;
 
-            if (particleBudget > 0 && particleBudget <= meshPolyBudget / meshTriangles)
+            long idealTrisPerParticle = particleBudget > 0
+                ? (long)meshPolyBudget / (long)particleBudget
+                : (long)meshPolyBudget;
+
+            if (idealTrisPerParticle >= 8)
             {
-                int maxTrisPerParticle = meshPolyBudget / particleBudget;
-                meshSubdivisions = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(maxTrisPerParticle / 2f)), 2, 200);
+                int meshSubdivisions = Mathf.Clamp(
+                    Mathf.FloorToInt(Mathf.Sqrt(idealTrisPerParticle / 2f)), 2, 200);
                 meshTriangles = meshSubdivisions * meshSubdivisions * 2;
+                int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
+                sharedParticleMesh = GenerateSphereMesh(meshVertexTarget);
+                sharedSubEmitterMesh = GenerateSphereMesh(meshVertexTarget);
             }
-            else if (particleBudget > 0)
+            else
             {
-                particleBudget = meshPolyBudget / meshTriangles;
+                meshTriangles = Mathf.Max(1, (int)idealTrisPerParticle);
+                sharedParticleMesh = GenerateFanMesh(meshTriangles);
+                sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
             }
 
-            int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
-            var sharedParticleMesh = GenerateSphereMesh(meshVertexTarget);
-            var sharedSubEmitterMesh = GenerateSphereMesh(meshVertexTarget);
+            if (meshTriangles > 0 && particleBudget > meshPolyBudget / meshTriangles)
+                particleBudget = meshPolyBudget / meshTriangles;
 
             int systemsUsed = 0;
             int particlesUsed = 0;
@@ -1421,6 +1430,52 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 #endif
             mesh.RecalculateBounds();
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
+
+            return mesh;
+        }
+
+        private static Mesh GenerateFanMesh(int triangleCount)
+        {
+            triangleCount = Mathf.Max(1, triangleCount);
+            var mesh = new Mesh { name = "ASS_Mesh" };
+
+            int vertexCount = triangleCount + 2;
+            var vertices = new Vector3[vertexCount];
+            var normals = new Vector3[vertexCount];
+            var uvs = new Vector2[vertexCount];
+            var colors = new Color[vertexCount];
+
+            vertices[0] = Vector3.zero;
+            normals[0] = Vector3.back;
+            uvs[0] = new Vector2(0.5f, 0.5f);
+            colors[0] = Color.white;
+
+            for (int i = 0; i <= triangleCount; i++)
+            {
+                float angle = i * 2f * Mathf.PI / triangleCount;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+                vertices[i + 1] = new Vector3(cos, sin, 0f);
+                normals[i + 1] = Vector3.back;
+                uvs[i + 1] = new Vector2((cos + 1f) * 0.5f, (sin + 1f) * 0.5f);
+                colors[i + 1] = Color.HSVToRGB((float)i / triangleCount, 1f, 1f);
+            }
+
+            var tris = new int[triangleCount * 3];
+            for (int i = 0; i < triangleCount; i++)
+            {
+                tris[i * 3] = 0;
+                tris[i * 3 + 1] = i + 1;
+                tris[i * 3 + 2] = i + 2;
+            }
+
+            mesh.vertices = vertices;
+            mesh.triangles = tris;
+            mesh.normals = normals;
+            mesh.uv = uvs;
+            mesh.colors = colors;
+            mesh.RecalculateBounds();
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
 
             return mesh;
         }
