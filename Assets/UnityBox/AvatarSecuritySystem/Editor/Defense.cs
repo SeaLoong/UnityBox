@@ -318,13 +318,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static RenderTexture CreateRenderTexture(int seed)
         {
-            var rt = new RenderTexture(1024, 1024, 0, RenderTextureFormat.ARGB32);
+            var rt = new RenderTexture(4096, 4096, 32, RenderTextureFormat.ARGBFloat);
             rt.name = $"ASS_RT_{seed}";
             rt.useMipMap = true;
-            rt.autoGenerateMips = false;
-            rt.filterMode = FilterMode.Bilinear;
+            rt.autoGenerateMips = true;
+            rt.filterMode = FilterMode.Trilinear;
+            rt.anisoLevel = 16;
             rt.wrapMode = TextureWrapMode.Repeat;
-            rt.Create();
+            rt.antiAliasing = 8;
+            rt.enableRandomWrite = true;
             return rt;
         }
 
