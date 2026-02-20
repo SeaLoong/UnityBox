@@ -53,6 +53,7 @@ Shader "UnityBox/ASS_UI"
             {
                 float4 pos : SV_POSITION;
                 float2 uv : TEXCOORD0;
+                float2 eyeShift : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -75,11 +76,21 @@ Shader "UnityBox/ASS_UI"
                 UNITY_INITIALIZE_OUTPUT(v2f, o);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                o.pos = float4(v.uv * 2.0 - 1.0, 0, 1);
+
+                float2 ndc = v.uv * 2.0 - 1.0;
                 #if UNITY_UV_STARTS_AT_TOP
-                o.pos.y = -o.pos.y;
+                ndc.y = -ndc.y;
                 #endif
+
+                float d = 100.0;
+                float3 vp = float3(
+                    (ndc.x + UNITY_MATRIX_P[0][2]) * d / UNITY_MATRIX_P[0][0],
+                    (ndc.y + UNITY_MATRIX_P[1][2]) * d / UNITY_MATRIX_P[1][1],
+                    -d
+                );
+                o.pos = mul(UNITY_MATRIX_P, float4(vp, 1.0));
                 o.uv = v.uv;
+                o.eyeShift = float2(UNITY_MATRIX_P[0][2] * 0.5, 0);
                 return o;
             }
 
@@ -87,9 +98,10 @@ Shader "UnityBox/ASS_UI"
             {
                 UNITY_SETUP_INSTANCE_ID(i);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
-                float2 uv = i.uv;
 
-                float _cs = clamp(1.2 / max(unity_CameraProjection[1][1], 0.01), 1.0, 2.0);
+                float2 uv = i.uv + i.eyeShift;
+
+                float _cs = max(1.0, 2.0 / max(unity_CameraProjection[1][1], 0.5));
                 float2 cUV = (uv - 0.5) * _cs + 0.5;
 
                 float barCenterY = 0.5 + _E3B5;
@@ -121,10 +133,10 @@ Shader "UnityBox/ASS_UI"
                 {
                     float2 logoUV = (cUV - logoMin) / (logoMax - logoMin);
                     fixed4 logoColor = tex2D(_G4D9, logoUV);
-                    baseColor = lerp(baseColor, logoColor, logoColor.a);
+                    baseColor = fixed4(lerp(baseColor.rgb, logoColor.rgb, logoColor.a), 1);
                 }
 
-                return baseColor;
+                return fixed4(baseColor.rgb, 1);
             }
             ENDCG
         }
