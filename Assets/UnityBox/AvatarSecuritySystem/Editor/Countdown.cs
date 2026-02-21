@@ -58,7 +58,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // Remote → Countdown（仅本地且未解锁时）
             var toCountdown = Utils.CreateTransition(remoteState, countdownState);
-            toCountdown.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
+            Utils.AddIsLocalCondition(toCountdown, controller, isTrue: true);
             toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // TimeUp（倒计时结束，触发防御但保持 UI 显示作为遮罩）
@@ -121,7 +121,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // Remote → Waiting（仅本地且未解锁时）
             var toWaiting = Utils.CreateTransition(remoteState, waitingState);
-            toWaiting.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
+            Utils.AddIsLocalCondition(toWaiting, controller, isTrue: true);
             toWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // WarningBeep（播放警告音，1秒自循环）

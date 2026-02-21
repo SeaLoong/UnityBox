@@ -75,6 +75,74 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     }
 
     /// <summary>
+    /// 获取 Animator 参数的当前类型，如果参数不存在则返回 null
+    /// </summary>
+    public static AnimatorControllerParameterType? GetParameterType(
+      AnimatorController controller, string name)
+    {
+      var param = controller.parameters.FirstOrDefault(p => p.name == name);
+      if (param == null) return null;
+      return param.type;
+    }
+
+    /// <summary>
+    /// 为 IsLocal 参数添加条件，自动适配参数类型。
+    /// 
+    /// VRCFury 会在 blend tree 中使用 IsLocal（作为 Float），导致 UpgradeWrongParamTypes
+    /// 将 IsLocal 从 Bool 升级为 Float。如果此后使用 AnimatorConditionMode.If（仅适用于
+    /// Bool），VRCFury 的 RemoveWrongParamTypes 会将该条件替换为 InvalidCondition（始终
+    /// 为 false），从而导致 ASS 的安全系统完全失效。
+    /// 
+    /// 此方法根据 IsLocal 的实际类型选择合适的条件模式：
+    /// - Bool:  If / IfNot（标准用法）
+    /// - Int:   Greater 0 / Less 1（等效于 Bool 判断）
+    /// - Float: Greater 0 / Less 1（等效于 Bool 判断）
+    /// </summary>
+    public static void AddIsLocalCondition(
+      AnimatorStateTransition transition,
+      AnimatorController controller,
+      bool isTrue = true)
+    {
+      var paramType = GetParameterType(controller, Constants.PARAM_IS_LOCAL);
+
+      switch (paramType)
+      {
+        case AnimatorControllerParameterType.Bool:
+          transition.AddCondition(
+            isTrue ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot,
+            0, Constants.PARAM_IS_LOCAL);
+          break;
+
+        case AnimatorControllerParameterType.Int:
+          transition.AddCondition(
+            isTrue ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+            isTrue ? 0 : 1, Constants.PARAM_IS_LOCAL);
+          break;
+
+        case AnimatorControllerParameterType.Float:
+          // VRCFury 的 blend tree 使用会将 IsLocal 升级为 Float
+          // VRChat 在运行时设置 IsLocal = 1.0（本地）或 0.0（远端）
+          transition.AddCondition(
+            isTrue ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+            isTrue ? 0.5f : 0.5f, Constants.PARAM_IS_LOCAL);
+          break;
+
+        default:
+          // 参数不存在或类型未知，使用 Greater 0 作为最安全的通用条件
+          // Greater 0 在所有类型下都能被正确处理：
+          // - Bool: RemoveWrongParamTypes 会自动转换为 If
+          // - Int/Float: Greater 0 直接有效
+          Debug.LogWarning(
+            $"[ASS] IsLocal parameter type is {paramType?.ToString() ?? "missing"}, " +
+            $"using Greater>0 as fallback");
+          transition.AddCondition(
+            isTrue ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+            isTrue ? 0 : 1, Constants.PARAM_IS_LOCAL);
+          break;
+      }
+    }
+
+    /// <summary>
     /// 创建状态转换
     /// </summary>
     public static AnimatorStateTransition CreateTransition(AnimatorState from, AnimatorState to,

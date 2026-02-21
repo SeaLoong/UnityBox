@@ -214,7 +214,9 @@ Unity 2022.3
     └─ VRChat SDK Avatars ≥ 3.7.0
 ```
 
-无其他必要依赖。兼容 NDMF、VRCFury、Modular Avatar 等工具（但不依赖它们）。
+无其他必要依赖。兼容 NDMF、VRCFury、Modular Avatar、Avatar Optimizer 等工具（但不依赖它们）。
+
+> **v0.3.1 兼容性修复**：当 VRCFury 的 SPS/Toggle/ActionClip 等功能在 blend tree 中使用 `IsLocal` 参数时，VRCFury 会将其从 Bool 升级为 Float。ASS 现在会自动检测 `IsLocal` 的实际类型并使用兼容的条件模式（`Greater > 0.5` 代替 `If`），确保在任何参数类型下都能正常工作。
 
 ---
 
@@ -247,7 +249,7 @@ ASS_Lock Layer
 
 **转换条件：**
 
-- Remote → Locked: `IsLocal == true && ASS_PasswordCorrect == false`
+- Remote → Locked: `IsLocal > 0（类型自适应） && ASS_PasswordCorrect == false`
 - Remote → Unlocked: `ASS_PasswordCorrect == true`（参数同步）
 - Locked → Unlocked: `ASS_PasswordCorrect == true`
 - Unlocked → Remote: `ASS_PasswordCorrect == false`
@@ -466,13 +468,13 @@ ASS_Defense Layer
 
 ### Animator 参数
 
-| 参数名                | 类型 | 默认值 | 同步     | 说明                       |
-| --------------------- | ---- | ------ | -------- | -------------------------- |
-| `ASS_PasswordCorrect` | Bool | false  | Synced   | 密码验证成功标志           |
-| `ASS_TimeUp`          | Bool | false  | Local    | 倒计时结束标志             |
-| `IsLocal`             | Bool | —      | Built-in | VRChat 内置（穿戴者=true） |
-| `GestureLeft`         | Int  | 0      | Built-in | VRChat 内置（左手 0-7）    |
-| `GestureRight`        | Int  | 0      | Built-in | VRChat 内置（右手 0-7）    |
+| 参数名                | 类型         | 默认值 | 同步     | 说明                                                                     |
+| --------------------- | ------------ | ------ | -------- | ------------------------------------------------------------------------ |
+| `ASS_PasswordCorrect` | Bool         | false  | Synced   | 密码验证成功标志                                                         |
+| `ASS_TimeUp`          | Bool         | false  | Local    | 倒计时结束标志                                                           |
+| `IsLocal`             | Bool/Float\* | —      | Built-in | VRChat 内置（穿戴者=true）。\*VRCFury 可能将其升级为 Float，ASS 自动适配 |
+| `GestureLeft`         | Int          | 0      | Built-in | VRChat 内置（左手 0-7）                                                  |
+| `GestureRight`        | Int          | 0      | Built-in | VRChat 内置（右手 0-7）                                                  |
 
 ### Animator 层
 
@@ -539,6 +541,10 @@ ASS_Defense Layer
 #### Q: 构建后 Avatar 不正常
 
 检查 Unity Console 的 `[ASS]` 日志。如果存在组件冲突，尝试降低 Defense Level 或勾选 Disable Defense。
+
+#### Q: 有 VRCFury 时 ASS 不生效
+
+**已在 v0.3.1 修复。** 此问题由 VRCFury 的参数类型升级机制引起：当 Avatar 使用了 VRCFury 的 SPS（Haptic Socket）、Toggle（带 Local State）或 ActionClip（带 localOnly/remoteOnly）等功能时，VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数，其 `UpgradeWrongParamTypes` 会将 `IsLocal` 从 Bool 升级为 Float。旧版 ASS 使用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加 `IsLocal` 条件，在 Float 类型下会被 VRCFury 的 `RemoveWrongParamTypes` 替换为始终为 false 的无效条件，导致 ASS 的锁定/密码/倒计时/防御全部失效。新版已自动适配所有参数类型。
 
 ---
 

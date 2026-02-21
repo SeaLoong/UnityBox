@@ -17,7 +17,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 ### 1.2 设计原则
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
-2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理
+2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理。当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
 3. **VRChat 限制遵守**：严格遵守 Rigidbody (256)、Cloth (256)、Light (256)、ParticleSystem (355) 等组件数量上限，自动检测已有组件预算
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
@@ -105,12 +105,12 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
 
 ### 2.4 Animator 参数
 
-| 参数名                         | 类型 | 同步方式      | 说明                               |
-| ------------------------------ | ---- | ------------- | ---------------------------------- |
-| `IsLocal`                      | Bool | VRChat 内置   | 是否为本地玩家（VRChat 自动设置）  |
-| `ASS_PasswordCorrect`          | Bool | networkSynced | 密码是否正确（本地设置，网络同步） |
-| `ASS_TimeUp`                   | Bool | 仅本地        | 倒计时是否结束（本地设置，不同步） |
-| `GestureLeft` / `GestureRight` | Int  | VRChat 内置   | 手势值 0-7                         |
+| 参数名                         | 类型         | 同步方式      | 说明                                                                            |
+| ------------------------------ | ------------ | ------------- | ------------------------------------------------------------------------------- |
+| `IsLocal`                      | Bool/Float\* | VRChat 内置   | 是否为本地玩家（VRChat 自动设置）。\*VRCFury 可能将其升级为 Float，ASS 自动适配 |
+| `ASS_PasswordCorrect`          | Bool         | networkSynced | 密码是否正确（本地设置，网络同步）                                              |
+| `ASS_TimeUp`                   | Bool         | 仅本地        | 倒计时是否结束（本地设置，不同步）                                              |
+| `GestureLeft` / `GestureRight` | Int          | VRChat 内置   | 手势值 0-7                                                                      |
 
 ---
 
@@ -138,6 +138,10 @@ OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
       │
       ├─ AddParameterIfNotExists(IsLocal)
       │   注册 VRChat 内置参数
+      │
+      ├─ 检测 IsLocal 参数类型
+      │   如果 VRCFury 将 IsLocal 升级为 Float，输出警告日志
+      │   后续 AddIsLocalCondition() 会自动适配对应类型
       │
       ├─ [可选] LoadAudioResources()
       │   从 Resources/ 加载音频
@@ -632,14 +636,16 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### Animator 层和参数
 
-| 方法                         | 说明                                           |
-| ---------------------------- | ---------------------------------------------- |
-| `CreateLayer(name, weight)`  | 创建 AnimatorControllerLayer + StateMachine    |
-| `AddParameterIfNotExists()`  | 添加 Animator 参数（避免重复）                 |
-| `CreateTransition()`         | 创建状态转换，统一配置 hasExitTime/duration    |
-| `CreateAnyStateTransition()` | 创建 Any State 转换                            |
-| `GetOrCreateEmptyClip()`     | 获取或创建共享的空 AnimationClip（按路径缓存） |
-| `OptimizeStates()`           | 将 null motion 替换为指定的空 clip             |
+| 方法                         | 说明                                                   |
+| ---------------------------- | ------------------------------------------------------ |
+| `CreateLayer(name, weight)`  | 创建 AnimatorControllerLayer + StateMachine            |
+| `AddParameterIfNotExists()`  | 添加 Animator 参数（避免重复）                         |
+| `GetParameterType()`         | 获取 Animator 参数的当前类型                           |
+| `AddIsLocalCondition()`      | 为 IsLocal 添加类型安全的条件（自适配 Bool/Int/Float） |
+| `CreateTransition()`         | 创建状态转换，统一配置 hasExitTime/duration            |
+| `CreateAnyStateTransition()` | 创建 Any State 转换                                    |
+| `GetOrCreateEmptyClip()`     | 获取或创建共享的空 AnimationClip（按路径缓存）         |
+| `OptimizeStates()`           | 将 null motion 替换为指定的空 clip                     |
 
 #### 子资产管理
 
@@ -807,6 +813,37 @@ int particleBudget = Mathf.Max(0, Constants.PARTICLE_MAX_COUNT - existingParticl
 - VRCFury 参数压缩 (ParameterCompressorHook) 在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中
+
+### 10.5 VRCFury IsLocal 参数类型兼容（v0.3.1）
+
+VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/Haptic Socket、Toggle 带 Local State、ActionClip 带 localOnly/remoteOnly），其 `UpgradeWrongParamTypes` 服务会将 `IsLocal` 从 `Bool` 升级为 `Float`。
+
+**问题链（v0.3.0）**：
+
+1. VRCFury 主构建 (-10000): clone FX 控制器，IsLocal 升级为 Float
+2. ASS (-1026): `AddParameterIfNotExists("IsLocal", Bool)` 发现已存在 → 跳过；但仍用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加条件
+3. Avatar Optimizer/NDMF (-1025): 深克隆 FX 控制器，新对象不再被 VRCFury 识别
+4. VRCFury ParameterCompressor (int.MaxValue-100): `ClearCache()` → `MakeController()` → `CopyAndLoadController()` → `RemoveWrongParamTypes()`
+5. `RemoveWrongParamTypes`: IsLocal 是 Float，但条件为 `If`（对 Float 无效）→ **替换为 `InvalidCondition`（始终 false）**
+6. 结果: ASS 的 Lock/Password/Countdown/Defense 所有 IsLocal 条件失效，安全系统完全不工作
+
+**修复方案（v0.3.1）**：
+
+新增 `Utils.AddIsLocalCondition()` 方法，根据 `IsLocal` 的实际类型自动选择条件模式：
+
+| 参数类型    | isTrue 条件   | isFalse 条件 | 说明                               |
+| ----------- | ------------- | ------------ | ---------------------------------- |
+| Bool        | `If`          | `IfNot`      | 标准用法                           |
+| Int         | `Greater 0`   | `Less 1`     | 等效 Bool 判断                     |
+| Float       | `Greater 0.5` | `Less 0.5`   | VRChat 设置 0.0/1.0，用 0.5 作阈值 |
+| 未知/不存在 | `Greater 0`   | `Less 1`     | 安全回退                           |
+
+受影响的代码位置（共 5 处）：
+
+- `Defense.cs`: 防御激活转换
+- `Lock.cs`: Remote → Locked 转换
+- `GesturePassword.cs`: Wait → Holding 入口转换
+- `Countdown.cs`: Remote → Countdown 转换、Remote → Waiting 转换
 
 ### 10.5 防御系统安全实践
 

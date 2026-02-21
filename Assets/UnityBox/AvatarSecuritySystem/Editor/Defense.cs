@@ -45,7 +45,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             activeState.motion = activateClip;
 
             var toActive = Utils.CreateTransition(inactiveState, activeState);
-            toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_IS_LOCAL);
+            Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_TIME_UP);
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;

@@ -75,7 +75,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var toLocked = Utils.CreateTransition(remoteState, lockedState);
             toLocked.hasExitTime = false;
             toLocked.duration = 0f;
-            toLocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_IS_LOCAL);
+            Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
             toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             
             // Locked → Locked（循环锁定，直到密码正确）

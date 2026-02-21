@@ -3787,7 +3787,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &322284336
 Transform:
   m_ObjectHideFlags: 0
@@ -8546,6 +8546,122 @@ Transform:
   - {fileID: 1828939856}
   m_Father: {fileID: 1855192836}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &871966467
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 871966468}
+  - component: {fileID: 871966469}
+  m_Layer: 0
+  m_Name: VRCFury Toggle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &871966468
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871966467}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1679610431}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &871966469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871966467}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9e94e501a2d4c95bff3d5601013d923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 3
+  unityVersion: 2022.3.22f1
+  vrcfuryVersion: 1.1279.0
+  somethingIsBroken: 0
+  config:
+    features: []
+  content:
+    rid: 5603525159769079810
+  references:
+    version: 2
+    RefIds:
+    - rid: 5603525159769079810
+      type: {class: Toggle, ns: VF.Model.Feature, asm: VRCFury}
+      data:
+        version: 3
+        name: IsLocal
+        state:
+          actions:
+          - rid: 5603525159769079811
+        saved: 0
+        slider: 0
+        sliderInactiveAtZero: 0
+        securityEnabled: 0
+        defaultOn: 0
+        includeInRest: 0
+        exclusiveOffState: 0
+        enableExclusiveTag: 0
+        exclusiveTag: 
+        resetPhysbones: []
+        hasExitTime: 0
+        enableIcon: 0
+        icon:
+          version: 1
+          fileID: 0
+          guid: 
+          id: 
+          objRef: {fileID: 0}
+        enableDriveGlobalParam: 0
+        driveGlobalParam: 
+        separateLocal: 1
+        localState:
+          actions: []
+        hasTransition: 0
+        transitionStateIn:
+          actions: []
+        transitionStateOut:
+          actions: []
+        transitionTimeIn: 0
+        transitionTimeOut: 0
+        localTransitionStateIn:
+          actions: []
+        localTransitionStateOut:
+          actions: []
+        localTransitionTimeIn: 0
+        localTransitionTimeOut: 0
+        simpleOutTransition: 1
+        defaultSliderValue: 0
+        useGlobalParam: 0
+        globalParam: 
+        holdButton: 0
+        invertRestLogic: 0
+        expandIntoTransition: 1
+    - rid: 5603525159769079811
+      type: {class: ObjectToggleAction, ns: VF.Model.StateAction, asm: VRCFury}
+      data:
+        version: 1
+        desktopActive: 0
+        androidActive: 0
+        localOnly: 0
+        remoteOnly: 0
+        obj: {fileID: 322284335}
+        mode: 0
 --- !u!1 &877572299
 GameObject:
   m_ObjectHideFlags: 0
@@ -10559,7 +10675,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 8400000, guid: abbe9332cbff4a143812d98775e04a72, type: 2}
+  m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -11950,6 +12066,122 @@ Transform:
   - {fileID: 556372328}
   m_Father: {fileID: 322101292}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1258916313
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1258916314}
+  - component: {fileID: 1258916315}
+  m_Layer: 0
+  m_Name: VRCFury Toggle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1258916314
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258916313}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5961212981230913172}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1258916315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1258916313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9e94e501a2d4c95bff3d5601013d923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 3
+  unityVersion: 2022.3.22f1
+  vrcfuryVersion: 1.1279.0
+  somethingIsBroken: 0
+  config:
+    features: []
+  content:
+    rid: 5603525159769079810
+  references:
+    version: 2
+    RefIds:
+    - rid: 5603525159769079810
+      type: {class: Toggle, ns: VF.Model.Feature, asm: VRCFury}
+      data:
+        version: 3
+        name: IsLocal
+        state:
+          actions:
+          - rid: 5603525159769079811
+        saved: 0
+        slider: 0
+        sliderInactiveAtZero: 0
+        securityEnabled: 0
+        defaultOn: 0
+        includeInRest: 0
+        exclusiveOffState: 0
+        enableExclusiveTag: 0
+        exclusiveTag: 
+        resetPhysbones: []
+        hasExitTime: 0
+        enableIcon: 0
+        icon:
+          version: 1
+          fileID: 0
+          guid: 
+          id: 
+          objRef: {fileID: 0}
+        enableDriveGlobalParam: 0
+        driveGlobalParam: 
+        separateLocal: 1
+        localState:
+          actions: []
+        hasTransition: 0
+        transitionStateIn:
+          actions: []
+        transitionStateOut:
+          actions: []
+        transitionTimeIn: 0
+        transitionTimeOut: 0
+        localTransitionStateIn:
+          actions: []
+        localTransitionStateOut:
+          actions: []
+        localTransitionTimeIn: 0
+        localTransitionTimeOut: 0
+        simpleOutTransition: 1
+        defaultSliderValue: 0
+        useGlobalParam: 0
+        globalParam: 
+        holdButton: 0
+        invertRestLogic: 0
+        expandIntoTransition: 1
+    - rid: 5603525159769079811
+      type: {class: ObjectToggleAction, ns: VF.Model.StateAction, asm: VRCFury}
+      data:
+        version: 1
+        desktopActive: 0
+        androidActive: 0
+        localOnly: 0
+        remoteOnly: 0
+        obj: {fileID: 322284335}
+        mode: 0
 --- !u!1 &1270874648
 GameObject:
   m_ObjectHideFlags: 0
@@ -13193,7 +13425,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1402796553
 Transform:
   m_ObjectHideFlags: 0
@@ -17157,6 +17389,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114213644543934330, guid: 2cd7c2d73a12a214b930125a1ca4ed33, type: 3}
+      propertyPath: settings.favourite
+      value: 
+      objectReference: {fileID: 1679610428}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -17206,6 +17442,7 @@ GameObject:
   - component: {fileID: 1679610430}
   - component: {fileID: 1679610429}
   - component: {fileID: 1679610428}
+  - component: {fileID: 1679610433}
   - component: {fileID: 1679610432}
   m_Layer: 0
   m_Name: TEST ASS
@@ -18064,6 +18301,7 @@ Transform:
   - {fileID: 1995628607}
   - {fileID: 324342216}
   - {fileID: 1402796553}
+  - {fileID: 871966468}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1679610432
@@ -18087,12 +18325,63 @@ MonoBehaviour:
   gestureErrorTolerance: 0.3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
-  enabledInPlaymode: 0
+  enabledInPlaymode: 1
   disableDefense: 0
   disableRootChildren: 1
   hideUI: 0
   enableOverflow: 1
   writeDefaultsMode: 0
+--- !u!114 &1679610433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1679610426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ad67726f6714ccbbb27913837ce7b15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  optimizeBlendShape: 1
+  removeUnusedObjects: 1
+  preserveEndBone: 0
+  removeZeroSizedPolygons: 1
+  optimizePhysBone: 1
+  optimizeAnimator: 1
+  mergeSkinnedMesh: 1
+  allowShuffleMaterialSlots: 1
+  optimizeTexture: 1
+  mmdWorldCompatibility: 1
+  debugOptions:
+    exclusions: []
+    gcDebug: 0
+    noSweepComponents: 0
+    noConfigureLeafMergeBone: 0
+    noConfigureMiddleMergeBone: 0
+    noActivenessAnimation: 0
+    skipFreezingNonAnimatedBlendShape: 0
+    skipFreezingMeaninglessBlendShape: 0
+    skipIsAnimatedOptimization: 0
+    skipMergePhysBoneCollider: 0
+    skipEntryExitToBlendTree: 0
+    skipRemoveUnusedAnimatingProperties: 0
+    skipMergeBlendTreeLayer: 0
+    skipRemoveMeaninglessAnimatorLayer: 0
+    skipMergeStaticSkinnedMesh: 0
+    skipMergeAnimatingSkinnedMesh: 0
+    skipMergeMaterialAnimatingSkinnedMesh: 0
+    skipMergeMaterials: 0
+    skipRemoveEmptySubMesh: 0
+    skipAnyStateToEntryExit: 0
+    skipRemoveMaterialUnusedProperties: 0
+    skipRemoveMaterialUnusedTextures: 0
+    skipAutoMergeBlendShape: 0
+    skipRemoveUnusedSubMesh: 0
+    skipMergePhysBones: 0
+    skipCompleteGraphToEntryExit: 0
+    skipReplaceEndBoneWithEndpointPosition: 0
+    skipOptimizationWarnings: 0
 --- !u!1 &1689731932
 GameObject:
   m_ObjectHideFlags: 0
@@ -38529,6 +38818,7 @@ Transform:
   - {fileID: 2357575297397319722}
   - {fileID: 7906363031112624680}
   - {fileID: 322284336}
+  - {fileID: 1258916314}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &5967140057193875985
@@ -39580,7 +39870,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &6481149578489306159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39602,7 +39892,7 @@ MonoBehaviour:
   gestureErrorTolerance: 0.3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
-  enabledInPlaymode: 0
+  enabledInPlaymode: 1
   disableDefense: 1
   disableRootChildren: 1
   hideUI: 0
