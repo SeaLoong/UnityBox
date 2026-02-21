@@ -449,10 +449,10 @@ ASS_Defense Layer
 
 #### 锁定选项
 
-| 属性                  | 类型                | 默认值 | 说明                         |
-| --------------------- | ------------------- | ------ | ---------------------------- |
-| `disableRootChildren` | `bool`              | `true` | 锁定时隐藏 Avatar 根级子对象 |
-| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto` | Auto=自动检测 / On / Off     |
+| 属性                  | 类型                | 默认值 | 说明                                              |
+| --------------------- | ------------------- | ------ | ------------------------------------------------- |
+| `disableRootChildren` | `bool`              | `true` | 锁定时隐藏 Avatar 根级子对象                      |
+| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto` | Auto=自动检测（优先复用 VRCFury 设置） / On / Off |
 
 #### 高级选项
 

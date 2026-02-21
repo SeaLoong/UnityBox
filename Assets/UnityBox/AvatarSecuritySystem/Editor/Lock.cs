@@ -212,17 +212,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
 
         /// <summary>
-        /// 解析 WD 模式：Auto 时参照 VRCFury / Modular Avatar 方案检测已有控制器的 WD 设置
-        /// 规则：
-        /// 1. 跳过 isDefault 的 Playable Layer（未自定义，无分配控制器）
-        /// 2. 跳过 animatorController 为 null 的层（参考 Av3 Manager）
-        /// 3. 跳过 VRChat 内置控制器（名称以 vrc_ 开头）
-        /// 4. 跳过 ASS 自己生成的层（ASS_ 前缀）
-        /// 5. 跳过 Additive 层（必须始终 WD On）
-        /// 6. 跳过 Direct BlendTree 单状态层（必须始终 WD On，参考 Modular Avatar IsWriteDefaultsRequiredLayer）
-        /// 7. 跳过没有 Motion 的空状态（不含有效动画，WD 设置无意义）
-        /// 8. 只要存在任何 WD Off 状态就使用 WD Off
-        /// 9. 全部为 WD On（或无有效状态）才使用 WD On
+        /// 解析 WD 模式：Auto 时优先复用 VRCFury FixWriteDefaults 的用户设置，否则自动扫描
+        /// Auto 流程：
+        /// 1. 检查 VRCFury FixWriteDefaults：ForceOn/ForceOff → 直接复用；Auto/Disabled → 回退扫描
+        /// 扫描规则：
+        /// 2. 跳过 isDefault 的 Playable Layer（未自定义，无分配控制器）
+        /// 3. 跳过 animatorController 为 null 的层（参考 Av3 Manager）
+        /// 4. 跳过 VRChat 内置控制器（名称以 vrc_ 开头）
+        /// 5. 跳过 ASS 自己生成的层（ASS_ 前缀）
+        /// 6. 跳过 Additive 层（必须始终 WD On）
+        /// 7. 跳过 Direct BlendTree 单状态层（必须始终 WD On，参考 Modular Avatar IsWriteDefaultsRequiredLayer）
+        /// 8. 跳过没有 Motion 的空状态（不含有效动画，WD 设置无意义）
+        /// 9. 只要存在任何 WD Off 状态就使用 WD Off
+        /// 10. 全部为 WD On（或无有效状态）才使用 WD On
         /// </summary>
         private bool ResolveWriteDefaults()
         {
@@ -230,6 +232,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             if (config.writeDefaultsMode == ASSComponent.WriteDefaultsMode.Off)
                 return false;
+            
+            // Auto 模式：先检查 VRCFury 是否已指定 WD 模式
+            var externalWd = TryResolveFromExternalTools();
+            if (externalWd.HasValue)
+                return externalWd.Value;
             
             // 收集所有 Playable Layer 的 AnimatorController（去重）
             var controllers = new HashSet<AnimatorController>();
@@ -270,6 +277,43 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             bool useWdOn = !hasWdOff;
             Debug.Log($"[ASS] WD Auto → {(useWdOn ? "On" : "Off")}");
             return useWdOn;
+        }
+
+        /// <summary>
+        /// 通过反射检查 VRCFury FixWriteDefaults 组件的 WD 设置
+        /// - ForceOn/ForceOff → 直接复用
+        /// - Auto → VRCFury 已在构建流程中统一 controller WD，回退到扫描确认
+        /// - Disabled / 未检测到 → 回退到 ASS 自动扫描
+        /// </summary>
+        private bool? TryResolveFromExternalTools()
+        {
+            foreach (var mb in avatarRoot.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb == null) continue;
+                if (mb.GetType().FullName != "VF.Model.VRCFury") continue;
+
+                var content = mb.GetType().GetField("content")?.GetValue(mb);
+                if (content == null || content.GetType().Name != "FixWriteDefaults") continue;
+
+                var modeName = content.GetType().GetField("mode")?.GetValue(content)?.ToString();
+                switch (modeName)
+                {
+                    case "ForceOn":
+                        Debug.Log("[ASS] WD Auto → On (VRCFury FixWriteDefaults = ForceOn)");
+                        return true;
+                    case "ForceOff":
+                        Debug.Log("[ASS] WD Auto → Off (VRCFury FixWriteDefaults = ForceOff)");
+                        return false;
+                    case "Auto":
+                        Debug.Log("[ASS] 检测到 VRCFury FixWriteDefaults = Auto，VRCFury 已统一 controller WD，扫描确认");
+                        return null;
+                    case "Disabled":
+                        Debug.Log("[ASS] VRCFury FixWriteDefaults = Disabled，回退到 ASS 自动检测");
+                        return null;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

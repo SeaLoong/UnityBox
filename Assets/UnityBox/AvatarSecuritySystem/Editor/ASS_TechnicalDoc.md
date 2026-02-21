@@ -267,9 +267,21 @@ Avatar 加载
 
 #### 4.1.5 Write Defaults 自动检测 (ResolveWriteDefaults)
 
-Auto 模式下扫描所有 Playable Layer 的 AnimatorController：
+Auto 模式下的检测流程分为两个阶段：
 
-**跳过规则**:
+**阶段 1 — VRCFury 检查** (`TryResolveFromExternalTools`)：
+
+通过反射检查 Avatar 上的 VRCFury `FixWriteDefaults` 组件（internal 类型，需反射访问）：
+
+- 遍历 `VF.Model.VRCFury` 组件的 `content` 字段
+  - `ForceOn` → 直接返回 WD On
+  - `ForceOff` → 直接返回 WD Off
+  - `Auto` → VRCFury 已在 `-10000` 阶段统一 controller WD，记录日志后进入阶段 2
+  - `Disabled` → VRCFury 不修复非自己管理的层，进入阶段 2
+
+**阶段 2 — Controller 扫描**（回退方案）：
+
+扫描所有 Playable Layer 的 AnimatorController，跳过规则：
 
 1. `isDefault` 的 Playable Layer（未自定义）
 2. `animatorController` 为 null 的层
@@ -607,10 +619,10 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 #### 锁定选项
 
-| 参数                  | 类型              | 默认值 | 说明                                                       |
-| --------------------- | ----------------- | ------ | ---------------------------------------------------------- |
-| `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
-| `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
+| 参数                  | 类型              | 默认值 | 说明                                                                                |
+| --------------------- | ----------------- | ------ | ----------------------------------------------------------------------------------- |
+| `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                                          |
+| `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测（优先复用 VRCFury 设置） / On = 依赖自动恢复 / Off = 显式写入恢复值 |
 
 #### 高级选项
 
@@ -794,7 +806,7 @@ int particleBudget = Mathf.Max(0, Constants.PARTICLE_MAX_COUNT - existingParticl
 
 ### 10.2 Write Defaults 模式
 
-- **Auto（推荐）**：自动检测已有 Controller 的 WD 设置，遵循大多数状态的设置
+- **Auto（推荐）**：优先复用 VRCFury `FixWriteDefaults` (ForceOn/ForceOff) 的用户设置；若为 Auto/Disabled 或不存在，则扫描 Controller 确认
 - **WD On**：动画结束后参数自动恢复默认值，更简洁
 - **WD Off**：每个状态需要显式写入所有受控属性的恢复值
 - 系统自动根据配置选择对应的动画生成策略
