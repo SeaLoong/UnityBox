@@ -19,7 +19,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     /// 因此 ASS 注入的参数会被 VRCFury 正确识别和处理。
     /// 
     /// 执行流程：
-    /// 1. 从 Avatar 根对象提取 AvatarSecuritySystemComponent 配置
+    /// 1. 从 Avatar 根对象提取 ASSComponent 配置
     /// 2. 验证密码有效性和运行模式（PlayMode 可选跳过）
     /// 3. 获取或创建 FX AnimatorController
     /// 4. 注册 VRChat 内置参数（IsLocal）
@@ -71,7 +71,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            var assConfig = avatarGameObject.GetComponent<AvatarSecuritySystemComponent>();
+            var assConfig = avatarGameObject.GetComponent<ASSComponent>();
             if (assConfig == null)
             {
                 Debug.Log("[ASS] No valid AvatarSecuritySystem component found, skipping");
@@ -91,7 +91,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode && assConfig.disabledInPlaymode)
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.enabledInPlaymode)
             {
                 Debug.Log("[ASS] Play mode disabled, skipping");
                 return true;
@@ -229,7 +229,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 从 Resources 文件夹加载音频资源
         /// </summary>
-        private void LoadAudioResources(AvatarSecuritySystemComponent config)
+        private void LoadAudioResources(ASSComponent config)
         {
             config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
             config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);

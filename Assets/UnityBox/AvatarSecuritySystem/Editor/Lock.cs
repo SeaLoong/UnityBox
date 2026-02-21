@@ -19,11 +19,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly AvatarSecuritySystemComponent config;
+        private readonly ASSComponent config;
 
         private readonly VRCAvatarDescriptor descriptor;
 
-        public Lock(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config, VRCAvatarDescriptor descriptor)
+        public Lock(AnimatorController controller, GameObject avatarRoot, ASSComponent config, VRCAvatarDescriptor descriptor)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
@@ -226,9 +226,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private bool ResolveWriteDefaults()
         {
-            if (config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.On)
+            if (config.writeDefaultsMode == ASSComponent.WriteDefaultsMode.On)
                 return true;
-            if (config.writeDefaultsMode == AvatarSecuritySystemComponent.WriteDefaultsMode.Off)
+            if (config.writeDefaultsMode == ASSComponent.WriteDefaultsMode.Off)
                 return false;
             
             // 收集所有 Playable Layer 的 AnimatorController（去重）

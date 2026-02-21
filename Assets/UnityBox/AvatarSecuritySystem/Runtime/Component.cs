@@ -4,39 +4,26 @@ using VRC.SDKBase;
 
 namespace UnityBox.AvatarSecuritySystem
 {
-    /// <summary>
-    /// Avatar Security System (ASS) - 防止盗模的密码保护系统
-    /// 
-    /// 工作原理：
-    /// 1. Avatar 启动时所有对象被禁用，参数被反转
-    /// 2. 同时开始倒计时（默认30秒）
-    /// 3. 用户必须在倒计时结束前输入正确的手势密码
-    /// 4. 只有倒计时到0才会触发反制措施
-    /// </summary>
 #if UNITY_EDITOR
     [AddComponentMenu("UnityBox/Avatar Security System (ASS)")]
 #endif
-    public class AvatarSecuritySystemComponent : MonoBehaviour, IEditorOnly
+    public class ASSComponent : MonoBehaviour, IEditorOnly
     {
-        // ============ UI 语言配置 ============
         [Tooltip("#{language.ui_language_tooltip}")]
         public SystemLanguage uiLanguage = SystemLanguage.Unknown;
 
-        // ============ 密码配置 ============
         [Tooltip("#{password.gesture_tooltip}")]
         public List<int> gesturePassword = new List<int> { 1, 7, 2, 4 };
 
         [Tooltip("#{password.use_right_hand_tooltip}")]
         public bool useRightHand = false;
 
-        // ============ 倒计时配置 ============
         [Range(30f, 120f)]
         [Tooltip("#{countdown.duration_tooltip}")]
         public float countdownDuration = 30f;
 
         [HideInInspector] public float warningThreshold = 10f;
 
-        // ============ 手势识别配置 ============
         [Range(0.1f, 1f)]
         [Tooltip("#{gesture.hold_time_tooltip}")]
         public float gestureHoldTime = 0.15f;
@@ -45,15 +32,13 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{gesture.error_tolerance_tooltip}")]
         public float gestureErrorTolerance = 0.3f;
 
-        // ============ 音频资源 ============
         [HideInInspector] public AudioClip warningBeep;
         [HideInInspector] public AudioClip successSound;
 
-        // ============ 高级选项 ============
         [Tooltip("#{advanced.play_mode_tooltip}")]
-        public bool disabledInPlaymode = true;
+        public bool enabledInPlaymode = false;
 
-        [Tooltip("#{advanced.disable_defense_tooltip}")]
+        [Tooltip("#{defense.disable_defense_tooltip}")]
         public bool disableDefense = false;
 
         [Tooltip("#{advanced.disable_objects_tooltip}")]
@@ -62,30 +47,19 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.hide_ui_tooltip}")]
         public bool hideUI = false;
 
-        [Tooltip("#{advanced.overflow_trick_tooltip}")]
-        public bool overflowTrick = false;
+        [Tooltip("#{defense.enable_overflow_tooltip}")]
+        public bool enableOverflow = true;
 
-        /// <summary>
-        /// Write Defaults 模式
-        /// </summary>
         public enum WriteDefaultsMode
         {
-            /// <summary>Auto: 自动检测 FX Controller 中已有层的 WD 设置</summary>
             Auto,
-            /// <summary>WD On: 不写入原始值，依赖动画系统自动恢复</summary>
             On,
-            /// <summary>WD Off: 显式写入原始值，允许其他系统修改</summary>
             Off
         }
 
         [Tooltip("#{advanced.wd_mode_tooltip}")]
         public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
 
-
-
-        /// <summary>
-        /// VRChat 手势枚举
-        /// </summary>
         public enum VRChatGesture
         {
             Idle = 0,
@@ -98,9 +72,6 @@ namespace UnityBox.AvatarSecuritySystem
             ThumbsUp = 7
         }
 
-        /// <summary>
-        /// 获取手势名称（用于UI显示）
-        /// </summary>
         public static string GetGestureName(int gestureIndex)
         {
             const int minimumGestureIndex = 0;
@@ -114,15 +85,11 @@ namespace UnityBox.AvatarSecuritySystem
             return ((VRChatGesture)gestureIndex).ToString();
         }
 
-        /// <summary>
-        /// 验证密码配置是否有效
-        /// 0位密码表示不启用ASS，也是合法的
-        /// </summary>
         public bool IsPasswordValid()
         {
             if (gesturePassword == null || gesturePassword.Count == 0)
             {
-                return true; // 0位密码合法，表示不启用ASS
+                return true;
             }
 
             return AreAllGesturesValid();
@@ -141,9 +108,6 @@ namespace UnityBox.AvatarSecuritySystem
             return true;
         }
 
-        /// <summary>
-        /// 获取密码强度评级
-        /// </summary>
         public string GetPasswordStrength()
         {
             if (!IsPasswordValid()) return "Invalid";
@@ -189,7 +153,7 @@ namespace UnityBox.AvatarSecuritySystem
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
-            disabledInPlaymode = true;
+            enabledInPlaymode = false;
             disableRootChildren = true;
         }
 #endif

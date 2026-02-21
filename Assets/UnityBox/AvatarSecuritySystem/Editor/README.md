@@ -117,10 +117,11 @@ Avatar 启动
 - **Gesture Hold Time**: 0.1-1.0 秒（默认 0.15 秒），手势需保持的最短时间
 - **Gesture Error Tolerance**: 0.1-1.0 秒（默认 0.3 秒），短暂误触的容错时间
 
-### 步骤 5：防御配置（可选）
+### 步骤 5：防御选项（可选）
 
 - 构建时自动生成 GPU 防御组件（所有 GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
 - 可通过 `disableDefense` 选项完全禁用防御生成
+- 可通过 `enableOverflow` 选项启用溢出模式
 
 ### 步骤 6：构建上传
 
@@ -144,7 +145,7 @@ Avatar 启动
 ### 构建流程
 
 ```
-AvatarSecuritySystemComponent (MonoBehaviour)
+ASSComponent (MonoBehaviour)
     ↓ 配置参数
 Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder=-1026)
     ↓ VRChat Build & Publish 时自动执行
@@ -177,11 +178,11 @@ ASS 在 NDMF/VRCFury 主处理完成后注入，VRCFury 参数压缩在远后执
 Assets/UnityBox/AvatarSecuritySystem/
 ├─ package.json                                          # VPM 包清单
 ├─ Runtime/
-│   ├─ AvatarSecuritySystem.cs                           # 主组件类（配置字段）
+│   ├─ Component.cs                                         # 主组件类（配置字段）
 │   └─ UnityBox.AvatarSecuritySystem.Runtime.asmdef
 │
 ├─ Editor/
-│   ├─ AvatarSecuritySystemEditor.cs                     # 自定义 Inspector UI
+│   ├─ Inspector.cs                                         # 自定义 Inspector UI
 │   ├─ Processor.cs                                      # VRCSDK 构建处理器（入口点）
 │   ├─ Utils.cs                                          # Animator 工具方法
 │   ├─ Lock.cs                                           # 锁定系统生成器
@@ -414,7 +415,7 @@ ASS_Defense Layer
 
 ## 配置选项
 
-### AvatarSecuritySystemComponent 属性
+### ASSComponent 属性
 
 #### 密码配置
 
@@ -437,22 +438,27 @@ ASS_Defense Layer
 | `countdownDuration` | `float` | 30-120s | `30`   | 倒计时时长                              |
 | `warningThreshold`  | `float` | —       | `10`   | 警告阶段阈值（HideInInspector，固定值） |
 
-#### 防御配置
+#### 防御选项
 
-| 属性             | 类型   | 默认值  | 说明                                                |
-| ---------------- | ------ | ------- | --------------------------------------------------- |
-| `disableDefense` | `bool` | `false` | 完全禁用防御生成（粒子/光源/刚体/布料/防御 Shader） |
+| 属性             | 类型   | 默认值  | 说明                                                                      |
+| ---------------- | ------ | ------- | ------------------------------------------------------------------------- |
+| `disableDefense` | `bool` | `false` | 禁用防御生成（仅保留密码系统）                                            |
+| `enableOverflow` | `bool` | `true`  | 启用溢出：粒子和Mesh面数按int.MaxValue+1生成，光源maxLights设int.MaxValue |
+
+#### 锁定选项
+
+| 属性                  | 类型                | 默认值 | 说明                         |
+| --------------------- | ------------------- | ------ | ---------------------------- |
+| `disableRootChildren` | `bool`              | `true` | 锁定时隐藏 Avatar 根级子对象 |
+| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto` | Auto=自动检测 / On / Off     |
 
 #### 高级选项
 
-| 属性                  | 类型                | 默认值    | 说明                                               |
-| --------------------- | ------------------- | --------- | -------------------------------------------------- |
-| `disabledInPlaymode`  | `bool`              | `true`    | Play Mode 跳过 ASS 生成                            |
-| `disableRootChildren` | `bool`              | `true`    | 锁定时隐藏 Avatar 根级子对象                       |
-| `hideUI`              | `bool`              | `false`   | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈 |
-| `overflowTrick`       | `bool`              | `false`   | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648     |
-| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto`    | Auto=自动检测 / On / Off                           |
-| `uiLanguage`          | `SystemLanguage`    | `Unknown` | Inspector 语言（Unknown=自动检测）                 |
+| 属性                | 类型             | 默认值    | 说明                                               |
+| ------------------- | ---------------- | --------- | -------------------------------------------------- |
+| `enabledInPlaymode` | `bool`           | `false`   | 播放模式中启用 ASS 生成                            |
+| `hideUI`            | `bool`           | `false`   | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈 |
+| `uiLanguage`        | `SystemLanguage` | `Unknown` | Inspector 语言（Unknown=自动检测）                 |
 
 ---
 

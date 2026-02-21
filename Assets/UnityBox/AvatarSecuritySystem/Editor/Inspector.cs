@@ -6,13 +6,10 @@ using static UnityBox.AvatarSecuritySystem.Editor.I18n;
 
 namespace UnityBox.AvatarSecuritySystem
 {
-    /// <summary>
-    /// AvatarSecuritySystem Inspector 编辑器
-    /// </summary>
-    [CustomEditor(typeof(AvatarSecuritySystemComponent))]
-    public class AvatarSecuritySystemEditor : UnityEditor.Editor
+    [CustomEditor(typeof(ASSComponent))]
+    public class Inspector : UnityEditor.Editor
     {
-        private AvatarSecuritySystemComponent _target;
+        private ASSComponent _target;
         
         private static readonly string[] GESTURE_NAMES =
         {
@@ -29,9 +26,8 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void OnEnable()
         {
-            _target = (AvatarSecuritySystemComponent)target;
+            _target = (ASSComponent)target;
             
-            // 应用组件中保存的语言设置
             if (_target.uiLanguage != SystemLanguage.Unknown)
             {
                 SetLanguage(_target.uiLanguage);
@@ -77,9 +73,9 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void DrawAdvancedSections()
         {
-            DrawAdvancedOptionsSection();
-            EditorGUILayout.Space(10);
             DrawLockSection();
+            EditorGUILayout.Space(10);
+            DrawAdvancedOptionsSection();
         }
 
         private void DrawTitle()
@@ -305,27 +301,24 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void DrawDefenseSection()
         {
-            EditorGUILayout.LabelField(T("defense.config"), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(T("defense.options"), EditorStyles.boldLabel);
 
-            EditorGUILayout.Space(3);
-            EditorGUILayout.HelpBox(T("defense.desc_gpu"), MessageType.Info);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
+                new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableOverflow"),
+                new GUIContent(T("defense.enable_overflow"), T("defense.enable_overflow_tooltip")));
         }
 
         private void DrawAdvancedOptionsSection()
         {
             EditorGUILayout.LabelField(T("advanced.options"), EditorStyles.boldLabel);
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disabledInPlaymode"),
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enabledInPlaymode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
-                new GUIContent(T("advanced.disable_defense"), T("advanced.disable_defense_tooltip")));
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("hideUI"),
                 new GUIContent(T("advanced.hide_ui"), T("advanced.hide_ui_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("overflowTrick"),
-                new GUIContent(T("advanced.overflow_trick"), T("advanced.overflow_trick_tooltip")));
         }
 
         private void DrawLockSection()

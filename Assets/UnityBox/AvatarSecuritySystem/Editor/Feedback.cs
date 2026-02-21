@@ -11,7 +11,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     public class Feedback
     {
         private readonly GameObject avatarGameObject;
-        private readonly AvatarSecuritySystemComponent config;
+        private readonly ASSComponent config;
         private GameObject uiGameObject;
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private const string UI_SHADER_NAME = "UnityBox/ASS_UI";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
 
-        public Feedback(GameObject avatarGameObject, AvatarSecuritySystemComponent config)
+        public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
             this.avatarGameObject = avatarGameObject;
             this.config = config;

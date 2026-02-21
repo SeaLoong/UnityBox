@@ -11,10 +11,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly AvatarSecuritySystemComponent config;
+        private readonly ASSComponent config;
         private readonly bool isDebugMode;
 
-        public Defense(AnimatorController controller, GameObject avatarRoot, AvatarSecuritySystemComponent config, bool isDebugMode = false)
+        public Defense(AnimatorController controller, GameObject avatarRoot, ASSComponent config, bool isDebugMode = false)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
@@ -90,14 +90,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (parameters.ParticleCount > 0)
             {
-                int existingPS = avatarRoot.GetComponentsInChildren<ParticleSystem>(true).Length;
-                int psBudget = Mathf.Max(0, Constants.PARTICLE_SYSTEM_MAX_COUNT - existingPS);
-                long existingParticleMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
-                int meshPolyBudget = (int)System.Math.Max(0L,
-                    (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingParticleMeshTris);
-                if (psBudget > 0)
-                    CreateParticleComponents(root, Mathf.Min(parameters.ParticleSystemCount, psBudget),
-                        parameters.ParticleCount, meshPolyBudget, defenseLights, config.overflowTrick);
+                int systemCount;
+                long particleTarget;
+                long meshPolyTarget;
+
+                if (config.enableOverflow)
+                {
+                    systemCount = parameters.ParticleSystemCount;
+                    particleTarget = (long)Constants.PARTICLE_MAX_COUNT + 1L;
+                    meshPolyTarget = (long)Constants.MESH_PARTICLE_MAX_POLYGONS + 1L;
+                }
+                else
+                {
+                    int existingPS = avatarRoot.GetComponentsInChildren<ParticleSystem>(true).Length;
+                    int psBudget = Mathf.Max(0, Constants.PARTICLE_SYSTEM_MAX_COUNT - existingPS);
+                    systemCount = Mathf.Min(parameters.ParticleSystemCount, psBudget);
+                    particleTarget = parameters.ParticleCount;
+                    long existingMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
+                    meshPolyTarget = System.Math.Max(0L,
+                        (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingMeshTris);
+                }
+
+                if (systemCount > 0 && meshPolyTarget > 0)
+                    CreateParticleComponents(root, systemCount, particleTarget, meshPolyTarget, defenseLights, config.enableOverflow);
             }
 
             if (parameters.PhysXRigidbodyCount > 0)
@@ -193,7 +208,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return total;
         }
 
-        private static void CreateParticleComponents(GameObject root, int systemBudget, int particleBudget, int meshPolyBudget, Light[] lights, bool overflowTrick)
+        private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget, long meshPolyBudget, Light[] lights, bool enableOverflow)
         {
             if (meshPolyBudget <= 0)
             {
@@ -208,9 +223,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Mesh sharedParticleMesh;
             Mesh sharedSubEmitterMesh;
 
-            long idealTrisPerParticle = particleBudget > 0
-                ? (long)meshPolyBudget / (long)particleBudget
-                : (long)meshPolyBudget;
+            long idealTrisPerParticle = particleTarget > 0
+                ? meshPolyBudget / particleTarget
+                : meshPolyBudget;
 
             if (idealTrisPerParticle >= 8)
             {
@@ -228,8 +243,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
             }
 
-            if (meshTriangles > 0 && particleBudget > meshPolyBudget / meshTriangles)
-                particleBudget = meshPolyBudget / meshTriangles;
+            if (meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
+                particleTarget = meshPolyBudget / meshTriangles;
 
             const int MATERIAL_POOL_SIZE = 8;
             var particleShaderRef = Shader.Find("Standard") ?? Shader.Find("Particles/Standard Unlit");
@@ -259,23 +274,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             int systemsUsed = 0;
-            int particlesUsed = 0;
+            long particlesUsed = 0;
 
             var mainSystems = new List<ParticleSystem>();
             var mainObjects = new List<GameObject>();
 
-            while (systemsUsed < systemBudget && particlesUsed < particleBudget)
+            while (systemsUsed < systemBudget && particlesUsed < particleTarget)
             {
-                int remaining = particleBudget - particlesUsed;
+                long remaining = particleTarget - particlesUsed;
                 int remainingSystems = systemBudget - systemsUsed;
-                int particlesForThis = remaining / remainingSystems;
+                int particlesForThis = (int)System.Math.Min(remaining / remainingSystems, int.MaxValue);
                 if (particlesForThis <= 0) break;
-
-                bool isLastSystem = (systemsUsed == systemBudget - 1) || (particlesUsed + particlesForThis >= particleBudget);
-                if (overflowTrick && isLastSystem)
-                {
-                    particlesForThis += 1;
-                }
 
                 int s = mainSystems.Count;
                 var psObj = new GameObject($"PS_{s}");
@@ -513,14 +522,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     lightsModule.enabled = true;
                     lightsModule.light = particleLight;
-                    lightsModule.ratio = 1f;
+                    lightsModule.ratio = 10000000f;
                     lightsModule.useRandomDistribution = true;
                     lightsModule.useParticleColor = true;
                     lightsModule.sizeAffectsRange = true;
                     lightsModule.alphaAffectsIntensity = true;
                     lightsModule.rangeMultiplier = 10000000f;
                     lightsModule.intensityMultiplier = 10000000f;
-                    lightsModule.maxLights = particlesForThis;
+                    lightsModule.maxLights = enableOverflow ? int.MaxValue : particlesForThis;
                 }
                 var customData = ps.customData;
                 customData.enabled = true;
@@ -574,18 +583,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             int mainCount = mainSystems.Count;
-            for (int s = 0; s < mainCount && systemsUsed < systemBudget && particlesUsed < particleBudget; s++)
+            for (int s = 0; s < mainCount && systemsUsed < systemBudget && particlesUsed < particleTarget; s++)
             {
-                int remaining = particleBudget - particlesUsed;
+                long remaining = particleTarget - particlesUsed;
                 int remainingSubs = Mathf.Min(mainCount - s, systemBudget - systemsUsed);
-                int subParticles = remaining / Mathf.Max(1, remainingSubs);
+                int subParticles = (int)System.Math.Min(remaining / Mathf.Max(1, remainingSubs), int.MaxValue);
                 if (subParticles <= 0) break;
-
-                bool isLastSub = (s == mainCount - 1) || (particlesUsed + subParticles >= particleBudget);
-                if (overflowTrick && isLastSub)
-                {
-                    subParticles += 1;
-                }
 
                 var ps = mainSystems[s];
                 var psObj = mainObjects[s];
@@ -778,14 +781,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     subLightsModule.enabled = true;
                     subLightsModule.light = subParticleLight;
-                    subLightsModule.ratio = 1f;
+                    subLightsModule.ratio = 10000000f;
                     subLightsModule.useRandomDistribution = true;
                     subLightsModule.useParticleColor = true;
                     subLightsModule.sizeAffectsRange = true;
                     subLightsModule.alphaAffectsIntensity = true;
                     subLightsModule.rangeMultiplier = 10000000f;
                     subLightsModule.intensityMultiplier = 10000000f;
-                    subLightsModule.maxLights = subParticles;
+                    subLightsModule.maxLights = enableOverflow ? int.MaxValue : subParticles;
                 }
 
                 var subCustomData = subPs.customData;

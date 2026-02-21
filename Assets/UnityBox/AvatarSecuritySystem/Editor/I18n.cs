@@ -332,12 +332,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.Japanese, "警告しきい値 (秒)" }
                 },
 
-                // ========== 防御配置 ==========
-                ["defense.config"] = new Dictionary<SystemLanguage, string>
+                // ========== 防御选项 ==========
+                ["defense.options"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense Configuration" },
-                    { SystemLanguage.ChineseSimplified, "防御配置" },
-                    { SystemLanguage.Japanese, "防御設定" }
+                    { SystemLanguage.English, "Defense Options" },
+                    { SystemLanguage.ChineseSimplified, "防御选项" },
+                    { SystemLanguage.Japanese, "防御オプション" }
                 },
                 ["defense.desc_gpu"] = new Dictionary<SystemLanguage, string>
                 {
@@ -361,23 +361,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.play_mode"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Disable in Play Mode" },
-                    { SystemLanguage.ChineseSimplified, "Play 模式中禁用" },
-                    { SystemLanguage.Japanese, "プレイモードで無効化" }
+                    { SystemLanguage.English, "Enable in Play Mode" },
+                    { SystemLanguage.ChineseSimplified, "播放模式中启用" },
+                    { SystemLanguage.Japanese, "プレイモードで有効化" }
                 },
                 ["advanced.play_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Skip ASS generation in Play Mode. When unchecked, defense components use minimal parameters (1 each) for quick testing." },
-                    { SystemLanguage.ChineseSimplified, "在 Play 模式下跳过 ASS 生成。取消勾选后，防御组件会使用最小参数（各 1 个）以快速测试。" },
-                    { SystemLanguage.Japanese, "プレイモードでASS生成をスキップ。チェックを外すと、防御コンポーネントは最小パラメータ（各 1 個）で素早くテストできます。" }
+                    { SystemLanguage.English, "Enable ASS generation in Play Mode. Defense components use minimal parameters (1 each) for quick testing." },
+                    { SystemLanguage.ChineseSimplified, "在播放模式下启用 ASS 生成。防御组件会使用最小参数（各 1 个）以快速测试。" },
+                    { SystemLanguage.Japanese, "プレイモードでASS生成を有効化。防御コンポーネントは最小パラメータ（各 1 個）で素早くテストできます。" }
                 },
-                ["advanced.disable_defense"] = new Dictionary<SystemLanguage, string>
+                ["defense.disable_defense"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Disable Defense" },
-                    { SystemLanguage.ChineseSimplified, "不生成防御" },
-                    { SystemLanguage.Japanese, "防御を生成しない" }
+                    { SystemLanguage.ChineseSimplified, "禁用防御" },
+                    { SystemLanguage.Japanese, "防御を無効化" }
                 },
-                ["advanced.disable_defense_tooltip"] = new Dictionary<SystemLanguage, string>
+                ["defense.disable_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Do not generate defense mechanisms (only test password system)" },
                     { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）" },
@@ -395,17 +395,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "不生成全屏覆盖 UI（遮罩 + 进度条）。音频反馈仍然会生成。" },
                     { SystemLanguage.Japanese, "フルスクリーンオーバーレイUI（マスク+プログレスバー）を生成しない。オーディオフィードバックは引き続き生成されます。" }
                 },
-                ["advanced.overflow_trick"] = new Dictionary<SystemLanguage, string>
+                ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Overflow Trick" },
-                    { SystemLanguage.ChineseSimplified, "溢出技巧" },
-                    { SystemLanguage.Japanese, "オーバーフロートリック" }
+                    { SystemLanguage.English, "Enable Overflow" },
+                    { SystemLanguage.ChineseSimplified, "启用溢出" },
+                    { SystemLanguage.Japanese, "オーバーフローを有効化" }
                 },
-                ["advanced.overflow_trick_tooltip"] = new Dictionary<SystemLanguage, string>
+                ["defense.enable_overflow_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Overflow Trick: The last particle system and mesh will have their max particles and triangle count increased by 1, causing VRChat stats to overflow past int.MaxValue and display -2147483648." },
-                    { SystemLanguage.ChineseSimplified, "溢出技巧：最后一个粒子系统和Mesh的最大粒子数与三角面数各+1，使VRChat统计超出int.MaxValue，显示-2147483648。" },
-                    { SystemLanguage.Japanese, "オーバーフロートリック：最後のパーティクルシステムとメッシュの最大パーティクル数・三角数を+1し、VRChat統計をint.MaxValue超えにして-2147483648を表示。" }
+                    { SystemLanguage.English, "Enable Overflow: Total particle count and mesh polygon count are generated at int.MaxValue+1 (bypassing budget calculation), causing VRChat stats to overflow and display -2147483648. Particle lights maxLights is set to int.MaxValue." },
+                    { SystemLanguage.ChineseSimplified, "启用溢出：粒子总数和Mesh面数按int.MaxValue+1直接生成（跳过预算计算），使VRChat统计溢出显示-2147483648。粒子光源maxLights设为int.MaxValue。" },
+                    { SystemLanguage.Japanese, "オーバーフローを有効化：パーティクル総数とメッシュポリゴン数をint.MaxValue+1で直接生成（予算計算をスキップ）し、VRChat統計をオーバーフローさせて-2147483648を表示。パーティクルライトmaxLightsをint.MaxValueに設定。" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {

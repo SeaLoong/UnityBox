@@ -38,11 +38,11 @@ Editor/
 ├── Constants.cs              # 系统常量定义
 ├── Utils.cs                  # 通用工具类（Animator 操作、VRC 行为、路径处理）
 ├── I18n.cs                   # 国际化
-├── AvatarSecuritySystemEditor.cs  # Inspector 自定义编辑器
+├── Inspector.cs                          # Inspector 自定义编辑器
 └── README.md                 # 用户说明文档
 
 Runtime/
-└── AvatarSecuritySystem.cs   # 运行时配置组件（AvatarSecuritySystemComponent : MonoBehaviour + IEditorOnly）
+└── Component.cs   # 运行时配置组件（ASSComponent : MonoBehaviour + IEditorOnly）
 
 Resources/
 ├── Avatar Security System.png      # Logo 图片
@@ -122,14 +122,14 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
 OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
 │
 ├─ 1. 获取 VRCAvatarDescriptor
-│     获取 AvatarSecuritySystemComponent 配置
+│     获取 ASSComponent 配置
 │     验证密码配置有效性 (IsPasswordValid)
 │
 ├─ 2. 检查密码是否为空
 │     gesturePassword 为空 (0位) → 跳过，不启用 ASS
 │
-├─ 3. 检查 PlayMode 禁用开关
-│     disabledInPlaymode = true 且当前为 PlayMode → 跳过
+├─ 3. 检查播放模式启用开关
+│     enabledInPlaymode = false 且当前为 PlayMode → 跳过
 │
 └─ 4. ProcessAvatar() 主流程
       │
@@ -168,7 +168,7 @@ OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
           保存资产，输出统计
 ```
 
-> 注：防御系统可通过 `disableDefense` 选项单独禁用。
+> 注：防御系统可通过 `disableDefense` 选项禁用。
 
 ### 3.2 运行时状态流
 
@@ -497,7 +497,8 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 - 两阶段顺序填充：第一阶段创建主粒子系统，第二阶段为每个主系统创建子发射器
 - **材质池优化**：所有粒子系统共享 8 个材质池（主材质 8 个 + Trail 材质 8 个），避免创建数百个独立 Material 实例
-- 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算（溢出保护）
+- 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算
+- **溢出模式**（`enableOverflow`）：粒子总数和 Mesh 面数目标设为 int.MaxValue+1（跳过预算），使用 `long` 运算分配到各系统后每系统 maxParticles 仍在 int 范围内；粒子光源 maxLights 设为 int.MaxValue
 - `GenerateSphereMesh` 生成的 Mesh `bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
 - **粒子光源复用**：不再为每个粒子系统创建独立 Light 子对象，而是引用 `CreateLightComponents` 已创建的 Light 数组（循环取用），避免 Light 总数超出 `LIGHT_MAX_COUNT` 上限
 - **创建顺序**：LightDefense 在 ParticleDefense 之前创建，以确保粒子光源模块能引用已有的 Light 组件
@@ -569,7 +570,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 
 ## 5. 配置参数详解
 
-### 5.1 AvatarSecuritySystemComponent 参数
+### 5.1 ASSComponent 参数
 
 #### 基础配置
 
@@ -593,16 +594,26 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 | `gestureHoldTime`       | float | 0.15   | 0.1-1.0 | 手势保持确认时间（秒），防止误触 |
 | `gestureErrorTolerance` | float | 0.3    | 0.1-1.0 | 错误手势容错缓冲时间（秒）       |
 
-#### 高级选项
+#### 防御选项
+
+| 参数             | 类型 | 默认值 | 说明                                                                      |
+| ---------------- | ---- | ------ | ------------------------------------------------------------------------- |
+| `disableDefense` | bool | false  | 禁用防御组件（仅保留密码系统，用于测试）                                  |
+| `enableOverflow` | bool | false  | 启用溢出：粒子和Mesh面数按int.MaxValue+1生成，光源maxLights设int.MaxValue |
+
+#### 锁定选项
 
 | 参数                  | 类型              | 默认值 | 说明                                                       |
 | --------------------- | ----------------- | ------ | ---------------------------------------------------------- |
-| `disabledInPlaymode`  | bool              | true   | PlayMode 时是否跳过安全系统生成                            |
-| `disableDefense`      | bool              | false  | 禁用防御组件（仅保留密码系统，用于测试）                   |
 | `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                 |
-| `hideUI`              | bool              | false  | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈         |
-| `overflowTrick`       | bool              | false  | 额外 +1 粒子使 VRChat 统计溢出显示 -2147483648             |
 | `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测 / On = 依赖自动恢复 / Off = 显式写入恢复值 |
+
+#### 高级选项
+
+| 参数                | 类型 | 默认值 | 说明                                               |
+| ------------------- | ---- | ------ | -------------------------------------------------- |
+| `enabledInPlaymode` | bool | false  | 播放模式中是否启用安全系统生成                     |
+| `hideUI`            | bool | false  | 不生成全屏覆盖 UI（遮罩 + 进度条），仅保留音频反馈 |
 
 #### 音频资源（隐藏字段，自动从 Resources 加载）
 
@@ -737,15 +748,15 @@ Avatar Root
 │  密码强度: ████ (强/中/弱/无效)              │
 ├─ 倒计时配置 ────────────────────────────────┤
 │  倒计时时间: [30━━━━━━━━━120]                │
-├─ 防御配置 ──────────────────────────────────┤
-│  ℹ️ GPU 防御说明                                 │
-├─ 高级设置 ──────────────────────────────────┤
-│  调试选项                                    │
-│    [✓] PlayMode 时禁用                       │
-│    [✓] 禁用防御                              │
-│  锁定选项                                    │
+├─ 防御选项 ──────────────────────────────────┤
+│  [ ] 禁用防御                                │
+│  [✓] 启用溢出                                │
+├─ 锁定选项 ──────────────────────────────────┤
 │  [✓] 隐藏对象                                │
 │  WD模式: [Auto ▼]                          │
+├─ 高级设置 ──────────────────────────────────┤
+│  [ ] 播放模式中启用                          │
+│  [ ] 隐藏 UI                                 │
 └──────────────────────────────────────────────┘
 ```
 

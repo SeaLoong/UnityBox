@@ -17206,7 +17206,7 @@ GameObject:
   - component: {fileID: 1679610430}
   - component: {fileID: 1679610429}
   - component: {fileID: 1679610428}
-  - component: {fileID: 1679610427}
+  - component: {fileID: 1679610432}
   m_Layer: 0
   m_Name: TEST ASS
   m_TagString: Untagged
@@ -17214,33 +17214,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1679610427
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1679610426}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c51e6a139920bb4ca12700dc82627ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uiLanguage: 43
-  gesturePassword: 01000000070000000200000004000000
-  useRightHand: 0
-  countdownDuration: 30
-  warningThreshold: 10
-  gestureHoldTime: 0.15
-  gestureErrorTolerance: 0.3
-  warningBeep: {fileID: 0}
-  successSound: {fileID: 0}
-  disabledInPlaymode: 0
-  disableDefense: 0
-  disableRootChildren: 1
-  hideUI: 0
-  overflowTrick: 1
-  writeDefaultsMode: 0
 --- !u!114 &1679610428
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18093,6 +18066,33 @@ Transform:
   - {fileID: 1402796553}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1679610432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1679610426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c51e6a139920bb4ca12700dc82627ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiLanguage: 43
+  gesturePassword: 01000000070000000200000004000000
+  useRightHand: 0
+  countdownDuration: 30
+  warningThreshold: 10
+  gestureHoldTime: 0.15
+  gestureErrorTolerance: 0.3
+  warningBeep: {fileID: 0}
+  successSound: {fileID: 0}
+  enabledInPlaymode: 0
+  disableDefense: 0
+  disableRootChildren: 1
+  hideUI: 0
+  enableOverflow: 1
+  writeDefaultsMode: 0
 --- !u!1 &1689731932
 GameObject:
   m_ObjectHideFlags: 0
@@ -39602,11 +39602,11 @@ MonoBehaviour:
   gestureErrorTolerance: 0.3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
-  disabledInPlaymode: 0
+  enabledInPlaymode: 0
   disableDefense: 1
   disableRootChildren: 1
   hideUI: 0
-  overflowTrick: 1
+  enableOverflow: 1
   writeDefaultsMode: 0
 --- !u!4 &6481295841211110324
 Transform:
