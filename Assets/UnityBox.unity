@@ -18116,6 +18116,12 @@ MonoBehaviour:
     name: dance_loop
   - hash: 877246816
     name: Afk Init
+  - hash: -268247177
+    name: Empty
+  - hash: 320039515
+    name: Local
+  - hash: 589858999
+    name: NonLocal
   autoFootsteps: 1
   autoLocomotion: 1
   collider_head:

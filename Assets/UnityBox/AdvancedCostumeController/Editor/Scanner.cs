@@ -47,15 +47,16 @@ namespace UnityBox.AdvancedCostumeController
         if (processedBases.Contains(outfitBase.gameObject)) continue;
         processedBases.Add(outfitBase.gameObject);
 
-        // 查找变体（同级的其他节点，必须也包含 Mesh 子节点才视为变体）
+        // 查找变体（同级的其他节点）
         var variants = new List<GameObject>();
         var outfitParent = outfitBase.parent;
+        // 只有当父节点存在且不是根节点时才查找变体
         if (outfitParent != null && outfitParent.gameObject != costumesRoot)
         {
           for (int i = 0; i < outfitParent.childCount; i++)
           {
             var sibling = outfitParent.GetChild(i);
-            if (sibling != outfitBase && !Utils.IsNameIgnored(sibling.name, ignoreSet) && HasMeshChild(sibling))
+            if (sibling != outfitBase && !Utils.IsNameIgnored(sibling.name, ignoreSet))
               variants.Add(sibling.gameObject);
           }
         }
