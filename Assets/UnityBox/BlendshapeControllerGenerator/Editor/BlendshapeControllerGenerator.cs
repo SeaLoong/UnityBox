@@ -517,7 +517,11 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
   private bool GenerateForMesh(SkinnedMeshRenderer mr, List<string> names, List<bool> sels, List<BlendParamType> types, List<bool> inverts, List<float> offs, List<float> ons, int clipIndexOffset, int totalClips, string usePrefix)
   {
     string meshName = mr != null ? mr.gameObject.name : "Mesh";
-    string meshSubFolder = Path.Combine(outputFolder, meshName).Replace("\\", "/");
+    // 在输出目录后追加 Avatar 名称，防止多个 Avatar 生成时互相覆盖
+    string resolvedOutputFolder = avatarRoot != null
+      ? Path.Combine(outputFolder, avatarRoot.name).Replace("\\", "/")
+      : outputFolder;
+    string meshSubFolder = Path.Combine(resolvedOutputFolder, meshName).Replace("\\", "/");
     string baseControllerNameForFile = string.IsNullOrWhiteSpace(controllerName) ? meshName : Path.GetFileNameWithoutExtension(controllerName);
     string controllerPath = Path.Combine(meshSubFolder, baseControllerNameForFile + ".controller").Replace("\\", "/");
     string baseControllerNameForMenu = meshName;

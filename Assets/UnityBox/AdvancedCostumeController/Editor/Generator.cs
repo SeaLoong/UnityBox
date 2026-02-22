@@ -31,7 +31,8 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData defaultOutfit)
     {
-      string controllerPath = Path.Combine(config.GeneratedFolder, "CostumeController.controller").Replace("\\", "/");
+      var resolvedFolder = config.GetResolvedGeneratedFolder();
+      string controllerPath = Path.Combine(resolvedFolder, "CostumeController.controller").Replace("\\", "/");
       if (File.Exists(controllerPath))
       {
         if (!EditorUtility.DisplayDialog("覆盖确认",
@@ -70,9 +71,9 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         EditorUtility.DisplayProgressBar("生成中", "创建动画控制器...", 0.7f);
-        if (!Directory.Exists(config.GeneratedFolder))
+        if (!Directory.Exists(resolvedFolder))
         {
-          Directory.CreateDirectory(config.GeneratedFolder);
+          Directory.CreateDirectory(resolvedFolder);
           AssetDatabase.Refresh();
         }
 
@@ -210,7 +211,7 @@ namespace UnityBox.AdvancedCostumeController
       sb.AppendLine("即将生成，摘要：");
       sb.AppendLine($"- 服装数量：{outfits.Count}");
       sb.AppendLine($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}");
-      sb.AppendLine($"- 输出目录：{config.GeneratedFolder}");
+      sb.AppendLine($"- 输出目录：{config.GetResolvedGeneratedFolder()}");
       sb.AppendLine($"- 默认服装：{defaultOutfit?.Name ?? "未设置"}");
       if (config.EnableCustomMixer)
         sb.AppendLine($"- 混搭模式：已启用 ({config.CustomMixerName})");

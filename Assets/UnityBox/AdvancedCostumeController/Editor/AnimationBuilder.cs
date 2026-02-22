@@ -494,7 +494,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private string EnsureAnimFolder(string subfolder = null)
     {
-      string folder = Path.Combine(config.GeneratedFolder, "Animations");
+      string folder = Path.Combine(config.GetResolvedGeneratedFolder(), "Animations");
       if (!string.IsNullOrEmpty(subfolder))
         folder = Path.Combine(folder, subfolder);
       if (!Directory.Exists(folder))

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VRC.SDK3.Avatars.Components;
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -59,5 +60,25 @@ public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeContro
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
     public string CustomMixerName = "CustomMix";
+
+    /// <summary>
+    /// 获取实际的生成目录（在 GeneratedFolder 后追加当前 Avatar 名称）
+    /// 防止切换不同 Avatar 生成时互相覆盖
+    /// </summary>
+    public string GetResolvedGeneratedFolder()
+    {
+      string avatarName = null;
+      if (CostumesRoot != null)
+      {
+        var descriptor = CostumesRoot.GetComponentInParent<VRCAvatarDescriptor>();
+        if (descriptor != null)
+          avatarName = descriptor.gameObject.name;
+        else
+          avatarName = CostumesRoot.transform.root.gameObject.name;
+      }
+      if (string.IsNullOrEmpty(avatarName))
+        return GeneratedFolder;
+      return GeneratedFolder.TrimEnd('/') + "/" + avatarName;
+    }
   }
 }

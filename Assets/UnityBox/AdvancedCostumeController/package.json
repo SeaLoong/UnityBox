@@ -1,7 +1,7 @@
 {
   "name": "top.sealoong.unitybox.advanced-costume-controller",
   "displayName": "Advanced Costume Controller",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A VRChat avatar editor tool for quickly setting up costume/outfit switching with Modular Avatar menus and animations.",
   "unity": "2022.3",
   "author": {
