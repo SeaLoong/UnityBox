@@ -17451,7 +17451,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1679610428
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26745,6 +26745,12 @@ MonoBehaviour:
     name: dance_loop
   - hash: 877246816
     name: Afk Init
+  - hash: -268247177
+    name: Empty
+  - hash: 320039515
+    name: Local
+  - hash: 589858999
+    name: NonLocal
   autoFootsteps: 1
   autoLocomotion: 1
   collider_head:
@@ -39899,13 +39905,14 @@ GameObject:
   - component: {fileID: 1124634812806735779}
   - component: {fileID: 1097081895637002651}
   - component: {fileID: 6481149578489306159}
+  - component: {fileID: 6481149578489306160}
   m_Layer: 0
   m_Name: TEST ASS ND
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &6481149578489306159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39933,6 +39940,34 @@ MonoBehaviour:
   hideUI: 0
   enableOverflow: 1
   writeDefaultsMode: 0
+--- !u!114 &6481149578489306160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6481149578489306158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9e94e501a2d4c95bff3d5601013d923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 3
+  unityVersion: 2022.3.22f1
+  vrcfuryVersion: 1.1279.0
+  somethingIsBroken: 0
+  config:
+    features: []
+  content:
+    rid: 5603525201153228800
+  references:
+    version: 2
+    RefIds:
+    - rid: 5603525201153228800
+      type: {class: FixWriteDefaults, ns: VF.Model.Feature, asm: VRCFury}
+      data:
+        version: 0
+        mode: 0
 --- !u!4 &6481295841211110324
 Transform:
   m_ObjectHideFlags: 0

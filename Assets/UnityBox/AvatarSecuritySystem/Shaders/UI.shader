@@ -82,7 +82,11 @@ Shader "UnityBox/ASS_UI"
                 ndc.y = -ndc.y;
                 #endif
 
-                float d = 100.0;
+                // d=5: 在相机前方 5 单位处构建全屏 quad
+                // 必须大于相机近裁剪面（~0.01-0.3）且小于远裁剪面
+                // 原先 d=100 会超出某些地图相机的远裁剪面导致 GPU 硬裁剪
+                // 同时需要大于 VRChat 表情镜的摄像机距离（~3-4m）以渲染在镜后
+                float d = 5;
                 float3 vp = float3(
                     (ndc.x + UNITY_MATRIX_P[0][2]) * d / UNITY_MATRIX_P[0][0],
                     (ndc.y + UNITY_MATRIX_P[1][2]) * d / UNITY_MATRIX_P[1][1],

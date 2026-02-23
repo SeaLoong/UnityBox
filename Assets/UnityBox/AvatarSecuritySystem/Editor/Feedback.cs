@@ -105,8 +105,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
             // 设置较大 Bounds 防止 Unity 视锥体剔除（Shader 负责全屏映射）
-            // 注意：不能太大否则会触发 VRChat 性能评估 Bounds VeryPoor
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2f);
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 200f);
 
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
