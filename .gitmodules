@@ -1,0 +1,3 @@
+[submodule "Assets/UnityBox/Sensa"]
+	path = Assets/UnityBox/Sensa
+	url = https://github.com/SeaLoong/Sensa.git
