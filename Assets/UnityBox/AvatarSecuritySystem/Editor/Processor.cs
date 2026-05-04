@@ -100,18 +100,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log("[ASS] Starting to generate security system...");
 
             var fxController = GetFXController(descriptor);
-            Utils.AddParameterIfNotExists(fxController, PARAM_IS_LOCAL,
-                AnimatorControllerParameterType.Bool, defaultBool: false);
-
-            // 检测 IsLocal 参数类型是否被其他插件（如 VRCFury）修改
-            var isLocalType = Utils.GetParameterType(fxController, PARAM_IS_LOCAL);
-            if (isLocalType.HasValue && isLocalType.Value != AnimatorControllerParameterType.Bool)
-            {
-                Debug.LogWarning(
-                    $"[ASS] IsLocal parameter type is {isLocalType.Value} (expected Bool). " +
-                    "This typically happens when VRCFury uses IsLocal in blend trees (SPS, toggles, etc.). " +
-                    "ASS will use type-compatible conditions to work correctly.");
-            }
+            Utils.EnsureBuiltInVRCParameters(fxController,
+                ensureIsLocal: true,
+                ensureGestureParameters: true);
 
             LoadAudioResources(assConfig);
             new Feedback(avatarGameObject, assConfig).Generate();

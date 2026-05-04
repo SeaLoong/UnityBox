@@ -47,6 +47,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             string gestureParam = config.useRightHand ? 
                 PARAM_GESTURE_RIGHT : PARAM_GESTURE_LEFT;
 
+            Utils.EnsureBuiltInVRCParameters(controller,
+                ensureIsLocal: false,
+                ensureGestureParameters: true);
+
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
 

@@ -75,6 +75,53 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     }
 
     /// <summary>
+    /// 确保 VRChat 常用内置参数存在并进行类型检查告警。
+    /// </summary>
+    public static void EnsureBuiltInVRCParameters(
+      AnimatorController controller,
+      bool ensureIsLocal = true,
+      bool ensureGestureParameters = true)
+    {
+      if (controller == null)
+        return;
+
+      if (ensureIsLocal)
+      {
+        AddParameterIfNotExists(controller, Constants.PARAM_IS_LOCAL,
+          AnimatorControllerParameterType.Bool, defaultBool: false);
+        WarnIfParameterTypeMismatch(controller, Constants.PARAM_IS_LOCAL,
+          AnimatorControllerParameterType.Bool);
+      }
+
+      if (ensureGestureParameters)
+      {
+        AddParameterIfNotExists(controller, Constants.PARAM_GESTURE_LEFT,
+          AnimatorControllerParameterType.Int, defaultInt: 0);
+        AddParameterIfNotExists(controller, Constants.PARAM_GESTURE_RIGHT,
+          AnimatorControllerParameterType.Int, defaultInt: 0);
+
+        WarnIfParameterTypeMismatch(controller, Constants.PARAM_GESTURE_LEFT,
+          AnimatorControllerParameterType.Int);
+        WarnIfParameterTypeMismatch(controller, Constants.PARAM_GESTURE_RIGHT,
+          AnimatorControllerParameterType.Int);
+      }
+    }
+
+    private static void WarnIfParameterTypeMismatch(
+      AnimatorController controller,
+      string parameterName,
+      AnimatorControllerParameterType expectedType)
+    {
+      var actualType = GetParameterType(controller, parameterName);
+      if (!actualType.HasValue || actualType.Value == expectedType)
+        return;
+
+      Debug.LogWarning(
+        $"[ASS] Parameter '{parameterName}' type is {actualType.Value} (expected {expectedType}). " +
+        "This may cause transition conditions to behave unexpectedly.");
+    }
+
+    /// <summary>
     /// 获取 Animator 参数的当前类型，如果参数不存在则返回 null
     /// </summary>
     public static AnimatorControllerParameterType? GetParameterType(
