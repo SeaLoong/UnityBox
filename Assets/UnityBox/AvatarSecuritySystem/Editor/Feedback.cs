@@ -19,6 +19,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private const string UI_SHADER_NAME = "UnityBox/ASS_UI";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
+        private const string UI_OVERLAY_NAME = "Overlay";
 
         public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
@@ -29,10 +30,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         public void Generate()
         {
-            if (!config.hideUI)
+            if (config.hideUI)
+            {
+                RemoveExistingUIObject();
+            }
+            else
             {
                 // 创建 UI 根对象
                 CreateUIGameObject();
+
+                // 清理旧 Overlay，避免重复生成导致多个同名子对象残留
+                RemoveExistingUIOverlays();
 
                 // 创建 UI Mesh（使用自定义 Shader 全屏渲染遮挡背景 + 进度条）
                 CreateUIMesh();
@@ -54,6 +62,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Transform existing = avatarGameObject.transform.Find(Constants.GO_UI);
             if (existing != null)
             {
+                int removedDuplicates = 0;
+                for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+                {
+                    var child = avatarGameObject.transform.GetChild(i);
+                    if (child == existing || child.name != Constants.GO_UI) continue;
+
+                    Object.DestroyImmediate(child.gameObject);
+                    removedDuplicates++;
+                }
+
+                existing.localPosition = Vector3.zero;
+                existing.localRotation = Quaternion.identity;
+                existing.localScale = Vector3.one;
+                existing.gameObject.SetActive(false);
+                if (removedDuplicates > 0)
+                {
+                    Debug.Log($"[ASS] Removed {removedDuplicates} duplicate UI root object(s)");
+                }
                 Debug.Log("[ASS] Using existing UI object");
                 this.uiGameObject = existing.gameObject;
                 return existing.gameObject;
@@ -79,7 +105,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private GameObject CreateUIMesh()
         {
-            var meshObj = new GameObject("Overlay");
+            var meshObj = new GameObject(UI_OVERLAY_NAME);
             meshObj.transform.SetParent(uiGameObject.transform, false);
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
@@ -105,7 +131,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
             // 设置较大 Bounds 防止 Unity 视锥体剔除（Shader 负责全屏映射）
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 200f);
+            // 注意：不能太大否则会触发 VRChat 性能评估 Bounds VeryPoor
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2f);
 
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
@@ -143,22 +170,89 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return meshObj;
         }
 
+        private void RemoveExistingUIObject()
+        {
+            int removedCount = 0;
+            for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = avatarGameObject.transform.GetChild(i);
+                if (child.name != Constants.GO_UI) continue;
+
+                Object.DestroyImmediate(child.gameObject);
+                removedCount++;
+            }
+
+            if (removedCount > 0)
+            {
+                Debug.Log($"[ASS] hideUI enabled, removed {removedCount} existing UI object(s)");
+            }
+        }
+
+        private void RemoveExistingUIOverlays()
+        {
+            if (uiGameObject == null) return;
+
+            int removedCount = 0;
+            for (int i = uiGameObject.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = uiGameObject.transform.GetChild(i);
+                if (child.name != UI_OVERLAY_NAME) continue;
+
+                Object.DestroyImmediate(child.gameObject);
+                removedCount++;
+            }
+
+            if (removedCount > 0)
+            {
+                Debug.Log($"[ASS] Removed {removedCount} existing UI overlay object(s)");
+            }
+        }
+
 
         private const float AUDIO_SOURCE_VOLUME = 0.5f;
         private const int AUDIO_SOURCE_PRIORITY = 0;
 
         private GameObject CreateAudioObject(string objectName)
         {
-            var obj = new GameObject(objectName);
-            obj.transform.SetParent(avatarGameObject.transform, false);
+            Transform existing = avatarGameObject.transform.Find(objectName);
+            if (existing != null)
+            {
+                for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+                {
+                    var child = avatarGameObject.transform.GetChild(i);
+                    if (child == existing || child.name != objectName) continue;
+
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
+
+            var obj = existing != null ? existing.gameObject : new GameObject(objectName);
+            if (existing == null)
+                obj.transform.SetParent(avatarGameObject.transform, false);
+
             obj.transform.localPosition = Vector3.zero;
-            var audioSource = obj.AddComponent<AudioSource>();
+            obj.transform.localRotation = Quaternion.identity;
+            obj.transform.localScale = Vector3.one;
+            var audioSources = obj.GetComponents<AudioSource>();
+            AudioSource audioSource;
+            if (audioSources.Length == 0)
+            {
+                audioSource = obj.AddComponent<AudioSource>();
+            }
+            else
+            {
+                audioSource = audioSources[0];
+                for (int i = audioSources.Length - 1; i >= 1; i--)
+                {
+                    Object.DestroyImmediate(audioSources[i]);
+                }
+            }
             audioSource.playOnAwake = false;
             audioSource.loop = false;
             audioSource.spatialBlend = 0f;
             audioSource.volume = AUDIO_SOURCE_VOLUME;
             audioSource.priority = AUDIO_SOURCE_PRIORITY;
-            Debug.Log($"[ASS] AudioSource created: {objectName}");
+            Debug.Log($"[ASS] AudioSource {(existing == null ? "created" : "reused")}: {objectName}");
             return obj;
         }
 
