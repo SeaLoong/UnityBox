@@ -30,6 +30,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private void OnEnable()
     {
+      config.ApplyAutoDefaultsFromRoot();
       if (config.CostumesRoot != null) RefreshPreview();
     }
 
@@ -81,10 +82,26 @@ namespace UnityBox.AdvancedCostumeController
       var oldRoot = config.CostumesRoot;
       config.CostumesRoot = (GameObject)EditorGUILayout.ObjectField(
         "Costumes Root", config.CostumesRoot, typeof(GameObject), true);
-      if (config.CostumesRoot != oldRoot) RefreshPreview();
+      if (config.CostumesRoot != oldRoot)
+      {
+        config.ApplyAutoDefaultsFromRoot();
+        RefreshPreview();
+      }
 
-      config.ParamPrefix = EditorGUILayout.TextField("Parameter Prefix", config.ParamPrefix);
-      config.CostumeParamName = EditorGUILayout.TextField("Costume Parameter Name", config.CostumeParamName);
+      var paramPrefix = EditorGUILayout.TextField("Parameter Prefix", config.ParamPrefix);
+      if (paramPrefix != config.ParamPrefix)
+      {
+        config.ParamPrefix = paramPrefix;
+        config.AutoParamPrefix = false;
+      }
+
+      var costumeParamName = EditorGUILayout.TextField("Costume Parameter Name", config.CostumeParamName);
+      if (costumeParamName != config.CostumeParamName)
+      {
+        config.CostumeParamName = costumeParamName;
+        config.AutoCostumeParamName = false;
+      }
+
       config.DefaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField(
         "Default Outfit (optional)", config.DefaultOutfitOverride, typeof(GameObject), true);
       config.EnableParts = EditorGUILayout.Toggle("Enable Parts Control", config.EnableParts);

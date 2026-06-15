@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1] - 2026-06-16
+
+### Changed
+
+- 不再生成 `ModularAvatarMenuInstaller` 组件
+- 生成的 Animator Controller 文件名改为跟随服装根对象名称
+- 参数前缀默认改为跟随服装根对象名称
+- 服装切换参数名默认改为跟随服装根对象名称
+
 ## [0.2.0] - 2026-02-23
 
 ### Added

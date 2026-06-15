@@ -32,7 +32,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit)
     {
       var resolvedFolder = config.GetResolvedGeneratedFolder();
-      string controllerPath = Path.Combine(resolvedFolder, "CostumeController.controller").Replace("\\", "/");
+      string controllerPath = Path.Combine(resolvedFolder, config.GetControllerFileName()).Replace("\\", "/");
       if (File.Exists(controllerPath))
       {
         if (!EditorUtility.DisplayDialog("覆盖确认",
@@ -52,7 +52,6 @@ namespace UnityBox.AdvancedCostumeController
         // 创建菜单根节点
         var costumesRoot = config.CostumesRoot;
         var menuRoot = Utils.PrepareChildRoot(costumesRoot, costumesRoot.name + " Menu");
-        Undo.AddComponent<ModularAvatarMenuInstaller>(menuRoot);
         var mergeAnimator = Undo.AddComponent<ModularAvatarMergeAnimator>(menuRoot);
         var rootParams = Utils.EnsureParametersComponent(menuRoot);
         Utils.EnsureSubmenuOnNode(menuRoot, costumesRoot.name);

@@ -35,7 +35,6 @@ namespace UnityBox.AdvancedCostumeController
     {
       var costumesRoot = config.CostumesRoot;
       string mixerName = config.CustomMixerName;
-      string paramPrefix = config.ParamPrefix;
       string costumeParamName = config.CostumeParamName;
 
       // 创建 CustomMixer 子菜单

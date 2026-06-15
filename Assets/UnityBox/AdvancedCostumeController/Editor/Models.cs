@@ -51,15 +51,46 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public class ACCConfig
   {
+    public const string LegacyParamPrefix = "CST";
+    public const string LegacyCostumeParamName = "costume";
+    public const string DefaultControllerFileName = "CostumeController";
+
     public GameObject CostumesRoot;
-    public string ParamPrefix = "CST";
-    public string CostumeParamName = "costume";
-public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeController";
+    public string ParamPrefix = "";
+    public string CostumeParamName = "";
+    public bool AutoParamPrefix = true;
+    public bool AutoCostumeParamName = true;
+    public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeController";
     public string IgnoreNamesCsv = "Armature,Bone,Skeleton";
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
     public string CustomMixerName = "CustomMix";
+
+    public void ApplyAutoDefaultsFromRoot()
+    {
+      string rootName = GetRootBasedDefaultName();
+      if (string.IsNullOrWhiteSpace(rootName)) return;
+
+      if (AutoParamPrefix || ParamPrefix == LegacyParamPrefix)
+        ParamPrefix = rootName;
+
+      if (AutoCostumeParamName || CostumeParamName == LegacyCostumeParamName)
+        CostumeParamName = rootName;
+    }
+
+    public string GetControllerFileName()
+    {
+      string sourceName = GetRootBasedDefaultName();
+      if (string.IsNullOrWhiteSpace(sourceName))
+        sourceName = DefaultControllerFileName;
+
+      string safeFileName = Utils.SanitizeForFileName(sourceName);
+      if (string.IsNullOrWhiteSpace(safeFileName))
+        safeFileName = DefaultControllerFileName;
+
+      return safeFileName + ".controller";
+    }
 
     /// <summary>
     /// 获取实际的生成目录（在 GeneratedFolder 后追加当前 Avatar 名称）
@@ -79,6 +110,11 @@ public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeContro
       if (string.IsNullOrEmpty(avatarName))
         return GeneratedFolder;
       return GeneratedFolder.TrimEnd('/') + "/" + avatarName;
+    }
+
+    private string GetRootBasedDefaultName()
+    {
+      return CostumesRoot != null ? CostumesRoot.name : "";
     }
   }
 }
