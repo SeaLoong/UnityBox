@@ -1,7 +1,7 @@
 {
   "name": "top.sealoong.unitybox.viseme-blendshape-override",
   "displayName": "Viseme Blendshape Override",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "A VRChat avatar editor tool that replaces the default viseme blendshape binding with custom per-viseme weights driven by the built-in Viseme parameter, with optional NDMF integration.",
   "unity": "2022.3",
   "author": {

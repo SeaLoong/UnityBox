@@ -29,8 +29,8 @@
 2. `Renderer` 默认会优先选择名为 `Body` 的 `SkinnedMeshRenderer`。
 3. 把 `Weight` 调到你想要的默认整体强度。
 4. 如需更自然的口型动态，保持 `Voice Mode = Linear`，并根据需要调整全局 `Voice Min / Voice Max`。
-5. 若某些口型需要不同的行为，展开对应 viseme 并打开 `Custom Settings`。
-6. 在 `Custom Settings` 中可单独设置 `Weight`，以及 `Voice Mode = Global / Disabled / Linear`。
+5. 若某些口型需要不同的行为，在对应 viseme 下勾选 `Custom Settings`。
+6. 勾选后可单独设置 `Weight`，以及 `Voice Mode = Global / Disabled / Linear`。
 7. 构建 / 上传头像即可。
 
 ## 说明

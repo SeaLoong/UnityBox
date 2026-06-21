@@ -60,7 +60,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             {
                 EditorGUI.indentLevel++;
                 for (var i = 0; i < _bindings.arraySize; i++)
-                    DrawBinding(component, descriptor, blendshapeOptions, _bindings.GetArrayElementAtIndex(i));
+                    DrawBinding(descriptor, blendshapeOptions, _bindings.GetArrayElementAtIndex(i));
                 EditorGUI.indentLevel--;
             }
 
@@ -70,7 +70,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         }
 
         private void DrawBinding(
-            VisemeBlendshapeOverrideComponent component,
             VRCAvatarDescriptor descriptor,
             IReadOnlyList<string> blendshapeOptions,
             SerializedProperty bindingProperty)
@@ -89,22 +88,13 @@ namespace UnityBox.VisemeBlendshapeOverride
             EditorGUILayout.LabelField(header, EditorStyles.boldLabel);
             DrawBlendshapePopup(descriptor, viseme, blendshapeOptions, blendshapeNameProperty);
 
-            var customFoldoutKey = GetCustomFoldoutKey(component, viseme);
-            var customExpanded = SessionState.GetBool(customFoldoutKey, false);
-            customExpanded = EditorGUILayout.Foldout(customExpanded, "Custom Settings", true);
-            SessionState.SetBool(customFoldoutKey, customExpanded);
+            useCustomSettingsProperty.boolValue = EditorGUILayout.ToggleLeft("Custom Settings", useCustomSettingsProperty.boolValue);
 
-            if (customExpanded)
+            if (useCustomSettingsProperty.boolValue)
             {
                 EditorGUI.indentLevel++;
-                useCustomSettingsProperty.boolValue = EditorGUILayout.ToggleLeft("Custom Settings", useCustomSettingsProperty.boolValue);
-
-                if (useCustomSettingsProperty.boolValue)
-                {
-                    DrawSlider("Weight", weightProperty, 0f, 100f);
-                    DrawVoiceModeOverride(voiceModeProperty, voiceMinProperty, voiceMaxProperty);
-                }
-
+                DrawSlider("Weight", weightProperty, 0f, 100f);
+                DrawVoiceModeOverride(voiceModeProperty, voiceMinProperty, voiceMaxProperty);
                 EditorGUI.indentLevel--;
             }
 
@@ -173,11 +163,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         private static string GetVisemesFoldoutKey(VisemeBlendshapeOverrideComponent component)
         {
             return $"UnityBox.VisemeBlendshapeOverride.Visemes.{component.GetInstanceID()}";
-        }
-
-        private static string GetCustomFoldoutKey(VisemeBlendshapeOverrideComponent component, VRC_AvatarDescriptor.Viseme viseme)
-        {
-            return $"UnityBox.VisemeBlendshapeOverride.Custom.{component.GetInstanceID()}.{viseme}";
         }
 
         private static void DrawBlendshapePopup(
