@@ -156,7 +156,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             AssetDatabase.SaveAssets();
         }
 
-        private static List<ResolvedBinding> ResolveBindings(
+        public static List<ResolvedBinding> ResolveBindings(
             VisemeBlendshapeOverrideComponent config,
             VRCAvatarDescriptor descriptor,
             SkinnedMeshRenderer targetRenderer)

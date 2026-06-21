@@ -10,15 +10,15 @@ using VRC.SDKBase;
 
 namespace UnityBox.VisemeBlendshapeOverride
 {
-    internal static class VisemeBlendshapeOverrideUtils
+    public static class VisemeBlendshapeOverrideUtils
     {
-        internal const string BuiltInVisemeParameter = "Viseme";
-        internal const string BuiltInVoiceParameter = "Voice";
-        internal const string GeneratedLayerName = "Viseme Blendshape Override";
-        internal const string GeneratedAssetPrefix = "VisemeBlendshapeOverride_";
+        public const string BuiltInVisemeParameter = "Viseme";
+        public const string BuiltInVoiceParameter = "Voice";
+        public const string GeneratedLayerName = "Viseme Blendshape Override";
+        public const string GeneratedAssetPrefix = "VisemeBlendshapeOverride_";
         internal const string FallbackGeneratedFolderRoot = "Assets/UnityBox/VisemeBlendshapeOverride/Generated";
 
-        internal static string GetRelativePath(GameObject root, GameObject node)
+        public static string GetRelativePath(GameObject root, GameObject node)
         {
             if (root == null || node == null)
                 return null;
@@ -112,7 +112,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             }
         }
 
-        internal static AnimatorController GetExistingFxController(VRCAvatarDescriptor descriptor)
+        public static AnimatorController GetExistingFxController(VRCAvatarDescriptor descriptor)
         {
             if (descriptor == null || descriptor.baseAnimationLayers == null)
                 return null;
@@ -281,7 +281,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             return tree;
         }
 
-        internal static bool ResolveWriteDefaults(
+        public static bool ResolveWriteDefaults(
             AnimatorController controller,
             VRCAvatarDescriptor descriptor,
             VisemeBlendshapeOverrideComponent.WriteDefaultsMode mode)
