@@ -302,7 +302,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
             if (!string.IsNullOrWhiteSpace(currentName))
             {
-                var foundIndex = blendshapeOptions.IndexOf(currentName);
+                var foundIndex = FindIndex(blendshapeOptions, currentName);
                 if (foundIndex >= 0)
                     currentIndex = (popupOptions.Count - blendshapeOptions.Count) + foundIndex;
             }
@@ -324,6 +324,20 @@ namespace UnityBox.VisemeBlendshapeOverride
             var selectedIndex = nextIndex - optionOffset;
             if (selectedIndex >= 0 && selectedIndex < blendshapeOptions.Count)
                 blendshapeNameProperty.stringValue = blendshapeOptions[selectedIndex];
+        }
+
+        private static int FindIndex(IReadOnlyList<string> values, string target)
+        {
+            if (values == null)
+                return -1;
+
+            for (var i = 0; i < values.Count; i++)
+            {
+                if (values[i] == target)
+                    return i;
+            }
+
+            return -1;
         }
 
         private static List<string> GetBlendshapeOptions(SkinnedMeshRenderer renderer)
