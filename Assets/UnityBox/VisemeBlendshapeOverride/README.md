@@ -37,3 +37,4 @@
 - 如果你想完全恢复 VRChat 默认的 viseme 绑定，还需要手动把 Avatar Descriptor 的 Lip Sync 模式切回 `VisemeBlendShape`。
 - 默认全局 Voice 范围为 `Min = 0`、`Max = 1`。
 - 当某个 viseme 启用 `Custom Settings` 时，它会改用自己的 `Weight`，并允许对 `Voice Mode / Voice Min / Voice Max` 做独立覆盖。
+- VRChat 的 viseme 名本身沿用了官方历史命名（例如 `PP / FF / aa / oh`），UI 中已统一按小写显示，底层仍保留原始枚举语义以保证兼容性。

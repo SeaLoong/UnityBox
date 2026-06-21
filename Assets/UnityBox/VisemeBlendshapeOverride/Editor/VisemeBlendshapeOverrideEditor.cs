@@ -10,8 +10,6 @@ namespace UnityBox.VisemeBlendshapeOverride
     [CustomEditor(typeof(VisemeBlendshapeOverrideComponent))]
     public class VisemeBlendshapeOverrideEditor : UnityEditor.Editor
     {
-        private const float NumericFieldWidth = 72f;
-
         private SerializedProperty _targetRenderer;
         private SerializedProperty _writeDefaultsMode;
         private SerializedProperty _globalWeight;
@@ -49,12 +47,22 @@ namespace UnityBox.VisemeBlendshapeOverride
             EditorGUILayout.PropertyField(_targetRenderer, new GUIContent("Renderer"));
             EditorGUILayout.PropertyField(_writeDefaultsMode, new GUIContent("Write Defaults"));
 
-            DrawSliderWithField("Weight", _globalWeight, 0f, 100f);
+            DrawSlider("Weight", _globalWeight, 0f, 100f);
             DrawVoiceSettings(_voiceModulationMode, _voiceMin, _voiceMax);
 
             EditorGUILayout.Space(6f);
-            for (var i = 0; i < _bindings.arraySize; i++)
-                DrawBinding(component, descriptor, blendshapeOptions, _bindings.GetArrayElementAtIndex(i));
+            var visemesFoldoutKey = GetVisemesFoldoutKey(component);
+            var visemesExpanded = SessionState.GetBool(visemesFoldoutKey, false);
+            visemesExpanded = EditorGUILayout.Foldout(visemesExpanded, "Visemes", true);
+            SessionState.SetBool(visemesFoldoutKey, visemesExpanded);
+
+            if (visemesExpanded)
+            {
+                EditorGUI.indentLevel++;
+                for (var i = 0; i < _bindings.arraySize; i++)
+                    DrawBinding(component, descriptor, blendshapeOptions, _bindings.GetArrayElementAtIndex(i));
+                EditorGUI.indentLevel--;
+            }
 
             DrawValidationMessages(component, descriptor, resolvedRenderer);
 
@@ -89,11 +97,11 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (customExpanded)
             {
                 EditorGUI.indentLevel++;
-                useCustomSettingsProperty.boolValue = EditorGUILayout.ToggleLeft("Enabled", useCustomSettingsProperty.boolValue);
+                useCustomSettingsProperty.boolValue = EditorGUILayout.ToggleLeft("Custom Settings", useCustomSettingsProperty.boolValue);
 
                 if (useCustomSettingsProperty.boolValue)
                 {
-                    DrawSliderWithField("Weight", weightProperty, 0f, 100f);
+                    DrawSlider("Weight", weightProperty, 0f, 100f);
                     DrawVoiceModeOverride(voiceModeProperty, voiceMinProperty, voiceMaxProperty);
                 }
 
@@ -114,8 +122,8 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (mode == VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled)
                 return;
 
-            DrawSliderWithField("Voice Min", minProperty, 0f, 1f);
-            DrawSliderWithField("Voice Max", maxProperty, 0f, 1f);
+            DrawSlider("Voice Min", minProperty, 0f, 1f);
+            DrawSlider("Voice Max", maxProperty, 0f, 1f);
             ClampVoiceRange(minProperty, maxProperty);
         }
 
@@ -130,20 +138,16 @@ namespace UnityBox.VisemeBlendshapeOverride
             switch (mode)
             {
                 case VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Linear:
-                    DrawSliderWithField("Voice Min", minProperty, 0f, 1f);
-                    DrawSliderWithField("Voice Max", maxProperty, 0f, 1f);
+                    DrawSlider("Voice Min", minProperty, 0f, 1f);
+                    DrawSlider("Voice Max", maxProperty, 0f, 1f);
                     ClampVoiceRange(minProperty, maxProperty);
                     break;
             }
         }
 
-        private static void DrawSliderWithField(string label, SerializedProperty property, float min, float max)
+        private static void DrawSlider(string label, SerializedProperty property, float min, float max)
         {
-            EditorGUILayout.BeginHorizontal();
-            var value = EditorGUILayout.Slider(label, property.floatValue, min, max);
-            value = EditorGUILayout.FloatField(value, GUILayout.Width(NumericFieldWidth));
-            EditorGUILayout.EndHorizontal();
-            property.floatValue = Mathf.Clamp(value, min, max);
+            property.floatValue = EditorGUILayout.Slider(label, property.floatValue, min, max);
         }
 
         private static void ClampVoiceRange(SerializedProperty minProperty, SerializedProperty maxProperty)
@@ -162,8 +166,13 @@ namespace UnityBox.VisemeBlendshapeOverride
         {
             var selectedBlendshape = ResolveCurrentBlendshapeName(descriptor, viseme, blendshapeNameProperty);
             return string.IsNullOrWhiteSpace(selectedBlendshape)
-                ? viseme.ToString()
-                : $"{viseme}  ·  {selectedBlendshape}";
+                ? FormatVisemeName(viseme)
+                : $"{FormatVisemeName(viseme)}  ·  {selectedBlendshape}";
+        }
+
+        private static string GetVisemesFoldoutKey(VisemeBlendshapeOverrideComponent component)
+        {
+            return $"UnityBox.VisemeBlendshapeOverride.Visemes.{component.GetInstanceID()}";
         }
 
         private static string GetCustomFoldoutKey(VisemeBlendshapeOverrideComponent component, VRC_AvatarDescriptor.Viseme viseme)
@@ -262,6 +271,11 @@ namespace UnityBox.VisemeBlendshapeOverride
         private static bool Contains(IReadOnlyList<string> values, string target)
         {
             return FindIndex(values, target) >= 0;
+        }
+
+        private static string FormatVisemeName(VRC_AvatarDescriptor.Viseme viseme)
+        {
+            return viseme.ToString().ToLowerInvariant();
         }
 
         private static void DrawValidationMessages(

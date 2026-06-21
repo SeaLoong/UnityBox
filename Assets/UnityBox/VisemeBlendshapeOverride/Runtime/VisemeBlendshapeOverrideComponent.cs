@@ -30,7 +30,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             public bool useCustomSettings = false;
 
             [Range(0f, 100f)]
-            [Tooltip("Blendshape weight written while this viseme is active.")]
+            [Tooltip("Blendshape weight used when custom settings are enabled for this viseme.")]
             public float weight = 100f;
 
             [FormerlySerializedAs("voiceModulationMode")]
@@ -87,7 +87,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         [Tooltip("Voice value at or above this threshold outputs the full configured viseme weight.")]
         public float voiceMax = 1f;
 
-        [Tooltip("Per-viseme settings. By default each entry reuses the Avatar Descriptor mapping and only overrides the output weight.")]
+        [Tooltip("Per-viseme settings.")]
         public List<VisemeBinding> bindings = new List<VisemeBinding>();
 
         public void EnsureBindings()
