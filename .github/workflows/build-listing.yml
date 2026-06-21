@@ -35,15 +35,17 @@ jobs:
           OWNER_LOWER=$(echo "${GITHUB_OWNER}" | tr '[:upper:]' '[:lower:]')
           REPO_URL="https://${OWNER_LOWER}.github.io/${GITHUB_REPO}"
 
-          # 定义所有包的目录（相对于仓库根）
-          PACKAGE_DIRS=(
-            "Assets/UnityBox/AdvancedCostumeController"
-            "Assets/UnityBox/BlendshapeControllerGenerator"
-            "Assets/UnityBox/AvatarColliderMonitor"
-            "Assets/UnityBox/BuildPipelineLogger"
-            "Assets/UnityBox/AvatarSecuritySystem"
-            "Assets/UnityBox/VisemeBlendshapeOverride"
-          )
+          # 自动发现主仓库中已跟踪的 package.json
+          # 使用 git ls-files 而不是 find，可天然排除子模块与未纳入仓库的临时目录
+          mapfile -t PACKAGE_DIRS < <(git ls-files 'Assets/UnityBox/*/package.json' | xargs -r -n1 dirname | sort)
+
+          if [ ${#PACKAGE_DIRS[@]} -eq 0 ]; then
+            echo "未发现任何可打包的 package.json"
+            exit 1
+          fi
+
+          echo "发现候选包目录："
+          printf '  - %s\n' "${PACKAGE_DIRS[@]}"
 
           mkdir -p _site
 

@@ -44,6 +44,11 @@ Assets/UnityBox/
 - Avatar Security System docs: `Assets/UnityBox/AvatarSecuritySystem/Editor/README.md`
 - Viseme Blendshape Override docs: `Docs/VisemeBlendshapeOverride.md`
 
+## VPM 仓库发布说明
+
+- GitHub Actions 会自动通过 `git ls-files 'Assets/UnityBox/*/package.json'` 发现主仓库中已跟踪的包，因此新增包时通常**不再需要手动修改 workflow 里的路径列表**。
+- 因为发现范围只包含**主仓库已跟踪文件**，所以像 `Assets/UnityBox/Sensa` 这种 Git 子模块内容不会被自动发布到当前仓库的 VPM listing 中。
+
 ## 许可证
 
 本项目采用 MIT 许可证（MIT）。详见仓库根目录的 `LICENSE` 文件。简要说明：你可以自由地复制、修改、合并、发布、分发、再许可和/或出售本软件的副本，但必须在所有副本或重要部分中包含原始版权声明和本许可声明。软件按"原样"提供，不附带任何明示或暗示的担保。
