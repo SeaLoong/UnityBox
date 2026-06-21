@@ -44,16 +44,8 @@ namespace UnityBox.VisemeBlendshapeOverride
 #if NDMF_AVAILABLE
             return true;
 #else
-            try
-            {
-                VisemeBlendshapeOverrideProcessor.ProcessAvatar(avatarGameObject);
-                return true;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[Viseme Blendshape Override] Avatar processing failed: {exception.Message}\n{exception.StackTrace}");
-                return false;
-            }
+            Debug.LogError("[Viseme Blendshape Override] NDMF is required for this package.");
+            return false;
 #endif
         }
     }
@@ -73,44 +65,17 @@ namespace UnityBox.VisemeBlendshapeOverride
 #if NDMF_AVAILABLE
         public static void ProcessAvatar(BuildContext context)
         {
-            if (context == null)
+            if (context == null || context.AvatarRootObject == null)
                 return;
 
-            ProcessAvatarInternal(context, context.AvatarRootObject, useVirtualController: true);
-        }
-#endif
-
-        public static void ProcessAvatar(GameObject avatarRoot)
-        {
-            if (avatarRoot == null)
-                return;
-
-            ProcessAvatarInternal(null, avatarRoot, useVirtualController: false);
-        }
-
-        private static void ProcessAvatarInternal(BuildContext context, GameObject avatarRoot, bool useVirtualController)
-        {
-            if (avatarRoot == null)
-                return;
-
+            var avatarRoot = context.AvatarRootObject;
             var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
                 return;
 
             var config = avatarRoot.GetComponent<VisemeBlendshapeOverrideComponent>();
             if (config == null)
-            {
-                if (!useVirtualController)
-                {
-                    var existingController = VisemeBlendshapeOverrideUtils.GetExistingFxController(descriptor);
-                    if (VisemeBlendshapeOverrideUtils.IsGeneratedController(existingController))
-                    {
-                        VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(existingController);
-                        AssetDatabase.SaveAssets();
-                    }
-                }
                 return;
-            }
 
             config.EnsureBindings();
 
@@ -152,49 +117,16 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return;
             }
 
-            if (useVirtualController)
-            {
-                ApplyToVirtualFxController(context, descriptor, relativePath, controlledBlendshapes, resolvedBindings, config, avatarRoot.name);
-                return;
-            }
-
-            var controller = VisemeBlendshapeOverrideUtils.GetOrCreateEditableFxController(descriptor, avatarRoot);
-            if (controller == null)
-            {
-                Debug.LogWarning($"[Viseme Blendshape Override] Failed to get or create an editable FX controller for '{avatarRoot.name}'.");
-                return;
-            }
-
-            VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(controller);
-            VisemeBlendshapeOverrideUtils.EnsureVisemeParameter(controller);
-            if (resolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
-                VisemeBlendshapeOverrideUtils.EnsureVoiceParameter(controller);
-
-            var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
-                controller,
+            ApplyToVirtualFxController(
+                context,
                 descriptor,
-                config.writeDefaultsMode);
-
-            GenerateLayer(
-                controller,
                 relativePath,
                 controlledBlendshapes,
                 resolvedBindings,
-                useWriteDefaultsOn);
-
-            descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
-
-            EditorUtility.SetDirty(config);
-            EditorUtility.SetDirty(descriptor);
-            EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssets();
-
-            Debug.Log(
-                $"[Viseme Blendshape Override] Generated viseme layer for '{avatarRoot.name}' on renderer '{targetRenderer.name}' " +
-                $"({controlledBlendshapes.Count} blendshapes, WD {(useWriteDefaultsOn ? "On" : "Off")}).");
+                config,
+                avatarRoot.name);
         }
 
-#if NDMF_AVAILABLE
         private static void ApplyToVirtualFxController(
             BuildContext context,
             VRCAvatarDescriptor descriptor,
@@ -213,11 +145,13 @@ namespace UnityBox.VisemeBlendshapeOverride
 
             fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
             EnsureVirtualVisemeParameter(fxController);
+
             if (resolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 EnsureVirtualVoiceParameter(fxController);
 
             var useWriteDefaultsOn = ResolveVirtualWriteDefaults(descriptor, config);
             GenerateVirtualLayer(fxController, relativePath, controlledBlendshapes, resolvedBindings, useWriteDefaultsOn);
+
             descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
             EditorUtility.SetDirty(config);
             EditorUtility.SetDirty(descriptor);
@@ -226,35 +160,35 @@ namespace UnityBox.VisemeBlendshapeOverride
         private static void EnsureVirtualVisemeParameter(VirtualAnimatorController controller)
         {
             var parameters = controller.Parameters;
-            if (!parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter))
-            {
-                parameters = parameters.Add(
-                    VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
-                    new AnimatorControllerParameter
-                    {
-                        name = VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
-                        type = AnimatorControllerParameterType.Int,
-                        defaultInt = 0,
-                    });
-                controller.Parameters = parameters;
-            }
+            if (parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter))
+                return;
+
+            parameters = parameters.Add(
+                VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
+                new AnimatorControllerParameter
+                {
+                    name = VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
+                    type = AnimatorControllerParameterType.Int,
+                    defaultInt = 0,
+                });
+            controller.Parameters = parameters;
         }
 
         private static void EnsureVirtualVoiceParameter(VirtualAnimatorController controller)
         {
             var parameters = controller.Parameters;
-            if (!parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter))
-            {
-                parameters = parameters.Add(
-                    VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
-                    new AnimatorControllerParameter
-                    {
-                        name = VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
-                        type = AnimatorControllerParameterType.Float,
-                        defaultFloat = 0f,
-                    });
-                controller.Parameters = parameters;
-            }
+            if (parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter))
+                return;
+
+            parameters = parameters.Add(
+                VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
+                new AnimatorControllerParameter
+                {
+                    name = VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
+                    type = AnimatorControllerParameterType.Float,
+                    defaultFloat = 0f,
+                });
+            controller.Parameters = parameters;
         }
 
         private static bool ResolveVirtualWriteDefaults(
@@ -466,83 +400,6 @@ namespace UnityBox.VisemeBlendshapeOverride
             }
 
             return resolved;
-        }
-
-        private static void GenerateLayer(
-            AnimatorController controller,
-            string relativePath,
-            IReadOnlyCollection<string> controlledBlendshapes,
-            IEnumerable<ResolvedBinding> resolvedBindings,
-            bool useWriteDefaultsOn)
-        {
-            var bindingsByViseme = resolvedBindings.ToDictionary(binding => binding.Viseme, binding => binding);
-            var layer = VisemeBlendshapeOverrideUtils.CreateLayer(VisemeBlendshapeOverrideUtils.GeneratedLayerName);
-            var useAnyVoiceModulation = resolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled);
-            AnimationClip zeroClip = null;
-            if (useAnyVoiceModulation)
-            {
-                zeroClip = VisemeBlendshapeOverrideUtils.CreateBlendshapeClip(
-                    VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + "VoiceZero_Clip",
-                    relativePath,
-                    controlledBlendshapes,
-                    null,
-                    0f);
-                VisemeBlendshapeOverrideUtils.AddSubAsset(controller, zeroClip);
-            }
-
-            var row = 0;
-            foreach (var viseme in VisemeBlendshapeOverrideComponent.GetSupportedVisemes())
-            {
-                bindingsByViseme.TryGetValue(viseme, out var resolvedBinding);
-
-                var state = layer.stateMachine.AddState(
-                    VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + viseme,
-                    new Vector3(280f, row * 70f, 0f));
-                state.writeDefaultValues = useWriteDefaultsOn;
-
-                var clip = VisemeBlendshapeOverrideUtils.CreateBlendshapeClip(
-                    VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + viseme + "_Clip",
-                    relativePath,
-                    controlledBlendshapes,
-                    resolvedBinding?.BlendshapeName,
-                    resolvedBinding?.Weight ?? 0f);
-
-                VisemeBlendshapeOverrideUtils.AddSubAsset(controller, clip);
-
-                Motion motion = clip;
-                if (resolvedBinding != null &&
-                    resolvedBinding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled)
-                {
-                    var tree = VisemeBlendshapeOverrideUtils.CreateVoiceBlendTree(
-                        VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + viseme + "_VoiceTree",
-                        zeroClip,
-                        clip,
-                        resolvedBinding.VoiceMin,
-                        resolvedBinding.VoiceMax);
-                    VisemeBlendshapeOverrideUtils.AddSubAsset(controller, tree);
-                    motion = tree;
-                }
-
-                state.motion = motion;
-
-                var transition = layer.stateMachine.AddAnyStateTransition(state);
-                transition.hasExitTime = false;
-                transition.duration = 0f;
-                transition.hasFixedDuration = true;
-                transition.canTransitionToSelf = false;
-                transition.AddCondition(
-                    AnimatorConditionMode.Equals,
-                    (float)(int)viseme,
-                    VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter);
-
-                if ((int)viseme == 0 || layer.stateMachine.defaultState == null)
-                    layer.stateMachine.defaultState = state;
-
-                row++;
-            }
-
-            VisemeBlendshapeOverrideUtils.AddSubAsset(controller, layer.stateMachine);
-            controller.AddLayer(layer);
         }
     }
 }

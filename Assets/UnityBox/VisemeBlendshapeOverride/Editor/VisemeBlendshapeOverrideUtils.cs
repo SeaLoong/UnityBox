@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -15,9 +13,8 @@ namespace UnityBox.VisemeBlendshapeOverride
     {
         internal const string BuiltInVisemeParameter = "Viseme";
         internal const string BuiltInVoiceParameter = "Voice";
-        internal const string GeneratedLayerName = "UB Viseme Blendshape Override";
-        internal const string GeneratedAssetPrefix = "UB_VBO_";
-        internal const string GeneratedFolderRoot = "Assets/UnityBox/VisemeBlendshapeOverride/Generated";
+        internal const string GeneratedLayerName = "Viseme Blendshape Override";
+        internal const string GeneratedAssetPrefix = "VisemeBlendshapeOverride_";
 
         internal static string GetRelativePath(GameObject root, GameObject node)
         {
@@ -121,128 +118,6 @@ namespace UnityBox.VisemeBlendshapeOverride
             return descriptor.baseAnimationLayers
                 .FirstOrDefault(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX)
                 .animatorController as AnimatorController;
-        }
-
-        internal static bool IsGeneratedController(AnimatorController controller)
-        {
-            if (controller == null)
-                return false;
-
-            var path = AssetDatabase.GetAssetPath(controller);
-            return !string.IsNullOrWhiteSpace(path) &&
-                   path.Replace('\\', '/').StartsWith(GeneratedFolderRoot + "/", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static AnimatorController GetOrCreateEditableFxController(VRCAvatarDescriptor descriptor, GameObject avatarRoot)
-        {
-            if (descriptor == null || descriptor.baseAnimationLayers == null)
-                return null;
-
-            var layers = descriptor.baseAnimationLayers;
-            var fxIndex = Array.FindIndex(layers, layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX);
-            if (fxIndex < 0)
-                return null;
-
-            var controllerPath = GetGeneratedControllerPath(avatarRoot);
-            EnsureFolder(Path.GetDirectoryName(controllerPath)?.Replace('\\', '/'));
-
-            var existingController = layers[fxIndex].animatorController as AnimatorController;
-            if (existingController != null)
-            {
-                var path = AssetDatabase.GetAssetPath(existingController);
-                if (!string.Equals(path, controllerPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    existingController = CloneControllerToGeneratedPath(existingController, avatarRoot);
-                    layers[fxIndex].animatorController = existingController;
-                    layers[fxIndex].isDefault = false;
-                    descriptor.baseAnimationLayers = layers;
-                }
-
-                return existingController;
-            }
-
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-            if (controller == null)
-                controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-
-            layers[fxIndex].animatorController = controller;
-            layers[fxIndex].isDefault = false;
-            descriptor.baseAnimationLayers = layers;
-            return controller;
-        }
-
-        private static AnimatorController CloneControllerToGeneratedPath(AnimatorController source, GameObject avatarRoot)
-        {
-            var sourcePath = AssetDatabase.GetAssetPath(source);
-            var targetPath = GetGeneratedControllerPath(avatarRoot);
-            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
-                return source;
-
-            EnsureFolder(Path.GetDirectoryName(targetPath)?.Replace('\\', '/'));
-
-            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(targetPath) != null)
-                AssetDatabase.DeleteAsset(targetPath);
-
-            if (!AssetDatabase.CopyAsset(sourcePath, targetPath))
-                throw new InvalidOperationException($"Failed to clone FX controller from '{sourcePath}' to '{targetPath}'.");
-
-            var clonedController = AssetDatabase.LoadAssetAtPath<AnimatorController>(targetPath);
-            if (clonedController == null)
-                throw new InvalidOperationException($"Failed to load cloned FX controller at '{targetPath}'.");
-
-            return clonedController;
-        }
-
-        internal static void CleanupGeneratedContent(AnimatorController controller)
-        {
-            if (controller == null)
-                return;
-
-            var changed = false;
-            for (var i = controller.layers.Length - 1; i >= 0; i--)
-            {
-                if (controller.layers[i].name == GeneratedLayerName)
-                {
-                    controller.RemoveLayer(i);
-                    changed = true;
-                }
-            }
-
-            var controllerPath = AssetDatabase.GetAssetPath(controller);
-            if (!string.IsNullOrWhiteSpace(controllerPath))
-            {
-                var generatedAssets = AssetDatabase.LoadAllAssetsAtPath(controllerPath)
-                    .Where(asset => asset != null && asset != controller)
-                    .Where(asset => asset.name.StartsWith(GeneratedAssetPrefix, StringComparison.Ordinal))
-                    .ToArray();
-
-                foreach (var asset in generatedAssets)
-                {
-                    AssetDatabase.RemoveObjectFromAsset(asset);
-                    UnityEngine.Object.DestroyImmediate(asset, true);
-                    changed = true;
-                }
-            }
-
-            if (changed)
-                EditorUtility.SetDirty(controller);
-        }
-
-        internal static void AddSubAsset(AnimatorController controller, UnityEngine.Object asset)
-        {
-            if (controller == null || asset == null)
-                return;
-
-            var controllerPath = AssetDatabase.GetAssetPath(controller);
-            var assetPath = AssetDatabase.GetAssetPath(asset);
-
-            if (!string.IsNullOrWhiteSpace(assetPath) && !string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            if (AssetDatabase.LoadAllAssetsAtPath(controllerPath).Any(existing => existing == asset))
-                return;
-
-            AssetDatabase.AddObjectToAsset(asset, controllerPath);
         }
 
         internal static AnimationClip CreateBlendshapeClip(
@@ -417,84 +292,5 @@ namespace UnityBox.VisemeBlendshapeOverride
             return false;
         }
 
-        private static string GetGeneratedControllerPath(GameObject avatarRoot)
-        {
-            var safeAvatarName = SanitizeAssetName(avatarRoot != null ? avatarRoot.name : "Avatar");
-            var stableSuffix = ComputeAvatarStableSuffix(avatarRoot);
-            var folderName = $"{safeAvatarName}_{stableSuffix}";
-            return $"{GeneratedFolderRoot}/{folderName}/{safeAvatarName}_VisemeBlendshapeOverride.controller";
-        }
-
-        private static string SanitizeAssetName(string rawName)
-        {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = new string(rawName
-                .Select(character => invalidChars.Contains(character) ? '_' : character)
-                .ToArray());
-            return string.IsNullOrWhiteSpace(sanitized) ? "Avatar" : sanitized;
-        }
-
-        private static string ComputeAvatarStableSuffix(GameObject avatarRoot)
-        {
-            if (avatarRoot == null)
-                return "00000000";
-
-            var raw = GlobalObjectId.GetGlobalObjectIdSlow(avatarRoot).ToString();
-            if (string.IsNullOrWhiteSpace(raw) || raw == "GlobalObjectId_V1-0-0-0-0")
-            {
-                var scenePath = avatarRoot.scene != null ? avatarRoot.scene.path : string.Empty;
-                raw = scenePath + "|" + GetHierarchyPath(avatarRoot.transform);
-            }
-
-            return ComputeDeterministicHash(raw);
-        }
-
-        private static string GetHierarchyPath(Transform transform)
-        {
-            if (transform == null)
-                return string.Empty;
-
-            var names = new Stack<string>();
-            var current = transform;
-            while (current != null)
-            {
-                names.Push(current.name);
-                current = current.parent;
-            }
-
-            return string.Join("/", names);
-        }
-
-        private static string ComputeDeterministicHash(string value)
-        {
-            unchecked
-            {
-                uint hash = 2166136261;
-                foreach (var character in Encoding.UTF8.GetBytes(value ?? string.Empty))
-                {
-                    hash ^= character;
-                    hash *= 16777619;
-                }
-
-                return hash.ToString("x8");
-            }
-        }
-
-        private static void EnsureFolder(string folderPath)
-        {
-            if (string.IsNullOrWhiteSpace(folderPath) || AssetDatabase.IsValidFolder(folderPath))
-                return;
-
-            var normalizedPath = folderPath.Replace('\\', '/');
-            var parts = normalizedPath.Split('/');
-            var current = parts[0];
-            for (var i = 1; i < parts.Length; i++)
-            {
-                var next = $"{current}/{parts[i]}";
-                if (!AssetDatabase.IsValidFolder(next))
-                    AssetDatabase.CreateFolder(current, parts[i]);
-                current = next;
-            }
-        }
     }
 }
