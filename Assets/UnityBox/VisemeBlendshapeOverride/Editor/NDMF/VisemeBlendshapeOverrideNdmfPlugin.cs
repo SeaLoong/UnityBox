@@ -22,7 +22,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         protected override void Configure()
         {
             InPhase(BuildPhase.Transforming)
-                .BeforePlugin("nadena.dev.modular-avatar")
+                .AfterPlugin("nadena.dev.modular-avatar")
                 .WithRequiredExtension(typeof(AnimatorServicesContext), seq => seq.Run("VisemeBlendshapeOverride/Apply", ctx =>
                 {
                     VisemeBlendshapeOverrideNdmfProcessor.ProcessAvatar(ctx);

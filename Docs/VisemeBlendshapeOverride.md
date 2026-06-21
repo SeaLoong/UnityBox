@@ -28,8 +28,8 @@
    - 保持 `Voice Mode = Linear`
    - 默认 `Voice Min = 0`、`Voice Max = 1`
 4. 如需更精细控制：
-   - 展开某个 viseme
-   - 打开 `Custom Settings`
+   - 找到对应 viseme
+   - 勾选 `Custom Settings`
    - 单独设置 `Weight`
    - 再按需设置 `Voice Mode / Voice Min / Voice Max`
 5. 构建 / 上传 Avatar
@@ -62,14 +62,14 @@ VRChat 的 viseme 名沿用了官方/历史命名形式，因此会出现 `PP / 
 该工具在构建时会：
 
 1. 读取 Avatar Descriptor 或组件上的 viseme 映射
-2. 生成 / 复用插件专用 FX Controller 副本
-3. 添加一层 `UB Viseme Blendshape Override`
+2. 安装 NDMF 时：在其它 Animator 合并插件处理完成后，把口型层追加到最终虚拟 FX Controller
+3. 未安装 NDMF 时：生成 / 复用插件专用 FX Controller 副本作为回退路径
 4. 通过 `Viseme` 参数切换状态
 5. 未启用 `Custom Settings` 的 viseme 使用全局 `Weight / Voice` 设置
 6. 启用 `Custom Settings` 的 viseme 可覆盖默认设置
 7. `Voice Mode = Linear` 时通过 `Voice` 1D BlendTree 缩放输出强度
 
-生成控制器使用插件专用产物路径，避免直接改脏用户原始 FX Controller。
+也就是说，在 NDMF 项目里，源码中的原始 FX Controller 不再代表最终运行时结果；真正生效的是 NDMF 构建后的虚拟 Animator 输出。
 
 ## 包信息
 

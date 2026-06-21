@@ -16,6 +16,13 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
+#if NDMF_AVAILABLE
+            // When NDMF is present, the dedicated NDMF plugin applies the viseme layer on the virtual
+            // animator controller after other animator-merging plugins have finished. Running the fallback
+            // path as well would clone and dirty the source FX controller, and can leave users inspecting
+            // stale generated clips/layers that are not the final runtime result.
+            return true;
+#else
             try
             {
                 VisemeBlendshapeOverrideProcessor.ProcessAvatar(avatarGameObject);
@@ -26,6 +33,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 Debug.LogError($"[Viseme Blendshape Override] Avatar processing failed: {exception.Message}\n{exception.StackTrace}");
                 return false;
             }
+#endif
         }
     }
 

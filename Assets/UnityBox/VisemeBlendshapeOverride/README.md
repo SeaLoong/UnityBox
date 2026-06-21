@@ -35,6 +35,8 @@
 
 ## 说明
 
+- 安装 NDMF 时，口型层会在其它 Animator 合并插件（例如 Modular Avatar）处理完成后追加到**最终虚拟 FX controller**；源码里的原始 FX controller 不会再被回退路径改写成中间产物。
+- 未安装 NDMF 时，才会走基础的 VRCSDK 预处理回退路径，并生成 / 复用插件专用 FX controller 副本。
 - 删除该组件后，重新构建会清理本插件生成的 FX 层与相关子资产。
 - 如果你想完全恢复 VRChat 默认的 viseme 绑定，还需要手动把 Avatar Descriptor 的 Lip Sync 模式切回 `VisemeBlendShape`。
 - 默认全局 Voice 范围为 `Min = 0`、`Max = 1`。
