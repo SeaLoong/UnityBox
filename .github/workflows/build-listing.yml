@@ -42,6 +42,7 @@ jobs:
             "Assets/UnityBox/AvatarColliderMonitor"
             "Assets/UnityBox/BuildPipelineLogger"
             "Assets/UnityBox/AvatarSecuritySystem"
+            "Assets/UnityBox/VisemeBlendshapeOverride"
           )
 
           mkdir -p _site

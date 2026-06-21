@@ -21,6 +21,7 @@
 | Avatar Collider Monitor         | VRChat 模型碰撞体监视器                                     |
 | Build Pipeline Logger           | 构建管线日志记录器                                          |
 | Avatar Security System          | VRChat Avatar 手势密码防盗保护系统                          |
+| Viseme Blendshape Override      | 用内建 `Viseme` / `Voice` 参数驱动可限幅、可独立响应区间的口型替代层 |
 
 ## 目录结构
 
@@ -32,7 +33,8 @@ Assets/UnityBox/
 ├── BlendshapeControllerGenerator/    # top.sealoong.unitybox.blendshape-controller-generator
 ├── AvatarColliderMonitor/            # top.sealoong.unitybox.avatar-collider-monitor
 ├── BuildPipelineLogger/              # top.sealoong.unitybox.build-pipeline-logger
-└── AvatarSecuritySystem/             # top.sealoong.unitybox.avatar-security-system
+├── AvatarSecuritySystem/             # top.sealoong.unitybox.avatar-security-system
+└── VisemeBlendshapeOverride/         # top.sealoong.unitybox.viseme-blendshape-override
 ```
 
 ## 工具文档
@@ -40,6 +42,7 @@ Assets/UnityBox/
 - Advanced Costume Controller docs: `Docs/AdvancedCostumeController.md`
 - Blendshape Controller Generator docs: `Docs/BlendshapeControllerGenerator.md`
 - Avatar Security System docs: `Assets/UnityBox/AvatarSecuritySystem/Editor/README.md`
+- Viseme Blendshape Override docs: `Docs/VisemeBlendshapeOverride.md`
 
 ## 许可证
 
