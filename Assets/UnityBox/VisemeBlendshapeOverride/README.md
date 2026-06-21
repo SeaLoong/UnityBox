@@ -3,6 +3,8 @@
 `Viseme Blendshape Override` 会在构建时读取 VRChat 内建的 `Viseme` Animator 参数，并生成一层 FX Animator，用自定义 BlendShape 驱动口型。
 此外也支持按内建 `Voice` 参数对输出做二次缩放。
 
+> 推荐在安装 NDMF 的项目中使用；未安装 NDMF 时仍会走基础的 VRCSDK 预处理回退路径。
+
 ## 设计目标
 
 - 替代 Avatar Descriptor 的默认 `VisemeBlendShape` 固定 100 权重行为。
