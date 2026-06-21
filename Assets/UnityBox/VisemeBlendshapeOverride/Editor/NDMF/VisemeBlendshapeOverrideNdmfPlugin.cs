@@ -53,7 +53,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 EnsureVirtualVoiceParameter(fxController);
 
-            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(plan.Descriptor, plan.Config);
+            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config);
             GenerateVirtualLayer(fxController, plan.RelativePath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
 
             plan.Descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
@@ -63,46 +63,118 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static void EnsureVirtualVisemeParameter(VirtualAnimatorController controller)
         {
-            var parameters = controller.Parameters;
-            if (parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter))
-                return;
-
-            parameters = parameters.Add(
-                VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
-                new AnimatorControllerParameter
-                {
-                    name = VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter,
-                    type = AnimatorControllerParameterType.Int,
-                    defaultInt = 0,
-                });
-            controller.Parameters = parameters;
+            EnsureVirtualParameter(controller, VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter, AnimatorControllerParameterType.Int, defaultInt: 0);
         }
 
         private static void EnsureVirtualVoiceParameter(VirtualAnimatorController controller)
         {
+            EnsureVirtualParameter(controller, VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter, AnimatorControllerParameterType.Float, defaultFloat: 0f);
+        }
+
+        private static void EnsureVirtualParameter(
+            VirtualAnimatorController controller,
+            string name,
+            AnimatorControllerParameterType type,
+            bool defaultBool = false,
+            int defaultInt = 0,
+            float defaultFloat = 0f)
+        {
             var parameters = controller.Parameters;
-            if (parameters.ContainsKey(VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter))
+            if (parameters.TryGetValue(name, out var existingParameter) && existingParameter.type == type)
                 return;
 
-            parameters = parameters.Add(
-                VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
-                new AnimatorControllerParameter
-                {
-                    name = VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter,
-                    type = AnimatorControllerParameterType.Float,
-                    defaultFloat = 0f,
-                });
-            controller.Parameters = parameters;
+            controller.Parameters = parameters.SetItem(name, new AnimatorControllerParameter
+            {
+                name = name,
+                type = type,
+                defaultBool = defaultBool,
+                defaultInt = defaultInt,
+                defaultFloat = defaultFloat,
+            });
         }
 
         private static bool ResolveVirtualWriteDefaults(
-            VRCAvatarDescriptor descriptor,
+            VirtualAnimatorController controller,
             VisemeBlendshapeOverrideComponent config)
         {
-            var currentController = VisemeBlendshapeOverrideUtils.GetExistingFxController(descriptor);
-            return currentController != null
-                ? VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(currentController, descriptor, config.writeDefaultsMode)
-                : config.writeDefaultsMode != VisemeBlendshapeOverrideComponent.WriteDefaultsMode.Off;
+            switch (config.writeDefaultsMode)
+            {
+                case VisemeBlendshapeOverrideComponent.WriteDefaultsMode.On:
+                    return true;
+                case VisemeBlendshapeOverrideComponent.WriteDefaultsMode.Off:
+                    return false;
+            }
+
+            foreach (var layer in controller.Layers)
+            {
+                if (layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName)
+                    continue;
+                if (layer.BlendingMode == AnimatorLayerBlendingMode.Additive)
+                    continue;
+                if (layer.StateMachine == null)
+                    continue;
+                if (IsWriteDefaultsRequiredLayer(layer))
+                    continue;
+                if (HasWriteDefaultsOffState(layer.StateMachine))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsWriteDefaultsRequiredLayer(VirtualLayer layer)
+        {
+            if (layer.BlendingMode == AnimatorLayerBlendingMode.Additive)
+                return true;
+
+            var stateMachine = layer.StateMachine;
+            if (stateMachine == null)
+                return false;
+            if (stateMachine.StateMachines.Count != 0)
+                return false;
+            if (stateMachine.States.Count != 1)
+                return false;
+            if (stateMachine.AnyStateTransitions.Count != 0)
+                return false;
+
+            var defaultState = stateMachine.DefaultState;
+            if (defaultState == null)
+                return false;
+            if (defaultState.Transitions.Count != 0)
+                return false;
+            if (!(defaultState.Motion is VirtualBlendTree blendTree))
+                return false;
+
+            return HasDirectBlendTree(blendTree);
+        }
+
+        private static bool HasDirectBlendTree(VirtualBlendTree blendTree)
+        {
+            if (blendTree.BlendType == BlendTreeType.Direct)
+                return true;
+
+            foreach (var child in blendTree.Children)
+            {
+                if (child.Motion is VirtualBlendTree childBlendTree && HasDirectBlendTree(childBlendTree))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasWriteDefaultsOffState(VirtualStateMachine stateMachine)
+        {
+            foreach (var state in stateMachine.AllStates())
+            {
+                if (state.Motion == null)
+                    continue;
+                if (state.Motion is VirtualBlendTree blendTree && blendTree.BlendType == BlendTreeType.Direct)
+                    continue;
+                if (!state.WriteDefaultValues)
+                    return true;
+            }
+
+            return false;
         }
 
         private static void GenerateVirtualLayer(

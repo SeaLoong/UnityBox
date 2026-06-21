@@ -59,7 +59,24 @@ namespace UnityBox.VisemeBlendshapeOverride
             };
         }
 
-        internal static void AddParameterIfNotExists(
+        internal static AnimatorControllerParameter CreateParameter(
+            string name,
+            AnimatorControllerParameterType type,
+            bool defaultBool = false,
+            int defaultInt = 0,
+            float defaultFloat = 0f)
+        {
+            return new AnimatorControllerParameter
+            {
+                name = name,
+                type = type,
+                defaultBool = defaultBool,
+                defaultInt = defaultInt,
+                defaultFloat = defaultFloat,
+            };
+        }
+
+        internal static void EnsureParameter(
             AnimatorController controller,
             string name,
             AnimatorControllerParameterType type,
@@ -67,17 +84,19 @@ namespace UnityBox.VisemeBlendshapeOverride
             int defaultInt = 0,
             float defaultFloat = 0f)
         {
-            if (controller.parameters.Any(parameter => parameter.name == name))
+            var parameters = controller.parameters;
+            var index = Array.FindIndex(parameters, parameter => parameter.name == name);
+            if (index < 0)
+            {
+                controller.AddParameter(CreateParameter(name, type, defaultBool, defaultInt, defaultFloat));
+                return;
+            }
+
+            if (parameters[index].type == type)
                 return;
 
-            controller.AddParameter(new AnimatorControllerParameter
-            {
-                name = name,
-                type = type,
-                defaultBool = defaultBool,
-                defaultInt = defaultInt,
-                defaultFloat = defaultFloat,
-            });
+            parameters[index] = CreateParameter(name, type, defaultBool, defaultInt, defaultFloat);
+            controller.parameters = parameters;
         }
 
         internal static AnimatorControllerParameterType? GetParameterType(AnimatorController controller, string name)
@@ -88,28 +107,12 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         internal static void EnsureVisemeParameter(AnimatorController controller)
         {
-            AddParameterIfNotExists(controller, BuiltInVisemeParameter, AnimatorControllerParameterType.Int, defaultInt: 0);
-
-            var actualType = GetParameterType(controller, BuiltInVisemeParameter);
-            if (actualType.HasValue && actualType.Value != AnimatorControllerParameterType.Int)
-            {
-                Debug.LogWarning(
-                    $"[Viseme Blendshape Override] Parameter '{BuiltInVisemeParameter}' type is {actualType.Value} (expected Int). " +
-                    "Viseme transitions may not behave correctly.");
-            }
+            EnsureParameter(controller, BuiltInVisemeParameter, AnimatorControllerParameterType.Int, defaultInt: 0);
         }
 
         internal static void EnsureVoiceParameter(AnimatorController controller)
         {
-            AddParameterIfNotExists(controller, BuiltInVoiceParameter, AnimatorControllerParameterType.Float, defaultFloat: 0f);
-
-            var actualType = GetParameterType(controller, BuiltInVoiceParameter);
-            if (actualType.HasValue && actualType.Value != AnimatorControllerParameterType.Float)
-            {
-                Debug.LogWarning(
-                    $"[Viseme Blendshape Override] Parameter '{BuiltInVoiceParameter}' type is {actualType.Value} (expected Float). " +
-                    "Voice modulation may not behave correctly.");
-            }
+            EnsureParameter(controller, BuiltInVoiceParameter, AnimatorControllerParameterType.Float, defaultFloat: 0f);
         }
 
         public static AnimatorController GetExistingFxController(VRCAvatarDescriptor descriptor)
