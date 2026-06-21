@@ -7,10 +7,10 @@
 | 功能 | 说明 |
 |---|---|
 | **替代默认 Viseme 绑定** | 构建时把 Avatar Descriptor 切到 `VisemeParameterOnly`，不再使用 VRChat 默认固定 100 的口型权重 |
-| **逐口型限幅** | 每个 viseme 都可设置独立 `Weight` 上限 |
+| **Default Weight** | 使用一个全局 `Weight` 作为默认输出值 |
 | **Voice 强度缩放** | 可用内建 `Voice` 参数对输出做二次缩放 |
-| **独立响应区间** | 每个 viseme 可选择自己的 `Voice Min / Voice Max` |
-| **映射继承或手动覆盖** | 可直接跟随 Avatar Descriptor 的 viseme 映射，也可手动指定 BlendShape 名 |
+| **Custom Settings** | 每个 viseme 可单独覆盖 `Weight`，并指定 `Voice Mode / Voice Min / Voice Max` |
+| **直接指定 BlendShape** | 每个 viseme 直接通过下拉框指定 BlendShape |
 
 ## 适用场景
 
@@ -22,17 +22,26 @@
 ## 快速开始
 
 1. 把 `VisemeBlendshapeOverrideComponent` 挂到 Avatar Root
-2. 如果 Avatar Descriptor 已配置 Face Mesh / Viseme 映射，可直接保持 **Follow Avatar Descriptor mapping**
+2. 默认 `Renderer` 会优先尝试使用名为 `Body` 的 `SkinnedMeshRenderer`
 3. 在 Inspector 中：
-   - 先点一次 **均衡** 权重预设
-   - 保持 `Voice Modulation = Linear`
-   - 从 `Voice Min = 0.05`、`Voice Max = 0.15` 起步
+   - 先设置 `Weight`
+   - 保持 `Voice Mode = Linear`
+   - 默认 `Voice Min = 0`、`Voice Max = 1`
 4. 如需更精细控制：
-   - 对某些 viseme 关闭 `Use Global Voice Range`
-   - 给它们单独设置 `Voice Min / Voice Max`
+   - 展开某个 viseme
+   - 打开 `Custom Settings`
+   - 单独设置 `Weight`
+   - 再按需设置 `Voice Mode / Voice Min / Voice Max`
 5. 构建 / 上传 Avatar
 
 ## 调参建议
+
+### Voice 默认值
+
+- `Voice Min = 0`
+- `Voice Max = 1`
+
+VRChat SDK 公开侧并没有提供一个“官方可配置阈值区间”实现；这里直接使用内建 `Voice` float 参数的完整 $0..1$ 范围作为默认值。
 
 ### 元音建议
 
@@ -52,7 +61,9 @@
 2. 生成 / 复用插件专用 FX Controller 副本
 3. 添加一层 `UB Viseme Blendshape Override`
 4. 通过 `Viseme` 参数切换状态
-5. 通过 `Voice` 1D BlendTree（可选）缩放输出强度
+5. 未启用 `Custom Settings` 的 viseme 使用全局 `Weight / Voice` 设置
+6. 启用 `Custom Settings` 的 viseme 可覆盖默认设置
+7. `Voice Mode = Linear` 时通过 `Voice` 1D BlendTree 缩放输出强度
 
 生成控制器使用插件专用产物路径，避免直接改脏用户原始 FX Controller。
 

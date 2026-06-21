@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDKBase;
 
@@ -13,32 +14,43 @@ namespace UnityBox.VisemeBlendshapeOverride
     [DisallowMultipleComponent]
     public class VisemeBlendshapeOverrideComponent : MonoBehaviour, IEditorOnly
     {
+        public const string NoneBlendshapeValue = "__NONE__";
+
         [Serializable]
         public class VisemeBinding
         {
             [HideInInspector]
             public VRC_AvatarDescriptor.Viseme viseme;
 
-            [Tooltip("Follow the blendshape currently configured on the Avatar Descriptor for this viseme.")]
-            public bool useAvatarDescriptorBlendshape = true;
-
-            [Tooltip("When not following the Avatar Descriptor, drive this blendshape name on the target renderer.")]
+            [Tooltip("Blendshape used for this viseme. Leave it empty to use the Avatar Descriptor mapping.")]
             public string blendshapeName = string.Empty;
+
+            [FormerlySerializedAs("overrideGlobalVoiceSettings")]
+            [Tooltip("Use custom settings for this viseme.")]
+            public bool useCustomSettings = false;
 
             [Range(0f, 100f)]
             [Tooltip("Blendshape weight written while this viseme is active.")]
             public float weight = 100f;
 
-            [Tooltip("Use the component-level Voice Min / Voice Max values for this viseme.")]
-            public bool useGlobalVoiceRange = true;
+            [FormerlySerializedAs("voiceModulationMode")]
+            [Tooltip("Voice mode for this viseme when custom settings are enabled.")]
+            public VoiceModeOverride voiceMode = VoiceModeOverride.Global;
+
+            public enum VoiceModeOverride
+            {
+                Global,
+                Disabled,
+                Linear,
+            }
 
             [Range(0f, 1f)]
-            [Tooltip("When not using the global range, Voice values at or below this threshold output 0 intensity for this viseme.")]
-            public float voiceMin = 0.05f;
+            [Tooltip("Voice values at or below this threshold output 0 intensity for this viseme.")]
+            public float voiceMin = 0f;
 
             [Range(0f, 1f)]
-            [Tooltip("When not using the global range, Voice values at or above this threshold output the full configured weight for this viseme.")]
-            public float voiceMax = 0.15f;
+            [Tooltip("Voice values at or above this threshold output the full configured weight for this viseme.")]
+            public float voiceMax = 1f;
         }
 
         public enum WriteDefaultsMode
@@ -54,29 +66,26 @@ namespace UnityBox.VisemeBlendshapeOverride
             Linear,
         }
 
-        public enum WeightPreset
-        {
-            Conservative,
-            Balanced,
-            Expressive,
-        }
-
-        [Tooltip("Optional override face mesh. Leave empty to reuse Avatar Descriptor > Face Mesh.")]
+        [Tooltip("Target skinned mesh renderer.")]
         public SkinnedMeshRenderer targetRenderer;
 
         [Tooltip("Write Defaults mode used by the generated FX layer.")]
         public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
+
+        [Range(0f, 100f)]
+        [Tooltip("Default weight used when a viseme does not use custom settings.")]
+        public float globalWeight = 100f;
 
         [Tooltip("Scale the configured viseme weight by VRChat's built-in Voice parameter.")]
         public VoiceModulationMode voiceModulationMode = VoiceModulationMode.Linear;
 
         [Range(0f, 1f)]
         [Tooltip("Voice value at or below this threshold outputs 0 intensity when voice modulation is enabled.")]
-        public float voiceMin = 0.05f;
+        public float voiceMin = 0f;
 
         [Range(0f, 1f)]
         [Tooltip("Voice value at or above this threshold outputs the full configured viseme weight.")]
-        public float voiceMax = 0.15f;
+        public float voiceMax = 1f;
 
         [Tooltip("Per-viseme settings. By default each entry reuses the Avatar Descriptor mapping and only overrides the output weight.")]
         public List<VisemeBinding> bindings = new List<VisemeBinding>();
@@ -99,12 +108,12 @@ namespace UnityBox.VisemeBlendshapeOverride
                     binding = new VisemeBinding
                     {
                         viseme = viseme,
-                        useAvatarDescriptorBlendshape = true,
                         blendshapeName = string.Empty,
                         weight = 100f,
-                        useGlobalVoiceRange = true,
-                        voiceMin = 0.05f,
-                        voiceMax = 0.15f,
+                        useCustomSettings = false,
+                        voiceMode = VisemeBinding.VoiceModeOverride.Global,
+                        voiceMin = 0f,
+                        voiceMax = 1f,
                     };
                 }
                 else
@@ -112,6 +121,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                     binding.viseme = viseme;
                     binding.blendshapeName ??= string.Empty;
                     binding.weight = Mathf.Clamp(binding.weight, 0f, 100f);
+                    binding.voiceMode = SanitizeVoiceModeOverride(binding.voiceMode);
                     binding.voiceMin = Mathf.Clamp01(binding.voiceMin);
                     binding.voiceMax = Mathf.Clamp01(binding.voiceMax);
                     if (binding.voiceMax <= binding.voiceMin)
@@ -143,8 +153,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (binding == null)
                 return string.Empty;
 
-            if (!binding.useAvatarDescriptorBlendshape)
-                return binding.blendshapeName?.Trim() ?? string.Empty;
+            var storedName = binding.blendshapeName?.Trim() ?? string.Empty;
+            if (string.Equals(storedName, NoneBlendshapeValue, StringComparison.Ordinal))
+                return string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(storedName))
+                return storedName;
 
             return GetDescriptorBlendshapeName(descriptor, binding.viseme);
         }
@@ -172,157 +186,15 @@ namespace UnityBox.VisemeBlendshapeOverride
                 .ToList();
         }
 
-        private static float GetBalancedPresetWeight(VRC_AvatarDescriptor.Viseme viseme)
-        {
-            switch (viseme.ToString())
-            {
-                case "sil":
-                case "silence":
-                    return 0f;
-
-                case "PP":
-                    return 18f;
-                case "FF":
-                    return 22f;
-                case "TH":
-                    return 24f;
-                case "DD":
-                    return 28f;
-                case "kk":
-                    return 28f;
-                case "CH":
-                    return 32f;
-                case "SS":
-                    return 20f;
-                case "nn":
-                    return 22f;
-                case "RR":
-                    return 30f;
-                case "aa":
-                    return 55f;
-                case "E":
-                    return 36f;
-                case "ih":
-                case "I":
-                    return 32f;
-                case "oh":
-                case "O":
-                    return 45f;
-                case "ou":
-                case "U":
-                    return 40f;
-                case "laugh":
-                    return 65f;
-                default:
-                    return 35f;
-            }
-        }
-
-        private static float GetPresetWeight(VRC_AvatarDescriptor.Viseme viseme, WeightPreset preset)
-        {
-            var balanced = GetBalancedPresetWeight(viseme);
-            switch (preset)
-            {
-                case WeightPreset.Conservative:
-                    return Mathf.Clamp(balanced * 0.75f, 0f, 100f);
-                case WeightPreset.Expressive:
-                    return Mathf.Clamp(balanced * 1.25f, 0f, 100f);
-                default:
-                    return balanced;
-            }
-        }
-
 #if UNITY_EDITOR
-        public void CopyDescriptorMappingsToOverrides()
-        {
-            EnsureBindings();
-
-            var descriptor = GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null)
-                return;
-
-            if (targetRenderer == null && descriptor.VisemeSkinnedMesh != null)
-                targetRenderer = descriptor.VisemeSkinnedMesh;
-
-            foreach (var binding in bindings)
-            {
-                binding.useAvatarDescriptorBlendshape = false;
-                binding.blendshapeName = GetDescriptorBlendshapeName(descriptor, binding.viseme);
-            }
-        }
-
-        public void FollowAvatarDescriptorMappings()
-        {
-            EnsureBindings();
-
-            foreach (var binding in bindings)
-            {
-                binding.useAvatarDescriptorBlendshape = true;
-                binding.blendshapeName = string.Empty;
-            }
-
-            var descriptor = GetComponent<VRCAvatarDescriptor>();
-            if (descriptor != null && targetRenderer == descriptor.VisemeSkinnedMesh)
-                targetRenderer = null;
-        }
-
-        public void SetAllWeights(float weight)
-        {
-            EnsureBindings();
-
-            var clamped = Mathf.Clamp(weight, 0f, 100f);
-            foreach (var binding in bindings)
-                binding.weight = clamped;
-        }
-
-        public void ApplyWeightPreset(WeightPreset preset)
-        {
-            EnsureBindings();
-
-            foreach (var binding in bindings)
-            {
-                if (binding == null)
-                    continue;
-
-                binding.weight = GetPresetWeight(binding.viseme, preset);
-            }
-        }
-
-        public void SetAllUseGlobalVoiceRange(bool useGlobalVoiceRange)
-        {
-            EnsureBindings();
-
-            foreach (var binding in bindings)
-            {
-                if (binding == null)
-                    continue;
-
-                binding.useGlobalVoiceRange = useGlobalVoiceRange;
-            }
-        }
-
-        public void CopyGlobalVoiceRangeToAllBindings()
-        {
-            EnsureBindings();
-
-            foreach (var binding in bindings)
-            {
-                if (binding == null)
-                    continue;
-
-                binding.voiceMin = voiceMin;
-                binding.voiceMax = voiceMax;
-            }
-        }
-
         private void Reset()
         {
-            EnsureBindings();
+            InitializeDefaultsFromDescriptor();
         }
 
         private void OnValidate()
         {
-            EnsureBindings();
+            InitializeDefaultsFromDescriptor();
 
             foreach (var binding in bindings)
             {
@@ -331,6 +203,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
                 binding.blendshapeName ??= string.Empty;
                 binding.weight = Mathf.Clamp(binding.weight, 0f, 100f);
+                binding.voiceMode = SanitizeVoiceModeOverride(binding.voiceMode);
                 binding.voiceMin = Mathf.Clamp01(binding.voiceMin);
                 binding.voiceMax = Mathf.Clamp01(binding.voiceMax);
                 if (binding.voiceMax <= binding.voiceMin)
@@ -340,6 +213,8 @@ namespace UnityBox.VisemeBlendshapeOverride
                 }
             }
 
+            globalWeight = Mathf.Clamp(globalWeight, 0f, 100f);
+            voiceModulationMode = SanitizeVoiceMode(voiceModulationMode);
             voiceMin = Mathf.Clamp01(voiceMin);
             voiceMax = Mathf.Clamp01(voiceMax);
             if (voiceMax <= voiceMin)
@@ -347,6 +222,69 @@ namespace UnityBox.VisemeBlendshapeOverride
                 voiceMax = Mathf.Min(1f, voiceMin + 0.001f);
                 voiceMin = Mathf.Max(0f, voiceMax - 0.001f);
             }
+        }
+
+        public void EnsureEditorDefaults()
+        {
+            InitializeDefaultsFromDescriptor();
+        }
+
+        private void InitializeDefaultsFromDescriptor()
+        {
+            EnsureBindings();
+
+            var descriptor = GetComponent<VRCAvatarDescriptor>();
+            if (descriptor != null && targetRenderer == null)
+                targetRenderer = ResolveDefaultRenderer(descriptor);
+
+            if (descriptor == null)
+                return;
+
+            foreach (var binding in bindings)
+            {
+                if (binding == null)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(binding.blendshapeName))
+                    continue;
+
+                var descriptorBlendshape = GetDescriptorBlendshapeName(descriptor, binding.viseme);
+                if (!string.IsNullOrWhiteSpace(descriptorBlendshape))
+                    binding.blendshapeName = descriptorBlendshape;
+            }
+        }
+
+        private SkinnedMeshRenderer ResolveDefaultRenderer(VRCAvatarDescriptor descriptor)
+        {
+            var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            if (renderers == null || renderers.Length == 0)
+                return null;
+
+            var bodyRenderer = renderers.FirstOrDefault(renderer =>
+                string.Equals(renderer.name, "Body", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(renderer.gameObject.name, "Body", StringComparison.OrdinalIgnoreCase));
+
+            if (bodyRenderer != null)
+                return bodyRenderer;
+
+            if (descriptor != null && descriptor.VisemeSkinnedMesh != null)
+                return descriptor.VisemeSkinnedMesh;
+
+            return renderers.FirstOrDefault();
+        }
+
+        private static VoiceModulationMode SanitizeVoiceMode(VoiceModulationMode mode)
+        {
+            return Enum.IsDefined(typeof(VoiceModulationMode), mode)
+                ? mode
+                : VoiceModulationMode.Linear;
+        }
+
+        private static VisemeBinding.VoiceModeOverride SanitizeVoiceModeOverride(VisemeBinding.VoiceModeOverride mode)
+        {
+            return Enum.IsDefined(typeof(VisemeBinding.VoiceModeOverride), mode)
+                ? mode
+                : VisemeBinding.VoiceModeOverride.Global;
         }
 #endif
     }

@@ -64,6 +64,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             public VRC_AvatarDescriptor.Viseme Viseme;
             public string BlendshapeName;
             public float Weight;
+            public VisemeBlendshapeOverrideComponent.VoiceModulationMode VoiceModulationMode;
             public float VoiceMin;
             public float VoiceMax;
         }
@@ -94,15 +95,15 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (targetRenderer == null)
             {
                 Debug.LogWarning(
-                    $"[Viseme Blendshape Override] '{avatarRoot.name}' has no target renderer. " +
-                    "Assign Target Renderer or configure Avatar Descriptor > Face Mesh.");
+                    $"[Viseme Blendshape Override] '{avatarRoot.name}' has no renderer. " +
+                    "Assign Renderer or configure Avatar Descriptor > Face Mesh.");
                 return;
             }
 
             if (targetRenderer.sharedMesh == null)
             {
                 Debug.LogWarning(
-                    $"[Viseme Blendshape Override] Target renderer '{targetRenderer.name}' on '{avatarRoot.name}' has no shared mesh.");
+                    $"[Viseme Blendshape Override] Renderer '{targetRenderer.name}' on '{avatarRoot.name}' has no shared mesh.");
                 return;
             }
 
@@ -110,7 +111,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (relativePath == null)
             {
                 Debug.LogWarning(
-                    $"[Viseme Blendshape Override] Target renderer '{targetRenderer.name}' is not a child of avatar root '{avatarRoot.name}'.");
+                    $"[Viseme Blendshape Override] Renderer '{targetRenderer.name}' is not a child of avatar root '{avatarRoot.name}'.");
                 return;
             }
 
@@ -137,7 +138,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
             VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(controller);
             VisemeBlendshapeOverrideUtils.EnsureVisemeParameter(controller);
-            if (config.voiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled)
+            if (resolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 VisemeBlendshapeOverrideUtils.EnsureVoiceParameter(controller);
 
             var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
@@ -150,8 +151,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 relativePath,
                 controlledBlendshapes,
                 resolvedBindings,
-                useWriteDefaultsOn,
-                config);
+                useWriteDefaultsOn);
 
             descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
 
@@ -177,7 +177,11 @@ namespace UnityBox.VisemeBlendshapeOverride
             {
                 var binding = config.GetBinding(viseme);
                 var resolvedName = config.ResolveBlendshapeName(descriptor, binding);
-                var sourceLabel = binding != null && !binding.useAvatarDescriptorBlendshape ? "override" : "Avatar Descriptor";
+                var sourceLabel = binding != null &&
+                                  (string.Equals(binding.blendshapeName?.Trim(), VisemeBlendshapeOverrideComponent.NoneBlendshapeValue, StringComparison.Ordinal) ||
+                                   !string.IsNullOrWhiteSpace(binding.blendshapeName))
+                    ? "override"
+                    : "Avatar Descriptor";
 
                 if (!string.IsNullOrWhiteSpace(resolvedName))
                 {
@@ -191,12 +195,30 @@ namespace UnityBox.VisemeBlendshapeOverride
                     }
                 }
 
+                var effectiveVoiceMode = config.voiceModulationMode;
                 var voiceMin = config.voiceMin;
                 var voiceMax = config.voiceMax;
-                if (binding != null && !binding.useGlobalVoiceRange)
+                var resolvedWeight = Mathf.Clamp(config.globalWeight, 0f, 100f);
+                if (binding != null && binding.useCustomSettings)
                 {
-                    voiceMin = binding.voiceMin;
-                    voiceMax = binding.voiceMax;
+                    resolvedWeight = Mathf.Clamp(binding.weight, 0f, 100f);
+
+                    switch (binding.voiceMode)
+                    {
+                        case VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Disabled:
+                            effectiveVoiceMode = VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled;
+                            break;
+                        case VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Linear:
+                            effectiveVoiceMode = VisemeBlendshapeOverrideComponent.VoiceModulationMode.Linear;
+                            voiceMin = binding.voiceMin;
+                            voiceMax = binding.voiceMax;
+                            break;
+                        default:
+                            effectiveVoiceMode = config.voiceModulationMode;
+                            voiceMin = config.voiceMin;
+                            voiceMax = config.voiceMax;
+                            break;
+                    }
                 }
 
                 voiceMin = Mathf.Clamp01(voiceMin);
@@ -208,7 +230,8 @@ namespace UnityBox.VisemeBlendshapeOverride
                 {
                     Viseme = viseme,
                     BlendshapeName = resolvedName,
-                    Weight = binding != null ? Mathf.Clamp(binding.weight, 0f, 100f) : 100f,
+                    Weight = resolvedWeight,
+                    VoiceModulationMode = effectiveVoiceMode,
                     VoiceMin = voiceMin,
                     VoiceMax = voiceMax,
                 });
@@ -222,14 +245,13 @@ namespace UnityBox.VisemeBlendshapeOverride
             string relativePath,
             IReadOnlyCollection<string> controlledBlendshapes,
             IEnumerable<ResolvedBinding> resolvedBindings,
-            bool useWriteDefaultsOn,
-            VisemeBlendshapeOverrideComponent config)
+            bool useWriteDefaultsOn)
         {
             var bindingsByViseme = resolvedBindings.ToDictionary(binding => binding.Viseme, binding => binding);
             var layer = VisemeBlendshapeOverrideUtils.CreateLayer(VisemeBlendshapeOverrideUtils.GeneratedLayerName);
-            var useVoiceModulation = config.voiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled;
+            var useAnyVoiceModulation = resolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled);
             AnimationClip zeroClip = null;
-            if (useVoiceModulation)
+            if (useAnyVoiceModulation)
             {
                 zeroClip = VisemeBlendshapeOverrideUtils.CreateBlendshapeClip(
                     VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + "VoiceZero_Clip",
@@ -260,14 +282,15 @@ namespace UnityBox.VisemeBlendshapeOverride
                 VisemeBlendshapeOverrideUtils.AddSubAsset(controller, clip);
 
                 Motion motion = clip;
-                if (useVoiceModulation)
+                if (resolvedBinding != null &&
+                    resolvedBinding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled)
                 {
                     var tree = VisemeBlendshapeOverrideUtils.CreateVoiceBlendTree(
                         VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + viseme + "_VoiceTree",
                         zeroClip,
                         clip,
-                        resolvedBinding?.VoiceMin ?? config.voiceMin,
-                        resolvedBinding?.VoiceMax ?? config.voiceMax);
+                        resolvedBinding.VoiceMin,
+                        resolvedBinding.VoiceMax);
                     VisemeBlendshapeOverrideUtils.AddSubAsset(controller, tree);
                     motion = tree;
                 }
