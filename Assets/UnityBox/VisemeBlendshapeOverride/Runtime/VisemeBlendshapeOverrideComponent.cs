@@ -277,6 +277,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
             return renderers.FirstOrDefault();
         }
+#endif
 
         private static VoiceModulationMode SanitizeVoiceMode(VoiceModulationMode mode)
         {
@@ -291,6 +292,5 @@ namespace UnityBox.VisemeBlendshapeOverride
                 ? mode
                 : VisemeBinding.VoiceModeOverride.Global;
         }
-#endif
     }
 }
