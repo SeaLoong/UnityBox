@@ -33,7 +33,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             [Tooltip("Blendshape weight used when custom settings are enabled for this viseme.")]
             public float weight = 100f;
 
-            [FormerlySerializedAs("voiceModulationMode")]
+            // NOTE: This field was previously named "voiceModulationMode" with type VoiceModulationMode
+            // (Disabled=0, Linear=1). The renamed to "voiceMode" with type VoiceModeOverride
+            // (Global=0, Disabled=1, Linear=2) means the integer values from old serialized data
+            // would map incorrectly if using FormerlySerializedAs (Disabled→Global, Linear→Disabled).
+            // To prevent silent voice modulation corruption, we dropped the attribute — old data
+            // defaults to Global (uses the component-level voiceModulationMode, which defaults to Linear).
             [Tooltip("Voice mode for this viseme when custom settings are enabled.")]
             public VoiceModeOverride voiceMode = VoiceModeOverride.Global;
 
