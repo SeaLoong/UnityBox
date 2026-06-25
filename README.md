@@ -47,7 +47,7 @@ Assets/UnityBox/
 ## VPM 仓库发布说明
 
 - GitHub Actions 会自动通过 `git ls-files 'Assets/UnityBox/*/package.json'` 发现主仓库中已跟踪的包，因此新增包时通常**不再需要手动修改 workflow 里的路径列表**。
-- 因为发现范围只包含**主仓库已跟踪文件**，所以像 `Assets/UnityBox/Sensa` 这种 Git 子模块内容不会被自动发布到当前仓库的 VPM listing 中。
+- 因为发现范围只包含**主仓库已跟踪文件**，所以像 Git 子模块内容不会被自动发布到当前仓库的 VPM listing 中。
 
 ## 许可证
 
