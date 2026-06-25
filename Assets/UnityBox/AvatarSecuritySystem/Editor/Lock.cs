@@ -131,9 +131,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 foreach (Transform child in avatarRoot.transform)
                 {
                     if (IsASSObject(child)) continue;
+
+                    string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
                     
-                    clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", disableCurve);
-                    Debug.Log($"[ASS] Lock animation: \"{child.name}\" (IsActive=0)");
+                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
+                    Debug.Log($"[ASS] Lock animation: \"{childPath}\" (IsActive=0)");
                     hiddenCount++;
                 }
                 
@@ -196,8 +198,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
+
+                string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
                 
-                clip.SetCurve(child.name, typeof(GameObject), "m_IsActive", child.gameObject.activeSelf ? enableCurve : disableCurve);
+                clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", child.gameObject.activeSelf ? enableCurve : disableCurve);
                 restoredCount++;
             }
             
