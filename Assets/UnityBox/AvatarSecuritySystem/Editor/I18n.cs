@@ -228,9 +228,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["gesture.hold_time"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hold Time (sec)" },
-                    { SystemLanguage.ChineseSimplified, "保持时间 (秒)" },
-                    { SystemLanguage.Japanese, "保持時間 (秒)" }
+                    { SystemLanguage.English, "Min Hold Time (sec)" },
+                    { SystemLanguage.ChineseSimplified, "最小保持时间 (秒)" },
+                    { SystemLanguage.Japanese, "最小保持時間 (秒)" }
+                },
+                ["gesture.max_hold_time"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Max Hold Time (sec)" },
+                    { SystemLanguage.ChineseSimplified, "最大保持时间 (秒)" },
+                    { SystemLanguage.Japanese, "最大保持時間 (秒)" }
+                },
+                ["gesture.max_hold_time_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Maximum time (seconds) to hold a single gesture during password input. If held longer, the input resets. Prevents holding a gesture while thinking about the next step." },
+                    { SystemLanguage.ChineseSimplified, "密码输入过程中保持单个手势的最大时间（秒）。超过此时间输入将重置。防止一直保持手势去思考下一步手势。" },
+                    { SystemLanguage.Japanese, "パスワード入力中に単一ジェスチャーを保持する最大時間（秒）。超えると入力がリセットされます。次のステップを考えながらジェスチャーを保持し続けるのを防ぎます。" }
                 },
                 ["gesture.error_tolerance"] = new Dictionary<SystemLanguage, string>
                 {
@@ -394,6 +406,36 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "Do not generate fullscreen overlay UI (mask + progress bar). Audio feedback is still generated." },
                     { SystemLanguage.ChineseSimplified, "不生成全屏覆盖 UI（遮罩 + 进度条）。音频反馈仍然会生成。" },
                     { SystemLanguage.Japanese, "フルスクリーンオーバーレイUI（マスク+プログレスバー）を生成しない。オーディオフィードバックは引き続き生成されます。" }
+                },
+                ["advanced.mute_warning"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Mute Warning Sound" },
+                    { SystemLanguage.ChineseSimplified, "静音警告音效" },
+                    { SystemLanguage.Japanese, "警告音をミュート" }
+                },
+                ["advanced.mute_warning_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Do not generate the countdown warning beep sound. Visual UI feedback (mask + progress bar) is still shown. Complements Hide UI to fully silence the system." },
+                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。视觉 UI 反馈（遮罩 + 进度条）仍然显示。与隐藏 UI 互补，可完全静音系统。" },
+                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。視覚的UIフィードバック（マスク+プログレスバー）は引き続き表示されます。UI非表示と組み合わせてシステムを完全に沈黙させることができます。" }
+                },
+                ["advanced.default_defense"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Default Enable Defense" },
+                    { SystemLanguage.ChineseSimplified, "默认启用防御" },
+                    { SystemLanguage.Japanese, "デフォルトで防御を有効化" }
+                },
+                ["advanced.default_defense_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Defense system is always ON by default. No password input needed. Use after uploading a password-protected model and unlocking it — the saved ASS_PasswordCorrect parameter will keep defense disabled for legitimate users, while thieves who steal the model cannot disable it." },
+                    { SystemLanguage.ChineseSimplified, "防御系统默认始终开启，无需密码输入。在上传带密码的模型并解锁后使用此模式——已保存的 ASS_PasswordCorrect 参数会为合法用户保持防御关闭，而盗模者无法关闭防御。" },
+                    { SystemLanguage.Japanese, "防御システムがデフォルトで常に有効になります。パスワード入力は不要です。パスワード保護されたモデルをアップロードしてロック解除した後にこのモードを使用してください。保存された ASS_PasswordCorrect パラメータにより正規ユーザーは防御が無効になり、モデルを盗んだ者は防御を無効化できません。" }
+                },
+                ["advanced.default_defense_warning"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "DANGER: With \"Default Enable Defense\" enabled, NO password system will be generated. You MUST first upload a password-protected version, unlock it in VRChat, then re-upload with this option enabled. If you skip the initial unlock step, defense will trigger for ALL users including yourself! Ensure you understand the workflow before enabling this." },
+                    { SystemLanguage.ChineseSimplified, "危险：启用\"默认启用防御\"后，将不会生成密码系统。你必须先上传带密码保护的版本，在VRChat中解锁它，然后再上传启用此选项的版本。如果跳过初始解锁步骤，防御将对所有用户（包括你自己）触发！在启用此选项前请确保你理解整个工作流程。" },
+                    { SystemLanguage.Japanese, "危険：「デフォルトで防御を有効化」を有効にすると、パスワードシステムは生成されません。まずパスワード保護されたバージョンをアップロードし、VRChatでロック解除してから、このオプションを有効にして再アップロードする必要があります。最初のロック解除手順をスキップすると、自分自身を含むすべてのユーザーに対して防御が作動します！このオプションを有効にする前に、ワークフローを理解していることを確認してください。" }
                 },
                 ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
                 {

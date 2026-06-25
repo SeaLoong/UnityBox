@@ -30,6 +30,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
+            // 默认启用防御模式：Defense 层默认 Active，PasswordCorrect=True 时切换到 Inactive
+            // 合法用户（PasswordCorrect=True 已保存）→ 防御关闭；盗模者（PasswordCorrect=False）→ 防御常开
+            // 不依赖 TimeUp/Countdown
+            if (config.defaultEnableDefense)
+            {
+                GenerateDefaultDefenseLayer();
+                return;
+            }
+
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
@@ -62,6 +71,51 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             controller.AddLayer(layer);
+        }
+
+        /// <summary>
+        /// 默认启用防御模式：Inactive→Active，条件与 Lock 的 Remote→Locked 一致
+        /// 默认 Inactive（防御关），仅当 IsLocal && !PasswordCorrect 时切到 Active
+        /// 合法用户 PasswordCorrect=True → 始终 Inactive，零闪烁
+        /// </summary>
+        private void GenerateDefaultDefenseLayer()
+        {
+            var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
+            layer.blendingMode = AnimatorLayerBlendingMode.Override;
+
+            // Inactive（默认）：防御关闭，类似 Lock 的 Remote 状态
+            var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(100, 50, 0));
+            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            layer.stateMachine.defaultState = inactiveState;
+
+            // Active：防御激活
+            var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
+            var activateClip = new AnimationClip { name = "ASS_DefenseActive_Default" };
+            activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
+                AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            Utils.AddSubAsset(controller, activateClip);
+            activeState.motion = activateClip;
+
+            // Inactive → Active（仅本地且密码未正确时激活防御）
+            var toActive = Utils.CreateTransition(inactiveState, activeState);
+            Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
+            toActive.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
+
+            layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
+            Utils.AddSubAsset(controller, layer.stateMachine);
+
+            try
+            {
+                CreateDefenseComponents();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ASS] CreateDefenseComponents调用失败: {e.Message}\n{e.StackTrace}");
+                throw;
+            }
+
+            controller.AddLayer(layer);
+            Debug.Log("[ASS] Default enable defense: Inactive→Active on IsLocal && !PasswordCorrect");
         }
 
         private GameObject CreateDefenseComponents()

@@ -29,10 +29,12 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 
 ### 核心特性
 
-- **手势密码保护** — 使用 VRChat 的 8 种手势组合作为密码
+- **手势密码保护** — 使用 VRChat 的 8 种手势（含 Idle）组合作为密码
+- **手势保持时间控制** — 最小/最大保持时间 + 容错时间，防止猜测与误触
 - **倒计时机制** — 限时输入（默认 30 秒），增加破解难度
 - **视觉/音频反馈** — 全屏 Shader 遮罩 + 进度条 + 警告音效（支持 VR 立体渲染）
 - **初始锁定** — Avatar 启动时所有功能被禁用
+- **默认启用防御** — 上传无密码的防御版本，利用已保存的参数状态区分合法用户与盗模者
 - **智能防御** — 仅对穿戴者生效（IsLocal），不影响其他玩家
 - **非破坏性** — 编辑时零影响，仅在 VRChat 构建时自动生成
 - **VRCSDK 集成** — 通过 `IVRCSDKPreprocessAvatarCallback` 无缝接入构建流程
@@ -41,6 +43,7 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 ### 工作流程
 
 ```
+标准模式：
 Avatar 启动
     ↓
 所有功能锁定（对象禁用 + 全屏遮罩覆盖视角）
@@ -51,6 +54,13 @@ Avatar 启动
     ├─ 正确 → ASS_PasswordCorrect = true → 解锁 → 正常使用
     ├─ 错误 → 容错机制 → 可继续输入
     └─ 超时 → ASS_TimeUp = true → 触发防御（仅对穿戴者）
+
+默认启用防御模式：
+Avatar 启动
+    ├─ PasswordCorrect = true（已保存）→ 正常使用（防御关闭）
+    └─ PasswordCorrect = false（盗模者）
+        ├─ 全屏遮罩 + 防御组件立即激活
+        └─ 无法关闭，持久防御
 ```
 
 ---
@@ -100,6 +110,7 @@ Avatar 启动
 
 - Gesture Password: `[1, 7, 2, 4]`（Fist → ThumbsUp → HandOpen → Victory）
 - Use Right Hand: `false`（使用左手）
+- 支持 Idle(0) 作为密码值（下拉菜单可选 `0: Idle`）
 
 **密码强度评级：**
 
@@ -107,23 +118,33 @@ Avatar 启动
 - **Medium (中)**: 4-5 位，或手势种类少于 4 种
 - **Strong (强)**: ≥ 6 位，且至少使用 4 种不同手势
 
-### 步骤 3：配置倒计时
+### 步骤 3：配置手势识别
 
-- **Countdown Duration**: 30-120 秒（默认 30 秒）
+- **Min Hold Time**: 0.1-1.0 秒（默认 0.15 秒），手势需保持的最短时间
+- **Max Hold Time**: 1-10 秒（默认 3 秒），手势可保持的最长时间，超过则输入重置
+- **Error Tolerance**: 0.1-1.0 秒（默认 0.3 秒），短暂误触的容错时间
+
+### 步骤 4：配置倒计时
+
+- **Countdown Duration**: 10-30 秒（默认 30 秒）
 - **Warning Threshold**: 固定 10 秒（最后 10 秒播放警告音效）
-
-### 步骤 4：手势识别调整（可选）
-
-- **Gesture Hold Time**: 0.1-1.0 秒（默认 0.15 秒），手势需保持的最短时间
-- **Gesture Error Tolerance**: 0.1-1.0 秒（默认 0.3 秒），短暂误触的容错时间
 
 ### 步骤 5：防御选项（可选）
 
 - 构建时自动生成 GPU 防御组件（所有 GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
-- 可通过 `disableDefense` 选项完全禁用防御生成
-- 可通过 `enableOverflow` 选项启用溢出模式
+- 可通过 `Disable Defense` 选项完全禁用防御生成
+- 可通过 `Enable Overflow` 选项启用溢出模式
 
-### 步骤 6：构建上传
+### 步骤 6：高级选项
+
+- **Enable in Play Mode**: 在 Unity Play 模式下启用 ASS 生成（用于测试）
+- **Hide UI**: 不生成全屏遮罩 UI（仍保留音频反馈）
+- **Mute Warning Sound**: 不生成倒计时警告音效（仍保留视觉反馈）
+- **Default Enable Defense**: ⚠️ 默认启用防御模式，不生成密码系统，利用已保存的参数状态工作
+- **Hide Objects**: 锁定时隐藏所有根级子对象
+- **Write Defaults Mode**: 动画 WD 模式（Auto/On/Off）
+
+### 步骤 7：构建上传
 
 1. 使用 VRChat SDK 的 **Build & Publish**
 2. ASS 会在构建时自动生成（不修改场景中的原始对象）

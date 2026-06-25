@@ -48,7 +48,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // 创建音频对象
             CreateAudioObject(Constants.GO_AUDIO_SUCCESS);
-            CreateAudioObject(Constants.GO_AUDIO_WARNING);
+            if (!config.muteWarningSound)
+            {
+                CreateAudioObject(Constants.GO_AUDIO_WARNING);
+            }
+            else
+            {
+                RemoveExistingWarningAudio();
+            }
         }
 
 
@@ -205,6 +212,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (removedCount > 0)
             {
                 Debug.Log($"[ASS] Removed {removedCount} existing UI overlay object(s)");
+            }
+        }
+
+        private void RemoveExistingWarningAudio()
+        {
+            int removedCount = 0;
+            for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = avatarGameObject.transform.GetChild(i);
+                if (child.name != Constants.GO_AUDIO_WARNING) continue;
+
+                Object.DestroyImmediate(child.gameObject);
+                removedCount++;
+            }
+
+            if (removedCount > 0)
+            {
+                Debug.Log($"[ASS] muteWarningSound enabled, removed {removedCount} existing warning audio object(s)");
             }
         }
 

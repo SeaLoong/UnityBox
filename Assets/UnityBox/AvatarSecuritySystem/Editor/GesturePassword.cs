@@ -26,12 +26,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 创建手势密码验证层并添加到控制器
         /// 实现尾部序列匹配：用户输入的最后N位满足密码即可通过
-        /// 增强特性：手势稳定时间、忽略Idle手势、容错机制
-        /// 时间到后强制进入失败状态，禁止继续输入
+        /// 
+        /// 时间参数分配：
+        ///   - Holding 状态：clip 时长 = gestureMaxHoldTime（单步总超时）
+        ///     退出确认点在 holdTime/maxHoldTime 比例处（最小保持阈值）
+        ///     超时退出在 exitTime=1.0（整步超时）
+        ///   - Confirmed 状态：空 clip（0 时长，仅做逻辑中转，无额外超时）
+        ///   - ErrorTolerance 状态：clip 时长 = gestureErrorTolerance（容错窗口）
+        /// 
+        /// Idle（手势值 0）不再有自循环逻辑，视为确定手势值参与条件判断。
+        /// 密码配置已支持 0 值（Idle）。
         /// </summary>
         public void Generate()
         {
             float gestureHoldTime = config.gestureHoldTime;
+            float gestureMaxHoldTime = config.gestureMaxHoldTime;
             float gestureErrorTolerance = config.gestureErrorTolerance;
 
             var layer = Utils.CreateLayer(LAYER_PASSWORD_INPUT, 1f);
@@ -67,6 +76,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
 
+            // 成功状态（需要在循环前声明，因为循环中会引用）
+            var successState = layer.stateMachine.AddState("Password_Success", 
+                new Vector3(50 + (password.Count + 1) * 350, 150, 0));
+            successState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+
             // 第一阶段：创建所有状态
             var stepHoldingStates = new List<AnimatorState>();
             var stepConfirmedStates = new List<AnimatorState>();
@@ -78,7 +92,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 var holdingState = layer.stateMachine.AddState($"Step_{i + 1}_Holding", 
                     new Vector3(50 + (i + 1) * 350, 50, 0));
-                var holdClip = CreateHoldClip($"ASS_Hold_{i + 1}", gestureHoldTime);
+                // Holding: clip 时长 = gestureMaxHoldTime（整步超时）
+                // 确认点位于 holdTime/maxHoldTime 比例处
+                var holdClip = CreateHoldClip($"ASS_Hold_{i + 1}", gestureMaxHoldTime);
                 holdingState.motion = holdClip;
                 Utils.AddSubAsset(controller, holdClip);
                 stepHoldingStates.Add(holdingState);
@@ -92,7 +108,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 var confirmedState = layer.stateMachine.AddState($"Step_{i + 1}_Confirmed", 
                     new Vector3(50 + (i + 1) * 350, 150, 0));
-            confirmedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+                // Confirmed: 空 clip，仅做逻辑中转，无超时
+                confirmedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
                 stepConfirmedStates.Add(confirmedState);
 
                 var errorToleranceState = layer.stateMachine.AddState($"Step_{i + 1}_ErrorTolerance", 
@@ -113,26 +130,33 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedState = stepConfirmedStates[i];
                 var errorToleranceState = stepErrorToleranceStates[i];
 
-                if (!isLastStep)
-                {
-                    var holdToConfirm = Utils.CreateTransition(holdingState, confirmedState,
-                        hasExitTime: true, exitTime: 1.0f);
-                    holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
-                    holdToConfirm.duration = 0f;
-                }
+                // Holding → Confirmed (或 → Success 最后一步)
+                // 退出点在 holdTime/maxHoldTime 比例处，手势保持超过最小阈值即确认
+                float holdExitTime = (gestureHoldTime > 0f && gestureMaxHoldTime > 0f)
+                    ? Mathf.Clamp01(gestureHoldTime / gestureMaxHoldTime)
+                    : 1.0f;
+                var holdToConfirm = Utils.CreateTransition(holdingState, 
+                    isLastStep ? successState : confirmedState,
+                    hasExitTime: true, exitTime: holdExitTime);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                holdToConfirm.duration = 0f;
 
-                ConfigureIdleLoopTransition(Utils.CreateTransition(holdingState, holdingState), gestureParam);
+                // Holding → Wait（超时：整步最大时间用完，exitTime=1.0）
+                var holdTimeout = Utils.CreateTransition(holdingState, waitState,
+                    hasExitTime: true, exitTime: 1.0f);
+                holdTimeout.duration = 0f;
 
+                // Holding → Wait（错误手势，包括 Idle(0) 均视为错误）
                 var holdingErrorToWait = holdingState.AddTransition(waitState);
                 ConfigureErrorTransition(holdingErrorToWait, gestureValue, gestureParam);
 
                 if (i == 0)
                 {
+                    // Wait → Step_1_Holding（首个手势匹配即进入，Idle(0) 也参与匹配）
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                     firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
-                    firstTransition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
                 }
                 else
                 {
@@ -143,11 +167,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 if (isLastStep) continue;
 
-                ConfigureIdleLoopTransition(Utils.CreateTransition(confirmedState, confirmedState), gestureParam);
+                // Confirmed → Step_{i+1}_Holding（下一正确手势）
+                var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
+                ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
+                // Confirmed → ErrorTolerance（任何非预期手势，包括 Idle(0)）
                 var confirmedToTolerance = confirmedState.AddTransition(errorToleranceState);
                 ConfigureErrorTransition(confirmedToTolerance, gestureValue, gestureParam);
 
+                // Confirmed → Step_1_Holding（手势匹配首位密码时重新开始）
                 var firstGesture = password[0];
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
@@ -155,31 +183,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
 
-                if (!isLastStep)
-                {
-                    var nextHoldingState = stepHoldingStates[i + 1];
-                    var toleranceCorrectTransition = errorToleranceState.AddTransition(nextHoldingState);
-                    int nextGesture = password[i + 1];
-                    ConfigureGestureTransition(toleranceCorrectTransition, nextGesture, gestureParam);
-                }
+                // ErrorTolerance → Step_{i+1}_Holding（容错内纠正为下一正确手势）
+                var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
+                ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
 
+                // ErrorTolerance → Step_1_Holding（容错内改回首位手势，重新开始）
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
                     var toleranceRestartTransition = errorToleranceState.AddTransition(stepHoldingStates[0]);
                     ConfigureGestureTransition(toleranceRestartTransition, firstGesture, gestureParam);
                 }
 
-                ConfigureIdleLoopTransition(Utils.CreateTransition(errorToleranceState, errorToleranceState), gestureParam);
-
+                // ErrorTolerance → Wait（容错时间用完，超时退出）
                 var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 toleranceTimeoutToWait.duration = 0f;
             }
-
-            // 成功状态
-            var successState = layer.stateMachine.AddState("Password_Success", 
-                new Vector3(50 + (password.Count + 1) * 350, 150, 0));
-            successState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             if (config.successSound != null)
             {
@@ -190,18 +209,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             
             Utils.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: true);
 
-            // 最后一步 Holding → Success
-            var lastHoldingState = stepHoldingStates[password.Count - 1];
-            var finalTransition = Utils.CreateTransition(lastHoldingState, successState,
-                hasExitTime: true, exitTime: 1.0f);
-            finalTransition.AddCondition(AnimatorConditionMode.Equals, password[password.Count - 1], gestureParam);
-            finalTransition.duration = 0f;
-
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
 
             Debug.Log($"[ASS] Gesture password layer created with stability check: " +
-                     $"password length={password.Count}, hold time={gestureHoldTime}s, error tolerance={gestureErrorTolerance}s");
+                     $"password length={password.Count}, min hold={gestureHoldTime}s, max hold={gestureMaxHoldTime}s, error tolerance={gestureErrorTolerance}s");
 
             controller.AddLayer(layer);
         }
@@ -219,20 +231,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return clip;
         }
         
-        private static void ConfigureIdleLoopTransition(AnimatorStateTransition transition, string gestureParam)
-        {
-            transition.hasExitTime = false;
-            transition.duration = 0f;
-            transition.AddCondition(AnimatorConditionMode.Equals, 0, gestureParam);
-        }
-        
         private static void ConfigureErrorTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
         {
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
             transition.AddCondition(AnimatorConditionMode.NotEqual, expectedGesture, gestureParam);
-            transition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
         }
         
         private static void ConfigureGestureTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
@@ -241,7 +245,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             transition.duration = 0f;
             transition.hasFixedDuration = true;
             transition.AddCondition(AnimatorConditionMode.Equals, expectedGesture, gestureParam);
-            transition.AddCondition(AnimatorConditionMode.NotEqual, 0, gestureParam);
         }
     }
 }

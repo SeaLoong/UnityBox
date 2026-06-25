@@ -18,7 +18,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{password.use_right_hand_tooltip}")]
         public bool useRightHand = false;
 
-        [Range(30f, 120f)]
+        [Range(10f, 30f)]
         [Tooltip("#{countdown.duration_tooltip}")]
         public float countdownDuration = 30f;
 
@@ -31,6 +31,10 @@ namespace UnityBox.AvatarSecuritySystem
         [Range(0.1f, 1f)]
         [Tooltip("#{gesture.error_tolerance_tooltip}")]
         public float gestureErrorTolerance = 0.3f;
+
+        [Range(1f, 10f)]
+        [Tooltip("#{gesture.max_hold_time_tooltip}")]
+        public float gestureMaxHoldTime = 3f;
 
         [HideInInspector] public AudioClip warningBeep;
         [HideInInspector] public AudioClip successSound;
@@ -46,6 +50,12 @@ namespace UnityBox.AvatarSecuritySystem
 
         [Tooltip("#{advanced.hide_ui_tooltip}")]
         public bool hideUI = false;
+
+        [Tooltip("#{advanced.mute_warning_tooltip}")]
+        public bool muteWarningSound = false;
+
+        [Tooltip("#{advanced.default_defense_tooltip}")]
+        public bool defaultEnableDefense = false;
 
         [Tooltip("#{defense.enable_overflow_tooltip}")]
         public bool enableOverflow = true;
@@ -97,7 +107,7 @@ namespace UnityBox.AvatarSecuritySystem
 
         private bool AreAllGesturesValid()
         {
-            const int minimumGestureValue = 1;
+            const int minimumGestureValue = 0;
             const int maximumGestureValue = 7;
 
             foreach (int gesture in gesturePassword)
@@ -127,6 +137,8 @@ namespace UnityBox.AvatarSecuritySystem
         {
             InitializePasswordIfNeeded();
             ValidateWarningThreshold();
+            ValidateGestureTimes();
+            SanitizeDefenseModes();
         }
 
         private void InitializePasswordIfNeeded()
@@ -145,16 +157,41 @@ namespace UnityBox.AvatarSecuritySystem
             }
         }
 
+        private void SanitizeDefenseModes()
+        {
+            // defaultEnableDefense 和 disableDefense 互斥
+            if (defaultEnableDefense && disableDefense)
+                disableDefense = false;
+        }
+
+        private void ValidateGestureTimes()
+        {
+            float minSum = gestureHoldTime + gestureErrorTolerance;
+            if (gestureMaxHoldTime <= minSum)
+            {
+                gestureMaxHoldTime = minSum + 0.5f;
+                if (gestureMaxHoldTime > 10f)
+                    gestureMaxHoldTime = 10f;
+            }
+        }
+
         private void Reset()
         {
             const float defaultCountdownDuration = 30f;
             const float defaultWarningThreshold = 10f;
+            const float defaultGestureMaxHoldTime = 3f;
 
             gesturePassword = new List<int> { 1, 7, 2, 4 };
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
+            gestureMaxHoldTime = defaultGestureMaxHoldTime;
+            gestureHoldTime = 0.15f;
+            gestureErrorTolerance = 0.3f;
             enabledInPlaymode = false;
             disableRootChildren = true;
+            muteWarningSound = false;
+            defaultEnableDefense = false;
+            enableOverflow = true;
         }
 #endif
     }

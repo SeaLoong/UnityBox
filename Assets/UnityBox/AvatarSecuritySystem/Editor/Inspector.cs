@@ -13,6 +13,7 @@ namespace UnityBox.AvatarSecuritySystem
         
         private static readonly string[] GESTURE_NAMES =
         {
+            "0: Idle",
             "1: Fist ✊",
             "2: HandOpen ✋",
             "3: Fingerpoint ☝",
@@ -22,7 +23,7 @@ namespace UnityBox.AvatarSecuritySystem
             "7: ThumbsUp 👍"
         };
 
-        private static readonly int[] GESTURE_VALUES = { 1, 2, 3, 4, 5, 6, 7 };
+        private static readonly int[] GESTURE_VALUES = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
         private void OnEnable()
         {
@@ -56,14 +57,22 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void DrawConfigurationSections()
         {
-            DrawPasswordSection();
-            EditorGUILayout.Space(10);
+            if (_target.defaultEnableDefense)
+            {
+                DrawDefaultDefenseWarning();
+                EditorGUILayout.Space(10);
+            }
+            else
+            {
+                DrawPasswordSection();
+                EditorGUILayout.Space(10);
 
-            DrawGestureRecognitionSection();
-            EditorGUILayout.Space(10);
+                DrawGestureRecognitionSection();
+                EditorGUILayout.Space(10);
 
-            DrawCountdownSection();
-            EditorGUILayout.Space(10);
+                DrawCountdownSection();
+                EditorGUILayout.Space(10);
+            }
 
             DrawDefenseSection();
             EditorGUILayout.Space(10);
@@ -218,12 +227,29 @@ namespace UnityBox.AvatarSecuritySystem
             };
         }
 
+        private void DrawDefaultDefenseWarning()
+        {
+            EditorGUILayout.HelpBox(T("advanced.default_defense"), MessageType.Warning);
+
+            var warningStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                fontSize = 12,
+                richText = true,
+                wordWrap = true,
+                normal = { textColor = Color.red }
+            };
+            EditorGUILayout.LabelField("⚠️ " + T("advanced.default_defense_warning"), warningStyle);
+        }
+
         private void DrawGestureRecognitionSection()
         {
             EditorGUILayout.LabelField(T("gesture.config"), EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureHoldTime"),
                 new GUIContent(T("gesture.hold_time"), T("gesture.hold_time_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureMaxHoldTime"),
+                new GUIContent(T("gesture.max_hold_time"), T("gesture.max_hold_time_tooltip")));
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureErrorTolerance"),
                 new GUIContent(T("gesture.error_tolerance"), T("gesture.error_tolerance_tooltip")));
@@ -319,6 +345,12 @@ namespace UnityBox.AvatarSecuritySystem
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("hideUI"),
                 new GUIContent(T("advanced.hide_ui"), T("advanced.hide_ui_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("muteWarningSound"),
+                new GUIContent(T("advanced.mute_warning"), T("advanced.mute_warning_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("defaultEnableDefense"),
+                new GUIContent(T("advanced.default_defense"), T("advanced.default_defense_tooltip")));
         }
 
         private void DrawLockSection()

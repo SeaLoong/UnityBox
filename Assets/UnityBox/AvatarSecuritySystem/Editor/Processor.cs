@@ -78,17 +78,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            if (!assConfig.IsPasswordValid())
+            // 默认启用防御模式不需要密码，跳过密码有效性检查
+            if (!assConfig.defaultEnableDefense)
             {
-                // TODO: I18n
-                Debug.LogWarning("[ASS] Password configuration is invalid");
-                return false;
-            }
+                if (!assConfig.IsPasswordValid())
+                {
+                    Debug.LogWarning("[ASS] Password configuration is invalid");
+                    return false;
+                }
 
-            if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
-            {
-                Debug.Log("[ASS] Password is empty (0 digits), ASS is disabled. Skipping generation.");
-                return true;
+                if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
+                {
+                    Debug.Log("[ASS] Password is empty (0 digits), ASS is disabled. Skipping generation.");
+                    return true;
+                }
             }
 
             if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.enabledInPlaymode)
@@ -110,11 +113,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
             new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
-            new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
 
-            var countdown = new Countdown(fxController, avatarGameObject, assConfig);
-            countdown.Generate();
-            countdown.GenerateAudioLayer();
+            if (!assConfig.defaultEnableDefense)
+            {
+                new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
+            }
+            else
+            {
+                Debug.Log("[ASS] Default enable defense mode: skipping gesture password layer generation");
+            }
+
+            if (!assConfig.defaultEnableDefense)
+            {
+                var countdown = new Countdown(fxController, avatarGameObject, assConfig);
+                countdown.Generate();
+                countdown.GenerateAudioLayer();
+            }
+            else
+            {
+                Debug.Log("[ASS] Default enable defense mode: skipping countdown layer");
+            }
 
             if (!assConfig.disableDefense)
             {
@@ -132,7 +150,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
             }
 
-            RegisterASSParameters(descriptor);
+            RegisterASSParameters(descriptor, assConfig);
 
             Utils.SaveAndRefresh();
             Utils.LogOptimizationStats(fxController);
@@ -143,7 +161,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 注册 ASS 参数到 VRCExpressionParameters
         /// </summary>
-        private void RegisterASSParameters(VRCAvatarDescriptor descriptor)
+        private void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)
         {
             var expressionParameters = descriptor.expressionParameters;
             if (expressionParameters == null)
@@ -155,9 +173,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var existingParams = expressionParameters.parameters?.ToList()
                 ?? new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>();
 
-            existingParams.RemoveAll(p =>
-                p.name == PARAM_PASSWORD_CORRECT ||
-                p.name == PARAM_TIME_UP);
+            existingParams.RemoveAll(p => p.name == PARAM_PASSWORD_CORRECT);
 
             var assParams = new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>
             {
@@ -168,23 +184,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     defaultValue = 0f,
                     saved = true,
                     networkSynced = true
-                },
-                new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+                }
+            };
+
+            // 默认启用防御模式不需要 TimeUp 参数（无倒计时）
+            bool needTimeUp = !(assConfig != null && assConfig.defaultEnableDefense);
+            if (needTimeUp)
+            {
+                existingParams.RemoveAll(p => p.name == PARAM_TIME_UP);
+                assParams.Add(new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
                 {
                     name = PARAM_TIME_UP,
                     valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
                     defaultValue = 0f,
                     saved = false,
                     networkSynced = false
-                }
-            };
+                });
+            }
 
             assParams.AddRange(existingParams);
             expressionParameters.parameters = assParams.ToArray();
 
             EditorUtility.SetDirty(expressionParameters);
             Debug.Log($"[ASS] Registered ASS parameters: " +
-                     $"{PARAM_PASSWORD_CORRECT}(synced), {PARAM_TIME_UP}(local)");
+                     $"{PARAM_PASSWORD_CORRECT}(synced)" +
+                     (needTimeUp ? $", {PARAM_TIME_UP}(local)" : " (no TimeUp)"));
         }
 
         /// <summary>

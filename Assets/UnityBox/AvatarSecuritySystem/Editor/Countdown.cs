@@ -89,9 +89,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 生成警告音效层，添加到控制器
         /// 需要在 Feedback 创建音频对象之后调用
+        /// 如果 muteWarningSound 启用，则跳过音效层生成
         /// </summary>
         public void GenerateAudioLayer()
         {
+            if (config.muteWarningSound)
+            {
+                Debug.Log("[ASS] muteWarningSound enabled, skipping warning audio layer");
+                return;
+            }
+
             var layer = Utils.CreateLayer(LAYER_AUDIO, 1f);
             float warningThreshold = config.warningThreshold;
             float duration = config.countdownDuration;
