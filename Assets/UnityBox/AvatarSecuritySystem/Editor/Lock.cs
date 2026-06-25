@@ -78,13 +78,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
             toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             
-            // Locked → Locked（循环锁定，直到密码正确）
-            var lockedLoop = Utils.CreateTransition(lockedState, lockedState);
-            lockedLoop.hasExitTime = true;
-            lockedLoop.exitTime = 0f;
-            lockedLoop.duration = 0f;
-            lockedLoop.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            
             // Locked → Unlocked（本地玩家密码正确时解锁）
             var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);
             toUnlocked.hasExitTime = false;
