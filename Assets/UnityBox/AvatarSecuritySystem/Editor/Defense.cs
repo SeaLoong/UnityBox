@@ -148,7 +148,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 long particleTarget;
                 long meshPolyTarget;
 
-                if (config.enableOverflow)
+                // Play Mode（isDebugMode=true）下禁用 Overflow，避免生成大量粒子
+                bool useOverflow = config.enableOverflow && !isDebugMode;
+
+                if (useOverflow)
                 {
                     systemCount = parameters.ParticleSystemCount;
                     particleTarget = (long)Constants.PARTICLE_MAX_COUNT + 1L;
@@ -161,12 +164,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     systemCount = Mathf.Min(parameters.ParticleSystemCount, psBudget);
                     particleTarget = parameters.ParticleCount;
                     long existingMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
-                    meshPolyTarget = System.Math.Max(0L,
-                        (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingMeshTris);
+                    meshPolyTarget = isDebugMode
+                        ? 1L  // Play Mode 只生成最小量
+                        : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingMeshTris);
                 }
 
                 if (systemCount > 0 && meshPolyTarget > 0)
-                    CreateParticleComponents(root, systemCount, particleTarget, meshPolyTarget, defenseLights, config.enableOverflow);
+                    CreateParticleComponents(root, systemCount, particleTarget, meshPolyTarget, defenseLights, useOverflow);
             }
 
             if (parameters.PhysXRigidbodyCount > 0)
