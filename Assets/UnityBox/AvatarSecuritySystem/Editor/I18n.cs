@@ -403,9 +403,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_overlay"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Disable Overlay" },
-                    { SystemLanguage.ChineseSimplified, "关闭覆盖" },
-                    { SystemLanguage.Japanese, "オーバーレイを無効化" }
+                    { SystemLanguage.English, "Disable Overlay Interface" },
+                    { SystemLanguage.ChineseSimplified, "关闭覆盖界面" },
+                    { SystemLanguage.Japanese, "オーバーレイ表示を無効化" }
                 },
                 ["advanced.disable_overlay_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
@@ -421,9 +421,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.mute_warning_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate the countdown warning beep.\nThe fullscreen overlay (mask + progress bar) is still shown.\nUse with 'Disable Overlay' to completely silence the system." },
-                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。\n全屏覆盖（遮罩 + 进度条）仍然显示。\n与「关闭覆盖」配合可完全关闭系统的所有反馈。" },
-                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。\nフルスクリーンオーバーレイ（マスク+プログレスバー）は引き続き表示されます。\n「オーバーレイを無効化」と組み合わせて完全に沈黙させることができます。" }
+                    { SystemLanguage.English, "Do not generate the countdown warning beep.\nThe fullscreen overlay (mask + progress bar) is still shown.\nUse with 'Disable Overlay Interface' to completely silence the system." },
+                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。\n全屏覆盖（遮罩 + 进度条）仍然显示。\n与「关闭覆盖界面」配合可完全关闭系统的所有反馈。" },
+                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。\nフルスクリーンオーバーレイ（マスク+プログレスバー）は引き続き表示されます。\n「オーバーレイ表示を無効化」と組み合わせて完全に沈黙させることができます。" }
                 },
                 ["advanced.default_defense"] = new Dictionary<SystemLanguage, string>
                 {

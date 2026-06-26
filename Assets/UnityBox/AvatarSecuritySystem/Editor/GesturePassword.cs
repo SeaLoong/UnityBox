@@ -171,11 +171,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
-                // Confirmed → ErrorTolerance（任何非预期手势，包括 Idle(0)）
-                var confirmedToTolerance = confirmedState.AddTransition(errorToleranceState);
-                ConfigureErrorTransition(confirmedToTolerance, gestureValue, gestureParam);
-
                 // Confirmed → Step_1_Holding（手势匹配首位密码时重新开始）
+                // 必须在 ErrorTolerance 之前添加，确保重启优先于错误
                 var firstGesture = password[0];
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
@@ -183,11 +180,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
 
+                // Confirmed → ErrorTolerance（任何非预期手势，包括 Idle(0)）
+                var confirmedToTolerance = confirmedState.AddTransition(errorToleranceState);
+                ConfigureErrorTransition(confirmedToTolerance, gestureValue, gestureParam);
+
                 // ErrorTolerance → Step_{i+1}_Holding（容错内纠正为下一正确手势）
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
 
                 // ErrorTolerance → Step_1_Holding（容错内改回首位手势，重新开始）
+                // 同样必须在 timeout 之前添加
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
                 {
                     var toleranceRestartTransition = errorToleranceState.AddTransition(stepHoldingStates[0]);
