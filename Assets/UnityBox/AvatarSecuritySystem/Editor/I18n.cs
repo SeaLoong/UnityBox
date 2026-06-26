@@ -401,13 +401,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "已锁定：当前启用了「默认启用防御」" },
                     { SystemLanguage.Japanese, "ロック中：「デフォルトで防御を有効化」が有効です" }
                 },
-                ["advanced.hide_ui"] = new Dictionary<SystemLanguage, string>
+                ["advanced.disable_overlay"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide Fullscreen Overlay" },
-                    { SystemLanguage.ChineseSimplified, "隐藏全屏覆盖" },
-                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイを非表示" }
+                    { SystemLanguage.English, "Disable Overlay" },
+                    { SystemLanguage.ChineseSimplified, "关闭覆盖" },
+                    { SystemLanguage.Japanese, "オーバーレイを無効化" }
                 },
-                ["advanced.hide_ui_tooltip"] = new Dictionary<SystemLanguage, string>
+                ["advanced.disable_overlay_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Do not generate the fullscreen overlay (white background + progress bar + logo). Audio feedback is still generated." },
                     { SystemLanguage.ChineseSimplified, "不生成全屏覆盖（白色背景 + 进度条 + 徽标）。音频反馈仍然会生成。" },

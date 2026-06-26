@@ -109,10 +109,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
             // ASS_UI 同时承担遮挡和进度条显示（使用全屏覆盖 Shader）
-            if (avatarRoot.transform.Find(GO_UI) != null)
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
             {
-                clip.SetCurve(GO_UI, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log("[ASS] Lock animation: enabled UI (fullscreen overlay + progress bar)");
+                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", enableCurve);
+                Debug.Log("[ASS] Lock animation: enabled overlay (fullscreen mask + progress bar)");
             }
             
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
@@ -149,14 +149,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = "ASS_Remote" };
             
-            SetGameObjectActiveInClip(clip, GO_UI, false);
+            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
             
             // WD Off: 显式恢复所有被修改的属性
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             
-            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide UI and defense objects");
+            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay and defense objects");
             return clip;
         }
 
@@ -167,7 +167,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
-            SetGameObjectActiveInClip(clip, GO_UI, false);
+            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
             
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
@@ -378,7 +378,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var assObjectNames = new HashSet<string>
             {
-                GO_UI, GO_AUDIO_WARNING,
+                GO_OVERLAY, GO_AUDIO_WARNING,
                 GO_AUDIO_SUCCESS, GO_DEFENSE_ROOT
             };
             

@@ -12,12 +12,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly GameObject avatarGameObject;
         private readonly ASSComponent config;
-        private GameObject uiGameObject;
+        private GameObject overlayRootObject;
 
         /// <summary>
-        /// UI Shader 名称（全屏覆盖渲染）
+        /// 全屏覆盖 Shader 名称
         /// </summary>
-        private const string UI_SHADER_NAME = "UnityBox/ASS_UI";
+        private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_UI";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
         private const string UI_OVERLAY_NAME = "Overlay";
 
@@ -30,20 +30,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         public void Generate()
         {
-            if (config.hideOverlay)
+            if (config.disableOverlay)
             {
-                RemoveExistingUIObject();
+                RemoveExistingOverlayObject();
             }
             else
             {
-                // 创建 UI 根对象
-                CreateUIGameObject();
+                // 创建全屏覆盖根对象（先清理旧版 ASS_UI）
+                CleanupLegacyUIObjects();
+                CreateOverlayRoot();
 
                 // 清理旧 Overlay，避免重复生成导致多个同名子对象残留
-                RemoveExistingUIOverlays();
+                RemoveExistingOverlayMeshes();
 
-                // 创建 UI Mesh（使用自定义 Shader 全屏渲染遮挡背景 + 进度条）
-                CreateUIMesh();
+                // 创建全屏覆盖 Mesh（使用自定义 Shader 渲染遮挡背景 + 进度条）
+                CreateOverlayMesh();
             }
 
             // 创建音频对象
@@ -60,20 +61,37 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
 
         /// <summary>
-        /// 创建 UI 根对象
+        /// 清理旧版 ASS_UI 对象（v0.3.x 兼容）
+        /// </summary>
+        private void CleanupLegacyUIObjects()
+        {
+            int removed = 0;
+            for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = avatarGameObject.transform.GetChild(i);
+                if (child.name != Constants.GO_OVERLAY_OLD) continue;
+                Object.DestroyImmediate(child.gameObject);
+                removed++;
+            }
+            if (removed > 0)
+                Debug.Log($"[ASS] Cleaned up {removed} legacy ASS_UI object(s)");
+        }
+
+        /// <summary>
+        /// 创建全屏覆盖根对象
         /// Shader 会直接渲染到摄像机全屏，不需要世界空间定位或头部绑定
         /// </summary>
-        private GameObject CreateUIGameObject()
+        private GameObject CreateOverlayRoot()
         {
             // 查找已有对象
-            Transform existing = avatarGameObject.transform.Find(Constants.GO_UI);
+            Transform existing = avatarGameObject.transform.Find(Constants.GO_OVERLAY);
             if (existing != null)
             {
                 int removedDuplicates = 0;
                 for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
                 {
                     var child = avatarGameObject.transform.GetChild(i);
-                    if (child == existing || child.name != Constants.GO_UI) continue;
+                    if (child == existing || child.name != Constants.GO_OVERLAY) continue;
 
                     Object.DestroyImmediate(child.gameObject);
                     removedDuplicates++;
@@ -85,35 +103,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 existing.gameObject.SetActive(false);
                 if (removedDuplicates > 0)
                 {
-                    Debug.Log($"[ASS] Removed {removedDuplicates} duplicate UI root object(s)");
+                    Debug.Log($"[ASS] Removed {removedDuplicates} duplicate overlay root object(s)");
                 }
-                Debug.Log("[ASS] Using existing UI object");
-                this.uiGameObject = existing.gameObject;
+                Debug.Log("[ASS] Using existing overlay object");
+                this.overlayRootObject = existing.gameObject;
                 return existing.gameObject;
             }
 
-            // 创建根对象
-            var uiGameObject = new GameObject(Constants.GO_UI);
-            uiGameObject.SetActive(false);  // 默认禁用，只在 Locked 状态时由动画启用
-            uiGameObject.transform.SetParent(avatarGameObject.transform, false);
+            var overlayObj = new GameObject(Constants.GO_OVERLAY);
+            overlayObj.SetActive(false);
+            overlayObj.transform.SetParent(avatarGameObject.transform, false);
 
-            // 全屏渲染模式：不需要 VRCParentConstraint 绑定到头部
-            // Shader 的顶点着色器会直接将顶点映射到裁剪空间全屏位置
-
-            Debug.Log("[ASS] UI object created (fullscreen Shader overlay)");
-            this.uiGameObject = uiGameObject;
-            return uiGameObject;
+            Debug.Log("[ASS] Overlay root created (fullscreen Shader overlay)");
+            this.overlayRootObject = overlayObj;
+            return overlayObj;
         }
 
         /// <summary>
-        /// 创建 UI Mesh：使用自定义 Shader 全屏渲染遮挡背景和进度条
+        /// 创建全屏覆盖 Mesh
         /// Shader 在顶点着色器中将 Quad 直接映射到裁剪空间覆盖整个屏幕
         /// 进度条通过动画驱动材质属性 _C9D4（1→0）
         /// </summary>
-        private GameObject CreateUIMesh()
+        private GameObject CreateOverlayMesh()
         {
             var meshObj = new GameObject(UI_OVERLAY_NAME);
-            meshObj.transform.SetParent(uiGameObject.transform, false);
+            meshObj.transform.SetParent(overlayRootObject.transform, false);
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
             meshObj.transform.localScale = Vector3.one;
@@ -146,7 +160,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // 使用全屏覆盖 Shader
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            var shader = Shader.Find(UI_SHADER_NAME) ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
+            var shader = Shader.Find(OVERLAY_SHADER_NAME) ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
             var material = new Material(shader);
             material.SetColor("_A7F3", Color.white);
             material.SetColor("_B2E1", Color.red);
@@ -177,13 +191,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return meshObj;
         }
 
-        private void RemoveExistingUIObject()
+        private void RemoveExistingOverlayObject()
         {
             int removedCount = 0;
+            // 清理新版 ASS_Overlay 和旧版 ASS_UI
             for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
             {
                 var child = avatarGameObject.transform.GetChild(i);
-                if (child.name != Constants.GO_UI) continue;
+                if (child.name != Constants.GO_OVERLAY && child.name != Constants.GO_OVERLAY_OLD) continue;
 
                 Object.DestroyImmediate(child.gameObject);
                 removedCount++;
@@ -191,13 +206,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (removedCount > 0)
             {
-                Debug.Log($"[ASS] hideOverlay enabled, removed {removedCount} existing UI object(s)");
+                Debug.Log($"[ASS] disableOverlay enabled, removed {removedCount} existing overlay object(s)");
             }
         }
 
-        private void RemoveExistingUIOverlays()
+        private void RemoveExistingOverlayMeshes()
         {
-            if (uiGameObject == null) return;
+            if (overlayRootObject == null) return;
 
             int removedCount = 0;
             for (int i = uiGameObject.transform.childCount - 1; i >= 0; i--)

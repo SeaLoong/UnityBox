@@ -50,8 +50,9 @@ namespace UnityBox.AvatarSecuritySystem
         public bool disableRootChildren = true;
 
         [FormerlySerializedAs("hideUI")]
-        [Tooltip("#{advanced.hide_ui_tooltip}")]
-        public bool hideOverlay = false;
+        [FormerlySerializedAs("hideOverlay")]
+        [Tooltip("#{advanced.disable_overlay_tooltip}")]
+        public bool disableOverlay = false;
 
         [FormerlySerializedAs("muteWarningSound")]
         [Tooltip("#{advanced.mute_warning_tooltip}")]
@@ -193,6 +194,7 @@ namespace UnityBox.AvatarSecuritySystem
             enabledInPlaymode = false;
             disableRootChildren = true;
             disableWarningSound = false;
+            disableOverlay = false;
             defaultEnableDefense = false;
             enableOverflow = true;
         }
