@@ -71,11 +71,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toUnlockedDirect.duration = 0f;
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             
-            // Remote → Locked（仅本地玩家：IsLocal=true 且密码未正确）
+            // Remote → Locked（!PasswordCorrect 时锁定，本地和远端都生效）
             var toLocked = Utils.CreateTransition(remoteState, lockedState);
             toLocked.hasExitTime = false;
             toLocked.duration = 0f;
-            Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
             toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             
             // Locked → Unlocked（本地玩家密码正确时解锁）
