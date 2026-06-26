@@ -203,15 +203,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["gesture.hold_time_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Gesture stability detection time (seconds), must hold gesture for this duration to confirm input" },
-                    { SystemLanguage.ChineseSimplified, "手势稳定检测时间（秒），需要保持手势此时间才能确认输入" },
-                    { SystemLanguage.Japanese, "ジェスチャー安定検出時間（秒）、確認入力には常にジェスチャーを保持必要" }
+                    { SystemLanguage.English, "Gesture stability detection time (seconds)\nMust hold gesture this long before it is accepted as input." },
+                    { SystemLanguage.ChineseSimplified, "手势稳定检测时间（秒）\n需要保持手势此时间后才会被确认为有效输入。" },
+                    { SystemLanguage.Japanese, "ジェスチャー安定検出時間（秒）\nこの時間ジェスチャーを保持しないと入力として認識されません。" }
                 },
                 ["gesture.error_tolerance_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Gesture error tolerance time (seconds), can correct after inputting wrong gesture for this duration" },
-                    { SystemLanguage.ChineseSimplified, "手势错误容错时间（秒），输入错误手势后有此时间可以纠正" },
-                    { SystemLanguage.Japanese, "ジェスチャーエラー許容時間（秒）、間違ったジェスチャーの入力後、この期間中に修正できます" }
+                    { SystemLanguage.English, "Gesture error tolerance time (seconds)\nAfter inputting a wrong gesture, you have this window to correct it before the input resets." },
+                    { SystemLanguage.ChineseSimplified, "手势错误容错时间（秒）\n输入错误手势后，在此时限内可纠正为正确手势，超时则输入重置。" },
+                    { SystemLanguage.Japanese, "ジェスチャーエラー許容時間（秒）\n間違ったジェスチャーを入力した後、この期間内に修正すれば継続できます。" }
                 },
                 ["password.gesture_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
@@ -240,9 +240,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["gesture.max_hold_time_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Maximum time (seconds) to hold a single gesture during password input. If held longer, the input resets. Prevents holding a gesture while thinking about the next step." },
-                    { SystemLanguage.ChineseSimplified, "密码输入过程中保持单个手势的最大时间（秒）。超过此时间输入将重置。防止一直保持手势去思考下一步手势。" },
-                    { SystemLanguage.Japanese, "パスワード入力中に単一ジェスチャーを保持する最大時間（秒）。超えると入力がリセットされます。次のステップを考えながらジェスチャーを保持し続けるのを防ぎます。" }
+                    { SystemLanguage.English, "Maximum time (seconds) to hold a single gesture during password input.\nIf held longer, the input resets.\nPrevents holding a gesture while thinking about the next step." },
+                    { SystemLanguage.ChineseSimplified, "密码输入过程中保持单个手势的最大时间（秒）。\n超过此时间输入将重置。\n防止一直保持手势去思考下一步手势。" },
+                    { SystemLanguage.Japanese, "パスワード入力中に単一ジェスチャーを保持する最大時間（秒）。\n超えると入力がリセットされます。\n次のステップを考えながらジェスチャーを保持し続けるのを防ぎます。" }
                 },
                 ["gesture.error_tolerance"] = new Dictionary<SystemLanguage, string>
                 {
@@ -313,9 +313,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["password.empty_warning"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Password is empty (0 digits). ASS is disabled and will not be generated." },
-                    { SystemLanguage.ChineseSimplified, "密码为空（0位）。ASS 已禁用，不会生成保护系统。" },
-                    { SystemLanguage.Japanese, "パスワードが空です（0桁）。ASSは無効化され、保護システムは生成されません。" }
+                    { SystemLanguage.English, "Password is empty (0 digits).\nASS is disabled and will not be generated." },
+                    { SystemLanguage.ChineseSimplified, "密码为空（0位）。\nASS 已禁用，不会生成保护系统。" },
+                    { SystemLanguage.Japanese, "パスワードが空です（0桁）。\nASSは無効化され、保護システムは生成されません。" }
                 },
 
                 // ========== 倒计时配置 ==========
@@ -359,9 +359,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.note"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense mechanisms are only generated in build mode and do not affect edit/play mode." },
-                    { SystemLanguage.ChineseSimplified, "防御机制仅在构建模式生成，编辑和 Play 模式不受影响。" },
-                    { SystemLanguage.Japanese, "防御メカニズムはビルドモードでのみ生成され、編集/プレイモードには影響しません。" }
+                    { SystemLanguage.English, "Defense mechanisms are only generated during VRChat Build & Publish.\nThey do NOT affect Edit Mode or Play Mode." },
+                    { SystemLanguage.ChineseSimplified, "防御机制仅在 VRChat 构建/上传时生成。\n编辑模式和 Play 模式不受任何影响。" },
+                    { SystemLanguage.Japanese, "防御メカニズムはVRChatビルド/アップロード時のみ生成されます。\n編集モードやプレイモードには影響しません。" }
                 },
 
                 // ========== 高级选项 ==========
@@ -379,9 +379,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.play_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Enable ASS generation in Play Mode. Defense components use minimal parameters (1 each) for quick testing." },
-                    { SystemLanguage.ChineseSimplified, "在播放模式下启用 ASS 生成。防御组件会使用最小参数（各 1 个）以快速测试。" },
-                    { SystemLanguage.Japanese, "プレイモードでASS生成を有効化。防御コンポーネントは最小パラメータ（各 1 個）で素早くテストできます。" }
+                    { SystemLanguage.English, "Enable ASS generation in Play Mode.\nDefense components use minimal parameters (1 each) for quick testing." },
+                    { SystemLanguage.ChineseSimplified, "在播放模式下启用 ASS 生成。\n防御组件会使用最小参数（各 1 个）以快速测试。" },
+                    { SystemLanguage.Japanese, "プレイモードでASS生成を有効化。\n防御コンポーネントは最小パラメータ（各 1 個）で素早くテストできます。" }
                 },
                 ["defense.disable_defense"] = new Dictionary<SystemLanguage, string>
                 {
@@ -391,9 +391,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.disable_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate defense mechanisms (only test password system). Disabled when 'Default Enable Defense' is active." },
-                    { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）。启用'默认启用防御'时此选项不可用。" },
-                    { SystemLanguage.Japanese, "防御メカニズムを生成しない（パスワードシステムのみテスト）。「デフォルトで防御を有効化」が有効な場合は使用できません。" }
+                    { SystemLanguage.English, "Do not generate defense mechanisms (only test the password system).\nDisabled while 'Default Enable Defense' is active." },
+                    { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）。\n启用「默认启用防御」时此选项不可用。" },
+                    { SystemLanguage.Japanese, "防御メカニズムを生成しない（パスワードシステムのみテスト）。\n「デフォルトで防御を有効化」が有効な場合は使用できません。" }
                 },
                 ["defense.disable_defense_locked"] = new Dictionary<SystemLanguage, string>
                 {
@@ -409,9 +409,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_overlay_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate the fullscreen overlay (white background + progress bar + logo). Audio feedback is still generated." },
-                    { SystemLanguage.ChineseSimplified, "不生成全屏覆盖（白色背景 + 进度条 + 徽标）。音频反馈仍然会生成。" },
-                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイ（白背景+プログレスバー+ロゴ）を生成しない。オーディオフィードバックは引き続き生成されます。" }
+                    { SystemLanguage.English, "Do not generate the fullscreen overlay\n(white background + progress bar + logo).\nAudio feedback is still generated." },
+                    { SystemLanguage.ChineseSimplified, "不生成全屏覆盖\n（白色背景 + 进度条 + 徽标）。\n音频反馈仍然会生成。" },
+                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイを生成しない\n（白背景+プログレスバー+ロゴ）。\nオーディオフィードバックは引き続き生成されます。" }
                 },
                 ["advanced.mute_warning"] = new Dictionary<SystemLanguage, string>
                 {
@@ -421,9 +421,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.mute_warning_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate the countdown warning beep. The fullscreen overlay (mask + progress bar) is still shown. Use with 'Hide Fullscreen Overlay' to completely silence the system." },
-                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。全屏覆盖（遮罩 + 进度条）仍然显示。与'隐藏全屏覆盖'配合可完全关闭系统的所有反馈。" },
-                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。フルスクリーンオーバーレイ（マスク+プログレスバー）は引き続き表示されます。「フルスクリーンオーバーレイを非表示」と組み合わせてシステムのフィードバックを完全に無効化できます。" }
+                    { SystemLanguage.English, "Do not generate the countdown warning beep.\nThe fullscreen overlay (mask + progress bar) is still shown.\nUse with 'Disable Overlay' to completely silence the system." },
+                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。\n全屏覆盖（遮罩 + 进度条）仍然显示。\n与「关闭覆盖」配合可完全关闭系统的所有反馈。" },
+                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。\nフルスクリーンオーバーレイ（マスク+プログレスバー）は引き続き表示されます。\n「オーバーレイを無効化」と組み合わせて完全に沈黙させることができます。" }
                 },
                 ["advanced.default_defense"] = new Dictionary<SystemLanguage, string>
                 {
@@ -433,15 +433,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.default_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense system is always ON by default. No password input needed. Use after uploading a password-protected model and unlocking it — the saved ASS_PasswordCorrect parameter will keep defense disabled for legitimate users, while thieves who steal the model cannot disable it." },
-                    { SystemLanguage.ChineseSimplified, "防御系统默认始终开启，无需密码输入。在上传带密码的模型并解锁后使用此模式——已保存的 ASS_PasswordCorrect 参数会为合法用户保持防御关闭，而盗模者无法关闭防御。" },
-                    { SystemLanguage.Japanese, "防御システムがデフォルトで常に有効になります。パスワード入力は不要です。パスワード保護されたモデルをアップロードしてロック解除した後にこのモードを使用してください。保存された ASS_PasswordCorrect パラメータにより正規ユーザーは防御が無効になり、モデルを盗んだ者は防御を無効化できません。" }
+                    { SystemLanguage.English, "Defense system is always ON by default. No password input needed.\n\nWorkflow:\n1. First upload a password-protected version, unlock it in VRChat\n2. Then re-upload with this option enabled\n\nThe saved ASS_PasswordCorrect parameter keeps defense OFF for\nlegitimate users. Thieves who steal the model cannot disable it." },
+                    { SystemLanguage.ChineseSimplified, "防御系统默认始终开启，无需密码输入。\n\n工作流程：\n1. 先上传带密码的版本，在VRChat中解锁\n2. 再上传启用此选项的版本\n\n已保存的 ASS_PasswordCorrect 参数会为合法用户保持防御关闭，\n而盗模者无法关闭防御。" },
+                    { SystemLanguage.Japanese, "防御システムがデフォルトで常に有効になります。パスワード入力は不要です。\n\nワークフロー：\n1. パスワード保護版をアップロードし、VRChatでロック解除\n2. このオプションを有効にして再アップロード\n\n保存された ASS_PasswordCorrect パラメータにより正規ユーザーは\n防御が無効になり、盗んだ者は防御を無効化できません。" }
                 },
                 ["advanced.default_defense_warning"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "DANGER: With \"Default Enable Defense\" enabled, NO password system will be generated. You MUST first upload a password-protected version, unlock it in VRChat, then re-upload with this option enabled. If you skip the initial unlock step, defense will trigger for ALL users including yourself! Ensure you understand the workflow before enabling this." },
-                    { SystemLanguage.ChineseSimplified, "危险：启用\"默认启用防御\"后，将不会生成密码系统。你必须先上传带密码保护的版本，在VRChat中解锁它，然后再上传启用此选项的版本。如果跳过初始解锁步骤，防御将对所有用户（包括你自己）触发！在启用此选项前请确保你理解整个工作流程。" },
-                    { SystemLanguage.Japanese, "危険：「デフォルトで防御を有効化」を有効にすると、パスワードシステムは生成されません。まずパスワード保護されたバージョンをアップロードし、VRChatでロック解除してから、このオプションを有効にして再アップロードする必要があります。最初のロック解除手順をスキップすると、自分自身を含むすべてのユーザーに対して防御が作動します！このオプションを有効にする前に、ワークフローを理解していることを確認してください。" }
+                    { SystemLanguage.English, "⚠️ DANGER: With Default Enable Defense enabled,\nNO password system will be generated.\n\nYou MUST first upload a password-protected version,\nunlock it in VRChat, then re-upload with this option.\n\nIf you skip the initial unlock step, defense will\ntrigger for ALL users including yourself!\n\nUnderstand the workflow before enabling this." },
+                    { SystemLanguage.ChineseSimplified, "⚠️ 危险：启用「默认启用防御」后，\n将不会生成密码系统。\n\n你必须先上传带密码保护的版本，\n在VRChat中解锁它，再上传启用此选项的版本。\n\n如果跳过初始解锁步骤，\n防御将对所有用户（包括你自己）触发！\n\n在启用此选项前请确保你理解整个工作流程。" },
+                    { SystemLanguage.Japanese, "⚠️ 危険：「デフォルトで防御を有効化」を有効にすると、\nパスワードシステムは生成されません。\n\nまずパスワード保護版をアップロードし、\nVRChatでロック解除してから、\nこのオプションを有効にして再アップロードしてください。\n\n最初のロック解除手順をスキップすると、\n自分を含む全ユーザーに防御が作動します！\n\nワークフローを理解してから有効にしてください。" }
                 },
                 ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
                 {
@@ -451,9 +451,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.enable_overflow_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Overflow: Particle & mesh counts use int.MaxValue+1 directly (bypass budget), making VRChat stats display -2147483648. Disable this for quick testing in Play Mode." },
-                    { SystemLanguage.ChineseSimplified, "溢出模式：粒子总数和Mesh面数直接使用int.MaxValue+1（跳过预算计算），VRChat统计显示为-2147483648。Play Mode 测试时可关闭以加快构建。" },
-                    { SystemLanguage.Japanese, "オーバーフローモード：パーティクル数とメッシュポリゴン数をint.MaxValue+1で直接生成（予算計算をスキップ）、VRChat統計に-2147483648と表示。Play Modeでのテスト時は無効にすると構築が速くなります。" }
+                    { SystemLanguage.English, "Overflow: Particle & mesh counts use int.MaxValue+1 directly\n(bypasses budget calculation), making VRChat stats overflow to -2147483648.\nDisable this for quick testing in Play Mode." },
+                    { SystemLanguage.ChineseSimplified, "溢出模式：粒子总数和Mesh面数直接使用 int.MaxValue+1\n（跳过预算计算），VRChat 统计显示为 -2147483648。\nPlay Mode 测试时可关闭以加快构建。" },
+                    { SystemLanguage.Japanese, "オーバーフローモード：パーティクル数とメッシュポリゴン数を\nint.MaxValue+1 で直接生成（予算計算をスキップ）、\nVRChat統計に -2147483648 と表示。\nPlay Mode でのテスト時は無効にすると構築が速くなります。" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {
@@ -475,9 +475,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_objects_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide all root-level child objects (the avatar itself) when locked. Leave enabled to completely conceal the avatar from the thief." },
-                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象（Avatar 本身）。建议保持开启，让盗模者完全看不到模型。" },
-                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクト（アバター本体）を非表示にします。有効にしておくと、盗んだ側からモデルが見えなくなります。" }
+                    { SystemLanguage.English, "Hide all root-level child objects (the avatar itself) when locked.\nLeave enabled to completely conceal the avatar from the thief." },
+                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象（Avatar 本身）。\n建议保持开启，让盗模者完全看不到模型。" },
+                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクト（アバター本体）を非表示にします。\n有効にしておくと、盗んだ側からモデルが見えなくなります。" }
                 },
                 
                 // ========== Write Defaults 模式 ==========
@@ -489,9 +489,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.wd_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Animation Write Defaults mode:\nAuto = Detect from existing FX layers (recommended)\nOn = Auto restore\nOff = Explicit restore" },
-                    { SystemLanguage.ChineseSimplified, "动画 Write Defaults 模式：\nAuto = 从已有 FX 层自动检测（推荐）\nOn = 自动恢复\nOff = 显式恢复" },
-                    { SystemLanguage.Japanese, "アニメーション Write Defaults モード：\nAuto = 既存FXレイヤーから自動検出（推奨）\nOn = 自動復元\nOff = 明示的復元" }
+                    { SystemLanguage.English, "Animation Write Defaults mode for ASS-generated animations:\n• Auto = Auto-detect from existing FX layers (recommended)\n• On  = Auto-restore with Write Defaults\n• Off = Explicit restore without Write Defaults" },
+                    { SystemLanguage.ChineseSimplified, "ASS 生成动画的 Write Defaults 模式：\n• Auto = 从已有 FX 层自动检测（推荐）\n• On  = 使用 Write Defaults 自动恢复\n• Off = 不使用 Write Defaults，显式恢复" },
+                    { SystemLanguage.Japanese, "ASS生成アニメーションの Write Defaults モード：\n• Auto = 既存FXレイヤーから自動検出（推奨）\n• On  = Write Defaults で自動復元\n• Off = Write Defaults なしで明示的復元" }
                 },
                 ["advanced.wd_mode_auto"] = new Dictionary<SystemLanguage, string>
                 {
