@@ -329,8 +329,17 @@ namespace UnityBox.AvatarSecuritySystem
         {
             EditorGUILayout.LabelField(T("defense.options"), EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
-                new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
+            // 默认启用防御模式下禁用"禁用防御"选项（两者互斥）
+            bool isDefaultDefenseActive = _target.defaultEnableDefense;
+            using (new EditorGUI.DisabledGroupScope(isDefaultDefenseActive))
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
+                    new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
+            }
+            if (isDefaultDefenseActive)
+            {
+                EditorGUILayout.LabelField("   ⚠️ " + T("defense.disable_defense_locked"), EditorStyles.miniLabel);
+            }
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableOverflow"),
                 new GUIContent(T("defense.enable_overflow"), T("defense.enable_overflow_tooltip")));

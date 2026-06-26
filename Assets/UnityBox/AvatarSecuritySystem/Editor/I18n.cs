@@ -391,33 +391,39 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.disable_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate defense mechanisms (only test password system)" },
-                    { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）" },
-                    { SystemLanguage.Japanese, "防御メカニズムを生成しない（パスワードシステムのみテスト）" }
+                    { SystemLanguage.English, "Do not generate defense mechanisms (only test password system). Disabled when 'Default Enable Defense' is active." },
+                    { SystemLanguage.ChineseSimplified, "不生成防御机制（仅测试密码系统）。启用'默认启用防御'时此选项不可用。" },
+                    { SystemLanguage.Japanese, "防御メカニズムを生成しない（パスワードシステムのみテスト）。「デフォルトで防御を有効化」が有効な場合は使用できません。" }
+                },
+                ["defense.disable_defense_locked"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Locked while 'Default Enable Defense' is enabled" },
+                    { SystemLanguage.ChineseSimplified, "已锁定：当前启用了"默认启用防御"" },
+                    { SystemLanguage.Japanese, "ロック中：「デフォルトで防御を有効化」が有効です" }
                 },
                 ["advanced.hide_ui"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide UI" },
-                    { SystemLanguage.ChineseSimplified, "隐藏 UI" },
-                    { SystemLanguage.Japanese, "UIを非表示" }
+                    { SystemLanguage.English, "Hide Fullscreen Overlay" },
+                    { SystemLanguage.ChineseSimplified, "隐藏全屏覆盖" },
+                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイを非表示" }
                 },
                 ["advanced.hide_ui_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate fullscreen overlay UI (mask + progress bar). Audio feedback is still generated." },
-                    { SystemLanguage.ChineseSimplified, "不生成全屏覆盖 UI（遮罩 + 进度条）。音频反馈仍然会生成。" },
-                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイUI（マスク+プログレスバー）を生成しない。オーディオフィードバックは引き続き生成されます。" }
+                    { SystemLanguage.English, "Do not generate the fullscreen overlay (white background + progress bar + logo). Audio feedback is still generated." },
+                    { SystemLanguage.ChineseSimplified, "不生成全屏覆盖（白色背景 + 进度条 + 徽标）。音频反馈仍然会生成。" },
+                    { SystemLanguage.Japanese, "フルスクリーンオーバーレイ（白背景+プログレスバー+ロゴ）を生成しない。オーディオフィードバックは引き続き生成されます。" }
                 },
                 ["advanced.mute_warning"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Mute Warning Sound" },
-                    { SystemLanguage.ChineseSimplified, "静音警告音效" },
-                    { SystemLanguage.Japanese, "警告音をミュート" }
+                    { SystemLanguage.English, "Disable Warning Sound" },
+                    { SystemLanguage.ChineseSimplified, "关闭警告音效" },
+                    { SystemLanguage.Japanese, "警告音を無効化" }
                 },
                 ["advanced.mute_warning_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Do not generate the countdown warning beep sound. Visual UI feedback (mask + progress bar) is still shown. Complements Hide UI to fully silence the system." },
-                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。视觉 UI 反馈（遮罩 + 进度条）仍然显示。与隐藏 UI 互补，可完全静音系统。" },
-                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。視覚的UIフィードバック（マスク+プログレスバー）は引き続き表示されます。UI非表示と組み合わせてシステムを完全に沈黙させることができます。" }
+                    { SystemLanguage.English, "Do not generate the countdown warning beep. The fullscreen overlay (mask + progress bar) is still shown. Use with 'Hide Fullscreen Overlay' to completely silence the system." },
+                    { SystemLanguage.ChineseSimplified, "不生成倒计时警告音效。全屏覆盖（遮罩 + 进度条）仍然显示。与'隐藏全屏覆盖'配合可完全关闭系统的所有反馈。" },
+                    { SystemLanguage.Japanese, "カウントダウン警告音を生成しない。フルスクリーンオーバーレイ（マスク+プログレスバー）は引き続き表示されます。「フルスクリーンオーバーレイを非表示」と組み合わせてシステムのフィードバックを完全に無効化できます。" }
                 },
                 ["advanced.default_defense"] = new Dictionary<SystemLanguage, string>
                 {
