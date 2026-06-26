@@ -107,7 +107,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             
             Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
-            // ASS_UI 同时承担遮挡和进度条显示（使用全屏覆盖 Shader）
+            // ASS_Overlay 同时承担遮挡和进度条显示（使用全屏覆盖 Shader）
             if (avatarRoot.transform.Find(GO_OVERLAY) != null)
             {
                 clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", enableCurve);

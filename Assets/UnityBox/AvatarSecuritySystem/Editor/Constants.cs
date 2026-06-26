@@ -32,7 +32,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         // ============ GameObject 名称 ============
         public const string GO_OVERLAY = "ASS_Overlay";
-        public const string GO_OVERLAY_OLD = "ASS_UI"; // 旧版兼容清理
         public const string GO_AUDIO_WARNING = "ASS_Audio_Warning";
         public const string GO_AUDIO_SUCCESS = "ASS_Audio_Success";
         public const string GO_DEFENSE_ROOT = "ASS_Defense";

@@ -36,8 +36,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             else
             {
-                // 创建全屏覆盖根对象（先清理旧版 ASS_UI）
-                CleanupLegacyUIObjects();
+                // 创建全屏覆盖根对象
                 CreateOverlayRoot();
 
                 // 清理旧 Overlay，避免重复生成导致多个同名子对象残留
@@ -59,23 +58,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-
-        /// <summary>
-        /// 清理旧版 ASS_UI 对象（v0.3.x 兼容）
-        /// </summary>
-        private void CleanupLegacyUIObjects()
-        {
-            int removed = 0;
-            for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
-            {
-                var child = avatarGameObject.transform.GetChild(i);
-                if (child.name != Constants.GO_OVERLAY_OLD) continue;
-                Object.DestroyImmediate(child.gameObject);
-                removed++;
-            }
-            if (removed > 0)
-                Debug.Log($"[ASS] Cleaned up {removed} legacy ASS_UI object(s)");
-        }
 
         /// <summary>
         /// 创建全屏覆盖根对象
@@ -133,7 +115,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             meshObj.transform.localScale = Vector3.one;
 
             // 创建 Quad Mesh（顶点位置无所谓，Shader 会重新映射到全屏）
-            var mesh = new Mesh { name = "ASS_UI_Quad" };
+            var mesh = new Mesh { name = "ASS_Overlay_Quad" };
             mesh.vertices = new Vector3[]
             {
                 new Vector3(-0.5f, -0.5f, 0),
@@ -187,18 +169,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             meshRenderer.allowOcclusionWhenDynamic = false;
             meshRenderer.sortingOrder = 32767;  // 最高排序优先级
 
-            Debug.Log("[ASS] UI Mesh overlay created (background + progress bar)");
+            Debug.Log("[ASS] Fullscreen overlay mesh created (mask + progress bar)");
             return meshObj;
         }
 
         private void RemoveExistingOverlayObject()
         {
             int removedCount = 0;
-            // 清理新版 ASS_Overlay 和旧版 ASS_UI
             for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
             {
                 var child = avatarGameObject.transform.GetChild(i);
-                if (child.name != Constants.GO_OVERLAY && child.name != Constants.GO_OVERLAY_OLD) continue;
+                if (child.name != Constants.GO_OVERLAY) continue;
 
                 Object.DestroyImmediate(child.gameObject);
                 removedCount++;
@@ -215,9 +196,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (overlayRootObject == null) return;
 
             int removedCount = 0;
-            for (int i = uiGameObject.transform.childCount - 1; i >= 0; i--)
+            for (int i = overlayRootObject.transform.childCount - 1; i >= 0; i--)
             {
-                var child = uiGameObject.transform.GetChild(i);
+                var child = overlayRootObject.transform.GetChild(i);
                 if (child.name != UI_OVERLAY_NAME) continue;
 
                 Object.DestroyImmediate(child.gameObject);
@@ -226,7 +207,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (removedCount > 0)
             {
-                Debug.Log($"[ASS] Removed {removedCount} existing UI overlay object(s)");
+                Debug.Log($"[ASS] Removed {removedCount} existing overlay mesh object(s)");
             }
         }
 
