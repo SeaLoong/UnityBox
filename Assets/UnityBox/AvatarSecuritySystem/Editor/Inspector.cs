@@ -352,10 +352,10 @@ namespace UnityBox.AvatarSecuritySystem
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enabledInPlaymode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
             
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("hideUI"),
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("hideOverlay"),
                 new GUIContent(T("advanced.hide_ui"), T("advanced.hide_ui_tooltip")));
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("muteWarningSound"),
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableWarningSound"),
                 new GUIContent(T("advanced.mute_warning"), T("advanced.mute_warning_tooltip")));
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("defaultEnableDefense"),

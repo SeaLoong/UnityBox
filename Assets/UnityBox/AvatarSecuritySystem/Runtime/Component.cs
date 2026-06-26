@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using System.Collections.Generic;
 using VRC.SDKBase;
 
@@ -48,11 +49,13 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
 
+        [FormerlySerializedAs("hideUI")]
         [Tooltip("#{advanced.hide_ui_tooltip}")]
-        public bool hideUI = false;
+        public bool hideOverlay = false;
 
+        [FormerlySerializedAs("muteWarningSound")]
         [Tooltip("#{advanced.mute_warning_tooltip}")]
-        public bool muteWarningSound = false;
+        public bool disableWarningSound = false;
 
         [Tooltip("#{advanced.default_defense_tooltip}")]
         public bool defaultEnableDefense = false;
@@ -189,7 +192,7 @@ namespace UnityBox.AvatarSecuritySystem
             gestureErrorTolerance = 0.3f;
             enabledInPlaymode = false;
             disableRootChildren = true;
-            muteWarningSound = false;
+            disableWarningSound = false;
             defaultEnableDefense = false;
             enableOverflow = true;
         }

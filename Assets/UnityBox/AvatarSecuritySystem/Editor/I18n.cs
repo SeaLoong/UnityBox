@@ -398,7 +398,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ["defense.disable_defense_locked"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Locked while 'Default Enable Defense' is enabled" },
-                    { SystemLanguage.ChineseSimplified, "已锁定：当前启用了"默认启用防御"" },
+                    { SystemLanguage.ChineseSimplified, "已锁定：当前启用了「默认启用防御」" },
                     { SystemLanguage.Japanese, "ロック中：「デフォルトで防御を有効化」が有効です" }
                 },
                 ["advanced.hide_ui"] = new Dictionary<SystemLanguage, string>
@@ -445,15 +445,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Enable Overflow" },
-                    { SystemLanguage.ChineseSimplified, "启用溢出" },
-                    { SystemLanguage.Japanese, "オーバーフローを有効化" }
+                    { SystemLanguage.English, "Overflow Mode" },
+                    { SystemLanguage.ChineseSimplified, "溢出模式" },
+                    { SystemLanguage.Japanese, "オーバーフローモード" }
                 },
                 ["defense.enable_overflow_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Enable Overflow: Total particle count and mesh polygon count are generated at int.MaxValue+1 (bypassing budget calculation), causing VRChat stats to overflow and display -2147483648. Particle lights maxLights is set to int.MaxValue." },
-                    { SystemLanguage.ChineseSimplified, "启用溢出：粒子总数和Mesh面数按int.MaxValue+1直接生成（跳过预算计算），使VRChat统计溢出显示-2147483648。粒子光源maxLights设为int.MaxValue。" },
-                    { SystemLanguage.Japanese, "オーバーフローを有効化：パーティクル総数とメッシュポリゴン数をint.MaxValue+1で直接生成（予算計算をスキップ）し、VRChat統計をオーバーフローさせて-2147483648を表示。パーティクルライトmaxLightsをint.MaxValueに設定。" }
+                    { SystemLanguage.English, "Overflow: Particle & mesh counts use int.MaxValue+1 directly (bypass budget), making VRChat stats display -2147483648. Disable this for quick testing in Play Mode." },
+                    { SystemLanguage.ChineseSimplified, "溢出模式：粒子总数和Mesh面数直接使用int.MaxValue+1（跳过预算计算），VRChat统计显示为-2147483648。Play Mode 测试时可关闭以加快构建。" },
+                    { SystemLanguage.Japanese, "オーバーフローモード：パーティクル数とメッシュポリゴン数をint.MaxValue+1で直接生成（予算計算をスキップ）、VRChat統計に-2147483648と表示。Play Modeでのテスト時は無効にすると構築が速くなります。" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {
@@ -469,15 +469,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_objects"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide Objects" },
-                    { SystemLanguage.ChineseSimplified, "隐藏对象" },
-                    { SystemLanguage.Japanese, "オブジェクトを非表示" }
+                    { SystemLanguage.English, "Conceal Avatar" },
+                    { SystemLanguage.ChineseSimplified, "隐藏Avatar本体" },
+                    { SystemLanguage.Japanese, "アバター本体を隠す" }
                 },
                 ["advanced.disable_objects_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide all root level child objects when locked" },
-                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象" },
-                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクトを非表示" }
+                    { SystemLanguage.English, "Hide all root-level child objects (the avatar itself) when locked. Leave enabled to completely conceal the avatar from the thief." },
+                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象（Avatar 本身）。建议保持开启，让盗模者完全看不到模型。" },
+                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクト（アバター本体）を非表示にします。有効にしておくと、盗んだ側からモデルが見えなくなります。" }
                 },
                 
                 // ========== Write Defaults 模式 ==========

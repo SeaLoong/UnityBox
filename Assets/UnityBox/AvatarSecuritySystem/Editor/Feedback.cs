@@ -30,7 +30,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         public void Generate()
         {
-            if (config.hideUI)
+            if (config.hideOverlay)
             {
                 RemoveExistingUIObject();
             }
@@ -48,7 +48,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // 创建音频对象
             CreateAudioObject(Constants.GO_AUDIO_SUCCESS);
-            if (!config.muteWarningSound)
+            if (!config.disableWarningSound)
             {
                 CreateAudioObject(Constants.GO_AUDIO_WARNING);
             }
@@ -191,7 +191,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (removedCount > 0)
             {
-                Debug.Log($"[ASS] hideUI enabled, removed {removedCount} existing UI object(s)");
+                Debug.Log($"[ASS] hideOverlay enabled, removed {removedCount} existing UI object(s)");
             }
         }
 
@@ -229,7 +229,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (removedCount > 0)
             {
-                Debug.Log($"[ASS] muteWarningSound enabled, removed {removedCount} existing warning audio object(s)");
+                Debug.Log($"[ASS] disableWarningSound enabled, removed {removedCount} existing warning audio object(s)");
             }
         }
 
