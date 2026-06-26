@@ -1,4 +1,4 @@
-Shader "UnityBox/ASS_UI"
+Shader "UnityBox/ASS_Overlay"
 {
     Properties
     {
@@ -33,7 +33,7 @@ Shader "UnityBox/ASS_UI"
 
         Pass
         {
-            Name "ASS_UI_PASS"
+            Name "ASS_OVERLAY_PASS"
 
             CGPROGRAM
             #pragma vertex vert

@@ -155,7 +155,7 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void ValidateWarningThreshold()
         {
-            if (warningThreshold > countdownDuration)
+            if (warningThreshold > countdownDuration / 2)
             {
                 warningThreshold = countdownDuration / 2f;
             }

@@ -61,7 +61,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddIsLocalCondition(toCountdown, controller, isTrue: true);
             toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
-            // TimeUp（倒计时结束，触发防御但保持 UI 显示作为遮罩）
+            // TimeUp（倒计时结束，触发防御但保持 Overlay 显示作为遮罩）
             var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
             timeUpState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             Utils.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);

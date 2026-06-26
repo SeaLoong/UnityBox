@@ -17,9 +17,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 全屏覆盖 Shader 名称
         /// </summary>
-        private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_UI";
+        private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_Overlay";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
-        private const string UI_OVERLAY_NAME = "Overlay";
+        private const string OVERLAY_MESH_NAME = "Overlay";
 
         public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
@@ -108,7 +108,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private GameObject CreateOverlayMesh()
         {
-            var meshObj = new GameObject(UI_OVERLAY_NAME);
+            var meshObj = new GameObject(OVERLAY_MESH_NAME);
             meshObj.transform.SetParent(overlayRootObject.transform, false);
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
@@ -199,7 +199,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             for (int i = overlayRootObject.transform.childCount - 1; i >= 0; i--)
             {
                 var child = overlayRootObject.transform.GetChild(i);
-                if (child.name != UI_OVERLAY_NAME) continue;
+                if (child.name != OVERLAY_MESH_NAME) continue;
 
                 Object.DestroyImmediate(child.gameObject);
                 removedCount++;
