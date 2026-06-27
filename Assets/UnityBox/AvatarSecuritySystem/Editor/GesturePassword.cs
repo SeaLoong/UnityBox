@@ -116,7 +116,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdTimeout = Utils.CreateTransition(holdingState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
-                AddErrorTransitions(holdingState, waitState, gestureValue, gestureParam);
+                // Error transitions with grace period: use hasExitTime=true with same exitTime
+                // as holdToConfirm, preventing single-frame gesture glitches from
+                // triggering immediate reset (which causes Wait↔Holding ping-pong)
+                int hlNoiseLow = (int)((_avatarHash >> (gestureValue * 3)) & 1);
+                int hlNoiseHigh = (int)((_avatarHash >> (gestureValue * 3 + 1)) & 1);
+                var errLow = holdingState.AddTransition(waitState);
+                errLow.hasExitTime = true;
+                errLow.exitTime = holdExitTime;
+                errLow.duration = 0f;
+                errLow.hasFixedDuration = true;
+                errLow.AddCondition(AnimatorConditionMode.Less, gestureValue - hlNoiseLow, gestureParam);
+                var errHigh = holdingState.AddTransition(waitState);
+                errHigh.hasExitTime = true;
+                errHigh.exitTime = holdExitTime;
+                errHigh.duration = 0f;
+                errHigh.hasFixedDuration = true;
+                errHigh.AddCondition(AnimatorConditionMode.Greater, gestureValue + hlNoiseHigh, gestureParam);
                 if (i == 0)
                 {
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
