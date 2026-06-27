@@ -146,8 +146,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 _shaderCache[originalShaderName] = original;
                 return original;
             }
-            string obfuscatedName = "UnityBox/" + ShaderName(originalShaderName);
-            string obfuscatedFileName = obfuscatedName.Replace("UnityBox/", "").Replace("/", "_");
+            string obfuscatedName = ShaderName(originalShaderName);
+            string obfuscatedFileName = obfuscatedName;
             string destPath = $"{_generatedFolder}/{obfuscatedFileName}.shader";
             var existingCopy = AssetDatabase.LoadAssetAtPath<Shader>(destPath);
             if (existingCopy != null)
