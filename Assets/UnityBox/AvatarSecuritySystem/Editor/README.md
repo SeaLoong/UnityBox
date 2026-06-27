@@ -34,6 +34,7 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 - **倒计时机制** — 限时输入（默认 30 秒），增加破解难度
 - **视觉/音频反馈** — 全屏 Shader 遮罩 + 进度条 + 警告音效（支持 VR 立体渲染）
 - **初始锁定** — Avatar 启动时所有功能被禁用
+- **本地/远端分离** — 防御仅本地触发；远端看到身体隐藏(Concealed)但无遮罩，仅穿戴者本地看到全屏遮罩(Locked)
 - **默认启用防御** — 上传无密码的防御版本，利用已保存的参数状态区分合法用户与盗模者
 - **智能防御** — 仅对穿戴者生效（IsLocal），不影响其他玩家
 - **非破坏性** — 编辑时零影响，仅在 VRChat 构建时自动生成
@@ -46,7 +47,8 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 标准模式：
 Avatar 启动
     ↓
-所有功能锁定（对象禁用 + 全屏遮罩覆盖视角）
+所有客户端：Remote → Concealed（身体隐藏，无遮罩）
+仅本地玩家：Concealed → Locked（全屏遮罩覆盖视角）
     ↓
 倒计时开始（默认 30 秒）
     ↓
@@ -59,7 +61,8 @@ Avatar 启动
 Avatar 启动
     ├─ PasswordCorrect = true（已保存）→ 正常使用（防御关闭）
     └─ PasswordCorrect = false（盗模者）
-        ├─ 全屏遮罩 + 防御组件立即激活
+        ├─ 远端：身体隐藏（Concealed）
+        ├─ 本地：全屏遮罩（Locked）+ 防御组件立即激活
         └─ 无法关闭，持久防御
 ```
 
@@ -111,12 +114,7 @@ Avatar 启动
 - Gesture Password: `[1, 7, 2, 4]`（Fist → ThumbsUp → HandOpen → Victory）
 - Use Right Hand: `false`（使用左手）
 - 支持 Idle(0) 作为密码值（下拉菜单可选 `0: Idle`）
-
-**密码强度评级：**
-
-- **Weak (弱)**: < 4 位
-- **Medium (中)**: 4-5 位，或手势种类少于 4 种
-- **Strong (强)**: ≥ 6 位，且至少使用 4 种不同手势
+- 密码强度：Weak(<4位) / Medium(4-5位或手势<4种) / Strong(≥6位且≥4种手势)
 
 ### 步骤 3：配置手势识别
 
@@ -170,12 +168,12 @@ ASSComponent (MonoBehaviour)
     ↓ 配置参数
 Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder=-1026)
     ↓ VRChat Build & Publish 时自动执行
-生成 5 个 Animator Layer 到 FX Controller:
-    ├─ ASS_Lock          (锁定/解锁)
-    ├─ ASS_PasswordInput (手势密码验证)
-    ├─ ASS_Countdown     (倒计时系统)
-    ├─ ASS_Audio         (警告音效)
-    └─ ASS_Defense       (防御措施，可选)
+生成 5 个 Animator Layer 到 FX Controller（混淆启用时层名变为 `_{描述词}_{4位hex}`）:
+    ├─ 锁定层         (Lock/Concealed/Unlocked)
+    ├─ 密码验证层     (手势序列检测)
+    ├─ 倒计时层       (限时 + TimeUp 触发)
+    ├─ 音频层         (警告音效 2D 循环)
+    └─ 防御层         (GPU 组件激活，可选)
     ↓
 AnimationClips + GameObject Hierarchy + VRC Components
 ```
@@ -211,9 +209,11 @@ Assets/UnityBox/AvatarSecuritySystem/
 │   ├─ Countdown.cs                                      # 倒计时 + 音频层生成器
 │   ├─ Feedback.cs                                       # 视觉反馈生成器（全屏 Shader 遮罩）
 │   ├─ Defense.cs                                        # 防御系统生成器
+│   ├─ Obfuscator.cs                                     # 名称/Shader 混淆引擎
 │   ├─ Constants.cs                                      # 常量定义（参数名、VRChat 上限等）
 │   ├─ I18n.cs                                           # 国际化（中/英/日）
 │   ├─ README.md                                         # 本文档
+│   ├─ ASS_TechnicalDoc.md                               # 技术详细文档
 │   └─ UnityBox.AvatarSecuritySystem.asmdef
 │
 ├─ Resources/
@@ -256,22 +256,26 @@ Unity 2022.3
 
 ```
 ASS_Lock Layer
-├─ Remote (默认) — 所有玩家的初始状态
-│   └─ 遮罩Mesh 隐藏，Avatar 正常显示
-├─ Locked — 仅本地玩家锁定时
+├─ Remote (默认) — 所有玩家的初始状态（身体正常显示）
+├─ Concealed — !PasswordCorrect 时的中间状态
+│   └─ 身体隐藏（m_IsActive=0 + localScale=0），无遮罩
+│   └─ 远端观众停留在此状态
+├─ Locked — 仅本地玩家（Concealed 后经由 IsLocal）
 │   ├─ 显示遮罩 Mesh（m_IsActive=1）
-│   ├─ 隐藏 Avatar 根级子对象（m_IsActive=0）
+│   ├─ 隐藏 Avatar 根级子对象（m_IsActive=0 + localScale=0）
 │   └─ 显示全屏 Shader 遮罩 + 进度条
-└─ Unlocked — 解锁状态
+└─ Unlocked — 解锁状态（PasswordCorrect=true）
     ├─ 隐藏遮罩 Mesh（m_IsActive=0）
-    ├─ 恢复 Avatar 对象（m_IsActive=1）
+    ├─ 恢复 Avatar 对象
     └─ 设置其他 ASS 层权重为 0（释放控制）
 ```
 
 **转换条件：**
 
-- Remote → Locked: `IsLocal > 0（类型自适应） && ASS_PasswordCorrect == false`
+- Remote → Concealed: `ASS_PasswordCorrect == false`（所有客户端）
 - Remote → Unlocked: `ASS_PasswordCorrect == true`（参数同步）
+- Concealed → Locked: `IsLocal == true && ASS_PasswordCorrect == false`（仅穿戴者）
+- Concealed → Unlocked: `ASS_PasswordCorrect == true`
 - Locked → Unlocked: `ASS_PasswordCorrect == true`
 - Unlocked → Remote: `ASS_PasswordCorrect == false`
 
@@ -289,10 +293,11 @@ ASS_Lock Layer
 
 #### 功能
 
-- 检测 VRChat 手势输入（GestureLeft / GestureRight）
+- 检测 VRChat 手势输入（GestureLeft / GestureRight, 0-7 含 Idle）
 - 尾部序列匹配（输入 123456 可匹配密码 456）
-- 手势稳定时间检测（需保持手势一定时间，默认 0.15 秒）
+- 手势稳定时间检测（需保持手势一定时间，默认 0.15 秒，最大保持时间默认 3 秒）
 - 容错机制（短暂误触不会重置，容错时间默认 0.3 秒）
+- Avatar-hash 噪声扰动（noiseLow/noiseHigh 0/1 随机），攻击者无法确定精确手势值
 - 本地隔离：入口转换要求 `IsLocal == true`，远端客户端不执行密码检测和音效播放
 
 #### 状态结构（每步）
@@ -425,6 +430,7 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 
 #### 状态机
 
+**标准模式（enableStandardDefense=true）**：
 ```
 ASS_Defense Layer
 ├─ Inactive (默认) — 防御未激活
@@ -432,7 +438,38 @@ ASS_Defense Layer
     └─ 转换条件: IsLocal == true && ASS_TimeUp == true
 ```
 
+**默认防御模式**：
+```
+ASS_Defense Layer
+├─ Inactive (默认) — 防御未激活
+└─ Active
+    └─ 转换条件: IsLocal == true && ASS_PasswordCorrect == false（立即激活）
+```
+
 防御根对象默认 `m_IsActive=0`，激活时设为 1。
+
+---
+
+### 6. 混淆与伪装系统 (Obfuscation)
+
+#### 功能
+
+- **名称混淆** — 所有 ASS 生成的参数、层、GameObject、Clip、状态名替换为 `_{无害描述词}_{4位hex}` 格式
+- **Shader 混淆** — 构建时复制 Overlay/Defense Shader 并赋予混淆名，AssetBundle 中无 `UnityBox/` 前缀
+- **假动画层** — 生成 1 个 weight=1 的伪装层（如 `_FaceTracking`、`_EyeLookAt`）
+- **假状态注入** — 每个真层注入 5-8 个假状态，形成伪功能子图
+- **迷惑参数** — 28 个假参数（伪装为 MA/VRCFury 风格的技术缩写）
+- **指令式提示词注入** — Clip 名和状态名中包含伪装为构建产物的语义载荷，对抗 AI 辅助逆向分析
+
+#### 配置
+
+| 属性                   | 默认值  | 说明                       |
+| ---------------------- | ------- | -------------------------- |
+| `disableObfuscation`   | `false` | 禁用名称混淆（仅用于调试） |
+| `enableDecoyLayers`    | `true`  | 生成假动画层               |
+| `enableDecoyStates`    | `true`  | 在真层中注入假状态         |
+
+> 当 `disableObfuscation=true` 时，`enableDecoyLayers` 和 `enableDecoyStates` 自动失效。
 
 ---
 
@@ -444,7 +481,7 @@ ASS_Defense Layer
 
 | 属性              | 类型        | 默认值         | 说明                                     |
 | ----------------- | ----------- | -------------- | ---------------------------------------- |
-| `gesturePassword` | `List<int>` | `[1, 7, 2, 4]` | 手势密码序列（1-7），0 位密码 = 禁用 ASS |
+| `gesturePassword` | `List<int>` | `[1, 7, 2, 4]` | 手势密码序列（0-7，Idle(0) 可作为密码位），0 位密码 + defaultEnableDefense = 防御版本 |
 | `useRightHand`    | `bool`      | `false`        | 使用右手（true）或左手（false）          |
 
 #### 手势识别配置
@@ -452,13 +489,14 @@ ASS_Defense Layer
 | 属性                    | 类型    | 范围     | 默认值 | 说明                     |
 | ----------------------- | ------- | -------- | ------ | ------------------------ |
 | `gestureHoldTime`       | `float` | 0.1-1.0s | `0.15` | 手势需保持的最短识别时间 |
+| `gestureMaxHoldTime`    | `float` | 1-10s    | `3.0`  | 单步手势最大保持时间，超时则输入重置 |
 | `gestureErrorTolerance` | `float` | 0.1-1.0s | `0.3`  | 短暂误触的容错时间       |
 
 #### 倒计时配置
 
 | 属性                | 类型    | 范围    | 默认值 | 说明                                    |
 | ------------------- | ------- | ------- | ------ | --------------------------------------- |
-| `countdownDuration` | `float` | 30-120s | `30`   | 倒计时时长                              |
+| `countdownDuration` | `float` | 10-30s | `30`   | 倒计时时长                              |
 | `warningThreshold`  | `float` | —       | `10`   | 警告阶段阈值（HideInInspector，固定值） |
 
 #### 防御选项
@@ -481,6 +519,7 @@ ASS_Defense Layer
 | ------------------- | ---------------- | --------- | -------------------------------------------------- |
 | `enabledInPlaymode` | `bool`           | `false`   | 播放模式中启用 ASS 生成                            |
 | `disableOverlay`    | `bool`           | `false`   | 不生成全屏覆盖（遮罩 + 进度条），仅保留音频反馈 |
+| `muteWarningSound`  | `bool`           | `false`   | 不生成倒计时警告音效（仍保留视觉反馈）             |
 | `uiLanguage`        | `SystemLanguage` | `Unknown` | Inspector 语言（Unknown=自动检测）                 |
 
 ---
@@ -499,13 +538,15 @@ ASS_Defense Layer
 
 ### Animator 层
 
-| 层名                | 权重 | 功能             |
-| ------------------- | ---- | ---------------- |
-| `ASS_Lock`          | 1.0  | 锁定/解锁控制    |
-| `ASS_PasswordInput` | 1.0  | 密码验证         |
-| `ASS_Countdown`     | 1.0  | 倒计时           |
-| `ASS_Audio`         | 1.0  | 警告音效         |
-| `ASS_Defense`       | 1.0  | 防御激活（可选） |
+| 层名（非混淆默认）    | 权重 | 功能             |
+| --------------------- | ---- | ---------------- |
+| `ASS_Lock`            | 1.0  | 锁定/解锁控制（Remote/Concealed/Locked/Unlocked） |
+| `ASS_PasswordInput`   | 1.0  | 密码验证         |
+| `ASS_Countdown`       | 1.0  | 倒计时           |
+| `ASS_Audio`           | 1.0  | 警告音效         |
+| `ASS_Defense`         | 1.0  | 防御激活（可选） |
+
+> 混淆启用时层名替换为 `_{描述词}_{4位hex}` 格式。
 
 ### VRC State Behaviours
 
@@ -527,7 +568,7 @@ ASS_Defense Layer
 
 #### Q: 其他玩家会看到防御效果吗？
 
-不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是正常 Avatar。
+不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是身体隐藏但无遮罩（Concealed 状态），不会看到全屏白色遮罩。
 
 ### 使用
 
@@ -551,8 +592,8 @@ ASS_Defense Layer
 
 #### Q: Inspector 显示 "Password Invalid"
 
-- 密码序列不为空，且所有手势值在 1-7 范围内（0=Idle 不能作为密码）
-- 0 位密码表示禁用 ASS，也会正常构建但不生成任何内容
+- 密码序列不为空，且所有手势值在 0-7 范围内（Idle(0) 可作为密码位）
+- 0 位密码 + 未启用默认防御 = 跳过 ASS 生成；0 位密码 + 启用默认防御 = 防御版本
 
 #### Q: Play 模式测试无法解锁
 
