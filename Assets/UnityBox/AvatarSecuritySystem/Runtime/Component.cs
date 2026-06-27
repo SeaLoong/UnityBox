@@ -113,7 +113,6 @@ namespace UnityBox.AvatarSecuritySystem
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            InitializePasswordIfNeeded();
             ValidateWarningThreshold();
             ValidateGestureTimes();
             SanitizeDefenseModes();

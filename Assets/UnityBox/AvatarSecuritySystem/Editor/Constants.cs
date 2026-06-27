@@ -3,7 +3,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     public static class Constants
     {
         public const string ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated";
-        public const string CONTROLLER_NAME = "ASS_Controller.controller";
+        public const string CONTROLLER_NAME = "_FX.controller";
         public const string SHARED_EMPTY_CLIP_FILE = "_E.anim";
         public static string SHARED_EMPTY_CLIP_DISPLAY_NAME = "_Empty";
         public const string AUDIO_PASSWORD_SUCCESS = "PasswordSuccess";

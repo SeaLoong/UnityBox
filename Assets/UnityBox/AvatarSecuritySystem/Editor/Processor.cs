@@ -177,7 +177,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         name = decoy.name,
                         valueType = vrcType,
                         defaultValue = decoy.defaultValue,
-                        saved = false,
+                        saved = ((uint)decoy.name.GetHashCode() & 1) == 0,
                         networkSynced = false
                     });
                 }

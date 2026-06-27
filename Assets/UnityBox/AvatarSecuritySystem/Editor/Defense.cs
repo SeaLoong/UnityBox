@@ -64,7 +64,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
             var toActive = Utils.CreateTransition(inactiveState, activeState);
-            Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_TIME_UP);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
@@ -100,7 +99,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
             var toActive = Utils.CreateTransition(inactiveState, activeState);
-            Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
             toActive.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);

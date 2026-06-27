@@ -721,7 +721,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 系统级常量，包括：
 
 - 资源路径 (`ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated"`)
-- 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `SHARED_EMPTY_CLIP_FILE = "_E.anim"`)
+- 生成文件 (`CONTROLLER_NAME = "_FX.controller"`, `SHARED_EMPTY_CLIP_FILE = "_E.anim"`)
 - 音频资源 (`AUDIO_PASSWORD_SUCCESS`, `AUDIO_COUNTDOWN_WARNING`，直接按文件名从 Resources 加载，导入设置 `loadInBackground=true`)
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)

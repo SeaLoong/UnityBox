@@ -2947,7 +2947,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mergeTarget:
     referencePath: Armature
-    targetObject: {fileID: 3789045296360315968}
+    targetObject: {fileID: 0}
   prefix: 
   suffix: 
   legacyLocked: 0
@@ -8592,7 +8592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1279.0
+  vrcfuryVersion: 1.1348.0
   somethingIsBroken: 0
   config:
     features: []
@@ -8660,7 +8660,7 @@ MonoBehaviour:
         androidActive: 0
         localOnly: 0
         remoteOnly: 0
-        obj: {fileID: 322284335}
+        obj: {fileID: 0}
         mode: 0
 --- !u!1 &877572299
 GameObject:
@@ -11896,11 +11896,11 @@ MonoBehaviour:
   InheritProbeAnchor: 3
   ProbeAnchor:
     referencePath: Armature/Hips
-    targetObject: {fileID: 6794418726893250435}
+    targetObject: {fileID: 0}
   InheritBounds: 3
   RootBone:
     referencePath: Armature/Hips
-    targetObject: {fileID: 6794418726893250435}
+    targetObject: {fileID: 0}
   Bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 1, y: 1, z: 1}
@@ -12112,7 +12112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1279.0
+  vrcfuryVersion: 1.1348.0
   somethingIsBroken: 0
   config:
     features: []
@@ -18323,20 +18323,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c51e6a139920bb4ca12700dc82627ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiLanguage: 43
+  uiLanguage: 40
   gesturePassword: 01000000070000000200000004000000
   useRightHand: 0
   countdownDuration: 30
   warningThreshold: 10
   gestureHoldTime: 0.15
   gestureErrorTolerance: 0.3
+  gestureMaxHoldTime: 3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
   enabledInPlaymode: 1
   disableDefense: 0
   disableRootChildren: 1
-  hideUI: 0
+  disableOverlay: 0
+  disableWarningSound: 0
+  defaultEnableDefense: 0
   enableOverflow: 1
+  disableObfuscation: 0
+  enableDecoyLayers: 1
+  enableDecoyStates: 1
   writeDefaultsMode: 0
 --- !u!114 &1679610433
 MonoBehaviour:
@@ -18389,6 +18395,7 @@ MonoBehaviour:
     skipCompleteGraphToEntryExit: 0
     skipReplaceEndBoneWithEndpointPosition: 0
     skipOptimizationWarnings: 0
+    skipMirrorIgnoreOtherPhysBonesToIgnoreTransform: 0
 --- !u!114 &1679610434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18403,7 +18410,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1279.0
+  vrcfuryVersion: 1.1348.0
   somethingIsBroken: 0
   config:
     features: []
@@ -39912,7 +39919,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &6481149578489306159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39932,13 +39939,19 @@ MonoBehaviour:
   warningThreshold: 10
   gestureHoldTime: 0.15
   gestureErrorTolerance: 0.3
+  gestureMaxHoldTime: 3
   warningBeep: {fileID: 0}
   successSound: {fileID: 0}
   enabledInPlaymode: 1
   disableDefense: 1
   disableRootChildren: 1
-  hideUI: 0
+  disableOverlay: 0
+  disableWarningSound: 0
+  defaultEnableDefense: 0
   enableOverflow: 1
+  disableObfuscation: 0
+  enableDecoyLayers: 1
+  enableDecoyStates: 1
   writeDefaultsMode: 0
 --- !u!114 &6481149578489306160
 MonoBehaviour:
@@ -39954,7 +39967,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1279.0
+  vrcfuryVersion: 1.1348.0
   somethingIsBroken: 0
   config:
     features: []
@@ -45250,7 +45263,7 @@ SceneRoots:
   - {fileID: 1058369961}
   - {fileID: 986817876}
   - {fileID: 1670618697}
-  - {fileID: 5961212981230913172}
   - {fileID: 1679610431}
   - {fileID: 1230535414}
   - {fileID: 222744747}
+  - {fileID: 5961212981230913172}

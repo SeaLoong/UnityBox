@@ -81,7 +81,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var toPreLock = Utils.CreateTransition(remoteState, preLockState);
                 toPreLock.hasExitTime = false;
                 toPreLock.duration = 0f;
-                Utils.AddIsLocalCondition(toPreLock, controller, isTrue: true);
                 toPreLock.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                 var preLockToLocked = Utils.CreateTransition(preLockState, lockedState,
                     hasExitTime: true, exitTime: 0.01f);
@@ -92,7 +91,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var toLocked = Utils.CreateTransition(remoteState, lockedState);
                 toLocked.hasExitTime = false;
                 toLocked.duration = 0f;
-                Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
                 toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             }
             var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);

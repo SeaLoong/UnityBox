@@ -10,6 +10,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSComponent config;
+        private uint _avatarHash;
         public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSComponent config)
         {
             this.controller = controller;
@@ -36,6 +37,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ensureGestureParameters: true);
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
+            uint avatarHash = (uint)avatarRoot.name.GetHashCode();
+            _avatarHash = avatarHash;
             var waitState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Wait_Input") : "Wait_Input",
                 new Vector3(50, 50, 0));
@@ -230,28 +233,32 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
             return clip;
         }
-        private static void ConfigureGestureTransition(AnimatorStateTransition transition,
+        private void ConfigureGestureTransition(AnimatorStateTransition transition,
             int expectedGesture, string gestureParam)
         {
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1, gestureParam);
-            transition.AddCondition(AnimatorConditionMode.Less, expectedGesture + 1, gestureParam);
+            int noiseLow = (int)((_avatarHash >> (expectedGesture * 3)) & 1);
+            int noiseHigh = (int)((_avatarHash >> (expectedGesture * 3 + 1)) & 1);
+            transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1 - noiseLow, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.Less, expectedGesture + 1 + noiseHigh, gestureParam);
         }
-        private static void AddErrorTransitions(AnimatorState holdingState, AnimatorState waitState,
+        private void AddErrorTransitions(AnimatorState holdingState, AnimatorState waitState,
             int expectedGesture, string gestureParam)
         {
+            int noiseLow = (int)((_avatarHash >> (expectedGesture * 3)) & 1);
+            int noiseHigh = (int)((_avatarHash >> (expectedGesture * 3 + 1)) & 1);
             var errLow = holdingState.AddTransition(waitState);
             errLow.hasExitTime = false;
             errLow.duration = 0f;
             errLow.hasFixedDuration = true;
-            errLow.AddCondition(AnimatorConditionMode.Less, expectedGesture, gestureParam);
+            errLow.AddCondition(AnimatorConditionMode.Less, expectedGesture - noiseLow, gestureParam);
             var errHigh = holdingState.AddTransition(waitState);
             errHigh.hasExitTime = false;
             errHigh.duration = 0f;
             errHigh.hasFixedDuration = true;
-            errHigh.AddCondition(AnimatorConditionMode.Greater, expectedGesture, gestureParam);
+            errHigh.AddCondition(AnimatorConditionMode.Greater, expectedGesture + noiseHigh, gestureParam);
         }
     }
 }
