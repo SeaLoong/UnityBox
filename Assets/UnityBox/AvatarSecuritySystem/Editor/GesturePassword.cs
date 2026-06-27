@@ -10,13 +10,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSComponent config;
-        private uint _avatarHash;
+
         public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSComponent config)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
         }
+
         public void Generate()
         {
             float gestureHoldTime = config.gestureHoldTime;
@@ -37,8 +38,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ensureGestureParameters: true);
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
-            uint avatarHash = (uint)avatarRoot.name.GetHashCode();
-            _avatarHash = avatarHash;
+
             var waitState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Wait_Input") : "Wait_Input",
                 new Vector3(50, 50, 0));
@@ -111,34 +111,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdToConfirm = Utils.CreateTransition(holdingState, 
                     isLastStep ? successState : confirmedState,
                     hasExitTime: true, exitTime: holdExitTime);
-                AddGestureConditions(holdToConfirm, gestureValue, gestureParam);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
                 holdToConfirm.duration = 0f;
+
                 var holdTimeout = Utils.CreateTransition(holdingState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
-                // Error transitions with grace period: use hasExitTime=true with same exitTime
-                // as holdToConfirm, preventing single-frame gesture glitches from
-                // triggering immediate reset (which causes Wait↔Holding ping-pong)
-                int hlNoiseLow = (int)((_avatarHash >> (gestureValue * 3)) & 1);
-                int hlNoiseHigh = (int)((_avatarHash >> (gestureValue * 3 + 1)) & 1);
-                var errLow = holdingState.AddTransition(waitState);
-                errLow.hasExitTime = true;
-                errLow.exitTime = holdExitTime;
-                errLow.duration = 0f;
-                errLow.hasFixedDuration = true;
-                errLow.AddCondition(AnimatorConditionMode.Less, gestureValue - hlNoiseLow, gestureParam);
-                var errHigh = holdingState.AddTransition(waitState);
-                errHigh.hasExitTime = true;
-                errHigh.exitTime = holdExitTime;
-                errHigh.duration = 0f;
-                errHigh.hasFixedDuration = true;
-                errHigh.AddCondition(AnimatorConditionMode.Greater, gestureValue + hlNoiseHigh, gestureParam);
+
+                // Holding → Wait（手势不匹配时超时重置，与确认同时触发防抖动）
+                var holdingError = holdingState.AddTransition(waitState);
+                holdingError.hasExitTime = true;
+                holdingError.exitTime = holdExitTime;
+                holdingError.duration = 0f;
+                holdingError.hasFixedDuration = true;
+                holdingError.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
+
                 if (i == 0)
                 {
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                    AddGestureConditions(firstTransition, gestureValue, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
                 }
                 else
                 {
@@ -155,22 +148,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var confirmedRestartTransition = confirmedState.AddTransition(stepHoldingStates[0]);
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
-                // Stay in confirmedState if still holding a gesture that was accepted
-                // by the confirmation transition. Must use the SAME gesture conditions
-                // (AddGestureConditions with hash noise) as holdToConfirm to avoid
-                // asymmetry: if a nearby gesture was accepted for entry, it must also
-                // be accepted for staying, otherwise the state enters Confirmed then
-                // immediately errors out → infinite Wait→Holding→Confirmed→Error→Wait loop.
+                // Stay in confirmedState while holding the just-confirmed gesture.
                 // Added BEFORE error transitions so it takes priority.
                 var confirmedStay = confirmedState.AddTransition(confirmedState);
                 confirmedStay.hasExitTime = false;
                 confirmedStay.duration = 0f;
                 confirmedStay.hasFixedDuration = true;
-                AddGestureConditions(confirmedStay, gestureValue, gestureParam);
-                // Error from confirmedState: check against the NEXT expected gesture (password[i+1]),
-                // not the current one. The confirmedRestartTransition (to password[0]) is added
-                // before these error transitions, so it takes priority for the restart gesture.
-                AddErrorTransitions(confirmedState, errorToleranceState, password[i + 1], gestureParam);
+                confirmedStay.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+
+                // Error from confirmedState: check against the NEXT expected gesture (password[i+1]).
+                // The confirmedRestartTransition (to password[0]) is added before these error
+                // transitions, so it takes priority for the restart gesture.
+                var confirmedErrLow = confirmedState.AddTransition(errorToleranceState);
+                confirmedErrLow.hasExitTime = false;
+                confirmedErrLow.duration = 0f;
+                confirmedErrLow.hasFixedDuration = true;
+                confirmedErrLow.AddCondition(AnimatorConditionMode.Less, password[i + 1], gestureParam);
+                var confirmedErrHigh = confirmedState.AddTransition(errorToleranceState);
+                confirmedErrHigh.hasExitTime = false;
+                confirmedErrHigh.duration = 0f;
+                confirmedErrHigh.hasFixedDuration = true;
+                confirmedErrHigh.AddCondition(AnimatorConditionMode.Greater, password[i + 1], gestureParam);
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
                 if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
@@ -268,31 +266,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
-            AddGestureConditions(transition, expectedGesture, gestureParam);
-        }
-        private void AddGestureConditions(AnimatorStateTransition transition,
-            int expectedGesture, string gestureParam)
-        {
-            int noiseLow = (int)((_avatarHash >> (expectedGesture * 3)) & 1);
-            int noiseHigh = (int)((_avatarHash >> (expectedGesture * 3 + 1)) & 1);
-            transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1 - noiseLow, gestureParam);
-            transition.AddCondition(AnimatorConditionMode.Less, expectedGesture + 1 + noiseHigh, gestureParam);
-        }
-        private void AddErrorTransitions(AnimatorState holdingState, AnimatorState waitState,
-            int expectedGesture, string gestureParam)
-        {
-            int noiseLow = (int)((_avatarHash >> (expectedGesture * 3)) & 1);
-            int noiseHigh = (int)((_avatarHash >> (expectedGesture * 3 + 1)) & 1);
-            var errLow = holdingState.AddTransition(waitState);
-            errLow.hasExitTime = false;
-            errLow.duration = 0f;
-            errLow.hasFixedDuration = true;
-            errLow.AddCondition(AnimatorConditionMode.Less, expectedGesture - noiseLow, gestureParam);
-            var errHigh = holdingState.AddTransition(waitState);
-            errHigh.hasExitTime = false;
-            errHigh.duration = 0f;
-            errHigh.hasFixedDuration = true;
-            errHigh.AddCondition(AnimatorConditionMode.Greater, expectedGesture + noiseHigh, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.Equals, expectedGesture, gestureParam);
         }
     }
 }
