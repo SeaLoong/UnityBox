@@ -31,6 +31,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteClip = CreateRemoteClip(useWdOn);
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
+            var concealedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Concealed") : "Concealed",
+                new Vector3(200, 50, 0));
+            concealedState.writeDefaultValues = useWdOn;
+            var concealedClip = CreateConcealedClip(useWdOn);
+            concealedState.motion = concealedClip;
+            Utils.AddSubAsset(controller, concealedClip);
             var lockedState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
                 new Vector3(200, 100, 0));
@@ -76,11 +83,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toUnlockedDirect.hasExitTime = false;
             toUnlockedDirect.duration = 0f;
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            var remoteToConcealed = Utils.CreateTransition(remoteState, concealedState);
+            remoteToConcealed.hasExitTime = false;
+            remoteToConcealed.duration = 0f;
+            remoteToConcealed.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+            var concealedToUnlocked = Utils.CreateTransition(concealedState, unlockedState);
+            concealedToUnlocked.hasExitTime = false;
+            concealedToUnlocked.duration = 0f;
+            concealedToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && preLockState != null)
             {
-                var toPreLock = Utils.CreateTransition(remoteState, preLockState);
+                var toPreLock = Utils.CreateTransition(concealedState, preLockState);
                 toPreLock.hasExitTime = false;
                 toPreLock.duration = 0f;
+                Utils.AddIsLocalCondition(toPreLock, controller, isTrue: true);
                 toPreLock.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                 var preLockToLocked = Utils.CreateTransition(preLockState, lockedState,
                     hasExitTime: true, exitTime: 0.01f);
@@ -88,9 +104,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             else
             {
-                var toLocked = Utils.CreateTransition(remoteState, lockedState);
+                var toLocked = Utils.CreateTransition(concealedState, lockedState);
                 toLocked.hasExitTime = false;
                 toLocked.duration = 0f;
+                Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
                 toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             }
             var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);
@@ -165,6 +182,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay and defense objects");
+            return clip;
+        }
+        private AnimationClip CreateConcealedClip(bool useWdOn)
+        {
+            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Concealed") : "ASS_Concealed" };
+            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+            var zeroScale = Vector3.zero;
+            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
+            SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
+            if (config.disableRootChildren)
+            {
+                foreach (Transform child in avatarRoot.transform)
+                {
+                    if (IsASSObject(child)) continue;
+                    string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
+                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
+                    SetTransformScaleInClip(clip, childPath, zeroScale);
+                }
+            }
             return clip;
         }
         private AnimationClip CreateUnlockClip(bool useWdOn)
