@@ -155,6 +155,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var confirmedRestartTransition = confirmedState.AddTransition(stepHoldingStates[0]);
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
+                // Stay in confirmedState if still holding the confirmed gesture,
+                // preventing the error transitions from catching it as "wrong next gesture".
+                // Added BEFORE error transitions so it takes priority.
+                var confirmedStay = confirmedState.AddTransition(confirmedState);
+                confirmedStay.hasExitTime = false;
+                confirmedStay.duration = 0f;
+                confirmedStay.hasFixedDuration = true;
+                AddGestureConditions(confirmedStay, gestureValue, gestureParam);
                 // Error from confirmedState: check against the NEXT expected gesture (password[i+1]),
                 // not the current one. The confirmedRestartTransition (to password[0]) is added
                 // before these error transitions, so it takes priority for the restart gesture.
