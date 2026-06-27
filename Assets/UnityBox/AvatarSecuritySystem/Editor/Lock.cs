@@ -41,18 +41,47 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             bool useWdOn = ResolveWriteDefaults();
 
             // Remote 状态：其他玩家看到的默认状态
-            var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, 0, 0));
+            var remoteState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                new Vector3(200, 0, 0));
             remoteState.writeDefaultValues = useWdOn;
             var remoteClip = CreateRemoteClip(useWdOn);
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
             
             // Locked 状态：本地玩家锁定时
-            var lockedState = layer.stateMachine.AddState("Locked", new Vector3(200, 100, 0));
+            var lockedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
+                new Vector3(200, 100, 0));
             lockedState.writeDefaultValues = useWdOn;
-            
-            // Unlocked 状态：本地玩家解锁后
-            var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 200, 0));
+
+            AnimatorState lockedShadowB = null, lockedShadowC = null, preLockState = null;
+            if (Obfuscator.DecoyStatesEnabled)
+            {
+                Utils.AddParameterIfNotExists(controller, "_SysBypassChk",
+                    AnimatorControllerParameterType.Bool, false);
+                Utils.AddParameterIfNotExists(controller, "_PwHashCacheV",
+                    AnimatorControllerParameterType.Float, defaultFloat: 0f);
+
+                lockedShadowB = layer.stateMachine.AddState(
+                    Obfuscator.IsEnabled ? Obfuscator.State("LockedB") : "LockedB",
+                    new Vector3(350, 100, 0));
+                lockedShadowB.writeDefaultValues = useWdOn;
+
+                lockedShadowC = layer.stateMachine.AddState(
+                    Obfuscator.IsEnabled ? Obfuscator.State("LockedC") : "LockedC",
+                    new Vector3(500, 100, 0));
+                lockedShadowC.writeDefaultValues = useWdOn;
+
+                preLockState = layer.stateMachine.AddState(
+                    Obfuscator.IsEnabled ? Obfuscator.State("PreLock") : "PreLock",
+                    new Vector3(200, 50, 0));
+                preLockState.writeDefaultValues = useWdOn;
+            }
+
+            var unlockedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Unlocked") : "Unlocked",
+                new Vector3(200, 200, 0));
             unlockedState.writeDefaultValues = useWdOn;
 
             layer.stateMachine.defaultState = remoteState;
@@ -65,29 +94,69 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             unlockedState.motion = unlockClip;
             Utils.AddSubAsset(controller, unlockClip);
 
-            // Remote → Unlocked（密码正确时，所有玩家都进入解锁状态）
+            if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
+            {
+                lockedShadowB.motion = lockClip;
+                lockedShadowC.motion = lockClip;
+                preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            }
+
             var toUnlockedDirect = Utils.CreateTransition(remoteState, unlockedState);
             toUnlockedDirect.hasExitTime = false;
             toUnlockedDirect.duration = 0f;
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            
-            // Remote → Locked（!PasswordCorrect 时锁定，本地和远端都生效）
-            var toLocked = Utils.CreateTransition(remoteState, lockedState);
-            toLocked.hasExitTime = false;
-            toLocked.duration = 0f;
-            toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            
-            // Locked → Unlocked（本地玩家密码正确时解锁）
+
+            if (Obfuscator.DecoyStatesEnabled && preLockState != null)
+            {
+                var toPreLock = Utils.CreateTransition(remoteState, preLockState);
+                toPreLock.hasExitTime = false;
+                toPreLock.duration = 0f;
+                Utils.AddIsLocalCondition(toPreLock, controller, isTrue: true);
+                toPreLock.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+
+                var preLockToLocked = Utils.CreateTransition(preLockState, lockedState,
+                    hasExitTime: true, exitTime: 0.01f);
+                preLockToLocked.duration = 0f;
+            }
+            else
+            {
+                var toLocked = Utils.CreateTransition(remoteState, lockedState);
+                toLocked.hasExitTime = false;
+                toLocked.duration = 0f;
+                Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
+                toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+            }
+
             var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);
             toUnlocked.hasExitTime = false;
             toUnlocked.duration = 0f;
             toUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            
-            // Unlocked → Remote（密码被重置时返回初始状态）
+
             var unlockedToRemote = Utils.CreateTransition(unlockedState, remoteState);
             unlockedToRemote.hasExitTime = false;
             unlockedToRemote.duration = 0f;
             unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+
+            if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
+            {
+                var lockedAToB = Utils.CreateTransition(lockedState, lockedShadowB,
+                    hasExitTime: true, exitTime: 999f);
+                lockedAToB.duration = 0.1f;
+                lockedAToB.AddCondition(AnimatorConditionMode.If, 0, "_SysBypassChk");
+
+                var lockedBToC = Utils.CreateTransition(lockedShadowB, lockedShadowC,
+                    hasExitTime: true, exitTime: 999f);
+                lockedBToC.duration = 0.1f;
+                lockedBToC.AddCondition(AnimatorConditionMode.Greater, 999999f, "_PwHashCacheV");
+
+                var lockedCToA = Utils.CreateTransition(lockedShadowC, lockedState,
+                    hasExitTime: true, exitTime: 0.01f);
+                lockedCToA.duration = 0f;
+
+                var remoteLoop = Utils.CreateTransition(remoteState, remoteState,
+                    hasExitTime: true, exitTime: 999f);
+                remoteLoop.duration = 0f;
+            }
 
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
@@ -101,7 +170,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private AnimationClip CreateLockClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = "ASS_Lock" };
+            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Lock") : "ASS_Lock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             
@@ -146,7 +215,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private AnimationClip CreateRemoteClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = "ASS_Remote" };
+            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Remote") : "ASS_Remote" };
             
             SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
             SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
@@ -161,7 +230,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private AnimationClip CreateUnlockClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = "ASS_Unlock" };
+            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Unlock") : "ASS_Unlock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
 
             Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");

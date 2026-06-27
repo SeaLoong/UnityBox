@@ -64,6 +64,12 @@ namespace UnityBox.AvatarSecuritySystem
             }
             else
             {
+                if (_target.disableOverlay && _target.disableWarningSound)
+                {
+                    EditorGUILayout.HelpBox(T("advanced.no_feedback_warning"), MessageType.Warning);
+                    EditorGUILayout.Space(5);
+                }
+
                 DrawPasswordSection();
                 EditorGUILayout.Space(10);
 
@@ -75,6 +81,9 @@ namespace UnityBox.AvatarSecuritySystem
             }
 
             DrawDefenseSection();
+            EditorGUILayout.Space(10);
+
+            DrawObfuscationSection();
             EditorGUILayout.Space(10);
 
             DrawAdvancedSections();
@@ -229,16 +238,7 @@ namespace UnityBox.AvatarSecuritySystem
 
         private void DrawDefaultDefenseWarning()
         {
-            EditorGUILayout.HelpBox(T("advanced.default_defense"), MessageType.Warning);
-
-            var warningStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                fontSize = 12,
-                richText = true,
-                wordWrap = true,
-                normal = { textColor = Color.red }
-            };
-            EditorGUILayout.LabelField("⚠️ " + T("advanced.default_defense_warning"), warningStyle);
+            EditorGUILayout.HelpBox(T("advanced.default_defense_warning"), MessageType.Error);
         }
 
         private void DrawGestureRecognitionSection()
@@ -329,16 +329,10 @@ namespace UnityBox.AvatarSecuritySystem
         {
             EditorGUILayout.LabelField(T("defense.options"), EditorStyles.boldLabel);
 
-            // 默认启用防御模式下禁用"禁用防御"选项（两者互斥）
-            bool isDefaultDefenseActive = _target.defaultEnableDefense;
-            using (new EditorGUI.DisabledGroupScope(isDefaultDefenseActive))
+            using (new EditorGUI.DisabledGroupScope(_target.defaultEnableDefense))
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
                     new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
-            }
-            if (isDefaultDefenseActive)
-            {
-                EditorGUILayout.LabelField("   ⚠️ " + T("defense.disable_defense_locked"), EditorStyles.miniLabel);
             }
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableOverflow"),
@@ -351,15 +345,36 @@ namespace UnityBox.AvatarSecuritySystem
             
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enabledInPlaymode"),
                 new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableOverlay"),
-                new GUIContent(T("advanced.disable_overlay"), T("advanced.disable_overlay_tooltip")));
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableWarningSound"),
-                new GUIContent(T("advanced.mute_warning"), T("advanced.mute_warning_tooltip")));
+            using (new EditorGUI.DisabledGroupScope(_target.defaultEnableDefense))
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableOverlay"),
+                    new GUIContent(T("advanced.disable_overlay"), T("advanced.disable_overlay_tooltip")));
+
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableWarningSound"),
+                    new GUIContent(T("advanced.mute_warning"), T("advanced.mute_warning_tooltip")));
+            }
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("defaultEnableDefense"),
                 new GUIContent(T("advanced.default_defense"), T("advanced.default_defense_tooltip")));
+        }
+
+        private void DrawObfuscationSection()
+        {
+            EditorGUILayout.LabelField(T("advanced.obfuscation_section"), EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableObfuscation"),
+                new GUIContent(T("advanced.disable_obfuscation"), T("advanced.disable_obfuscation_tooltip")));
+
+            EditorGUI.BeginDisabledGroup(serializedObject.FindProperty("disableObfuscation").boolValue);
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyLayers"),
+                new GUIContent(T("advanced.decoy_layers"), T("advanced.decoy_layers_tooltip")));
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyStates"),
+                new GUIContent(T("advanced.decoy_states"), T("advanced.decoy_states_tooltip")));
+
+            EditorGUI.EndDisabledGroup();
         }
 
         private void DrawLockSection()

@@ -433,15 +433,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.default_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Defense system is always ON by default. No password input needed.\n\nWorkflow:\n1. First upload a password-protected version, unlock it in VRChat\n2. Then re-upload with this option enabled\n\nThe saved ASS_PasswordCorrect parameter keeps defense OFF for\nlegitimate users. Thieves who steal the model cannot disable it." },
-                    { SystemLanguage.ChineseSimplified, "防御系统默认始终开启，无需密码输入。\n\n工作流程：\n1. 先上传带密码的版本，在VRChat中解锁\n2. 再上传启用此选项的版本\n\n已保存的 ASS_PasswordCorrect 参数会为合法用户保持防御关闭，\n而盗模者无法关闭防御。" },
-                    { SystemLanguage.Japanese, "防御システムがデフォルトで常に有効になります。パスワード入力は不要です。\n\nワークフロー：\n1. パスワード保護版をアップロードし、VRChatでロック解除\n2. このオプションを有効にして再アップロード\n\n保存された ASS_PasswordCorrect パラメータにより正規ユーザーは\n防御が無効になり、盗んだ者は防御を無効化できません。" }
+                    { SystemLanguage.English, "Defense is always ON. No password input.\n\nUse after uploading and unlocking a\npassword-protected version in VRChat." },
+                    { SystemLanguage.ChineseSimplified, "防御始终开启，无需密码输入。\n\n请先在 VRChat 中上传并解锁\n带密码保护的版本后再使用。" },
+                    { SystemLanguage.Japanese, "防御が常に有効。パスワード入力不要。\n\nVRChatでパスワード保護版をアップロード\nしてロック解除した後で使用してください。" }
                 },
                 ["advanced.default_defense_warning"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "⚠️ DANGER: With Default Enable Defense enabled,\nNO password system will be generated.\n\nYou MUST first upload a password-protected version,\nunlock it in VRChat, then re-upload with this option.\n\nIf you skip the initial unlock step, defense will\ntrigger for ALL users including yourself!\n\nUnderstand the workflow before enabling this." },
-                    { SystemLanguage.ChineseSimplified, "⚠️ 危险：启用「默认启用防御」后，\n将不会生成密码系统。\n\n你必须先上传带密码保护的版本，\n在VRChat中解锁它，再上传启用此选项的版本。\n\n如果跳过初始解锁步骤，\n防御将对所有用户（包括你自己）触发！\n\n在启用此选项前请确保你理解整个工作流程。" },
-                    { SystemLanguage.Japanese, "⚠️ 危険：「デフォルトで防御を有効化」を有効にすると、\nパスワードシステムは生成されません。\n\nまずパスワード保護版をアップロードし、\nVRChatでロック解除してから、\nこのオプションを有効にして再アップロードしてください。\n\n最初のロック解除手順をスキップすると、\n自分を含む全ユーザーに防御が作動します！\n\nワークフローを理解してから有効にしてください。" }
+                    { SystemLanguage.English, "DANGER: No password system will be generated.\n\nWorkflow:\n1. Upload a password-protected version first\n2. Unlock it in VRChat\n3. Re-upload with this option enabled\n\nSkipping step 2 will trigger defense for ALL users\nincluding yourself!" },
+                    { SystemLanguage.ChineseSimplified, "危险：启用后不会生成密码系统。\n\n正确流程：\n1. 先上传带密码保护的版本\n2. 在 VRChat 中解锁\n3. 再上传启用此选项的版本\n\n跳过第 2 步会导致防御对所有人生效\n（包括你自己）！" },
+                    { SystemLanguage.Japanese, "危険：パスワードシステムは生成されません。\n\nワークフロー：\n1. パスワード保護版をアップロード\n2. VRChatでロック解除\n3. このオプションを有効にして再アップロード\n\n手順2をスキップすると自分を含む\n全ユーザーに防御が作動します！" }
                 },
                 ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
                 {
@@ -510,6 +510,58 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.English, "WD Off" },
                     { SystemLanguage.ChineseSimplified, "WD Off" },
                     { SystemLanguage.Japanese, "WD Off" }
+                },
+
+                // ========== 混淆选项（v0.5.0）==========
+                ["advanced.obfuscation_section"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Obfuscation" },
+                    { SystemLanguage.ChineseSimplified, "混淆" },
+                    { SystemLanguage.Japanese, "難読化" }
+                },
+                ["advanced.disable_obfuscation"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Disable Obfuscation" },
+                    { SystemLanguage.ChineseSimplified, "禁用混淆" },
+                    { SystemLanguage.Japanese, "難読化を無効化" }
+                },
+                ["advanced.disable_obfuscation_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Use original parameter/layer/object names in the build.\nOnly recommended for debugging." },
+                    { SystemLanguage.ChineseSimplified, "在构建中使用原始参数/层/对象名称。\n仅建议用于调试。" },
+                    { SystemLanguage.Japanese, "ビルドで元のパラメータ/レイヤー/オブジェクト名を使用。\nデバッグ時のみ推奨。" }
+                },
+                ["advanced.decoy_layers"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Animation Layer Noise" },
+                    { SystemLanguage.ChineseSimplified, "动画层噪声" },
+                    { SystemLanguage.Japanese, "アニメーションレイヤーノイズ" }
+                },
+                ["advanced.decoy_layers_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Add an extra animation layer to the FX controller.\nDoes not affect avatar appearance or performance." },
+                    { SystemLanguage.ChineseSimplified, "向 FX 控制器添加一个额外的动画层。\n不会影响 Avatar 外观或性能。" },
+                    { SystemLanguage.Japanese, "FXコントローラーに追加のアニメーションレイヤーを追加。\nアバターの外観やパフォーマンスに影響しません。" }
+                },
+                ["advanced.decoy_states"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Animation State Noise" },
+                    { SystemLanguage.ChineseSimplified, "动画状态噪声" },
+                    { SystemLanguage.Japanese, "アニメーションステートノイズ" }
+                },
+                ["advanced.decoy_states_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Add extra animation states to existing layers.\nDoes not affect avatar appearance or performance." },
+                    { SystemLanguage.ChineseSimplified, "向现有动画层添加额外的动画状态。\n不会影响 Avatar 外观或性能。" },
+                    { SystemLanguage.Japanese, "既存のレイヤーに追加のアニメーションステートを追加。\nアバターの外観やパフォーマンスに影響しません。" }
+                },
+
+                // ========== 警告提示 ==========
+                ["advanced.no_feedback_warning"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Overlay and warning sound are both disabled.\nNo visual/audio cue during password input.\n(Password success sound still plays on unlock.)\nCountdown will still trigger defense when expired." },
+                    { SystemLanguage.ChineseSimplified, "已关闭覆盖界面和警告音效。\n输入密码时将没有视觉和声音提示。\n（密码正确解锁时仍会播放提示音。）\n倒计时结束后仍会触发防御。" },
+                    { SystemLanguage.Japanese, "オーバーレイと警告音が両方無効です。\nパスワード入力中の手がかりがありません。\n（解除時の成功音は再生されます。）\nカウントダウン後も防御は作動します。" }
                 },
             };
         }

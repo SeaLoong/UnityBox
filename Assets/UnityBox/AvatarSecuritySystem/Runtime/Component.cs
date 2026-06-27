@@ -64,6 +64,15 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{defense.enable_overflow_tooltip}")]
         public bool enableOverflow = true;
 
+        [Tooltip("#{advanced.obfuscation_tooltip}")]
+        public bool disableObfuscation = false;
+
+        [Tooltip("#{advanced.decoy_layers_tooltip}")]
+        public bool enableDecoyLayers = true;
+
+        [Tooltip("#{advanced.decoy_states_tooltip}")]
+        public bool enableDecoyStates = true;
+
         public enum WriteDefaultsMode
         {
             Auto,

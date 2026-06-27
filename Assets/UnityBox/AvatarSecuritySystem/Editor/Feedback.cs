@@ -15,11 +15,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private GameObject overlayRootObject;
 
         /// <summary>
-        /// 全屏覆盖 Shader 名称
+        /// 全屏覆盖 Shader 名称（混淆后仍需要准确的 Shader 名称以正确查找 Shader）
         /// </summary>
         private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_Overlay";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
-        private const string OVERLAY_MESH_NAME = "Overlay";
+        private static string OverlayMeshName => Obfuscator.IsEnabled
+            ? Obfuscator.GameObject("OverlayMesh")
+            : "Overlay";
 
         public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
@@ -108,7 +110,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private GameObject CreateOverlayMesh()
         {
-            var meshObj = new GameObject(OVERLAY_MESH_NAME);
+            var meshObj = new GameObject(OverlayMeshName);
             meshObj.transform.SetParent(overlayRootObject.transform, false);
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
@@ -140,9 +142,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
 
-            // 使用全屏覆盖 Shader
+            // 使用全屏覆盖 Shader（混淆模式：复制并重命名 Shader）
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
-            var shader = Shader.Find(OVERLAY_SHADER_NAME) ?? Shader.Find("Unlit/Color") ?? Shader.Find("Hidden/InternalErrorShader");
+            var shader = Obfuscator.GetObfuscatedShader(OVERLAY_SHADER_NAME)
+                ?? Shader.Find(OVERLAY_SHADER_NAME)
+                ?? Shader.Find("Unlit/Color")
+                ?? Shader.Find("Hidden/InternalErrorShader");
             var material = new Material(shader);
             material.SetColor("_A7F3", Color.white);
             material.SetColor("_B2E1", Color.red);
@@ -199,7 +204,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             for (int i = overlayRootObject.transform.childCount - 1; i >= 0; i--)
             {
                 var child = overlayRootObject.transform.GetChild(i);
-                if (child.name != OVERLAY_MESH_NAME) continue;
+                if (child.name != OverlayMeshName) continue;
 
                 Object.DestroyImmediate(child.gameObject);
                 removedCount++;

@@ -64,12 +64,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 AnimatorControllerParameterType.Bool, false);
 
             // 初始等待状态
-            var waitState = layer.stateMachine.AddState("Wait_Input", new Vector3(50, 50, 0));
+            var waitState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Wait_Input") : "Wait_Input",
+                new Vector3(50, 50, 0));
             waitState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = waitState;
 
             // 时间到失败状态
-            var timeUpFailedState = layer.stateMachine.AddState("TimeUp_Failed", new Vector3(50, -50, 0));
+            var timeUpFailedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("TimeUp_Failed") : "TimeUp_Failed",
+                new Vector3(50, -50, 0));
             timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             // Any State → TimeUp_Failed
@@ -77,7 +81,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
 
             // 成功状态（需要在循环前声明，因为循环中会引用）
-            var successState = layer.stateMachine.AddState("Password_Success", 
+            var successState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Success") : "Password_Success",
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             successState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
@@ -90,11 +95,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 bool isLastStep = (i == password.Count - 1);
 
-                var holdingState = layer.stateMachine.AddState($"Step_{i + 1}_Holding", 
+                string holdingName = Obfuscator.IsEnabled
+                    ? Obfuscator.State($"Hold_{i + 1}")
+                    : $"Step_{i + 1}_Holding";
+                var holdingState = layer.stateMachine.AddState(holdingName,
                     new Vector3(50 + (i + 1) * 350, 50, 0));
                 // Holding: clip 时长 = gestureMaxHoldTime（整步超时）
                 // 确认点位于 holdTime/maxHoldTime 比例处
-                var holdClip = CreateHoldClip($"ASS_Hold_{i + 1}", gestureMaxHoldTime);
+                string holdClipName = Obfuscator.IsEnabled
+                    ? Obfuscator.Clip($"Hold_{i + 1}")
+                    : $"ASS_Hold_{i + 1}";
+                var holdClip = CreateHoldClip(holdClipName, gestureMaxHoldTime);
                 holdingState.motion = holdClip;
                 Utils.AddSubAsset(controller, holdClip);
                 stepHoldingStates.Add(holdingState);
@@ -106,15 +117,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     continue;
                 }
 
-                var confirmedState = layer.stateMachine.AddState($"Step_{i + 1}_Confirmed", 
+                string confirmedName = Obfuscator.IsEnabled
+                    ? Obfuscator.State($"Confirm_{i + 1}")
+                    : $"Step_{i + 1}_Confirmed";
+                var confirmedState = layer.stateMachine.AddState(confirmedName,
                     new Vector3(50 + (i + 1) * 350, 150, 0));
                 // Confirmed: 空 clip，仅做逻辑中转，无超时
                 confirmedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
                 stepConfirmedStates.Add(confirmedState);
 
-                var errorToleranceState = layer.stateMachine.AddState($"Step_{i + 1}_ErrorTolerance", 
+                string toleranceName = Obfuscator.IsEnabled
+                    ? Obfuscator.State($"Tolerance_{i + 1}")
+                    : $"Step_{i + 1}_ErrorTolerance";
+                var errorToleranceState = layer.stateMachine.AddState(toleranceName,
                     new Vector3(50 + (i + 1) * 350, 250, 0));
-                var toleranceClip = CreateHoldClip($"ASS_Tolerance_{i + 1}", gestureErrorTolerance);
+                string toleranceClipName = Obfuscator.IsEnabled
+                    ? Obfuscator.Clip($"Tolerance_{i + 1}")
+                    : $"ASS_Tolerance_{i + 1}";
+                var toleranceClip = CreateHoldClip(toleranceClipName, gestureErrorTolerance);
                 errorToleranceState.motion = toleranceClip;
                 Utils.AddSubAsset(controller, toleranceClip);
                 stepErrorToleranceStates.Add(errorToleranceState);
@@ -138,25 +158,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdToConfirm = Utils.CreateTransition(holdingState, 
                     isLastStep ? successState : confirmedState,
                     hasExitTime: true, exitTime: holdExitTime);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                // Greater(gv-1)+Less(gv+1) ≡ Equals(gv)，隐藏密码精确值
+                holdToConfirm.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 holdToConfirm.duration = 0f;
 
-                // Holding → Wait（超时：整步最大时间用完，exitTime=1.0）
+                // Holding → Wait（超时）
                 var holdTimeout = Utils.CreateTransition(holdingState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
 
-                // Holding → Wait（错误手势，包括 Idle(0) 均视为错误）
-                var holdingErrorToWait = holdingState.AddTransition(waitState);
-                ConfigureErrorTransition(holdingErrorToWait, gestureValue, gestureParam);
+                // Holding → Wait（错误手势：拆成 Less(gv)+Greater(gv) 替代 NotEqual）
+                AddErrorTransitions(holdingState, waitState, gestureValue, gestureParam);
 
                 if (i == 0)
                 {
-                    // Wait → Step_1_Holding（首个手势匹配即进入，Idle(0) 也参与匹配）
+                    // Wait → Step_1_Holding（Greater+Less 替代 Equals）
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                    firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 }
                 else
                 {
@@ -180,9 +202,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
 
-                // Confirmed → ErrorTolerance（任何非预期手势，包括 Idle(0)）
-                var confirmedToTolerance = confirmedState.AddTransition(errorToleranceState);
-                ConfigureErrorTransition(confirmedToTolerance, gestureValue, gestureParam);
+                // Confirmed → ErrorTolerance（拆成 Less+Greater 替代 NotEqual）
+                AddErrorTransitions(confirmedState, errorToleranceState, gestureValue, gestureParam);
 
                 // ErrorTolerance → Step_{i+1}_Holding（容错内纠正为下一正确手势）
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
@@ -200,6 +221,73 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 toleranceTimeoutToWait.duration = 0f;
+            }
+
+            if (Obfuscator.DecoyStatesEnabled && stepHoldingStates.Count > 0)
+            {
+                Utils.AddParameterIfNotExists(controller, "_VerbLogLvl",
+                    AnimatorControllerParameterType.Bool, false);
+                Utils.AddParameterIfNotExists(controller, "_ProfilerEn",
+                    AnimatorControllerParameterType.Bool, false);
+
+                var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+                var decoyHolds = new List<AnimatorState>();
+                int decoyCount = Mathf.Min(3, password.Count);
+                for (int d = 0; d < decoyCount; d++)
+                {
+                    string decoyName = Obfuscator.State($"Decoy_{d + 1}");
+                    var decoyState = layer.stateMachine.AddState(decoyName,
+                        new Vector3(-200, 200 + d * 80, 0));
+                    decoyState.motion = emptyClip;
+                    decoyState.writeDefaultValues = true;
+                    decoyHolds.Add(decoyState);
+
+                    // 假入口：使用确定性与所有密码位不同的手势值
+                    int fakeGesture = 1 + ((d * 3 + (int)(password[0]) + 1) % 7);
+                    int safetyCount = 0;
+                    while (password.Contains(fakeGesture) && safetyCount < 8)
+                    {
+                        fakeGesture = (fakeGesture % 7) + 1;
+                        safetyCount++;
+                    }
+                    var decoyEntry = Utils.CreateTransition(waitState, decoyState);
+                    decoyEntry.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureParam);
+                    decoyEntry.AddCondition(AnimatorConditionMode.If, 0, "_VerbLogLvl");
+                }
+
+                // 假状态之间链式转换（条件包含永假守卫）
+                for (int d = 0; d < decoyHolds.Count - 1; d++)
+                {
+                    var trans = decoyHolds[d].AddTransition(decoyHolds[d + 1]);
+                    trans.hasExitTime = true;
+                    trans.exitTime = 0.5f;
+                    trans.duration = 0.1f;
+                    int fg = 1 + ((d * 5 + 3) % 7);
+                    trans.AddCondition(AnimatorConditionMode.Equals, fg, gestureParam);
+                    trans.AddCondition(AnimatorConditionMode.If, 0, "_ProfilerEn"); // 永假守卫
+                }
+
+                // 最后一个假状态 → Wait（死端）
+                if (decoyHolds.Count > 0)
+                {
+                    var deadEnd = Utils.CreateTransition(decoyHolds[decoyHolds.Count - 1], waitState,
+                        hasExitTime: true, exitTime: 1f);
+                    deadEnd.duration = 0f;
+                }
+
+                // 在真 Hold 状态上添加自循环（双保险：手势≠密码 + 永假守卫参数）
+                for (int i = 0; i < Mathf.Min(2, stepHoldingStates.Count); i++)
+                {
+                    var selfLoop = stepHoldingStates[i].AddTransition(stepHoldingStates[i]);
+                    selfLoop.hasExitTime = true;
+                    selfLoop.exitTime = 0.99f;
+                    selfLoop.duration = 0f;
+                    // 手势值确保与当前密码位不同
+                    int safeGesture = 1 + ((i * 3 + password[i] + 2) % 7);
+                    if (safeGesture == password[i]) safeGesture = (safeGesture % 7) + 1;
+                    selfLoop.AddCondition(AnimatorConditionMode.Equals, safeGesture, gestureParam);
+                    selfLoop.AddCondition(AnimatorConditionMode.If, 0, "_ProfilerEn");
+                }
             }
 
             if (config.successSound != null)
@@ -228,25 +316,38 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
-            clip.SetCurve("__ASS_Dummy__", typeof(GameObject), "m_IsActive", dummyCurve);
+            clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
 
             return clip;
         }
         
-        private static void ConfigureErrorTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
+        private static void ConfigureGestureTransition(AnimatorStateTransition transition,
+            int expectedGesture, string gestureParam)
         {
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.NotEqual, expectedGesture, gestureParam);
+            // Greater (gv-1) AND Less (gv+1) ≡ Equals (gv) for integer 0-7
+            transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.Less, expectedGesture + 1, gestureParam);
         }
-        
-        private static void ConfigureGestureTransition(AnimatorStateTransition transition, int expectedGesture, string gestureParam)
+
+        private static void AddErrorTransitions(AnimatorState holdingState, AnimatorState waitState,
+            int expectedGesture, string gestureParam)
         {
-            transition.hasExitTime = false;
-            transition.duration = 0f;
-            transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.Equals, expectedGesture, gestureParam);
+            // 转换 1: 手势 < 预期值 → Wait
+            var errLow = holdingState.AddTransition(waitState);
+            errLow.hasExitTime = false;
+            errLow.duration = 0f;
+            errLow.hasFixedDuration = true;
+            errLow.AddCondition(AnimatorConditionMode.Less, expectedGesture, gestureParam);
+
+            // 转换 2: 手势 > 预期值 → Wait
+            var errHigh = holdingState.AddTransition(waitState);
+            errHigh.hasExitTime = false;
+            errHigh.duration = 0f;
+            errHigh.hasFixedDuration = true;
+            errHigh.AddCondition(AnimatorConditionMode.Greater, expectedGesture, gestureParam);
         }
     }
 }

@@ -37,19 +37,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, countdownClip);
 
             // Remote（其他玩家默认状态）
-            var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
+            var remoteState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
 
             // Countdown（倒计时进行中）
-            var countdownState = layer.stateMachine.AddState("Countdown", new Vector3(200, 50, 0));
+            var countdownState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Countdown") : "Countdown",
+                new Vector3(200, 50, 0));
             countdownState.motion = countdownClip;
             countdownState.speed = 1f;
             countdownState.writeDefaultValues = true;
 
             // Unlocked（密码正确，停止倒计时）
-            var unlockedState = layer.stateMachine.AddState("Unlocked", new Vector3(200, 150, 0));
+            var unlockedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Unlocked") : "Unlocked",
+                new Vector3(200, 150, 0));
             unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
 
             // Remote → Unlocked（已解锁状态，跳过倒计时；PasswordCorrect 是 networkSynced，远端也会同步）
@@ -62,7 +68,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // TimeUp（倒计时结束，触发防御但保持 Overlay 显示作为遮罩）
-            var timeUpState = layer.stateMachine.AddState("TimeUp", new Vector3(200, 250, 0));
+            var timeUpState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("TimeUp") : "TimeUp",
+                new Vector3(200, 250, 0));
             timeUpState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             Utils.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
             
@@ -105,20 +113,28 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             float warningStartTime = duration - warningThreshold;
 
             // Remote
-            var remoteState = layer.stateMachine.AddState("Remote", new Vector3(200, -50, 0));
+            var remoteState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
 
             // Waiting（等待警告时间）
-            var waitingState = layer.stateMachine.AddState("Waiting", new Vector3(200, 50, 0));
-            var waitingClip = CreateDummyClip("ASS_AudioWaiting", warningStartTime + 0.1f);
+            var waitingState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Waiting") : "Waiting",
+                new Vector3(200, 50, 0));
+            var waitingClip = CreateDummyClip(
+                Obfuscator.IsEnabled ? Obfuscator.Clip("AudioWaiting") : "ASS_AudioWaiting",
+                warningStartTime + 0.1f);
             waitingState.motion = waitingClip;
             waitingState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, waitingClip);
 
             // Stop（停止音效）
-            var stopState = layer.stateMachine.AddState("Stop", new Vector3(200, 250, 0));
+            var stopState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Stop") : "Stop",
+                new Vector3(200, 250, 0));
             stopState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             stopState.writeDefaultValues = true;
             
@@ -132,8 +148,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
 
             // WarningBeep（播放警告音，1秒自循环）
-            var beepState = layer.stateMachine.AddState("WarningBeep", new Vector3(200, 150, 0));
-            var beepClip = CreateDummyClip("ASS_WarningLoop", 1f);
+            var beepState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("WarningBeep") : "WarningBeep",
+                new Vector3(200, 150, 0));
+            var beepClip = CreateDummyClip(
+                Obfuscator.IsEnabled ? Obfuscator.Clip("WarningLoop") : "ASS_WarningLoop",
+                1f);
             beepState.motion = beepClip;
             beepState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, beepClip);
@@ -179,7 +199,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip 
             { 
-                name = "ASS_Countdown",
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("Countdown") : "ASS_Countdown",
                 legacy = false
             };
             
@@ -205,7 +225,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
-            clip.SetCurve("__ASS_Dummy__", typeof(GameObject), "m_IsActive", dummyCurve);
+            clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
             
             return clip;
         }

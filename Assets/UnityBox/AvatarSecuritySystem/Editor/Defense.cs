@@ -22,6 +22,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             this.isDebugMode = isDebugMode;
         }
 
+        private static string ParticleRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ParticleRoot") : "ParticleDefense";
+        private static string LightRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("LightRoot") : "LightDefense";
+        private static string PhysXRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("PhysXRoot") : "PhysXDefense";
+        private static string ClothRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ClothRoot") : "ClothDefense";
+        private static string ShaderRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ShaderRoot") : "ShaderDefense";
+        private static string PSObjPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("PS") : "PS";
+        private static string SubEmitterPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Sub") : "SubEmitter";
+        private static string LightPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("L") : "L";
+        private static string RBPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("RB") : "Rigidbody";
+        private static string ColliderPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Col") : "Collider";
+        private static string ClothPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Cloth") : "Cloth";
+        private static string ShaderMatPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("SM") : "ShaderMat";
+        private static string DefenseMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("Mesh") : "ASS_Mesh";
+        private static string ShaderMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ShaderMesh") : "ASS_ShaderMesh";
+
         public void Generate()
         {
             if (config.disableDefense)
@@ -30,9 +45,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            // 默认启用防御模式：Defense 层默认 Active，PasswordCorrect=True 时切换到 Inactive
-            // 合法用户（PasswordCorrect=True 已保存）→ 防御关闭；盗模者（PasswordCorrect=False）→ 防御常开
-            // 不依赖 TimeUp/Countdown
             if (config.defaultEnableDefense)
             {
                 GenerateDefaultDefenseLayer();
@@ -42,12 +54,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
-            var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(100, 50, 0));
+            var inactiveState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
+                new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = inactiveState;
 
-            var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
-            var activateClip = new AnimationClip { name = "ASS_DefenseActivate" };
+            var activeState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
+                new Vector3(100, 150, 0));
+            var activateClip = new AnimationClip
+            {
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("DefenseActivate") : "ASS_DefenseActivate"
+            };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
             Utils.AddSubAsset(controller, activateClip);
@@ -73,24 +92,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             controller.AddLayer(layer);
         }
 
-        /// <summary>
-        /// 默认启用防御模式：Inactive→Active，条件与 Lock 的 Remote→Locked 一致
-        /// 默认 Inactive（防御关），仅当 IsLocal && !PasswordCorrect 时切到 Active
-        /// 合法用户 PasswordCorrect=True → 始终 Inactive，零闪烁
-        /// </summary>
         private void GenerateDefaultDefenseLayer()
         {
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
 
             // Inactive（默认）：防御关闭，类似 Lock 的 Remote 状态
-            var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(100, 50, 0));
+            var inactiveState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
+                new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
             layer.stateMachine.defaultState = inactiveState;
 
             // Active：防御激活
-            var activeState = layer.stateMachine.AddState("Active", new Vector3(100, 150, 0));
-            var activateClip = new AnimationClip { name = "ASS_DefenseActive_Default" };
+            var activeState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
+                new Vector3(100, 150, 0));
+            var activateClip = new AnimationClip
+            {
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("DefenseActiveDefault") : "ASS_DefenseActive_Default"
+            };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
             Utils.AddSubAsset(controller, activateClip);
@@ -225,24 +246,33 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (isDebugMode)
             {
-                return new DefenseParams(
-                    physXRigidbodyCount: 1,
-                    physXColliderCount: 1,
-                    clothComponentCount: 1,
-                    particleCount: 1,
-                    particleSystemCount: 1,
-                    lightCount: 1
-                );
+                return new DefenseParams(1, 1, 1, 1, 1, 1);
             }
 
+            uint seedBase = HashAvatarName();
+            float physXFrac = 0.1f + (float)(((seedBase ^ 0x9E3779B9) * 0x9E3779B9) % 91) / 100f;
+            float clothFrac = 0.1f + (float)(((seedBase ^ 0x85EBCA6B) * 0x85EBCA6B) % 91) / 100f;
+
+            int physXCount = Mathf.Max(1, (int)(Constants.RIGIDBODY_MAX_COUNT * physXFrac));
+            int physXColCount = Mathf.Max(4, (int)(Constants.RIGIDBODY_COLLIDER_MAX_COUNT * physXFrac));
+            int clothCount = Mathf.Max(1, (int)(Constants.CLOTH_MAX_COUNT * clothFrac));
+
+            Debug.Log($"[ASS] Defense profile: Particles=MAX, Lights=MAX, "
+                + $"PhysX={physXCount}({physXFrac:P0}), Cloth={clothCount}({clothFrac:P0})");
+
             return new DefenseParams(
-                physXRigidbodyCount: Constants.RIGIDBODY_MAX_COUNT,
-                physXColliderCount: Constants.RIGIDBODY_COLLIDER_MAX_COUNT,
-                clothComponentCount: Constants.CLOTH_MAX_COUNT,
-                particleCount: Constants.PARTICLE_MAX_COUNT,
-                particleSystemCount: Constants.PARTICLE_SYSTEM_MAX_COUNT,
-                lightCount: Constants.LIGHT_MAX_COUNT
+                physXCount, physXColCount, clothCount,
+                Constants.PARTICLE_MAX_COUNT, Constants.PARTICLE_SYSTEM_MAX_COUNT,
+                Constants.LIGHT_MAX_COUNT
             );
+        }
+
+        private uint HashAvatarName()
+        {
+            if (string.IsNullOrEmpty(avatarRoot.name)) return 0xDEF;
+            uint h = 0x811C9DC5;
+            foreach (char c in avatarRoot.name) { h ^= c; h *= 0x01000193; }
+            return h;
         }
 
 
@@ -274,7 +304,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
-            var particleRoot = new GameObject("ParticleDefense");
+            var particleRoot = new GameObject(ParticleRootName);
             particleRoot.transform.SetParent(root.transform);
 
             int meshTriangles;
@@ -345,7 +375,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (particlesForThis <= 0) break;
 
                 int s = mainSystems.Count;
-                var psObj = new GameObject($"PS_{s}");
+                var psObj = new GameObject($"{PSObjPrefix}_{s}");
                 psObj.transform.SetParent(particleRoot.transform);
                 psObj.transform.localPosition = Vector3.zero;
 
@@ -651,7 +681,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var ps = mainSystems[s];
                 var psObj = mainObjects[s];
 
-                var subEmitterObj = new GameObject($"SubEmitter_{s}");
+                var subEmitterObj = new GameObject($"{SubEmitterPrefix}_{s}");
                 subEmitterObj.transform.SetParent(psObj.transform);
                 subEmitterObj.transform.localPosition = Vector3.zero;
                 var subPs = subEmitterObj.AddComponent<ParticleSystem>();
@@ -901,13 +931,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static Light[] CreateLightComponents(GameObject root, int lightCount)
         {
-            var lightRoot = new GameObject("LightDefense");
+            var lightRoot = new GameObject(LightRootName);
             lightRoot.transform.SetParent(root.transform);
             var lightList = new List<Light>(lightCount);
 
             for (int i = 0; i < lightCount; i++)
             {
-                var lightObj = new GameObject($"L_{i}");
+                var lightObj = new GameObject($"{LightPrefix}_{i}");
                 lightObj.transform.SetParent(lightRoot.transform);
                 lightObj.transform.localPosition = Vector3.zero;
 
@@ -944,7 +974,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static Mesh GenerateSphereMesh(int targetVertexCount)
         {
-            var mesh = new Mesh { name = "ASS_Mesh" };
+            var mesh = new Mesh { name = DefenseMeshName };
 
             int subdivisions = Mathf.CeilToInt(Mathf.Sqrt(targetVertexCount / 6f));
             subdivisions = Mathf.Clamp(subdivisions, 2, 200);
@@ -1020,7 +1050,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static Mesh GenerateFanMesh(int triangleCount)
         {
             triangleCount = Mathf.Max(1, triangleCount);
-            var mesh = new Mesh { name = "ASS_Mesh" };
+            var mesh = new Mesh { name = DefenseMeshName };
 
             int vertexCount = triangleCount + 2;
             var vertices = new Vector3[vertexCount];
@@ -1067,12 +1097,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static void CreatePhysXComponents(GameObject root, int rigidbodyCount, int colliderCount)
         {
-            var physXRoot = new GameObject("PhysXDefense");
+            var physXRoot = new GameObject(PhysXRootName);
             physXRoot.transform.SetParent(root.transform);
 
             for (int i = 0; i < rigidbodyCount; i++)
             {
-                var rbObj = new GameObject($"Rigidbody_{i}");
+                var rbObj = new GameObject($"{RBPrefix}_{i}");
                 rbObj.transform.SetParent(physXRoot.transform);
                 rbObj.transform.localPosition = Vector3.zero;
 
@@ -1088,7 +1118,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 int collidersPerBody = Mathf.Max(1, colliderCount / Mathf.Max(1, rigidbodyCount));
                 for (int j = 0; j < collidersPerBody; j++)
                 {
-                    var colliderObj = new GameObject($"Collider_{j}");
+                    var colliderObj = new GameObject($"{ColliderPrefix}_{j}");
                     colliderObj.transform.SetParent(rbObj.transform);
                     colliderObj.transform.localPosition = Vector3.zero;
 
@@ -1109,7 +1139,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static void CreateClothComponents(GameObject root, int clothCount)
         {
-            var clothRoot = new GameObject("ClothDefense");
+            var clothRoot = new GameObject(ClothRootName);
             clothRoot.transform.SetParent(root.transform);
 
             var clothShader = Shader.Find("Standard");
@@ -1117,7 +1147,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             for (int c = 0; c < clothCount; c++)
             {
-                var clothObj = new GameObject($"Cloth_{c}");
+                var clothObj = new GameObject($"{ClothPrefix}_{c}");
                 clothObj.transform.SetParent(clothRoot.transform);
                 clothObj.transform.localPosition = Vector3.zero;
 
@@ -1203,10 +1233,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var defenseShader = GetDefenseShader();
             if (defenseShader == null) return;
 
-            var shaderRoot = new GameObject("ShaderDefense");
+            var shaderRoot = new GameObject(ShaderRootName);
             shaderRoot.transform.SetParent(root.transform);
 
-            var mesh = new Mesh { name = "ASS_ShaderMesh" };
+            var mesh = new Mesh { name = ShaderMeshName };
             mesh.vertices = new Vector3[] {
                 new Vector3(-0.5f, -0.5f, 0),
                 new Vector3(0.5f, -0.5f, 0),
@@ -1222,11 +1252,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Vector3.back, Vector3.back, Vector3.back, Vector3.back
             };
             mesh.RecalculateBounds();
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 100000f);
 
             for (int i = 0; i < count; i++)
             {
-                var obj = new GameObject($"ShaderMat_{i}");
+                var obj = new GameObject($"{ShaderMatPrefix}_{i}");
                 obj.transform.SetParent(shaderRoot.transform);
                 obj.transform.localPosition = Vector3.zero;
 
@@ -1245,8 +1274,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static Shader GetDefenseShader()
         {
-            var shader = Shader.Find("UnityBox/ASS_DefenseShader");
+            var shader = Obfuscator.GetObfuscatedShader("UnityBox/ASS_DefenseShader");
             if (shader != null) return shader;
+
+            // 回退：直接查找原始 Shader
+            shader = Shader.Find("UnityBox/ASS_DefenseShader");
+            if (shader != null) return shader;
+
             Debug.LogWarning("[ASS] Defense shader not found, falling back to Standard");
             return Shader.Find("Standard");
         }
