@@ -111,7 +111,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdToConfirm = Utils.CreateTransition(holdingState, 
                     isLastStep ? successState : confirmedState,
                     hasExitTime: true, exitTime: holdExitTime);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 holdToConfirm.duration = 0f;
 
                 var holdTimeout = Utils.CreateTransition(holdingState, waitState,
@@ -124,14 +125,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 holdingError.exitTime = holdExitTime;
                 holdingError.duration = 0f;
                 holdingError.hasFixedDuration = true;
-                holdingError.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
+                holdingError.AddCondition(AnimatorConditionMode.Less, gestureValue, gestureParam);
+                holdingError.AddCondition(AnimatorConditionMode.Greater, gestureValue, gestureParam);
 
                 if (i == 0)
                 {
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                    firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 }
                 else
                 {
@@ -154,7 +157,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 confirmedStay.hasExitTime = false;
                 confirmedStay.duration = 0f;
                 confirmedStay.hasFixedDuration = true;
-                confirmedStay.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                confirmedStay.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                confirmedStay.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
 
                 // Error from confirmedState: check against the NEXT expected gesture (password[i+1]).
                 // The confirmedRestartTransition (to password[0]) is added before these error
@@ -266,7 +270,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.Equals, expectedGesture, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1, gestureParam);
+            transition.AddCondition(AnimatorConditionMode.Less, expectedGesture + 1, gestureParam);
         }
     }
 }
