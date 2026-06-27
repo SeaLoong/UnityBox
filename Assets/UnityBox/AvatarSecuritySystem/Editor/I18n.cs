@@ -1,85 +1,59 @@
 using UnityEngine;
 using System.Collections.Generic;
-
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
-    /// <summary>
-    /// ASS 国际化系统
-    /// 支持中文、英文、日文
-    /// </summary>
     public static class I18n
     {
         private static SystemLanguage _currentLanguage;
         private static Dictionary<string, Dictionary<SystemLanguage, string>> _translations;
-
         static I18n()
         {
             _currentLanguage = DetectSystemLanguage();
             InitializeTranslations();
         }
-
-        /// <summary>
-        /// 获取翻译文本
-        /// </summary>
         public static string T(string key)
         {
             if (!_translations.TryGetValue(key, out var languageDict))
             {
                 return FormatMissingKey(key);
             }
-
             return GetLocalizedText(languageDict);
         }
-
         private static string GetLocalizedText(Dictionary<SystemLanguage, string> languageDict)
         {
             if (languageDict.TryGetValue(_currentLanguage, out var text))
             {
                 return text;
             }
-
             if (IsChinese(_currentLanguage) && languageDict.TryGetValue(SystemLanguage.ChineseSimplified, out var simplifiedText))
             {
                 return simplifiedText;
             }
-
             if (languageDict.TryGetValue(SystemLanguage.English, out var englishText))
             {
                 return englishText;
             }
-
             return string.Empty;
         }
-
-        /// <summary>
-        /// 设置语言
-        /// </summary>
         public static void SetLanguage(SystemLanguage language)
         {
             _currentLanguage = language == SystemLanguage.Unknown
                 ? DetectSystemLanguage()
                 : NormalizeLanguage(language);
         }
-
-        /// <summary>
-        /// 获取当前语言
-        /// </summary>
         public static SystemLanguage GetCurrentLanguage()
         {
             return _currentLanguage;
         }
-
         private static SystemLanguage DetectSystemLanguage()
         {
             SystemLanguage detectedLanguage = Application.systemLanguage;
             return IsSupportedLanguage(detectedLanguage) ? detectedLanguage : SystemLanguage.English;
         }
-
         private static SystemLanguage NormalizeLanguage(SystemLanguage language)
         {
             return IsSupportedLanguage(language) ? language : SystemLanguage.English;
         }
-
         private static bool IsSupportedLanguage(SystemLanguage language)
         {
             return language == SystemLanguage.ChineseSimplified ||
@@ -88,23 +62,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                    language == SystemLanguage.English ||
                    language == SystemLanguage.Chinese;
         }
-
         private static bool IsChinese(SystemLanguage language)
         {
             return language == SystemLanguage.ChineseTraditional ||
                    language == SystemLanguage.Chinese;
         }
-
         private static string FormatMissingKey(string key)
         {
             return $"[Missing: {key}]";
         }
-
         private static void InitializeTranslations()
         {
             _translations = new Dictionary<string, Dictionary<SystemLanguage, string>>
             {
-                // ========== 通用 ==========
                 ["common.confirm"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Confirm" },
@@ -123,8 +93,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "警告" },
                     { SystemLanguage.Japanese, "警告" }
                 },
-
-                // ========== 语言选择 ==========
                 ["language.title"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Language" },
@@ -161,8 +129,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "界面语言 / UI Language" },
                     { SystemLanguage.Japanese, "UI言語 / 界面语言" }
                 },
-
-                // ========== 系统名称 ==========
                 ["system.name"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Avatar Security System" },
@@ -181,8 +147,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "防盗模密码保护系统" },
                     { SystemLanguage.Japanese, "盗難防止パスワード保護システム" }
                 },
-
-                // ========== 密码配置 ==========
                 ["password.config"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Password Configuration" },
@@ -219,7 +183,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "手势密码序列，使用1-7表示VRChat手势:\n1=Fist, 2=HandOpen, 3=Fingerpoint\n4=Victory, 5=RockNRoll, 6=HandGun, 7=ThumbsUp" },
                     { SystemLanguage.Japanese, "ジェスチャーパスワードシーケンス、1-7でVRChatジェスチャーを表す:\n1=Fist, 2=HandOpen, 3=Fingerpoint\n4=Victory, 5=RockNRoll, 6=HandGun, 7=ThumbsUp" }
                 },
-                // ========== 手势识别配置 ==========
                 ["gesture.config"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Gesture Recognition" },
@@ -250,7 +213,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "容错时间 (秒)" },
                     { SystemLanguage.Japanese, "エラー許容時間 (秒)" }
                 },
-
                 ["password.sequence"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Gesture Password Sequence:" },
@@ -317,8 +279,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "密码为空（0位）。\nASS 已禁用，不会生成保护系统。" },
                     { SystemLanguage.Japanese, "パスワードが空です（0桁）。\nASSは無効化され、保護システムは生成されません。" }
                 },
-
-                // ========== 倒计时配置 ==========
                 ["countdown.config"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Countdown Configuration" },
@@ -343,8 +303,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "警告阈值 (秒)" },
                     { SystemLanguage.Japanese, "警告しきい値 (秒)" }
                 },
-
-                // ========== 防御选项 ==========
                 ["defense.options"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Defense Options" },
@@ -363,8 +321,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "防御机制仅在 VRChat 构建/上传时生成。\n编辑模式和 Play 模式不受任何影响。" },
                     { SystemLanguage.Japanese, "防御メカニズムはVRChatビルド/アップロード時のみ生成されます。\n編集モードやプレイモードには影響しません。" }
                 },
-
-                // ========== 高级选项 ==========
                 ["advanced.config"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Advanced Options" },
@@ -479,8 +435,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象（Avatar 本身）。\n建议保持开启，让盗模者完全看不到模型。" },
                     { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクト（アバター本体）を非表示にします。\n有効にしておくと、盗んだ側からモデルが見えなくなります。" }
                 },
-                
-                // ========== Write Defaults 模式 ==========
                 ["advanced.wd_mode"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Write Defaults Mode" },
@@ -511,8 +465,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "WD Off" },
                     { SystemLanguage.Japanese, "WD Off" }
                 },
-
-                // ========== 混淆选项（v0.5.0）==========
                 ["advanced.obfuscation_section"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Obfuscation" },
@@ -555,8 +507,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "向现有动画层添加额外的动画状态。\n不会影响 Avatar 外观或性能。" },
                     { SystemLanguage.Japanese, "既存のレイヤーに追加のアニメーションステートを追加。\nアバターの外観やパフォーマンスに影響しません。" }
                 },
-
-                // ========== 警告提示 ==========
                 ["advanced.no_feedback_warning"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Overlay and warning sound are both disabled.\nNo visual/audio cue during password input.\n(Password success sound still plays on unlock.)\nCountdown will still trigger defense when expired." },

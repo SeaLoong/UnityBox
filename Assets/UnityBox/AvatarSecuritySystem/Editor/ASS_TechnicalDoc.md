@@ -721,7 +721,7 @@ Inactive ──(IsLocal && TimeUp)──→ Active
 系统级常量，包括：
 
 - 资源路径 (`ASSET_FOLDER = "Assets/UnityBox/AvatarSecuritySystem/Generated"`)
-- 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `SHARED_EMPTY_CLIP_NAME = "ASS_SharedEmpty.anim"`)
+- 生成文件 (`CONTROLLER_NAME = "ASS_Controller.controller"`, `SHARED_EMPTY_CLIP_FILE = "_E.anim"`)
 - 音频资源 (`AUDIO_PASSWORD_SUCCESS`, `AUDIO_COUNTDOWN_WARNING`，直接按文件名从 Resources 加载，导入设置 `loadInBackground=true`)
 - Animator 参数名 (`PARAM_PASSWORD_CORRECT`, `PARAM_TIME_UP`, `PARAM_IS_LOCAL`, `PARAM_GESTURE_LEFT/RIGHT`)
 - 层名称 (`LAYER_LOCK`, `LAYER_PASSWORD_INPUT`, `LAYER_COUNTDOWN`, `LAYER_AUDIO`, `LAYER_DEFENSE`)
@@ -1197,7 +1197,7 @@ ASS 的目标不是"不可破解"，而是**将破解成本提高到超过盗模
 | 加密校验 | 7 | `_PwHashCacheV`, `_ShaDigestA/B`, `_HashSaltB` | 误判为哈希/加密验证 |
 | 网络会话 | 5 | `_SrvChalResp`, `_RemAuthSt`, `_SessTokenV` | 误判需要服务端交互 |
 | 调试遗留 | 4 | `_DevModeFlg`, `_VerbLogLvl`, `_ProfilerEn` | 寻找不存在的开发者入口 |
-| 混淆自指 | 4 | `_DataObscFlg`, `_RandSeedV`, `_NoiseChanV` | 增加元认知怀疑 |
+| 混淆自指 | 4 | `_DataObscFlg`, `_RandSeedV`, `_InterpCacheV` | 增加元认知怀疑 |
 
 与旧版（`_SecurityBypass`, `_PasswordHash` 等全语义命名）相比，
 新版使用缩写和技术后缀（`Chk`, `Flg`, `V`, `St`, `Id`），

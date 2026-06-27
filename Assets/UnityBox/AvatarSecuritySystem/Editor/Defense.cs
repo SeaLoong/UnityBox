@@ -1,10 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
-
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
     public class Defense
@@ -13,7 +12,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly GameObject avatarRoot;
         private readonly ASSComponent config;
         private readonly bool isDebugMode;
-
         public Defense(AnimatorController controller, GameObject avatarRoot, ASSComponent config, bool isDebugMode = false)
         {
             this.controller = controller;
@@ -21,7 +19,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             this.config = config;
             this.isDebugMode = isDebugMode;
         }
-
         private static string ParticleRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ParticleRoot") : "ParticleDefense";
         private static string LightRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("LightRoot") : "LightDefense";
         private static string PhysXRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("PhysXRoot") : "PhysXDefense";
@@ -36,7 +33,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static string ShaderMatPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("SM") : "ShaderMat";
         private static string DefenseMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("Mesh") : "ASS_Mesh";
         private static string ShaderMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ShaderMesh") : "ASS_ShaderMesh";
-
         public void Generate()
         {
             if (config.disableDefense)
@@ -44,22 +40,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.Log("[ASS] 禁用防御选项已勾选，跳过防御层创建（仅测试密码系统）");
                 return;
             }
-
             if (config.defaultEnableDefense)
             {
                 GenerateDefaultDefenseLayer();
                 return;
             }
-
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
-
             var inactiveState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
                 new Vector3(100, 50, 0));
-            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             layer.stateMachine.defaultState = inactiveState;
-
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
                 new Vector3(100, 150, 0));
@@ -71,14 +63,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
-
             var toActive = Utils.CreateTransition(inactiveState, activeState);
             Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
             toActive.AddCondition(AnimatorConditionMode.If, 0, Constants.PARAM_TIME_UP);
-
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
-
             try
             {
                 CreateDefenseComponents();
@@ -88,23 +77,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.LogError($"[ASS] CreateDefenseComponents调用失败: {e.Message}\n{e.StackTrace}");
                 throw;
             }
-
             controller.AddLayer(layer);
         }
-
         private void GenerateDefaultDefenseLayer()
         {
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
-
-            // Inactive（默认）：防御关闭，类似 Lock 的 Remote 状态
             var inactiveState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
                 new Vector3(100, 50, 0));
-            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_NAME);
+            inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             layer.stateMachine.defaultState = inactiveState;
-
-            // Active：防御激活
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
                 new Vector3(100, 150, 0));
@@ -116,15 +99,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
-
-            // Inactive → Active（仅本地且密码未正确时激活防御）
             var toActive = Utils.CreateTransition(inactiveState, activeState);
             Utils.AddIsLocalCondition(toActive, controller, isTrue: true);
             toActive.AddCondition(AnimatorConditionMode.IfNot, 0, Constants.PARAM_PASSWORD_CORRECT);
-
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
-
             try
             {
                 CreateDefenseComponents();
@@ -134,26 +113,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.LogError($"[ASS] CreateDefenseComponents调用失败: {e.Message}\n{e.StackTrace}");
                 throw;
             }
-
             controller.AddLayer(layer);
             Debug.Log("[ASS] Default enable defense: Inactive→Active on IsLocal && !PasswordCorrect");
         }
-
         private GameObject CreateDefenseComponents()
         {
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
                 Object.DestroyImmediate(existingRoot.gameObject);
-
             var root = new GameObject(Constants.GO_DEFENSE_ROOT);
             root.transform.SetParent(avatarRoot.transform);
             root.transform.localPosition = Vector3.zero;
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
             root.SetActive(false);
-
             var parameters = ComputeDefenseParams();
-
             Light[] defenseLights = null;
             if (parameters.LightCount > 0)
             {
@@ -162,16 +136,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (budget > 0)
                     defenseLights = CreateLightComponents(root, Mathf.Min(parameters.LightCount, budget));
             }
-
             if (parameters.ParticleCount > 0)
             {
                 int systemCount;
                 long particleTarget;
                 long meshPolyTarget;
-
-                // Play Mode（isDebugMode=true）下禁用 Overflow，避免生成大量粒子
                 bool useOverflow = config.enableOverflow && !isDebugMode;
-
                 if (useOverflow)
                 {
                     systemCount = parameters.ParticleSystemCount;
@@ -189,11 +159,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         ? 1L  // Play Mode 只生成最小量
                         : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingMeshTris);
                 }
-
                 if (systemCount > 0 && meshPolyTarget > 0)
                     CreateParticleComponents(root, systemCount, particleTarget, meshPolyTarget, defenseLights, useOverflow);
             }
-
             if (parameters.PhysXRigidbodyCount > 0)
             {
                 int existingRB = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
@@ -204,7 +172,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rbBudget),
                         Mathf.Min(parameters.PhysXColliderCount, colBudget));
             }
-
             if (parameters.ClothComponentCount > 0)
             {
                 int existing = avatarRoot.GetComponentsInChildren<Cloth>(true).Length;
@@ -212,14 +179,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (budget > 0)
                     CreateClothComponents(root, Mathf.Min(parameters.ClothComponentCount, budget));
             }
-
             CreateShaderDefenseComponents(root, isDebugMode ? 1 : Constants.SHADER_DEFENSE_COUNT);
-
             return root;
         }
-
-
-
         private readonly struct DefenseParams
         {
             public readonly int PhysXRigidbodyCount;
@@ -228,7 +190,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int ParticleCount;
             public readonly int ParticleSystemCount;
             public readonly int LightCount;
-
             public DefenseParams(
                 int physXRigidbodyCount, int physXColliderCount, int clothComponentCount,
                 int particleCount, int particleSystemCount, int lightCount)
@@ -241,32 +202,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 LightCount = lightCount;
             }
         }
-
         private DefenseParams ComputeDefenseParams()
         {
             if (isDebugMode)
             {
                 return new DefenseParams(1, 1, 1, 1, 1, 1);
             }
-
             uint seedBase = HashAvatarName();
             float physXFrac = 0.1f + (float)(((seedBase ^ 0x9E3779B9) * 0x9E3779B9) % 91) / 100f;
             float clothFrac = 0.1f + (float)(((seedBase ^ 0x85EBCA6B) * 0x85EBCA6B) % 91) / 100f;
-
             int physXCount = Mathf.Max(1, (int)(Constants.RIGIDBODY_MAX_COUNT * physXFrac));
             int physXColCount = Mathf.Max(4, (int)(Constants.RIGIDBODY_COLLIDER_MAX_COUNT * physXFrac));
             int clothCount = Mathf.Max(1, (int)(Constants.CLOTH_MAX_COUNT * clothFrac));
-
             Debug.Log($"[ASS] Defense profile: Particles=MAX, Lights=MAX, "
                 + $"PhysX={physXCount}({physXFrac:P0}), Cloth={clothCount}({clothFrac:P0})");
-
             return new DefenseParams(
                 physXCount, physXColCount, clothCount,
                 Constants.PARTICLE_MAX_COUNT, Constants.PARTICLE_SYSTEM_MAX_COUNT,
                 Constants.LIGHT_MAX_COUNT
             );
         }
-
         private uint HashAvatarName()
         {
             if (string.IsNullOrEmpty(avatarRoot.name)) return 0xDEF;
@@ -274,9 +229,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             foreach (char c in avatarRoot.name) { h ^= c; h *= 0x01000193; }
             return h;
         }
-
-
-
         private static long CountExistingParticleMeshTriangles(GameObject avatarRoot)
         {
             long total = 0;
@@ -284,18 +236,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var r = ps.GetComponent<ParticleSystemRenderer>();
                 if (r == null) continue;
-
                 long trisPerParticle;
                 if (r.renderMode == ParticleSystemRenderMode.Mesh && r.mesh != null)
                     trisPerParticle = r.mesh.triangles.Length / 3;
                 else
                     trisPerParticle = 2;
-
                 total += (long)ps.main.maxParticles * trisPerParticle;
             }
             return total;
         }
-
         private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget, long meshPolyBudget, Light[] lights, bool enableOverflow)
         {
             if (meshPolyBudget <= 0)
@@ -303,18 +252,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.LogWarning("[ASS] Particle mesh polygon budget exhausted by existing avatar particles, skipping particle defense");
                 return;
             }
-
             var particleRoot = new GameObject(ParticleRootName);
             particleRoot.transform.SetParent(root.transform);
-
             int meshTriangles;
             Mesh sharedParticleMesh;
             Mesh sharedSubEmitterMesh;
-
             long idealTrisPerParticle = particleTarget > 0
                 ? meshPolyBudget / particleTarget
                 : meshPolyBudget;
-
             if (idealTrisPerParticle >= 8)
             {
                 int meshSubdivisions = Mathf.Clamp(
@@ -330,10 +275,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sharedParticleMesh = GenerateFanMesh(meshTriangles);
                 sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
             }
-
             if (meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
                 particleTarget = meshPolyBudget / meshTriangles;
-
             const int MATERIAL_POOL_SIZE = 8;
             var particleShaderRef = Shader.Find("Standard") ?? Shader.Find("Particles/Standard Unlit");
             Material[] sharedParticleMats = null;
@@ -352,7 +295,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     mat.EnableKeyword("_EMISSION");
                     mat.SetColor("_EmissionColor", Color.HSVToRGB(hue, 0.5f, 0.3f));
                     sharedParticleMats[m] = mat;
-
                     var trailMat = new Material(particleShaderRef);
                     trailMat.color = Color.HSVToRGB((hue + 0.15f) % 1f, 0.9f, 1f);
                     trailMat.EnableKeyword("_EMISSION");
@@ -360,28 +302,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     sharedTrailMats[m] = trailMat;
                 }
             }
-
             int systemsUsed = 0;
             long particlesUsed = 0;
-
             var mainSystems = new List<ParticleSystem>();
             var mainObjects = new List<GameObject>();
-
             while (systemsUsed < systemBudget && particlesUsed < particleTarget)
             {
                 long remaining = particleTarget - particlesUsed;
                 int remainingSystems = systemBudget - systemsUsed;
                 int particlesForThis = (int)System.Math.Min(remaining / remainingSystems, int.MaxValue);
                 if (particlesForThis <= 0) break;
-
                 int s = mainSystems.Count;
                 var psObj = new GameObject($"{PSObjPrefix}_{s}");
                 psObj.transform.SetParent(particleRoot.transform);
                 psObj.transform.localPosition = Vector3.zero;
-
                 var ps = psObj.AddComponent<ParticleSystem>();
                 var renderer = psObj.GetComponent<ParticleSystemRenderer>();
-
                 var main = ps.main;
                 main.duration = 1f;
                 main.loop = true;
@@ -409,7 +345,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 main.startRotationZ = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
                 main.flipRotation = 1f;
                 main.ringBufferMode = ParticleSystemRingBufferMode.PauseUntilReplaced;
-
                 var emission = ps.emission;
                 emission.enabled = true;
                 emission.rateOverTime = particlesForThis * 10f;
@@ -418,7 +353,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     new ParticleSystem.Burst(0f, (short)Mathf.Min(particlesForThis, short.MaxValue), (short)Mathf.Min(particlesForThis, short.MaxValue), 10, 0.1f),
                     new ParticleSystem.Burst(0.5f, (short)Mathf.Min(particlesForThis / 2, short.MaxValue), (short)Mathf.Min(particlesForThis, short.MaxValue), 10, 0.1f)
                 });
-
                 var shape = ps.shape;
                 shape.enabled = true;
                 shape.shapeType = (s % 3 == 0) ? ParticleSystemShapeType.Sphere :
@@ -428,7 +362,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 shape.angle = 45f;
                 shape.randomDirectionAmount = 0.5f;
                 shape.randomPositionAmount = 1f;
-
                 var velocityOverLifetime = ps.velocityOverLifetime;
                 velocityOverLifetime.enabled = true;
                 velocityOverLifetime.space = ParticleSystemSimulationSpace.World;
@@ -440,14 +373,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(-1f, 1f);
                 velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-
                 var forceOverLifetime = ps.forceOverLifetime;
                 forceOverLifetime.enabled = true;
                 forceOverLifetime.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
                 forceOverLifetime.y = new ParticleSystem.MinMaxCurve(-1f, 3f);
                 forceOverLifetime.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
                 forceOverLifetime.randomized = true;
-
                 var colorOverLifetime = ps.colorOverLifetime;
                 colorOverLifetime.enabled = true;
                 var gradient = new Gradient();
@@ -465,21 +396,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                 );
                 colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
-
                 var sizeOverLifetime = ps.sizeOverLifetime;
                 sizeOverLifetime.enabled = true;
                 sizeOverLifetime.separateAxes = true;
                 sizeOverLifetime.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
                 sizeOverLifetime.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.3f, 1, 1.2f));
                 sizeOverLifetime.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
-
                 var rotationOverLifetime = ps.rotationOverLifetime;
                 rotationOverLifetime.enabled = true;
                 rotationOverLifetime.separateAxes = true;
                 rotationOverLifetime.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 rotationOverLifetime.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
-
                 var noise = ps.noise;
                 noise.enabled = true;
                 noise.strength = new ParticleSystem.MinMaxCurve(1f, 3f);
@@ -497,7 +425,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 noise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 noise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 noise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-
                 var collision = ps.collision;
                 collision.enabled = true;
                 collision.type = ParticleSystemCollisionType.World;
@@ -514,7 +441,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 collision.multiplyColliderForceByCollisionAngle = true;
                 collision.multiplyColliderForceByParticleSize = true;
                 collision.multiplyColliderForceByParticleSpeed = true;
-
                 var trails = ps.trails;
                 trails.enabled = true;
                 trails.mode = ParticleSystemTrailMode.PerParticle;
@@ -533,7 +459,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var trailWidthCurve = new AnimationCurve(
                     new Keyframe(0f, 1f), new Keyframe(0.5f, 0.5f), new Keyframe(1f, 0f));
                 trails.widthOverTrail = new ParticleSystem.MinMaxCurve(1f, trailWidthCurve);
-
                 var textureSheet = ps.textureSheetAnimation;
                 textureSheet.enabled = true;
                 textureSheet.mode = ParticleSystemAnimationMode.Grid;
@@ -543,7 +468,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 textureSheet.frameOverTime = new ParticleSystem.MinMaxCurve(0f, 1f);
                 textureSheet.startFrame = new ParticleSystem.MinMaxCurve(0f, 15f);
                 textureSheet.cycleCount = 3;
-
                 var limitVelocity = ps.limitVelocityOverLifetime;
                 limitVelocity.enabled = true;
                 limitVelocity.separateAxes = true;
@@ -554,17 +478,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 limitVelocity.drag = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 limitVelocity.multiplyDragByParticleSize = true;
                 limitVelocity.multiplyDragByParticleVelocity = true;
-
                 var inheritVelocity = ps.inheritVelocity;
                 inheritVelocity.enabled = true;
                 inheritVelocity.mode = ParticleSystemInheritVelocityMode.Current;
                 inheritVelocity.curve = new ParticleSystem.MinMaxCurve(0.5f);
-
                 var lifetimeBySpeed = ps.lifetimeByEmitterSpeed;
                 lifetimeBySpeed.enabled = true;
                 lifetimeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
                 lifetimeBySpeed.range = new Vector2(0f, 10f);
-
                 var colorBySpeed = ps.colorBySpeed;
                 colorBySpeed.enabled = true;
                 var speedGradient = new Gradient();
@@ -581,7 +502,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 );
                 colorBySpeed.color = new ParticleSystem.MinMaxGradient(speedGradient);
                 colorBySpeed.range = new Vector2(0f, 10f);
-
                 var sizeBySpeed = ps.sizeBySpeed;
                 sizeBySpeed.enabled = true;
                 sizeBySpeed.separateAxes = true;
@@ -589,7 +509,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
                 sizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
                 sizeBySpeed.range = new Vector2(0f, 10f);
-
                 var rotationBySpeed = ps.rotationBySpeed;
                 rotationBySpeed.enabled = true;
                 rotationBySpeed.separateAxes = true;
@@ -597,14 +516,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 rotationBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 rotationBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 rotationBySpeed.range = new Vector2(0f, 10f);
-
                 var externalForces = ps.externalForces;
                 externalForces.enabled = true;
                 externalForces.multiplier = 10000000f;
                 externalForces.multiplierCurve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 1f, 1, 10000000f));
-
                 Light particleLight = (lights != null && lights.Length > 0) ? lights[s % lights.Length] : null;
-
                 var lightsModule = ps.lights;
                 if (particleLight != null)
                 {
@@ -631,7 +547,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 customData.SetVector(ParticleSystemCustomData.Custom2, 1, new ParticleSystem.MinMaxCurve(0f, 1f));
                 customData.SetVector(ParticleSystemCustomData.Custom2, 2, new ParticleSystem.MinMaxCurve(0f, 1f));
                 customData.SetVector(ParticleSystemCustomData.Custom2, 3, new ParticleSystem.MinMaxCurve(0f, 1f));
-
                 var trigger = ps.trigger;
                 trigger.enabled = true;
                 trigger.inside = ParticleSystemOverlapAction.Callback;
@@ -639,19 +554,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 trigger.enter = ParticleSystemOverlapAction.Callback;
                 trigger.exit = ParticleSystemOverlapAction.Callback;
                 trigger.radiusScale = 1f;
-
                 if (renderer != null)
                 {
                     renderer.renderMode = ParticleSystemRenderMode.Mesh;
                     renderer.mesh = sharedParticleMesh;
                     renderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
-
                     if (sharedParticleMats != null)
                     {
                         renderer.sharedMaterial = sharedParticleMats[s % MATERIAL_POOL_SIZE];
                         renderer.trailMaterial = sharedTrailMats[s % MATERIAL_POOL_SIZE];
                     }
-
                     renderer.maxParticleSize = 5f;
                     renderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                     renderer.receiveShadows = true;
@@ -663,13 +575,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     renderer.sortMode = ParticleSystemSortMode.Distance;
                     renderer.enableGPUInstancing = true;
                 }
-
                 mainSystems.Add(ps);
                 mainObjects.Add(psObj);
                 systemsUsed++;
                 particlesUsed += particlesForThis;
             }
-
             int mainCount = mainSystems.Count;
             for (int s = 0; s < mainCount && systemsUsed < systemBudget && particlesUsed < particleTarget; s++)
             {
@@ -677,16 +587,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 int remainingSubs = Mathf.Min(mainCount - s, systemBudget - systemsUsed);
                 int subParticles = (int)System.Math.Min(remaining / Mathf.Max(1, remainingSubs), int.MaxValue);
                 if (subParticles <= 0) break;
-
                 var ps = mainSystems[s];
                 var psObj = mainObjects[s];
-
                 var subEmitterObj = new GameObject($"{SubEmitterPrefix}_{s}");
                 subEmitterObj.transform.SetParent(psObj.transform);
                 subEmitterObj.transform.localPosition = Vector3.zero;
                 var subPs = subEmitterObj.AddComponent<ParticleSystem>();
                 var subRenderer = subEmitterObj.GetComponent<ParticleSystemRenderer>();
-
                 var subMain = subPs.main;
                 subMain.duration = 2f;
                 subMain.loop = true;
@@ -710,7 +617,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subMain.startRotationZ = new ParticleSystem.MinMaxCurve(-Mathf.PI, Mathf.PI);
                 subMain.flipRotation = 1f;
                 subMain.ringBufferMode = ParticleSystemRingBufferMode.PauseUntilReplaced;
-
                 var subEmission = subPs.emission;
                 subEmission.enabled = true;
                 subEmission.rateOverTime = subParticles * 10f;
@@ -718,14 +624,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subEmission.SetBursts(new ParticleSystem.Burst[] {
                     new ParticleSystem.Burst(0f, (short)Mathf.Min(subParticles, short.MaxValue), (short)Mathf.Min(subParticles, short.MaxValue), 10, 0.1f)
                 });
-
                 var subShape = subPs.shape;
                 subShape.enabled = true;
                 subShape.shapeType = ParticleSystemShapeType.Sphere;
                 subShape.radius = 2f;
                 subShape.randomDirectionAmount = 0.5f;
                 subShape.randomPositionAmount = 1f;
-
                 var subVelocity = subPs.velocityOverLifetime;
                 subVelocity.enabled = true;
                 subVelocity.space = ParticleSystemSimulationSpace.World;
@@ -735,14 +639,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 subVelocity.orbitalY = new ParticleSystem.MinMaxCurve(0.5f, 2f);
                 subVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-
                 var subForce = subPs.forceOverLifetime;
                 subForce.enabled = true;
                 subForce.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
                 subForce.y = new ParticleSystem.MinMaxCurve(-1f, 3f);
                 subForce.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
                 subForce.randomized = true;
-
                 var subColor = subPs.colorOverLifetime;
                 subColor.enabled = true;
                 var subGradient = new Gradient();
@@ -759,21 +661,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                 );
                 subColor.color = new ParticleSystem.MinMaxGradient(subGradient);
-
                 var subSize = subPs.sizeOverLifetime;
                 subSize.enabled = true;
                 subSize.separateAxes = true;
                 subSize.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
                 subSize.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.3f, 1, 1.2f));
                 subSize.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 0.2f, 1, 1.5f));
-
                 var subRotation = subPs.rotationOverLifetime;
                 subRotation.enabled = true;
                 subRotation.separateAxes = true;
                 subRotation.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 subRotation.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 subRotation.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
-
                 var subNoise = subPs.noise;
                 subNoise.enabled = true;
                 subNoise.strength = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
@@ -789,7 +688,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subNoise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-
                 var subCollision = subPs.collision;
                 subCollision.enabled = true;
                 subCollision.type = ParticleSystemCollisionType.World;
@@ -799,7 +697,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subCollision.enableDynamicColliders = true;
                 subCollision.collidesWith = ~0;
                 subCollision.sendCollisionMessages = true;
-
                 var subTrails = subPs.trails;
                 subTrails.enabled = true;
                 subTrails.mode = ParticleSystemTrailMode.PerParticle;
@@ -812,7 +709,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subTrails.sizeAffectsWidth = true;
                 subTrails.inheritParticleColor = true;
                 subTrails.generateLightingData = true;
-
                 var subTexSheet = subPs.textureSheetAnimation;
                 subTexSheet.enabled = true;
                 subTexSheet.mode = ParticleSystemAnimationMode.Grid;
@@ -820,7 +716,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subTexSheet.numTilesY = 4;
                 subTexSheet.animation = ParticleSystemAnimationType.WholeSheet;
                 subTexSheet.cycleCount = 3;
-
                 var subLimitVel = subPs.limitVelocityOverLifetime;
                 subLimitVel.enabled = true;
                 subLimitVel.separateAxes = true;
@@ -828,21 +723,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subLimitVel.limitY = new ParticleSystem.MinMaxCurve(5f);
                 subLimitVel.limitZ = new ParticleSystem.MinMaxCurve(5f);
                 subLimitVel.dampen = 0.5f;
-
                 var subInheritVel = subPs.inheritVelocity;
                 subInheritVel.enabled = true;
                 subInheritVel.mode = ParticleSystemInheritVelocityMode.Current;
                 subInheritVel.curve = new ParticleSystem.MinMaxCurve(0.5f);
-
                 var subLifeBySpeed = subPs.lifetimeByEmitterSpeed;
                 subLifeBySpeed.enabled = true;
                 subLifeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
                 subLifeBySpeed.range = new Vector2(0f, 10f);
-
                 var subColorBySpeed = subPs.colorBySpeed;
                 subColorBySpeed.enabled = true;
                 subColorBySpeed.range = new Vector2(0f, 10f);
-
                 var subSizeBySpeed = subPs.sizeBySpeed;
                 subSizeBySpeed.enabled = true;
                 subSizeBySpeed.separateAxes = true;
@@ -850,7 +741,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subSizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
                 subSizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
                 subSizeBySpeed.range = new Vector2(0f, 10f);
-
                 var subRotBySpeed = subPs.rotationBySpeed;
                 subRotBySpeed.enabled = true;
                 subRotBySpeed.separateAxes = true;
@@ -858,11 +748,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subRotBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 subRotBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 subRotBySpeed.range = new Vector2(0f, 10f);
-
                 var subExtForces = subPs.externalForces;
                 subExtForces.enabled = true;
                 subExtForces.multiplier = 10000000f;
-
                 Light subParticleLight = (lights != null && lights.Length > 0) ? lights[(s + mainCount) % lights.Length] : null;
                 var subLightsModule = subPs.lights;
                 if (subParticleLight != null)
@@ -878,7 +766,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subLightsModule.intensityMultiplier = 10000000f;
                     subLightsModule.maxLights = enableOverflow ? int.MaxValue : subParticles;
                 }
-
                 var subCustomData = subPs.customData;
                 subCustomData.enabled = true;
                 subCustomData.SetMode(ParticleSystemCustomData.Custom1, ParticleSystemCustomDataMode.Vector);
@@ -886,26 +773,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subCustomData.SetVector(ParticleSystemCustomData.Custom1, 1, new ParticleSystem.MinMaxCurve(-1f, 1f));
                 subCustomData.SetVector(ParticleSystemCustomData.Custom1, 2, new ParticleSystem.MinMaxCurve(-1f, 1f));
                 subCustomData.SetVector(ParticleSystemCustomData.Custom1, 3, new ParticleSystem.MinMaxCurve(-1f, 1f));
-
                 var subTrigger = subPs.trigger;
                 subTrigger.enabled = true;
                 subTrigger.inside = ParticleSystemOverlapAction.Callback;
                 subTrigger.outside = ParticleSystemOverlapAction.Callback;
                 subTrigger.enter = ParticleSystemOverlapAction.Callback;
                 subTrigger.exit = ParticleSystemOverlapAction.Callback;
-
                 if (subRenderer != null)
                 {
                     subRenderer.renderMode = ParticleSystemRenderMode.Mesh;
                     subRenderer.mesh = sharedSubEmitterMesh;
                     subRenderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
-
                     if (sharedParticleMats != null)
                     {
                         subRenderer.sharedMaterial = sharedParticleMats[(s + mainCount) % MATERIAL_POOL_SIZE];
                         subRenderer.trailMaterial = sharedTrailMats[(s + mainCount) % MATERIAL_POOL_SIZE];
                     }
-
                     subRenderer.maxParticleSize = 5f;
                     subRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                     subRenderer.receiveShadows = true;
@@ -917,32 +800,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subRenderer.sortMode = ParticleSystemSortMode.Distance;
                     subRenderer.enableGPUInstancing = true;
                 }
-
                 var subEmitters = ps.subEmitters;
                 subEmitters.enabled = true;
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Collision, ParticleSystemSubEmitterProperties.InheritColor);
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Death, ParticleSystemSubEmitterProperties.InheritColor | ParticleSystemSubEmitterProperties.InheritSize);
-
                 systemsUsed++;
                 particlesUsed += subParticles;
             }
-
         }
-
         private static Light[] CreateLightComponents(GameObject root, int lightCount)
         {
             var lightRoot = new GameObject(LightRootName);
             lightRoot.transform.SetParent(root.transform);
             var lightList = new List<Light>(lightCount);
-
             for (int i = 0; i < lightCount; i++)
             {
                 var lightObj = new GameObject($"{LightPrefix}_{i}");
                 lightObj.transform.SetParent(lightRoot.transform);
                 lightObj.transform.localPosition = Vector3.zero;
-
                 var light = lightObj.AddComponent<Light>();
-
                 if (i % 2 == 0)
                 {
                     light.type = LightType.Point;
@@ -953,7 +829,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     light.spotAngle = 179f;
                     light.innerSpotAngle = 170f;
                 }
-
                 light.intensity = 10000000f;
                 light.bounceIntensity = 10000000f;
                 light.range = 10000000f;
@@ -968,32 +843,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 light.cullingMask = ~0;
                 lightList.Add(light);
             }
-
             return lightList.ToArray();
         }
-
         private static Mesh GenerateSphereMesh(int targetVertexCount)
         {
             var mesh = new Mesh { name = DefenseMeshName };
-
             int subdivisions = Mathf.CeilToInt(Mathf.Sqrt(targetVertexCount / 6f));
             subdivisions = Mathf.Clamp(subdivisions, 2, 200);
-
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
-
             for (int lat = 0; lat <= subdivisions; lat++)
             {
                 float theta = lat * Mathf.PI / subdivisions;
                 float sinTheta = Mathf.Sin(theta);
                 float cosTheta = Mathf.Cos(theta);
-
                 for (int lon = 0; lon <= subdivisions; lon++)
                 {
                     float phi = lon * 2 * Mathf.PI / subdivisions;
                     float sinPhi = Mathf.Sin(phi);
                     float cosPhi = Mathf.Cos(phi);
-
                     Vector3 vertex = new Vector3(
                         cosPhi * sinTheta,
                         cosTheta,
@@ -1002,27 +870,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     vertices.Add(vertex);
                 }
             }
-
             for (int lat = 0; lat < subdivisions; lat++)
             {
                 for (int lon = 0; lon < subdivisions; lon++)
                 {
                     int first = (lat * (subdivisions + 1)) + lon;
                     int second = first + subdivisions + 1;
-
                     triangles.Add(first);
                     triangles.Add(second);
                     triangles.Add(first + 1);
-
                     triangles.Add(second);
                     triangles.Add(second + 1);
                     triangles.Add(first + 1);
                 }
             }
-
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0);
-
             var uv = new List<Vector2>(vertices.Count);
             var uv2 = new List<Vector2>(vertices.Count);
             var colors = new List<Color>(vertices.Count);
@@ -1036,33 +899,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.uv = uv.ToArray();
             mesh.uv2 = uv2.ToArray();
             mesh.colors = colors.ToArray();
-
             mesh.RecalculateNormals();
 #if UNITY_2019_1_OR_NEWER
             mesh.RecalculateTangents();
 #endif
             mesh.RecalculateBounds();
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
-
             return mesh;
         }
-
         private static Mesh GenerateFanMesh(int triangleCount)
         {
             triangleCount = Mathf.Max(1, triangleCount);
             var mesh = new Mesh { name = DefenseMeshName };
-
             int vertexCount = triangleCount + 2;
             var vertices = new Vector3[vertexCount];
             var normals = new Vector3[vertexCount];
             var uvs = new Vector2[vertexCount];
             var colors = new Color[vertexCount];
-
             vertices[0] = Vector3.zero;
             normals[0] = Vector3.back;
             uvs[0] = new Vector2(0.5f, 0.5f);
             colors[0] = Color.white;
-
             for (int i = 0; i <= triangleCount; i++)
             {
                 float angle = i * 2f * Mathf.PI / triangleCount;
@@ -1073,7 +930,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 uvs[i + 1] = new Vector2((cos + 1f) * 0.5f, (sin + 1f) * 0.5f);
                 colors[i + 1] = Color.HSVToRGB((float)i / triangleCount, 1f, 1f);
             }
-
             var tris = new int[triangleCount * 3];
             for (int i = 0; i < triangleCount; i++)
             {
@@ -1081,7 +937,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 tris[i * 3 + 1] = i + 1;
                 tris[i * 3 + 2] = i + 2;
             }
-
             mesh.vertices = vertices;
             mesh.triangles = tris;
             mesh.normals = normals;
@@ -1089,23 +944,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.colors = colors;
             mesh.RecalculateBounds();
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
-
             return mesh;
         }
-
-        
-
         private static void CreatePhysXComponents(GameObject root, int rigidbodyCount, int colliderCount)
         {
             var physXRoot = new GameObject(PhysXRootName);
             physXRoot.transform.SetParent(root.transform);
-
             for (int i = 0; i < rigidbodyCount; i++)
             {
                 var rbObj = new GameObject($"{RBPrefix}_{i}");
                 rbObj.transform.SetParent(physXRoot.transform);
                 rbObj.transform.localPosition = Vector3.zero;
-
                 var rb = rbObj.AddComponent<Rigidbody>();
                 rb.mass = 100f;
                 rb.drag = 50f;
@@ -1114,14 +963,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 rb.isKinematic = false;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 rb.constraints = RigidbodyConstraints.FreezeAll;
-
                 int collidersPerBody = Mathf.Max(1, colliderCount / Mathf.Max(1, rigidbodyCount));
                 for (int j = 0; j < collidersPerBody; j++)
                 {
                     var colliderObj = new GameObject($"{ColliderPrefix}_{j}");
                     colliderObj.transform.SetParent(rbObj.transform);
                     colliderObj.transform.localPosition = Vector3.zero;
-
                     if (j % 2 == 0)
                     {
                         var boxCollider = colliderObj.AddComponent<BoxCollider>();
@@ -1134,32 +981,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                 }
             }
-
         }
-
         private static void CreateClothComponents(GameObject root, int clothCount)
         {
             var clothRoot = new GameObject(ClothRootName);
             clothRoot.transform.SetParent(root.transform);
-
             var clothShader = Shader.Find("Standard");
             Material sharedClothMat = clothShader != null ? new Material(clothShader) { color = Color.gray } : null;
-
             for (int c = 0; c < clothCount; c++)
             {
                 var clothObj = new GameObject($"{ClothPrefix}_{c}");
                 clothObj.transform.SetParent(clothRoot.transform);
                 clothObj.transform.localPosition = Vector3.zero;
-
                 var meshFilter = clothObj.AddComponent<MeshFilter>();
                 var mesh = new Mesh { name = $"ClothMesh_{c}" };
-
                 int verticesPerCloth = Constants.TOTAL_CLOTH_VERTICES_MAX / Mathf.Max(1, clothCount);
                 int gridSizePlus1 = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(verticesPerCloth)), 3, 500);
                 int gridSize = gridSizePlus1 - 1;
                 Vector3[] vertices = new Vector3[gridSizePlus1 * gridSizePlus1];
                 int[] triangles = new int[gridSize * gridSize * 6];
-
                 for (int x = 0; x <= gridSize; x++)
                 {
                     for (int y = 0; y <= gridSize; y++)
@@ -1168,7 +1008,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         vertices[idx] = new Vector3((float)x / gridSize, (float)y / gridSize, 0);
                     }
                 }
-
                 int triIdx = 0;
                 for (int x = 0; x < gridSize; x++)
                 {
@@ -1178,25 +1017,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         int v1 = v0 + 1;
                         int v2 = v0 + gridSizePlus1;
                         int v3 = v2 + 1;
-
                         triangles[triIdx++] = v0;
                         triangles[triIdx++] = v2;
                         triangles[triIdx++] = v1;
-
                         triangles[triIdx++] = v1;
                         triangles[triIdx++] = v2;
                         triangles[triIdx++] = v3;
                     }
                 }
-
                 mesh.vertices = vertices;
                 mesh.triangles = triangles;
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
                 mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
-
                 meshFilter.mesh = mesh;
-
                 var meshRenderer = clothObj.AddComponent<SkinnedMeshRenderer>();
                 meshRenderer.sharedMesh = mesh;
                 meshRenderer.sharedMaterial = sharedClothMat;
@@ -1204,7 +1038,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 meshRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                 meshRenderer.receiveShadows = true;
                 meshRenderer.allowOcclusionWhenDynamic = false;
-
                 var cloth = clothObj.AddComponent<Cloth>();
 #if UNITY_2021_2_OR_NEWER
                 cloth.clothSolverFrequency = 240f;
@@ -1225,17 +1058,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 cloth.useContinuousCollision = true;
 #endif
             }
-
         }
-
         private static void CreateShaderDefenseComponents(GameObject root, int count)
         {
             var defenseShader = GetDefenseShader();
             if (defenseShader == null) return;
-
             var shaderRoot = new GameObject(ShaderRootName);
             shaderRoot.transform.SetParent(root.transform);
-
             var mesh = new Mesh { name = ShaderMeshName };
             mesh.vertices = new Vector3[] {
                 new Vector3(-0.5f, -0.5f, 0),
@@ -1252,16 +1081,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Vector3.back, Vector3.back, Vector3.back, Vector3.back
             };
             mesh.RecalculateBounds();
-
             for (int i = 0; i < count; i++)
             {
                 var obj = new GameObject($"{ShaderMatPrefix}_{i}");
                 obj.transform.SetParent(shaderRoot.transform);
                 obj.transform.localPosition = Vector3.zero;
-
                 var mf = obj.AddComponent<MeshFilter>();
                 mf.sharedMesh = mesh;
-
                 var mr = obj.AddComponent<MeshRenderer>();
                 var mat = new Material(defenseShader);
                 mat.renderQueue = 3000;
@@ -1271,20 +1097,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 mr.allowOcclusionWhenDynamic = false;
             }
         }
-
         private static Shader GetDefenseShader()
         {
             var shader = Obfuscator.GetObfuscatedShader("UnityBox/ASS_DefenseShader");
             if (shader != null) return shader;
-
-            // 回退：直接查找原始 Shader
             shader = Shader.Find("UnityBox/ASS_DefenseShader");
             if (shader != null) return shader;
-
             Debug.LogWarning("[ASS] Defense shader not found, falling back to Standard");
             return Shader.Find("Standard");
         }
-
     }
 }
-
