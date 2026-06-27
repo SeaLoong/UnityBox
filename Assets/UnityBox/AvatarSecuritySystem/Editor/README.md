@@ -133,7 +133,7 @@ Avatar 启动
 
 - 构建时自动生成 GPU 防御组件（所有 GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
 - 可通过 `Disable Defense` 选项完全禁用防御生成
-- 可通过 `Enable Overflow` 选项启用溢出模式
+- 可通过 `Enable Overflow` 选项启用溢出模式（仅 Build & Publish 生效，Play Mode 始终最小防御）
 
 ### 步骤 6：高级选项
 
@@ -466,7 +466,7 @@ ASS_Defense Layer
 | 属性             | 类型   | 默认值  | 说明                                                                      |
 | ---------------- | ------ | ------- | ------------------------------------------------------------------------- |
 | `disableDefense` | `bool` | `false` | 禁用防御生成（仅保留密码系统）                                            |
-| `enableOverflow` | `bool` | `true`  | 启用溢出：粒子和Mesh面数按int.MaxValue+1生成，光源maxLights设int.MaxValue |
+| `enableOverflow` | `bool` | `true`  | 启用溢出（Build&Publish）：粒子/Mesh按int.MaxValue+1，maxLights=int.MaxValue。Play Mode忽略此选项 |
 
 #### 锁定选项
 

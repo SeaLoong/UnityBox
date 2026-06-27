@@ -407,9 +407,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.enable_overflow_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Overflow: Particle & mesh counts use int.MaxValue+1 directly\n(bypasses budget calculation), making VRChat stats overflow to -2147483648.\nDisable this for quick testing in Play Mode." },
-                    { SystemLanguage.ChineseSimplified, "溢出模式：粒子总数和Mesh面数直接使用 int.MaxValue+1\n（跳过预算计算），VRChat 统计显示为 -2147483648。\nPlay Mode 测试时可关闭以加快构建。" },
-                    { SystemLanguage.Japanese, "オーバーフローモード：パーティクル数とメッシュポリゴン数を\nint.MaxValue+1 で直接生成（予算計算をスキップ）、\nVRChat統計に -2147483648 と表示。\nPlay Mode でのテスト時は無効にすると構築が速くなります。" }
+                    { SystemLanguage.English, "Overflow: During Build & Publish, particle & mesh counts\nuse int.MaxValue+1 (bypasses budget), stats overflow to -2147483648.\nPlay Mode always uses minimal defense regardless of this setting." },
+                    { SystemLanguage.ChineseSimplified, "溢出模式：构建/上传时粒子数和Mesh面数以 int.MaxValue+1 为目标\n（跳过预算计算），VRChat 统计溢出为 -2147483648。\nPlay Mode 始终使用最小防御（各1个），不受此选项影响。" },
+                    { SystemLanguage.Japanese, "オーバーフローモード：ビルド/アップロード時、パーティクル数と\nメッシュポリゴン数を int.MaxValue+1 で生成（予算計算スキップ）、\n統計が -2147483648 にオーバーフロー。\nPlay Mode では常に最小防御（各1個）、この設定は無視されます。" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {
