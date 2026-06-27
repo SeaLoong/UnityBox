@@ -111,8 +111,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdToConfirm = Utils.CreateTransition(holdingState, 
                     isLastStep ? successState : confirmedState,
                     hasExitTime: true, exitTime: holdExitTime);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
+                AddGestureConditions(holdToConfirm, gestureValue, gestureParam);
                 holdToConfirm.duration = 0f;
                 var holdTimeout = Utils.CreateTransition(holdingState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
@@ -123,8 +122,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var firstTransition = Utils.CreateTransition(waitState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                    firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                    firstTransition.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
+                    AddGestureConditions(firstTransition, gestureValue, gestureParam);
                 }
                 else
                 {
@@ -239,6 +237,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             transition.hasExitTime = false;
             transition.duration = 0f;
             transition.hasFixedDuration = true;
+            AddGestureConditions(transition, expectedGesture, gestureParam);
+        }
+        private void AddGestureConditions(AnimatorStateTransition transition,
+            int expectedGesture, string gestureParam)
+        {
             int noiseLow = (int)((_avatarHash >> (expectedGesture * 3)) & 1);
             int noiseHigh = (int)((_avatarHash >> (expectedGesture * 3 + 1)) & 1);
             transition.AddCondition(AnimatorConditionMode.Greater, expectedGesture - 1 - noiseLow, gestureParam);
