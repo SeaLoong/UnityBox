@@ -164,6 +164,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             var content = File.ReadAllText(destPath);
             content = content.Replace(originalShaderName, obfuscatedName);
+            content = System.Text.RegularExpressions.Regex.Replace(content,
+                @"Name\s+""[^""]*(?:UB_|ASS_)[^""]*""",
+                "Name \"" + obfuscatedFileName + "_PASS\"");
             File.WriteAllText(destPath, content);
             AssetDatabase.Refresh();
             var copiedShader = AssetDatabase.LoadAssetAtPath<Shader>(destPath);
