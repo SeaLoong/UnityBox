@@ -42,6 +42,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteToUnlocked = Utils.CreateTransition(remoteState, unlockedState);
             remoteToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var toCountdown = Utils.CreateTransition(remoteState, countdownState);
+            Utils.AddIsLocalCondition(toCountdown, controller, isTrue: true);
             toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var timeUpState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("TimeUp") : "TimeUp",
@@ -94,6 +95,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteToStop = Utils.CreateTransition(remoteState, stopState);
             remoteToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var toWaiting = Utils.CreateTransition(remoteState, waitingState);
+            Utils.AddIsLocalCondition(toWaiting, controller, isTrue: true);
             toWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var beepState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("WarningBeep") : "WarningBeep",
