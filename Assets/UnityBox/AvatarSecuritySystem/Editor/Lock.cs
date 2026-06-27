@@ -173,6 +173,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Lock") : "ASS_Lock" };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
+            var zeroScale = Vector3.zero;
             
             Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
 
@@ -202,12 +203,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                     string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
                     
+                    // 双重保护：IsActive=false + Scale=0，任一被覆盖另一仍生效
                     clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
-                    Debug.Log($"[ASS] Lock animation: \"{childPath}\" (IsActive=0)");
+                    SetTransformScaleInClip(clip, childPath, zeroScale);
                     hiddenCount++;
                 }
                 
-                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects");
+                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (IsActive=0 + Scale=0)");
             }
 
             return clip;
@@ -255,7 +257,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         
         /// <summary>
         /// WD Off 模式：显式写回所有被修改属性的原始值
-        /// 所有根子对象: 恢复 m_IsActive 为原始值
+        /// 所有根子对象: 恢复 m_IsActive + localScale 为原始值（双重保护）
         /// </summary>
         private void WriteRestoreValues(AnimationClip clip)
         {
@@ -269,11 +271,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
                 
-                clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", child.gameObject.activeSelf ? enableCurve : disableCurve);
+                // 恢复 m_IsActive
+                clip.SetCurve(childPath, typeof(GameObject), "m_IsActive",
+                    child.gameObject.activeSelf ? enableCurve : disableCurve);
+                // 恢复 localScale（双重保护，与 CreateLockClip 中的 Scale=0 配对）
+                SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
             
-            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (preserving original active state)");
+            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (IsActive + Scale)");
         }
 
         /// <summary>
@@ -444,26 +450,45 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private bool IsASSObject(Transform obj)
         {
-            var assObjectNames = new HashSet<string>
-            {
-                GO_OVERLAY, GO_AUDIO_WARNING,
-                GO_AUDIO_SUCCESS, GO_DEFENSE_ROOT
-            };
+            // 静态缓存，避免每次调用重建 HashSet（混淆启用后值不变）
+            if (_assObjectNames == null)
+                _assObjectNames = new HashSet<string>
+                {
+                    GO_OVERLAY, GO_AUDIO_WARNING,
+                    GO_AUDIO_SUCCESS, GO_DEFENSE_ROOT,
+                    GO_OVERLAY_MESH
+                };
             
             Transform current = obj;
             while (current != null && current != avatarRoot.transform)
             {
-                if (assObjectNames.Contains(current.name))
+                if (_assObjectNames.Contains(current.name))
                     return true;
                 current = current.parent;
             }
             return false;
         }
 
+        private HashSet<string> _assObjectNames;
+
         private static void SetGameObjectActiveInClip(AnimationClip clip, string objectPath, bool isActive)
         {
             var curve = AnimationCurve.Constant(0f, 1f / 60f, isActive ? 1f : 0f);
             clip.SetCurve(objectPath, typeof(GameObject), "m_IsActive", curve);
+        }
+
+        /// <summary>
+        /// 在 AnimationClip 中设置 Transform.localScale 为指定值。
+        /// 同时写入 x/y/z 三个分量。
+        /// </summary>
+        private static void SetTransformScaleInClip(AnimationClip clip, string objectPath, Vector3 scale)
+        {
+            var curveX = AnimationCurve.Constant(0f, 1f / 60f, scale.x);
+            var curveY = AnimationCurve.Constant(0f, 1f / 60f, scale.y);
+            var curveZ = AnimationCurve.Constant(0f, 1f / 60f, scale.z);
+            clip.SetCurve(objectPath, typeof(Transform), "m_LocalScale.x", curveX);
+            clip.SetCurve(objectPath, typeof(Transform), "m_LocalScale.y", curveY);
+            clip.SetCurve(objectPath, typeof(Transform), "m_LocalScale.z", curveZ);
         }
 
         #endregion

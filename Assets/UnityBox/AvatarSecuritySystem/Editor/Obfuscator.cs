@@ -112,7 +112,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public static string DummyPath()
         {
             EnsureInitialized();
-            if (!_enabled) return "__ASS_Dummy__";
+            if (!_enabled) return "__internal_dummy_anim__";
             // Dummy 路径也需要看起来像普通对象名
             return FormatHashName(DummyPool, "DummyPath");
         }

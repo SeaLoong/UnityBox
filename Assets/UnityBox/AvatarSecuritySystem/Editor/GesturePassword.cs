@@ -242,14 +242,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     decoyState.writeDefaultValues = true;
                     decoyHolds.Add(decoyState);
 
-                    // 假入口：使用确定性与所有密码位不同的手势值
-                    int fakeGesture = 1 + ((d * 3 + (int)(password[0]) + 1) % 7);
-                    int safetyCount = 0;
-                    while (password.Contains(fakeGesture) && safetyCount < 8)
-                    {
-                        fakeGesture = (fakeGesture % 7) + 1;
-                        safetyCount++;
-                    }
+                    // 假入口：确定性地选择不在密码中的手势值
+                    var usedGestures = new HashSet<int>(password);
+                    var unusedGestures = new List<int>();
+                    for (int g = 0; g <= 7; g++)
+                        if (!usedGestures.Contains(g))
+                            unusedGestures.Add(g);
+                    // 极端情况：密码包含全部 8 种手势，回退到全部池
+                    if (unusedGestures.Count == 0)
+                        for (int g = 0; g <= 7; g++) unusedGestures.Add(g);
+
+                    int fakeGesture = unusedGestures[(d * 3 + password[0] + 1) % unusedGestures.Count];
                     var decoyEntry = Utils.CreateTransition(waitState, decoyState);
                     decoyEntry.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureParam);
                     decoyEntry.AddCondition(AnimatorConditionMode.If, 0, "_VerbLogLvl");

@@ -220,8 +220,8 @@ Assets/UnityBox/AvatarSecuritySystem/
 │   ├─ Avatar Security System.png                        # Logo
 │   ├─ PasswordSuccess.mp3                               # 成功音效
 │   ├─ CountdownWarning.mp3                              # 倒计时警告音效
-│   ├─ StepSuccess.mp3                                   # 步骤确认音效
-│   └─ InputError.mp3                                    # 输入错误音效
+│   ├─ StepSuccess.mp3                                   # 预留：步骤确认音效（未来功能）
+│   └─ InputError.mp3                                    # 预留：输入错误音效（未来功能）
 │
 └─ Shaders/
     ├─ Overlay.shader                                         # 全屏遮罩 + 进度条 Shader
@@ -279,9 +279,9 @@ ASS_Lock Layer
 
 - 全屏遮罩使用自定义 Shader（`UnityBox/ASS_Overlay`），顶点着色器直接映射到裁剪空间全屏
 - 进度条通过动画驱动 Shader 材质属性控制
-- 对象控制使用 `GameObject.m_IsActive` 而非 `Transform.localScale`
-- 变换遮罩（Transform Mask）仅启用被锁定的根对象与 ASS 对象
-- 解锁后将 ASS_Lock 层权重设为 0，释放 Transform 影响
+- 双重保护隐藏：同时设置 `m_IsActive=0` + `localScale=0`，任一被覆盖另一仍生效
+- ASS 对象（Overlay、Audio、Defense）不参与隐藏
+- WD On 模式由 WriteDefaults 自动恢复属性；WD Off 模式显式写入原始值
 
 ---
 

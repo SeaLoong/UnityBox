@@ -251,10 +251,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         networkSynced = false
                     });
                 }
-                Debug.Log($"[ASS] Registered ASS parameters: " +
-                     $"{PARAM_PASSWORD_CORRECT}(synced)" +
-                     (needTimeUp ? $", {PARAM_TIME_UP}(local)" : " (no TimeUp)") +
-                     (Obfuscator.IsEnabled ? " + decoys" : ""));
             }
 
             assParams.AddRange(existingParams);
@@ -491,7 +487,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (i % 2 == 0)
                 {
                     int fakeGesture = 1 + (i * 3) % 7;
-                    trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture, Constants.PARAM_GESTURE_LEFT);
+                    // 随机混用左右手，避免泄漏用户手势惯用手信息
+                    string gestureParam = (i % 4 == 0) ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT;
+                    trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureParam);
                 }
 
                 if (decoyParams.Count > 0)

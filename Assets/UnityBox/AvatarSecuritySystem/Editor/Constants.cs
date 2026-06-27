@@ -54,6 +54,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public static string GO_AUDIO_SUCCESS = "ASS_Audio_Success";
         /// <summary>原始: ASS_Defense</summary>
         public static string GO_DEFENSE_ROOT = "ASS_Defense";
+        /// <summary>原始: Overlay (ASS_Overlay 的子 mesh 对象名称，用于倒计时进度条动画绑定)</summary>
+        public static string GO_OVERLAY_MESH = "Overlay";
 
 
         /// <summary>
@@ -75,6 +77,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             GO_AUDIO_WARNING = Obfuscator.GameObject("GO_AUDIO_WARNING");
             GO_AUDIO_SUCCESS = Obfuscator.GameObject("GO_AUDIO_SUCCESS");
             GO_DEFENSE_ROOT = Obfuscator.GameObject("GO_DEFENSE_ROOT");
+            GO_OVERLAY_MESH = Obfuscator.GameObject("GO_OVERLAY_MESH");
         }
 
         // ============ VRChat 组件上限（不混淆，数值常量） ============

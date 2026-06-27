@@ -19,9 +19,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_Overlay";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
-        private static string OverlayMeshName => Obfuscator.IsEnabled
-            ? Obfuscator.GameObject("OverlayMesh")
-            : "Overlay";
 
         public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
@@ -110,7 +107,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// </summary>
         private GameObject CreateOverlayMesh()
         {
-            var meshObj = new GameObject(OverlayMeshName);
+            var meshObj = new GameObject(Constants.GO_OVERLAY_MESH);
             meshObj.transform.SetParent(overlayRootObject.transform, false);
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
@@ -204,7 +201,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             for (int i = overlayRootObject.transform.childCount - 1; i >= 0; i--)
             {
                 var child = overlayRootObject.transform.GetChild(i);
-                if (child.name != OverlayMeshName) continue;
+                if (child.name != Constants.GO_OVERLAY_MESH) continue;
 
                 Object.DestroyImmediate(child.gameObject);
                 removedCount++;

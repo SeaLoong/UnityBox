@@ -208,7 +208,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             // 驱动 Overlay 上 MeshRenderer 的材质属性 _C9D4（从 1 到 0）
-            string overlayPath = $"{GO_OVERLAY}/Overlay";
+            string overlayPath = $"{GO_OVERLAY}/{Constants.GO_OVERLAY_MESH}";
             AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
             clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._C9D4", progressCurve);
 
