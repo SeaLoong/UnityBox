@@ -8,7 +8,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly GameObject avatarGameObject;
         private readonly ASSComponent config;
         private GameObject overlayRootObject;
-        private const string OVERLAY_SHADER_NAME = "UnityBox/ASS_Overlay";
+        private const string OVERLAY_SHADER_NAME = "UnityBox/UB_Overlay";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
         public Feedback(GameObject avatarGameObject, ASSComponent config)
         {
@@ -76,7 +76,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             meshObj.transform.localPosition = Vector3.zero;
             meshObj.transform.localRotation = Quaternion.identity;
             meshObj.transform.localScale = Vector3.one;
-            var mesh = new Mesh { name = "ASS_Overlay_Quad" };
+            var mesh = new Mesh { name = "_Overlay_Quad" };
             mesh.vertices = new Vector3[]
             {
                 new Vector3(-0.5f, -0.5f, 0),
@@ -94,7 +94,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2f);
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 200f);
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();

@@ -1,4 +1,4 @@
-Shader "UnityBox/ASS_DefenseShader"
+Shader "UnityBox/UB_Defense"
 {
     Properties
     {

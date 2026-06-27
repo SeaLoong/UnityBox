@@ -1099,9 +1099,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private static Shader GetDefenseShader()
         {
-            var shader = Obfuscator.GetObfuscatedShader("UnityBox/ASS_DefenseShader");
+            var shader = Obfuscator.GetObfuscatedShader("UnityBox/UB_Defense");
             if (shader != null) return shader;
-            shader = Shader.Find("UnityBox/ASS_DefenseShader");
+            shader = Shader.Find("UnityBox/UB_Defense");
             if (shader != null) return shader;
             Debug.LogWarning("[ASS] Defense shader not found, falling back to Standard");
             return Shader.Find("Standard");
