@@ -233,7 +233,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     GO_AUDIO_SUCCESS, 
                     config.successSound);
             }
-            Utils.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: true);
+            Utils.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: false);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Gesture password layer created with stability check: " +
