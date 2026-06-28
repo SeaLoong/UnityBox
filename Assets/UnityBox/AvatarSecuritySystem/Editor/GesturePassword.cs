@@ -83,7 +83,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     : $"Step_{i + 1}_Confirmed";
                 var confirmedState = layer.stateMachine.AddState(confirmedName,
                     new Vector3(50 + (i + 1) * 350, 150, 0));
-                confirmedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+                // Confirmed: clip = gestureMaxHoldTime, 超时回到 Wait
+                var confirmedClip = CreateHoldClip($"ASS_Confirmed_{i + 1}", gestureMaxHoldTime);
+                confirmedState.motion = confirmedClip;
+                Utils.AddSubAsset(controller, confirmedClip);
                 stepConfirmedStates.Add(confirmedState);
                 string toleranceName = Obfuscator.IsEnabled
                     ? Obfuscator.State($"Tolerance_{i + 1}")
@@ -151,14 +154,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var confirmedRestartTransition = confirmedState.AddTransition(stepHoldingStates[0]);
                     ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
                 }
-                // Stay in confirmedState while holding the just-confirmed gesture.
-                // Added BEFORE error transitions so it takes priority.
-                var confirmedStay = confirmedState.AddTransition(confirmedState);
-                confirmedStay.hasExitTime = false;
-                confirmedStay.duration = 0f;
-                confirmedStay.hasFixedDuration = true;
-                confirmedStay.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                confirmedStay.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
+                // Confirmed → Wait（超时：gestureMaxHoldTime 内没有输入下一手势则重置）
+                var confirmedTimeout = Utils.CreateTransition(confirmedState, waitState,
+                    hasExitTime: true, exitTime: 1.0f);
+                confirmedTimeout.duration = 0f;
 
                 // Error from confirmedState: check against the NEXT expected gesture (password[i+1]).
                 // The confirmedRestartTransition (to password[0]) is added before these error
