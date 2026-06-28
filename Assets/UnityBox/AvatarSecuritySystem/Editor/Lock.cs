@@ -118,6 +118,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             unlockedToRemote.hasExitTime = false;
             unlockedToRemote.duration = 0f;
             unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+            // AnyState → Unlocked 作为保险：确保远程客户端在 PasswordCorrect 变化时
+            // 一定触发解锁，防止直接过渡因某种原因未被评估
+            var anyToUnlocked = Utils.CreateAnyStateTransition(layer.stateMachine, unlockedState);
+            anyToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
             {
                 var lockedAToB = Utils.CreateTransition(lockedState, lockedShadowB,
@@ -214,9 +218,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
             if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
                 clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
-            if (config.disableRootChildren)
+            if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
-            Debug.Log("[ASS] Unlock animation created (restores body, hides overlay/defense)");
+            Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
             return clip;
         }
         private void WriteRestoreValues(AnimationClip clip)
@@ -233,7 +237,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] Unlock restore: {restoredCount} root child objects (IsActive + Scale)");
+            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (IsActive + Scale)");
         }
         private bool ResolveWriteDefaults()
         {
