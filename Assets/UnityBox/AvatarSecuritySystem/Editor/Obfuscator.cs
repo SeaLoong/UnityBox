@@ -212,21 +212,67 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 description = template.description
             };
         }
+        private static uint MixSeed(uint baseSeed, uint layerId)
+        {
+            // 每层独立 seed 派生: 不同的层同一次调用结果不同
+            return (baseSeed ^ layerId) * 0x9E3779B9 + 0x7F4A7C15;
+        }
+
+        private static float PseudoRange(ref uint state, float min, float max)
+        {
+            state = state * 0x85EBCA6B + 0xC2B2AE35;
+            float t = (state & 0xFFFFFF) / (float)0x1000000;
+            return min + t * (max - min);
+        }
+
+        private static int PseudoInt(ref uint state, int min, int maxInclusive)
+        {
+            state = state * 0x85EBCA6B + 0xC2B2AE35;
+            return min + (int)((state & 0x7FFFFFFF) % (maxInclusive - min + 1));
+        }
+
+        // 公开版本，供 Processor.cs 使用
+        public static float RngRange(ref uint rng, float min, float max)
+        {
+            rng = rng * 0x85EBCA6B + 0xC2B2AE35;
+            float t = (rng & 0xFFFFFF) / (float)0x1000000;
+            return min + t * (max - min);
+        }
+
+        public static int RngInt(ref uint rng, int min, int maxInclusive)
+        {
+            rng = rng * 0x85EBCA6B + 0xC2B2AE35;
+            return min + (int)((rng & 0x7FFFFFFF) % (maxInclusive - min + 1));
+        }
+
+        public static uint GetDecoyLayerSeed()
+        {
+            EnsureInitialized();
+            return (_seed ^ 0xDEC0DE) * 0x9E3779B9 + 0x7F4A7C15;
+        }
+
         public static void InjectFakeStates(AnimatorStateMachine stateMachine,
             List<(string name, AnimatorControllerParameterType type, float defaultValue)> decoyParams,
             AnimationClip emptyClip,
-            List<AnimationClip> instructionalClips = null)
+            List<AnimationClip> instructionalClips = null,
+            uint layerSeedOffset = 0)
         {
             EnsureInitialized();
             if (!_decoyStatesEnabled) return;
             if (decoyParams == null || decoyParams.Count == 0) return;
-            int fakeCount = (int)(_seed % 4) + 5; // 5-8 个，比之前的 2-4 更密集
+
+            uint rng = MixSeed(_seed, layerSeedOffset);
+
+            int fakeCount = PseudoInt(ref rng, 5, 10);
             var fakeStates = new List<AnimatorState>();
             var instructionalNames = GetInstructionalStateNames(fakeCount);
             int instructionalIdx = 0;
+
             for (int i = 0; i < fakeCount; i++)
             {
-                bool useInstructional = (i % 3 == 1) && instructionalIdx < instructionalNames.Length;
+                bool useInstructional = (PseudoInt(ref rng, 0, 2) == 0)
+                    && instructionalIdx < instructionalNames.Length
+                    && instructionalClips != null && instructionalClips.Count > 0;
                 string stateName;
                 if (useInstructional)
                 {
@@ -236,90 +282,151 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 else
                 {
                     string stateKey = $"FakeState_{stateMachine.name}_{i}";
-                    stateName = FormatHashName(FakeStatePool, stateKey);
+                    stateName = FormatHashName(FakeStatePool, stateKey + rng.ToString("x8"));
                 }
-                var fakeState = stateMachine.AddState(stateName,
-                    new Vector3(600 + (i % 4) * 180, -100 - (i / 4) * 100, 0));
-                if (useInstructional && instructionalClips != null && instructionalClips.Count > 0)
+
+                float x = PseudoRange(ref rng, 50, 900);
+                float y = PseudoRange(ref rng, -500, 300);
+                var fakeState = stateMachine.AddState(stateName, new Vector3(x, y, 0));
+
+                if (useInstructional)
                 {
-                    int clipIdx = (i + (int)(_seed % 7)) % instructionalClips.Count;
+                    int clipIdx = PseudoInt(ref rng, 0, Mathf.Max(0, instructionalClips.Count - 1));
                     fakeState.motion = instructionalClips[clipIdx];
                 }
                 else
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = PseudoInt(ref rng, 0, 1) == 0;
                 fakeStates.Add(fakeState);
             }
+
             var boolGuards = decoyParams
                 .Where(p => p.type == AnimatorControllerParameterType.Bool)
                 .ToList();
             if (boolGuards.Count == 0)
                 boolGuards.Add(("_ProfilerEn", AnimatorControllerParameterType.Bool, 0f));
+
             var defaultState = stateMachine.defaultState;
+
+            // 从 defaultState 到每个假状态的入口转换
             for (int i = 0; i < fakeStates.Count; i++)
             {
                 var trans = defaultState.AddTransition(fakeStates[i]);
                 trans.hasExitTime = true;
-                trans.exitTime = 999f + i * 100f; // 分散 exitTime，增加复杂度
-                trans.duration = 0.1f;
+                trans.exitTime = PseudoRange(ref rng, 100, 5000);
+                trans.duration = PseudoRange(ref rng, 0, 0.3f);
                 trans.hasFixedDuration = true;
-                var guard = boolGuards[i % boolGuards.Count];
+
+                var guard = boolGuards[PseudoInt(ref rng, 0, boolGuards.Count - 1)];
                 trans.AddCondition(AnimatorConditionMode.If, 0, guard.name);
-                int fakeGesture = 1 + ((i * 3 + 2) % 7);
-                trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture,
-                    (i % 3 == 0) ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT);
+
+                // 混合 Equals 和 Greater+Less
+                int fakeGesture = PseudoInt(ref rng, 0, 7);
+                string gestureSide = (PseudoInt(ref rng, 0, 1) == 0)
+                    ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT;
+                if (PseudoInt(ref rng, 0, 2) == 0)
+                {
+                    trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureSide);
+                }
+                else
+                {
+                    trans.AddCondition(AnimatorConditionMode.Greater, fakeGesture - 1, gestureSide);
+                    trans.AddCondition(AnimatorConditionMode.Less, fakeGesture + 1, gestureSide);
+                }
             }
+
+            // 假状态之间的互连
+            int maxConnections = PseudoInt(ref rng, 1, 4);
             for (int i = 0; i < fakeStates.Count; i++)
             {
-                int[] targets = {
-                    (i + 1) % fakeStates.Count,
-                    (i + 2) % fakeStates.Count,
-                    (i + fakeStates.Count / 2) % fakeStates.Count
-                };
                 var seen = new HashSet<int>();
-                foreach (int t in targets)
+                int connections = PseudoInt(ref rng, 1, Mathf.Min(maxConnections, fakeStates.Count - 1));
+                for (int c = 0; c < connections; c++)
                 {
+                    int t = PseudoInt(ref rng, 0, fakeStates.Count - 1);
                     if (t == i || !seen.Add(t)) continue;
+
                     var trans = fakeStates[i].AddTransition(fakeStates[t]);
                     trans.hasExitTime = true;
-                    trans.exitTime = 0.3f + (i * 0.07f) % 0.5f;
-                    trans.duration = 0.1f;
+                    trans.exitTime = PseudoRange(ref rng, 0.05f, 5f);
+                    trans.duration = PseudoRange(ref rng, 0, 0.3f);
                     trans.hasFixedDuration = true;
-                    int fakeGesture = 1 + ((i * 5 + t * 3 + 2) % 7);
-                    trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture,
-                        (t % 3 == 0) ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT);
-                    var condParam = decoyParams[(i + t) % decoyParams.Count];
-                    if (condParam.type == AnimatorControllerParameterType.Bool)
+
+                    // 有时加自循环
+                    if (PseudoInt(ref rng, 0, 3) == 0)
                     {
-                        trans.AddCondition(AnimatorConditionMode.IfNot, 0, condParam.name);
-                        var guard2 = boolGuards[(i + t + 1) % boolGuards.Count];
-                        trans.AddCondition(AnimatorConditionMode.If, 0, guard2.name);
+                        var selfLoop = fakeStates[i].AddTransition(fakeStates[i]);
+                        selfLoop.hasExitTime = true;
+                        selfLoop.exitTime = PseudoRange(ref rng, 0.1f, 2f);
+                        selfLoop.duration = 0f;
+                        selfLoop.AddCondition(AnimatorConditionMode.Greater,
+                            PseudoInt(ref rng, 0, 6), Constants.PARAM_GESTURE_LEFT);
+                        selfLoop.AddCondition(AnimatorConditionMode.Less,
+                            PseudoInt(ref rng, 1, 7), Constants.PARAM_GESTURE_RIGHT);
+                    }
+
+                    // 混合手势条件 + 浮点/整数参数条件
+                    if (PseudoInt(ref rng, 0, 1) == 0)
+                    {
+                        int fg = PseudoInt(ref rng, 0, 7);
+                        string gSide = (PseudoInt(ref rng, 0, 1) == 0)
+                            ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT;
+                        trans.AddCondition(AnimatorConditionMode.Equals, fg, gSide);
                     }
                     else
                     {
-                        trans.AddCondition(AnimatorConditionMode.Less, 0.5f, condParam.name);
-                        var guard2 = boolGuards[(i + t + 1) % boolGuards.Count];
-                        trans.AddCondition(AnimatorConditionMode.If, 0, guard2.name);
+                        int fg = PseudoInt(ref rng, 0, 7);
+                        string gSide = (PseudoInt(ref rng, 0, 1) == 0)
+                            ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT;
+                        trans.AddCondition(AnimatorConditionMode.Greater, fg - 1, gSide);
+                        trans.AddCondition(AnimatorConditionMode.Less, fg + 1, gSide);
                     }
+
+                    var condParam = decoyParams[PseudoInt(ref rng, 0, decoyParams.Count - 1)];
+                    if (condParam.type == AnimatorControllerParameterType.Bool)
+                    {
+                        trans.AddCondition(PseudoInt(ref rng, 0, 1) == 0
+                            ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, condParam.name);
+                    }
+                    else if (condParam.type == AnimatorControllerParameterType.Float)
+                    {
+                        float threshold = PseudoRange(ref rng, -10, 10);
+                        trans.AddCondition(PseudoInt(ref rng, 0, 1) == 0
+                            ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+                            threshold, condParam.name);
+                    }
+                    else
+                    {
+                        int threshold = PseudoInt(ref rng, -5, 10);
+                        trans.AddCondition(PseudoInt(ref rng, 0, 1) == 0
+                            ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+                            threshold, condParam.name);
+                    }
+
+                    var guard2 = boolGuards[PseudoInt(ref rng, 0, boolGuards.Count - 1)];
+                    trans.AddCondition(AnimatorConditionMode.If, 0, guard2.name);
                 }
             }
+
+            // 回到 default 的超时出口
             for (int i = 0; i < fakeStates.Count; i++)
             {
+                if (PseudoInt(ref rng, 0, 3) == 0) continue; // 有些状态没有回到 default 的出口
                 var trans = fakeStates[i].AddTransition(defaultState);
                 trans.hasExitTime = true;
-                trans.exitTime = 999f + i * 50f;
-                trans.duration = 0.1f;
+                trans.exitTime = PseudoRange(ref rng, 50, 5000);
+                trans.duration = PseudoRange(ref rng, 0, 0.2f);
                 trans.hasFixedDuration = true;
-                var guard = boolGuards[(i + 1) % boolGuards.Count];
+                var guard = boolGuards[PseudoInt(ref rng, 0, boolGuards.Count - 1)];
                 trans.AddCondition(AnimatorConditionMode.If, 0, guard.name);
-                int fakeGesture = 1 + ((i * 7 + 4) % 7);
-                trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture,
-                    Constants.PARAM_GESTURE_LEFT);
+                int fg = PseudoInt(ref rng, 0, 7);
+                trans.AddCondition(AnimatorConditionMode.Equals, fg, Constants.PARAM_GESTURE_LEFT);
             }
+
             Debug.Log($"[ASS] Obfuscator: Injected {fakeStates.Count} fake states ({instructionalIdx} instructional)"
-                + $" in mesh topology into \"{stateMachine.name}\"");
+                + $" into \"{stateMachine.name}\" (seed=0x{rng:X8})");
         }
         #endregion
         #region 迷惑参数池（提示词注入专用 — 语义名称误导 AI）

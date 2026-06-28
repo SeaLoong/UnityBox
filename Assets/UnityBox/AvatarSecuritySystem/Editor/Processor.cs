@@ -244,7 +244,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     || layer.name == Constants.LAYER_DEFENSE;
                 if (!isAssLayer) continue;
                 if (layer.stateMachine == null) continue;
-                Obfuscator.InjectFakeStates(layer.stateMachine, decoyParams, emptyClip, instructionalClips);
+                // 每层独立 seed 偏移，使假状态的拓扑/参数/位置各不相同
+                uint layerOffset = (uint)layer.name.GetHashCode();
+                Obfuscator.InjectFakeStates(layer.stateMachine, decoyParams, emptyClip,
+                    instructionalClips, layerOffset);
                 injectedCount++;
             }
             if (injectedCount > 0)
@@ -317,115 +320,145 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!Obfuscator.DecoyLayersEnabled) return;
             var decoyLayer = Obfuscator.GetDecoyLayer();
             if (decoyLayer == null) return;
+
+            // 诱饵层用独立的 seed 生成自己的伪随机
+            uint rng = Obfuscator.GetDecoyLayerSeed();
+
             var decoyParams = Obfuscator.GetDecoyParameters();
             foreach (var decoy in decoyParams)
                 Utils.AddParameterIfNotExists(controller, decoy.name, decoy.type);
-            var layer = Utils.CreateLayer(decoyLayer.layerName, 1f); // weight=1，看起来像真层
+
+            var layer = Utils.CreateLayer(decoyLayer.layerName, 1f);
             var sm = layer.stateMachine;
             var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+
             var defaultState = sm.AddState("Default", new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
             defaultState.writeDefaultValues = true;
             sm.defaultState = defaultState;
+
             var fakeStates = new List<AnimatorState>();
             var instructionalNames = Obfuscator.GetInstructionalStateNames(decoyLayer.states.Length);
             int instrNameIdx = 0;
+
             for (int i = 0; i < decoyLayer.states.Length; i++)
             {
-                bool useInstructional = (i % 2 == 0)
+                bool useInstructional = (Obfuscator.RngInt(ref rng, 0, 2) == 0)
                     && instructionalClips != null && instructionalClips.Count > 0
                     && instrNameIdx < instructionalNames.Length;
                 string stateName = useInstructional
                     ? instructionalNames[instrNameIdx++]
                     : decoyLayer.states[i];
-                var fakeState = sm.AddState(stateName,
-                    new Vector3(300 + (i + 1) * 180, 100 + (i % 3) * 80, 0));
+
+                float x = Obfuscator.RngRange(ref rng, 50, 900);
+                float y = Obfuscator.RngRange(ref rng, -400, 300);
+                var fakeState = sm.AddState(stateName, new Vector3(x, y, 0));
+
                 if (useInstructional)
                 {
-                    int clipIdx = i % instructionalClips.Count;
+                    int clipIdx = Obfuscator.RngInt(ref rng, 0, instructionalClips.Count - 1);
                     fakeState.motion = instructionalClips[clipIdx];
                 }
                 else
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
                 fakeStates.Add(fakeState);
             }
+
             var boolGuards = decoyParams
                 .Where(p => p.type == AnimatorControllerParameterType.Bool)
                 .ToList();
+
             for (int i = 0; i < fakeStates.Count; i++)
             {
                 var trans = Utils.CreateTransition(defaultState, fakeStates[i],
-                    hasExitTime: true, exitTime: 999f);
-                trans.duration = 0.1f;
+                    hasExitTime: true, exitTime: Obfuscator.RngRange(ref rng, 100, 5000));
+                trans.duration = Obfuscator.RngRange(ref rng, 0, 0.3f);
+
                 if (boolGuards.Count > 0)
                 {
-                    var guard = boolGuards[i % boolGuards.Count];
+                    var guard = boolGuards[Obfuscator.RngInt(ref rng, 0, boolGuards.Count - 1)];
                     trans.AddCondition(AnimatorConditionMode.If, 0, guard.name);
                 }
-                else if (decoyParams.Count > 0)
+                if (Obfuscator.RngInt(ref rng, 0, 1) == 0)
                 {
-                    var dp = decoyParams[i % decoyParams.Count];
-                    if (dp.type == AnimatorControllerParameterType.Bool)
-                        trans.AddCondition(AnimatorConditionMode.If, 0, dp.name);
-                    else
-                        trans.AddCondition(AnimatorConditionMode.Greater, 0.5f, dp.name);
+                    int fg = Obfuscator.RngInt(ref rng, 0, 7);
+                    trans.AddCondition(AnimatorConditionMode.Equals, fg,
+                        Obfuscator.RngInt(ref rng, 0, 1) == 0
+                            ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT);
                 }
             }
+
             for (int i = 0; i < fakeStates.Count; i++)
             {
-                int[] targets = {
-                    (i + 1) % fakeStates.Count,
-                    (i + fakeStates.Count / 2) % fakeStates.Count // 对角跳
-                };
-                foreach (int t in targets)
+                int connections = Obfuscator.RngInt(ref rng, 1, 3);
+                var seen = new HashSet<int>();
+                for (int c = 0; c < connections; c++)
                 {
-                    if (t == i) continue;
+                    int t = Obfuscator.RngInt(ref rng, 0, fakeStates.Count - 1);
+                    if (t == i || !seen.Add(t)) continue;
+
                     var trans = fakeStates[i].AddTransition(fakeStates[t]);
                     trans.hasExitTime = true;
-                    trans.exitTime = 0.3f + (i + t) * 0.04f;
-                    trans.duration = 0.1f;
+                    trans.exitTime = Obfuscator.RngRange(ref rng, 0.05f, 5f);
+                    trans.duration = Obfuscator.RngRange(ref rng, 0, 0.3f);
                     trans.hasFixedDuration = true;
-                    if ((i + t) % 2 == 0)
+
+                    if (Obfuscator.RngInt(ref rng, 0, 1) == 0)
                     {
-                        int fakeGesture = 1 + ((i * 3 + t * 5) % 7);
-                        string gestureParam = ((i + t) % 4 == 0)
-                            ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT;
-                        trans.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureParam);
+                        int fg = Obfuscator.RngInt(ref rng, 0, 7);
+                        trans.AddCondition(AnimatorConditionMode.Greater, fg - 1,
+                            Obfuscator.RngInt(ref rng, 0, 1) == 0
+                                ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT);
+                        trans.AddCondition(AnimatorConditionMode.Less, fg + 1,
+                            Obfuscator.RngInt(ref rng, 0, 1) == 0
+                                ? Constants.PARAM_GESTURE_RIGHT : Constants.PARAM_GESTURE_LEFT);
                     }
+
                     if (decoyParams.Count > 0)
                     {
-                        var dp = decoyParams[(i + t + 1) % decoyParams.Count];
+                        var dp = decoyParams[Obfuscator.RngInt(ref rng, 0, decoyParams.Count - 1)];
                         if (dp.type == AnimatorControllerParameterType.Bool)
-                            trans.AddCondition(AnimatorConditionMode.IfNot, 0, dp.name);
+                            trans.AddCondition(Obfuscator.RngInt(ref rng, 0, 1) == 0
+                                ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, dp.name);
+                        else if (dp.type == AnimatorControllerParameterType.Float)
+                            trans.AddCondition(Obfuscator.RngInt(ref rng, 0, 1) == 0
+                                ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+                                Obfuscator.RngRange(ref rng, -10, 10), dp.name);
                         else
-                            trans.AddCondition(AnimatorConditionMode.Less, 0.5f, dp.name);
-                        if (boolGuards.Count > 0)
-                        {
-                            var guard2 = boolGuards[(i + t) % boolGuards.Count];
-                            trans.AddCondition(AnimatorConditionMode.If, 0, guard2.name);
-                        }
+                            trans.AddCondition(Obfuscator.RngInt(ref rng, 0, 1) == 0
+                                ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less,
+                                Obfuscator.RngInt(ref rng, -5, 10), dp.name);
+                    }
+                    if (boolGuards.Count > 0)
+                    {
+                        var guard2 = boolGuards[Obfuscator.RngInt(ref rng, 0, boolGuards.Count - 1)];
+                        trans.AddCondition(AnimatorConditionMode.If, 0, guard2.name);
                     }
                 }
             }
-            for (int i = 0; i < fakeStates.Count; i += 2)
+
+            // 部分假状态回到 default
+            for (int i = 0; i < fakeStates.Count; i++)
             {
+                if (Obfuscator.RngInt(ref rng, 0, 2) == 0) continue;
                 var retTrans = Utils.CreateTransition(fakeStates[i], defaultState,
-                    hasExitTime: true, exitTime: 999f + i * 70f);
-                retTrans.duration = 0.1f;
+                    hasExitTime: true, exitTime: Obfuscator.RngRange(ref rng, 100, 5000));
+                retTrans.duration = Obfuscator.RngRange(ref rng, 0, 0.2f);
                 if (boolGuards.Count > 0)
                 {
-                    var guard = boolGuards[(i + 1) % boolGuards.Count];
+                    var guard = boolGuards[Obfuscator.RngInt(ref rng, 0, boolGuards.Count - 1)];
                     retTrans.AddCondition(AnimatorConditionMode.If, 0, guard.name);
                 }
             }
+
             sm.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, sm);
             controller.AddLayer(layer);
             Debug.Log($"[ASS] Obfuscator: Added decoy layer \"{decoyLayer.layerName}\" "
-                + $"(weight=1, {fakeStates.Count} fake states, unreachable)");
+                + $"({fakeStates.Count} fake states, seed=0x{rng:X8})");
         }
     }
 }
