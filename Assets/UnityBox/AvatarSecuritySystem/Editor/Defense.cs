@@ -263,7 +263,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (idealTrisPerParticle >= 8)
             {
                 int meshSubdivisions = Mathf.Clamp(
-                    Mathf.FloorToInt(Mathf.Sqrt(idealTrisPerParticle / 2f)), 2, 200);
+                    Mathf.FloorToInt(Mathf.Sqrt(idealTrisPerParticle / 2f)), 2, 2);
                 meshTriangles = meshSubdivisions * meshSubdivisions * 2;
                 int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
                 sharedParticleMesh = GenerateSphereMesh(meshVertexTarget);
@@ -849,7 +849,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var mesh = new Mesh { name = DefenseMeshName };
             int subdivisions = Mathf.CeilToInt(Mathf.Sqrt(targetVertexCount / 6f));
-            subdivisions = Mathf.Clamp(subdivisions, 2, 200);
+            subdivisions = Mathf.Clamp(subdivisions, 2, 2);
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
             for (int lat = 0; lat <= subdivisions; lat++)

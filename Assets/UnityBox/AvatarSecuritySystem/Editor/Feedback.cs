@@ -94,7 +94,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
-            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 200f);
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2f);
             var meshFilter = meshObj.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
             var meshRenderer = meshObj.AddComponent<MeshRenderer>();
