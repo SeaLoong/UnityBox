@@ -139,12 +139,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
                     firstTransition.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 }
-                else
-                {
-                    var previousConfirmed = stepConfirmedStates[i - 1];
-                    var correctTransition = Utils.CreateTransition(previousConfirmed, holdingState);
-                    ConfigureGestureTransition(correctTransition, gestureValue, gestureParam);
-                }
                 if (isLastStep) continue;
                 var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
