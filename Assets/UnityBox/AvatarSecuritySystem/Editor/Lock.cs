@@ -22,6 +22,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         public void Generate()
         {
+            // 确保 Blend Tree 和过渡条件依赖的参数存在
+            Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
+                AnimatorControllerParameterType.Bool, false);
+
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
             bool useWdOn = ResolveWriteDefaults();
             var remoteState = layer.stateMachine.AddState(
@@ -64,20 +68,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var lockClip = CreateLockClip(useWdOn);
             var unlockClip = CreateUnlockClip(useWdOn);
             Utils.AddSubAsset(controller, unlockClip);
-            // Locked 状态使用 1D Blend Tree：根据 PasswordCorrect 混合 Lock clip / Unlock clip
-            // 这样远程客户端不需要状态过渡即可响应参数变化
-            var lockedBlendTree = new BlendTree
-            {
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("LockedBT") : "ASS_Locked_BT",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = PARAM_PASSWORD_CORRECT,
-                useAutomaticThresholds = false
-            };
-            lockedBlendTree.AddChild(lockClip, 0f);
-            lockedBlendTree.AddChild(unlockClip, 1f);
-            lockedState.motion = lockedBlendTree;
+            lockedState.motion = lockClip;
             Utils.AddSubAsset(controller, lockClip);
-            Utils.AddSubAsset(controller, lockedBlendTree);
             if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
             {
                 lockedShadowB.motion = lockClip;
