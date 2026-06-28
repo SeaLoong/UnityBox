@@ -54,6 +54,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.IsEnabled ? Obfuscator.State("Success") : "Password_Success",
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             successState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            // Completed 状态：密码已正确输入的稳定终点
+            var completedState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("Completed") : "Password_Completed",
+                new Vector3(50 + (password.Count + 2) * 350, 150, 0));
+            completedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            // successState → Completed（立即到达终点状态）
+            var toCompleted = Utils.CreateTransition(successState, completedState,
+                hasExitTime: true, exitTime: 0f);
+            toCompleted.duration = 0f;
+            // AnyState → Completed：如果密码已正确则直接跳转到终点
+            var anyToCompleted = Utils.CreateAnyStateTransition(layer.stateMachine, completedState);
+            anyToCompleted.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var stepHoldingStates = new List<AnimatorState>();
             var stepConfirmedStates = new List<AnimatorState>();
             var stepErrorToleranceStates = new List<AnimatorState>();

@@ -31,27 +31,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteClip = CreateRemoteClip(useWdOn);
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
-            var concealedState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Concealed") : "Concealed",
-                new Vector3(200, 50, 0));
-            concealedState.writeDefaultValues = useWdOn;
-            var concealedClip = CreateConcealedClip(useWdOn);
-            Utils.AddSubAsset(controller, concealedClip);
-            // Concealed 状态使用 1D Blend Tree：根据 PasswordCorrect 混合隐藏/可见
-            // 这样远程客户端不需要状态过渡即可响应参数变化
-            var concealedBlendTree = new BlendTree
-            {
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("ConcealedBT") : "ASS_Concealed_BT",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = PARAM_PASSWORD_CORRECT,
-                useAutomaticThresholds = false
-            };
-            concealedBlendTree.AddChild(concealedClip, 0f);
-            var revealClip = CreateRevealClip();
-            Utils.AddSubAsset(controller, revealClip);
-            concealedBlendTree.AddChild(revealClip, 1f);
-            concealedState.motion = concealedBlendTree;
-            Utils.AddSubAsset(controller, concealedBlendTree);
+
             var lockedState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
                 new Vector3(200, 100, 0));
@@ -73,7 +53,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 lockedShadowC.writeDefaultValues = useWdOn;
                 preLockState = layer.stateMachine.AddState(
                     Obfuscator.IsEnabled ? Obfuscator.State("PreLock") : "PreLock",
-                    new Vector3(200, 50, 0));
+                    new Vector3(200, 0, 0));
                 preLockState.writeDefaultValues = useWdOn;
             }
             var unlockedState = layer.stateMachine.AddState(
@@ -82,32 +62,41 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             unlockedState.writeDefaultValues = useWdOn;
             layer.stateMachine.defaultState = remoteState;
             var lockClip = CreateLockClip(useWdOn);
-            lockedState.motion = lockClip;
-            Utils.AddSubAsset(controller, lockClip);
             var unlockClip = CreateUnlockClip(useWdOn);
-            unlockedState.motion = unlockClip;
             Utils.AddSubAsset(controller, unlockClip);
+            // Locked 状态使用 1D Blend Tree：根据 PasswordCorrect 混合 Lock clip / Unlock clip
+            // 这样远程客户端不需要状态过渡即可响应参数变化
+            var lockedBlendTree = new BlendTree
+            {
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("LockedBT") : "ASS_Locked_BT",
+                blendType = BlendTreeType.Simple1D,
+                blendParameter = PARAM_PASSWORD_CORRECT,
+                useAutomaticThresholds = false
+            };
+            lockedBlendTree.AddChild(lockClip, 0f);
+            lockedBlendTree.AddChild(unlockClip, 1f);
+            lockedState.motion = lockedBlendTree;
+            Utils.AddSubAsset(controller, lockClip);
+            Utils.AddSubAsset(controller, lockedBlendTree);
             if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
             {
                 lockedShadowB.motion = lockClip;
                 lockedShadowC.motion = lockClip;
                 preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             }
+            // Remote → Locked: 所有客户端初始进入锁定
+            var remoteToLocked = Utils.CreateTransition(remoteState, lockedState);
+            remoteToLocked.hasExitTime = false;
+            remoteToLocked.duration = 0f;
+            remoteToLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+            // Remote → Unlocked: 如果密码已正确则直接跳过锁定
             var toUnlockedDirect = Utils.CreateTransition(remoteState, unlockedState);
             toUnlockedDirect.hasExitTime = false;
             toUnlockedDirect.duration = 0f;
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            var remoteToConcealed = Utils.CreateTransition(remoteState, concealedState);
-            remoteToConcealed.hasExitTime = false;
-            remoteToConcealed.duration = 0f;
-            remoteToConcealed.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            var concealedToUnlocked = Utils.CreateTransition(concealedState, unlockedState);
-            concealedToUnlocked.hasExitTime = false;
-            concealedToUnlocked.duration = 0f;
-            concealedToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && preLockState != null)
             {
-                var toPreLock = Utils.CreateTransition(concealedState, preLockState);
+                var toPreLock = Utils.CreateTransition(remoteState, preLockState);
                 toPreLock.hasExitTime = false;
                 toPreLock.duration = 0f;
                 Utils.AddIsLocalCondition(toPreLock, controller, isTrue: true);
@@ -116,14 +105,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 0.01f);
                 preLockToLocked.duration = 0f;
             }
-            else
-            {
-                var toLocked = Utils.CreateTransition(concealedState, lockedState);
-                toLocked.hasExitTime = false;
-                toLocked.duration = 0f;
-                Utils.AddIsLocalCondition(toLocked, controller, isTrue: true);
-                toLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            }
+            // Locked → Unlocked（显式过渡，本地有效时作为快路径）
             var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);
             toUnlocked.hasExitTime = false;
             toUnlocked.duration = 0f;
@@ -132,10 +114,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             unlockedToRemote.hasExitTime = false;
             unlockedToRemote.duration = 0f;
             unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            // AnyState → Unlocked 作为保险：确保远程客户端在 PasswordCorrect 变化时
-            // 一定触发解锁，防止直接过渡因某种原因未被评估
-            var anyToUnlocked = Utils.CreateAnyStateTransition(layer.stateMachine, unlockedState);
-            anyToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
             {
                 var lockedAToB = Utils.CreateTransition(lockedState, lockedShadowB,
@@ -202,25 +180,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay and defense objects");
             return clip;
         }
-        private AnimationClip CreateConcealedClip(bool useWdOn)
-        {
-            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Concealed") : "ASS_Concealed" };
-            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
-            var zeroScale = Vector3.zero;
-            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
-            SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
-            if (config.disableRootChildren)
-            {
-                foreach (Transform child in avatarRoot.transform)
-                {
-                    if (IsASSObject(child)) continue;
-                    string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
-                    SetTransformScaleInClip(clip, childPath, zeroScale);
-                }
-            }
-            return clip;
-        }
         private AnimationClip CreateUnlockClip(bool useWdOn)
         {
             var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Unlock") : "ASS_Unlock" };
@@ -235,21 +194,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
-            return clip;
-        }
-        /// <summary>
-        /// 创建"恢复身体可见"clip，仅在 Concealed Blend Tree 中使用。
-        /// 当 PasswordCorrect=1 时 Blend Tree 混合到此 clip，使远程客户端
-        /// 无需状态过渡即可恢复身体可见。
-        /// </summary>
-        private AnimationClip CreateRevealClip()
-        {
-            var clip = new AnimationClip
-            {
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("Reveal") : "ASS_Reveal"
-            };
-            if (config.disableRootChildren)
-                WriteRestoreValues(clip);
             return clip;
         }
         private void WriteRestoreValues(AnimationClip clip)
