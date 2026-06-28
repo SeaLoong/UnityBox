@@ -323,7 +323,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 .Where(p => p.type == AnimatorControllerParameterType.Bool)
                 .ToList();
             if (boolGuards.Count == 0)
-                boolGuards.Add(("_ASS_Guard", AnimatorControllerParameterType.Bool, 0f));
+                boolGuards.Add((Obfuscator.Param("Guard"), AnimatorControllerParameterType.Bool, 0f));
 
             var defaultState = stateMachine.defaultState;
 

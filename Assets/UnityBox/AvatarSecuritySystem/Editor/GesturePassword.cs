@@ -96,7 +96,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedState = layer.stateMachine.AddState(confirmedName,
                     new Vector3(50 + (i + 1) * 350, 150, 0));
                 // Confirmed: clip = gestureMaxHoldTime, 超时回到 Wait
-                var confirmedClip = CreateHoldClip($"ASS_Confirmed_{i + 1}", gestureMaxHoldTime);
+                string confirmedClipName = Obfuscator.IsEnabled
+                    ? Obfuscator.Clip($"Confirm_{i + 1}")
+                    : $"ASS_Confirmed_{i + 1}";
+                var confirmedClip = CreateHoldClip(confirmedClipName, gestureMaxHoldTime);
                 confirmedState.motion = confirmedClip;
                 Utils.AddSubAsset(controller, confirmedClip);
                 stepConfirmedStates.Add(confirmedState);
@@ -241,7 +244,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     int safeGesture = 1 + ((i * 3 + password[i] + 2) % 7);
                     if (safeGesture == password[i]) safeGesture = (safeGesture % 7) + 1;
                     selfLoop.AddCondition(AnimatorConditionMode.Equals, safeGesture, gestureParam);
-                    selfLoop.AddCondition(AnimatorConditionMode.If, 0, "_ProfilerEn");
+                    selfLoop.AddCondition(AnimatorConditionMode.If, 0, guardA);
                 }
             }
             if (config.successSound != null)

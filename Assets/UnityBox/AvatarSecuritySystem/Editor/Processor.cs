@@ -234,7 +234,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var decoyParams = Obfuscator.GetDecoyParameters();
             if (decoyParams == null || decoyParams.Count == 0) return;
             // 确保守卫参数在控制器中存在
-            Utils.AddParameterIfNotExists(controller, "_ASS_Guard",
+            string guardParam = Obfuscator.IsEnabled ? Obfuscator.Param("Guard") : "_ASS_Guard";
+            Utils.AddParameterIfNotExists(controller, guardParam,
                 AnimatorControllerParameterType.Bool, false);
             var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             int injectedCount = 0;
