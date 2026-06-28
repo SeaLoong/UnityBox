@@ -214,9 +214,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
             if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
                 clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
-            if (!useWdOn && config.disableRootChildren)
+            if (config.disableRootChildren)
                 WriteRestoreValues(clip);
-            Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
+            Debug.Log("[ASS] Unlock animation created (restores body, hides overlay/defense)");
             return clip;
         }
         private void WriteRestoreValues(AnimationClip clip)
@@ -233,7 +233,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (IsActive + Scale)");
+            Debug.Log($"[ASS] Unlock restore: {restoredCount} root child objects (IsActive + Scale)");
         }
         private bool ResolveWriteDefaults()
         {
