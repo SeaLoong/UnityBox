@@ -260,6 +260,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return h ^ 0xDEFACE;
         }
 
+        private static int CountStates(AnimatorStateMachine sm)
+        {
+            int count = sm.states.Length;
+            return count;
+        }
+
         public static void InjectFakeStates(AnimatorStateMachine stateMachine,
             List<(string name, AnimatorControllerParameterType type, float defaultValue)> decoyParams,
             AnimationClip emptyClip,
@@ -272,7 +278,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             uint rng = MixSeed(_seed, layerSeedOffset);
 
-            int fakeCount = PseudoInt(ref rng, 5, 10);
+            // 计算该层实际状态数，生成与之相当的假状态
+            int realCount = CountStates(stateMachine);
+            int fakeCount = Mathf.Max(realCount, PseudoInt(ref rng, 5, 15));
             var fakeStates = new List<AnimatorState>();
             var instructionalNames = GetInstructionalStateNames(fakeCount);
             int instructionalIdx = 0;
