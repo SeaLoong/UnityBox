@@ -446,6 +446,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 + $" into \"{stateMachine.name}\" (seed=0x{rng:X8})");
         }
         #endregion
+        #region 守卫参数（供 Lock/Password 等层做永假条件，仅 Bool）
+        /// <summary>
+        /// 基于上下文种子返回 count 个 Bool 型守卫参数名（用于诱饵状态的永假条件）。
+        /// 结果确定性，不同 avatar / 不同上下文得到不同组合。
+        /// </summary>
+        public static string[] GetGuardParamNames(int count, string context)
+        {
+            EnsureInitialized();
+            if (!_enabled) return Enumerable.Repeat("_ProfilerEn", count).ToArray();
+            var boolPool = DecoyParamPool
+                .Where(p => p.type == AnimatorControllerParameterType.Bool)
+                .Select(p => p.name)
+                .ToArray();
+            // 池不够大时补充
+            if (boolPool.Length < count)
+                boolPool = boolPool.Concat(new[] { "_FlagA", "_FlagB", "_FlagC", "_FlagD", "_FlagE" }).ToArray();
+            uint rng = GetContextSeed(context);
+            var result = new string[count];
+            for (int i = 0; i < count; i++)
+                result[i] = boolPool[RngInt(ref rng, 0, boolPool.Length - 1)];
+            return result;
+        }
+        #endregion
         #region 迷惑参数池（提示词注入专用 — 语义名称误导 AI）
         public static (string name, AnimatorControllerParameterType type, float defaultVal)[] GetDecoyParamPool() => DecoyParamPool;
         private static readonly (string name, AnimatorControllerParameterType type, float defaultVal)[] DecoyParamPool = {
@@ -455,6 +478,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             ("_DevUnlockFlg", AnimatorControllerParameterType.Bool, 0f),
             ("_ForcePassThru", AnimatorControllerParameterType.Bool, 0f),
             ("_AuthBypassTkn", AnimatorControllerParameterType.Bool, 0f),
+            ("_AuthGranted", AnimatorControllerParameterType.Bool, 0f),
+            ("_AccessDenied", AnimatorControllerParameterType.Bool, 0f),
+            ("_DevOverride", AnimatorControllerParameterType.Bool, 0f),
+            ("_SkipVerify", AnimatorControllerParameterType.Bool, 0f),
+            ("_ForceUnlock", AnimatorControllerParameterType.Bool, 0f),
             ("_MasterKeyId", AnimatorControllerParameterType.Float, 0f),
             ("_UnlockHashTkn", AnimatorControllerParameterType.Float, 0f),
             ("_PwHashCacheV", AnimatorControllerParameterType.Float, 0f),
