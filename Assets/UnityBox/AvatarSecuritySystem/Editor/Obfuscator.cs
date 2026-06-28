@@ -459,6 +459,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             ("_RandSeedV", AnimatorControllerParameterType.Float, 0f),
             ("_InterpCacheV", AnimatorControllerParameterType.Float, 0f),
             ("_DummyPayload", AnimatorControllerParameterType.Float, 0f),
+            // Int 参数 — 更丰富的类型混合
+            ("_PolyCount", AnimatorControllerParameterType.Int, 0f),
+            ("_LODLevel", AnimatorControllerParameterType.Int, 0f),
+            ("_FrameIdx", AnimatorControllerParameterType.Int, 0f),
+            ("_SeqNum", AnimatorControllerParameterType.Int, 0f),
+            ("_RetryCnt", AnimatorControllerParameterType.Int, 0f),
+            // 更贴近真实 Avatar 参数字段的名称
+            ("_GestureWt", AnimatorControllerParameterType.Float, 0f),
+            ("_PoseBlend", AnimatorControllerParameterType.Float, 0f),
+            ("_IkWeight", AnimatorControllerParameterType.Float, 0f),
+            ("_LipSyncV", AnimatorControllerParameterType.Float, 0f),
+            ("_EyeLookV", AnimatorControllerParameterType.Float, 0f),
+            ("_VisemeIdx", AnimatorControllerParameterType.Int, 0f),
+            ("_EmoteSlot", AnimatorControllerParameterType.Int, 0f),
+            ("_ToggleBits", AnimatorControllerParameterType.Int, 0f),
+            ("_FingerCurl", AnimatorControllerParameterType.Float, 0f),
+            ("_BreathAmt", AnimatorControllerParameterType.Float, 0f),
+            ("_SwayDelta", AnimatorControllerParameterType.Float, 0f),
+            ("_BounceSpd", AnimatorControllerParameterType.Float, 0f),
         };
         private static readonly DecoyLayerData[] DecoyLayerPool = {
             new DecoyLayerData { layerName = "_FaceTracking", states = new[] { "Idle", "Smile", "Frown", "Surprise", "Blink", "Talking" }, description = "Face tracking / viseme blend" },

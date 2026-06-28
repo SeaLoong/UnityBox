@@ -12,7 +12,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{language.ui_language_tooltip}")]
         public SystemLanguage uiLanguage = SystemLanguage.Unknown;
         [Tooltip("#{password.gesture_tooltip}")]
-        public List<int> gesturePassword = new List<int> { 1, 7, 2, 4 };
+        public List<int> gesturePassword = new List<int> { 1, 2, 3, 4 };
         [Tooltip("#{password.use_right_hand_tooltip}")]
         public bool useRightHand = false;
         [Range(10f, 30f)]
@@ -121,7 +121,7 @@ namespace UnityBox.AvatarSecuritySystem
         {
             if (gesturePassword == null)
             {
-                gesturePassword = new List<int> { 1, 7, 2, 4 };
+                gesturePassword = new List<int> { 1, 2, 3, 4 };
             }
         }
         private void ValidateWarningThreshold()
@@ -151,7 +151,7 @@ namespace UnityBox.AvatarSecuritySystem
             const float defaultCountdownDuration = 30f;
             const float defaultWarningThreshold = 10f;
             const float defaultGestureMaxHoldTime = 3f;
-            gesturePassword = new List<int> { 1, 7, 2, 4 };
+            gesturePassword = new List<int> { 1, 2, 3, 4 };
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
             gestureMaxHoldTime = defaultGestureMaxHoldTime;
