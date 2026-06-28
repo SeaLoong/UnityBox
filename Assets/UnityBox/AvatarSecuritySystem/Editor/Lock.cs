@@ -50,9 +50,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 decoySeed = Obfuscator.GetContextSeed("LockDecoy");
                 uint rng = decoySeed;
-                var pool = Obfuscator.GetDecoyParamPool();
-                string guardParamA = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
-                string guardParamB = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                // 只从 Bool 参数中选守卫（If 条件不支持 Int/Float）
+                var boolPool = Obfuscator.GetDecoyParamPool()
+                    .Where(p => p.type == AnimatorControllerParameterType.Bool)
+                    .Select(p => p.name)
+                    .ToArray();
+                if (boolPool.Length < 2) boolPool = new[] { "_SysBypassChk", "_DevModeFlg" };
+                string guardParamA = boolPool[Obfuscator.RngInt(ref rng, 0, boolPool.Length - 1)];
+                string guardParamB = boolPool[Obfuscator.RngInt(ref rng, 0, boolPool.Length - 1)];
                 Utils.AddParameterIfNotExists(controller, guardParamA,
                     AnimatorControllerParameterType.Bool, false);
                 Utils.AddParameterIfNotExists(controller, guardParamB,
@@ -95,12 +100,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 uint rng = decoySeed ^ 0xBEEF;
                 string guardA = null, guardB = null;
-                // 重新获取 guard 参数（与创建时一致，通过 RNG 重放）
+                // 重新获取 guard 参数（Bool 池，与创建时一致）
                 {
                     uint rr = decoySeed;
-                    var pool = Obfuscator.GetDecoyParamPool();
-                    guardA = pool[Obfuscator.RngInt(ref rr, 0, pool.Length - 1)].name;
-                    guardB = pool[Obfuscator.RngInt(ref rr, 0, pool.Length - 1)].name;
+                    var boolPool = Obfuscator.GetDecoyParamPool()
+                        .Where(p => p.type == AnimatorControllerParameterType.Bool)
+                        .Select(p => p.name)
+                        .ToArray();
+                    if (boolPool.Length < 2) boolPool = new[] { "_SysBypassChk", "_DevModeFlg" };
+                    guardA = boolPool[Obfuscator.RngInt(ref rr, 0, boolPool.Length - 1)];
+                    guardB = boolPool[Obfuscator.RngInt(ref rr, 0, boolPool.Length - 1)];
                 }
                 preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
                 // 每个影子状态赋值为 lockClip

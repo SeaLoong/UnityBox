@@ -185,9 +185,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (Obfuscator.DecoyStatesEnabled && stepHoldingStates.Count > 0)
             {
                 uint rng = Obfuscator.GetContextSeed("GestureDecoy");
-                var pool = Obfuscator.GetDecoyParamPool();
-                string guardA = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
-                string guardB = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                var boolPool = Obfuscator.GetDecoyParamPool()
+                    .Where(p => p.type == AnimatorControllerParameterType.Bool)
+                    .Select(p => p.name)
+                    .ToArray();
+                if (boolPool.Length < 2) boolPool = new[] { "_SysBypassChk", "_DevModeFlg" };
+                string guardA = boolPool[Obfuscator.RngInt(ref rng, 0, boolPool.Length - 1)];
+                string guardB = boolPool[Obfuscator.RngInt(ref rng, 0, boolPool.Length - 1)];
                 Utils.AddParameterIfNotExists(controller, guardA,
                     AnimatorControllerParameterType.Bool, false);
                 Utils.AddParameterIfNotExists(controller, guardB,
