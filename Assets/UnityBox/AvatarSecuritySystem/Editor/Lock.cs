@@ -36,8 +36,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 50, 0));
             concealedState.writeDefaultValues = useWdOn;
             var concealedClip = CreateConcealedClip(useWdOn);
-            concealedState.motion = concealedClip;
             Utils.AddSubAsset(controller, concealedClip);
+            // Concealed 状态使用 1D Blend Tree：根据 PasswordCorrect 混合隐藏/可见
+            // 这样远程客户端不需要状态过渡即可响应参数变化
+            var concealedBlendTree = new BlendTree
+            {
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("ConcealedBT") : "ASS_Concealed_BT",
+                blendType = BlendTreeType.Simple1D,
+                blendParameter = PARAM_PASSWORD_CORRECT,
+                useAutomaticThresholds = false
+            };
+            concealedBlendTree.AddChild(concealedClip, 0f);
+            var revealClip = CreateRevealClip();
+            Utils.AddSubAsset(controller, revealClip);
+            concealedBlendTree.AddChild(revealClip, 1f);
+            concealedState.motion = concealedBlendTree;
+            Utils.AddSubAsset(controller, concealedBlendTree);
             var lockedState = layer.stateMachine.AddState(
                 Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
                 new Vector3(200, 100, 0));
@@ -221,6 +235,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
+            return clip;
+        }
+        /// <summary>
+        /// 创建"恢复身体可见"clip，仅在 Concealed Blend Tree 中使用。
+        /// 当 PasswordCorrect=1 时 Blend Tree 混合到此 clip，使远程客户端
+        /// 无需状态过渡即可恢复身体可见。
+        /// </summary>
+        private AnimationClip CreateRevealClip()
+        {
+            var clip = new AnimationClip
+            {
+                name = Obfuscator.IsEnabled ? Obfuscator.Clip("Reveal") : "ASS_Reveal"
+            };
+            if (config.disableRootChildren)
+                WriteRestoreValues(clip);
             return clip;
         }
         private void WriteRestoreValues(AnimationClip clip)
