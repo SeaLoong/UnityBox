@@ -45,7 +45,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!_initialized)
             {
                 _seed = 0x5EED5EED;
-                _enabled = true;
+                _enabled = false; // 默认关闭，由 Initialize() 显式开启
                 _generatedFolder = "Assets/UnityBox/AvatarSecuritySystem/Generated";
                 _initialized = true;
             }

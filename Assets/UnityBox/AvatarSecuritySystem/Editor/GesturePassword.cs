@@ -149,7 +149,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
-                // Confirmed → Wait（超时：gestureMaxHoldTime 内没有输入下一手势则重置）
+                // Stay in confirmedState while holding the just-confirmed gesture.
+                // Uses the same Greater+Less conditions as holdToConfirm so any gesture
+                // accepted for entry is also accepted for staying.
+                // Added BEFORE error transitions so it takes priority.
+                var confirmedStay = confirmedState.AddTransition(confirmedState);
+                confirmedStay.hasExitTime = false;
+                confirmedStay.duration = 0f;
+                confirmedStay.hasFixedDuration = true;
+                confirmedStay.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
+                confirmedStay.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
+
+                // Confirmed → Wait（超时：gestureMaxHoldTime clip 播完则重置）
                 var confirmedTimeout = Utils.CreateTransition(confirmedState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 confirmedTimeout.duration = 0f;
