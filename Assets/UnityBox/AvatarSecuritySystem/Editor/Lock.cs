@@ -64,19 +64,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.IsEnabled ? Obfuscator.State("Unlocked") : "Unlocked",
                 new Vector3(200, 200, 0));
             unlockedState.writeDefaultValues = useWdOn;
+            // LockedLocal：仅本地，在 Locked 基础上叠加遮罩和音频
+            var lockedLocalState = layer.stateMachine.AddState(
+                Obfuscator.IsEnabled ? Obfuscator.State("LockedLocal") : "LockedLocal",
+                new Vector3(200, 150, 0));
+            lockedLocalState.writeDefaultValues = useWdOn;
             layer.stateMachine.defaultState = remoteState;
             var lockClip = CreateLockClip(useWdOn);
+            var lockLocalClip = CreateLockLocalClip(useWdOn);
             var unlockClip = CreateUnlockClip(useWdOn);
             Utils.AddSubAsset(controller, unlockClip);
             lockedState.motion = lockClip;
+            lockedLocalState.motion = lockLocalClip;
             Utils.AddSubAsset(controller, lockClip);
+            Utils.AddSubAsset(controller, lockLocalClip);
             if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
             {
                 lockedShadowB.motion = lockClip;
                 lockedShadowC.motion = lockClip;
                 preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             }
-            // Remote → Locked: 所有客户端初始进入锁定
+            // Remote → Locked: 所有客户端进入锁定（身体隐藏，无遮罩）
             var remoteToLocked = Utils.CreateTransition(remoteState, lockedState);
             remoteToLocked.hasExitTime = false;
             remoteToLocked.duration = 0f;
@@ -97,11 +105,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 0.01f);
                 preLockToLocked.duration = 0f;
             }
-            // Locked → Unlocked（显式过渡，本地有效时作为快路径）
-            var toUnlocked = Utils.CreateTransition(lockedState, unlockedState);
-            toUnlocked.hasExitTime = false;
-            toUnlocked.duration = 0f;
-            toUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // Locked → LockedLocal（仅本地，叠加遮罩）
+            var toLockedLocal = Utils.CreateTransition(lockedState, lockedLocalState);
+            toLockedLocal.hasExitTime = false;
+            toLockedLocal.duration = 0f;
+            Utils.AddIsLocalCondition(toLockedLocal, controller, isTrue: true);
+            toLockedLocal.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
+            // LockedLocal → Unlocked（本地解锁）
+            var lockedLocalToUnlocked = Utils.CreateTransition(lockedLocalState, unlockedState);
+            lockedLocalToUnlocked.hasExitTime = false;
+            lockedLocalToUnlocked.duration = 0f;
+            lockedLocalToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // Locked → Unlocked（远端解锁，如果参数过渡有效）
+            var lockedToUnlocked = Utils.CreateTransition(lockedState, unlockedState);
+            lockedToUnlocked.hasExitTime = false;
+            lockedToUnlocked.duration = 0f;
+            lockedToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var unlockedToRemote = Utils.CreateTransition(unlockedState, remoteState);
             unlockedToRemote.hasExitTime = false;
             unlockedToRemote.duration = 0f;
@@ -132,19 +151,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private AnimationClip CreateLockClip(bool useWdOn)
         {
             var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Lock") : "ASS_Lock" };
-            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             var zeroScale = Vector3.zero;
             Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
-            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
-            {
-                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", enableCurve);
-                Debug.Log("[ASS] Lock animation: enabled overlay (fullscreen mask + progress bar)");
-            }
-            if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
-                clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
-            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
-                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
+            // Lock clip 只隐藏身体，不激活遮罩（遮罩由 LockedLocal 状态处理，仅本地）
             if (avatarRoot.transform.Find(GO_DEFENSE_ROOT) != null)
                 clip.SetCurve(GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
             if (config.disableRootChildren)
@@ -160,6 +170,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
                 Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (IsActive=0 + Scale=0)");
             }
+            return clip;
+        }
+        private AnimationClip CreateLockLocalClip(bool useWdOn)
+        {
+            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("LockLocal") : "ASS_LockLocal" };
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            // 仅本地：在 Lock clip 基础上叠加遮罩和音频激活
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
+                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", enableCurve);
+            if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
+                clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
+            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
+                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
             return clip;
         }
         private AnimationClip CreateRemoteClip(bool useWdOn)
