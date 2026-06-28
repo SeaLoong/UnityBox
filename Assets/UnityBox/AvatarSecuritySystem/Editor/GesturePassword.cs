@@ -148,20 +148,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (isLastStep) continue;
                 var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
-                var firstGesture = password[0];
-                if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
-                {
-                    var confirmedRestartTransition = confirmedState.AddTransition(stepHoldingStates[0]);
-                    ConfigureGestureTransition(confirmedRestartTransition, firstGesture, gestureParam);
-                }
+
                 // Confirmed → Wait（超时：gestureMaxHoldTime 内没有输入下一手势则重置）
                 var confirmedTimeout = Utils.CreateTransition(confirmedState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 confirmedTimeout.duration = 0f;
 
                 // Error from confirmedState: check against the NEXT expected gesture (password[i+1]).
-                // The confirmedRestartTransition (to password[0]) is added before these error
-                // transitions, so it takes priority for the restart gesture.
+                // 注意：首位密码手势不再单独处理（已移除 restart 转换），因为误触时
+                // 0.3s 容错窗口足以纠正到下一正确手势，超时回到 Wait 后也会自然触发。
                 var confirmedErrLow = confirmedState.AddTransition(errorToleranceState);
                 confirmedErrLow.hasExitTime = false;
                 confirmedErrLow.duration = 0f;
@@ -174,11 +169,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 confirmedErrHigh.AddCondition(AnimatorConditionMode.Greater, password[i + 1], gestureParam);
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
-                if (firstGesture != gestureValue && stepHoldingStates.Count > 0)
-                {
-                    var toleranceRestartTransition = errorToleranceState.AddTransition(stepHoldingStates[0]);
-                    ConfigureGestureTransition(toleranceRestartTransition, firstGesture, gestureParam);
-                }
+
                 var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 toleranceTimeoutToWait.duration = 0f;
