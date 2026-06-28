@@ -40,21 +40,37 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
                 new Vector3(200, 100, 0));
             lockedState.writeDefaultValues = useWdOn;
-            AnimatorState lockedShadowB = null, lockedShadowC = null, preLockState = null;
+            var lockClip = CreateLockClip(useWdOn);
+            Utils.AddSubAsset(controller, lockClip);
+            lockedState.motion = lockClip;
+            AnimatorState preLockState = null;
+            List<AnimatorState> extraShadows = null;
+            uint decoySeed = 0;
             if (Obfuscator.DecoyStatesEnabled)
             {
-                Utils.AddParameterIfNotExists(controller, "_SysBypassChk",
+                decoySeed = Obfuscator.GetContextSeed("LockDecoy");
+                uint rng = decoySeed;
+                var pool = Obfuscator.GetDecoyParamPool();
+                string guardParamA = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                string guardParamB = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                Utils.AddParameterIfNotExists(controller, guardParamA,
                     AnimatorControllerParameterType.Bool, false);
-                Utils.AddParameterIfNotExists(controller, "_PwHashCacheV",
-                    AnimatorControllerParameterType.Float, defaultFloat: 0f);
-                lockedShadowB = layer.stateMachine.AddState(
-                    Obfuscator.IsEnabled ? Obfuscator.State("LockedB") : "LockedB",
-                    new Vector3(350, 100, 0));
-                lockedShadowB.writeDefaultValues = useWdOn;
-                lockedShadowC = layer.stateMachine.AddState(
-                    Obfuscator.IsEnabled ? Obfuscator.State("LockedC") : "LockedC",
-                    new Vector3(500, 100, 0));
-                lockedShadowC.writeDefaultValues = useWdOn;
+                Utils.AddParameterIfNotExists(controller, guardParamB,
+                    AnimatorControllerParameterType.Bool, false);
+                // 随机 1~4 个额外影子状态
+                int shadowCount = Obfuscator.RngInt(ref rng, 1, 4);
+                extraShadows = new List<AnimatorState>();
+                float xBase = 350f;
+                for (int s = 0; s < shadowCount; s++)
+                {
+                    var shadow = layer.stateMachine.AddState(
+                        Obfuscator.State($"Shd_{s + 1}"),
+                        new Vector3(xBase + s * 100, 100 + ((s & 1) * 50), 0));
+                    shadow.writeDefaultValues = useWdOn;
+                    shadow.motion = lockClip;
+                    extraShadows.Add(shadow);
+                }
+                // preLock 作为诱饵（始终存在）
                 preLockState = layer.stateMachine.AddState(
                     Obfuscator.IsEnabled ? Obfuscator.State("PreLock") : "PreLock",
                     new Vector3(200, 0, 0));
@@ -70,35 +86,58 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 150, 0));
             lockedLocalState.writeDefaultValues = useWdOn;
             layer.stateMachine.defaultState = remoteState;
-            var lockClip = CreateLockClip(useWdOn);
             var lockLocalClip = CreateLockLocalClip(useWdOn);
             var unlockClip = CreateUnlockClip(useWdOn);
             Utils.AddSubAsset(controller, unlockClip);
-            lockedState.motion = lockClip;
             lockedLocalState.motion = lockLocalClip;
-            Utils.AddSubAsset(controller, lockClip);
             Utils.AddSubAsset(controller, lockLocalClip);
-            if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
+            if (Obfuscator.DecoyStatesEnabled && extraShadows != null)
             {
-                lockedShadowB.motion = lockClip;
-                lockedShadowC.motion = lockClip;
+                uint rng = decoySeed ^ 0xBEEF;
+                string guardA = null, guardB = null;
+                // 重新获取 guard 参数（与创建时一致，通过 RNG 重放）
+                {
+                    uint rr = decoySeed;
+                    var pool = Obfuscator.GetDecoyParamPool();
+                    guardA = pool[Obfuscator.RngInt(ref rr, 0, pool.Length - 1)].name;
+                    guardB = pool[Obfuscator.RngInt(ref rr, 0, pool.Length - 1)].name;
+                }
                 preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+                // 每个影子状态赋值为 lockClip
+                foreach (var sh in extraShadows)
+                    sh.motion = lockClip;
+                // 构建随机器械链：LockedA → Shd_1 → Shd_2 → ... → LockedA
+                var prevState = lockedState;
+                for (int i = 0; i < extraShadows.Count; i++)
+                {
+                    var guard = (i & 1) == 0 ? guardA : guardB;
+                    var trans = Utils.CreateTransition(prevState, extraShadows[i],
+                        hasExitTime: true, exitTime: 500f + Obfuscator.RngInt(ref rng, 0, 999));
+                    trans.duration = 0.05f + Obfuscator.RngInt(ref rng, 0, 5) * 0.01f;
+                    trans.AddCondition(AnimatorConditionMode.If, 0, guard);
+                    prevState = extraShadows[i];
+                }
+                // 最后一个影子指回 LockedA
+                if (extraShadows.Count > 0)
+                {
+                    var backTrans = Utils.CreateTransition(extraShadows[extraShadows.Count - 1], lockedState,
+                        hasExitTime: true, exitTime: 0.01f);
+                    backTrans.duration = 0f;
+                }
+                // Remote 自循环（exitTime 随机）
+                var remoteLoop = Utils.CreateTransition(remoteState, remoteState,
+                    hasExitTime: true, exitTime: 500f + Obfuscator.RngInt(ref rng, 0, 999));
+                remoteLoop.duration = 0f;
             }
             // Remote → Locked: 所有客户端进入锁定（身体隐藏，无遮罩）
             var remoteToLocked = Utils.CreateTransition(remoteState, lockedState);
-            remoteToLocked.hasExitTime = false;
-            remoteToLocked.duration = 0f;
             remoteToLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             // Remote → Unlocked: 如果密码已正确则直接跳过锁定
             var toUnlockedDirect = Utils.CreateTransition(remoteState, unlockedState);
-            toUnlockedDirect.hasExitTime = false;
-            toUnlockedDirect.duration = 0f;
             toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && preLockState != null)
             {
                 var toPreLock = Utils.CreateTransition(remoteState, preLockState);
-                toPreLock.hasExitTime = false;
-                toPreLock.duration = 0f;
                 Utils.AddIsLocalCondition(toPreLock, controller, isTrue: true);
                 toPreLock.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                 var preLockToLocked = Utils.CreateTransition(preLockState, lockedState,
@@ -107,41 +146,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             // Locked → LockedLocal（仅本地，叠加遮罩）
             var toLockedLocal = Utils.CreateTransition(lockedState, lockedLocalState);
-            toLockedLocal.hasExitTime = false;
-            toLockedLocal.duration = 0f;
             Utils.AddIsLocalCondition(toLockedLocal, controller, isTrue: true);
             toLockedLocal.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             // LockedLocal → Unlocked（本地解锁）
             var lockedLocalToUnlocked = Utils.CreateTransition(lockedLocalState, unlockedState);
-            lockedLocalToUnlocked.hasExitTime = false;
-            lockedLocalToUnlocked.duration = 0f;
             lockedLocalToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             // Locked → Unlocked（远端解锁，如果参数过渡有效）
             var lockedToUnlocked = Utils.CreateTransition(lockedState, unlockedState);
-            lockedToUnlocked.hasExitTime = false;
-            lockedToUnlocked.duration = 0f;
             lockedToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var unlockedToRemote = Utils.CreateTransition(unlockedState, remoteState);
-            unlockedToRemote.hasExitTime = false;
-            unlockedToRemote.duration = 0f;
             unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            if (Obfuscator.DecoyStatesEnabled && lockedShadowB != null)
-            {
-                var lockedAToB = Utils.CreateTransition(lockedState, lockedShadowB,
-                    hasExitTime: true, exitTime: 999f);
-                lockedAToB.duration = 0.1f;
-                lockedAToB.AddCondition(AnimatorConditionMode.If, 0, "_SysBypassChk");
-                var lockedBToC = Utils.CreateTransition(lockedShadowB, lockedShadowC,
-                    hasExitTime: true, exitTime: 999f);
-                lockedBToC.duration = 0.1f;
-                lockedBToC.AddCondition(AnimatorConditionMode.If, 0, "_SysBypassChk");
-                var lockedCToA = Utils.CreateTransition(lockedShadowC, lockedState,
-                    hasExitTime: true, exitTime: 0.01f);
-                lockedCToA.duration = 0f;
-                var remoteLoop = Utils.CreateTransition(remoteState, remoteState,
-                    hasExitTime: true, exitTime: 999f);
-                remoteLoop.duration = 0f;
-            }
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log("[ASS] Initial lock layer created");

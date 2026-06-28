@@ -251,6 +251,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return (_seed ^ 0xDEC0DE) * 0x9E3779B9 + 0x7F4A7C15;
         }
 
+        public static uint GetContextSeed(string context)
+        {
+            EnsureInitialized();
+            if (!_enabled) return 0;
+            uint h = _seed;
+            foreach (char c in context) { h ^= (uint)c; h *= 0x01000193; }
+            return h ^ 0xDEFACE;
+        }
+
         public static void InjectFakeStates(AnimatorStateMachine stateMachine,
             List<(string name, AnimatorControllerParameterType type, float defaultValue)> decoyParams,
             AnimationClip emptyClip,
@@ -430,6 +439,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         #endregion
         #region 迷惑参数池（提示词注入专用 — 语义名称误导 AI）
+        public static (string name, AnimatorControllerParameterType type, float defaultVal)[] GetDecoyParamPool() => DecoyParamPool;
         private static readonly (string name, AnimatorControllerParameterType type, float defaultVal)[] DecoyParamPool = {
             ("_SysBypassChk", AnimatorControllerParameterType.Bool, 0f),
             ("_DbgOverrideSt", AnimatorControllerParameterType.Bool, 0f),

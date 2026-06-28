@@ -184,18 +184,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             if (Obfuscator.DecoyStatesEnabled && stepHoldingStates.Count > 0)
             {
-                Utils.AddParameterIfNotExists(controller, "_VerbLogLvl",
+                uint rng = Obfuscator.GetContextSeed("GestureDecoy");
+                var pool = Obfuscator.GetDecoyParamPool();
+                string guardA = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                string guardB = pool[Obfuscator.RngInt(ref rng, 0, pool.Length - 1)].name;
+                Utils.AddParameterIfNotExists(controller, guardA,
                     AnimatorControllerParameterType.Bool, false);
-                Utils.AddParameterIfNotExists(controller, "_ProfilerEn",
+                Utils.AddParameterIfNotExists(controller, guardB,
                     AnimatorControllerParameterType.Bool, false);
                 var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
                 var decoyHolds = new List<AnimatorState>();
-                int decoyCount = Mathf.Min(3, password.Count);
+                int decoyCount = Mathf.Clamp(Obfuscator.RngInt(ref rng, 2, 4), 2, password.Count);
                 for (int d = 0; d < decoyCount; d++)
                 {
-                    string decoyName = Obfuscator.State($"Decoy_{d + 1}");
+                    string decoyName = Obfuscator.State($"GDecoy_{d + 1}");
                     var decoyState = layer.stateMachine.AddState(decoyName,
-                        new Vector3(-200, 200 + d * 80, 0));
+                        new Vector3(-200 + d * 30, 200 + d * 80, 0));
                     decoyState.motion = emptyClip;
                     decoyState.writeDefaultValues = true;
                     decoyHolds.Add(decoyState);
@@ -206,20 +210,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                             unusedGestures.Add(g);
                     if (unusedGestures.Count == 0)
                         for (int g = 0; g <= 7; g++) unusedGestures.Add(g);
-                    int fakeGesture = unusedGestures[(d * 3 + password[0] + 1) % unusedGestures.Count];
+                    int fakeGesture = unusedGestures[Obfuscator.RngInt(ref rng, 0, unusedGestures.Count - 1)];
+                    var guard = (d & 1) == 0 ? guardA : guardB;
                     var decoyEntry = Utils.CreateTransition(waitState, decoyState);
                     decoyEntry.AddCondition(AnimatorConditionMode.Equals, fakeGesture, gestureParam);
-                    decoyEntry.AddCondition(AnimatorConditionMode.If, 0, "_VerbLogLvl");
+                    decoyEntry.AddCondition(AnimatorConditionMode.If, 0, guard);
                 }
                 for (int d = 0; d < decoyHolds.Count - 1; d++)
                 {
                     var trans = decoyHolds[d].AddTransition(decoyHolds[d + 1]);
                     trans.hasExitTime = true;
-                    trans.exitTime = 0.5f;
-                    trans.duration = 0.1f;
-                    int fg = 1 + ((d * 5 + 3) % 7);
-                    trans.AddCondition(AnimatorConditionMode.Equals, fg, gestureParam);
-                    trans.AddCondition(AnimatorConditionMode.If, 0, "_ProfilerEn"); // 永假守卫
+                    trans.exitTime = 0.2f + Obfuscator.RngInt(ref rng, 0, 8) * 0.1f;
+                    trans.duration = 0.05f + Obfuscator.RngInt(ref rng, 0, 3) * 0.05f;
+                    int fakeG = Obfuscator.RngInt(ref rng, 0, 7);
+                    var guard = (d & 1) == 0 ? guardA : guardB;
+                    trans.AddCondition(AnimatorConditionMode.Equals, fakeG, gestureParam);
+                    trans.AddCondition(AnimatorConditionMode.If, 0, guard);
                 }
                 if (decoyHolds.Count > 0)
                 {
