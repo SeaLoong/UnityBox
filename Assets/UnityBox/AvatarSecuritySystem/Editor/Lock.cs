@@ -129,8 +129,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 500f + Obfuscator.RngInt(ref rng, 0, 999));
                 remoteLoop.duration = 0f;
             }
-            // Remote → Locked: 所有客户端进入锁定（身体隐藏，无遮罩）
+            // Remote → Locked: 仅本地进入隐藏锁定
             var remoteToLocked = Utils.CreateTransition(remoteState, lockedState);
+            Utils.AddIsLocalCondition(remoteToLocked, controller, isTrue: true);
             remoteToLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             // Remote → Unlocked: 如果密码已正确则直接跳过锁定
             var toUnlockedDirect = Utils.CreateTransition(remoteState, unlockedState);
