@@ -323,8 +323,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 .Where(p => p.type == AnimatorControllerParameterType.Bool)
                 .ToList();
             if (boolGuards.Count == 0)
-                // 使用 IsLocal 做 fallback——它由 EnsureBuiltInVRCParameters 保证存在
-                boolGuards.Add((Constants.PARAM_IS_LOCAL, AnimatorControllerParameterType.Bool, 0f));
+                boolGuards.Add(("_ASS_Guard", AnimatorControllerParameterType.Bool, 0f));
 
             var defaultState = stateMachine.defaultState;
 
