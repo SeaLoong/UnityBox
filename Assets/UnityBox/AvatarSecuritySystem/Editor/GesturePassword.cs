@@ -149,35 +149,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
-                // Stay in confirmedState while holding the just-confirmed gesture.
-                // Uses the same Greater+Less conditions as holdToConfirm so any gesture
-                // accepted for entry is also accepted for staying.
-                // Added BEFORE error transitions so it takes priority.
-                var confirmedStay = confirmedState.AddTransition(confirmedState);
-                confirmedStay.hasExitTime = false;
-                confirmedStay.duration = 0f;
-                confirmedStay.hasFixedDuration = true;
-                confirmedStay.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                confirmedStay.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
-
                 // Confirmed → Wait（超时：gestureMaxHoldTime clip 播完则重置）
                 var confirmedTimeout = Utils.CreateTransition(confirmedState, waitState,
                     hasExitTime: true, exitTime: 1.0f);
                 confirmedTimeout.duration = 0f;
 
-                // Error from confirmedState: check against the NEXT expected gesture (password[i+1]).
-                // 注意：首位密码手势不再单独处理（已移除 restart 转换），因为误触时
-                // 0.3s 容错窗口足以纠正到下一正确手势，超时回到 Wait 后也会自然触发。
+                // Error from confirmedState: check against the NEXT expected gesture (password[i+1]),
+                // but exclude the JUST-CONFIRMED gesture (password[i]) via NotEqual so the user
+                // can hold it without immediately erroring.
                 var confirmedErrLow = confirmedState.AddTransition(errorToleranceState);
                 confirmedErrLow.hasExitTime = false;
                 confirmedErrLow.duration = 0f;
                 confirmedErrLow.hasFixedDuration = true;
                 confirmedErrLow.AddCondition(AnimatorConditionMode.Less, password[i + 1], gestureParam);
+                confirmedErrLow.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
                 var confirmedErrHigh = confirmedState.AddTransition(errorToleranceState);
                 confirmedErrHigh.hasExitTime = false;
                 confirmedErrHigh.duration = 0f;
                 confirmedErrHigh.hasFixedDuration = true;
                 confirmedErrHigh.AddCondition(AnimatorConditionMode.Greater, password[i + 1], gestureParam);
+                confirmedErrHigh.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
 
