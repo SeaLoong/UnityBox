@@ -109,6 +109,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var instructionalClips = GenerateInstructionalClips(fxController);
                 GenerateDecoyLayer(fxController, instructionalClips);
                 InjectFakeStatesIntoRealLayers(fxController, instructionalClips);
+                Obfuscator.ObfuscatePlayableControllers(descriptor);
             }
             RegisterASSParameters(descriptor, assConfig);
             Utils.SaveAndRefresh();

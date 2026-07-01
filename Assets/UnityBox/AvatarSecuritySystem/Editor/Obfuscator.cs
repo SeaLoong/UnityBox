@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using VRC.SDK3.Avatars.Components;
 using Object = UnityEngine.Object;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
@@ -258,6 +259,189 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             uint h = _seed;
             foreach (char c in context) { h ^= (uint)c; h *= 0x01000193; }
             return h ^ 0xDEFACE;
+        }
+
+        public static void ObfuscatePlayableControllers(VRCAvatarDescriptor descriptor)
+        {
+            EnsureInitialized();
+            if (!_enabled || descriptor == null) return;
+
+            var controllers = new HashSet<AnimatorController>();
+            foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
+            {
+                if (animLayer.isDefault) continue;
+                if (animLayer.animatorController is AnimatorController controller && controller != null)
+                    controllers.Add(controller);
+            }
+
+            int controllerCount = 0;
+            int layerCount = 0;
+            int stateMachineCount = 0;
+            int stateCount = 0;
+            int blendTreeCount = 0;
+            int clipCount = 0;
+
+            foreach (var controller in controllers)
+            {
+                ObfuscateAnimatorController(controller,
+                    ref layerCount,
+                    ref stateMachineCount,
+                    ref stateCount,
+                    ref blendTreeCount,
+                    ref clipCount);
+                controllerCount++;
+            }
+
+            if (controllerCount > 0)
+            {
+                Debug.Log($"[ASS] Obfuscator: Renamed playable controllers={controllerCount}, layers={layerCount}, stateMachines={stateMachineCount}, states={stateCount}, blendTrees={blendTreeCount}, clips={clipCount}");
+            }
+        }
+
+        private static void ObfuscateAnimatorController(
+            AnimatorController controller,
+            ref int layerCount,
+            ref int stateMachineCount,
+            ref int stateCount,
+            ref int blendTreeCount,
+            ref int clipCount)
+        {
+            if (controller == null) return;
+
+            if (CanRenameAssetObject(controller))
+            {
+                controller.name = Layer(GetStableObjectKey("PlayableController", controller), controller.name);
+                EditorUtility.SetDirty(controller);
+            }
+
+            var renamedMotions = new HashSet<Motion>();
+            var layers = controller.layers;
+            string controllerKey = GetStableObjectKey("Controller", controller);
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                var layer = layers[i];
+                if (Constants.IsASSManagedLayerName(layer.name))
+                {
+                    layers[i] = layer;
+                    continue;
+                }
+
+                layer.name = Layer($"{controllerKey}_Layer_{i}", layer.name);
+                layerCount++;
+
+                if (layer.stateMachine != null)
+                {
+                    ObfuscateStateMachineRecursive(
+                        layer.stateMachine,
+                        $"{controllerKey}_Layer_{i}",
+                        renamedMotions,
+                        ref stateMachineCount,
+                        ref stateCount,
+                        ref blendTreeCount,
+                        ref clipCount);
+                }
+
+                layers[i] = layer;
+            }
+
+            controller.layers = layers;
+            EditorUtility.SetDirty(controller);
+        }
+
+        private static void ObfuscateStateMachineRecursive(
+            AnimatorStateMachine stateMachine,
+            string keyPrefix,
+            HashSet<Motion> renamedMotions,
+            ref int stateMachineCount,
+            ref int stateCount,
+            ref int blendTreeCount,
+            ref int clipCount)
+        {
+            if (stateMachine == null) return;
+
+            stateMachine.name = Layer(GetStableObjectKey($"{keyPrefix}_StateMachine", stateMachine), stateMachine.name);
+            EditorUtility.SetDirty(stateMachine);
+            stateMachineCount++;
+
+            foreach (var childState in stateMachine.states)
+            {
+                var state = childState.state;
+                if (state == null) continue;
+
+                state.name = State(GetStableObjectKey("PlayableState", state), state.name);
+                EditorUtility.SetDirty(state);
+                stateCount++;
+
+                ObfuscateMotionRecursive(state.motion, renamedMotions, ref blendTreeCount, ref clipCount);
+            }
+
+            foreach (var childMachine in stateMachine.stateMachines)
+            {
+                ObfuscateStateMachineRecursive(
+                    childMachine.stateMachine,
+                    GetStableObjectKey($"{keyPrefix}_ChildStateMachine", childMachine.stateMachine),
+                    renamedMotions,
+                    ref stateMachineCount,
+                    ref stateCount,
+                    ref blendTreeCount,
+                    ref clipCount);
+            }
+        }
+
+        private static void ObfuscateMotionRecursive(
+            Motion motion,
+            HashSet<Motion> renamedMotions,
+            ref int blendTreeCount,
+            ref int clipCount)
+        {
+            if (motion == null || !renamedMotions.Add(motion)) return;
+
+            if (motion is BlendTree blendTree)
+            {
+                blendTree.name = Clip(GetStableObjectKey("PlayableBlendTree", blendTree), blendTree.name);
+                EditorUtility.SetDirty(blendTree);
+                blendTreeCount++;
+
+                foreach (var child in blendTree.children)
+                    ObfuscateMotionRecursive(child.motion, renamedMotions, ref blendTreeCount, ref clipCount);
+
+                return;
+            }
+
+            if (motion is AnimationClip clip)
+            {
+                if (!CanRenameAssetObject(clip)) return;
+
+                clip.name = Clip(GetStableObjectKey("PlayableClip", clip), clip.name);
+                EditorUtility.SetDirty(clip);
+                clipCount++;
+            }
+        }
+
+        private static string GetStableObjectKey(string prefix, Object obj)
+        {
+            if (obj == null) return prefix + "_Null";
+
+            try
+            {
+                string globalId = GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString();
+                if (!string.IsNullOrEmpty(globalId))
+                    return prefix + "_" + globalId;
+            }
+            catch
+            {
+            }
+
+            return prefix + "_" + obj.GetInstanceID();
+        }
+
+        private static bool CanRenameAssetObject(Object obj)
+        {
+            string path = AssetDatabase.GetAssetPath(obj);
+            return string.IsNullOrEmpty(path)
+                || path.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("Assets\\", StringComparison.OrdinalIgnoreCase);
         }
 
         private static int CountStates(AnimatorStateMachine sm)
@@ -587,10 +771,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         };
         private static readonly string[] LayerPool = {
             "_GestureBlend", "_GestureLayer", "_GestureProc",
+            "_PlayableMux", "_PlayableEval", "_PlayableGraph", "_PlayableKernel",
             "_FingerTrack", "_FingerPose", "_FingerIK",
             "_HandAnim", "_HandPose", "_HandIK",
             "_FullBodyIK", "_BodyIK", "_LimbIK",
             "_MaterialCtrl", "_MaterialLOD", "_MaterialFX",
+            "_StateRouter", "_StateKernel", "_StateMux", "_StateDriver",
             "_ShaderFX", "_ShaderCtrl", "_ShaderLOD",
             "_PhysSim", "_PhysCalc", "_PhysBone",
             "_DynamicResp", "_DynamicSim", "_DynamicCalc",
@@ -613,6 +799,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_LODGroup", "_LODSwitch", "_QualityTier",
             "_MeshRenderer", "_MeshFilter", "_MeshCombiner",
             "_Lightmapper", "_LightProbe", "_ReflProbe",
+            "_ParamRouter", "_GraphDriver", "_PoseKernel", "_EvalStack",
         };
         private static readonly string[] GameObjectPool = {
             "_TrackingData", "_TrackingRoot", "_TrackingNode",
@@ -653,6 +840,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         };
         private static readonly string[] ClipPool = {
             "_IdlePose", "_IdleAnim", "_IdleLoop",
+            "_SyncPulse", "_GraphPulse", "_KernelLoop", "_KernelTick",
             "_WalkCycle", "_WalkAnim", "_WalkLoop",
             "_RunCycle", "_RunAnim", "_RunLoop",
             "_JumpAnim", "_JumpStart", "_JumpLoop",
@@ -667,6 +855,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_LoopAnim", "_LoopMain", "_LoopAlt",
             "_OneShot", "_SingleAnim",
             "_HoldPose", "_ReleasePose", "_IdleToPose",
+            "_RoutePass", "_DriverPass", "_MuxPass", "_EvalPass",
             "_EaseIn", "_EaseOut", "_EaseLoop",
             "_BounceAnim", "_SwingAnim", "_TwistAnim",
             "_StretchAnm", "_CompressAn", "_WobbleAnim",
@@ -678,11 +867,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_RockPose", "_GunPose", "_ThumbPose",
             "_AFKAnim", "_Emote1", "_Emote2", "_StationPose",
             "_SitPose", "_CrouchAnim", "_ProneAnim", "_LayDown",
+            "_PoseCache", "_StateLatch", "_ParamSweep", "_DispatchStep",
             "_Viseme0", "_Viseme1", "_Viseme2", "_Viseme3",
             "_Viseme4", "_Viseme5", "_Viseme6",
         };
         private static readonly string[] StatePool = {
             "Idle", "Idle_A", "Idle_B", "Idle_Variant",
+            "Validate", "Resolve", "Route", "Kernel", "Latch", "Prime",
             "Walk", "Walk_A", "Walk_B",
             "Run", "Run_A", "Run_B",
             "Jump", "Jump_Start", "Jump_Loop",
@@ -700,11 +891,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "Enter", "Exit", "Enter_A", "Exit_A",
             "Loop", "Loop_A", "Once", "Once_A",
             "Start", "Stop", "Pause", "Resume", "Reset",
+            "Scan", "Tick", "Sample", "Dispatch", "Finalize",
             "Forward", "Backward", "Left", "Right",
             "Up", "Down", "Open", "Close",
             "FadeIn", "FadeOut", "Snap",
             "Init", "Main", "Final",
             "Wait", "Ready", "Process", "Complete",
+            "Cache", "StageA", "StageB", "RouteA", "RouteB",
             "Lock", "Release", "Apply", "Remove",
             "Add", "Subtract", "Multiply", "Divide",
             "Normal", "Invert", "Absolute", "Negate",
