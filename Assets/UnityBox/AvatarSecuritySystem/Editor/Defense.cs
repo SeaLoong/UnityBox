@@ -19,20 +19,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             this.config = config;
             this.isDebugMode = isDebugMode;
         }
-        private static string ParticleRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ParticleRoot") : "ParticleDefense";
-        private static string LightRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("LightRoot") : "LightDefense";
-        private static string PhysXRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("PhysXRoot") : "PhysXDefense";
-        private static string ClothRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ClothRoot") : "ClothDefense";
-        private static string ShaderRootName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ShaderRoot") : "ShaderDefense";
-        private static string PSObjPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("PS") : "PS";
-        private static string SubEmitterPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Sub") : "SubEmitter";
-        private static string LightPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("L") : "L";
-        private static string RBPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("RB") : "Rigidbody";
-        private static string ColliderPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Col") : "Collider";
-        private static string ClothPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("Cloth") : "Cloth";
-        private static string ShaderMatPrefix => Obfuscator.IsEnabled ? Obfuscator.GameObject("SM") : "ShaderMat";
-        private static string DefenseMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("Mesh") : "ASS_Mesh";
-        private static string ShaderMeshName => Obfuscator.IsEnabled ? Obfuscator.GameObject("ShaderMesh") : "ASS_ShaderMesh";
+        private static string ParticleRootName => GO_PARTICLE_ROOT;
+        private static string LightRootName => GO_LIGHT_ROOT;
+        private static string PhysXRootName => GO_PHYSX_ROOT;
+        private static string ClothRootName => GO_CLOTH_ROOT;
+        private static string ShaderRootName => GO_SHADER_ROOT;
+        private static string PSObjPrefix => GO_PS_PREFIX;
+        private static string SubEmitterPrefix => GO_SUB_EMITTER_PREFIX;
+        private static string LightPrefix => GO_LIGHT_PREFIX;
+        private static string RBPrefix => GO_RB_PREFIX;
+        private static string ColliderPrefix => GO_COLLIDER_PREFIX;
+        private static string ClothPrefix => GO_CLOTH_PREFIX;
+        private static string ShaderMatPrefix => GO_SHADER_MAT_PREFIX;
+        private static string DefenseMeshName => GO_DEFENSE_MESH;
+        private static string ShaderMeshName => GO_SHADER_MESH;
         public void Generate()
         {
             if (config.disableDefense)
@@ -48,16 +48,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
             var inactiveState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
+                Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
+                Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
             var activateClip = new AnimationClip
             {
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("DefenseActivate") : "ASS_DefenseActivate"
+                name = CLIP_DEFENSE_ACTIVATE
             };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
@@ -84,16 +84,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
             var inactiveState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Inactive") : "Inactive",
+                Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Active") : "Active",
+                Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
             var activateClip = new AnimationClip
             {
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("DefenseActiveDefault") : "ASS_DefenseActive_Default"
+                name = CLIP_DEFENSE_ACTIVE_DEFAULT
             };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));

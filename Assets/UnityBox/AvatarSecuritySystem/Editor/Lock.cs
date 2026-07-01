@@ -29,7 +29,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
             bool useWdOn = ResolveWriteDefaults();
             var remoteState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
             remoteState.writeDefaultValues = useWdOn;
             var remoteClip = CreateRemoteClip(useWdOn);
@@ -37,7 +37,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, remoteClip);
 
             var lockedState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("LockedA") : "LockedA",
+                Obfuscator.State("LockedA"),
                 new Vector3(200, 100, 0));
             lockedState.writeDefaultValues = useWdOn;
             var lockClip = CreateLockClip(useWdOn);
@@ -71,23 +71,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
                 // preLock 作为诱饵（始终存在）
                 preLockState = layer.stateMachine.AddState(
-                    Obfuscator.IsEnabled ? Obfuscator.State("PreLock") : "PreLock",
+                    Obfuscator.State("PreLock"),
                     new Vector3(200, 0, 0));
                 preLockState.writeDefaultValues = useWdOn;
             }
             var unlockedState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Unlocked") : "Unlocked",
+                Obfuscator.State("Unlocked"),
                 new Vector3(200, 200, 0));
             unlockedState.writeDefaultValues = useWdOn;
             // LockedLocal：仅本地，在 Locked 基础上叠加遮罩和音频
             var lockedLocalState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("LockedLocal") : "LockedLocal",
+                Obfuscator.State("LockedLocal"),
                 new Vector3(200, 150, 0));
             lockedLocalState.writeDefaultValues = useWdOn;
             layer.stateMachine.defaultState = remoteState;
             var lockLocalClip = CreateLockLocalClip(useWdOn);
             var unlockClip = CreateUnlockClip(useWdOn);
             Utils.AddSubAsset(controller, unlockClip);
+            unlockedState.motion = unlockClip;
             lockedLocalState.motion = lockLocalClip;
             Utils.AddSubAsset(controller, lockLocalClip);
             if (Obfuscator.DecoyStatesEnabled && extraShadows != null)
@@ -163,13 +164,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         #region Private Methods
         private AnimationClip CreateLockClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Lock") : "ASS_Lock" };
+            var clip = new AnimationClip { name = CLIP_LOCK };
             var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             var zeroScale = Vector3.zero;
             Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
             // Lock clip 只隐藏身体，不激活遮罩（遮罩由 LockedLocal 状态处理，仅本地）
-            if (avatarRoot.transform.Find(GO_DEFENSE_ROOT) != null)
-                clip.SetCurve(GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive", disableCurve);
+            // defense 由 Defense 层独立管理，Lock 层不碰
             if (config.disableRootChildren)
             {
                 int hiddenCount = 0;
@@ -187,7 +187,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private AnimationClip CreateLockLocalClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("LockLocal") : "ASS_LockLocal" };
+            var clip = new AnimationClip { name = CLIP_LOCK_LOCAL };
             var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
             // 仅本地：在 Lock clip 基础上叠加遮罩和音频激活
             if (avatarRoot.transform.Find(GO_OVERLAY) != null)
@@ -200,28 +200,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private AnimationClip CreateRemoteClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Remote") : "ASS_Remote" };
+            var clip = new AnimationClip { name = CLIP_REMOTE };
             SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
-            SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
+            // defense 由 Defense 层独立管理，Lock 层不碰
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
-            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay and defense objects");
+            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay");
             return clip;
         }
         private AnimationClip CreateUnlockClip(bool useWdOn)
         {
-            var clip = new AnimationClip { name = Obfuscator.IsEnabled ? Obfuscator.Clip("Unlock") : "ASS_Unlock" };
-            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            var clip = new AnimationClip { name = CLIP_UNLOCK };
             Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
             SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
-            SetGameObjectActiveInClip(clip, GO_DEFENSE_ROOT, false);
-            if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
-                clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
-            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
-                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
-            Debug.Log("[ASS] Unlock animation created (empty animation, allows objects to restore original state)");
             return clip;
         }
         private void WriteRestoreValues(AnimationClip clip)
@@ -267,7 +260,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 foreach (var layer in ac.layers)
                 {
-                    if (layer.name.StartsWith("ASS_")) continue;
+                    if (IsASSManagedLayerName(layer.name)) continue;
                     if (layer.blendingMode == AnimatorLayerBlendingMode.Additive) continue;
                     if (layer.stateMachine == null) continue;
                     if (IsWriteDefaultsRequiredLayer(layer)) continue;

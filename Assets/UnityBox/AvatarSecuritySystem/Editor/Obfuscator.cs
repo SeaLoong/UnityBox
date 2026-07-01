@@ -52,34 +52,34 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         #endregion
         #region 名称映射 — 内部 Key → 误导性名称 + 哈希后缀
-        public static string Param(string internalKey)
+        public static string Param(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
-            if (!_enabled) return internalKey;
+            if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(ParamPool, internalKey);
         }
-        public static string Layer(string internalKey)
+        public static string Layer(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
-            if (!_enabled) return internalKey;
+            if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(LayerPool, internalKey);
         }
-        public static string GameObject(string internalKey)
+        public static string GameObject(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
-            if (!_enabled) return internalKey;
+            if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(GameObjectPool, internalKey);
         }
-        public static string Clip(string internalKey)
+        public static string Clip(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
-            if (!_enabled) return internalKey;
+            if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(ClipPool, internalKey);
         }
-        public static string State(string internalKey)
+        public static string State(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
-            if (!_enabled) return internalKey;
+            if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(StatePool, internalKey);
         }
         public static string DummyPath()

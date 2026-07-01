@@ -234,19 +234,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var decoyParams = Obfuscator.GetDecoyParameters();
             if (decoyParams == null || decoyParams.Count == 0) return;
             // 确保守卫参数在控制器中存在
-            string guardParam = Obfuscator.IsEnabled ? Obfuscator.Param("Guard") : "_ASS_Guard";
+            string guardParam = Obfuscator.Param("Guard", "_ASS_Guard");
             Utils.AddParameterIfNotExists(controller, guardParam,
                 AnimatorControllerParameterType.Bool, false);
             var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             int injectedCount = 0;
             foreach (var layer in controller.layers)
             {
-                bool isAssLayer = layer.name == Constants.LAYER_LOCK
-                    || layer.name == Constants.LAYER_PASSWORD_INPUT
-                    || layer.name == Constants.LAYER_COUNTDOWN
-                    || layer.name == Constants.LAYER_AUDIO
-                    || layer.name == Constants.LAYER_DEFENSE;
-                if (!isAssLayer) continue;
+                if (!Constants.IsASSManagedLayerName(layer.name)) continue;
                 if (layer.stateMachine == null) continue;
                 // 每层独立 seed 偏移，使假状态的拓扑/参数/位置各不相同
                 uint layerOffset = (uint)layer.name.GetHashCode();

@@ -24,19 +24,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var countdownClip = CreateCountdownClip(duration);
             Utils.AddSubAsset(controller, countdownClip);
             var remoteState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                Obfuscator.State("Remote"),
                 new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
             var countdownState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Countdown") : "Countdown",
+                Obfuscator.State("Countdown"),
                 new Vector3(200, 50, 0));
             countdownState.motion = countdownClip;
             countdownState.speed = 1f;
             countdownState.writeDefaultValues = true;
             var unlockedState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Unlocked") : "Unlocked",
+                Obfuscator.State("Unlocked"),
                 new Vector3(200, 150, 0));
             unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             var remoteToUnlocked = Utils.CreateTransition(remoteState, unlockedState);
@@ -45,7 +45,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddIsLocalCondition(toCountdown, controller, isTrue: true);
             toCountdown.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var timeUpState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("TimeUp") : "TimeUp",
+                Obfuscator.State("TimeUp"),
                 new Vector3(200, 250, 0));
             timeUpState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             Utils.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
@@ -73,36 +73,34 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             float duration = config.countdownDuration;
             float warningStartTime = duration - warningThreshold;
             var remoteState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Remote") : "Remote",
+                Obfuscator.State("Remote"),
                 new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
             var waitingState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Waiting") : "Waiting",
+                Obfuscator.State("Waiting"),
                 new Vector3(200, 50, 0));
-            var waitingClip = CreateDummyClip(
-                Obfuscator.IsEnabled ? Obfuscator.Clip("AudioWaiting") : "ASS_AudioWaiting",
-                warningStartTime + 0.1f);
+            var waitingClip = CreateDummyClip(CLIP_AUDIO_WAITING, warningStartTime + 0.1f);
             waitingState.motion = waitingClip;
             waitingState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, waitingClip);
             var stopState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("Stop") : "Stop",
+                Obfuscator.State("Stop"),
                 new Vector3(200, 250, 0));
-            stopState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            var stopClip = CreateStopClip();
+            stopState.motion = stopClip;
             stopState.writeDefaultValues = true;
+            Utils.AddSubAsset(controller, stopClip);
             var remoteToStop = Utils.CreateTransition(remoteState, stopState);
             remoteToStop.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             var toWaiting = Utils.CreateTransition(remoteState, waitingState);
             Utils.AddIsLocalCondition(toWaiting, controller, isTrue: true);
             toWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var beepState = layer.stateMachine.AddState(
-                Obfuscator.IsEnabled ? Obfuscator.State("WarningBeep") : "WarningBeep",
+                Obfuscator.State("WarningBeep"),
                 new Vector3(200, 150, 0));
-            var beepClip = CreateDummyClip(
-                Obfuscator.IsEnabled ? Obfuscator.Clip("WarningLoop") : "ASS_WarningLoop",
-                1f);
+            var beepClip = CreateDummyClip(CLIP_WARNING_LOOP, 1f);
             beepState.motion = beepClip;
             beepState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, beepClip);
@@ -134,7 +132,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip 
             { 
-                name = Obfuscator.IsEnabled ? Obfuscator.Clip("Countdown") : "ASS_Countdown",
+                name = CLIP_COUNTDOWN,
                 legacy = false
             };
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
@@ -154,6 +152,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
             clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
+            return clip;
+        }
+        private AnimationClip CreateStopClip()
+        {
+            var clip = new AnimationClip
+            {
+                name = CLIP_AUDIO_STOP,
+                legacy = false
+            };
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            var disableCurve = AnimationCurve.Constant(0f, 1f, 0f);
+            clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", disableCurve);
+            if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
+                clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", disableCurve);
             return clip;
         }
     }
