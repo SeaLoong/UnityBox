@@ -848,7 +848,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var shuffled = ShuffleArray(InstructionalClipPool, _seed + 0x1EAD1E);
             int n = Math.Min(count, shuffled.Length);
             var result = new string[n];
-            Array.Copy(shuffled, result, n);
+            for (int i = 0; i < n; i++)
+                result[i] = Clip($"InstructionalClip_{shuffled[i]}", shuffled[i]);
             return result;
         }
         public static string[] GetInstructionalStateNames(int count)
@@ -858,7 +859,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var shuffled = ShuffleArray(InstructionalStatePool, _seed + 0x5A7E15);
             int n = Math.Min(count, shuffled.Length);
             var result = new string[n];
-            Array.Copy(shuffled, result, n);
+            for (int i = 0; i < n; i++)
+                result[i] = State($"InstructionalState_{shuffled[i]}", shuffled[i]);
             return result;
         }
         public static string[] GetInstructionalBindingPaths(int count)

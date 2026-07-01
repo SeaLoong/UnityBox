@@ -331,7 +331,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var sm = layer.stateMachine;
             var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
 
-            var defaultState = sm.AddState("Default", new Vector3(300, 0, 0));
+            var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
             defaultState.writeDefaultValues = true;
             sm.defaultState = defaultState;
