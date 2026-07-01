@@ -54,8 +54,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toTimeUp.duration = 0f;
             var countdownToUnlocked = Utils.CreateTransition(countdownState, unlockedState);
             countdownToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            var timeUpToUnlocked = Utils.CreateTransition(timeUpState, unlockedState);
-            timeUpToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Countdown layer created, duration: {duration}s, warning threshold: {config.warningThreshold:F1}s");
