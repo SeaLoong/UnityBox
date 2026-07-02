@@ -123,8 +123,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     case 0: return $"{baseName}_{suffixVal:x4}";           // _BlendWeight_a3f2
                     case 1: return $"{baseName}{suffixVal:x3}";            // _BlendWeight3f2
-                    case 2: return $"__auto_{baseName}_{suffixVal:x5}";    // __auto__BlendWeight_a3f2b
-                    default: return $"_{suffixVal:x3}_{baseName}";         // _a3f_BlendWeight
+                    case 2: return $"{baseName}_v{suffixVal:x4}";          // _BlendWeight_va3f2
+                    default: return $"{baseName}_x{suffixVal:x3}";         // _BlendWeight_xa3f
                 }
             }
         }
