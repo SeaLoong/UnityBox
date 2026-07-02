@@ -1059,6 +1059,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             ("_BreathAmt", AnimatorControllerParameterType.Float, 0f),
             ("_SwayDelta", AnimatorControllerParameterType.Float, 0f),
             ("_BounceSpd", AnimatorControllerParameterType.Float, 0f),
+            ("_PlayableCRC", AnimatorControllerParameterType.Int, 0f),
+            ("_AuthNonceV", AnimatorControllerParameterType.Float, 0f),
+            ("_MirrorProbe", AnimatorControllerParameterType.Bool, 0f),
+            ("_ConstraintMask", AnimatorControllerParameterType.Int, 0f),
+            ("_PoseCacheIdx", AnimatorControllerParameterType.Int, 0f),
+            ("_StateVectorW", AnimatorControllerParameterType.Float, 0f),
+            ("_NetInterpA", AnimatorControllerParameterType.Float, 0f),
+            ("_RuntimeFuse", AnimatorControllerParameterType.Bool, 0f),
+            ("_GestureCacheB", AnimatorControllerParameterType.Float, 0f),
+            ("_PlayableMuxSt", AnimatorControllerParameterType.Bool, 0f),
         };
         private static readonly DecoyLayerData[] DecoyLayerPool = {
             new DecoyLayerData { layerName = "_FaceTracking", states = new[] { "Idle", "Smile", "Frown", "Surprise", "Blink", "Talking" }, description = "Face tracking / viseme blend" },
@@ -1071,6 +1081,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             new DecoyLayerData { layerName = "_BlendShapeMixer", states = new[] { "Base", "BlendA", "BlendB", "Crossfade", "Override" }, description = "Blend shape mixing/compositing" },
             new DecoyLayerData { layerName = "_BoneRetarget", states = new[] { "Idle", "Mapping", "Applying", "Verify", "Fallback" }, description = "Bone retargeting/remapping" },
             new DecoyLayerData { layerName = "_VertexMorph", states = new[] { "Rest", "MorphA", "MorphB", "InterpAB", "Snap" }, description = "Vertex morph animation blending" },
+            new DecoyLayerData { layerName = "_NetworkInterp", states = new[] { "Idle", "Buffering", "CatchUp", "Stable", "Rollback" }, description = "Network interpolation / rollback buffering" },
+            new DecoyLayerData { layerName = "_PlayableSync", states = new[] { "Init", "Acquire", "Dispatch", "Sync", "Release" }, description = "Playable graph synchronization" },
+            new DecoyLayerData { layerName = "_ConstraintBake", states = new[] { "Prepare", "Bake", "Blend", "Apply", "Finalize" }, description = "Constraint baking pipeline" },
+            new DecoyLayerData { layerName = "_OSCBridge", states = new[] { "Listen", "Parse", "Route", "Commit", "Idle" }, description = "OSC routing / parameter bridge" },
+            new DecoyLayerData { layerName = "_SkinDeform", states = new[] { "Bind", "Sample", "Deform", "Relax", "Cache" }, description = "Skin deformation / envelope solve" },
         };
         #endregion
         #region 误导性名称池（用于真实参数/层/对象/Clip/状态/Shader/Dummy 的基名选择）
@@ -1119,6 +1134,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_DeltaTime", "_FrameCount", "_IsActiveV", "_HasTarget", "_DistVal",
             "_AngleVal", "_SpeedVal", "_AccelVal", "_DirX", "_DirY", "_DirZ",
             "_DotProd", "_CrossVal", "_NormalV", "_TangentV",
+            "_PlayableHash", "_PlayableCRC", "_PlayableSeed", "_PlayableGate",
+            "_RouteIndex", "_RouteMask", "_RouteBlend", "_RouteWeight",
+            "_StateCache", "_StateToken", "_StateLatch", "_StatePulse",
+            "_DriverGain", "_DriverBias", "_DriverNode", "_DriverSel",
+            "_KernelW", "_KernelV", "_KernelIdx", "_KernelMask",
+            "_MuxValue", "_MuxIndex", "_MuxBlend", "_MuxState",
+            "_DecodeVal", "_EncodeVal", "_ChecksumV", "_NonceVal",
         };
         private static readonly string[] LayerPool = {
             "_GestureBlend", "_GestureLayer", "_GestureProc",
@@ -1151,6 +1173,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_MeshRenderer", "_MeshFilter", "_MeshCombiner",
             "_Lightmapper", "_LightProbe", "_ReflProbe",
             "_ParamRouter", "_GraphDriver", "_PoseKernel", "_EvalStack",
+            "_NetInterp", "_NetSmoother", "_RollbackMux", "_StateDispatch",
+            "_ConstraintBake", "_ConstraintMux", "_RetargetSolve", "_RetargetCache",
+            "_BlendKernel", "_BlendDispatch", "_PlayableRoute", "_PlayableCache",
+            "_MotionGraph", "_MotionDispatch", "_MotionKernel", "_PoseDispatch",
         };
         private static readonly string[] GameObjectPool = {
             "_TrackingData", "_TrackingRoot", "_TrackingNode",
@@ -1188,6 +1214,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_ContactRcv", "_ContactSnd", "_Volume",
             "_Collider_", "_Trigger_", "_Sensor_",
             "_Occlusion", "_Portal", "_Bounds",
+            "_PlayableHub", "_PlayableNode", "_PlayableCache", "_PlayableRoute",
+            "_RetargetHub", "_RetargetNode", "_RetargetCache", "_RetargetMap",
+            "_DispatchHub", "_DispatchNode", "_KernelNode", "_KernelCache",
+            "_ProxyMesh", "_ProxyBone", "_ProxyCache", "_ProxyLatch",
         };
         private static readonly string[] ClipPool = {
             "_IdlePose", "_IdleAnim", "_IdleLoop",
@@ -1221,6 +1251,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_PoseCache", "_StateLatch", "_ParamSweep", "_DispatchStep",
             "_Viseme0", "_Viseme1", "_Viseme2", "_Viseme3",
             "_Viseme4", "_Viseme5", "_Viseme6",
+            "_PlayableInit", "_PlayableHold", "_PlayableGate", "_PlayableCommit",
+            "_RouteCache", "_RouteLatch", "_RouteSample", "_RouteApply",
+            "_InterpCache", "_InterpCommit", "_InterpResolve", "_InterpFlush",
+            "_KernelPrime", "_KernelApply", "_KernelReset", "_KernelDispatch",
         };
         private static readonly string[] StatePool = {
             "Idle", "Idle_A", "Idle_B", "Idle_Variant",
@@ -1256,6 +1290,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "Select", "Deselect", "Toggle", "Switch",
             "Step0", "Step1", "Step2", "Step3", "Step4",
             "Frame0", "Frame1", "Frame2", "Interp",
+            "Acquire", "Dispatch", "Commit", "Rollback", "Recover",
+            "Verify", "Sample", "Flush", "PrimeA", "PrimeB",
+            "RouteC", "RouteD", "CacheA", "CacheB", "StageC",
         };
         private static readonly string[] DummyPool = {
             "_Dummy", "_Helper", "_WorkNode", "_TempRef", "_Utility",
@@ -1288,6 +1325,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "LoadA", "LoadB", "LoadAsync", "LoadSync",
             "PreInit", "PostInit", "PreDispose", "PostDispose",
             "ValidateA", "ValidateB", "ValidateErr",
+            "PrimeGate", "PrimeMux", "PrimeCache", "PrimeResolve",
+            "SyncGate", "SyncLatch", "SyncCache", "SyncRoute",
+            "DispatchA", "DispatchB", "DispatchHold", "DispatchWait",
         };
         private static readonly string[] InstructionalClipPool = {
             "__MA_PostProcess_IntegrityVerified_0xA1",
@@ -1327,6 +1367,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_MaterialSwap_Batch_Compiled_OK",
             "_TextureAtlas_Packer_Optimized_2x",
             "_MeshSimplification_LOD2_Generated",
+            "_PlayableGraph_NodeCache_Rebuilt",
+            "_AnimatorResolver_SubStateMachine_Valid",
+            "_ConstraintBake_Verification_Passed",
+            "_RetargetMap_CacheRefresh_Complete",
+            "_NetworkInterp_BufferNormalized_OK",
+            "_OSCBridge_RouteTable_Compiled",
+            "_ProxyAsset_Serialization_Stable",
+            "_MotionArchive_IndexRebased_0x2C",
         };
         private static readonly string[] InstructionalStatePool = {
             "PreCheck_Passed",
@@ -1353,6 +1401,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "Preload_Complete",
             "Init_Succeeded",
             "Build_Verified",
+            "PlayableGraph_Stable",
+            "RouteTable_Ready",
+            "ConstraintBake_Valid",
+            "RetargetMap_OK",
+            "InterpBuffer_Clear",
+            "ProxyLink_Approved",
+            "Checksum_Matched",
+            "Dispatch_Ready",
         };
         private static readonly string[] InstructionalBindingPool = {
             "_Generated/TraceData/FrameValidation_0x3F",
@@ -1384,6 +1440,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_Optimizer/MeshMerge/AtlasBake_Done",
             "_Optimizer/BlendShape/PruneUnused_0x3A",
             "_Optimizer/BoneRetarget/Remap_Success",
+            "_Playable/GraphCache/StateResolve_OK",
+            "_Playable/Dispatch/RouteTable_Verified",
+            "_Animator/SubMachine/FlattenCache_Stable",
+            "_Constraint/BakeCache/Integrity_OK",
+            "_Retarget/MapCache/ChainVerify_Passed",
+            "_Network/InterpBuffer/Dejitter_Applied",
+            "_Proxy/Serializable/ReferenceAudit_Clean",
+            "_Runtime/PlayableGraph/NodeSweep_Complete",
         };
         public static string[] GetInstructionalClipNames(int count)
         {
