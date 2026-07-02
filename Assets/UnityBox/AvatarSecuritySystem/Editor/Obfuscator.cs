@@ -59,56 +59,57 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             EnsureInitialized();
             if (!_enabled) return cleanName ?? internalKey;
-            return FormatHashName(ParamPool, internalKey);
+            return FormatHashName(ParamPool, internalKey, cleanName);
         }
         public static string Layer(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
             if (!_enabled) return cleanName ?? internalKey;
-            return FormatHashName(LayerPool, internalKey);
+            return FormatHashName(LayerPool, internalKey, cleanName);
         }
         public static string GameObject(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
             if (!_enabled) return cleanName ?? internalKey;
-            return FormatHashName(GameObjectPool, internalKey);
+            return FormatHashName(GameObjectPool, internalKey, cleanName);
         }
         public static string Clip(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
             if (!_enabled) return cleanName ?? internalKey;
-            return FormatHashName(ClipPool, internalKey);
+            return FormatHashName(ClipPool, internalKey, cleanName);
         }
         public static string State(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
             if (!_enabled) return cleanName ?? internalKey;
-            return FormatHashName(StatePool, internalKey);
+            return FormatHashName(StatePool, internalKey, cleanName);
         }
         public static string DummyPath()
         {
             EnsureInitialized();
             if (!_enabled) return "__internal_dummy_anim__";
-            return FormatHashName(DummyPool, "DummyPath");
+            return FormatHashName(DummyPool, "DummyPath", "DummyPath");
         }
         public static string ShaderName(string internalKey)
         {
             EnsureInitialized();
             if (!_enabled) return internalKey;
-            return FormatHashName(ShaderPool, internalKey);
+            return FormatHashName(ShaderPool, internalKey, internalKey);
         }
-        private static string FormatHashName(string[] pool, string key)
+        private static string FormatHashName(string[] pool, string key, string contextHint)
         {
             uint keyHash = HashString(key);
             uint combined = _seed ^ keyHash;
             uint finalHash = MurmurFinalize(combined);
+            uint clusterHash = MurmurFinalize(_seed ^ HashString(GetClusterKey(key, contextHint)));
             int variant = (int)(finalHash & 3);
             uint poolIdx = (finalHash >> 2) % (uint)pool.Length;
             string baseName = pool[poolIdx];
             uint suffixVal = (finalHash >> 18) & 0x3FFF;
             bool isStateName = (pool == StatePool || pool == FakeStatePool);
-            string semanticTag = GetSemanticTag(pool, key, finalHash);
-            string phaseTag = GetPhaseTag(finalHash);
+            string semanticTag = GetSemanticTag(pool, key, contextHint, clusterHash);
+            string phaseTag = GetPhaseTag(clusterHash);
             if (isStateName)
                 return FormatStateHashName(baseName, semanticTag, phaseTag, suffixVal, variant);
 
@@ -137,10 +138,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private static string GetSemanticTag(string[] pool, string key, uint hash)
+        private static string GetSemanticTag(string[] pool, string key, string contextHint, uint clusterHash)
         {
-            var tagPool = GetSemanticTagPool(pool, key);
-            return tagPool[(int)((hash >> 8) % (uint)tagPool.Length)];
+            var tagPool = GetSemanticTagPool(pool, key, contextHint);
+            return tagPool[(int)((clusterHash >> 8) % (uint)tagPool.Length)];
         }
 
         private static string GetPhaseTag(uint hash)
@@ -148,7 +149,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return PhaseTagPool[(int)((hash >> 13) % (uint)PhaseTagPool.Length)];
         }
 
-        private static string[] GetSemanticTagPool(string[] pool, string key)
+        private static string[] GetSemanticTagPool(string[] pool, string key, string contextHint)
         {
             if (pool == ParamPool) return ParamSemanticTagPool;
             if (pool == LayerPool) return LayerSemanticTagPool;
@@ -157,14 +158,42 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (pool == ShaderPool) return ShaderSemanticTagPool;
             if (pool == StatePool || pool == FakeStatePool) return StateSemanticTagPool;
 
-            if (ContainsAny(key, "Playable", "Graph", "Route", "Dispatch", "Kernel", "Mux")) return PlayableSemanticTagPool;
-            if (ContainsAny(key, "Constraint", "Retarget", "Bone", "Phys", "Cloth", "Probe")) return RigSemanticTagPool;
-            if (ContainsAny(key, "Material", "Shader", "Mesh", "Texture", "BlendShape", "Morph")) return VisualSemanticTagPool;
-            if (ContainsAny(key, "Audio", "Viseme", "Lip", "Sound", "Voice")) return AudioSemanticTagPool;
-            if (ContainsAny(key, "Net", "Sync", "OSC", "Remote", "Interp")) return NetworkSemanticTagPool;
-            if (ContainsAny(key, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelineSemanticTagPool;
+            string semanticSource = string.IsNullOrEmpty(contextHint) ? key : contextHint + "|" + key;
+
+            if (ContainsAny(semanticSource, "Playable", "Graph", "Route", "Dispatch", "Kernel", "Mux")) return PlayableSemanticTagPool;
+            if (ContainsAny(semanticSource, "Constraint", "Retarget", "Bone", "Phys", "Cloth", "Probe")) return RigSemanticTagPool;
+            if (ContainsAny(semanticSource, "Material", "Shader", "Mesh", "Texture", "BlendShape", "Morph")) return VisualSemanticTagPool;
+            if (ContainsAny(semanticSource, "Audio", "Viseme", "Lip", "Sound", "Voice")) return AudioSemanticTagPool;
+            if (ContainsAny(semanticSource, "Net", "Sync", "OSC", "Remote", "Interp")) return NetworkSemanticTagPool;
+            if (ContainsAny(semanticSource, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelineSemanticTagPool;
 
             return GenericSemanticTagPool;
+        }
+
+        private static string GetClusterKey(string key, string contextHint)
+        {
+            if (!string.IsNullOrEmpty(key))
+            {
+                string[] markers = {
+                    "_Layer_",
+                    "_ChildStateMachine",
+                    "_StateMachine",
+                    "_State",
+                    "_BlendTree",
+                    "_Clip",
+                    "_MotionAssetCopy_",
+                    "_PlayableControllerCopy_"
+                };
+
+                foreach (var marker in markers)
+                {
+                    int index = key.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                    if (index >= 0)
+                        return key.Substring(0, index + marker.Length);
+                }
+            }
+
+            return string.IsNullOrEmpty(contextHint) ? key : contextHint;
         }
 
         private static bool ContainsAny(string text, params string[] tokens)
@@ -253,9 +282,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!_decoyLayersEnabled) return null;
             int idx = (int)(_seed % (uint)DecoyLayerPool.Length);
             var template = DecoyLayerPool[idx];
-            string hashedLayerName = FormatHashName(LayerPool, template.layerName);
+            string hashedLayerName = FormatHashName(LayerPool, template.layerName, template.layerName);
             var hashedStates = template.states
-                .Select(s => FormatHashName(StatePool, s))
+                .Select(s => FormatHashName(StatePool, s, s))
                 .ToArray();
             return new DecoyLayerData
             {
@@ -703,11 +732,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var state = childState.state;
                 if (state == null) continue;
 
-                state.name = State(GetStableObjectKey("PlayableState", state), state.name);
+                string stateKeyPrefix = GetStableObjectKey($"{keyPrefix}_State", state);
+                state.name = State(stateKeyPrefix, state.name);
                 EditorUtility.SetDirty(state);
                 stateCount++;
 
-                ObfuscateMotionRecursive(state.motion, renamedMotions, ref blendTreeCount, ref clipCount);
+                ObfuscateMotionRecursive(state.motion, stateKeyPrefix, renamedMotions, ref blendTreeCount, ref clipCount);
             }
 
             foreach (var childMachine in stateMachine.stateMachines)
@@ -725,6 +755,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static void ObfuscateMotionRecursive(
             Motion motion,
+            string contextKey,
             HashSet<Motion> renamedMotions,
             ref int blendTreeCount,
             ref int clipCount)
@@ -735,12 +766,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (!CanRenameGeneratedAssetPath(AssetDatabase.GetAssetPath(blendTree))) return;
 
-                blendTree.name = Clip(GetStableObjectKey("PlayableBlendTree", blendTree), blendTree.name);
+                string blendTreeKey = GetStableObjectKey($"{contextKey}_BlendTree", blendTree);
+                blendTree.name = Clip(blendTreeKey, blendTree.name);
                 EditorUtility.SetDirty(blendTree);
                 blendTreeCount++;
 
-                foreach (var child in blendTree.children)
-                    ObfuscateMotionRecursive(child.motion, renamedMotions, ref blendTreeCount, ref clipCount);
+                var children = blendTree.children;
+                for (int i = 0; i < children.Length; i++)
+                    ObfuscateMotionRecursive(children[i].motion, $"{blendTreeKey}_Child{i}", renamedMotions, ref blendTreeCount, ref clipCount);
 
                 return;
             }
@@ -749,7 +782,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (!CanRenameGeneratedAssetPath(AssetDatabase.GetAssetPath(clip))) return;
 
-                clip.name = Clip(GetStableObjectKey("PlayableClip", clip), clip.name);
+                clip.name = Clip(GetStableObjectKey($"{contextKey}_Clip", clip), clip.name);
                 EditorUtility.SetDirty(clip);
                 clipCount++;
             }
@@ -883,7 +916,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 else
                 {
                     string stateKey = $"FakeState_{stateMachine.name}_{i}";
-                    stateName = FormatHashName(FakeStatePool, stateKey + rng.ToString("x8"));
+                    stateName = FormatHashName(FakeStatePool, stateKey + rng.ToString("x8"), stateMachine.name);
                 }
 
                 float x = PseudoRange(ref rng, 50, 900);
