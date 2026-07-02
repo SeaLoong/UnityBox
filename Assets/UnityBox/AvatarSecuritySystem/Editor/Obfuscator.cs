@@ -107,26 +107,75 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             string baseName = pool[poolIdx];
             uint suffixVal = (finalHash >> 18) & 0x3FFF;
             bool isStateName = (pool == StatePool || pool == FakeStatePool);
+            string semanticTag = GetSemanticTag(pool, key, finalHash);
+            string phaseTag = GetPhaseTag(finalHash);
             if (isStateName)
+                return FormatStateHashName(baseName, semanticTag, phaseTag, suffixVal, variant);
+
+            return FormatAssetHashName(baseName, semanticTag, phaseTag, suffixVal, variant);
+        }
+
+        private static string FormatStateHashName(string baseName, string semanticTag, string phaseTag, uint suffixVal, int variant)
+        {
+            switch (variant)
             {
-                switch (variant)
-                {
-                    case 0: return $"{baseName}_{suffixVal:x4}";        // BlendIn_a3f2
-                    case 1: return $"{baseName}{suffixVal:x3}";         // BlendIn3f2
-                    case 2: return $"__{baseName}_{suffixVal:x5}";      // __BlendIn_a3f2b
-                    default: return $"{suffixVal:x3}_{baseName}";       // a3f_BlendIn
-                }
+                case 0: return $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}";
+                case 1: return $"{baseName}{suffixVal & 0xFFF:x3}_{semanticTag}";
+                case 2: return $"{semanticTag}_{baseName}_{suffixVal & 0xFFF:x3}";
+                default: return $"{phaseTag}{suffixVal & 0xFF:x2}_{baseName}";
             }
-            else
+        }
+
+        private static string FormatAssetHashName(string baseName, string semanticTag, string phaseTag, uint suffixVal, int variant)
+        {
+            switch (variant)
             {
-                switch (variant)
-                {
-                    case 0: return $"{baseName}_{suffixVal:x4}";           // _BlendWeight_a3f2
-                    case 1: return $"{baseName}{suffixVal:x3}";            // _BlendWeight3f2
-                    case 2: return $"{baseName}_v{suffixVal:x4}";          // _BlendWeight_va3f2
-                    default: return $"{baseName}_x{suffixVal:x3}";         // _BlendWeight_xa3f
-                }
+                case 0: return $"{baseName}_{semanticTag}_{suffixVal & 0xFFF:x3}";
+                case 1: return $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}";
+                case 2: return $"{baseName}_{semanticTag}_{phaseTag}_{suffixVal & 0xFF:x2}";
+                default: return $"{baseName}_{phaseTag}_v{suffixVal & 0xFFF:x3}";
             }
+        }
+
+        private static string GetSemanticTag(string[] pool, string key, uint hash)
+        {
+            var tagPool = GetSemanticTagPool(pool, key);
+            return tagPool[(int)((hash >> 8) % (uint)tagPool.Length)];
+        }
+
+        private static string GetPhaseTag(uint hash)
+        {
+            return PhaseTagPool[(int)((hash >> 13) % (uint)PhaseTagPool.Length)];
+        }
+
+        private static string[] GetSemanticTagPool(string[] pool, string key)
+        {
+            if (pool == ParamPool) return ParamSemanticTagPool;
+            if (pool == LayerPool) return LayerSemanticTagPool;
+            if (pool == GameObjectPool) return ObjectSemanticTagPool;
+            if (pool == ClipPool) return ClipSemanticTagPool;
+            if (pool == ShaderPool) return ShaderSemanticTagPool;
+            if (pool == StatePool || pool == FakeStatePool) return StateSemanticTagPool;
+
+            if (ContainsAny(key, "Playable", "Graph", "Route", "Dispatch", "Kernel", "Mux")) return PlayableSemanticTagPool;
+            if (ContainsAny(key, "Constraint", "Retarget", "Bone", "Phys", "Cloth", "Probe")) return RigSemanticTagPool;
+            if (ContainsAny(key, "Material", "Shader", "Mesh", "Texture", "BlendShape", "Morph")) return VisualSemanticTagPool;
+            if (ContainsAny(key, "Audio", "Viseme", "Lip", "Sound", "Voice")) return AudioSemanticTagPool;
+            if (ContainsAny(key, "Net", "Sync", "OSC", "Remote", "Interp")) return NetworkSemanticTagPool;
+            if (ContainsAny(key, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelineSemanticTagPool;
+
+            return GenericSemanticTagPool;
+        }
+
+        private static bool ContainsAny(string text, params string[] tokens)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+            foreach (var token in tokens)
+            {
+                if (text.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+            return false;
         }
         #endregion
         #region Shader 混淆
@@ -1303,6 +1352,49 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_Dummy", "_Helper", "_WorkNode", "_TempRef", "_Utility",
             "_ProxyObj", "_ControlRef", "_MeasureRef", "_DebugRef", "_EditorRef",
             "_PreviewRef", "_AnchorRef", "_BoneRef", "_TransformRef", "_BaseRef",
+        };
+        private static readonly string[] GenericSemanticTagPool = {
+            "Core", "Runtime", "Cache", "Route", "Driver", "Kernel", "Stage", "Graph"
+        };
+        private static readonly string[] ParamSemanticTagPool = {
+            "Runtime", "Cache", "Route", "Driver", "State", "Sync", "Weight", "Scalar"
+        };
+        private static readonly string[] LayerSemanticTagPool = {
+            "Playable", "Graph", "Dispatch", "Kernel", "Route", "Stage", "Mixer", "Solver"
+        };
+        private static readonly string[] ObjectSemanticTagPool = {
+            "Runtime", "Proxy", "Cache", "Node", "Hub", "Root", "Driver", "Anchor"
+        };
+        private static readonly string[] ClipSemanticTagPool = {
+            "Bake", "Cache", "Route", "Dispatch", "Stage", "Runtime", "Sample", "Commit"
+        };
+        private static readonly string[] ShaderSemanticTagPool = {
+            "Render", "Composite", "Probe", "Post", "Runtime", "Variant", "Filter", "Stage"
+        };
+        private static readonly string[] StateSemanticTagPool = {
+            "Route", "Cache", "Stage", "Sync", "Prime", "Verify", "Sample", "Dispatch"
+        };
+        private static readonly string[] PlayableSemanticTagPool = {
+            "Playable", "Graph", "Route", "Dispatch", "Kernel", "State", "Stage", "Mux"
+        };
+        private static readonly string[] RigSemanticTagPool = {
+            "Rig", "Constraint", "Retarget", "Bone", "Probe", "Physics", "Solve", "Bind"
+        };
+        private static readonly string[] VisualSemanticTagPool = {
+            "Render", "Shader", "Material", "Texture", "Mesh", "Morph", "Blend", "Probe"
+        };
+        private static readonly string[] AudioSemanticTagPool = {
+            "Audio", "Voice", "Viseme", "Lip", "Mix", "Peak", "Band", "Route"
+        };
+        private static readonly string[] NetworkSemanticTagPool = {
+            "Network", "Sync", "Interp", "Remote", "OSC", "Buffer", "Route", "Jitter"
+        };
+        private static readonly string[] PipelineSemanticTagPool = {
+            "Import", "Build", "Cache", "Verify", "Serialize", "Asset", "Post", "Refresh"
+        };
+        private static readonly string[] PhaseTagPool = {
+            "Init", "Build", "Resolve", "Apply", "Verify", "Cache", "Commit", "Release",
+            "Prime", "Bake", "Flush", "Sample", "Merge", "Route", "Stage", "Sync"
         };
         private static readonly string[] ShaderPool = {
             "_Overlay", "_PostFX", "_ScreenFX", "_UIFX",
