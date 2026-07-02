@@ -1086,6 +1086,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             new DecoyLayerData { layerName = "_ConstraintBake", states = new[] { "Prepare", "Bake", "Blend", "Apply", "Finalize" }, description = "Constraint baking pipeline" },
             new DecoyLayerData { layerName = "_OSCBridge", states = new[] { "Listen", "Parse", "Route", "Commit", "Idle" }, description = "OSC routing / parameter bridge" },
             new DecoyLayerData { layerName = "_SkinDeform", states = new[] { "Bind", "Sample", "Deform", "Relax", "Cache" }, description = "Skin deformation / envelope solve" },
+            new DecoyLayerData { layerName = "_AvatarOptimize", states = new[] { "Collect", "Analyze", "Strip", "Merge", "Finalize" }, description = "Avatar optimizer preprocessing" },
+            new DecoyLayerData { layerName = "_ModularMerge", states = new[] { "Scan", "Resolve", "Compose", "Apply", "Seal" }, description = "Modular avatar merge / compose" },
+            new DecoyLayerData { layerName = "_AnimatorCodegen", states = new[] { "Parse", "Emit", "Bake", "Link", "Commit" }, description = "Animator code generation pipeline" },
+            new DecoyLayerData { layerName = "_ImporterPost", states = new[] { "Hash", "Validate", "Refresh", "Relink", "Done" }, description = "Importer / postprocessor refresh chain" },
+            new DecoyLayerData { layerName = "_ProbeResolve", states = new[] { "Capture", "Filter", "Project", "Cache", "Release" }, description = "Probe capture / projection pipeline" },
         };
         #endregion
         #region 误导性名称池（用于真实参数/层/对象/Clip/状态/Shader/Dummy 的基名选择）
@@ -1375,6 +1380,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_OSCBridge_RouteTable_Compiled",
             "_ProxyAsset_Serialization_Stable",
             "_MotionArchive_IndexRebased_0x2C",
+            "_AvatarOptimizer_ComponentSweep_Complete",
+            "_ModularAvatar_MergeMap_Verified",
+            "_AnimatorAsCode_GraphBake_Success",
+            "_AssetPostprocessor_DependencyPass_OK",
+            "_ModelImporter_RemapBindings_Stable",
+            "_SerializedObject_ApplyModifiedProperties_Clean",
+            "_StateMachineCache_Reindex_Passed",
+            "_PlayableGraph_OutputNode_Resolved",
         };
         private static readonly string[] InstructionalStatePool = {
             "PreCheck_Passed",
@@ -1409,6 +1422,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "ProxyLink_Approved",
             "Checksum_Matched",
             "Dispatch_Ready",
+            "Importer_Stable",
+            "Optimizer_Clean",
+            "Codegen_Ready",
+            "MergeMap_Valid",
+            "ProbeCache_Warm",
+            "OutputGraph_Resolved",
+            "Bindings_Relinked",
+            "Postprocess_Done",
         };
         private static readonly string[] InstructionalBindingPool = {
             "_Generated/TraceData/FrameValidation_0x3F",
@@ -1448,6 +1469,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             "_Network/InterpBuffer/Dejitter_Applied",
             "_Proxy/Serializable/ReferenceAudit_Clean",
             "_Runtime/PlayableGraph/NodeSweep_Complete",
+            "_AvatarOptimizer/Stage/StripUnusedBindings",
+            "_ModularAvatar/MergeTree/RouteAssembly_OK",
+            "_AnimatorAsCode/EmitGraph/TransitionBake_Done",
+            "_AssetPostprocessor/Importer/MetaRefresh_Stable",
+            "_ModelImporter/AvatarMask/RemapTable_OK",
+            "_SerializedObject/Apply/PrefabOverride_Clean",
+            "_PlayableGraph/Output/ConstraintNode_Ready",
+            "_Probe/RuntimeCapture/ResolveStage_Nominal",
         };
         public static string[] GetInstructionalClipNames(int count)
         {
