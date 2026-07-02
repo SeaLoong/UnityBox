@@ -109,33 +109,36 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             uint suffixVal = (finalHash >> 18) & 0x3FFF;
             bool isStateName = (pool == StatePool || pool == FakeStatePool);
             string semanticTag = GetSemanticTag(pool, key, contextHint, clusterHash);
-            string phaseTag = GetPhaseTag(clusterHash);
+            string phaseTag = GetPhaseTag(pool, key, contextHint, clusterHash);
+            string anomalyTag = GetAnomalyTag(pool, key, contextHint, finalHash, clusterHash);
             if (isStateName)
-                return FormatStateHashName(baseName, semanticTag, phaseTag, suffixVal, variant);
+                return FormatStateHashName(baseName, semanticTag, phaseTag, anomalyTag, suffixVal, variant);
 
-            return FormatAssetHashName(baseName, semanticTag, phaseTag, suffixVal, variant);
+            return FormatAssetHashName(baseName, semanticTag, phaseTag, anomalyTag, suffixVal, variant);
         }
 
-        private static string FormatStateHashName(string baseName, string semanticTag, string phaseTag, uint suffixVal, int variant)
+        private static string FormatStateHashName(string baseName, string semanticTag, string phaseTag, string anomalyTag, uint suffixVal, int variant)
         {
-            switch (variant)
+            string name = variant switch
             {
-                case 0: return $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}";
-                case 1: return $"{baseName}{suffixVal & 0xFFF:x3}_{semanticTag}";
-                case 2: return $"{semanticTag}_{baseName}_{suffixVal & 0xFFF:x3}";
-                default: return $"{phaseTag}{suffixVal & 0xFF:x2}_{baseName}";
-            }
+                0 => $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}",
+                1 => $"{baseName}{suffixVal & 0xFFF:x3}_{semanticTag}",
+                2 => $"{semanticTag}_{baseName}_{suffixVal & 0xFFF:x3}",
+                _ => $"{phaseTag}{suffixVal & 0xFF:x2}_{baseName}",
+            };
+            return string.IsNullOrEmpty(anomalyTag) ? name : $"{name}_{anomalyTag}";
         }
 
-        private static string FormatAssetHashName(string baseName, string semanticTag, string phaseTag, uint suffixVal, int variant)
+        private static string FormatAssetHashName(string baseName, string semanticTag, string phaseTag, string anomalyTag, uint suffixVal, int variant)
         {
-            switch (variant)
+            string name = variant switch
             {
-                case 0: return $"{baseName}_{semanticTag}_{suffixVal & 0xFFF:x3}";
-                case 1: return $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}";
-                case 2: return $"{baseName}_{semanticTag}_{phaseTag}_{suffixVal & 0xFF:x2}";
-                default: return $"{baseName}_{phaseTag}_v{suffixVal & 0xFFF:x3}";
-            }
+                0 => $"{baseName}_{semanticTag}_{suffixVal & 0xFFF:x3}",
+                1 => $"{baseName}_{phaseTag}{suffixVal & 0xFF:x2}",
+                2 => $"{baseName}_{semanticTag}_{phaseTag}_{suffixVal & 0xFF:x2}",
+                _ => $"{baseName}_{phaseTag}_v{suffixVal & 0xFFF:x3}",
+            };
+            return string.IsNullOrEmpty(anomalyTag) ? name : $"{name}_{anomalyTag}";
         }
 
         private static string GetSemanticTag(string[] pool, string key, string contextHint, uint clusterHash)
@@ -144,9 +147,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return tagPool[(int)((clusterHash >> 8) % (uint)tagPool.Length)];
         }
 
-        private static string GetPhaseTag(uint hash)
+        private static string GetPhaseTag(string[] pool, string key, string contextHint, uint clusterHash)
         {
-            return PhaseTagPool[(int)((hash >> 13) % (uint)PhaseTagPool.Length)];
+            var phasePool = GetPhaseTagPool(pool, key, contextHint);
+            return phasePool[(int)((clusterHash >> 13) % (uint)phasePool.Length)];
+        }
+
+        private static string GetAnomalyTag(string[] pool, string key, string contextHint, uint finalHash, uint clusterHash)
+        {
+            if (((finalHash >> 5) & 0x7) != 0)
+                return null;
+
+            var anomalyPool = GetAnomalyTagPool(pool, key, contextHint);
+            return anomalyPool[(int)((clusterHash >> 17) % (uint)anomalyPool.Length)];
         }
 
         private static string[] GetSemanticTagPool(string[] pool, string key, string contextHint)
@@ -168,6 +181,41 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (ContainsAny(semanticSource, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelineSemanticTagPool;
 
             return GenericSemanticTagPool;
+        }
+
+        private static string[] GetPhaseTagPool(string[] pool, string key, string contextHint)
+        {
+            if (pool == ParamPool) return ParamPhaseTagPool;
+            if (pool == LayerPool) return LayerPhaseTagPool;
+            if (pool == GameObjectPool) return ObjectPhaseTagPool;
+            if (pool == ClipPool) return ClipPhaseTagPool;
+            if (pool == ShaderPool) return ShaderPhaseTagPool;
+            if (pool == StatePool || pool == FakeStatePool) return StatePhaseTagPool;
+
+            string semanticSource = string.IsNullOrEmpty(contextHint) ? key : contextHint + "|" + key;
+
+            if (ContainsAny(semanticSource, "Playable", "Graph", "Route", "Dispatch", "Kernel", "Mux")) return PlayablePhaseTagPool;
+            if (ContainsAny(semanticSource, "Constraint", "Retarget", "Bone", "Phys", "Cloth", "Probe")) return RigPhaseTagPool;
+            if (ContainsAny(semanticSource, "Material", "Shader", "Mesh", "Texture", "BlendShape", "Morph")) return VisualPhaseTagPool;
+            if (ContainsAny(semanticSource, "Audio", "Viseme", "Lip", "Sound", "Voice")) return AudioPhaseTagPool;
+            if (ContainsAny(semanticSource, "Net", "Sync", "OSC", "Remote", "Interp")) return NetworkPhaseTagPool;
+            if (ContainsAny(semanticSource, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelinePhaseTagPool;
+
+            return PhaseTagPool;
+        }
+
+        private static string[] GetAnomalyTagPool(string[] pool, string key, string contextHint)
+        {
+            string semanticSource = string.IsNullOrEmpty(contextHint) ? key : contextHint + "|" + key;
+
+            if (ContainsAny(semanticSource, "Playable", "Graph", "Route", "Dispatch", "Kernel", "Mux")) return PlayableAnomalyTagPool;
+            if (ContainsAny(semanticSource, "Constraint", "Retarget", "Bone", "Phys", "Cloth", "Probe")) return RigAnomalyTagPool;
+            if (ContainsAny(semanticSource, "Material", "Shader", "Mesh", "Texture", "BlendShape", "Morph")) return VisualAnomalyTagPool;
+            if (ContainsAny(semanticSource, "Audio", "Viseme", "Lip", "Sound", "Voice")) return AudioAnomalyTagPool;
+            if (ContainsAny(semanticSource, "Net", "Sync", "OSC", "Remote", "Interp")) return NetworkAnomalyTagPool;
+            if (ContainsAny(semanticSource, "Import", "Asset", "Cache", "Serialize", "Build", "Validate")) return PipelineAnomalyTagPool;
+
+            return GenericAnomalyTagPool;
         }
 
         private static string GetClusterKey(string key, string contextHint)
@@ -1389,41 +1437,98 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static readonly string[] GenericSemanticTagPool = {
             "Core", "Runtime", "Cache", "Route", "Driver", "Kernel", "Stage", "Graph"
         };
+        private static readonly string[] GenericAnomalyTagPool = {
+            "Legacy", "Compat", "Patch", "Fallback", "Dbg", "Stale", "Hotfix", "Workaround"
+        };
         private static readonly string[] ParamSemanticTagPool = {
             "Runtime", "Cache", "Route", "Driver", "State", "Sync", "Weight", "Scalar"
+        };
+        private static readonly string[] ParamPhaseTagPool = {
+            "Init", "Bind", "Sync", "Cache", "Apply", "Resolve", "Sample", "Commit"
         };
         private static readonly string[] LayerSemanticTagPool = {
             "Playable", "Graph", "Dispatch", "Kernel", "Route", "Stage", "Mixer", "Solver"
         };
+        private static readonly string[] LayerPhaseTagPool = {
+            "Init", "Graph", "Route", "Bake", "Dispatch", "Resolve", "Merge", "Sync"
+        };
         private static readonly string[] ObjectSemanticTagPool = {
             "Runtime", "Proxy", "Cache", "Node", "Hub", "Root", "Driver", "Anchor"
+        };
+        private static readonly string[] ObjectPhaseTagPool = {
+            "Bind", "Cache", "Route", "Init", "Sample", "Apply", "Release", "Resolve"
         };
         private static readonly string[] ClipSemanticTagPool = {
             "Bake", "Cache", "Route", "Dispatch", "Stage", "Runtime", "Sample", "Commit"
         };
+        private static readonly string[] ClipPhaseTagPool = {
+            "Bake", "Prime", "Route", "Sample", "Flush", "Commit", "Merge", "Apply"
+        };
         private static readonly string[] ShaderSemanticTagPool = {
             "Render", "Composite", "Probe", "Post", "Runtime", "Variant", "Filter", "Stage"
+        };
+        private static readonly string[] ShaderPhaseTagPool = {
+            "Compile", "Warmup", "Filter", "Resolve", "Probe", "Cache", "Apply", "Finalize"
         };
         private static readonly string[] StateSemanticTagPool = {
             "Route", "Cache", "Stage", "Sync", "Prime", "Verify", "Sample", "Dispatch"
         };
+        private static readonly string[] StatePhaseTagPool = {
+            "Init", "Wait", "Route", "Verify", "Prime", "Resolve", "Sample", "Release"
+        };
         private static readonly string[] PlayableSemanticTagPool = {
             "Playable", "Graph", "Route", "Dispatch", "Kernel", "State", "Stage", "Mux"
+        };
+        private static readonly string[] PlayablePhaseTagPool = {
+            "Graph", "Resolve", "Dispatch", "Route", "Prime", "Sample", "Merge", "Sync"
+        };
+        private static readonly string[] PlayableAnomalyTagPool = {
+            "LegacyRoute", "CacheMiss", "Rollback", "StaleNode", "CompatFix", "MuxPatch", "LateBind", "GhostPass"
         };
         private static readonly string[] RigSemanticTagPool = {
             "Rig", "Constraint", "Retarget", "Bone", "Probe", "Physics", "Solve", "Bind"
         };
+        private static readonly string[] RigPhaseTagPool = {
+            "Bind", "Solve", "Bake", "Relax", "Apply", "Probe", "Resolve", "Finalize"
+        };
+        private static readonly string[] RigAnomalyTagPool = {
+            "BoneFallback", "ProbeDrift", "RetargetStub", "ConstraintPatch", "BindLegacy", "JointFix", "RigCompat", "PoseLeak"
+        };
         private static readonly string[] VisualSemanticTagPool = {
             "Render", "Shader", "Material", "Texture", "Mesh", "Morph", "Blend", "Probe"
+        };
+        private static readonly string[] VisualPhaseTagPool = {
+            "Render", "Filter", "Bake", "Blend", "Resolve", "Sample", "Cache", "Composite"
+        };
+        private static readonly string[] VisualAnomalyTagPool = {
+            "VariantStub", "AtlasFix", "MipFallback", "ProbePatch", "RenderCompat", "MorphLeak", "BlendAlias", "ShaderBypass"
         };
         private static readonly string[] AudioSemanticTagPool = {
             "Audio", "Voice", "Viseme", "Lip", "Mix", "Peak", "Band", "Route"
         };
+        private static readonly string[] AudioPhaseTagPool = {
+            "Mix", "Peak", "Gate", "Sample", "Route", "Sync", "Cache", "Commit"
+        };
+        private static readonly string[] AudioAnomalyTagPool = {
+            "PeakHold", "BandLeak", "VisemeStub", "LipFix", "VoiceCompat", "GatePatch", "AudioFallback", "RouteNoise"
+        };
         private static readonly string[] NetworkSemanticTagPool = {
             "Network", "Sync", "Interp", "Remote", "OSC", "Buffer", "Route", "Jitter"
         };
+        private static readonly string[] NetworkPhaseTagPool = {
+            "Sync", "Interp", "Buffer", "Resolve", "Dispatch", "Route", "Dejitter", "Commit"
+        };
+        private static readonly string[] NetworkAnomalyTagPool = {
+            "LatePacket", "BufferSkew", "OSCStub", "InterpPatch", "RemoteCompat", "JitterFix", "NetFallback", "SyncLeak"
+        };
         private static readonly string[] PipelineSemanticTagPool = {
             "Import", "Build", "Cache", "Verify", "Serialize", "Asset", "Post", "Refresh"
+        };
+        private static readonly string[] PipelinePhaseTagPool = {
+            "Import", "Build", "Verify", "Refresh", "Serialize", "Cache", "Resolve", "Finalize"
+        };
+        private static readonly string[] PipelineAnomalyTagPool = {
+            "MetaDrift", "SerializeFix", "ImportCompat", "BuildStub", "CacheGhost", "RefreshLeak", "VerifyPatch", "AssetFallback"
         };
         private static readonly string[] PhaseTagPool = {
             "Init", "Build", "Resolve", "Apply", "Verify", "Cache", "Commit", "Release",
