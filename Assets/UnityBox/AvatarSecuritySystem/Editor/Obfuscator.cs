@@ -19,6 +19,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static bool _decoyStatesEnabled;
         private static string _generatedFolder;
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
+        private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -31,6 +32,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _decoyStatesEnabled = enableDecoyStates && _enabled;
             _generatedFolder = generatedFolder ?? "Assets/UnityBox/AvatarSecuritySystem/Generated";
             _shaderCache.Clear();
+            _generatedContentAssetPaths.Clear();
             if (!_enabled)
             {
                 _initialized = true;
@@ -261,6 +263,52 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return h ^ 0xDEFACE;
         }
 
+        public static void RegisterGeneratedAsset(Object asset)
+        {
+            if (asset == null) return;
+            RegisterGeneratedAssetPath(AssetDatabase.GetAssetPath(asset));
+        }
+
+        private static void RegisterGeneratedAssetPath(string assetPath)
+        {
+            string normalized = NormalizeAssetPath(assetPath);
+            if (string.IsNullOrEmpty(normalized)) return;
+            _generatedContentAssetPaths.Add(normalized);
+        }
+
+        public static void PreparePlayableControllerCopies(VRCAvatarDescriptor descriptor)
+        {
+            EnsureInitialized();
+            if (!_enabled || descriptor == null) return;
+
+            var baseLayers = descriptor.baseAnimationLayers;
+            PreparePlayableControllerCopies(baseLayers, "Base");
+            descriptor.baseAnimationLayers = baseLayers;
+
+            var specialLayers = descriptor.specialAnimationLayers;
+            PreparePlayableControllerCopies(specialLayers, "Special");
+            descriptor.specialAnimationLayers = specialLayers;
+        }
+
+        private static void PreparePlayableControllerCopies(VRCAvatarDescriptor.CustomAnimLayer[] layers, string scope)
+        {
+            if (layers == null) return;
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                var layer = layers[i];
+                if (layer.isDefault) continue;
+                if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
+
+                var clonedController = DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
+                if (clonedController == null) continue;
+
+                layer.animatorController = clonedController;
+                layer.isDefault = false;
+                layers[i] = layer;
+            }
+        }
+
         public static void ObfuscatePlayableControllers(VRCAvatarDescriptor descriptor)
         {
             EnsureInitialized();
@@ -308,11 +356,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (controller == null) return;
 
-            if (CanRenameAssetObject(controller))
-            {
-                controller.name = Layer(GetStableObjectKey("PlayableController", controller), controller.name);
-                EditorUtility.SetDirty(controller);
-            }
+            string controllerPath = AssetDatabase.GetAssetPath(controller);
+            if (!CanRenameGeneratedAssetPath(controllerPath))
+                return;
+
+            controller.name = Layer(GetStableObjectKey("PlayableController", controller), controller.name);
+            EditorUtility.SetDirty(controller);
 
             var renamedMotions = new HashSet<Motion>();
             var layers = controller.layers;
@@ -347,6 +396,242 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             controller.layers = layers;
             EditorUtility.SetDirty(controller);
+        }
+
+        private static AnimatorController DuplicateAnimatorControllerForBuild(AnimatorController sourceController, string slotKey)
+        {
+            string sourcePath = AssetDatabase.GetAssetPath(sourceController);
+            if (string.IsNullOrEmpty(sourcePath))
+                return sourceController;
+            if (IsAssetUnderGeneratedFolder(sourcePath))
+                return sourceController;
+
+            string sourceGuid = AssetDatabase.AssetPathToGUID(sourcePath);
+            string guidSuffix = ShortGuid(sourceGuid);
+            string controllerFolder = $"{_generatedFolder}/PlayableControllers";
+            EnsureFolder(controllerFolder);
+
+            string controllerFileBase = SanitizeFileName(Layer($"PlayableControllerCopy_{slotKey}_{sourceGuid}", sourceController.name));
+            string controllerPath = $"{controllerFolder}/{controllerFileBase}_{guidSuffix}.controller";
+            DeleteAssetIfExists(controllerPath);
+
+            if (!AssetDatabase.CopyAsset(sourcePath, controllerPath))
+            {
+                Debug.LogWarning($"[ASS] Obfuscator: Failed to copy playable controller '{sourcePath}' to '{controllerPath}'");
+                return sourceController;
+            }
+
+            var clonedController = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            if (clonedController == null)
+            {
+                Debug.LogWarning($"[ASS] Obfuscator: Failed to load copied playable controller '{controllerPath}'");
+                return sourceController;
+            }
+
+            RegisterGeneratedAssetPath(controllerPath);
+
+            string motionFolder = $"{controllerFolder}/{controllerFileBase}_{guidSuffix}_Motions";
+            DeleteAssetIfExists(motionFolder);
+            EnsureFolder(motionFolder);
+            CloneReferencedMotionsForController(clonedController, motionFolder, slotKey);
+            EditorUtility.SetDirty(clonedController);
+            return clonedController;
+        }
+
+        private static void CloneReferencedMotionsForController(AnimatorController controller, string motionFolder, string slotKey)
+        {
+            if (controller == null) return;
+
+            string controllerPath = AssetDatabase.GetAssetPath(controller);
+            var clonedMotions = new Dictionary<Motion, Motion>();
+            var copiedAssetPaths = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+            bool controllerChanged = false;
+
+            foreach (var layer in controller.layers)
+            {
+                if (layer.stateMachine == null) continue;
+                if (CloneReferencedMotionsInStateMachine(layer.stateMachine, controllerPath, motionFolder, slotKey, clonedMotions, copiedAssetPaths))
+                    controllerChanged = true;
+            }
+
+            if (controllerChanged)
+                EditorUtility.SetDirty(controller);
+        }
+
+        private static bool CloneReferencedMotionsInStateMachine(
+            AnimatorStateMachine stateMachine,
+            string controllerPath,
+            string motionFolder,
+            string slotKey,
+            Dictionary<Motion, Motion> clonedMotions,
+            Dictionary<string, string> copiedAssetPaths)
+        {
+            bool changed = false;
+
+            foreach (var childState in stateMachine.states)
+            {
+                var state = childState.state;
+                if (state == null) continue;
+
+                var clonedMotion = CloneReferencedMotion(state.motion, controllerPath, motionFolder, slotKey, clonedMotions, copiedAssetPaths);
+                if (clonedMotion != state.motion)
+                {
+                    state.motion = clonedMotion;
+                    EditorUtility.SetDirty(state);
+                    changed = true;
+                }
+            }
+
+            foreach (var childMachine in stateMachine.stateMachines)
+            {
+                if (CloneReferencedMotionsInStateMachine(childMachine.stateMachine, controllerPath, motionFolder, slotKey, clonedMotions, copiedAssetPaths))
+                    changed = true;
+            }
+
+            return changed;
+        }
+
+        private static Motion CloneReferencedMotion(
+            Motion motion,
+            string controllerPath,
+            string motionFolder,
+            string slotKey,
+            Dictionary<Motion, Motion> clonedMotions,
+            Dictionary<string, string> copiedAssetPaths)
+        {
+            if (motion == null) return null;
+            if (clonedMotions.TryGetValue(motion, out var existingMotion))
+                return existingMotion;
+
+            string motionPath = AssetDatabase.GetAssetPath(motion);
+            bool isInternalMotion = string.IsNullOrEmpty(motionPath) || PathsEqual(motionPath, controllerPath);
+            Motion resolvedMotion = motion;
+
+            if (!isInternalMotion)
+            {
+                string copiedAssetPath = GetOrCreateCopiedMotionAssetPath(motionPath, motionFolder, slotKey, copiedAssetPaths);
+                var copiedMotion = ResolveMotionFromCopiedAsset(motion, copiedAssetPath);
+                if (copiedMotion != null)
+                {
+                    resolvedMotion = copiedMotion;
+                }
+                else
+                {
+                    Debug.LogWarning($"[ASS] Obfuscator: Failed to resolve copied motion '{motion.name}' from '{motionPath}'");
+                    resolvedMotion = motion;
+                }
+            }
+
+            clonedMotions[motion] = resolvedMotion;
+
+            if (resolvedMotion is BlendTree blendTree)
+                CloneReferencedMotionsInBlendTree(blendTree, controllerPath, motionFolder, slotKey, clonedMotions, copiedAssetPaths);
+
+            return resolvedMotion;
+        }
+
+        private static void CloneReferencedMotionsInBlendTree(
+            BlendTree blendTree,
+            string controllerPath,
+            string motionFolder,
+            string slotKey,
+            Dictionary<Motion, Motion> clonedMotions,
+            Dictionary<string, string> copiedAssetPaths)
+        {
+            var children = blendTree.children;
+            bool changed = false;
+
+            for (int i = 0; i < children.Length; i++)
+            {
+                var clonedMotion = CloneReferencedMotion(children[i].motion, controllerPath, motionFolder, slotKey, clonedMotions, copiedAssetPaths);
+                if (clonedMotion != children[i].motion)
+                {
+                    children[i].motion = clonedMotion;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                blendTree.children = children;
+                EditorUtility.SetDirty(blendTree);
+            }
+        }
+
+        private static string GetOrCreateCopiedMotionAssetPath(
+            string sourceAssetPath,
+            string motionFolder,
+            string slotKey,
+            Dictionary<string, string> copiedAssetPaths)
+        {
+            if (copiedAssetPaths.TryGetValue(sourceAssetPath, out var existingPath))
+                return existingPath;
+
+            string sourceGuid = AssetDatabase.AssetPathToGUID(sourceAssetPath);
+            string guidSuffix = ShortGuid(sourceGuid);
+            string extension = Path.GetExtension(sourceAssetPath);
+            if (string.IsNullOrEmpty(extension)) extension = ".asset";
+
+            string sourceFileBase = Path.GetFileNameWithoutExtension(sourceAssetPath);
+            string copiedFileBase = SanitizeFileName(Clip($"PlayableMotionAssetCopy_{slotKey}_{sourceGuid}", sourceFileBase));
+            string copiedAssetPath = $"{motionFolder}/{copiedFileBase}_{guidSuffix}{extension}";
+            DeleteAssetIfExists(copiedAssetPath);
+
+            if (!AssetDatabase.CopyAsset(sourceAssetPath, copiedAssetPath))
+            {
+                Debug.LogWarning($"[ASS] Obfuscator: Failed to copy motion asset '{sourceAssetPath}' to '{copiedAssetPath}'");
+                copiedAssetPaths[sourceAssetPath] = sourceAssetPath;
+                return sourceAssetPath;
+            }
+
+            RegisterGeneratedAssetPath(copiedAssetPath);
+            copiedAssetPaths[sourceAssetPath] = copiedAssetPath;
+            return copiedAssetPath;
+        }
+
+        private static Motion ResolveMotionFromCopiedAsset(Motion sourceMotion, string copiedAssetPath)
+        {
+            if (string.IsNullOrEmpty(copiedAssetPath))
+                return null;
+
+            string sourceAssetPath = AssetDatabase.GetAssetPath(sourceMotion);
+            if (string.IsNullOrEmpty(sourceAssetPath))
+                return null;
+
+            if (PathsEqual(sourceAssetPath, copiedAssetPath))
+                return sourceMotion;
+
+            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceMotion, out _, out long sourceLocalId);
+            var copiedMotions = AssetDatabase.LoadAllAssetsAtPath(copiedAssetPath)
+                .OfType<Motion>()
+                .Where(candidate => candidate.GetType() == sourceMotion.GetType())
+                .ToList();
+
+            foreach (var candidate in copiedMotions)
+            {
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(candidate, out _, out long candidateLocalId)
+                    && sourceLocalId != 0
+                    && candidateLocalId == sourceLocalId)
+                {
+                    return candidate;
+                }
+            }
+
+            var sourceMotions = AssetDatabase.LoadAllAssetsAtPath(sourceAssetPath)
+                .OfType<Motion>()
+                .Where(candidate => candidate.GetType() == sourceMotion.GetType())
+                .ToList();
+
+            var sourceSameName = sourceMotions.Where(candidate => candidate.name == sourceMotion.name).ToList();
+            var copiedSameName = copiedMotions.Where(candidate => candidate.name == sourceMotion.name).ToList();
+
+            if (sourceSameName.Count == 1 && copiedSameName.Count == 1)
+                return copiedSameName[0];
+
+            if (sourceMotions.Count == 1 && copiedMotions.Count == 1)
+                return copiedMotions[0];
+
+            return null;
         }
 
         private static void ObfuscateStateMachineRecursive(
@@ -399,6 +684,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (motion is BlendTree blendTree)
             {
+                if (!CanRenameGeneratedAssetPath(AssetDatabase.GetAssetPath(blendTree))) return;
+
                 blendTree.name = Clip(GetStableObjectKey("PlayableBlendTree", blendTree), blendTree.name);
                 EditorUtility.SetDirty(blendTree);
                 blendTreeCount++;
@@ -411,7 +698,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (motion is AnimationClip clip)
             {
-                if (!CanRenameAssetObject(clip)) return;
+                if (!CanRenameGeneratedAssetPath(AssetDatabase.GetAssetPath(clip))) return;
 
                 clip.name = Clip(GetStableObjectKey("PlayableClip", clip), clip.name);
                 EditorUtility.SetDirty(clip);
@@ -436,12 +723,76 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return prefix + "_" + obj.GetInstanceID();
         }
 
-        private static bool CanRenameAssetObject(Object obj)
+        private static bool CanRenameGeneratedAssetPath(string assetPath)
         {
-            string path = AssetDatabase.GetAssetPath(obj);
-            return string.IsNullOrEmpty(path)
-                || path.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith("Assets\\", StringComparison.OrdinalIgnoreCase);
+            string normalized = NormalizeAssetPath(assetPath);
+            return !string.IsNullOrEmpty(normalized)
+                && IsAssetUnderGeneratedFolder(normalized)
+                && _generatedContentAssetPaths.Contains(normalized);
+        }
+
+        private static bool IsAssetUnderGeneratedFolder(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath)) return false;
+            string normalizedAssetPath = NormalizeAssetPath(assetPath);
+            string normalizedGeneratedFolder = NormalizeAssetPath(_generatedFolder)?.TrimEnd('/');
+            return normalizedAssetPath.StartsWith(normalizedGeneratedFolder + "/", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalizedAssetPath, normalizedGeneratedFolder, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeAssetPath(string assetPath)
+        {
+            return string.IsNullOrEmpty(assetPath) ? null : assetPath.Replace('\\', '/');
+        }
+
+        private static void EnsureFolder(string assetFolderPath)
+        {
+            if (AssetDatabase.IsValidFolder(assetFolderPath))
+                return;
+
+            string normalized = assetFolderPath.Replace('\\', '/');
+            string[] parts = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0 || parts[0] != "Assets")
+                throw new InvalidOperationException($"Folder must be inside Assets: {assetFolderPath}");
+
+            string current = "Assets";
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string next = current + "/" + parts[i];
+                if (!AssetDatabase.IsValidFolder(next))
+                    AssetDatabase.CreateFolder(current, parts[i]);
+                current = next;
+            }
+        }
+
+        private static void DeleteAssetIfExists(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath)) return;
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath) != null || AssetDatabase.IsValidFolder(assetPath))
+                AssetDatabase.DeleteAsset(assetPath);
+        }
+
+        private static string ShortGuid(string guid)
+        {
+            if (string.IsNullOrEmpty(guid))
+                return "noguid";
+            return guid.Length <= 8 ? guid : guid.Substring(0, 8);
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return "unnamed";
+            foreach (char invalid in Path.GetInvalidFileNameChars())
+                name = name.Replace(invalid, '_');
+            return name.Replace('/', '_').Replace('\\', '_').Trim();
+        }
+
+        private static bool PathsEqual(string left, string right)
+        {
+            return string.Equals(
+                left?.Replace('\\', '/'),
+                right?.Replace('\\', '/'),
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private static int CountStates(AnimatorStateMachine sm)

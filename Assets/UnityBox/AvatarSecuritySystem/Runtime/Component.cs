@@ -49,6 +49,8 @@ namespace UnityBox.AvatarSecuritySystem
         public bool enableOverflow = true;
         [Tooltip("#{advanced.disable_obfuscation_tooltip}")]
         public bool disableObfuscation = false;
+        [Tooltip("#{advanced.obfuscate_playable_layers_tooltip}")]
+        public bool enablePlayableLayerObfuscation = false;
         [Tooltip("#{advanced.decoy_layers_tooltip}")]
         public bool enableDecoyLayers = true;
         [Tooltip("#{advanced.decoy_states_tooltip}")]
@@ -163,6 +165,7 @@ namespace UnityBox.AvatarSecuritySystem
             disableOverlay = false;
             defaultEnableDefense = false;
             enableOverflow = true;
+            enablePlayableLayerObfuscation = false;
         }
 #endif
     }

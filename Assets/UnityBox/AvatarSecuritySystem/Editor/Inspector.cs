@@ -296,6 +296,8 @@ namespace UnityBox.AvatarSecuritySystem
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableObfuscation"),
                 new GUIContent(T("advanced.disable_obfuscation"), T("advanced.disable_obfuscation_tooltip")));
             EditorGUI.BeginDisabledGroup(serializedObject.FindProperty("disableObfuscation").boolValue);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("enablePlayableLayerObfuscation"),
+                new GUIContent(T("advanced.obfuscate_playable_layers"), T("advanced.obfuscate_playable_layers_tooltip")));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyLayers"),
                 new GUIContent(T("advanced.decoy_layers"), T("advanced.decoy_layers_tooltip")));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyStates"),

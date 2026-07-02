@@ -483,6 +483,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "在构建中使用原始参数/层/对象名称。\n仅建议用于调试。" },
                     { SystemLanguage.Japanese, "ビルドで元のパラメータ/レイヤー/オブジェクト名を使用。\nデバッグ時のみ推奨。" }
                 },
+                ["advanced.obfuscate_playable_layers"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "Obfuscate All Playable Layers" },
+                    { SystemLanguage.ChineseSimplified, "混淆全部 Playable Layer" },
+                    { SystemLanguage.Japanese, "すべてのPlayable Layerを難読化" }
+                },
+                ["advanced.obfuscate_playable_layers_tooltip"] = new Dictionary<SystemLanguage, string>
+                {
+                    { SystemLanguage.English, "During build, duplicate all custom playable controllers used by the avatar and obfuscate their layer/state/state machine/blend tree/clip names.\nOriginal project assets stay unchanged. Disabled by default to preserve existing workflow." },
+                    { SystemLanguage.ChineseSimplified, "构建时复制 Avatar 使用的所有自定义 Playable Controller，并混淆其中的层 / 状态 / 状态机 / BlendTree / Clip 名称。\n原始项目资源不会被直接修改。默认关闭，以保持现有工作流不变。" },
+                    { SystemLanguage.Japanese, "ビルド時にアバターが使用するすべてのカスタムPlayable Controllerを複製し、その中のレイヤー / ステート / ステートマシン / BlendTree / Clip 名を難読化します。\n元のプロジェクト資産は直接変更されません。既存ワークフローを維持するため、既定では無効です。" }
+                },
                 ["advanced.decoy_layers"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Animation Layer Noise" },

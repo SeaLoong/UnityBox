@@ -62,8 +62,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.Log("[ASS] Play mode disabled, skipping");
                 return true;
             }
+            if (Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation)
+            {
+                Obfuscator.PreparePlayableControllerCopies(descriptor);
+            }
             Debug.Log("[ASS] Starting to generate security system...");
             var fxController = GetFXController(descriptor);
+            Obfuscator.RegisterGeneratedAsset(fxController);
+            CleanupASSGeneratedLayers(fxController);
             Utils.EnsureBuiltInVRCParameters(fxController,
                 ensureIsLocal: true,
                 ensureGestureParameters: true);
@@ -109,7 +115,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var instructionalClips = GenerateInstructionalClips(fxController);
                 GenerateDecoyLayer(fxController, instructionalClips);
                 InjectFakeStatesIntoRealLayers(fxController, instructionalClips);
-                Obfuscator.ObfuscatePlayableControllers(descriptor);
+                if (assConfig.enablePlayableLayerObfuscation)
+                    Obfuscator.ObfuscatePlayableControllers(descriptor);
             }
             RegisterASSParameters(descriptor, assConfig);
             Utils.SaveAndRefresh();
@@ -227,6 +234,144 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
             EnsureAudioLoadInBackground(config.successSound);
             EnsureAudioLoadInBackground(config.warningBeep);
+        }
+        private static void CleanupASSGeneratedLayers(AnimatorController controller)
+        {
+            if (controller == null) return;
+
+            string controllerPath = AssetDatabase.GetAssetPath(controller)?.Replace('\\', '/');
+            string generatedFxPath = $"{ASSET_FOLDER}/{CONTROLLER_NAME}".Replace('\\', '/');
+            if (string.Equals(controllerPath, generatedFxPath, System.StringComparison.OrdinalIgnoreCase))
+            {
+                bool hasLayers = controller.layers.Length > 0;
+                bool hasParameters = controller.parameters.Length > 0;
+                if (hasLayers || hasParameters)
+                {
+                    controller.layers = new AnimatorControllerLayer[0];
+                    controller.parameters = new AnimatorControllerParameter[0];
+                    EditorUtility.SetDirty(controller);
+                    Debug.Log("[ASS] Reset generated FX controller layers and parameters before regeneration");
+                }
+                return;
+            }
+
+            var keptLayers = new List<AnimatorControllerLayer>();
+            int removedCount = 0;
+            foreach (var layer in controller.layers)
+            {
+                if (IsASSGeneratedLayer(layer))
+                {
+                    removedCount++;
+                    continue;
+                }
+                keptLayers.Add(layer);
+            }
+
+            if (removedCount == 0) return;
+
+            controller.layers = keptLayers.ToArray();
+            EditorUtility.SetDirty(controller);
+            Debug.Log($"[ASS] Removed {removedCount} previously generated ASS layer(s) before regeneration");
+        }
+        private static bool IsASSGeneratedLayer(AnimatorControllerLayer layer)
+        {
+            if (Constants.IsASSManagedLayerName(layer.name))
+                return true;
+            if (layer.stateMachine == null)
+                return false;
+            return StateMachineContainsASSArtifacts(layer.stateMachine);
+        }
+        private static bool StateMachineContainsASSArtifacts(AnimatorStateMachine stateMachine)
+        {
+            foreach (var childState in stateMachine.states)
+            {
+                var state = childState.state;
+                if (state == null) continue;
+                if (StateContainsASSArtifacts(state))
+                    return true;
+            }
+
+            foreach (var childMachine in stateMachine.stateMachines)
+            {
+                if (StateMachineContainsASSArtifacts(childMachine.stateMachine))
+                    return true;
+            }
+
+            return false;
+        }
+        private static bool StateContainsASSArtifacts(AnimatorState state)
+        {
+            foreach (var behaviour in state.behaviours)
+            {
+                if (behaviour is VRCAnimatorPlayAudio playAudio && IsASSObjectPath(playAudio.SourcePath))
+                    return true;
+
+                if (behaviour is VRCAvatarParameterDriver parameterDriver)
+                {
+                    foreach (var parameter in parameterDriver.parameters)
+                    {
+                        if (IsASSParameterName(parameter.name))
+                            return true;
+                    }
+                }
+            }
+
+            return MotionContainsASSArtifacts(state.motion);
+        }
+        private static bool MotionContainsASSArtifacts(Motion motion)
+        {
+            if (motion == null) return false;
+
+            if (motion is BlendTree blendTree)
+            {
+                foreach (var child in blendTree.children)
+                {
+                    if (MotionContainsASSArtifacts(child.motion))
+                        return true;
+                }
+                return false;
+            }
+
+            if (motion is AnimationClip clip)
+            {
+                foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+                {
+                    if (IsASSObjectPath(binding.path))
+                        return true;
+                    if (binding.propertyName == "material._C9D4")
+                        return true;
+                }
+            }
+
+            return false;
+        }
+        private static bool IsASSParameterName(string parameterName)
+        {
+            return parameterName == PARAM_PASSWORD_CORRECT
+                || parameterName == PARAM_TIME_UP
+                || parameterName == "ASS_PasswordCorrect"
+                || parameterName == "ASS_TimeUp";
+        }
+        private static bool IsASSObjectPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+
+            return path == GO_OVERLAY
+                || path == GO_AUDIO_WARNING
+                || path == GO_AUDIO_SUCCESS
+                || path == GO_DEFENSE_ROOT
+                || path.StartsWith(GO_OVERLAY + "/")
+                || path.StartsWith(GO_AUDIO_WARNING + "/")
+                || path.StartsWith(GO_AUDIO_SUCCESS + "/")
+                || path.StartsWith(GO_DEFENSE_ROOT + "/")
+                || path == "ASS_Overlay"
+                || path == "ASS_Audio_Warning"
+                || path == "ASS_Audio_Success"
+                || path == "ASS_Defense"
+                || path.StartsWith("ASS_Overlay/")
+                || path.StartsWith("ASS_Audio_Warning/")
+                || path.StartsWith("ASS_Audio_Success/")
+                || path.StartsWith("ASS_Defense/");
         }
         private static void InjectFakeStatesIntoRealLayers(AnimatorController controller,
             List<AnimationClip> instructionalClips = null)
