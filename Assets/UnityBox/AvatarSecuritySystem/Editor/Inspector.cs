@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using System.Linq;
 using UnityBox.AvatarSecuritySystem.Editor;
 using static UnityBox.AvatarSecuritySystem.Editor.I18n;
 namespace UnityBox.AvatarSecuritySystem

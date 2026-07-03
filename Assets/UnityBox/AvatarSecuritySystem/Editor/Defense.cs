@@ -21,18 +21,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private static string ParticleRootName => GO_PARTICLE_ROOT;
         private static string LightRootName => GO_LIGHT_ROOT;
-        private static string PhysXRootName => GO_PHYSX_ROOT;
-        private static string ClothRootName => GO_CLOTH_ROOT;
-        private static string ShaderRootName => GO_SHADER_ROOT;
         private static string PSObjPrefix => GO_PS_PREFIX;
         private static string SubEmitterPrefix => GO_SUB_EMITTER_PREFIX;
         private static string LightPrefix => GO_LIGHT_PREFIX;
-        private static string RBPrefix => GO_RB_PREFIX;
-        private static string ColliderPrefix => GO_COLLIDER_PREFIX;
-        private static string ClothPrefix => GO_CLOTH_PREFIX;
-        private static string ShaderMatPrefix => GO_SHADER_MAT_PREFIX;
         private static string DefenseMeshName => GO_DEFENSE_MESH;
-        private static string ShaderMeshName => GO_SHADER_MESH;
         private bool IsLightweightDefense => config != null && config.lightweightDefense;
         public void Generate()
         {
@@ -435,29 +427,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
 
-        private uint HashAvatarName()
-        {
-            if (string.IsNullOrEmpty(avatarRoot.name)) return 0xDEF;
-            uint h = 0x811C9DC5;
-            foreach (char c in avatarRoot.name) { h ^= c; h *= 0x01000193; }
-            return h;
-        }
-        private static long CountExistingParticleMeshTriangles(GameObject avatarRoot)
-        {
-            long total = 0;
-            foreach (var ps in avatarRoot.GetComponentsInChildren<ParticleSystem>(true))
-            {
-                var r = ps.GetComponent<ParticleSystemRenderer>();
-                if (r == null) continue;
-                long trisPerParticle;
-                if (r.renderMode == ParticleSystemRenderMode.Mesh && r.mesh != null)
-                    trisPerParticle = r.mesh.triangles.Length / 3;
-                else
-                    trisPerParticle = 2;
-                total += (long)ps.main.maxParticles * trisPerParticle;
-            }
-            return total;
-        }
         private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
             long meshPolyBudget, Light[] lights, bool enableOverflow, Material sharedRendererMaterial,
             bool lightweightDefense)
@@ -1015,6 +984,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 particlesUsed += subParticles;
             }
         }
+
         private static Light[] CreateLightComponents(GameObject root, int lightCount)
         {
             var lightRoot = new GameObject(LightRootName);
@@ -1152,173 +1122,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             mesh.RecalculateBounds();
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
             return mesh;
-        }
-        private static void CreatePhysXComponents(GameObject root, int rigidbodyCount, int colliderCount)
-        {
-            var physXRoot = new GameObject(PhysXRootName);
-            physXRoot.transform.SetParent(root.transform);
-            for (int i = 0; i < rigidbodyCount; i++)
-            {
-                var rbObj = new GameObject($"{RBPrefix}_{i}");
-                rbObj.transform.SetParent(physXRoot.transform);
-                rbObj.transform.localPosition = Vector3.zero;
-                var rb = rbObj.AddComponent<Rigidbody>();
-                rb.mass = 100f;
-                rb.drag = 50f;
-                rb.angularDrag = 50f;
-                rb.useGravity = false;
-                rb.isKinematic = false;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                rb.constraints = RigidbodyConstraints.FreezeAll;
-                int collidersPerBody = Mathf.Max(1, colliderCount / Mathf.Max(1, rigidbodyCount));
-                for (int j = 0; j < collidersPerBody; j++)
-                {
-                    var colliderObj = new GameObject($"{ColliderPrefix}_{j}");
-                    colliderObj.transform.SetParent(rbObj.transform);
-                    colliderObj.transform.localPosition = Vector3.zero;
-                    if (j % 2 == 0)
-                    {
-                        var boxCollider = colliderObj.AddComponent<BoxCollider>();
-                        boxCollider.size = new Vector3(0.5f, 0.5f, 0.5f);
-                    }
-                    else
-                    {
-                        var sphereCollider = colliderObj.AddComponent<SphereCollider>();
-                        sphereCollider.radius = 0.25f;
-                    }
-                }
-            }
-        }
-        private static void CreateClothComponents(GameObject root, int clothCount)
-        {
-            var clothRoot = new GameObject(ClothRootName);
-            clothRoot.transform.SetParent(root.transform);
-            var clothShader = Shader.Find("Standard");
-            Material sharedClothMat = clothShader != null ? new Material(clothShader) { color = Color.gray } : null;
-            for (int c = 0; c < clothCount; c++)
-            {
-                var clothObj = new GameObject($"{ClothPrefix}_{c}");
-                clothObj.transform.SetParent(clothRoot.transform);
-                clothObj.transform.localPosition = Vector3.zero;
-                var meshFilter = clothObj.AddComponent<MeshFilter>();
-                var mesh = new Mesh { name = $"ClothMesh_{c}" };
-                int verticesPerCloth = Constants.TOTAL_CLOTH_VERTICES_MAX / Mathf.Max(1, clothCount);
-                int gridSizePlus1 = Mathf.Clamp(Mathf.FloorToInt(Mathf.Sqrt(verticesPerCloth)), 3, 500);
-                int gridSize = gridSizePlus1 - 1;
-                Vector3[] vertices = new Vector3[gridSizePlus1 * gridSizePlus1];
-                int[] triangles = new int[gridSize * gridSize * 6];
-                for (int x = 0; x <= gridSize; x++)
-                {
-                    for (int y = 0; y <= gridSize; y++)
-                    {
-                        int idx = x * gridSizePlus1 + y;
-                        vertices[idx] = new Vector3((float)x / gridSize, (float)y / gridSize, 0);
-                    }
-                }
-                int triIdx = 0;
-                for (int x = 0; x < gridSize; x++)
-                {
-                    for (int y = 0; y < gridSize; y++)
-                    {
-                        int v0 = x * gridSizePlus1 + y;
-                        int v1 = v0 + 1;
-                        int v2 = v0 + gridSizePlus1;
-                        int v3 = v2 + 1;
-                        triangles[triIdx++] = v0;
-                        triangles[triIdx++] = v2;
-                        triangles[triIdx++] = v1;
-                        triangles[triIdx++] = v1;
-                        triangles[triIdx++] = v2;
-                        triangles[triIdx++] = v3;
-                    }
-                }
-                mesh.vertices = vertices;
-                mesh.triangles = triangles;
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
-                mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 1f);
-                meshFilter.mesh = mesh;
-                var meshRenderer = clothObj.AddComponent<SkinnedMeshRenderer>();
-                meshRenderer.sharedMesh = mesh;
-                meshRenderer.sharedMaterial = sharedClothMat;
-                meshRenderer.updateWhenOffscreen = true;
-                meshRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
-                meshRenderer.receiveShadows = true;
-                meshRenderer.allowOcclusionWhenDynamic = false;
-                var cloth = clothObj.AddComponent<Cloth>();
-#if UNITY_2021_2_OR_NEWER
-                cloth.clothSolverFrequency = 240f;
-#else
-                cloth.solverFrequency = 240f;
-#endif
-                cloth.stiffnessFrequency = 1f;
-                cloth.useGravity = false;
-                cloth.damping = 0.9f;
-                cloth.selfCollisionDistance = 0f;
-                cloth.selfCollisionStiffness = 0.2f;
-                cloth.worldVelocityScale = 0f;
-                cloth.friction = 0.5f;
-                cloth.collisionMassScale = 0.5f;
-#if UNITY_2021_2_OR_NEWER
-                cloth.enableContinuousCollision = true;
-#else
-                cloth.useContinuousCollision = true;
-#endif
-            }
-        }
-        private static void CreateShaderDefenseComponents(GameObject root, int count, Material sharedOverrideMaterial)
-        {
-            if (count <= 0)
-                return;
-
-            Material sharedMaterial = sharedOverrideMaterial;
-            if (sharedMaterial == null)
-            {
-                var defenseShader = GetDefenseShader();
-                if (defenseShader == null) return;
-                sharedMaterial = new Material(defenseShader)
-                {
-                    renderQueue = 3000
-                };
-            }
-            var shaderRoot = new GameObject(ShaderRootName);
-            shaderRoot.transform.SetParent(root.transform);
-            var mesh = new Mesh { name = ShaderMeshName };
-            mesh.vertices = new Vector3[] {
-                new Vector3(-0.5f, -0.5f, 0),
-                new Vector3(0.5f, -0.5f, 0),
-                new Vector3(-0.5f, 0.5f, 0),
-                new Vector3(0.5f, 0.5f, 0)
-            };
-            mesh.triangles = new int[] { 0, 2, 1, 1, 2, 3 };
-            mesh.uv = new Vector2[] {
-                new Vector2(0, 0), new Vector2(1, 0),
-                new Vector2(0, 1), new Vector2(1, 1)
-            };
-            mesh.normals = new Vector3[] {
-                Vector3.back, Vector3.back, Vector3.back, Vector3.back
-            };
-            mesh.RecalculateBounds();
-            for (int i = 0; i < count; i++)
-            {
-                var obj = new GameObject($"{ShaderMatPrefix}_{i}");
-                obj.transform.SetParent(shaderRoot.transform);
-                obj.transform.localPosition = Vector3.zero;
-                var mf = obj.AddComponent<MeshFilter>();
-                mf.sharedMesh = mesh;
-                var mr = obj.AddComponent<MeshRenderer>();
-                mr.sharedMaterial = sharedMaterial;
-                mr.shadowCastingMode = ShadowCastingMode.TwoSided;
-                mr.receiveShadows = true;
-                mr.allowOcclusionWhenDynamic = false;
-            }
-        }
-        private static Shader GetDefenseShader()
-        {
-            var shader = GetHeavyDefenseShaderOrNull();
-            if (shader != null) return shader;
-            Debug.LogWarning("[ASS] Defense shader not found, falling back to Standard");
-            return Shader.Find("Standard");
         }
 
         private static Shader GetHeavyDefenseShaderOrNull()

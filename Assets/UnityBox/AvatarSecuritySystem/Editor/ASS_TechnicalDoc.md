@@ -538,10 +538,10 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 
 #### 4.5.3 GPU 防御详解
 
-**PhysX / Cloth 旧路径** (`CreatePhysXComponents`, `CreateClothComponents`)
+**PhysX / Cloth 旧设计（当前实现已移除）**
 
-- 这两套生成器仍保留在 `Defense.cs` 中，便于兼容旧设计思路与后续实验。
-- 但当前 `CreateDefenseComponents()` 已**不再调用**它们。
+- 早期版本曾尝试通过 Rigidbody / Collider / Cloth 组件进一步堆高负载。
+- 当前实现已经删除这些生成路径，不再在 `Defense.cs` 中保留对应辅助方法。
 - 因此当前默认实现不会再主动生成：
   - Rigidbody / Collider 负载
   - Cloth / SkinnedMeshRenderer / 动态布料网格
@@ -611,7 +611,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 - fallback Light 使用 Point / Spot 配置之一，保持高强度、超大范围、逐像素渲染与阴影设置
 - 轻量模式下：**不主动生成新 Light；若 Avatar 本来就有 Light，则直接复用；若没有则完全不补光源**
 
-**防御 Shader 材质** (`CreateShaderDefenseComponents`)
+**防御 Shader 材质（当前实现）**
 
 当前实现不再单独生成 `ShaderDefense` Quad 树，而是：
 
