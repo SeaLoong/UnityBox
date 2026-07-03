@@ -8,7 +8,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 - **手势密码验证**：通过 VRChat 左/右手手势组合作为密码
 - **倒计时机制**：限时密码输入，超时自动触发防御
-- **GPU 防御**：防御 Shader、粒子、光源、布料、物理等组件填满至 VRChat 上限
+- **GPU 防御**：以共享 `UB_Defense` 材质的粒子系统为主，结合最少系统数策略制造负载；轻量模式下不主动生成新光源，并关闭粒子碰撞 / 拖尾
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御(Countdown+Defense)仅本地触发；Lock层:远端保持在Remote状态（身体可见）,仅穿戴者本地执行隐藏→遮罩→解锁流程
 - **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
@@ -18,7 +18,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
 2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理。当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
-3. **VRChat 限制遵守**：严格遵守 Rigidbody (256)、Cloth (256)、Light (256)、ParticleSystem (355) 等组件数量上限，自动检测已有组件预算
+3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；在普通模式下优先复用现有 Light，轻量模式则不主动生成新光源，仅在 Avatar 本来已有 Light 时直接复用，以尽量贴近绿模
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
 ---
@@ -524,52 +524,44 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 
 #### 4.5.2 防御参数表
 
-| 参数                | 正常模式 | 调试模式 |
-| ------------------- | -------- | -------- |
-| PhysXRigidbodyCount | 256      | 1        |
-| PhysXColliderCount  | 1024     | 1        |
-| ClothComponentCount | 256      | 1        |
-| ParticleCount       | MAX_INT  | 1        |
-| ParticleSystemCount | 355      | 1        |
-| LightCount          | 256      | 1        |
-| ShaderMaterialCount | 8        | 1        |
+| 参数                | 当前实现（Build & Publish） | 调试模式 |
+| ------------------- | --------------------------- | -------- |
+| PhysXRigidbodyCount | 0（当前默认不生成）         | 0        |
+| PhysXColliderCount  | 0（当前默认不生成）         | 0        |
+| ClothComponentCount | 0（当前默认不生成）         | 0        |
+| ParticleCount       | `MAX_INT` 目标              | 1        |
+| ParticleSystemCount | 非溢出：通常 1；溢出：1 或 2 | 1        |
+| LightCount          | 普通模式：复用 1 / fallback 1；轻量模式：仅复用已有 | 1（轻量模式下仅复用已有） |
+| SharedShaderMaterialCount | 1 份共享材质         | 1        |
 
-> 所有参数目标值设为 `Constants.cs` 定义的组件上限，实际生成数量由预算系统动态截断。调试模式下所有参数均为 1（仅验证代码路径）。
+> `Constants.cs` 中仍保留 VRChat 上限常量（Rigidbody 256、Cloth 256、ParticleSystem 355、Light 256 等），但当前默认实现已经不再尝试把 PhysX / Cloth / 独立 ShaderDefense 网格灌满到这些上限。
 
 #### 4.5.3 GPU 防御详解
 
-**PhysX Rigidbody + Collider** (`CreatePhysXComponents`)
+**PhysX / Cloth 旧路径** (`CreatePhysXComponents`, `CreateClothComponents`)
 
-受 Rigidbody 预算限制：
+- 这两套生成器仍保留在 `Defense.cs` 中，便于兼容旧设计思路与后续实验。
+- 但当前 `CreateDefenseComponents()` 已**不再调用**它们。
+- 因此当前默认实现不会再主动生成：
+  - Rigidbody / Collider 负载
+  - Cloth / SkinnedMeshRenderer / 动态布料网格
 
-- 每个 Rigidbody：`mass = 100`, `drag = 50`, `angularDrag = 50`, `useGravity = false`, `isKinematic = false`, `ContinuousSpeculative`, `FreezeAll`
-- 每个 Rigidbody 附加 `PhysXColliderCount / rigidbodyCount` 个 Collider（BoxCollider 和 SphereCollider 交替）
-
-**Cloth 布料** (`CreateClothComponents`)
-
-受 Cloth 预算限制：
-
-- 每个布料网格顶点数动态计算：`gridSizePlus1 = clamp(floor(sqrt(TOTAL_CLOTH_VERTICES_MAX / clothCount)), 3, 500)`
-- `clothSolverFrequency = 240`，`damping = 0.9`，`selfCollisionStiffness = 0.2`，`worldVelocityScale = 0`
-- SkinnedMeshRenderer 支持布料形变
-  - `updateWhenOffscreen = true`（禁用视锥体剔除，始终更新）
-  - `shadowCastingMode = TwoSided`，`receiveShadows = true`
-  - `allowOcclusionWhenDynamic = false`（禁止遮挡剔除）
-  - `mesh.bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
-
-> **注意**: 系统自动检测 Avatar 上已有的 Rigidbody、Cloth、Light、ParticleSystem 数量，计算可用预算后动态调整防御组件数量，确保总数不超过配置上限。
+> **注意**: 当前默认实现主要对已有 ParticleSystem / Light 做预算检测与复用决策；Rigidbody / Cloth 的上限常量仍保留，但默认生成流程不再消耗这些预算。
 
 #### 4.5.4 粒子/光源/Shader 防御详解
 
 **粒子防御** (`CreateParticleComponents`)
 
-- 两阶段顺序填充：第一阶段创建主粒子系统，第二阶段为每个主系统创建子发射器
-- **材质池优化**：所有粒子系统共享 8 个材质池（主材质 8 个 + Trail 材质 8 个），避免创建数百个独立 Material 实例
+- **最少系统数策略**：
+  - 非溢出模式：通常只生成 1 个粒子系统，尽量把剩余粒子 / Mesh 预算补满但不超限
+  - 溢出模式：若 Avatar 已有粒子，则补 1 个顶满系统；否则补 2 个顶满系统以保持溢出
+- **共享材质策略**：所有粒子渲染器共享 1 份 `UB_Defense` 材质；若重 Shader 不可用，才回退到 Avatar 现有材质或单份 fallback 材质
 - 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算
-- **溢出模式**（`enableOverflow`）：粒子总数和 Mesh 面数目标设为 int.MaxValue+1（跳过预算），使用 `long` 运算分配到各系统后每系统 maxParticles 仍在 int 范围内；粒子光源 maxLights 设为 int.MaxValue
+- **溢出模式**（`enableOverflow`）：粒子总数和 Mesh 面数目标以 `int.MaxValue+1` 为参考，允许总量对 VRChat 统计发生溢出；轻量模式建议与此选项搭配使用，以更容易保持绿色参数显示
 - `GenerateSphereMesh` 生成的 Mesh `bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
-- **粒子光源复用**：不再为每个粒子系统创建独立 Light 子对象，而是引用 `CreateLightComponents` 已创建的 Light 数组（循环取用），避免 Light 总数超出 `LIGHT_MAX_COUNT` 上限
-- **创建顺序**：LightDefense 在 ParticleDefense 之前创建，以确保粒子光源模块能引用已有的 Light 组件
+- **光源策略**：
+  - 普通模式：优先复用 1 个外部 Light；若没有可复用光源，则只创建 1 个 fallback Light
+  - 轻量模式：不主动生成新光源；若 Avatar 本来就有 Light，则允许直接复用
 - 每个系统配置：
   - `loop = true`, `prewarm = true`, `playOnAwake = true`, `simulationSpeed = 10000000`（千万级）
   - `ringBufferMode = PauseUntilReplaced`
@@ -591,8 +583,8 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
     - **SizeOverLifetime**（3 轴分离，AnimationCurve）
     - **RotationOverLifetime**（3 轴 ±360°）
     - **Noise**（4 octave 高质量湍流，影响位置/旋转/大小）
-    - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息）
-    - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线）
+    - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息；**轻量模式关闭**）
+    - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线；**轻量模式关闭**）
     - **TextureSheetAnimation**（4×4 网格，3 周期循环）
     - **LimitVelocityOverLifetime**（3 轴限制+阻力）
     - **InheritVelocity**（继承发射器速度）
@@ -601,38 +593,32 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
     - **SizeBySpeed**（3 轴分离，速度缩放）
     - **RotationBySpeed**（3 轴 ±360°）
     - **ExternalForces**（`multiplier = 10000000`，千万级外部力场影响）
-    - **Lights**（复用 LightDefense 的 Light 组件，`rangeMultiplier = 10000000`，`intensityMultiplier = 10000000`，每粒子发光）
+    - **Lights**（普通模式复用外部 Light 或 1 个 fallback Light；轻量模式仅在 Avatar 已有 Light 时复用，`rangeMultiplier = 10000000`，`intensityMultiplier = 10000000`）
     - **CustomData**（Custom1 + Custom2 各 4 通道 Vector 数据，增加 GPU 数据传输负担）
     - **Trigger**（Inside/Outside/Enter/Exit 全回调）
-- **子发射器**（第二阶段顺序填充，全模块对等）：
+- **子发射器**（保留为后备路径；在当前最少系统数策略下通常不会进入该阶段）：
   - `simulationSpeed = 10000000`，`prewarm = true`，`ringBufferMode = PauseUntilReplaced`
   - 启用全部 18 个模块（与主系统完全对等）
-  - 独立 Emission（rateOverTime + rateOverDistance + Burst），Shape，VelocityOverLifetime，ForceOverLifetime，ColorOverLifetime，SizeOverLifetime，RotationOverLifetime，Noise（4 octave），Collision（World 3D High），Trails，TextureSheetAnimation，LimitVelocityOverLifetime，InheritVelocity，LifetimeByEmitterSpeed，ColorBySpeed，SizeBySpeed，RotationBySpeed，ExternalForces（10000000），Lights（复用 LightDefense），CustomData，Trigger
+  - 独立 Emission（rateOverTime + rateOverDistance + Burst），Shape，VelocityOverLifetime，ForceOverLifetime，ColorOverLifetime，SizeOverLifetime，RotationOverLifetime，Noise（4 octave），Collision（普通模式）、Trails（普通模式）、TextureSheetAnimation，LimitVelocityOverLifetime，InheritVelocity，LifetimeByEmitterSpeed，ColorBySpeed，SizeBySpeed，RotationBySpeed，ExternalForces（10000000），Lights（普通模式或轻量模式下的已有外部 Light 复用），CustomData，Trigger
   - 渲染器配置与主系统对等：Mesh 模式，TwoSided Shadow，allowOcclusionWhenDynamic=false，GPU Instancing，World 对齐，Distance 排序
   - Collision + Death 类型子发射器（InheritColor + InheritSize）
 
 **光源防御** (`CreateLightComponents`)
 
-返回 `Light[]` 数组，供粒子系统 Lights 模块复用：
+光源策略如下：
 
-- 交替创建 Point / Spot 光源（Spot: `spotAngle = 179°`, `innerSpotAngle = 170°`）
-- `intensity = 10000000`，`bounceIntensity = 10000000`，`range = 10000000`（千万级极端消耗）
-- `renderMode = ForcePixel`（强制逐像素渲染，禁止 Unity 降级为顶点光）
-- `shadowBias = 0.001`，`cullingMask = ~0`（影响所有层）
-- HSV 色彩分布
-- 全部启用 `Soft Shadow`，`shadowResolution = VeryHigh`
-- **创建顺序**：在 ParticleDefense 之前创建，确保粒子光源模块可引用
+- 优先复用 Avatar 现有的 1 个 Light；若找不到，才在 `ASS_Defense` 下创建 `LightDefense/L_0`
+- fallback Light 使用 Point / Spot 配置之一，保持高强度、超大范围、逐像素渲染与阴影设置
+- 轻量模式下：**不主动生成新 Light；若 Avatar 本来就有 Light，则直接复用；若没有则完全不补光源**
 
 **防御 Shader 材质** (`CreateShaderDefenseComponents`)
 
-使用 `UnityBox/UB_Defense`（GPU 密集 Shader：分形、路径追踪、流体模拟等），仅创建 8 个小型 MeshRenderer：
+当前实现不再单独生成 `ShaderDefense` Quad 树，而是：
 
-- **Mesh**：共享一个 4 顶点 Quad（极小内存占用），`bounds = 100000`（禁止视锥体剔除）
-- **材质**：每个 MeshRenderer 独立 Material 实例（`renderQueue = 3000`）
-- **渲染**：`shadowCastingMode = TwoSided`，`receiveShadows = true`，`allowOcclusionWhenDynamic = false`
-- **Shader 回退**：找不到 `UnityBox/UB_Defense` 时回退到 `Standard`
-- **可控性**：防御根对象未激活时 MeshRenderer 不渲染，不消耗 GPU。激活后每像素触发极重的 Shader 计算
-- **数量**：正常模式 8 个，调试模式 1 个
+- 创建 1 份共享 `UB_Defense` 材质
+- 直接赋给所有粒子渲染器 / Trail 渲染器
+- 若重 Shader 不可用，则回退到 Avatar 现有材质或单份 fallback 材质
+- 这样既保留 GPU 负载，又减少额外 GameObject / MeshRenderer 数量
 
 ---
 
@@ -668,7 +654,8 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 | 参数             | 类型 | 默认值 | 说明                                                                      |
 | ---------------- | ---- | ------ | ------------------------------------------------------------------------- |
 | `disableDefense` | bool | false  | 禁用防御组件（仅保留密码系统，用于测试）                                  |
-| `enableOverflow` | bool | true   | 启用溢出模式：粒子和Mesh面数按int.MaxValue+1生成，光源maxLights设int.MaxValue |
+| `enableOverflow` | bool | true   | 启用溢出模式：通过粒子数 / Mesh 面数的数值溢出更容易保持绿色参数显示，建议与轻量模式一起使用 |
+| `lightweightDefense` | bool | false | 轻量模式：不主动生成新光源；若 Avatar 本来就有 Light 则直接复用。并关闭粒子碰撞与拖尾，使用最少粒子系统策略尽量贴近绿模 |
 
 #### 锁定选项
 
@@ -792,23 +779,12 @@ Avatar Root
 │   AudioSource (spatialBlend=0, volume=0.5)
 │
 └── ASS_Defense (默认禁用) [混淆启用时名称被替换]
-    ├── PhysXDefense/ [混淆启用时名称被替换]
-    │   └── Rigidbody_0 ~ Rigidbody_{count} [混淆启用时名称被替换]
-    │       └── Collider_0 ~ Collider_{n} [混淆启用时名称被替换] (Box/Sphere交替)
-    │
-    ├── ClothDefense/ [混淆启用时名称被替换]
-    │   └── Cloth_0 ~ Cloth_{count} [混淆启用时名称被替换] (动态网格, updateWhenOffscreen, bounds=1)
-    │
-    ├── ShaderDefense/ [混淆启用时名称被替换]
-    │   └── ShaderMat_0 ~ ShaderMat_{count} [混淆启用时名称被替换] (Quad, bounds=100000, allowOcclusionWhenDynamic=false)
-    │
-    ├── LightDefense/ [混淆启用时名称被替换] (在ParticleDefense之前创建)
-    │   └── L_0 ~ L_{count} [混淆启用时名称被替换]
-    │       (Point/Spot交替, intensity/range=10M, ForcePixel, Soft Shadow VeryHigh)
-    │
-    └── ParticleDefense/ [混淆启用时名称被替换]
-        └── PS_0 ~ PS_{count} [混淆启用时名称被替换] (simulationSpeed=10M, 18模块全启用)
-            └── SubEmitter_0 [混淆启用时名称被替换] (全模块对等, 复用LightDefense光源)
+  ├── LightDefense/ [仅普通模式且无可复用 Light 时生成]
+  │   └── L_0 [后备高负载 Light]
+  │
+  └── ParticleDefense/ [混淆启用时名称被替换]
+    └── PS_0 ~ PS_{count} [混淆启用时名称被替换]
+      (最少系统数策略；粒子渲染器共享 UB_Defense 材质；轻量模式不主动生成 Light，若 Avatar 已有 Light 可直接复用；无 Collision / 无 Trails)
 ```
 
 ---
@@ -848,7 +824,7 @@ Avatar Root
 
 ### 10.1 VRChat 组件限制
 
-系统对所有 VRC 受限组件采用统一预算分配方式：检测已有数量 → 计算剩余预算 → `min(目标值, 预算)` 确定实际生成数量。
+系统仍保留所有 VRC 受限组件的上限常量，但当前默认实现主要对 **ParticleSystem / Mesh 三角面 / Light** 进行预算检测和复用决策。
 
 | 组件类型  | 配置上限 | 检测方式                                    |
 | --------- | -------- | ------------------------------------------- |
@@ -857,16 +833,16 @@ Avatar Root
 | Light     | 256      | `GetComponentsInChildren<Light>()`          |
 | Particle  | MAX_INT  | `GetComponentsInChildren<ParticleSystem>()` |
 
-**预算检查代码逻辑** (`Defense.cs CreateDefenseComponents()`):
+**当前默认实现实际使用的预算逻辑**（粒子 / 光源）:
 
 ```csharp
-int rigidbodyBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRigidbodies);
-int clothBudget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existingCloth);
+var existing = GetExistingParticleStats();
+long remainingParticleBudget = Mathf.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
+long remainingMeshBudget = Mathf.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
 int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
-int particleBudget = Mathf.Max(0, Constants.PARTICLE_MAX_COUNT - existingParticles);
 ```
 
-这确保了即使 Avatar 本身已接近组件上限，ASS 也不会导致构建失败。所有组件类型遵循相同的预算分配原则：目标值设为配置上限（`Constants.cs` 定义），由预算截断实际生成数量。
+这确保了即使 Avatar 本身已有大量粒子或光源，ASS 也会优先走“复用已有 / 最少系统数 / 不主动补灯（轻量模式）”的策略，避免无意义地继续堆对象。
 
 ### 10.2 Write Defaults 模式
 
@@ -930,7 +906,7 @@ VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/H
 ### 10.6 代码规范
 
 - Defense.cs 不包含任何注释（代码足够自文档化，注释在技术文档中维护）
-- 粒子光源复用策略：不创建额外 Light 组件，复用 LightDefense 已有的 Light 引用，避免超出 LIGHT_MAX_COUNT 上限
+- 粒子光源策略：普通模式下优先复用 1 个外部 Light，否则仅创建 1 个 fallback Light；轻量模式不主动生成新光源，但若 Avatar 已有 Light 则允许直接复用
 
 ### 10.7 Overlay Shader 全屏覆盖深度修复
 
@@ -1033,10 +1009,15 @@ Defense:  Idle→Active                     ← 开关触发器模式
 
 **攻击路径 D：组件预算异常检测**
 
-256 个 Rigidbody、256 个 Cloth、355 个 ParticleSystem……
-这些极端数值本身就是一个特征。
-→ **无法消除**：这是防御机制的核心——大量组件消耗 GPU。
-→ **缓解**：给每个组件混淆名称，使其看起来像普通 Avatar 元素。
+当前实现已经不再默认堆出 `256 Rigidbody / 256 Cloth / 355 ParticleSystem / 256 Light` 这种极端对象数。
+异常特征更多来自：
+
+- `MAX_INT` 级别的粒子数
+- 粒子 / Mesh 统计的溢出行为
+- 共享 `UB_Defense` 材质带来的重 Shader 负载
+
+→ **无法完全消除**：这些仍然是防御机制的核心。
+→ **缓解**：最少系统数策略、复用已有 Light、轻量模式关闭 Collision/Trails，以及名称混淆，都在降低对象数量层面的异常信号。
 
 #### 11.5.3 残余风险总结
 

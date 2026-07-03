@@ -33,6 +33,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static string ShaderMatPrefix => GO_SHADER_MAT_PREFIX;
         private static string DefenseMeshName => GO_DEFENSE_MESH;
         private static string ShaderMeshName => GO_SHADER_MESH;
+        private bool IsLightweightDefense => config != null && config.lightweightDefense;
         public void Generate()
         {
             if (config.disableDefense)
@@ -45,6 +46,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 GenerateDefaultDefenseLayer();
                 return;
             }
+            var reusableLight = FindReusableAvatarLight();
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
             var inactiveState = layer.stateMachine.AddState(
@@ -61,6 +63,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            ApplyReusableLightActivationCurves(activateClip, reusableLight);
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
             var toActive = Utils.CreateTransition(inactiveState, activeState);
@@ -70,7 +73,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             try
             {
-                CreateDefenseComponents();
+                CreateDefenseComponents(reusableLight);
             }
             catch (System.Exception e)
             {
@@ -81,6 +84,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private void GenerateDefaultDefenseLayer()
         {
+            var reusableLight = FindReusableAvatarLight();
             var layer = Utils.CreateLayer(Constants.LAYER_DEFENSE, 1f);
             layer.blendingMode = AnimatorLayerBlendingMode.Override;
             var inactiveState = layer.stateMachine.AddState(
@@ -97,6 +101,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            ApplyReusableLightActivationCurves(activateClip, reusableLight);
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;
             var toActive = Utils.CreateTransition(inactiveState, activeState);
@@ -106,7 +111,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             try
             {
-                CreateDefenseComponents();
+                CreateDefenseComponents(reusableLight);
             }
             catch (System.Exception e)
             {
@@ -116,7 +121,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             controller.AddLayer(layer);
             Debug.Log("[ASS] Default enable defense: Inactive→Active on IsLocal && !PasswordCorrect");
         }
-        private GameObject CreateDefenseComponents()
+        private GameObject CreateDefenseComponents(Light reusableLight)
         {
             var existingRoot = avatarRoot.transform.Find(Constants.GO_DEFENSE_ROOT);
             if (existingRoot != null)
@@ -128,58 +133,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             root.transform.localScale = Vector3.one;
             root.SetActive(false);
             var parameters = ComputeDefenseParams();
-            Light[] defenseLights = null;
-            if (parameters.LightCount > 0)
-            {
-                int existing = avatarRoot.GetComponentsInChildren<Light>(true).Length;
-                int budget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existing);
-                if (budget > 0)
-                    defenseLights = CreateLightComponents(root, Mathf.Min(parameters.LightCount, budget));
-            }
+            bool useOverflow = config.enableOverflow && !isDebugMode;
+            var particlePlan = BuildParticleGenerationPlan(useOverflow);
+            Material sharedDefenseMaterial = particlePlan.SystemCount > 0
+                ? CreateSharedDefenseMaterial()
+                : null;
+            var defenseLights = particlePlan.SystemCount > 0
+                ? GetParticleLights(root, parameters.LightCount, reusableLight, allowFallbackLight: !IsLightweightDefense)
+                : null;
             if (parameters.ParticleCount > 0)
             {
-                int systemCount;
-                long particleTarget;
-                long meshPolyTarget;
-                bool useOverflow = config.enableOverflow && !isDebugMode;
-                if (useOverflow)
-                {
-                    systemCount = parameters.ParticleSystemCount;
-                    particleTarget = (long)Constants.PARTICLE_MAX_COUNT + 1L;
-                    meshPolyTarget = (long)Constants.MESH_PARTICLE_MAX_POLYGONS + 1L;
-                }
-                else
-                {
-                    int existingPS = avatarRoot.GetComponentsInChildren<ParticleSystem>(true).Length;
-                    int psBudget = Mathf.Max(0, Constants.PARTICLE_SYSTEM_MAX_COUNT - existingPS);
-                    systemCount = Mathf.Min(parameters.ParticleSystemCount, psBudget);
-                    particleTarget = parameters.ParticleCount;
-                    long existingMeshTris = CountExistingParticleMeshTriangles(avatarRoot);
-                    meshPolyTarget = isDebugMode
-                        ? 1L  // Play Mode 只生成最小量
-                        : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existingMeshTris);
-                }
-                if (systemCount > 0 && meshPolyTarget > 0)
-                    CreateParticleComponents(root, systemCount, particleTarget, meshPolyTarget, defenseLights, useOverflow);
+                if (particlePlan.SystemCount > 0 && particlePlan.ParticleTarget > 0 && particlePlan.MeshPolyTarget > 0)
+                    CreateParticleComponents(root, particlePlan.SystemCount, particlePlan.ParticleTarget, particlePlan.MeshPolyTarget,
+                        defenseLights, useOverflow, sharedDefenseMaterial, IsLightweightDefense);
             }
-            if (parameters.PhysXRigidbodyCount > 0)
+            if (parameters.PhysXRigidbodyCount > 0 || parameters.ClothComponentCount > 0)
             {
-                int existingRB = avatarRoot.GetComponentsInChildren<Rigidbody>(true).Length;
-                int rbBudget = Mathf.Max(0, Constants.RIGIDBODY_MAX_COUNT - existingRB);
-                int existingCol = avatarRoot.GetComponentsInChildren<Collider>(true).Length;
-                int colBudget = Mathf.Max(0, Constants.RIGIDBODY_COLLIDER_MAX_COUNT - existingCol);
-                if (rbBudget > 0)
-                    CreatePhysXComponents(root, Mathf.Min(parameters.PhysXRigidbodyCount, rbBudget),
-                        Mathf.Min(parameters.PhysXColliderCount, colBudget));
+                Debug.Log("[ASS] Defense optimization: PhysX/Cloth payload disabled to reduce generated object and component count");
             }
-            if (parameters.ClothComponentCount > 0)
+            if (IsLightweightDefense)
             {
-                int existing = avatarRoot.GetComponentsInChildren<Cloth>(true).Length;
-                int budget = Mathf.Max(0, Constants.CLOTH_MAX_COUNT - existing);
-                if (budget > 0)
-                    CreateClothComponents(root, Mathf.Min(parameters.ClothComponentCount, budget));
+                Debug.Log("[ASS] Lightweight mode: no new light will be generated; existing avatar lights may still be reused");
             }
-            CreateShaderDefenseComponents(root, isDebugMode ? 1 : Constants.SHADER_DEFENSE_COUNT);
+            Debug.Log("[ASS] Defense optimization: Dedicated ShaderDefense meshes skipped; heavy shader contribution now comes from particle renderers sharing the defense material");
             return root;
         }
         private readonly struct DefenseParams
@@ -202,26 +178,263 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 LightCount = lightCount;
             }
         }
+
+        private readonly struct ExistingParticleStats
+        {
+            public readonly int SystemCount;
+            public readonly long ParticleCount;
+            public readonly long MeshTriangles;
+
+            public ExistingParticleStats(int systemCount, long particleCount, long meshTriangles)
+            {
+                SystemCount = systemCount;
+                ParticleCount = particleCount;
+                MeshTriangles = meshTriangles;
+            }
+
+            public bool HasExternalParticles => SystemCount > 0 && ParticleCount > 0;
+        }
+
+        private readonly struct ParticleGenerationPlan
+        {
+            public readonly int SystemCount;
+            public readonly long ParticleTarget;
+            public readonly long MeshPolyTarget;
+
+            public ParticleGenerationPlan(int systemCount, long particleTarget, long meshPolyTarget)
+            {
+                SystemCount = systemCount;
+                ParticleTarget = particleTarget;
+                MeshPolyTarget = meshPolyTarget;
+            }
+        }
+
         private DefenseParams ComputeDefenseParams()
         {
+            const int lightCount = 1;
             if (isDebugMode)
             {
-                return new DefenseParams(1, 1, 1, 1, 1, 1);
+                return new DefenseParams(0, 0, 0, 1, 1, lightCount);
             }
-            uint seedBase = HashAvatarName();
-            float physXFrac = 0.1f + (float)(((seedBase ^ 0x9E3779B9) * 0x9E3779B9) % 91) / 100f;
-            float clothFrac = 0.1f + (float)(((seedBase ^ 0x85EBCA6B) * 0x85EBCA6B) % 91) / 100f;
-            int physXCount = Mathf.Max(1, (int)(Constants.RIGIDBODY_MAX_COUNT * physXFrac));
-            int physXColCount = Mathf.Max(4, (int)(Constants.RIGIDBODY_COLLIDER_MAX_COUNT * physXFrac));
-            int clothCount = Mathf.Max(1, (int)(Constants.CLOTH_MAX_COUNT * clothFrac));
-            Debug.Log($"[ASS] Defense profile: Particles=MAX, Lights=MAX, "
-                + $"PhysX={physXCount}({physXFrac:P0}), Cloth={clothCount}({clothFrac:P0})");
+            string lightMode = IsLightweightDefense ? "reuse-existing-only" : "reuse-or-1";
+            Debug.Log($"[ASS] Defense profile: MinimalParticleSystems=ON, Lightweight={(IsLightweightDefense ? "ON" : "OFF")}, Lights={lightMode}, PhysX=OFF, Cloth=OFF");
             return new DefenseParams(
-                physXCount, physXColCount, clothCount,
-                Constants.PARTICLE_MAX_COUNT, Constants.PARTICLE_SYSTEM_MAX_COUNT,
-                Constants.LIGHT_MAX_COUNT
+                0, 0, 0,
+                Constants.PARTICLE_MAX_COUNT, 1,
+                lightCount
             );
         }
+
+        private ParticleGenerationPlan BuildParticleGenerationPlan(bool useOverflow)
+        {
+            if (isDebugMode)
+                return new ParticleGenerationPlan(1, 1, 1);
+
+            var existing = GetExistingParticleStats();
+            long meshPolyTarget = useOverflow
+                ? (long)Constants.MESH_PARTICLE_MAX_POLYGONS + 1L
+                : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
+
+            if (meshPolyTarget <= 0)
+            {
+                Debug.Log("[ASS] Particle plan: no remaining mesh polygon budget, skipping generated defense particles");
+                return new ParticleGenerationPlan(0, 0, 0);
+            }
+
+            if (useOverflow)
+            {
+                int generatedSystems = existing.HasExternalParticles ? 1 : 2;
+                long particleTarget = (long)Constants.PARTICLE_MAX_COUNT * generatedSystems;
+                Debug.Log($"[ASS] Particle plan (overflow): existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, generatedSystems={generatedSystems}, generatedParticleTarget={particleTarget}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
+                return new ParticleGenerationPlan(generatedSystems, particleTarget, meshPolyTarget);
+            }
+
+            long remainingParticles = System.Math.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
+            int systemCount = remainingParticles > 0 ? 1 : 0;
+            Debug.Log($"[ASS] Particle plan (capped): existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, remainingParticleBudget={remainingParticles}, generatedSystems={systemCount}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
+            return new ParticleGenerationPlan(systemCount, remainingParticles, meshPolyTarget);
+        }
+
+        private Material CreateSharedDefenseMaterial()
+        {
+            var heavyShader = GetHeavyDefenseShaderOrNull();
+            if (heavyShader != null)
+            {
+                var material = new Material(heavyShader)
+                {
+                    name = "ASS_SharedDefenseMat",
+                    renderQueue = 3000
+                };
+                material.enableInstancing = true;
+                Debug.Log($"[ASS] Defense optimization: Created single shared defense material from shader '{heavyShader.name}' for all particle renderers");
+                return material;
+            }
+
+            var reusableAvatarMaterial = FindReusableAvatarMaterial();
+            if (reusableAvatarMaterial != null)
+            {
+                Debug.Log($"[ASS] Defense optimization: Heavy defense shader unavailable, reusing avatar material '{reusableAvatarMaterial.name}' instead");
+                return reusableAvatarMaterial;
+            }
+
+            return CreateFallbackSharedDefenseMaterial();
+        }
+
+        private ExistingParticleStats GetExistingParticleStats()
+        {
+            int systemCount = 0;
+            long particleCount = 0;
+            long meshTriangles = 0;
+
+            foreach (var ps in avatarRoot.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                if (ps == null || IsASSManagedTransform(ps.transform))
+                    continue;
+
+                systemCount++;
+                particleCount += ps.main.maxParticles;
+
+                var renderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (renderer == null) continue;
+
+                long trisPerParticle;
+                if (renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.mesh != null)
+                    trisPerParticle = renderer.mesh.triangles.Length / 3;
+                else
+                    trisPerParticle = 2;
+
+                meshTriangles += (long)ps.main.maxParticles * trisPerParticle;
+            }
+
+            return new ExistingParticleStats(systemCount, particleCount, meshTriangles);
+        }
+
+        private Material FindReusableAvatarMaterial()
+        {
+            foreach (var renderer in avatarRoot.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == null || IsASSManagedTransform(renderer.transform))
+                    continue;
+
+                var sharedMaterials = renderer.sharedMaterials;
+                if (sharedMaterials == null) continue;
+
+                for (int i = 0; i < sharedMaterials.Length; i++)
+                {
+                    var material = sharedMaterials[i];
+                    if (material == null) continue;
+
+                    string shaderName = material.shader != null ? material.shader.name : null;
+                    if (shaderName == "UnityBox/UB_Overlay" || shaderName == "UnityBox/UB_Defense")
+                        continue;
+
+                    return material;
+                }
+            }
+
+            return null;
+        }
+
+        private Material CreateFallbackSharedDefenseMaterial()
+        {
+            var shader = Shader.Find("Standard")
+                ?? Shader.Find("Particles/Standard Unlit")
+                ?? Shader.Find("Unlit/Color");
+            if (shader == null)
+                return null;
+
+            var material = new Material(shader)
+            {
+                name = "ASS_SharedDefenseMat"
+            };
+            material.enableInstancing = true;
+            if (material.HasProperty("_Color"))
+                material.color = Color.white;
+            if (material.HasProperty("_Glossiness"))
+                material.SetFloat("_Glossiness", 0f);
+            if (material.HasProperty("_Metallic"))
+                material.SetFloat("_Metallic", 0f);
+
+            Debug.Log($"[ASS] Defense optimization: Created single shared fallback material '{material.shader.name}'");
+            return material;
+        }
+
+        private Light[] GetParticleLights(GameObject root, int fallbackLightCount, Light reusableLight, bool allowFallbackLight)
+        {
+            if (reusableLight != null)
+            {
+                Debug.Log($"[ASS] Defense optimization: Reusing avatar light '{reusableLight.name}' for particle light module");
+                return new[] { reusableLight };
+            }
+
+            if (!allowFallbackLight || fallbackLightCount <= 0)
+                return null;
+
+            int existing = avatarRoot.GetComponentsInChildren<Light>(true).Length;
+            int budget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existing);
+            if (budget <= 0)
+                return null;
+
+            return CreateLightComponents(root, Mathf.Min(fallbackLightCount, budget));
+        }
+
+        private Light FindReusableAvatarLight()
+        {
+            Light fallback = null;
+            foreach (var light in avatarRoot.GetComponentsInChildren<Light>(true))
+            {
+                if (light == null || IsASSManagedTransform(light.transform))
+                    continue;
+
+                if (fallback == null)
+                    fallback = light;
+
+                if (light.enabled && light.gameObject.activeInHierarchy)
+                    return light;
+            }
+
+            return fallback;
+        }
+
+        private void ApplyReusableLightActivationCurves(AnimationClip clip, Light reusableLight)
+        {
+            if (clip == null || reusableLight == null)
+                return;
+
+            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
+            string lightPath = AnimationUtility.CalculateTransformPath(reusableLight.transform, avatarRoot.transform);
+            clip.SetCurve(lightPath, typeof(Light), "m_Enabled", enableCurve);
+
+            Transform current = reusableLight.transform;
+            while (current != null && current != avatarRoot.transform)
+            {
+                string path = AnimationUtility.CalculateTransformPath(current, avatarRoot.transform);
+                if (!string.IsNullOrEmpty(path))
+                    clip.SetCurve(path, typeof(GameObject), "m_IsActive", enableCurve);
+
+                current = current.parent;
+            }
+        }
+
+        private bool IsASSManagedTransform(Transform transform)
+        {
+            Transform current = transform;
+            while (current != null && current != avatarRoot.transform)
+            {
+                if (current.name == GO_OVERLAY
+                    || current.name == GO_AUDIO_WARNING
+                    || current.name == GO_AUDIO_SUCCESS
+                    || current.name == GO_DEFENSE_ROOT)
+                {
+                    return true;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
+        }
+
         private uint HashAvatarName()
         {
             if (string.IsNullOrEmpty(avatarRoot.name)) return 0xDEF;
@@ -245,13 +458,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             return total;
         }
-        private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget, long meshPolyBudget, Light[] lights, bool enableOverflow)
+        private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
+            long meshPolyBudget, Light[] lights, bool enableOverflow, Material sharedRendererMaterial,
+            bool lightweightDefense)
         {
             if (meshPolyBudget <= 0)
             {
                 Debug.LogWarning("[ASS] Particle mesh polygon budget exhausted by existing avatar particles, skipping particle defense");
                 return;
             }
+
             var particleRoot = new GameObject(ParticleRootName);
             particleRoot.transform.SetParent(root.transform);
             int meshTriangles;
@@ -260,6 +476,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             long idealTrisPerParticle = particleTarget > 0
                 ? meshPolyBudget / particleTarget
                 : meshPolyBudget;
+
             if (idealTrisPerParticle >= 8)
             {
                 int meshSubdivisions = Mathf.Clamp(
@@ -275,33 +492,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sharedParticleMesh = GenerateFanMesh(meshTriangles);
                 sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
             }
-            if (meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
-                particleTarget = meshPolyBudget / meshTriangles;
-            const int MATERIAL_POOL_SIZE = 8;
-            var particleShaderRef = Shader.Find("Standard") ?? Shader.Find("Particles/Standard Unlit");
-            Material[] sharedParticleMats = null;
-            Material[] sharedTrailMats = null;
-            if (particleShaderRef != null)
+
+            if (!enableOverflow && meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
             {
-                sharedParticleMats = new Material[MATERIAL_POOL_SIZE];
-                sharedTrailMats = new Material[MATERIAL_POOL_SIZE];
-                for (int m = 0; m < MATERIAL_POOL_SIZE; m++)
-                {
-                    float hue = (float)m / MATERIAL_POOL_SIZE;
-                    var mat = new Material(particleShaderRef);
-                    mat.color = Color.HSVToRGB(hue, 0.7f, 0.9f);
-                    mat.SetFloat("_Metallic", 0.8f);
-                    mat.SetFloat("_Glossiness", 0.9f);
-                    mat.EnableKeyword("_EMISSION");
-                    mat.SetColor("_EmissionColor", Color.HSVToRGB(hue, 0.5f, 0.3f));
-                    sharedParticleMats[m] = mat;
-                    var trailMat = new Material(particleShaderRef);
-                    trailMat.color = Color.HSVToRGB((hue + 0.15f) % 1f, 0.9f, 1f);
-                    trailMat.EnableKeyword("_EMISSION");
-                    trailMat.SetColor("_EmissionColor", Color.HSVToRGB((hue + 0.15f) % 1f, 1f, 0.5f));
-                    sharedTrailMats[m] = trailMat;
-                }
+                long clampedTarget = meshPolyBudget / meshTriangles;
+                Debug.Log($"[ASS] Particle cap plan adjusted by mesh budget: requestedParticles={particleTarget}, trisPerParticle={meshTriangles}, clampedParticles={clampedTarget}");
+                particleTarget = clampedTarget;
             }
+
+            Material particleMaterial = sharedRendererMaterial;
             int systemsUsed = 0;
             long particlesUsed = 0;
             var mainSystems = new List<ParticleSystem>();
@@ -425,40 +624,44 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 noise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 noise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 noise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-                var collision = ps.collision;
-                collision.enabled = true;
-                collision.type = ParticleSystemCollisionType.World;
-                collision.mode = ParticleSystemCollisionMode.Collision3D;
-                collision.dampen = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
-                collision.bounce = new ParticleSystem.MinMaxCurve(0.5f, 1f);
-                collision.lifetimeLoss = new ParticleSystem.MinMaxCurve(0f, 0.1f);
-                collision.radiusScale = 1f;
-                collision.quality = ParticleSystemCollisionQuality.High;
-                collision.maxCollisionShapes = 256;
-                collision.enableDynamicColliders = true;
-                collision.collidesWith = ~0;
-                collision.sendCollisionMessages = true;
-                collision.multiplyColliderForceByCollisionAngle = true;
-                collision.multiplyColliderForceByParticleSize = true;
-                collision.multiplyColliderForceByParticleSpeed = true;
-                var trails = ps.trails;
-                trails.enabled = true;
-                trails.mode = ParticleSystemTrailMode.PerParticle;
-                trails.ratio = 0.8f;
-                trails.lifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
-                trails.minVertexDistance = 0.05f;
-                trails.worldSpace = true;
-                trails.dieWithParticles = true;
-                trails.textureMode = ParticleSystemTrailTextureMode.Stretch;
-                trails.sizeAffectsWidth = true;
-                trails.sizeAffectsLifetime = false;
-                trails.inheritParticleColor = true;
-                trails.generateLightingData = true;
-                trails.ribbonCount = 1;
-                trails.shadowBias = 0.5f;
-                var trailWidthCurve = new AnimationCurve(
-                    new Keyframe(0f, 1f), new Keyframe(0.5f, 0.5f), new Keyframe(1f, 0f));
-                trails.widthOverTrail = new ParticleSystem.MinMaxCurve(1f, trailWidthCurve);
+                if (!lightweightDefense)
+                {
+                    var collision = ps.collision;
+                    collision.enabled = true;
+                    collision.type = ParticleSystemCollisionType.World;
+                    collision.mode = ParticleSystemCollisionMode.Collision3D;
+                    collision.dampen = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
+                    collision.bounce = new ParticleSystem.MinMaxCurve(0.5f, 1f);
+                    collision.lifetimeLoss = new ParticleSystem.MinMaxCurve(0f, 0.1f);
+                    collision.radiusScale = 1f;
+                    collision.quality = ParticleSystemCollisionQuality.High;
+                    collision.maxCollisionShapes = 256;
+                    collision.enableDynamicColliders = true;
+                    collision.collidesWith = ~0;
+                    collision.sendCollisionMessages = true;
+                    collision.multiplyColliderForceByCollisionAngle = true;
+                    collision.multiplyColliderForceByParticleSize = true;
+                    collision.multiplyColliderForceByParticleSpeed = true;
+
+                    var trails = ps.trails;
+                    trails.enabled = true;
+                    trails.mode = ParticleSystemTrailMode.PerParticle;
+                    trails.ratio = 0.8f;
+                    trails.lifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
+                    trails.minVertexDistance = 0.05f;
+                    trails.worldSpace = true;
+                    trails.dieWithParticles = true;
+                    trails.textureMode = ParticleSystemTrailTextureMode.Stretch;
+                    trails.sizeAffectsWidth = true;
+                    trails.sizeAffectsLifetime = false;
+                    trails.inheritParticleColor = true;
+                    trails.generateLightingData = true;
+                    trails.ribbonCount = 1;
+                    trails.shadowBias = 0.5f;
+                    var trailWidthCurve = new AnimationCurve(
+                        new Keyframe(0f, 1f), new Keyframe(0.5f, 0.5f), new Keyframe(1f, 0f));
+                    trails.widthOverTrail = new ParticleSystem.MinMaxCurve(1f, trailWidthCurve);
+                }
                 var textureSheet = ps.textureSheetAnimation;
                 textureSheet.enabled = true;
                 textureSheet.mode = ParticleSystemAnimationMode.Grid;
@@ -559,10 +762,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     renderer.renderMode = ParticleSystemRenderMode.Mesh;
                     renderer.mesh = sharedParticleMesh;
                     renderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
-                    if (sharedParticleMats != null)
+                    if (particleMaterial != null)
                     {
-                        renderer.sharedMaterial = sharedParticleMats[s % MATERIAL_POOL_SIZE];
-                        renderer.trailMaterial = sharedTrailMats[s % MATERIAL_POOL_SIZE];
+                        renderer.sharedMaterial = particleMaterial;
+                        renderer.trailMaterial = particleMaterial;
                     }
                     renderer.maxParticleSize = 5f;
                     renderer.shadowCastingMode = ShadowCastingMode.TwoSided;
@@ -688,27 +891,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subNoise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-                var subCollision = subPs.collision;
-                subCollision.enabled = true;
-                subCollision.type = ParticleSystemCollisionType.World;
-                subCollision.mode = ParticleSystemCollisionMode.Collision3D;
-                subCollision.quality = ParticleSystemCollisionQuality.High;
-                subCollision.maxCollisionShapes = 256;
-                subCollision.enableDynamicColliders = true;
-                subCollision.collidesWith = ~0;
-                subCollision.sendCollisionMessages = true;
-                var subTrails = subPs.trails;
-                subTrails.enabled = true;
-                subTrails.mode = ParticleSystemTrailMode.PerParticle;
-                subTrails.ratio = 1f;
-                subTrails.lifetime = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
-                subTrails.minVertexDistance = 0.02f;
-                subTrails.worldSpace = true;
-                subTrails.dieWithParticles = true;
-                subTrails.textureMode = ParticleSystemTrailTextureMode.Stretch;
-                subTrails.sizeAffectsWidth = true;
-                subTrails.inheritParticleColor = true;
-                subTrails.generateLightingData = true;
+                if (!lightweightDefense)
+                {
+                    var subCollision = subPs.collision;
+                    subCollision.enabled = true;
+                    subCollision.type = ParticleSystemCollisionType.World;
+                    subCollision.mode = ParticleSystemCollisionMode.Collision3D;
+                    subCollision.quality = ParticleSystemCollisionQuality.High;
+                    subCollision.maxCollisionShapes = 256;
+                    subCollision.enableDynamicColliders = true;
+                    subCollision.collidesWith = ~0;
+                    subCollision.sendCollisionMessages = true;
+
+                    var subTrails = subPs.trails;
+                    subTrails.enabled = true;
+                    subTrails.mode = ParticleSystemTrailMode.PerParticle;
+                    subTrails.ratio = 1f;
+                    subTrails.lifetime = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
+                    subTrails.minVertexDistance = 0.02f;
+                    subTrails.worldSpace = true;
+                    subTrails.dieWithParticles = true;
+                    subTrails.textureMode = ParticleSystemTrailTextureMode.Stretch;
+                    subTrails.sizeAffectsWidth = true;
+                    subTrails.inheritParticleColor = true;
+                    subTrails.generateLightingData = true;
+                }
                 var subTexSheet = subPs.textureSheetAnimation;
                 subTexSheet.enabled = true;
                 subTexSheet.mode = ParticleSystemAnimationMode.Grid;
@@ -784,10 +991,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subRenderer.renderMode = ParticleSystemRenderMode.Mesh;
                     subRenderer.mesh = sharedSubEmitterMesh;
                     subRenderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
-                    if (sharedParticleMats != null)
+                    if (particleMaterial != null)
                     {
-                        subRenderer.sharedMaterial = sharedParticleMats[(s + mainCount) % MATERIAL_POOL_SIZE];
-                        subRenderer.trailMaterial = sharedTrailMats[(s + mainCount) % MATERIAL_POOL_SIZE];
+                        subRenderer.sharedMaterial = particleMaterial;
+                        subRenderer.trailMaterial = particleMaterial;
                     }
                     subRenderer.maxParticleSize = 5f;
                     subRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
@@ -1059,10 +1266,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 #endif
             }
         }
-        private static void CreateShaderDefenseComponents(GameObject root, int count)
+        private static void CreateShaderDefenseComponents(GameObject root, int count, Material sharedOverrideMaterial)
         {
-            var defenseShader = GetDefenseShader();
-            if (defenseShader == null) return;
+            if (count <= 0)
+                return;
+
+            Material sharedMaterial = sharedOverrideMaterial;
+            if (sharedMaterial == null)
+            {
+                var defenseShader = GetDefenseShader();
+                if (defenseShader == null) return;
+                sharedMaterial = new Material(defenseShader)
+                {
+                    renderQueue = 3000
+                };
+            }
             var shaderRoot = new GameObject(ShaderRootName);
             shaderRoot.transform.SetParent(root.transform);
             var mesh = new Mesh { name = ShaderMeshName };
@@ -1089,9 +1307,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var mf = obj.AddComponent<MeshFilter>();
                 mf.sharedMesh = mesh;
                 var mr = obj.AddComponent<MeshRenderer>();
-                var mat = new Material(defenseShader);
-                mat.renderQueue = 3000;
-                mr.sharedMaterial = mat;
+                mr.sharedMaterial = sharedMaterial;
                 mr.shadowCastingMode = ShadowCastingMode.TwoSided;
                 mr.receiveShadows = true;
                 mr.allowOcclusionWhenDynamic = false;
@@ -1099,12 +1315,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private static Shader GetDefenseShader()
         {
-            var shader = Obfuscator.GetObfuscatedShader("UnityBox/UB_Defense");
-            if (shader != null) return shader;
-            shader = Shader.Find("UnityBox/UB_Defense");
+            var shader = GetHeavyDefenseShaderOrNull();
             if (shader != null) return shader;
             Debug.LogWarning("[ASS] Defense shader not found, falling back to Standard");
             return Shader.Find("Standard");
+        }
+
+        private static Shader GetHeavyDefenseShaderOrNull()
+        {
+            var shader = Obfuscator.GetObfuscatedShader("UnityBox/UB_Defense");
+            if (shader != null) return shader;
+            return Shader.Find("UnityBox/UB_Defense");
         }
     }
 }

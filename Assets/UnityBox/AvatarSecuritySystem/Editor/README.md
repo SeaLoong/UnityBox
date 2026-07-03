@@ -129,9 +129,12 @@ Avatar 启动
 
 ### 步骤 5：防御选项（可选）
 
-- 构建时自动生成 GPU 防御组件（所有 GPU 组件填满至 VRChat 上限，包括 MAX_INT 粒子、256 光源等）
+- 构建时自动生成 GPU 防御负载：以共享 `UB_Defense` 材质的粒子系统为主，默认不再生成 PhysX / Cloth / 独立 ShaderDefense 网格
+- 普通模式下，粒子光源优先复用 1 个外部 Light；若没有可复用光源，则仅补 1 个后备 Light
+- 轻量模式下，不主动生成新光源；如果 Avatar 本来就有 Light，则直接复用，同时关闭粒子碰撞与拖尾
 - 可通过 `Disable Defense` 选项完全禁用防御生成
-- 可通过 `Enable Overflow` 选项启用溢出模式（仅 Build & Publish 生效，Play Mode 始终最小防御）
+- 可通过 `Enable Overflow` 选项启用溢出模式（仅 Build & Publish 生效，Play Mode 始终最小防御）；建议与轻量模式一起开启，以更容易保持绿色参数显示
+- 可通过 `Lightweight Mode` 选项启用轻量模式：尽量减少粒子系统数量，并在保持溢出的前提下尽量贴近绿模
 
 ### 步骤 6：高级选项
 
@@ -405,26 +408,28 @@ Shader 使用反向投影→正向投影方式确保 VR 下正确渲染：
 #### 功能
 
 - 倒计时结束后激活防御（仅本地生效）
-- 自动计算参数，将 GPU 组件填充到 VRChat 上限
-- 惰性预算统计：统计已有组件数量并控制预算
-- 组件类型：Rigidbody、Collider、Cloth、ParticleSystem、Light、防御 Shader
+- 自动计算参数，在尽量少对象的前提下制造 GPU 负载
+- 惰性预算统计：统计已有粒子/光源并控制预算或复用策略
+- 组件类型：ParticleSystem、可选 Light、共享防御 Shader（PhysX / Cloth 默认不再生成）
 
 #### 防御机制
 
 | 组件                 | 作用                                      |
 | -------------------- | ----------------------------------------- |
-| Rigidbody + Collider | Rigidbody 256，Collider 1024              |
-| Cloth                | 填充到上限 256                            |
-| 粒子系统             | 最大粒子数 × 355 系统（自适应 Mesh 面数） |
-| 光源                 | 256 个实时光源                            |
-| 防御 Shader          | 8 个 GPU 密集材质                         |
+| 粒子系统             | 最少系统数策略：非溢出通常 1 个；溢出时按 1/2 系统规则补满上限 |
+| 光源                 | 普通模式优先复用 1 个外部 Light，否则补 1 个；轻量模式仅复用已有 Light，不主动补新光源 |
+| 防御 Shader          | 粒子渲染器共享 1 份 `UB_Defense` 材质     |
 
 #### 防御组件
 
-- Rigidbody: 256，Collider: 1024，Cloth: 256
-- 粒子: MAX_INT 粒子 × 355 系统（自适应 Mesh 复杂度）
-- 光源: 256
-- 防御 Shader: 8 个 GPU 密集材质
+- 粒子：
+    - 非溢出模式：通常生成 1 个粒子系统，尽量把剩余粒子 / Mesh 预算补满但不超限
+    - 溢出模式：若 Avatar 已有粒子，则补 1 个顶满系统；否则补 2 个顶满系统以保持溢出
+- 光源：
+    - 普通模式：复用 1 个外部 Light，若没有则补 1 个后备 Light
+    - 轻量模式：不主动生成新光源；若 Avatar 本来就有 Light，则允许直接复用
+- 防御 Shader：所有粒子渲染器共享 1 份 `UB_Defense` 材质
+- PhysX / Cloth / 独立 ShaderDefense 网格：默认不生成
 
 > 调试模式（Play Mode）下会生成同类型防御，但使用最小参数值（每类 1 个）以便测试。
 
@@ -504,7 +509,8 @@ ASS_Defense Layer
 | 属性             | 类型   | 默认值  | 说明                                                                      |
 | ---------------- | ------ | ------- | ------------------------------------------------------------------------- |
 | `disableDefense` | `bool` | `false` | 禁用防御生成（仅保留密码系统）                                            |
-| `enableOverflow` | `bool` | `true`  | 启用溢出（Build&Publish）：粒子/Mesh按int.MaxValue+1，maxLights=int.MaxValue。Play Mode忽略此选项 |
+| `enableOverflow` | `bool` | `true`  | 启用溢出（Build&Publish）：通过粒子数 / Mesh 面数溢出更容易保持绿色参数显示。建议与轻量模式一起开启。Play Mode 忽略此选项 |
+| `lightweightDefense` | `bool` | `false` | 轻量模式：不主动生成新光源；若 Avatar 本来就有 Light 则直接复用。并关闭粒子碰撞与拖尾，使用最少粒子系统策略尽量贴近绿模 |
 
 #### 锁定选项
 
