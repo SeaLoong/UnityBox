@@ -601,6 +601,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             sm.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, sm);
+            Obfuscator.RegisterSkipSecondPassLayerName(layer.name);
             controller.AddLayer(layer);
             Debug.Log($"[ASS] Obfuscator: Added decoy layer \"{decoyLayer.layerName}\" "
                 + $"({fakeStates.Count} fake states, seed=0x{rng:X8})");

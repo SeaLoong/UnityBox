@@ -20,6 +20,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static string _generatedFolder;
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
         private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> _skipSecondPassLayerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -33,6 +34,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _generatedFolder = generatedFolder ?? "Assets/UnityBox/AvatarSecuritySystem/Generated";
             _shaderCache.Clear();
             _generatedContentAssetPaths.Clear();
+            _skipSecondPassLayerNames.Clear();
             if (!_enabled)
             {
                 _initialized = true;
@@ -225,19 +227,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 string[] markers = {
                     "_Layer_",
                     "_ChildStateMachine",
-
-        private static uint GetClusterLocalPoolIndex(int poolLength, uint finalHash, uint clusterHash)
-        {
-            if (poolLength <= 0) return 0;
-
-            uint length = (uint)poolLength;
-            uint window = Math.Min(length, length <= 8 ? length : 8u + (clusterHash & 0x7));
-            if (window == 0) window = 1;
-
-            uint clusterBase = (clusterHash >> 2) % length;
-            uint localOffset = (finalHash >> 2) % window;
-            return (clusterBase + localOffset) % length;
-        }
                     "_StateMachine",
                     "_State",
                     "_BlendTree",
@@ -255,6 +244,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             return string.IsNullOrEmpty(contextHint) ? key : contextHint;
+        }
+
+        private static uint GetClusterLocalPoolIndex(int poolLength, uint finalHash, uint clusterHash)
+        {
+            if (poolLength <= 0) return 0;
+
+            uint length = (uint)poolLength;
+            uint window = Math.Min(length, length <= 8 ? length : 8u + (clusterHash & 0x7));
+            if (window == 0) window = 1;
+
+            uint clusterBase = (clusterHash >> 2) % length;
+            uint localOffset = (finalHash >> 2) % window;
+            return (clusterBase + localOffset) % length;
         }
 
         private static bool ContainsAny(string text, params string[] tokens)
@@ -408,6 +410,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             RegisterGeneratedAssetPath(AssetDatabase.GetAssetPath(asset));
         }
 
+        public static void RegisterSkipSecondPassLayerName(string layerName)
+        {
+            if (string.IsNullOrEmpty(layerName)) return;
+            _skipSecondPassLayerNames.Add(layerName);
+        }
+
         private static void RegisterGeneratedAssetPath(string assetPath)
         {
             string normalized = NormalizeAssetPath(assetPath);
@@ -454,11 +462,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!_enabled || descriptor == null) return;
 
             var controllers = new HashSet<AnimatorController>();
+            var allowInternalRenameByController = new Dictionary<AnimatorController, bool>();
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
                 if (animLayer.isDefault) continue;
                 if (animLayer.animatorController is AnimatorController controller && controller != null)
+                {
                     controllers.Add(controller);
+                    bool allowInternalRename = animLayer.type == VRCAvatarDescriptor.AnimLayerType.FX;
+                    if (allowInternalRenameByController.TryGetValue(controller, out var existingValue))
+                        allowInternalRenameByController[controller] = existingValue && allowInternalRename;
+                    else
+                        allowInternalRenameByController[controller] = allowInternalRename;
+                }
             }
 
             int controllerCount = 0;
@@ -470,7 +486,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             foreach (var controller in controllers)
             {
+                bool allowInternalRename = allowInternalRenameByController.TryGetValue(controller, out var value) && value;
                 ObfuscateAnimatorController(controller,
+                    allowInternalRename,
                     ref layerCount,
                     ref stateMachineCount,
                     ref stateCount,
@@ -487,6 +505,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static void ObfuscateAnimatorController(
             AnimatorController controller,
+            bool allowInternalRename,
             ref int layerCount,
             ref int stateMachineCount,
             ref int stateCount,
@@ -509,7 +528,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             for (int i = 0; i < layers.Length; i++)
             {
                 var layer = layers[i];
-                if (Constants.IsASSManagedLayerName(layer.name))
+                if (Constants.IsASSManagedLayerName(layer.name) || _skipSecondPassLayerNames.Contains(layer.name))
                 {
                     layers[i] = layer;
                     continue;
@@ -518,7 +537,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 layer.name = Layer($"{controllerKey}_Layer_{i}", layer.name);
                 layerCount++;
 
-                if (layer.stateMachine != null)
+                if (allowInternalRename && layer.stateMachine != null)
                 {
                     ObfuscateStateMachineRecursive(
                         layer.stateMachine,
