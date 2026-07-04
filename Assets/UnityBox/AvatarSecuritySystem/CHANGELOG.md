@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1] - 2026-07-05
+
+### Changed
+
+- 默认开启 **Obfuscate all Playable Layers（混淆所有 Playable Layer）** 选项（新建组件与 Reset 均为启用）
+
 ## [0.7.0] - 2026-07-04
 
 ### Added
