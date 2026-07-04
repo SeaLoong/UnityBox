@@ -1,0 +1,16 @@
+{
+  "name": "UnityBox.PrefabDiffPatcher",
+  "rootNamespace": "UnityBox.PrefabDiffPatcher",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
