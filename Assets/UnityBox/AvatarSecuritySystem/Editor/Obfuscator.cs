@@ -445,6 +445,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var layer = layers[i];
                 if (layer.isDefault) continue;
+                // 只复制 FX 控制器（ASS 需要在其上添加 Lock/Password/Defense 层）
+                // 其他控制器由 NDMF 在 -11000 已克隆，ASS 直接 in-place 改层名即可
                 if (layer.type != VRCAvatarDescriptor.AnimLayerType.FX) continue;
                 if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
 
@@ -462,17 +464,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             EnsureInitialized();
             if (!_enabled || descriptor == null) return;
 
-            var controllers = new HashSet<AnimatorController>();
-            foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
-            {
-                if (animLayer.isDefault) continue;
-                if (animLayer.type != VRCAvatarDescriptor.AnimLayerType.FX) continue;
-                if (animLayer.animatorController is AnimatorController controller && controller != null)
-                {
-                    controllers.Add(controller);
-                }
-            }
-
             int controllerCount = 0;
             int layerCount = 0;
             int stateMachineCount = 0;
@@ -480,15 +471,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int blendTreeCount = 0;
             int clipCount = 0;
 
-            foreach (var controller in controllers)
+            foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
+                if (animLayer.isDefault) continue;
+                if (!(animLayer.animatorController is AnimatorController controller) || controller == null) continue;
+
+                bool isFX = animLayer.type == VRCAvatarDescriptor.AnimLayerType.FX;
+
+                // FX: 从 Generate 目录的副本改名，允许内部状态重命名
+                // 非 FX: NDMF 已克隆了原始控制器，ASS 直接 in-place 改层名（不复制，不改内部状态）
                 ObfuscateAnimatorController(controller,
-                    false,
+                    allowInternalRename: isFX,
                     ref layerCount,
                     ref stateMachineCount,
                     ref stateCount,
                     ref blendTreeCount,
-                    ref clipCount);
+                    ref clipCount,
+                    requireGeneratedPath: isFX);
                 controllerCount++;
             }
 
@@ -505,19 +504,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             ref int stateMachineCount,
             ref int stateCount,
             ref int blendTreeCount,
-            ref int clipCount)
+            ref int clipCount,
+            bool requireGeneratedPath = true)
         {
             if (controller == null) return;
 
-            string controllerPath = AssetDatabase.GetAssetPath(controller);
-            if (!CanRenameGeneratedAssetPath(controllerPath))
-                return;
+            // 对于非 Generated 路径的控制器（如 NDMF 克隆版），跳过路径检查
+            if (requireGeneratedPath)
+            {
+                string controllerPath = AssetDatabase.GetAssetPath(controller);
+                if (!CanRenameGeneratedAssetPath(controllerPath))
+                    return;
+            }
 
             controller.name = Layer(GetStableObjectKey("PlayableController", controller), controller.name);
             EditorUtility.SetDirty(controller);
 
-            var renamedMotions = new HashSet<Motion>();
+            // 保存第一层的 mask（用于 Gesture 等需要 mask 的层）
             var layers = controller.layers;
+            AvatarMask firstLayerMask = (layers.Length > 0) ? layers[0].avatarMask : null;
+
+            var renamedMotions = new HashSet<Motion>();
             string controllerKey = GetStableObjectKey("Controller", controller);
 
             for (int i = 0; i < layers.Length; i++)
@@ -549,6 +556,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             controller.layers = layers;
             EditorUtility.SetDirty(controller);
+
+            // 防御性恢复：如果第一层的 mask 在过程中丢失，从之前保存的快照恢复
+            if (firstLayerMask != null)
+            {
+                var finalLayers = controller.layers;
+                if (finalLayers.Length > 0 && finalLayers[0].avatarMask == null)
+                {
+                    finalLayers[0].avatarMask = firstLayerMask;
+                    controller.layers = finalLayers;
+                    EditorUtility.SetDirty(controller);
+                    Debug.Log($"[ASS] Obfuscator: Restored first layer mask on '{controller.name}'");
+                }
+            }
         }
 
         private static AnimatorController DuplicateAnimatorControllerForBuild(AnimatorController sourceController, string slotKey)
