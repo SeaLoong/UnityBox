@@ -462,18 +462,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!_enabled || descriptor == null) return;
 
             var controllers = new HashSet<AnimatorController>();
-            var allowInternalRenameByController = new Dictionary<AnimatorController, bool>();
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
                 if (animLayer.isDefault) continue;
                 if (animLayer.animatorController is AnimatorController controller && controller != null)
                 {
                     controllers.Add(controller);
-                    bool allowInternalRename = animLayer.type == VRCAvatarDescriptor.AnimLayerType.FX;
-                    if (allowInternalRenameByController.TryGetValue(controller, out var existingValue))
-                        allowInternalRenameByController[controller] = existingValue && allowInternalRename;
-                    else
-                        allowInternalRenameByController[controller] = allowInternalRename;
                 }
             }
 
@@ -486,9 +480,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             foreach (var controller in controllers)
             {
-                bool allowInternalRename = allowInternalRenameByController.TryGetValue(controller, out var value) && value;
                 ObfuscateAnimatorController(controller,
-                    allowInternalRename,
+                    false,
                     ref layerCount,
                     ref stateMachineCount,
                     ref stateCount,
