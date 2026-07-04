@@ -445,6 +445,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var layer = layers[i];
                 if (layer.isDefault) continue;
+                if (layer.type != VRCAvatarDescriptor.AnimLayerType.FX) continue;
                 if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
 
                 var clonedController = DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
@@ -465,6 +466,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
                 if (animLayer.isDefault) continue;
+                if (animLayer.type != VRCAvatarDescriptor.AnimLayerType.FX) continue;
                 if (animLayer.animatorController is AnimatorController controller && controller != null)
                 {
                     controllers.Add(controller);
