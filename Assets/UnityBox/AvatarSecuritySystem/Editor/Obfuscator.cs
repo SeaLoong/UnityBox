@@ -104,7 +104,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             uint finalHash = MurmurFinalize(combined);
             uint clusterHash = MurmurFinalize(_seed ^ HashString(GetClusterKey(key, contextHint)));
             int variant = (int)(finalHash & 3);
-            uint poolIdx = (finalHash >> 2) % (uint)pool.Length;
+            uint poolIdx = GetClusterLocalPoolIndex(pool.Length, finalHash, clusterHash);
             string baseName = pool[poolIdx];
             uint suffixVal = (finalHash >> 18) & 0x3FFF;
             bool isStateName = (pool == StatePool || pool == FakeStatePool);
@@ -225,6 +225,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 string[] markers = {
                     "_Layer_",
                     "_ChildStateMachine",
+
+        private static uint GetClusterLocalPoolIndex(int poolLength, uint finalHash, uint clusterHash)
+        {
+            if (poolLength <= 0) return 0;
+
+            uint length = (uint)poolLength;
+            uint window = Math.Min(length, length <= 8 ? length : 8u + (clusterHash & 0x7));
+            if (window == 0) window = 1;
+
+            uint clusterBase = (clusterHash >> 2) % length;
+            uint localOffset = (finalHash >> 2) % window;
+            return (clusterBase + localOffset) % length;
+        }
                     "_StateMachine",
                     "_State",
                     "_BlendTree",
