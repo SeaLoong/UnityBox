@@ -10,7 +10,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 {
     public class Processor : IVRCSDKPreprocessAvatarCallback
     {
-        public int callbackOrder => -1026;
+        private static bool? _hasNDMF;
+
+        /// <summary>
+        /// NDMF 存在时在 NDMF Optimize（-1025）之后执行（-1024），
+        /// 确保 MA / VRCFury / 其他 NDMF pass 全部完成后 ASS 才做最终处理。
+        /// 无 NDMF 时在默认位置（-1026，VRCFury 之后）执行。
+        /// </summary>
+        public int callbackOrder
+        {
+            get
+            {
+                if (_hasNDMF == null)
+                    _hasNDMF = System.Type.GetType(
+                        "nadena.dev.ndmf.BuildContext, nadena.dev.ndmf") != null;
+                return _hasNDMF.Value ? -1024 : -1026;
+            }
+        }
+
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
             Debug.Log($"[ASS] OnPreprocessAvatar called (callbackOrder={callbackOrder})");
@@ -63,23 +80,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            // 检测 NDMF：NDMF 存在时 ASS 利用其已克隆的控制器做 in-place 修改；
-            // 不存在时 ASS 完全掌控管道，自己复制所有控制器并自由操作。
-            bool hasNDMF = Obfuscator.HasNDMF;
-
-            if (hasNDMF)
+            // callbackOrder 已决定执行时机：
+            //   NDMF 模式（-1024）：在 NDMF Optimize 之后，控制器已是最终版本，无需复制
+            //   独立模式（-1026）：ASS 自己复制所有控制器到 Generated
+            bool hasNDMF = _hasNDMF ?? false;
+            if (!hasNDMF)
             {
-                Debug.Log("[ASS] NDMF detected: operating in-place on NDMF-cloned controllers");
-            }
-            else
-            {
-                // 非 NDMF 路径：复制所有非默认控制器到 Generated 目录
-                // 无 NDMF → 无 Optimize hook 干扰 → 副本上的修改是最终的
                 if (Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation)
                 {
                     Obfuscator.PreparePlayableControllerCopies(descriptor);
                 }
-                Debug.Log("[ASS] NDMF not detected: using standalone copy mode (all controllers)");
             }
 
             Debug.Log("[ASS] Starting to generate security system...");
