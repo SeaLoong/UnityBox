@@ -63,24 +63,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            // 检测 NDMF 是否活跃（NDMF 在 -11000 已将控制器克隆到临时路径）
-            bool hasNDMF = Obfuscator.CheckNDMFAvailable(avatarGameObject);
-            Obfuscator.SetNDMFAvailable(hasNDMF);
+            // 检测 NDMF：NDMF 存在时 ASS 利用其已克隆的控制器做 in-place 修改；
+            // 不存在时 ASS 完全掌控管道，自己复制所有控制器并自由操作。
+            bool hasNDMF = Obfuscator.HasNDMF;
 
             if (hasNDMF)
             {
-                // NDMF 路径：不复制控制器，直接修改 NDMF 克隆版（in-place）
-                // NDMF 的 Revalidate 机制会检测到变更并正确提交
                 Debug.Log("[ASS] NDMF detected: operating in-place on NDMF-cloned controllers");
             }
             else
             {
-                // 非 NDMF 路径：仅复制 FX 控制器（其他控制器无 NDMF 保护，跳过）
+                // 非 NDMF 路径：复制所有非默认控制器到 Generated 目录
+                // 无 NDMF → 无 Optimize hook 干扰 → 副本上的修改是最终的
                 if (Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation)
                 {
                     Obfuscator.PreparePlayableControllerCopies(descriptor);
                 }
-                Debug.Log("[ASS] NDMF not detected: using standalone copy mode");
+                Debug.Log("[ASS] NDMF not detected: using standalone copy mode (all controllers)");
             }
 
             Debug.Log("[ASS] Starting to generate security system...");

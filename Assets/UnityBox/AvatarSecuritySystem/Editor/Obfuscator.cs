@@ -21,7 +21,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
         private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _skipSecondPassLayerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private static bool _hasNDMF;
+        private static bool? _hasNDMF;
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -36,7 +36,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _shaderCache.Clear();
             _generatedContentAssetPaths.Clear();
             _skipSecondPassLayerNames.Clear();
-            _hasNDMF = false;
+            _hasNDMF = null;
             if (!_enabled)
             {
                 _initialized = true;
@@ -58,28 +58,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        public static void SetNDMFAvailable(bool available)
+        /// <summary>
+        /// 检测当前项目是否引用了 NDMF 程序集。
+        /// NDMF 存在时 ASS 利用其已克隆的控制器做 in-place 修改；
+        /// 不存在时 ASS 完全掌控构建管道，可复制所有控制器后自由操作。
+        /// </summary>
+        public static bool HasNDMF
         {
-            _hasNDMF = available;
-        }
-
-        public static bool CheckNDMFAvailable(GameObject avatarGameObject)
-        {
-            if (avatarGameObject == null) return false;
-            try
+            get
             {
-                foreach (var c in avatarGameObject.GetComponents<Component>())
-                {
-                    if (c == null) continue;
-                    var t = c.GetType();
-                    if (t.Name == "ContextHolder" &&
-                        (t.Namespace == "nadena.dev.ndmf.VRChat" ||
-                         t.FullName == "nadena.dev.ndmf.VRChat.ContextHolder"))
-                        return true;
-                }
+                if (_hasNDMF == null)
+                    _hasNDMF = System.Type.GetType(
+                        "nadena.dev.ndmf.BuildContext, nadena.dev.ndmf") != null;
+                return _hasNDMF.Value;
             }
-            catch { }
-            return false;
         }
         #endregion
         #region 名称映射 — 内部 Key → 误导性名称 + 哈希后缀
@@ -467,13 +459,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (layers == null) return;
 
+            // 注意：此函数仅在非 NDMF 模式下被调用（NDMF 模式下不需要复制）
+            // 非 NDMF 模式下 ASS 完全掌控管道，复制所有非默认控制器后自由操作
             for (int i = 0; i < layers.Length; i++)
             {
                 var layer = layers[i];
                 if (layer.isDefault) continue;
-                // 只复制 FX 控制器（ASS 需要在其上添加 Lock/Password/Defense 层）
-                // 其他控制器由 NDMF 在 -11000 已克隆，ASS 直接 in-place 改层名即可
-                if (layer.type != VRCAvatarDescriptor.AnimLayerType.FX) continue;
                 if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
 
                 var clonedController = DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
@@ -497,37 +488,30 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int blendTreeCount = 0;
             int clipCount = 0;
 
-            bool logMode = _hasNDMF;
+            bool hasNDMF = _hasNDMF ?? false;
 
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
                 if (animLayer.isDefault) continue;
                 if (!(animLayer.animatorController is AnimatorController controller) || controller == null) continue;
 
-                bool isFX = animLayer.type == VRCAvatarDescriptor.AnimLayerType.FX;
-
-                // NDMF 路径: NDMF 已在 -11000 克隆了原始控制器，
-                //   ASS 直接 in-place 修改（不改内部状态名会引起 Transition 校验问题）
-                //   所有控制器都可以做完整重命名（层名 + 内部状态）
-                // 非 NDMF 路径: 只有 FX 被复制到 Generated 目录，
-                //   非 FX 不做任何修改（避免复制破坏构建 + 无 NDMF 保护下的改名风险）
-                bool allowInternalRename = _hasNDMF || isFX;
-                bool requireGeneratedPath = !_hasNDMF && isFX;
-
+                // NDMF 路径：NDMF 已在 -11000 克隆所有控制器，ASS 直接 in-place 完整改名
+                // 非 NDMF 路径：ASS 已复制所有控制器到 Generated，在副本上完整改名
+                // 两种模式下所有控制器都做层名 + 内部状态重命名
                 ObfuscateAnimatorController(controller,
-                    allowInternalRename: allowInternalRename,
+                    allowInternalRename: true,
                     ref layerCount,
                     ref stateMachineCount,
                     ref stateCount,
                     ref blendTreeCount,
                     ref clipCount,
-                    requireGeneratedPath: requireGeneratedPath);
+                    requireGeneratedPath: !hasNDMF);
                 controllerCount++;
             }
 
             if (controllerCount > 0)
             {
-                Debug.Log($"[ASS] Obfuscator: [{(logMode ? "NDMF" : "STANDALONE")}] Renamed playable controllers={controllerCount}, layers={layerCount}, stateMachines={stateMachineCount}, states={stateCount}, blendTrees={blendTreeCount}, clips={clipCount}");
+                Debug.Log($"[ASS] Obfuscator: [{(hasNDMF ? "NDMF" : "STANDALONE")}] Renamed playable controllers={controllerCount}, layers={layerCount}, stateMachines={stateMachineCount}, states={stateCount}, blendTrees={blendTreeCount}, clips={clipCount}");
             }
         }
 
