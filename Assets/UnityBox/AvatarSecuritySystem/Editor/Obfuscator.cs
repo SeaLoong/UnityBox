@@ -21,6 +21,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
         private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _skipSecondPassLayerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static bool _hasNDMF;
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -35,6 +36,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _shaderCache.Clear();
             _generatedContentAssetPaths.Clear();
             _skipSecondPassLayerNames.Clear();
+            _hasNDMF = false;
             if (!_enabled)
             {
                 _initialized = true;
@@ -54,6 +56,30 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 _generatedFolder = "Assets/UnityBox/AvatarSecuritySystem/Generated";
                 _initialized = true;
             }
+        }
+
+        public static void SetNDMFAvailable(bool available)
+        {
+            _hasNDMF = available;
+        }
+
+        public static bool CheckNDMFAvailable(GameObject avatarGameObject)
+        {
+            if (avatarGameObject == null) return false;
+            try
+            {
+                foreach (var c in avatarGameObject.GetComponents<Component>())
+                {
+                    if (c == null) continue;
+                    var t = c.GetType();
+                    if (t.Name == "ContextHolder" &&
+                        (t.Namespace == "nadena.dev.ndmf.VRChat" ||
+                         t.FullName == "nadena.dev.ndmf.VRChat.ContextHolder"))
+                        return true;
+                }
+            }
+            catch { }
+            return false;
         }
         #endregion
         #region 名称映射 — 内部 Key → 误导性名称 + 哈希后缀
@@ -471,6 +497,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int blendTreeCount = 0;
             int clipCount = 0;
 
+            bool logMode = _hasNDMF;
+
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {
                 if (animLayer.isDefault) continue;
@@ -478,22 +506,28 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 bool isFX = animLayer.type == VRCAvatarDescriptor.AnimLayerType.FX;
 
-                // FX: 从 Generate 目录的副本改名，允许内部状态重命名
-                // 非 FX: NDMF 已克隆了原始控制器，ASS 直接 in-place 改层名（不复制，不改内部状态）
+                // NDMF 路径: NDMF 已在 -11000 克隆了原始控制器，
+                //   ASS 直接 in-place 修改（不改内部状态名会引起 Transition 校验问题）
+                //   所有控制器都可以做完整重命名（层名 + 内部状态）
+                // 非 NDMF 路径: 只有 FX 被复制到 Generated 目录，
+                //   非 FX 不做任何修改（避免复制破坏构建 + 无 NDMF 保护下的改名风险）
+                bool allowInternalRename = _hasNDMF || isFX;
+                bool requireGeneratedPath = !_hasNDMF && isFX;
+
                 ObfuscateAnimatorController(controller,
-                    allowInternalRename: isFX,
+                    allowInternalRename: allowInternalRename,
                     ref layerCount,
                     ref stateMachineCount,
                     ref stateCount,
                     ref blendTreeCount,
                     ref clipCount,
-                    requireGeneratedPath: isFX);
+                    requireGeneratedPath: requireGeneratedPath);
                 controllerCount++;
             }
 
             if (controllerCount > 0)
             {
-                Debug.Log($"[ASS] Obfuscator: Renamed playable controllers={controllerCount}, layers={layerCount}, stateMachines={stateMachineCount}, states={stateCount}, blendTrees={blendTreeCount}, clips={clipCount}");
+                Debug.Log($"[ASS] Obfuscator: [{(logMode ? "NDMF" : "STANDALONE")}] Renamed playable controllers={controllerCount}, layers={layerCount}, stateMachines={stateMachineCount}, states={stateCount}, blendTrees={blendTreeCount}, clips={clipCount}");
             }
         }
 
