@@ -126,7 +126,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             root.SetActive(false);
             var parameters = ComputeDefenseParams();
             bool useOverflow = config.enableOverflow && !isDebugMode;
-            var particlePlan = BuildParticleGenerationPlan(useOverflow);
+            var existingParticleStats = GetExistingParticleStats();
+            var particlePlan = BuildParticleGenerationPlan(useOverflow, existingParticleStats);
+            bool enableCollision = !IsLightweightDefense || existingParticleStats.HasCollisionEnabled;
+            bool enableTrails = !IsLightweightDefense || existingParticleStats.HasTrailsEnabled;
             Material sharedDefenseMaterial = particlePlan.SystemCount > 0
                 ? CreateSharedDefenseMaterial()
                 : null;
@@ -137,7 +140,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (particlePlan.SystemCount > 0 && particlePlan.ParticleTarget > 0 && particlePlan.MeshPolyTarget > 0)
                     CreateParticleComponents(root, particlePlan.SystemCount, particlePlan.ParticleTarget, particlePlan.MeshPolyTarget,
-                        defenseLights, useOverflow, sharedDefenseMaterial, IsLightweightDefense);
+                        defenseLights, useOverflow, sharedDefenseMaterial, IsLightweightDefense, enableCollision, enableTrails);
             }
             if (parameters.PhysXRigidbodyCount > 0 || parameters.ClothComponentCount > 0)
             {
@@ -145,7 +148,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             if (IsLightweightDefense)
             {
-                Debug.Log("[ASS] Lightweight mode: no new light will be generated; existing avatar lights may still be reused");
+                Debug.Log($"[ASS] Lightweight mode inheritance: lights={(reusableLight != null ? "reuse-existing" : "off")}, collision={(enableCollision ? "inherit-existing" : "off")}, trails={(enableTrails ? "inherit-existing" : "off")}");
             }
             Debug.Log("[ASS] Defense optimization: Dedicated ShaderDefense meshes skipped; heavy shader contribution now comes from particle renderers sharing the defense material");
             return root;
@@ -176,12 +179,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int SystemCount;
             public readonly long ParticleCount;
             public readonly long MeshTriangles;
+            public readonly bool HasCollisionEnabled;
+            public readonly bool HasTrailsEnabled;
 
-            public ExistingParticleStats(int systemCount, long particleCount, long meshTriangles)
+            public ExistingParticleStats(int systemCount, long particleCount, long meshTriangles,
+                bool hasCollisionEnabled, bool hasTrailsEnabled)
             {
                 SystemCount = systemCount;
                 ParticleCount = particleCount;
                 MeshTriangles = meshTriangles;
+                HasCollisionEnabled = hasCollisionEnabled;
+                HasTrailsEnabled = hasTrailsEnabled;
             }
 
             public bool HasExternalParticles => SystemCount > 0 && ParticleCount > 0;
@@ -209,7 +217,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return new DefenseParams(0, 0, 0, 1, 1, lightCount);
             }
             string lightMode = IsLightweightDefense ? "reuse-existing-only" : "reuse-or-1";
-            Debug.Log($"[ASS] Defense profile: MinimalParticleSystems=ON, Lightweight={(IsLightweightDefense ? "ON" : "OFF")}, Lights={lightMode}, PhysX=OFF, Cloth=OFF");
+            string rankSensitiveMode = IsLightweightDefense ? "inherit-existing-only" : "force-on";
+            Debug.Log($"[ASS] Defense profile: MinimalParticleSystems=ON, Lightweight={(IsLightweightDefense ? "ON" : "OFF")}, Lights={lightMode}, CollisionTrails={rankSensitiveMode}, PhysX=OFF, Cloth=OFF");
             return new DefenseParams(
                 0, 0, 0,
                 Constants.PARTICLE_MAX_COUNT, 1,
@@ -217,12 +226,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             );
         }
 
-        private ParticleGenerationPlan BuildParticleGenerationPlan(bool useOverflow)
+        private ParticleGenerationPlan BuildParticleGenerationPlan(bool useOverflow, ExistingParticleStats existing)
         {
             if (isDebugMode)
                 return new ParticleGenerationPlan(1, 1, 1);
 
-            var existing = GetExistingParticleStats();
             long meshPolyTarget = useOverflow
                 ? (long)Constants.MESH_PARTICLE_MAX_POLYGONS + 1L
                 : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
@@ -277,6 +285,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int systemCount = 0;
             long particleCount = 0;
             long meshTriangles = 0;
+            bool hasCollisionEnabled = false;
+            bool hasTrailsEnabled = false;
 
             foreach (var ps in avatarRoot.GetComponentsInChildren<ParticleSystem>(true))
             {
@@ -296,9 +306,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     trisPerParticle = 2;
 
                 meshTriangles += (long)ps.main.maxParticles * trisPerParticle;
+
+                if (ps.collision.enabled)
+                    hasCollisionEnabled = true;
+                if (ps.trails.enabled)
+                    hasTrailsEnabled = true;
             }
 
-            return new ExistingParticleStats(systemCount, particleCount, meshTriangles);
+            return new ExistingParticleStats(systemCount, particleCount, meshTriangles,
+                hasCollisionEnabled, hasTrailsEnabled);
         }
 
         private Material FindReusableAvatarMaterial()
@@ -429,7 +445,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
             long meshPolyBudget, Light[] lights, bool enableOverflow, Material sharedRendererMaterial,
-            bool lightweightDefense)
+            bool lightweightDefense, bool enableCollision, bool enableTrails)
         {
             if (meshPolyBudget <= 0)
             {
@@ -593,7 +609,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 noise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 noise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 noise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-                if (!lightweightDefense)
+                if (enableCollision)
                 {
                     var collision = ps.collision;
                     collision.enabled = true;
@@ -611,7 +627,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     collision.multiplyColliderForceByCollisionAngle = true;
                     collision.multiplyColliderForceByParticleSize = true;
                     collision.multiplyColliderForceByParticleSpeed = true;
+                }
 
+                if (enableTrails)
+                {
                     var trails = ps.trails;
                     trails.enabled = true;
                     trails.mode = ParticleSystemTrailMode.PerParticle;
@@ -860,7 +879,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subNoise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
                 subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
                 subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
-                if (!lightweightDefense)
+                if (enableCollision)
                 {
                     var subCollision = subPs.collision;
                     subCollision.enabled = true;
@@ -871,7 +890,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subCollision.enableDynamicColliders = true;
                     subCollision.collidesWith = ~0;
                     subCollision.sendCollisionMessages = true;
+                }
 
+                if (enableTrails)
+                {
                     var subTrails = subPs.trails;
                     subTrails.enabled = true;
                     subTrails.mode = ParticleSystemTrailMode.PerParticle;
@@ -978,7 +1000,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
                 var subEmitters = ps.subEmitters;
                 subEmitters.enabled = true;
-                subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Collision, ParticleSystemSubEmitterProperties.InheritColor);
+                if (enableCollision)
+                {
+                    subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Collision, ParticleSystemSubEmitterProperties.InheritColor);
+                }
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Death, ParticleSystemSubEmitterProperties.InheritColor | ParticleSystemSubEmitterProperties.InheritSize);
                 systemsUsed++;
                 particlesUsed += subParticles;

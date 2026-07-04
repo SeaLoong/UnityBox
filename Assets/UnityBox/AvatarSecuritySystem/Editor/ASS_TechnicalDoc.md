@@ -8,7 +8,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 - **手势密码验证**：通过 VRChat 左/右手手势组合作为密码
 - **倒计时机制**：限时密码输入，超时自动触发防御
-- **GPU 防御**：以共享 `UB_Defense` 材质的粒子系统为主，结合最少系统数策略制造负载；轻量模式下不主动生成新光源，并关闭粒子碰撞 / 拖尾
+- **GPU 防御**：以共享 `UB_Defense` 材质的粒子系统为主，结合最少系统数策略制造负载；轻量模式下不主动新增光源 / 粒子碰撞 / 拖尾，但若 Avatar 本来就在使用这些功能，则直接继承
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御(Countdown+Defense)仅本地触发；Lock层:远端保持在Remote状态（身体可见）,仅穿戴者本地执行隐藏→遮罩→解锁流程
 - **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
@@ -18,7 +18,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
 2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理。当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
-3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；在普通模式下优先复用现有 Light，轻量模式则不主动生成新光源，仅在 Avatar 本来已有 Light 时直接复用，以尽量贴近绿模
+3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；轻量模式遵循“已有则继承、没有则不主动新增”的原则，对 Light / 粒子碰撞 / 粒子拖尾都采用同样策略，以尽量贴近绿模
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
 ---
@@ -583,8 +583,8 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
     - **SizeOverLifetime**（3 轴分离，AnimationCurve）
     - **RotationOverLifetime**（3 轴 ±360°）
     - **Noise**（4 octave 高质量湍流，影响位置/旋转/大小）
-    - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息；**轻量模式关闭**）
-    - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线；**轻量模式关闭**）
+    - **Collision**（World 3D 碰撞，High 质量，256 碰撞体，全层碰撞，发送碰撞消息；**轻量模式下仅当 Avatar 现有粒子已启用 Collision 时才继承启用**）
+    - **Trails**（PerParticle 模式，80% 粒子产生拖尾，生成光照数据，自适应宽度曲线；**轻量模式下仅当 Avatar 现有粒子已启用 Trails 时才继承启用**）
     - **TextureSheetAnimation**（4×4 网格，3 周期循环）
     - **LimitVelocityOverLifetime**（3 轴限制+阻力）
     - **InheritVelocity**（继承发射器速度）
@@ -599,7 +599,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 - **子发射器**（保留为后备路径；在当前最少系统数策略下通常不会进入该阶段）：
   - `simulationSpeed = 10000000`，`prewarm = true`，`ringBufferMode = PauseUntilReplaced`
   - 启用全部 18 个模块（与主系统完全对等）
-  - 独立 Emission（rateOverTime + rateOverDistance + Burst），Shape，VelocityOverLifetime，ForceOverLifetime，ColorOverLifetime，SizeOverLifetime，RotationOverLifetime，Noise（4 octave），Collision（普通模式）、Trails（普通模式）、TextureSheetAnimation，LimitVelocityOverLifetime，InheritVelocity，LifetimeByEmitterSpeed，ColorBySpeed，SizeBySpeed，RotationBySpeed，ExternalForces（10000000），Lights（普通模式或轻量模式下的已有外部 Light 复用），CustomData，Trigger
+  - 独立 Emission（rateOverTime + rateOverDistance + Burst），Shape，VelocityOverLifetime，ForceOverLifetime，ColorOverLifetime，SizeOverLifetime，RotationOverLifetime，Noise（4 octave），Collision（普通模式；轻量模式仅在已有 Avatar 粒子启用时继承）、Trails（普通模式；轻量模式仅在已有 Avatar 粒子启用时继承）、TextureSheetAnimation，LimitVelocityOverLifetime，InheritVelocity，LifetimeByEmitterSpeed，ColorBySpeed，SizeBySpeed，RotationBySpeed，ExternalForces（10000000），Lights（普通模式或轻量模式下的已有外部 Light 复用），CustomData，Trigger
   - 渲染器配置与主系统对等：Mesh 模式，TwoSided Shadow，allowOcclusionWhenDynamic=false，GPU Instancing，World 对齐，Distance 排序
   - Collision + Death 类型子发射器（InheritColor + InheritSize）
 
@@ -610,6 +610,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 - 优先复用 Avatar 现有的 1 个 Light；若找不到，才在 `ASS_Defense` 下创建 `LightDefense/L_0`
 - fallback Light 使用 Point / Spot 配置之一，保持高强度、超大范围、逐像素渲染与阴影设置
 - 轻量模式下：**不主动生成新 Light；若 Avatar 本来就有 Light，则直接复用；若没有则完全不补光源**
+- 同样的“已有则继承”原则也适用于粒子的 `Collision` 与 `Trails` 模块
 
 **防御 Shader 材质（当前实现）**
 
@@ -655,7 +656,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 | ---------------- | ---- | ------ | ------------------------------------------------------------------------- |
 | `disableDefense` | bool | false  | 禁用防御组件（仅保留密码系统，用于测试）                                  |
 | `enableOverflow` | bool | true   | 启用溢出模式：通过粒子数 / Mesh 面数的数值溢出更容易保持绿色参数显示，建议与轻量模式一起使用 |
-| `lightweightDefense` | bool | false | 轻量模式：不主动生成新光源；若 Avatar 本来就有 Light 则直接复用。并关闭粒子碰撞与拖尾，使用最少粒子系统策略尽量贴近绿模 |
+| `lightweightDefense` | bool | false | 轻量模式：不主动新增新的光源 / 粒子碰撞 / 拖尾；若 Avatar 已经在使用这些功能，则允许直接继承。并使用最少粒子系统策略尽量贴近绿模 |
 
 #### 锁定选项
 
@@ -784,7 +785,7 @@ Avatar Root
   │
   └── ParticleDefense/ [混淆启用时名称被替换]
     └── PS_0 ~ PS_{count} [混淆启用时名称被替换]
-      (最少系统数策略；粒子渲染器共享 UB_Defense 材质；轻量模式不主动生成 Light，若 Avatar 已有 Light 可直接复用；无 Collision / 无 Trails)
+      (最少系统数策略；粒子渲染器共享 UB_Defense 材质；轻量模式不主动新增 Light / Collision / Trails，但若 Avatar 已有对应特性则直接继承)
 ```
 
 ---
@@ -906,7 +907,7 @@ VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/H
 ### 10.6 代码规范
 
 - Defense.cs 不包含任何注释（代码足够自文档化，注释在技术文档中维护）
-- 粒子光源策略：普通模式下优先复用 1 个外部 Light，否则仅创建 1 个 fallback Light；轻量模式不主动生成新光源，但若 Avatar 已有 Light 则允许直接复用
+- 粒子高开销特性策略：普通模式下主动启用 Light / Collision / Trails；轻量模式则遵循“已有则继承、没有则不新增”——已有外部 Light 可复用，已有粒子 Collision / Trails 也会被 ASS 生成粒子跟随启用
 
 ### 10.7 Overlay Shader 全屏覆盖深度修复
 
@@ -1017,7 +1018,7 @@ Defense:  Idle→Active                     ← 开关触发器模式
 - 共享 `UB_Defense` 材质带来的重 Shader 负载
 
 → **无法完全消除**：这些仍然是防御机制的核心。
-→ **缓解**：最少系统数策略、复用已有 Light、轻量模式关闭 Collision/Trails，以及名称混淆，都在降低对象数量层面的异常信号。
+→ **缓解**：最少系统数策略、复用已有 Light、轻量模式对 Light / Collision / Trails 采用“已有则继承、没有则不新增”的策略，以及名称混淆，都在降低对象数量层面的异常信号。
 
 #### 11.5.3 残余风险总结
 
