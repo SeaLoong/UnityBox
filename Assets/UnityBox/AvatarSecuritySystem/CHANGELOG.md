@@ -4,7 +4,8 @@
 
 ### Fixed
 
-- 修正文档与实现不一致：`callbackOrder` 实际按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；有 NDMF 为 `-1024`，晚于 NDMF Optimize `-1025`），而非文档所述固定 `-1026`
+- 修正文档与实现不一致：`callbackOrder` 实际按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；有 NDMF 时晚于 NDMF Optimize `-1025`），而非文档所述固定 `-1026`
+- 修正存在 NDMF 时 `callbackOrder` 与 VRCFury 自身 `RemoveEditorOnlyObjectsHook` 相同（均为 `-1024`）导致相对执行顺序不确定的问题：改为 `-1023`，确保始终在 VRCFury 该钩子之后执行
 - 同步更新 README 与技术文档中的构建管线执行顺序说明
 
 ## [0.7.1] - 2026-07-05

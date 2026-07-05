@@ -13,9 +13,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static bool? _hasNDMF;
 
         /// <summary>
-        /// NDMF 存在时在 NDMF Optimize（-1025）之后执行（-1024），
+        /// NDMF 存在时在 NDMF Optimize（-1025）之后执行（-1023），
         /// 确保 MA / VRCFury / 其他 NDMF pass 全部完成后 ASS 才做最终处理。
-        /// 无 NDMF 时在默认位置（-1026，VRCFury 之后）执行。
+        /// 注意：不能使用 -1024 —— VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook
+        /// 固定注册在 -1024，与其相同会导致两者执行先后不确定，因此让到 -1023。
+        /// 无 NDMF 时在默认位置（-1026，VRCFury 主处理 -10000 之后、-1024 之前）执行。
         /// </summary>
         public int callbackOrder
         {
@@ -24,7 +26,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (_hasNDMF == null)
                     _hasNDMF = System.Type.GetType(
                         "nadena.dev.ndmf.BuildContext, nadena.dev.ndmf") != null;
-                return _hasNDMF.Value ? -1024 : -1026;
+                return _hasNDMF.Value ? -1023 : -1026;
             }
         }
 
@@ -81,7 +83,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             // callbackOrder 已决定执行时机：
-            //   NDMF 模式（-1024）：在 NDMF Optimize 之后，控制器已是最终版本，无需复制
+            //   NDMF 模式（-1023）：在 NDMF Optimize 之后，控制器已是最终版本，无需复制
             //   独立模式（-1026）：ASS 自己复制所有控制器到 Generated
             bool hasNDMF = _hasNDMF ?? false;
             if (!hasNDMF)

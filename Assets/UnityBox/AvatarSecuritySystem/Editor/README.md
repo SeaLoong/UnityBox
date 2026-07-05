@@ -186,7 +186,7 @@ AnimationClips + GameObject Hierarchy + VRC Components
 `Processor` 通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在，从而判断当前项目是否安装了 NDMF：
 
 - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`callbackOrder = -1026`
-- **存在 NDMF**：`callbackOrder = -1024`（在 NDMF Optimize `-1025` 之后执行）
+- **存在 NDMF**：`callbackOrder = -1023`（在 NDMF Optimize `-1025` 和 VRCFury `RemoveEditorOnlyObjects` `-1024` 之后执行；不能取 -1024，因为该值与 VRCFury 自身的钩子冲突，相对顺序会不确定）
 
 **构建管线执行顺序：**
 
@@ -201,12 +201,13 @@ AnimationClips + GameObject Hierarchy + VRC Components
 -11000 : NDMF PreprocessHook
 -10000 : VRCFury VrcPreuploadHook（若同时安装了 VRCFury）
  -1025 : NDMF OptimizeHook（Modular Avatar / Avatar Optimizer 等 NDMF pass 均在此阶段完成）
- -1024 : ★ ASS（本插件）/ VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
+ -1024 : VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
+ -1023 : ★ ASS（本插件）
    MAX : VRCFury ParameterCompressorHook / Cleanup
 ```
 
 无 NDMF 时，ASS 在 VRCFury 主处理完成后、`RemoveEditorOnlyObjects` 之前注入，并自行复制 Playable 层控制器，避免修改原始资产。
-存在 NDMF 时，ASS 改为在 **NDMF Optimize 之后** 才注入，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的 FX Controller 已是最终版本，ASS 直接在其上追加层，无需再复制/追踪控制器副本。
+存在 NDMF 时，ASS 改为在 **NDMF Optimize 和 VRCFury `RemoveEditorOnlyObjects` 之后** 才注入，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的 FX Controller 已是最终版本，ASS 直接在其上追加层，无需再复制/追踪控制器副本。
 两种场景下，VRCFury 参数压缩都在远后执行，因此 ASS 参数会被正确识别。
 
 ### 文件结构
@@ -637,7 +638,7 @@ ASS_Defense Layer
 ASS 会通过反射检测项目中是否存在 `nadena.dev.ndmf.BuildContext` 类型，从而自动判断是否安装了 NDMF：
 
 - **未安装 NDMF**：ASS 使用固定的 `callbackOrder = -1026`，在 VRCFury 主处理之后立即注入，并自行复制 Playable 层控制器到 Generated 目录。
-- **安装了 NDMF**：ASS 改用 `callbackOrder = -1024`，等待 **NDMF Optimize（-1025）** 阶段完成之后再注入，也就是 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后，ASS 才在该最终控制器上追加安全层。这样可以避免 ASS 生成的层被后续的优化/深克隆步骤丢弃或错位。
+- **安装了 NDMF**：ASS 改用 `callbackOrder = -1023`，等待 **NDMF Optimize（-1025）** 及 VRCFury `RemoveEditorOnlyObjects`（`-1024`）阶段都完成之后再注入，也就是 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后，ASS 才在该最终控制器上追加安全层。这样可以避免 ASS 生成的层被后续的优化/深克隆步骤丢弃或错位。之所以选 `-1023` 而不是 `-1024`，是因为 VRCFury 自身的 `RemoveEditorOnlyObjects` 钩子固定注册在 `-1024`，与其取相同值会导致两者的相对执行顺序不确定。
 
 无论哪种模式，VRCFury 的参数压缩（ParameterCompressorHook）都在极后（`int.MaxValue - 100`）执行，ASS 新增的参数始终会被正确识别和压缩。
 
