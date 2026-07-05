@@ -21,7 +21,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
         private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _skipSecondPassLayerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private static bool? _hasNDMF;
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -36,7 +35,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _shaderCache.Clear();
             _generatedContentAssetPaths.Clear();
             _skipSecondPassLayerNames.Clear();
-            _hasNDMF = null;
             if (!_enabled)
             {
                 _initialized = true;
@@ -58,21 +56,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        /// <summary>
-        /// 检测当前项目是否引用了 NDMF 程序集。
-        /// NDMF 存在时 ASS 利用其已克隆的控制器做 in-place 修改；
-        /// 不存在时 ASS 完全掌控构建管道，可复制所有控制器后自由操作。
-        /// </summary>
-        public static bool HasNDMF
-        {
-            get
-            {
-                if (_hasNDMF == null)
-                    _hasNDMF = System.Type.GetType(
-                        "nadena.dev.ndmf.BuildContext, nadena.dev.ndmf") != null;
-                return _hasNDMF.Value;
-            }
-        }
         #endregion
         #region 名称映射 — 内部 Key → 误导性名称 + 哈希后缀
         public static string Param(string internalKey, string cleanName = null)
@@ -476,7 +459,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        public static void ObfuscatePlayableControllers(VRCAvatarDescriptor descriptor)
+        public static void ObfuscatePlayableControllers(VRCAvatarDescriptor descriptor, bool hasNDMF)
         {
             EnsureInitialized();
             if (!_enabled || descriptor == null) return;
@@ -487,8 +470,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int stateCount = 0;
             int blendTreeCount = 0;
             int clipCount = 0;
-
-            bool hasNDMF = _hasNDMF ?? false;
 
             foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
             {

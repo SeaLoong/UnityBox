@@ -10,38 +10,40 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 {
     public class Processor : IVRCSDKPreprocessAvatarCallback
     {
-        private static bool? _hasNDMF;
-
         /// <summary>
-        /// NDMF 存在时在 NDMF Optimize（-1025）之后执行（-1024），
-        /// 确保 MA / VRCFury / 其他 NDMF pass 全部完成后 ASS 才做最终处理。
-        /// 无 NDMF 时在默认位置（-1026，VRCFury 之后）执行。
+        /// 固定在 -1024：与 VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook 相同的 callbackOrder
+        /// 不会造成问题（两者处理的内容互不影响，谁先谁后结果一致）。
+        /// 无需按 NDMF 是否存在动态切换：是否存在 NDMF 在编译期已由 NDMF_AVAILABLE 决定——
+        /// 存在 NDMF 时，实际处理改由 Editor/NDMF 子程序集中的 NDMFPlugin 在 NDMF
+        /// BuildPhase.PlatformFinish（NDMF 概念中真正的最后一个阶段）内完成，此回调直接跳过；
+        /// 不存在 NDMF 时才由本回调处理。
         /// </summary>
-        public int callbackOrder
-        {
-            get
-            {
-                if (_hasNDMF == null)
-                    _hasNDMF = System.Type.GetType(
-                        "nadena.dev.ndmf.BuildContext, nadena.dev.ndmf") != null;
-                return _hasNDMF.Value ? -1024 : -1026;
-            }
-        }
+        public int callbackOrder => -1024;
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
+#if NDMF_AVAILABLE
+            // 存在 NDMF 时，处理已经在 NDMF BuildPhase.PlatformFinish 阶段由 NDMFPlugin 完成，
+            // 此处跳过，避免重复处理及依赖不确定的 VRCSDK callbackOrder 相对顺序。
+            return true;
+#else
             Debug.Log($"[ASS] OnPreprocessAvatar called (callbackOrder={callbackOrder})");
             try
             {
-                return ProcessAvatar(avatarGameObject);
+                return ProcessAvatar(avatarGameObject, hasNDMF: false);
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[ASS] Avatar processing failed: {ex.Message}\n{ex.StackTrace}");
                 return false;
             }
+#endif
         }
-        private bool ProcessAvatar(GameObject avatarGameObject)
+        /// <summary>
+        /// 核心处理逻辑。由 <see cref="OnPreprocessAvatar"/>（无 NDMF 场景）
+        /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.PlatformFinish）调用。
+        /// </summary>
+        public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF)
         {
             var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
@@ -80,10 +82,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
             }
 
-            // callbackOrder 已决定执行时机：
-            //   NDMF 模式（-1024）：在 NDMF Optimize 之后，控制器已是最终版本，无需复制
-            //   独立模式（-1026）：ASS 自己复制所有控制器到 Generated
-            bool hasNDMF = _hasNDMF ?? false;
+            // hasNDMF 由调用方决定执行路径：
+            //   NDMF 模式：由 NDMFPlugin 在 BuildPhase.PlatformFinish 内调用，
+            //     操作的是 NDMF 已克隆的虚拟控制器，无需再复制一份
+            //   独立模式：由 VRCSDK 回调（callbackOrder=-1024）调用，
+            //     ASS 自己复制所有控制器到 Generated
             if (!hasNDMF)
             {
                 if (Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation)
@@ -145,7 +148,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 GenerateDecoyLayer(fxController, instructionalClips);
                 InjectFakeStatesIntoRealLayers(fxController, instructionalClips);
                 if (assConfig.enablePlayableLayerObfuscation)
-                    Obfuscator.ObfuscatePlayableControllers(descriptor);
+                    Obfuscator.ObfuscatePlayableControllers(descriptor, hasNDMF);
             }
             RegisterASSParameters(descriptor, assConfig);
             Utils.SaveAndRefresh();
@@ -153,7 +156,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log("[ASS] Security system generation complete!");
             return true;
         }
-        private void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)
+        private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)
         {
             var expressionParameters = descriptor.expressionParameters;
             if (expressionParameters == null)
@@ -227,7 +230,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                      (needTimeUp ? $", {PARAM_TIME_UP}(local)" : " (no TimeUp)") +
                      (Obfuscator.IsEnabled ? " + decoys" : ""));
         }
-        private AnimatorController GetFXController(VRCAvatarDescriptor descriptor)
+        private static AnimatorController GetFXController(VRCAvatarDescriptor descriptor)
         {
             var fxLayer = descriptor.baseAnimationLayers
                 .FirstOrDefault(l => l.type == VRCAvatarDescriptor.AnimLayerType.FX);
@@ -257,7 +260,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             return controller;
         }
-        private void LoadAudioResources(ASSComponent config)
+        private static void LoadAudioResources(ASSComponent config)
         {
             config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
             config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);

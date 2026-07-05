@@ -1,0 +1,27 @@
+{
+  "name": "UnityBox.AvatarSecuritySystem.NDMF",
+  "rootNamespace": "UnityBox.AvatarSecuritySystem.Editor",
+  "references": [
+    "UnityBox.AvatarSecuritySystem",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "NDMF_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "",
+      "define": "NDMF_AVAILABLE"
+    }
+  ],
+  "noEngineReferences": false
+}
