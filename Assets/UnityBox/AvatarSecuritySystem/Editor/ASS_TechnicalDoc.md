@@ -17,9 +17,9 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 ### 1.2 设计原则
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
-2. **NDMF/VRCFury 兼容**：`callbackOrder` 根据运行环境动态决定（`Processor.callbackOrder`，通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在）：
-   - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`callbackOrder = -1026`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行
-   - **存在 NDMF**：`callbackOrder = -1023`，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000)、**NDMF Optimize (-1025)** 以及 VRCFury `RemoveEditorOnlyObjects` (-1024) 全部完成之后才执行，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的最终 FX Controller 已经稳定，ASS 无需再复制/追踪控制器副本即可直接处理最终版本。**不能选用 -1024**：该值与 VRCFury 自身的 `VrcfRemoveEditorOnlyObjectsHook` 完全相同，同序号回调的相对执行顺序不确定，因此让到 -1023 以避免冲突
+2. **NDMF/VRCFury 兼容**：是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，只有安装了 NDMF 包时才参与编译），而非运行期反射：
+   - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1023`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行
+   - **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中的最后一个 BuildPhase（`Optimizing`）**，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000) 之后、且 Modular Avatar / VRCFury / 其他 NDMF pass 生成最终 FX Controller 之后（仍在 NDMF 虚拟/克隆状态、`context.Finish()` 提交为真实资产之前）执行，ASS 直接在该控制器上原地追加层，无需再复制/追踪控制器副本，也**完全不经过 VRCSDK 的 `callbackOrder` 数轴**，因此不存在与 VRCFury 自身固定在 `-1024` 的 `VrcfRemoveEditorOnlyObjectsHook`（或任何其他同序号钩子）之间相对顺序不确定的问题
    - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 都在 ASS 之后运行，确保 ASS 新增参数被正确识别和压缩
    - 当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
 3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；轻量模式遵循“已有则继承、没有则不主动新增”的原则，对 Light / 粒子碰撞 / 粒子拖尾都采用同样策略，以尽量贴近绿模
@@ -122,12 +122,18 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
 
 ## 3. 执行流程
 
-### 3.1 构建时序 (`Processor`)
+### 3.1 构建时序 (`Processor` / `NDMFPlugin`)
 
 ```
-OnPreprocessAvatar(avatarGameObject)
-  [callbackOrder = -1023（存在 NDMF 时，在 NDMF Optimize -1025、VRCFury RemoveEditorOnlyObjects -1024 之后；避免与 -1024 冲突）
-                 = -1026（无 NDMF 时，VRCFury 主处理 -10000 之后）]
+无 NDMF 时：
+  Processor.OnPreprocessAvatar(avatarGameObject)
+    [callbackOrder = -1023，固定值，晚于 VRCFury 主处理 -10000、早于 VRCFury RemoveEditorOnlyObjects -1024]
+
+存在 NDMF 时（Editor/NDMF 子程序集编译期启用，NDMFPlugin.Configure 注册）：
+  Processor.OnPreprocessAvatar(avatarGameObject) → 直接跳过（返回 true）
+  NDMFPlugin: InPhase(BuildPhase.Optimizing).Run(ctx => Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true))
+    [BuildPhase.Optimizing 是 NDMF 概念中的最后一个阶段，在其它 NDMF pass 完成之后、
+     NDMF 把结果通过 context.Finish() 写回真实资产之前执行；完全不经过 VRCSDK callbackOrder]
 │
 ├─ 1. 获取 VRCAvatarDescriptor
 │     获取 ASSComponent 配置
@@ -140,7 +146,7 @@ OnPreprocessAvatar(avatarGameObject)
 ├─ 3. 检查播放模式启用开关
 │     enabledInPlaymode = false 且当前为 PlayMode → 跳过
 │
-└─ 4. ProcessAvatar() 主流程
+└─ 4. ProcessAvatar(avatarGameObject, hasNDMF) 主流程
       │
       ├─ [无 NDMF 时] Obfuscator.PreparePlayableControllerCopies(descriptor)
       │   复制所有 Playable 层控制器到 Generated 目录，避免修改原始资产
@@ -877,10 +883,10 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 
 ### 10.4 构建流程兼容性
 
-`Processor.callbackOrder` 通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在，动态选择执行时机：
+是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，仅安装了 NDMF 包时才参与编译），而非运行期反射：
 
-- **无 NDMF**：`callbackOrder = -1026`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行。此时 ASS 自行复制 Playable 层控制器到 Generated 目录（`Obfuscator.PreparePlayableControllerCopies`），不修改原始资产
-- **存在 NDMF**：`callbackOrder = -1023`，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000)、**NDMF Optimize (-1025)**、VRCFury `RemoveEditorOnlyObjects` (-1024) 全部完成之后才执行。此时 Modular Avatar / VRCFury / 其他 NDMF pass 已经生成最终 FX Controller，ASS 直接在该最终控制器上追加层，无需再复制/追踪副本。**此处不能取 -1024**：VRCFury 的 `VrcfRemoveEditorOnlyObjectsHook` 固定注册在 -1024，若 ASS 也用 -1024，两者的相对先后顺序将由列表排序方式决定而非显式声明，是不稳定的隐患，因此选择 -1023 让在其后一步执行
+- **无 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1023`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行。此时 ASS 自行复制 Playable 层控制器到 Generated 目录（`Obfuscator.PreparePlayableControllerCopies`），不修改原始资产
+- **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中的最后一个 BuildPhase（`Optimizing`）**，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000) 之后，且 Modular Avatar / VRCFury / 其他 NDMF pass 已经生成最终 FX Controller 之后（仍在 NDMF 虚拟/克隆状态、`context.Finish()` 写回真实资产之前）执行。ASS 直接在该最终控制器上追加层，无需再复制/追踪副本。**此路径完全不经过 VRCSDK 的 `callbackOrder` 数轴**，因此与 VRCFury 自身固定在 `-1024` 的 `VrcfRemoveEditorOnlyObjectsHook`（或任何其他同序号回调）之间不存在相对顺序不确定的隐患
 - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook) 都在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中
@@ -892,13 +898,13 @@ VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/H
 **问题链**（旧版 ASS 固定在 `-1026` 执行、且在无 NDMF 场景下仍然成立）：
 
 1. VRCFury 主构建 (-10000): clone FX 控制器，IsLocal 升级为 Float
-2. ASS (-1026): `AddParameterIfNotExists("IsLocal", Bool)` 发现已存在 → 跳过；但仍用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加条件
+2. ASS (-1023): `AddParameterIfNotExists("IsLocal", Bool)` 发现已存在 → 跳过；但仍用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加条件
 3. VRCFury RemoveEditorOnlyObjects (-1024): 清理 EditorOnly 对象
 4. VRCFury ParameterCompressor (int.MaxValue-100): `ClearCache()` → `MakeController()` → `CopyAndLoadController()` → `RemoveWrongParamTypes()`
 5. `RemoveWrongParamTypes`: IsLocal 是 Float，但条件为 `If`（对 Float 无效）→ **替换为 `InvalidCondition`（始终 false）**
 6. 结果: ASS 的 Lock/Password/Countdown/Defense 所有 IsLocal 条件失效，安全系统完全不工作
 
-> 存在 NDMF 时（ASS 现为 `-1023`，在 NDMF Optimize `-1025`、VRCFury `RemoveEditorOnlyObjects` `-1024` 之后执行），ASS 处理的已是 NDMF/MA/VRCFury 全部 pass 完成后的最终控制器，不存在「先加条件、后被深克隆丢弃」的问题，但 IsLocal 仍可能已被 VRCFury 升级为 Float，因此下述兼容方案在两种场景下都必须保留。
+> 存在 NDMF 时（ASS 通过 `NDMFPlugin` 在 NDMF `BuildPhase.Optimizing` 内执行，位于 VRCFury `RemoveEditorOnlyObjects` `-1024` 之前，但在其余 NDMF pass 之后），ASS 处理的已是 NDMF/MA/VRCFury 全部 NDMF pass 完成后的控制器，不存在「先加条件、后被深克隆丢弃」的问题，但 IsLocal 仍可能已被 VRCFury 升级为 Float，因此下述兼容方案在两种场景下都必须保留。
 
 **修复方案**：
 

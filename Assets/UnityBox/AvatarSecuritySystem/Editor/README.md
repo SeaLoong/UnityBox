@@ -169,7 +169,8 @@ Avatar 启动
 ```
 ASSComponent (MonoBehaviour)
     ↓ 配置参数
-Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder 动态决定)
+Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder = -1023, 无 NDMF 时使用)
+NDMFPlugin (仅存在 NDMF 时编译，通过 NDMF Plugin API 注册到 BuildPhase.Optimizing)
     ↓ VRChat Build & Publish 时自动执行
 生成 5 个 Animator Layer 到 FX Controller（混淆启用时层名变为 `_{描述词}_{4位hex}`）:
     ├─ 锁定层         (Lock/Concealed/Unlocked)
@@ -181,34 +182,38 @@ Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder 动态决定)
 AnimationClips + GameObject Hierarchy + VRC Components
 ```
 
-**`callbackOrder` 动态决定：**
+**是否存在 NDMF 由编译期常量而非运行期反射决定：**
 
-`Processor` 通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在，从而判断当前项目是否安装了 NDMF：
+`Editor/NDMF` 子程序集通过 `defineConstraints: ["NDMF_AVAILABLE"]` 声明，仅当项目安装了 NDMF 包（`versionDefines` 检测到 `nadena.dev.ndmf`）时才会被编译，无需在运行期用反射判断：
 
-- **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`callbackOrder = -1026`
-- **存在 NDMF**：`callbackOrder = -1023`（在 NDMF Optimize `-1025` 和 VRCFury `RemoveEditorOnlyObjects` `-1024` 之后执行；不能取 -1024，因为该值与 VRCFury 自身的钩子冲突，相对顺序会不确定）
+- **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor` 作为 `IVRCSDKPreprocessAvatarCallback` 以固定的 `callbackOrder = -1023` 执行全部处理逻辑
+- **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过（返回 `true` 不做任何处理），改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API（`InPhase(BuildPhase.Optimizing).Run(...)`）注册到 NDMF 概念中的最后一个 BuildPhase 执行，在 Modular Avatar / VRCFury 等所有 NDMF pass 完成之后、NDMF 把结果写回真实资产（`context.Finish()`）之前处理头像。这样完全避免了依赖 VRCSDK 对相同 `callbackOrder` 钩子（例如 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjectsHook`）的不确定相对顺序。
 
 **构建管线执行顺序：**
 
 ```
 无 NDMF 时：
 -10000 : VRCFury VrcPreuploadHook（若安装了 VRCFury）
- -1026 : ★ ASS（本插件）
+ -1023 : ★ ASS（本插件，Processor.OnPreprocessAvatar）
  -1024 : VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
    MAX : VRCFury ParameterCompressorHook / Cleanup
 
-存在 NDMF 时：
+存在 NDMF 时（ASS 不再使用 VRCSDK callbackOrder，而是注册进 NDMF 自身的 Pass 队列）：
 -11000 : NDMF PreprocessHook
 -10000 : VRCFury VrcPreuploadHook（若同时安装了 VRCFury）
- -1025 : NDMF OptimizeHook（Modular Avatar / Avatar Optimizer 等 NDMF pass 均在此阶段完成）
+ -1025 : NDMF OptimizeHook 开始执行
+          │  BuildPhase.Optimizing（NDMF 概念中的最后一个阶段）
+          │    ... Modular Avatar / Avatar Optimizer 等 NDMF pass ...
+          └─   ★ ASS（本插件，NDMFPlugin，在该阶段末尾执行）
+        context.Finish() 把结果写回真实资产
  -1024 : VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
- -1023 : ★ ASS（本插件）
    MAX : VRCFury ParameterCompressorHook / Cleanup
 ```
 
-无 NDMF 时，ASS 在 VRCFury 主处理完成后、`RemoveEditorOnlyObjects` 之前注入，并自行复制 Playable 层控制器，避免修改原始资产。
-存在 NDMF 时，ASS 改为在 **NDMF Optimize 和 VRCFury `RemoveEditorOnlyObjects` 之后** 才注入，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的 FX Controller 已是最终版本，ASS 直接在其上追加层，无需再复制/追踪控制器副本。
+无 NDMF 时，ASS 以固定 `callbackOrder = -1023` 注入（晚于 VRCFury 主处理 `-10000`，早于其 `RemoveEditorOnlyObjects` `-1024`），并自行复制 Playable 层控制器，避免修改原始资产。
+存在 NDMF 时，ASS 改为在 **NDMF 自身的 BuildPhase.Optimizing 阶段末尾**（仍在虚拟/克隆状态、`context.Finish()` 提交之前）处理，直接在 NDMF 已克隆的控制器上原地追加层，无需再复制/追踪控制器副本。
 两种场景下，VRCFury 参数压缩都在远后执行，因此 ASS 参数会被正确识别。
+
 
 ### 文件结构
 
@@ -221,7 +226,7 @@ Assets/UnityBox/AvatarSecuritySystem/
 │
 ├─ Editor/
 │   ├─ Inspector.cs                                         # 自定义 Inspector UI
-│   ├─ Processor.cs                                      # VRCSDK 构建处理器（入口点）
+│   ├─ Processor.cs                                      # VRCSDK 构建处理器（入口点，无 NDMF 时使用）
 │   ├─ Utils.cs                                          # Animator 工具方法
 │   ├─ Lock.cs                                           # 锁定系统生成器
 │   ├─ GesturePassword.cs                                # 手势密码状态机生成器
@@ -233,7 +238,10 @@ Assets/UnityBox/AvatarSecuritySystem/
 │   ├─ I18n.cs                                           # 国际化（中/英/日）
 │   ├─ README.md                                         # 本文档
 │   ├─ ASS_TechnicalDoc.md                               # 技术详细文档
-│   └─ UnityBox.AvatarSecuritySystem.asmdef
+│   ├─ UnityBox.AvatarSecuritySystem.asmdef
+│   └─ NDMF/                                             # 仅当项目安装了 NDMF 时才会被编译（defineConstraints）
+│       ├─ NDMFPlugin.cs                                 # NDMF Plugin 入口，注册到 BuildPhase.Optimizing
+│       └─ UnityBox.AvatarSecuritySystem.NDMF.asmdef
 │
 ├─ Resources/
 │   ├─ Avatar Security System.png                        # Logo
@@ -635,10 +643,12 @@ ASS_Defense Layer
 
 #### Q: 有 NDMF（Modular Avatar / Avatar Optimizer 等）时 ASS 何时注入？
 
-ASS 会通过反射检测项目中是否存在 `nadena.dev.ndmf.BuildContext` 类型，从而自动判断是否安装了 NDMF：
+ASS 是否使用 NDMF 由编译期常量决定，而不是运行期反射：`Editor/NDMF` 子程序集声明了 `defineConstraints: ["NDMF_AVAILABLE"]`，只有当项目安装了 NDMF 包时才会参与编译。
 
-- **未安装 NDMF**：ASS 使用固定的 `callbackOrder = -1026`，在 VRCFury 主处理之后立即注入，并自行复制 Playable 层控制器到 Generated 目录。
-- **安装了 NDMF**：ASS 改用 `callbackOrder = -1023`，等待 **NDMF Optimize（-1025）** 及 VRCFury `RemoveEditorOnlyObjects`（`-1024`）阶段都完成之后再注入，也就是 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后，ASS 才在该最终控制器上追加安全层。这样可以避免 ASS 生成的层被后续的优化/深克隆步骤丢弃或错位。之所以选 `-1023` 而不是 `-1024`，是因为 VRCFury 自身的 `RemoveEditorOnlyObjects` 钩子固定注册在 `-1024`，与其取相同值会导致两者的相对执行顺序不确定。
+- **未安装 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor` 使用固定的 `callbackOrder = -1023`，在 VRCFury 主处理（`-10000`）之后、`RemoveEditorOnlyObjects`（`-1024`）之前注入，并自行复制 Playable 层控制器到 Generated 目录。
+- **安装了 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中的最后一个 BuildPhase（`Optimizing`）**，在 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后（仍在 NDMF 的虚拟/克隆状态、`context.Finish()` 提交为真实资产之前）执行，ASS 直接在该控制器上原地追加安全层。
+
+这样彻底避免了依赖 VRCSDK 对相同 `callbackOrder` 钩子（例如 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjectsHook`）的不确定相对顺序：存在 NDMF 时 ASS 根本不通过 VRCSDK 的 `callbackOrder` 数轴与 VRCFury 的收尾钩子比较顺序。
 
 无论哪种模式，VRCFury 的参数压缩（ParameterCompressorHook）都在极后（`int.MaxValue - 100`）执行，ASS 新增的参数始终会被正确识别和压缩。
 
