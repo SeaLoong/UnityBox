@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.7.11] - 2026-07-05
+
+### Changed
+
+- 将 `Assets/UnityBox/AvatarSecuritySystem/Generated` 调整为构建期临时工作目录：
+  - 构建开始前自动清理历史生成物
+  - 构建后处理阶段自动回收生成目录
+  - 整体行为更贴近 NDMF / VRCF 的临时产物模式，减少历史残留导致的体积膨胀
+- 优化 `Utils.AddSubAsset()`：
+  - 改用 `AssetDatabase.AddObjectToAsset(asset, controller)` 对象重载
+  - 移除每次 `LoadAllAssetsAtPath` 的全量扫描，降低大 Controller 场景下的额外内存与遍历开销
+
 ### Fixed
 
 - 修正文档与实现不一致的历史遗留问题：修复前 `callbackOrder` 实际按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；有 NDMF 时晚于 NDMF Optimize `-1025`），而文档所述为固定 `-1026`；本次改为文档所述的固定值（见下方最终方案）

@@ -8,7 +8,7 @@ using VRC.SDKBase.Editor.BuildPipeline;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
-    public class Processor : IVRCSDKPreprocessAvatarCallback
+    public class Processor : IVRCSDKPreprocessAvatarCallback, IVRCSDKPostprocessAvatarCallback
     {
         /// <summary>
         /// 固定在 -1024：与 VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook 相同的 callbackOrder
@@ -39,12 +39,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 #endif
         }
+
+        public void OnPostprocessAvatar()
+        {
+            CleanupTransientGeneratedAssets("postprocess");
+        }
         /// <summary>
         /// 核心处理逻辑。由 <see cref="OnPreprocessAvatar"/>（无 NDMF 场景）
         /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.PlatformFinish）调用。
         /// </summary>
         public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF)
         {
+            CleanupTransientGeneratedAssets("preprocess");
             var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
             {
@@ -156,6 +162,28 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log("[ASS] Security system generation complete!");
             return true;
         }
+
+        private static void CleanupTransientGeneratedAssets(string stage)
+        {
+            string generatedPath = ASSET_FOLDER.Replace('\\', '/');
+            if (!AssetDatabase.IsValidFolder(generatedPath))
+                return;
+            try
+            {
+                if (!AssetDatabase.DeleteAsset(generatedPath))
+                {
+                    Debug.LogWarning($"[ASS] Failed to delete transient generated folder at {stage}: {generatedPath}");
+                    return;
+                }
+                AssetDatabase.Refresh();
+                Debug.Log($"[ASS] Cleaned transient generated assets at {stage}: {generatedPath}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[ASS] Exception while cleaning transient generated assets at {stage}: {ex.Message}");
+            }
+        }
+
         private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)
         {
             var expressionParameters = descriptor.expressionParameters;

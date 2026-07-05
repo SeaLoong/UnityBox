@@ -164,12 +164,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       if (asset == null || controller == null)
         return;
       string controllerPath = AssetDatabase.GetAssetPath(controller);
+      if (string.IsNullOrEmpty(controllerPath))
+        return;
       string assetPath = AssetDatabase.GetAssetPath(asset);
-      if (!string.IsNullOrEmpty(assetPath) && assetPath != controllerPath)
-        return;
-      if (AssetDatabase.LoadAllAssetsAtPath(controllerPath).Any(existing => existing == asset))
-        return;
-      AssetDatabase.AddObjectToAsset(asset, controllerPath);
+      if (!string.IsNullOrEmpty(assetPath))
+      {
+        if (!string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
+          return;
+        if (AssetDatabase.IsSubAsset(asset) || asset == controller)
+          return;
+      }
+      AssetDatabase.AddObjectToAsset(asset, controller);
     }
     public static void AddSubAssets(AnimatorController controller, params UnityEngine.Object[] assets)
     {
