@@ -4,10 +4,9 @@
 
 ### Fixed
 
-- 修正文档与实现不一致：`callbackOrder` 实际按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；有 NDMF 时晚于 NDMF Optimize `-1025`），而非文档所述固定 `-1026`
-- 修正存在 NDMF 时 `callbackOrder` 与 VRCFury 自身 `RemoveEditorOnlyObjectsHook` 相同（均为 `-1024`）导致相对执行顺序不确定的问题
+- 修正文档与实现不一致的历史遗留问题：修复前 `callbackOrder` 实际按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；有 NDMF 时晚于 NDMF Optimize `-1025`），而文档所述为固定 `-1026`；本次改为文档所述的固定值（见下方最终方案）
 - 修正存在 NDMF 时"混淆所有 Playable Layer"功能实际未生效的问题：`Obfuscator` 内部另一份基于反射的 NDMF 检测从未被赋值，导致 `requireGeneratedPath` 恒为 `true`，NDMF 克隆出的控制器（不在 Generated 目录下）被直接跳过重命名
-- 移除运行期反射检测 NDMF 的动态 `callbackOrder`：VRCSDK 回调固定为 `-1023`（仅用于无 NDMF 场景）；存在 NDMF 时改为通过 NDMF 官方 Plugin API 注册到 NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后），不再依赖 VRCSDK 对同 `callbackOrder` 钩子相对顺序的不确定行为
+- 移除运行期反射检测 NDMF 的动态 `callbackOrder`：VRCSDK 回调固定为 `-1024`（仅用于无 NDMF 场景，与 VRCFury 自身的 `RemoveEditorOnlyObjectsHook` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果）；存在 NDMF 时改为通过 NDMF 官方 Plugin API 注册到 NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后），不再依赖 VRCSDK 的 `callbackOrder` 数轴
 - 同步更新 README 与技术文档中的构建管线执行顺序说明
 
 ## [0.7.1] - 2026-07-05

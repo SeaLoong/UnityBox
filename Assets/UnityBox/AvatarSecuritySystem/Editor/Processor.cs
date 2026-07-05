@@ -11,19 +11,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     public class Processor : IVRCSDKPreprocessAvatarCallback
     {
         /// <summary>
-        /// 固定在 -1023：晚于 NDMF Optimize（-1025）和 VRCFury 自身的
-        /// VrcfRemoveEditorOnlyObjectsHook（-1024），避免与 -1024 相同导致的顺序不确定。
+        /// 固定在 -1024：与 VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook 相同的 callbackOrder
+        /// 不会造成问题（两者处理的内容互不影响，谁先谁后结果一致）。
         /// 无需按 NDMF 是否存在动态切换：是否存在 NDMF 在编译期已由 NDMF_AVAILABLE 决定——
         /// 存在 NDMF 时，实际处理改由 Editor/NDMF 子程序集中的 NDMFPlugin 在 NDMF
-        /// BuildPhase.Optimizing（NDMF 概念中的最后一个阶段）内完成，此回调直接跳过；
+        /// BuildPhase.PlatformFinish（NDMF 概念中真正的最后一个阶段）内完成，此回调直接跳过；
         /// 不存在 NDMF 时才由本回调处理。
         /// </summary>
-        public int callbackOrder => -1023;
+        public int callbackOrder => -1024;
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
 #if NDMF_AVAILABLE
-            // 存在 NDMF 时，处理已经在 NDMF BuildPhase.Optimizing 阶段由 NDMFPlugin 完成，
+            // 存在 NDMF 时，处理已经在 NDMF BuildPhase.PlatformFinish 阶段由 NDMFPlugin 完成，
             // 此处跳过，避免重复处理及依赖不确定的 VRCSDK callbackOrder 相对顺序。
             return true;
 #else
@@ -41,7 +41,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         /// <summary>
         /// 核心处理逻辑。由 <see cref="OnPreprocessAvatar"/>（无 NDMF 场景）
-        /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.Optimizing）调用。
+        /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.PlatformFinish）调用。
         /// </summary>
         public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF)
         {
@@ -83,9 +83,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
 
             // hasNDMF 由调用方决定执行路径：
-            //   NDMF 模式：由 NDMFPlugin 在 BuildPhase.Optimizing 内调用，
+            //   NDMF 模式：由 NDMFPlugin 在 BuildPhase.PlatformFinish 内调用，
             //     操作的是 NDMF 已克隆的虚拟控制器，无需再复制一份
-            //   独立模式：由 VRCSDK 回调（callbackOrder=-1023）调用，
+            //   独立模式：由 VRCSDK 回调（callbackOrder=-1024）调用，
             //     ASS 自己复制所有控制器到 Generated
             if (!hasNDMF)
             {
