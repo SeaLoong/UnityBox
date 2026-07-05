@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- 修正 `callbackOrder` 说明：文档此前仍描述固定 `-1026`，实际实现已改为按是否存在 NDMF 动态选择（无 NDMF 为 `-1026`；存在 NDMF 时为 `-1024`，在 NDMF Optimize `-1025` 之后执行），同步更新 README 与技术文档中的构建管线执行顺序说明
+
 ## [0.7.1] - 2026-07-05
 
 ### Changed

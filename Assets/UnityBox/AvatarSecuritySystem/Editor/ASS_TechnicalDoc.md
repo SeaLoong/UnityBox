@@ -17,7 +17,11 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 ### 1.2 设计原则
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
-2. **NDMF/VRCFury 兼容**：`callbackOrder = -1026`，在 NDMF Preprocess (-11000) 和 VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行。VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 在 ASS 之后运行，确保参数被正确处理。当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
+2. **NDMF/VRCFury 兼容**：`callbackOrder` 根据运行环境动态决定（`Processor.callbackOrder`，通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在）：
+   - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`callbackOrder = -1026`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行
+   - **存在 NDMF**：`callbackOrder = -1024`，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000) 以及 **NDMF Optimize (-1025)** 全部完成之后才执行，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的最终 FX Controller 已经稳定，ASS 无需再复制/追踪控制器副本即可直接处理最终版本
+   - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 都在 ASS 之后运行，确保 ASS 新增参数被正确识别和压缩
+   - 当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
 3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；轻量模式遵循“已有则继承、没有则不主动新增”的原则，对 Light / 粒子碰撞 / 粒子拖尾都采用同样策略，以尽量贴近绿模
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
 
@@ -121,7 +125,9 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
 ### 3.1 构建时序 (`Processor`)
 
 ```
-OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
+OnPreprocessAvatar(avatarGameObject)
+  [callbackOrder = -1024（存在 NDMF 时，在 NDMF Optimize -1025 之后）
+                 = -1026（无 NDMF 时，VRCFury 主处理 -10000 之后）]
 │
 ├─ 1. 获取 VRCAvatarDescriptor
 │     获取 ASSComponent 配置
@@ -136,15 +142,24 @@ OnPreprocessAvatar(avatarGameObject)  [callbackOrder = -1026]
 │
 └─ 4. ProcessAvatar() 主流程
       │
+      ├─ [无 NDMF 时] Obfuscator.PreparePlayableControllerCopies(descriptor)
+      │   复制所有 Playable 层控制器到 Generated 目录，避免修改原始资产
+      │   （NDMF 存在时跳过：NDMF Optimize 已生成最终控制器副本，无需 ASS 再复制）
+      │
       ├─ GetFXController(descriptor)
       │   获取或创建 FX AnimatorController
+      │   （NDMF 存在时，此处获取到的已是 NDMF/MA/VRCFury 处理后的最终 FX Controller）
       │
-      ├─ AddParameterIfNotExists(IsLocal)
-      │   注册 VRChat 内置参数
+      ├─ [无 NDMF 时] Obfuscator.RegisterGeneratedAsset(fxController)
+      │   跟踪需要一并保存的生成资产
       │
-      ├─ 检测 IsLocal 参数类型
-      │   如果 VRCFury 将 IsLocal 升级为 Float，输出警告日志
-      │   后续 AddIsLocalCondition() 会自动适配对应类型
+      ├─ CleanupASSGeneratedLayers(fxController)
+      │   移除上一次构建残留的 ASS 层，避免重复叠加（重复构建/回退调试场景）
+      │
+      ├─ EnsureBuiltInVRCParameters(ensureIsLocal, ensureGestureParameters)
+      │   注册 VRChat 内置参数 (IsLocal / GestureLeft / GestureRight)
+      │   若 VRCFury 已将 IsLocal 升级为 Float，此处保留其类型
+      │   后续 AddIsLocalCondition() 会根据实际类型自动适配条件模式
       │
       ├─ [可选] LoadAudioResources()
       │   从 Resources/ 加载音频
@@ -862,23 +877,28 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 
 ### 10.4 构建流程兼容性
 
-- `callbackOrder = -1026` 确保 ASS 在 NDMF Preprocess (-11000)/VRCFury 主处理 (-10000) 之后、NDMF Optimize (-1025) 之前执行
-- VRCFury 参数压缩 (ParameterCompressorHook) 在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
+`Processor.callbackOrder` 通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在，动态选择执行时机：
+
+- **无 NDMF**：`callbackOrder = -1026`，在 VRCFury 主处理 (-10000) 之后、VRCFury `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` (-1024) 之前执行。此时 ASS 自行复制 Playable 层控制器到 Generated 目录（`Obfuscator.PreparePlayableControllerCopies`），不修改原始资产
+- **存在 NDMF**：`callbackOrder = -1024`，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000)、**NDMF Optimize (-1025)** 全部完成之后才执行。此时 Modular Avatar / VRCFury / 其他 NDMF pass 已经生成最终 FX Controller，ASS 直接在该最终控制器上追加层，无需再复制/追踪副本
+- 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook) 都在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中
 
-### 10.6 VRCFury IsLocal 参数类型兼容
+### 10.5 VRCFury IsLocal 参数类型兼容
 
 VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/Haptic Socket、Toggle 带 Local State、ActionClip 带 localOnly/remoteOnly），其 `UpgradeWrongParamTypes` 服务会将 `IsLocal` 从 `Bool` 升级为 `Float`。
 
-**问题链**：
+**问题链**（旧版 ASS 固定在 `-1026` 执行、且在无 NDMF 场景下仍然成立）：
 
 1. VRCFury 主构建 (-10000): clone FX 控制器，IsLocal 升级为 Float
 2. ASS (-1026): `AddParameterIfNotExists("IsLocal", Bool)` 发现已存在 → 跳过；但仍用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加条件
-3. Avatar Optimizer/NDMF (-1025): 深克隆 FX 控制器，新对象不再被 VRCFury 识别
+3. VRCFury RemoveEditorOnlyObjects (-1024): 清理 EditorOnly 对象
 4. VRCFury ParameterCompressor (int.MaxValue-100): `ClearCache()` → `MakeController()` → `CopyAndLoadController()` → `RemoveWrongParamTypes()`
 5. `RemoveWrongParamTypes`: IsLocal 是 Float，但条件为 `If`（对 Float 无效）→ **替换为 `InvalidCondition`（始终 false）**
 6. 结果: ASS 的 Lock/Password/Countdown/Defense 所有 IsLocal 条件失效，安全系统完全不工作
+
+> 存在 NDMF 时（ASS 现为 `-1024`，在 NDMF Optimize `-1025` 之后执行），ASS 处理的已是 NDMF/MA/VRCFury 全部 pass 完成后的最终控制器，不存在「先加条件、后被深克隆丢弃」的问题，但 IsLocal 仍可能已被 VRCFury 升级为 Float，因此下述兼容方案在两种场景下都必须保留。
 
 **修复方案**：
 
@@ -898,18 +918,18 @@ VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/H
 - `GesturePassword.cs`: Wait → Holding 入口转换
 - `Countdown.cs`: Remote → Countdown 转换、Remote → Waiting 转换
 
-### 10.5 防御系统安全实践
+### 10.6 防御系统安全实践
 
 - **静态 Mesh 缓存**: 使用 Unity 的 `==` 运算符检测已销毁对象（而非 `??=` 的 C# null 语义），防止使用已销毁的 Mesh 导致原生崩溃
 - **材质赋值**: 使用 `sharedMaterial` 而非 `material`，避免创建不必要的材质副本
 - **对象清理**: 使用 `Object.DestroyImmediate`（而非 `Object.Destroy`），确保在编辑器同步回调中立即销毁对象
 
-### 10.6 代码规范
+### 10.7 代码规范
 
 - Defense.cs 不包含任何注释（代码足够自文档化，注释在技术文档中维护）
 - 粒子高开销特性策略：普通模式下主动启用 Light / Collision / Trails；轻量模式则遵循“已有则继承、没有则不新增”——已有外部 Light 可复用，已有粒子 Collision / Trails 也会被 ASS 生成粒子跟随启用
 
-### 10.7 Overlay Shader 全屏覆盖深度修复
+### 10.8 Overlay Shader 全屏覆盖深度修复
 
 Overlay Shader 在顶点着色器中于相机前方 `d=100` 单位处构建视图空间坐标再投影到裁剪空间。当某些 VRChat 地图的相机远裁剪面 < 100 时，几何体超出裁剪空间有效深度范围，被 GPU 硬件裁剪（发生在光栅化之前，`ZTest Always` 无法阻止）。但 VRChat 表情镜使用独立相机且远裁剪面通常更大，因此 UI 在镜中能正常显示而主视角不显示。
 

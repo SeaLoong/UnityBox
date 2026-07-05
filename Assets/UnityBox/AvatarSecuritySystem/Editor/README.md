@@ -169,7 +169,7 @@ Avatar 启动
 ```
 ASSComponent (MonoBehaviour)
     ↓ 配置参数
-Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder=-1026)
+Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder 动态决定)
     ↓ VRChat Build & Publish 时自动执行
 生成 5 个 Animator Layer 到 FX Controller（混淆启用时层名变为 `_{描述词}_{4位hex}`）:
     ├─ 锁定层         (Lock/Concealed/Unlocked)
@@ -181,18 +181,33 @@ Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder=-1026)
 AnimationClips + GameObject Hierarchy + VRC Components
 ```
 
+**`callbackOrder` 动态决定：**
+
+`Processor` 通过反射检测 `nadena.dev.ndmf.BuildContext` 类型是否存在，从而判断当前项目是否安装了 NDMF：
+
+- **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`callbackOrder = -1026`
+- **存在 NDMF**：`callbackOrder = -1024`（在 NDMF Optimize `-1025` 之后执行）
+
 **构建管线执行顺序：**
 
 ```
--11000 : NDMF PreprocessHook
--10000 : VRCFury VrcPreuploadHook
+无 NDMF 时：
+-10000 : VRCFury VrcPreuploadHook（若安装了 VRCFury）
  -1026 : ★ ASS（本插件）
- -1025 : NDMF OptimizeHook
  -1024 : VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
+   MAX : VRCFury ParameterCompressorHook / Cleanup
+
+存在 NDMF 时：
+-11000 : NDMF PreprocessHook
+-10000 : VRCFury VrcPreuploadHook（若同时安装了 VRCFury）
+ -1025 : NDMF OptimizeHook（Modular Avatar / Avatar Optimizer 等 NDMF pass 均在此阶段完成）
+ -1024 : ★ ASS（本插件）/ VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
    MAX : VRCFury ParameterCompressorHook / Cleanup
 ```
 
-ASS 在 NDMF/VRCFury 主处理完成后注入，VRCFury 参数压缩在远后执行，因此 ASS 参数会被正确识别。
+无 NDMF 时，ASS 在 VRCFury 主处理完成后、`RemoveEditorOnlyObjects` 之前注入，并自行复制 Playable 层控制器，避免修改原始资产。
+存在 NDMF 时，ASS 改为在 **NDMF Optimize 之后** 才注入，确保 Modular Avatar / VRCFury / 其他 NDMF pass 生成的 FX Controller 已是最终版本，ASS 直接在其上追加层，无需再复制/追踪控制器副本。
+两种场景下，VRCFury 参数压缩都在远后执行，因此 ASS 参数会被正确识别。
 
 ### 文件结构
 
@@ -616,6 +631,15 @@ ASS_Defense Layer
 #### Q: 有 VRCFury 时 ASS 不生效
 
 **已在 v0.3.1 修复。** 此问题由 VRCFury 的参数类型升级机制引起：当 Avatar 使用了 VRCFury 的 SPS（Haptic Socket）、Toggle（带 Local State）或 ActionClip（带 localOnly/remoteOnly）等功能时，VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数，其 `UpgradeWrongParamTypes` 会将 `IsLocal` 从 Bool 升级为 Float。旧版 ASS 使用 `AnimatorConditionMode.If`（仅对 Bool 有效）添加 `IsLocal` 条件，在 Float 类型下会被 VRCFury 的 `RemoveWrongParamTypes` 替换为始终为 false 的无效条件，导致 ASS 的锁定/密码/倒计时/防御全部失效。新版已自动适配所有参数类型。
+
+#### Q: 有 NDMF（Modular Avatar / Avatar Optimizer 等）时 ASS 何时注入？
+
+ASS 会通过反射检测项目中是否存在 `nadena.dev.ndmf.BuildContext` 类型，从而自动判断是否安装了 NDMF：
+
+- **未安装 NDMF**：ASS 使用固定的 `callbackOrder = -1026`，在 VRCFury 主处理之后立即注入，并自行复制 Playable 层控制器到 Generated 目录。
+- **安装了 NDMF**：ASS 改用 `callbackOrder = -1024`，等待 **NDMF Optimize（-1025）** 阶段完成之后再注入，也就是 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后，ASS 才在该最终控制器上追加安全层。这样可以避免 ASS 生成的层被后续的优化/深克隆步骤丢弃或错位。
+
+无论哪种模式，VRCFury 的参数压缩（ParameterCompressorHook）都在极后（`int.MaxValue - 100`）执行，ASS 新增的参数始终会被正确识别和压缩。
 
 ---
 
