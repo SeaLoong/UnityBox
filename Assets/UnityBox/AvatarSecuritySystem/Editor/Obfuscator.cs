@@ -442,8 +442,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (layers == null) return;
 
-            // 注意：此函数仅在非 NDMF 模式下被调用（NDMF 模式下不需要复制）
-            // 非 NDMF 模式下 ASS 完全掌控管道，复制所有非默认控制器后自由操作
             for (int i = 0; i < layers.Length; i++)
             {
                 var layer = layers[i];

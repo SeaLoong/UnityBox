@@ -23,8 +23,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
 #if NDMF_AVAILABLE
-            // 存在 NDMF 时，处理已经在 NDMF BuildPhase.PlatformFinish 阶段由 NDMFPlugin 完成，
-            // 此处跳过，避免重复处理及依赖不确定的 VRCSDK callbackOrder 相对顺序。
+            // 存在 NDMF 时，统一由 NDMFPlugin 在 NDMF 构建管线中处理，
+            // VRCSDK callback 路径直接跳过，避免重复执行。
             return true;
 #else
             Debug.Log($"[ASS] OnPreprocessAvatar called (callbackOrder={callbackOrder})");
@@ -153,8 +153,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var instructionalClips = GenerateInstructionalClips(fxController);
                 GenerateDecoyLayer(fxController, instructionalClips);
                 InjectFakeStatesIntoRealLayers(fxController, instructionalClips);
-                if (assConfig.enablePlayableLayerObfuscation)
-                    Obfuscator.ObfuscatePlayableControllers(descriptor, hasNDMF);
             }
             RegisterASSParameters(descriptor, assConfig);
             Utils.SaveAndRefresh();
@@ -182,6 +180,54 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.LogWarning($"[ASS] Exception while cleaning transient generated assets at {stage}: {ex.Message}");
             }
+        }
+
+        private static bool ShouldProcessAvatar(ASSComponent assConfig)
+        {
+            if (assConfig == null)
+                return false;
+
+            if (!assConfig.defaultEnableDefense)
+            {
+                if (!assConfig.IsPasswordValid())
+                {
+                    Debug.LogWarning("[ASS] Password configuration is invalid");
+                    return false;
+                }
+                if (assConfig.gesturePassword == null || assConfig.gesturePassword.Count == 0)
+                {
+                    Debug.Log("[ASS] Password is empty (0 digits), ASS is disabled. Skipping generation.");
+                    return false;
+                }
+            }
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.enabledInPlaymode)
+            {
+                Debug.Log("[ASS] Play mode disabled, skipping");
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool ProcessPlayableObfuscation(GameObject avatarGameObject, bool hasNDMF)
+        {
+            var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
+            if (descriptor == null)
+                return true;
+
+            var assConfig = avatarGameObject.GetComponent<ASSComponent>();
+            if (assConfig == null)
+                return true;
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.enabledInPlaymode)
+                return true;
+
+            if (!Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation)
+                return true;
+
+            Obfuscator.ObfuscatePlayableControllers(descriptor, hasNDMF);
+            return true;
         }
 
         private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)

@@ -886,7 +886,7 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，仅安装了 NDMF 包时才参与编译），而非运行期反射：
 
 - **无 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1024`，在 VRCFury 主处理 (-10000) 之后执行（与 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果）。此时 ASS 自行复制 Playable 层控制器到 Generated 目录（`Obfuscator.PreparePlayableControllerCopies`），不修改原始资产
-- **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）**，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000) 之后，且 Modular Avatar / VRCFury / 其他 NDMF pass 已经生成最终 FX Controller 之后（仍在 NDMF 虚拟/克隆状态、`context.Finish()` 写回真实资产之前）执行。ASS 直接在该最终控制器上追加层，无需再复制/追踪副本
+- **存在 NDMF**：`Processor.OnPreprocessAvatar` 统一跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）** 执行。playable controller 的混淆单独放到 `callbackOrder = int.MaxValue` 的最终阶段。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式声明 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
 - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook) 都在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中

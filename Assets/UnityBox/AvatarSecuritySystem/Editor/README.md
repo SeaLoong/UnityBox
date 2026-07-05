@@ -212,7 +212,7 @@ AnimationClips + GameObject Hierarchy + VRC Components
 ```
 
 无 NDMF 时，ASS 以固定 `callbackOrder = -1024` 注入（晚于 VRCFury 主处理 `-10000`，与其 `RemoveEditorOnlyObjects` 相同 `callbackOrder`，但两者互不影响），并自行复制 Playable 层控制器，避免修改原始资产。
-存在 NDMF 时，ASS 改为在 **NDMF 自身的 BuildPhase.PlatformFinish 阶段**（在 `Optimizing` 之后，仍在虚拟/克隆状态、`context.Finish()` 提交之前）处理，直接在 NDMF 已克隆的控制器上原地追加层，无需再复制/追踪控制器副本。
+存在 NDMF 时，ASS 统一在 **NDMF 自身的 BuildPhase.PlatformFinish 阶段**（在 `Optimizing` 之后，仍在虚拟/克隆状态、`context.Finish()` 提交之前）生成 ASS 功能层；playable controller 的混淆单独延后到 `callbackOrder = int.MaxValue` 的最后一步。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式设置为 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
 两种场景下，VRCFury 参数压缩都在远后执行，因此 ASS 参数会被正确识别。
 
 

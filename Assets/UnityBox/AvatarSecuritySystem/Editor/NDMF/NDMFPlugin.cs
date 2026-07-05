@@ -18,7 +18,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         protected override void Configure()
         {
-            InPhase(BuildPhase.PlatformFinish).Run("Generate Avatar Security System", ctx =>
+            InPhase(BuildPhase.PlatformFinish)
+                .AfterPlugin("jp.lilxyzw.lilycalinventory")
+                .Run("Generate Avatar Security System", ctx =>
             {
                 if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true))
                 {

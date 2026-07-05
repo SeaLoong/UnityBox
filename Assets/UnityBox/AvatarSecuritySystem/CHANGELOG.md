@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.7.12] - 2026-07-06
+
+### Changed
+
+- 调整 NDMF 构建路径职责：
+  - `NDMFPlugin` 仅负责 ASS 主功能层生成（`ProcessAvatar`）
+  - Playable 混淆改为独立后置流程执行，避免与下游处理链交叉覆盖
+- 新增独立的 `PlayableObfuscationProcessor`，并将混淆回调顺序设置为 `int.MaxValue - 1`，使其稳定处于上传前的尾部阶段
+- 统一 NDMF 场景的执行策略，并保留 `AfterPlugin("jp.lilxyzw.lilycalinventory")` 兼容约束
+
+### Fixed
+
+- 修复 NDMF/VRCF 组合场景下，Playable 混淆可能早执行后又被覆盖，导致 FX 等层看似“混淆失效”的问题
+- 修复混淆流程误复用 `ShouldProcessAvatar` 造成的错误短路：即使密码/手势逻辑不生成，也能按开关正确执行 Playable 混淆
+
 ## [0.7.11] - 2026-07-05
 
 ### Changed
