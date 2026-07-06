@@ -186,7 +186,7 @@ AnimationClips + GameObject Hierarchy + VRC Components
 
 `Editor/NDMF` 子程序集通过 `defineConstraints: ["NDMF_AVAILABLE"]` 声明，仅当项目安装了 NDMF 包（`versionDefines` 检测到 `nadena.dev.ndmf`）时才会被编译，无需在运行期用反射判断：
 
-- **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor` 作为 `IVRCSDKPreprocessAvatarCallback` 以固定的 `callbackOrder = -1024` 执行全部处理逻辑（与 VRCFury 自身的 `VrcfRemoveEditorOnlyObjectsHook` 相同，但两者处理内容互不影响，相对顺序不影响结果）
+- **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor` 作为 `IVRCSDKPreprocessAvatarCallback` 以固定的 `callbackOrder = -1024` 执行 ASS 主功能层生成（与 VRCFury 自身的 `VrcfRemoveEditorOnlyObjectsHook` 相同，但两者处理内容互不影响，相对顺序不影响结果）；Playable 混淆由独立的 `PlayableObfuscationProcessor` 在尾部阶段执行
 - **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过（返回 `true` 不做任何处理），改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API（`InPhase(BuildPhase.PlatformFinish).Run(...)`）注册到 NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）执行，在 Modular Avatar / VRCFury 等所有 NDMF pass 完成之后、NDMF 把结果写回真实资产（`context.Finish()`）之前处理头像，直接在 NDMF 仍处于虚拟/克隆状态的控制器上原地追加层，无需再复制/追踪副本。
 
 **构建管线执行顺序：**
@@ -196,7 +196,9 @@ AnimationClips + GameObject Hierarchy + VRC Components
 -10000 : VRCFury VrcPreuploadHook（若安装了 VRCFury）
  -1024 : ★ ASS（本插件，Processor.OnPreprocessAvatar） / VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
           （与 VRCFury 相同 callbackOrder，相对顺序不确定，但两者处理内容互不影响，不会产生冲突）
-   MAX : VRCFury ParameterCompressorHook / Cleanup
+int.MaxValue-100 : VRCFury ParameterCompressorHook
+ int.MaxValue-1 : ★ ASS PlayableObfuscationProcessor（仅 Playable 混淆）
+       MAX   : VRCFury Cleanup
 
 存在 NDMF 时（ASS 不再使用 VRCSDK callbackOrder，而是注册进 NDMF 自身的 Pass 队列）：
 -11000 : NDMF PreprocessHook
@@ -208,12 +210,14 @@ AnimationClips + GameObject Hierarchy + VRC Components
           └─   ★ ASS（本插件，NDMFPlugin，在该阶段执行）
         context.Finish() 把结果写回真实资产
  -1024 : VRCFury RemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
-   MAX : VRCFury ParameterCompressorHook / Cleanup
+int.MaxValue-100 : VRCFury ParameterCompressorHook
+ int.MaxValue-1 : ★ ASS PlayableObfuscationProcessor（仅 Playable 混淆）
+                    MAX   : VRCFury Cleanup
 ```
 
 无 NDMF 时，ASS 以固定 `callbackOrder = -1024` 注入（晚于 VRCFury 主处理 `-10000`，与其 `RemoveEditorOnlyObjects` 相同 `callbackOrder`，但两者互不影响），并自行复制 Playable 层控制器，避免修改原始资产。
-存在 NDMF 时，ASS 统一在 **NDMF 自身的 BuildPhase.PlatformFinish 阶段**（在 `Optimizing` 之后，仍在虚拟/克隆状态、`context.Finish()` 提交之前）生成 ASS 功能层；playable controller 的混淆单独延后到 `callbackOrder = int.MaxValue` 的最后一步。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式设置为 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
-两种场景下，VRCFury 参数压缩都在远后执行，因此 ASS 参数会被正确识别。
+存在 NDMF 时，ASS 统一在 **NDMF 自身的 BuildPhase.PlatformFinish 阶段**（在 `Optimizing` 之后，仍在虚拟/克隆状态、`context.Finish()` 提交之前）生成 ASS 功能层；playable controller 的混淆单独延后到 `callbackOrder = int.MaxValue - 1` 的尾部步骤。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式设置为 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
+两种场景下，VRCFury 参数压缩（`int.MaxValue - 100`）都晚于 ASS 主功能层生成，因此 ASS 参数会被正确识别；Playable 混淆则进一步后置到参数压缩之后执行。
 
 
 ### 文件结构
@@ -228,6 +232,7 @@ Assets/UnityBox/AvatarSecuritySystem/
 ├─ Editor/
 │   ├─ Inspector.cs                                         # 自定义 Inspector UI
 │   ├─ Processor.cs                                      # VRCSDK 构建处理器（入口点，无 NDMF 时使用）
+│   ├─ PlayableObfuscationProcessor.cs                  # Playable 混淆后置处理器（callbackOrder = int.MaxValue - 1）
 │   ├─ Utils.cs                                          # Animator 工具方法
 │   ├─ Lock.cs                                           # 锁定系统生成器
 │   ├─ GesturePassword.cs                                # 手势密码状态机生成器
@@ -646,10 +651,10 @@ ASS_Defense Layer
 
 ASS 是否使用 NDMF 由编译期常量决定，而不是运行期反射：`Editor/NDMF` 子程序集声明了 `defineConstraints: ["NDMF_AVAILABLE"]`，只有当项目安装了 NDMF 包时才会参与编译。
 
-- **未安装 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor` 使用固定的 `callbackOrder = -1024`，在 VRCFury 主处理（`-10000`）之后注入（与 VRCFury 自身的 `RemoveEditorOnlyObjects` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果），并自行复制 Playable 层控制器到 Generated 目录。
+- **未安装 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor` 使用固定的 `callbackOrder = -1024`，在 VRCFury 主处理（`-10000`）之后注入（与 VRCFury 自身的 `RemoveEditorOnlyObjects` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果），并自行复制 Playable 层控制器到 Generated 目录；Playable 混淆由独立回调在尾部执行。
 - **安装了 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）**，在 Modular Avatar / Avatar Optimizer / VRCFury 等所有 NDMF pass 都已生成最终 FX Controller 之后（仍在 NDMF 的虚拟/克隆状态、`context.Finish()` 提交为真实资产之前）执行，ASS 直接在该控制器上原地追加安全层，无需再复制/追踪副本。
 
-无论哪种模式，VRCFury 的参数压缩（ParameterCompressorHook）都在极后（`int.MaxValue - 100`）执行，ASS 新增的参数始终会被正确识别和压缩。
+无论哪种模式，VRCFury 的参数压缩（ParameterCompressorHook）都在极后（`int.MaxValue - 100`）执行，ASS 新增参数会被正确识别和压缩；Playable 混淆由 `PlayableObfuscationProcessor` 在 `int.MaxValue - 1` 执行。
 
 ---
 

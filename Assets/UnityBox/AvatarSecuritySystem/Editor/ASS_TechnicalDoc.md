@@ -18,9 +18,9 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 
 1. **构建时注入**：所有安全组件在 VRCSDK 构建流程中自动生成，不修改原始资产
 2. **NDMF/VRCFury 兼容**：是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，只有安装了 NDMF 包时才参与编译），而非运行期反射：
-   - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1024`，在 VRCFury 主处理 (-10000) 之后执行（与 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjectsHook` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果）
+  - **无 NDMF**（仅 VRCFury 或纯 VRCSDK）：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1024`，在 VRCFury 主处理 (-10000) 之后执行 ASS 主功能层生成（与 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjectsHook` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果）
    - **存在 NDMF**：`Processor.OnPreprocessAvatar` 直接跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）**，在 NDMF Preprocess (-11000)、VRCFury 主处理 (-10000) 之后、且 Modular Avatar / VRCFury / 其他 NDMF pass 生成最终 FX Controller 之后（仍在 NDMF 虚拟/克隆状态、`context.Finish()` 提交为真实资产之前）执行，ASS 直接在该控制器上原地追加层，无需再复制/追踪控制器副本
-   - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 都在 ASS 之后运行，确保 ASS 新增参数被正确识别和压缩
+  - 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook, `int.MaxValue - 100`) 都晚于 ASS 主功能层生成，确保 ASS 新增参数被正确识别和压缩；Playable 混淆由独立的 `PlayableObfuscationProcessor` 在 `callbackOrder = int.MaxValue - 1` 执行
    - 当 VRCFury 将 `IsLocal` 参数从 Bool 升级为 Float 时，ASS 使用 `AddIsLocalCondition()` 自动适配参数类型
 3. **VRChat 限制遵守**：对 ParticleSystem / Light 等组件自动检测已有预算；轻量模式遵循“已有则继承、没有则不主动新增”的原则，对 Light / 粒子碰撞 / 粒子拖尾都采用同样策略，以尽量贴近绿模
 4. **无侵入式**：使用 `IEditorOnly` 组件，不影响运行时
@@ -34,6 +34,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 ```
 Editor/
 ├── Processor.cs              # 系统入口（VRCSDK 构建回调 IVRCSDKPreprocessAvatarCallback）
+├── PlayableObfuscationProcessor.cs # Playable 混淆后置回调（callbackOrder = int.MaxValue - 1）
 ├── Lock.cs                   # 锁定/解锁层生成器
 ├── GesturePassword.cs        # 手势密码验证层生成器
 ├── Countdown.cs              # 倒计时 + 音频警告层生成器
@@ -122,18 +123,22 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
 
 ## 3. 执行流程
 
-### 3.1 构建时序 (`Processor` / `NDMFPlugin`)
+### 3.1 构建时序 (`Processor` / `NDMFPlugin` / `PlayableObfuscationProcessor`)
 
 ```
 无 NDMF 时：
   Processor.OnPreprocessAvatar(avatarGameObject)
     [callbackOrder = -1024，固定值，晚于 VRCFury 主处理 -10000；与 VRCFury RemoveEditorOnlyObjects 相同 callbackOrder，但互不影响]
+  PlayableObfuscationProcessor.OnPreprocessAvatar(avatarGameObject)
+    [callbackOrder = int.MaxValue - 1，位于 VRCFury ParameterCompressor(int.MaxValue - 100) 之后]
 
 存在 NDMF 时（Editor/NDMF 子程序集编译期启用，NDMFPlugin.Configure 注册）：
   Processor.OnPreprocessAvatar(avatarGameObject) → 直接跳过（返回 true）
   NDMFPlugin: InPhase(BuildPhase.PlatformFinish).Run(ctx => Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true))
     [BuildPhase.PlatformFinish 是 NDMF 概念中真正的最后一个阶段（在 Optimizing 之后），在其它 NDMF pass 完成之后、
      NDMF 把结果通过 context.Finish() 写回真实资产之前执行；完全不经过 VRCSDK callbackOrder]
+  PlayableObfuscationProcessor.OnPreprocessAvatar(avatarGameObject)
+    [callbackOrder = int.MaxValue - 1，位于 VRCFury ParameterCompressor(int.MaxValue - 100) 之后]
 │
 ├─ 1. 获取 VRCAvatarDescriptor
 │     获取 ASSComponent 配置
@@ -886,8 +891,8 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，仅安装了 NDMF 包时才参与编译），而非运行期反射：
 
 - **无 NDMF**：`Editor/NDMF` 子程序集不参与编译，`Processor`（`IVRCSDKPreprocessAvatarCallback`）固定 `callbackOrder = -1024`，在 VRCFury 主处理 (-10000) 之后执行（与 VRCFury 自身固定在 `-1024` 的 `RemoveEditorOnlyObjects`/VRCSDK `RemoveAvatarEditorOnly` 相同 `callbackOrder`，但两者处理内容互不影响，相对顺序不影响结果）。此时 ASS 自行复制 Playable 层控制器到 Generated 目录（`Obfuscator.PreparePlayableControllerCopies`），不修改原始资产
-- **存在 NDMF**：`Processor.OnPreprocessAvatar` 统一跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）** 执行。playable controller 的混淆单独放到 `callbackOrder = int.MaxValue` 的最终阶段。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式声明 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
-- 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook) 都在 `int.MaxValue - 100` 执行，远在 ASS 之后，ASS 新增的参数会被正确识别和压缩
+- **存在 NDMF**：`Processor.OnPreprocessAvatar` 统一跳过，改由 `NDMFPlugin` 通过 NDMF 官方 Plugin API 注册到 **NDMF 概念中真正的最后一个 BuildPhase（`PlatformFinish`，在 `Optimizing` 之后）** 执行。playable controller 的混淆单独放到 `PlayableObfuscationProcessor`（`callbackOrder = int.MaxValue - 1`）的尾部阶段。为兼容 lilycalinventory 的菜单/参数生成流程，ASS 在 NDMF 中显式声明 `AfterPlugin("jp.lilxyzw.lilycalinventory")`。
+- 两种情况下，VRCFury 参数压缩 (ParameterCompressorHook) 都在 `int.MaxValue - 100` 执行，晚于 ASS 主功能层生成；Playable 混淆继续后置到 `int.MaxValue - 1`
 - ASS 获取现有 FX Controller 并追加层，不会覆盖已有内容
 - 使用 `IEditorOnly` 接口，Runtime 组件不会出现在构建产物中
 
