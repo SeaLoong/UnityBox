@@ -1024,7 +1024,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = PseudoInt(ref rng, 0, 1) == 0;
                 fakeStates.Add(fakeState);
             }
 

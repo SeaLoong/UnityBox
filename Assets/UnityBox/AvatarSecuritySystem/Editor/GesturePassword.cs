@@ -196,7 +196,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var decoyState = layer.stateMachine.AddState(decoyName,
                         new Vector3(-200 + d * 30, 200 + d * 80, 0));
                     decoyState.motion = emptyClip;
-                    decoyState.writeDefaultValues = true;
+                    decoyState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
                     decoyHolds.Add(decoyState);
                     var usedGestures = new HashSet<int>(password);
                     var unusedGestures = new List<int>();

@@ -585,7 +585,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
-            defaultState.writeDefaultValues = true;
+            defaultState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
             sm.defaultState = defaultState;
 
             var fakeStates = new List<AnimatorState>();
@@ -614,7 +614,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
                 fakeStates.Add(fakeState);
             }
 

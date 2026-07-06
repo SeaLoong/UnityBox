@@ -27,7 +27,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 AnimatorControllerParameterType.Bool, false);
 
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
-            const bool useWdOn = true;
+            bool useWdOn = ResolveWriteDefaults();
             var remoteState = layer.stateMachine.AddState(
                 Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
@@ -238,7 +238,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private bool ResolveWriteDefaults()
         {
-            Debug.Log("[ASS] WD mode is fixed to On for ASS-generated lock layer");
+            // 当前产品策略：ASS 锁定层固定使用 WD On，避免与外部切换系统（如衣柜/菜单）在 WD Off
+            // 下出现状态恢复冲突。
+            //
+            // 注意：历史 WD 自动检测与外部工具探测能力仍然保留在本类中（见 TryResolveFromExternalTools /
+            // HasWdOffState 等方法），后续若需要回退为可配置策略，可在此处恢复分支而无需重写整套逻辑。
+            Debug.Log("[ASS] WD mode is fixed to On for ASS-generated lock layer (legacy WD resolver retained)");
             return true;
         }
         private bool? TryResolveFromExternalTools()
