@@ -63,8 +63,9 @@ namespace UnityBox.AvatarSecuritySystem
             On,
             Off
         }
+        [HideInInspector]
         [Tooltip("#{advanced.wd_mode_tooltip}")]
-        public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.Auto;
+        public WriteDefaultsMode writeDefaultsMode = WriteDefaultsMode.On;
         public enum VRChatGesture
         {
             Idle = 0,
@@ -120,6 +121,7 @@ namespace UnityBox.AvatarSecuritySystem
             ValidateWarningThreshold();
             ValidateGestureTimes();
             SanitizeDefenseModes();
+            NormalizeLegacyWriteDefaultsMode();
         }
         private void InitializePasswordIfNeeded()
         {
@@ -150,6 +152,11 @@ namespace UnityBox.AvatarSecuritySystem
                     gestureMaxHoldTime = 10f;
             }
         }
+        private void NormalizeLegacyWriteDefaultsMode()
+        {
+            if (writeDefaultsMode != WriteDefaultsMode.On)
+                writeDefaultsMode = WriteDefaultsMode.On;
+        }
         private void Reset()
         {
             const float defaultCountdownDuration = 30f;
@@ -169,6 +176,7 @@ namespace UnityBox.AvatarSecuritySystem
             enableOverflow = true;
             lightweightDefense = false;
             enablePlayableLayerObfuscation = true;
+            writeDefaultsMode = WriteDefaultsMode.On;
         }
 #endif
     }

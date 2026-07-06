@@ -318,15 +318,6 @@ namespace UnityBox.AvatarSecuritySystem
             EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
                 new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
-            var wdModeProp = serializedObject.FindProperty("writeDefaultsMode");
-            var wdContent = new GUIContent(T("advanced.wd_mode"), T("advanced.wd_mode_tooltip"));
-            string[] wdModeNames = new[]
-            {
-                T("advanced.wd_mode_auto"),
-                T("advanced.wd_mode_on"),
-                T("advanced.wd_mode_off")
-            };
-            wdModeProp.enumValueIndex = EditorGUILayout.Popup(wdContent, wdModeProp.enumValueIndex, wdModeNames);
         }
     }
 }

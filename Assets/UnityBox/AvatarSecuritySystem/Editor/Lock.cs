@@ -27,7 +27,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 AnimatorControllerParameterType.Bool, false);
 
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
-            bool useWdOn = ResolveWriteDefaults();
+            const bool useWdOn = true;
             var remoteState = layer.stateMachine.AddState(
                 Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
@@ -238,46 +238,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private bool ResolveWriteDefaults()
         {
-            if (config.writeDefaultsMode == ASSComponent.WriteDefaultsMode.On)
-                return true;
-            if (config.writeDefaultsMode == ASSComponent.WriteDefaultsMode.Off)
-                return false;
-            var externalWd = TryResolveFromExternalTools();
-            if (externalWd.HasValue)
-                return externalWd.Value;
-            var controllers = new HashSet<AnimatorController>();
-            if (descriptor != null)
-            {
-                foreach (var animLayer in descriptor.baseAnimationLayers
-                    .Concat(descriptor.specialAnimationLayers))
-                {
-                    if (animLayer.isDefault) continue;
-                    if (!(animLayer.animatorController is AnimatorController ac) || ac == null) continue;
-                    if (ac.name.StartsWith("vrc_")) continue;
-                    controllers.Add(ac);
-                }
-            }
-            controllers.Add(controller);
-            bool hasWdOff = false;
-            foreach (var ac in controllers)
-            {
-                foreach (var layer in ac.layers)
-                {
-                    if (IsASSManagedLayerName(layer.name)) continue;
-                    if (layer.blendingMode == AnimatorLayerBlendingMode.Additive) continue;
-                    if (layer.stateMachine == null) continue;
-                    if (IsWriteDefaultsRequiredLayer(layer)) continue;
-                    if (HasWdOffState(layer.stateMachine))
-                    {
-                        hasWdOff = true;
-                        break;
-                    }
-                }
-                if (hasWdOff) break;
-            }
-            bool useWdOn = !hasWdOff;
-            Debug.Log($"[ASS] WD Auto → {(useWdOn ? "On" : "Off")}");
-            return useWdOn;
+            Debug.Log("[ASS] WD mode is fixed to On for ASS-generated lock layer");
+            return true;
         }
         private bool? TryResolveFromExternalTools()
         {
