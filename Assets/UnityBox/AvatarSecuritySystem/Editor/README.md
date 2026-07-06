@@ -488,7 +488,7 @@ ASS_Defense Layer
 
 ---
 
-### 6. 混淆与伪装系统 (Obfuscation)
+### 6. 混淆选项 (Obfuscation Options)
 
 #### 功能
 

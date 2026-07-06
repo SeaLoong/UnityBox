@@ -491,9 +491,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.obfuscation_section"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Obfuscation" },
-                    { SystemLanguage.ChineseSimplified, "混淆" },
-                    { SystemLanguage.Japanese, "難読化" }
+                    { SystemLanguage.English, "Obfuscation Options" },
+                    { SystemLanguage.ChineseSimplified, "混淆选项" },
+                    { SystemLanguage.Japanese, "難読化オプション" }
                 },
                 ["advanced.disable_obfuscation"] = new Dictionary<SystemLanguage, string>
                 {
