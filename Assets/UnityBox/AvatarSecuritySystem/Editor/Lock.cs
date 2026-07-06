@@ -177,11 +177,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     if (IsASSObject(child)) continue;
                     string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
+                    // WD Off 兼容：避免对 m_IsActive 施加动画，防止覆盖服装/道具系统（如 lilycalinventory）
+                    // 在运行时计算出的对象开关结果。
+                    if (useWdOn)
+                        clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
                     SetTransformScaleInClip(clip, childPath, zeroScale);
                     hiddenCount++;
                 }
-                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (IsActive=0 + Scale=0)");
+                if (useWdOn)
+                    Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (IsActive=0 + Scale=0)");
+                else
+                    Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (Scale=0 only, WD Off compatibility mode)");
             }
             return clip;
         }
@@ -219,19 +225,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private void WriteRestoreValues(AnimationClip clip)
         {
-            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
-            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             int restoredCount = 0;
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                clip.SetCurve(childPath, typeof(GameObject), "m_IsActive",
-                    child.gameObject.activeSelf ? enableCurve : disableCurve);
+                // WD Off 兼容：不恢复 m_IsActive，避免把外部系统在初始状态禁用的对象重新强制启用/禁用。
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (IsActive + Scale)");
+            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (Scale only)");
         }
         private bool ResolveWriteDefaults()
         {
