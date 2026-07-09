@@ -24,6 +24,7 @@ namespace UnityBox.PrefabDiffPatcher
         private readonly Dictionary<string, bool> _selectionByPath = new(StringComparer.Ordinal);
         private readonly Dictionary<string, bool> _componentSelectionById = new(StringComparer.Ordinal);
         private readonly Dictionary<string, bool> _foldoutByPath = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, TreeSelectionAggregate> _selectionAggregateByPath = new(StringComparer.Ordinal);
 
         [MenuItem("Tools/UnityBox/Prefab Diff Patcher")]
         public static void ShowWindow()
@@ -146,6 +147,7 @@ namespace UnityBox.PrefabDiffPatcher
                 "- 选择组件：仅表示该组件差异按 B 优先应用\n" +
                 "- 分析完成后默认全选所有变化\n" +
                 "- 勾选父对象时会默认联动勾选子对象和组件，之后仍可手动取消局部选择\n" +
+                "- 父节点支持三态勾选：全选 / 半选 / 未选\n" +
                 "- 未选择的子对象/组件会尽量保持 A 的内容不变\n" +
                 "- 若某节点只存在于 B，则只有它自身或其后代被选中时，才会被引入结果中",
                 MessageType.None);
@@ -166,6 +168,8 @@ namespace UnityBox.PrefabDiffPatcher
 
         private void DrawDiffTree()
         {
+            _selectionAggregateByPath.Clear();
+            BuildSelectionStateCache(_diffRoot);
             _diffScroll = EditorGUILayout.BeginScrollView(_diffScroll, GUILayout.MinHeight(260));
             DrawNode(_diffRoot);
             EditorGUILayout.EndScrollView();
@@ -207,11 +211,14 @@ namespace UnityBox.PrefabDiffPatcher
                     }
 
                     bool isChanged = node.Path == string.Empty || node.HasAnyChanges;
-                    using (new EditorGUI.DisabledScope(!isChanged || node.Path == string.Empty))
+                    var aggregate = GetSelectionAggregate(node.Path);
+                    using (new EditorGUI.DisabledScope(!isChanged))
                     {
-                        bool current = _selectionByPath.TryGetValue(node.Path, out var selected) && selected;
-                        bool next = EditorGUILayout.Toggle(current, GUILayout.Width(18));
-                        if (next != current)
+                        bool displayValue = aggregate.State == TreeSelectionState.All;
+                        EditorGUI.showMixedValue = aggregate.State == TreeSelectionState.Partial;
+                        bool next = EditorGUILayout.Toggle(displayValue, GUILayout.Width(18));
+                        EditorGUI.showMixedValue = false;
+                        if (next != displayValue || aggregate.State == TreeSelectionState.Partial)
                             SetNodeSelectionRecursive(node, next);
                     }
 
@@ -413,6 +420,63 @@ namespace UnityBox.PrefabDiffPatcher
                 ExpandChangedAncestors(child);
         }
 
+        private TreeSelectionAggregate BuildSelectionStateCache(DiffNode node)
+        {
+            if (node == null)
+                return default;
+
+            int totalUnits = 0;
+            int selectedUnits = 0;
+
+            if (node.Path != string.Empty && node.HasAnyChanges)
+            {
+                totalUnits++;
+                if (_selectionByPath.TryGetValue(node.Path, out var selected) && selected)
+                    selectedUnits++;
+            }
+
+            if (node.ExistsInA && node.ExistsInB)
+            {
+                foreach (var component in node.ComponentDiffs)
+                {
+                    if (!component.IsSelectable)
+                        continue;
+                    totalUnits++;
+                    var selectionId = PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key);
+                    if (_componentSelectionById.TryGetValue(selectionId, out var selected) && selected)
+                        selectedUnits++;
+                }
+            }
+
+            foreach (var child in node.Children)
+            {
+                if (!child.HasAnyChanges)
+                    continue;
+                var childAggregate = BuildSelectionStateCache(child);
+                totalUnits += childAggregate.TotalUnits;
+                selectedUnits += childAggregate.SelectedUnits;
+            }
+
+            var state = totalUnits <= 0
+                ? TreeSelectionState.None
+                : selectedUnits == 0
+                    ? TreeSelectionState.None
+                    : selectedUnits == totalUnits
+                        ? TreeSelectionState.All
+                        : TreeSelectionState.Partial;
+
+            var aggregate = new TreeSelectionAggregate(selectedUnits, totalUnits, state);
+            _selectionAggregateByPath[node.Path] = aggregate;
+            return aggregate;
+        }
+
+        private TreeSelectionAggregate GetSelectionAggregate(string path)
+        {
+            return _selectionAggregateByPath.TryGetValue(path ?? string.Empty, out var aggregate)
+                ? aggregate
+                : default;
+        }
+
         private void SetFoldoutRecursive(DiffNode node, bool expanded)
         {
             if (node == null)
@@ -447,15 +511,18 @@ namespace UnityBox.PrefabDiffPatcher
 
         private void SetNodeSelectionRecursive(DiffNode node, bool selected)
         {
-            if (node == null || string.IsNullOrEmpty(node.Path))
+            if (node == null)
                 return;
 
-            _selectionByPath[node.Path] = selected;
-            foreach (var component in node.ComponentDiffs)
+            if (!string.IsNullOrEmpty(node.Path))
             {
-                if (!component.IsSelectable || !node.ExistsInA || !node.ExistsInB)
-                    continue;
-                _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = selected;
+                _selectionByPath[node.Path] = selected;
+                foreach (var component in node.ComponentDiffs)
+                {
+                    if (!component.IsSelectable || !node.ExistsInA || !node.ExistsInB)
+                        continue;
+                    _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = selected;
+                }
             }
 
             foreach (var child in node.Children)
@@ -1562,6 +1629,27 @@ namespace UnityBox.PrefabDiffPatcher
         {
             Path = path ?? string.Empty;
             ComponentKey = componentKey ?? string.Empty;
+        }
+    }
+
+    internal enum TreeSelectionState
+    {
+        None,
+        Partial,
+        All
+    }
+
+    internal readonly struct TreeSelectionAggregate
+    {
+        public readonly int SelectedUnits;
+        public readonly int TotalUnits;
+        public readonly TreeSelectionState State;
+
+        public TreeSelectionAggregate(int selectedUnits, int totalUnits, TreeSelectionState state)
+        {
+            SelectedUnits = selectedUnits;
+            TotalUnits = totalUnits;
+            State = state;
         }
     }
 
