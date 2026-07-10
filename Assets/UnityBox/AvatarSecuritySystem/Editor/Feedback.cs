@@ -6,11 +6,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     public class Feedback
     {
         private readonly GameObject avatarGameObject;
-        private readonly ASSComponent config;
+        private readonly ASSConfigData config;
         private GameObject overlayRootObject;
         private const string OVERLAY_SHADER_NAME = "UnityBox/UB_Overlay";
         private const string LOGO_RESOURCE_NAME = "Avatar Security System";
-        public Feedback(GameObject avatarGameObject, ASSComponent config)
+        public Feedback(GameObject avatarGameObject, ASSConfigData config)
         {
             this.avatarGameObject = avatarGameObject;
             this.config = config;

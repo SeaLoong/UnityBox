@@ -1,4 +1,6 @@
 using nadena.dev.ndmf;
+using System.Collections.Generic;
+using UnityEngine;
 
 [assembly: ExportsPlugin(typeof(UnityBox.AvatarSecuritySystem.Editor.NDMFPlugin))]
 
@@ -16,16 +18,60 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public override string QualifiedName => "com.unitybox.avatarsecuritysystem";
         public override string DisplayName => "UnityBox Avatar Security System";
 
+        private sealed class ASSConfigSnapshot
+        {
+            private static readonly Dictionary<int, ASSConfigData> Snapshots = new Dictionary<int, ASSConfigData>();
+
+            public static void Capture(GameObject avatarRoot)
+            {
+                if (avatarRoot == null) return;
+
+                var config = avatarRoot.GetComponent<ASSComponent>()
+                    ?? avatarRoot.GetComponentInChildren<ASSComponent>(true);
+                if (config == null) return;
+
+                Snapshots[avatarRoot.GetInstanceID()] = ASSConfigData.FromComponent(config);
+                Debug.Log($"[ASS] NDMF captured ASS configuration from '{config.gameObject.name}'");
+            }
+
+            public static ASSConfigData GetCapturedConfig(GameObject avatarRoot)
+            {
+                if (avatarRoot == null) return null;
+                Snapshots.TryGetValue(avatarRoot.GetInstanceID(), out var snapshot);
+                return snapshot;
+            }
+
+            public static void Release(GameObject avatarRoot)
+            {
+                if (avatarRoot == null) return;
+                Snapshots.Remove(avatarRoot.GetInstanceID());
+            }
+        }
+
         protected override void Configure()
         {
+            InPhase(BuildPhase.Resolving)
+                .Run("Capture Avatar Security System Config", ctx =>
+            {
+                ASSConfigSnapshot.Capture(ctx.AvatarRootObject);
+            });
+
             InPhase(BuildPhase.PlatformFinish)
                 .AfterPlugin("jp.lilxyzw.lilycalinventory")
                 .Run("Generate Avatar Security System", ctx =>
             {
-                if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true))
+                var capturedConfig = ASSConfigSnapshot.GetCapturedConfig(ctx.AvatarRootObject);
+                try
                 {
-                    throw new System.Exception(
-                        "[ASS] Avatar Security System processing failed (see previous log for details)");
+                    if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true, configOverride: capturedConfig))
+                    {
+                        throw new System.Exception(
+                            "[ASS] Avatar Security System processing failed (see previous log for details)");
+                    }
+                }
+                finally
+                {
+                    ASSConfigSnapshot.Release(ctx.AvatarRootObject);
                 }
             });
         }

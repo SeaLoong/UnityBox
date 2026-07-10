@@ -11,9 +11,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly ASSComponent config;
+        private readonly ASSConfigData config;
         private readonly VRCAvatarDescriptor descriptor;
-        public Lock(AnimatorController controller, GameObject avatarRoot, ASSComponent config, VRCAvatarDescriptor descriptor)
+        public Lock(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, VRCAvatarDescriptor descriptor)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
@@ -207,7 +207,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private AnimationClip CreateRemoteClip(bool useWdOn)
         {
             var clip = new AnimationClip { name = CLIP_REMOTE };
-            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
+                SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
             // defense 由 Defense 层独立管理，Lock 层不碰
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
@@ -218,7 +219,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = CLIP_UNLOCK };
             Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
-            SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
+                SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
             if (!useWdOn && config.disableRootChildren)
                 WriteRestoreValues(clip);
             return clip;

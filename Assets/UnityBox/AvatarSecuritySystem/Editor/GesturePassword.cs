@@ -9,9 +9,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly ASSComponent config;
+        private readonly ASSConfigData config;
 
-        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSComponent config)
+        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSConfigData config)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;

@@ -8,8 +8,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly ASSComponent config;
-        public Countdown(AnimatorController controller, GameObject avatarRoot, ASSComponent config)
+        private readonly ASSConfigData config;
+        public Countdown(AnimatorController controller, GameObject avatarRoot, ASSConfigData config)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
@@ -104,8 +104,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, beepClip);
             if (config.warningBeep != null)
             {
-                Utils.AddPlayAudioBehaviour(beepState, 
-                    GO_AUDIO_WARNING, 
+                Utils.AddPlayAudioBehaviour(beepState,
+                    GO_AUDIO_WARNING,
                     config.warningBeep);
             }
             var waitingToBeep = Utils.CreateTransition(waitingState, beepState,
@@ -128,8 +128,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private AnimationClip CreateCountdownClip(float duration)
         {
-            var clip = new AnimationClip 
-            { 
+            var clip = new AnimationClip
+            {
                 name = CLIP_COUNTDOWN,
                 legacy = false
             };
@@ -137,9 +137,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             settings.loopTime = false;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             string overlayPath = $"{GO_OVERLAY}/{Constants.GO_OVERLAY_MESH}";
-            AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
-            clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._C9D4", progressCurve);
-            Debug.Log($"[ASS] Countdown animation created: duration={duration}s, path={overlayPath}");
+            if (avatarRoot.transform.Find(overlayPath) != null)
+            {
+                AnimationCurve progressCurve = AnimationCurve.Linear(0f, 1f, duration, 0f);
+                clip.SetCurve(overlayPath, typeof(MeshRenderer), "material._C9D4", progressCurve);
+                Debug.Log($"[ASS] Countdown animation created: duration={duration}s, path={overlayPath}");
+            }
+            else
+            {
+                AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
+                clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
+                Debug.Log($"[ASS] Countdown animation created without overlay binding: duration={duration}s");
+            }
             return clip;
         }
         private static AnimationClip CreateDummyClip(string name, float duration)

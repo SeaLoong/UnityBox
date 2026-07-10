@@ -10,9 +10,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     {
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
-        private readonly ASSComponent config;
+        private readonly ASSConfigData config;
         private readonly bool isDebugMode;
-        public Defense(AnimatorController controller, GameObject avatarRoot, ASSComponent config, bool isDebugMode = false)
+        public Defense(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, bool isDebugMode = false)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
@@ -73,6 +73,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 throw;
             }
             controller.AddLayer(layer);
+            Debug.Log($"[ASS] Defense layer created: layer={Constants.LAYER_DEFENSE}, root={Constants.GO_DEFENSE_ROOT}");
         }
         private void GenerateDefaultDefenseLayer()
         {
@@ -112,6 +113,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             controller.AddLayer(layer);
             Debug.Log("[ASS] Default enable defense: Inactive→Active on IsLocal && !PasswordCorrect");
+            Debug.Log($"[ASS] Defense layer created: layer={Constants.LAYER_DEFENSE}, root={Constants.GO_DEFENSE_ROOT}");
         }
         private GameObject CreateDefenseComponents(Light reusableLight)
         {
@@ -150,6 +152,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.Log($"[ASS] Lightweight mode inheritance: lights={(reusableLight != null ? "reuse-existing" : "off")}, collision={(enableCollision ? "inherit-existing" : "off")}, trails={(enableTrails ? "inherit-existing" : "off")}");
             }
+            int generatedParticleSystemCount = root.GetComponentsInChildren<ParticleSystem>(true).Length;
+            if (parameters.ParticleCount > 0 && generatedParticleSystemCount == 0)
+            {
+                Debug.LogWarning("[ASS] Defense root was created, but no defense ParticleSystem was generated. Check particle budget / overflow / existing avatar particle usage.");
+            }
+            Debug.Log($"[ASS] Defense root generated: root={root.name}, particleSystems={generatedParticleSystemCount}, activeSelf={root.activeSelf}");
             Debug.Log("[ASS] Defense optimization: Dedicated ShaderDefense meshes skipped; heavy shader contribution now comes from particle renderers sharing the defense material");
             return root;
         }

@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.7.15] - 2026-07-11
+
+### Changed
+
+- 将 ASS 构建配置读取改为构建早期快照的纯数据流：
+  - NDMF 路径在 `BuildPhase.Resolving` 捕获配置，并在 `PlatformFinish` 直接传入生成流程
+  - 无 NDMF 路径新增早期 VRCSDK preprocess 快照，避免后续 `IEditorOnly` 清理导致配置缺失
+  - 各生成器改为依赖 `ASSConfigData`，不再要求构建后期 `ASSComponent` 仍存在
+
+### Fixed
+
+- 修复 NDMF / VRCSDK 构建链中 `ASSComponent : IEditorOnly` 被提前移除后，ASS 主功能完全跳过的问题
+- 修复二次上传时临时 `Generated` 控制器引用可能残留，导致后续构建找不到有效 FX / Playable Controller 的问题
+- 修复关闭 Overlay 后仍生成指向缺失 Overlay 对象的动画曲线，导致后续功能异常的问题
+- 防御生成失败时不再静默继续构建，避免上传成功但防御层实际缺失
+
 ## [0.7.12] - 2026-07-06
 
 ### Changed

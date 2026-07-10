@@ -8,8 +8,96 @@ using VRC.SDKBase.Editor.BuildPipeline;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
+    public sealed class ASSConfigData
+    {
+        public SystemLanguage uiLanguage;
+        public List<int> gesturePassword;
+        public bool useRightHand;
+        public float countdownDuration;
+        public float warningThreshold;
+        public float gestureHoldTime;
+        public float gestureErrorTolerance;
+        public float gestureMaxHoldTime;
+        public AudioClip warningBeep;
+        public AudioClip successSound;
+        public bool enabledInPlaymode;
+        public bool disableDefense;
+        public bool disableRootChildren;
+        public bool disableOverlay;
+        public bool disableWarningSound;
+        public bool defaultEnableDefense;
+        public bool enableOverflow;
+        public bool lightweightDefense;
+        public bool disableObfuscation;
+        public bool enablePlayableLayerObfuscation;
+        public bool enableDecoyLayers;
+        public bool enableDecoyStates;
+        public ASSComponent.WriteDefaultsMode writeDefaultsMode;
+
+        public static ASSConfigData FromComponent(ASSComponent source)
+        {
+            if (source == null) return null;
+
+            return new ASSConfigData
+            {
+                uiLanguage = source.uiLanguage,
+                gesturePassword = source.gesturePassword != null
+                    ? new List<int>(source.gesturePassword)
+                    : new List<int>(),
+                useRightHand = source.useRightHand,
+                countdownDuration = source.countdownDuration,
+                warningThreshold = source.warningThreshold,
+                gestureHoldTime = source.gestureHoldTime,
+                gestureErrorTolerance = source.gestureErrorTolerance,
+                gestureMaxHoldTime = source.gestureMaxHoldTime,
+                warningBeep = source.warningBeep,
+                successSound = source.successSound,
+                enabledInPlaymode = source.enabledInPlaymode,
+                disableDefense = source.disableDefense,
+                disableRootChildren = source.disableRootChildren,
+                disableOverlay = source.disableOverlay,
+                disableWarningSound = source.disableWarningSound,
+                defaultEnableDefense = source.defaultEnableDefense,
+                enableOverflow = source.enableOverflow,
+                lightweightDefense = source.lightweightDefense,
+                disableObfuscation = source.disableObfuscation,
+                enablePlayableLayerObfuscation = source.enablePlayableLayerObfuscation,
+                enableDecoyLayers = source.enableDecoyLayers,
+                enableDecoyStates = source.enableDecoyStates,
+                writeDefaultsMode = source.writeDefaultsMode
+            };
+        }
+
+        public bool IsPasswordValid()
+        {
+            if (gesturePassword == null || gesturePassword.Count == 0)
+            {
+                return true;
+            }
+
+            const int minimumGestureValue = 0;
+            const int maximumGestureValue = 7;
+            foreach (int gesture in gesturePassword)
+            {
+                if (gesture < minimumGestureValue || gesture > maximumGestureValue) return false;
+            }
+
+            return true;
+        }
+    }
+
     public class Processor : IVRCSDKPreprocessAvatarCallback, IVRCSDKPostprocessAvatarCallback
     {
+        private sealed class PlayableLayerSnapshot
+        {
+            public VRCAvatarDescriptor Descriptor;
+            public VRCAvatarDescriptor.CustomAnimLayer[] BaseLayers;
+            public VRCAvatarDescriptor.CustomAnimLayer[] SpecialLayers;
+        }
+
+        private static readonly List<PlayableLayerSnapshot> PlayableLayerSnapshots = new List<PlayableLayerSnapshot>();
+        private static readonly Dictionary<int, ASSConfigData> ConfigSnapshots = new Dictionary<int, ASSConfigData>();
+
         /// <summary>
         /// 固定在 -1024：与 VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook 相同的 callbackOrder
         /// 不会造成问题（两者处理的内容互不影响，谁先谁后结果一致）。
@@ -30,11 +118,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] OnPreprocessAvatar called (callbackOrder={callbackOrder})");
             try
             {
-                return ProcessAvatar(avatarGameObject, hasNDMF: false);
+                bool result = ProcessAvatar(avatarGameObject, hasNDMF: false,
+                    configOverride: GetCapturedConfig(avatarGameObject));
+                if (!result)
+                {
+                    RestorePlayableLayerSnapshots("failed preprocess");
+                    ClearConfigSnapshots("failed preprocess");
+                }
+                return result;
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[ASS] Avatar processing failed: {ex.Message}\n{ex.StackTrace}");
+                RestorePlayableLayerSnapshots("preprocess exception");
+                ClearConfigSnapshots("preprocess exception");
                 return false;
             }
 #endif
@@ -42,26 +139,37 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         public void OnPostprocessAvatar()
         {
+            RestorePlayableLayerSnapshots("postprocess");
+            ClearConfigSnapshots("postprocess");
             CleanupTransientGeneratedAssets("postprocess");
         }
         /// <summary>
         /// 核心处理逻辑。由 <see cref="OnPreprocessAvatar"/>（无 NDMF 场景）
         /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.PlatformFinish）调用。
         /// </summary>
-        public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF)
+        public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF, ASSConfigData configOverride = null)
         {
-            CleanupTransientGeneratedAssets("preprocess");
             var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
             {
                 Debug.LogError("[ASS] VRCAvatarDescriptor not found");
                 return true;
             }
-            var assConfig = avatarGameObject.GetComponent<ASSComponent>();
+            var assComponent = avatarGameObject.GetComponent<ASSComponent>()
+                ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true);
+            var assConfig = configOverride ?? ASSConfigData.FromComponent(assComponent);
             if (assConfig == null)
             {
-                Debug.Log("[ASS] No valid AvatarSecuritySystem component found, skipping");
+                Debug.LogWarning($"[ASS] No AvatarSecuritySystem component found on '{avatarGameObject.name}' or its children, skipping");
                 return true;
+            }
+            if (configOverride != null)
+            {
+                Debug.Log("[ASS] Using captured AvatarSecuritySystem configuration");
+            }
+            else if (assComponent != null && assComponent.gameObject != avatarGameObject)
+            {
+                Debug.Log($"[ASS] Using AvatarSecuritySystem component from child object '{assComponent.gameObject.name}'");
             }
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
@@ -87,6 +195,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.Log("[ASS] Play mode disabled, skipping");
                 return true;
             }
+
+            if (!hasNDMF)
+            {
+                SnapshotPlayableLayers(descriptor);
+                RemoveTransientGeneratedControllerReferences(descriptor);
+            }
+            CleanupTransientGeneratedAssets("preprocess");
 
             // hasNDMF 由调用方决定执行路径：
             //   NDMF 模式：由 NDMFPlugin 在 BuildPhase.PlatformFinish 内调用，
@@ -145,8 +260,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[ASS] Defense layer creation failed: {ex.Message}");
+                    Debug.LogError($"[ASS] Defense layer creation failed: {ex.Message}\n{ex.StackTrace}");
+                    return false;
                 }
+            }
+            else
+            {
+                Debug.Log("[ASS] disableDefense enabled, skipping defense generation");
             }
             if (Obfuscator.IsEnabled)
             {
@@ -182,7 +302,135 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private static bool ShouldProcessAvatar(ASSComponent assConfig)
+        internal static void CaptureConfigSnapshot(GameObject avatarGameObject, string stage)
+        {
+            if (avatarGameObject == null) return;
+
+            var assComponent = avatarGameObject.GetComponent<ASSComponent>()
+                ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true);
+            var config = ASSConfigData.FromComponent(assComponent);
+            if (config == null) return;
+
+            ConfigSnapshots[avatarGameObject.GetInstanceID()] = config;
+            Debug.Log($"[ASS] Captured AvatarSecuritySystem configuration at {stage} from '{assComponent.gameObject.name}'");
+        }
+
+        internal static ASSConfigData GetCapturedConfig(GameObject avatarGameObject)
+        {
+            if (avatarGameObject == null) return null;
+            ConfigSnapshots.TryGetValue(avatarGameObject.GetInstanceID(), out var config);
+            return config;
+        }
+
+        private static void ClearConfigSnapshots(string stage)
+        {
+            if (ConfigSnapshots.Count == 0) return;
+            int count = ConfigSnapshots.Count;
+            ConfigSnapshots.Clear();
+            Debug.Log($"[ASS] Cleared {count} captured ASS configuration snapshot(s) at {stage}");
+        }
+
+        private static void SnapshotPlayableLayers(VRCAvatarDescriptor descriptor)
+        {
+            if (descriptor == null) return;
+            if (PlayableLayerSnapshots.Any(s => s.Descriptor == descriptor)) return;
+
+            PlayableLayerSnapshots.Add(new PlayableLayerSnapshot
+            {
+                Descriptor = descriptor,
+                BaseLayers = CloneAndSanitizePlayableLayers(descriptor.baseAnimationLayers),
+                SpecialLayers = CloneAndSanitizePlayableLayers(descriptor.specialAnimationLayers)
+            });
+        }
+
+        private static VRCAvatarDescriptor.CustomAnimLayer[] CloneAndSanitizePlayableLayers(
+            VRCAvatarDescriptor.CustomAnimLayer[] layers)
+        {
+            if (layers == null) return null;
+
+            var clone = (VRCAvatarDescriptor.CustomAnimLayer[])layers.Clone();
+            for (int i = 0; i < clone.Length; i++)
+            {
+                if (!IsTransientGeneratedController(clone[i].animatorController)) continue;
+                clone[i].animatorController = null;
+                clone[i].isDefault = true;
+            }
+            return clone;
+        }
+
+        private static void RestorePlayableLayerSnapshots(string stage)
+        {
+            if (PlayableLayerSnapshots.Count == 0)
+                return;
+
+            int restoredCount = 0;
+            foreach (var snapshot in PlayableLayerSnapshots)
+            {
+                if (snapshot?.Descriptor == null) continue;
+
+                snapshot.Descriptor.baseAnimationLayers = snapshot.BaseLayers;
+                snapshot.Descriptor.specialAnimationLayers = snapshot.SpecialLayers;
+                EditorUtility.SetDirty(snapshot.Descriptor);
+                restoredCount++;
+            }
+            PlayableLayerSnapshots.Clear();
+            if (restoredCount > 0)
+            {
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[ASS] Restored {restoredCount} avatar playable layer snapshot(s) at {stage}");
+            }
+        }
+
+        private static void RemoveTransientGeneratedControllerReferences(VRCAvatarDescriptor descriptor)
+        {
+            if (descriptor == null) return;
+
+            var baseLayers = descriptor.baseAnimationLayers;
+            bool changed = RemoveTransientGeneratedControllerReferences(baseLayers);
+            if (changed)
+                descriptor.baseAnimationLayers = baseLayers;
+
+            var specialLayers = descriptor.specialAnimationLayers;
+            changed |= RemoveTransientGeneratedControllerReferences(specialLayers);
+            if (changed)
+                descriptor.specialAnimationLayers = specialLayers;
+
+            if (changed)
+            {
+                EditorUtility.SetDirty(descriptor);
+                Debug.LogWarning("[ASS] Removed stale Generated playable controller reference(s) before regeneration");
+            }
+        }
+
+        private static bool RemoveTransientGeneratedControllerReferences(
+            VRCAvatarDescriptor.CustomAnimLayer[] layers)
+        {
+            if (layers == null) return false;
+
+            bool changed = false;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                if (!IsTransientGeneratedController(layers[i].animatorController)) continue;
+                layers[i].animatorController = null;
+                layers[i].isDefault = true;
+                changed = true;
+            }
+            return changed;
+        }
+
+        private static bool IsTransientGeneratedController(RuntimeAnimatorController controller)
+        {
+            if (controller == null) return false;
+
+            string path = AssetDatabase.GetAssetPath(controller)?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(path)) return true;
+
+            string generatedPath = ASSET_FOLDER.Replace('\\', '/').TrimEnd('/');
+            return path.StartsWith(generatedPath + "/", System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(path, generatedPath, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ShouldProcessAvatar(ASSConfigData assConfig)
         {
             if (assConfig == null)
                 return false;
@@ -216,7 +464,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (descriptor == null)
                 return true;
 
-            var assConfig = avatarGameObject.GetComponent<ASSComponent>();
+            var assConfig = GetCapturedConfig(avatarGameObject)
+                ?? ASSConfigData.FromComponent(
+                    avatarGameObject.GetComponent<ASSComponent>()
+                    ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true));
             if (assConfig == null)
                 return true;
 
@@ -230,7 +481,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return true;
         }
 
-        private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSComponent assConfig)
+        private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSConfigData assConfig)
         {
             var expressionParameters = descriptor.expressionParameters;
             if (expressionParameters == null)
@@ -334,7 +585,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             return controller;
         }
-        private static void LoadAudioResources(ASSComponent config)
+        private static void LoadAudioResources(ASSConfigData config)
         {
             config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
             config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
