@@ -1,7 +1,7 @@
 {
   "name": "top.sealoong.unitybox.prefab-diff-patcher",
   "displayName": "Prefab Diff Patcher",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Unity editor tool for comparing two prefab hierarchies and selectively applying B-priority object/component diffs to avatar prefabs.",
   "unity": "2022.3",
   "author": {

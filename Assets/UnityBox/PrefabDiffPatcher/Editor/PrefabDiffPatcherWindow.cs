@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -19,8 +20,10 @@ namespace UnityBox.PrefabDiffPatcher
         private GameObject _sourceA;
         private GameObject _sourceB;
         private string _outputPath = DefaultOutputFolder + "/PatchedAvatar.prefab";
-        private Vector2 _diffScroll;
         private DiffNode _diffRoot;
+        private Vector2 _detailScroll;
+        private TreeViewState _treeViewState;
+        private PrefabDiffTreeView _treeView;
         private readonly Dictionary<string, bool> _selectionByPath = new(StringComparer.Ordinal);
         private readonly Dictionary<string, bool> _componentSelectionById = new(StringComparer.Ordinal);
         private readonly Dictionary<string, bool> _foldoutByPath = new(StringComparer.Ordinal);
@@ -47,6 +50,8 @@ namespace UnityBox.PrefabDiffPatcher
             {
                 EnsureDefaultOutputPath();
                 _diffRoot = null;
+                _treeView = null;
+                _detailScroll = Vector2.zero;
                 _selectionByPath.Clear();
                 _componentSelectionById.Clear();
                 _foldoutByPath.Clear();
@@ -110,14 +115,17 @@ namespace UnityBox.PrefabDiffPatcher
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Select All", GUILayout.Width(100)))
+            {
                 SelectAllChanges();
+                Repaint();
+            }
 
             if (GUILayout.Button("Objects Only", GUILayout.Width(110)))
             {
                 _selectionByPath.Clear();
                 _componentSelectionById.Clear();
-                foreach (var node in EnumerateChangedNodes(_diffRoot))
-                    _selectionByPath[node.Path] = true;
+                SetObjectSelectionsRecursive(_diffRoot, true);
+                Repaint();
             }
 
             if (GUILayout.Button("Components Only", GUILayout.Width(125)))
@@ -125,18 +133,26 @@ namespace UnityBox.PrefabDiffPatcher
                 _selectionByPath.Clear();
                 _componentSelectionById.Clear();
                 SelectAllComponents();
+                Repaint();
             }
 
             if (GUILayout.Button("Expand All", GUILayout.Width(100)))
-                SetFoldoutRecursive(_diffRoot, true);
+            {
+                _treeView?.ExpandAll();
+                Repaint();
+            }
 
             if (GUILayout.Button("Collapse All", GUILayout.Width(100)))
-                SetFoldoutRecursive(_diffRoot, false);
+            {
+                _treeView?.CollapseAll();
+                Repaint();
+            }
 
             if (GUILayout.Button("Clear", GUILayout.Width(80)))
             {
                 _selectionByPath.Clear();
                 _componentSelectionById.Clear();
+                Repaint();
             }
             EditorGUILayout.EndHorizontal();
 
@@ -148,6 +164,7 @@ namespace UnityBox.PrefabDiffPatcher
                 "- 分析完成后默认全选所有变化\n" +
                 "- 勾选父对象时会默认联动勾选子对象和组件，之后仍可手动取消局部选择\n" +
                 "- 父节点支持三态勾选：全选 / 半选 / 未选\n" +
+                "- 顶部快速选择按钮会直接递归修改整棵树的选择状态\n" +
                 "- 未选择的子对象/组件会尽量保持 A 的内容不变\n" +
                 "- 若某节点只存在于 B，则只有它自身或其后代被选中时，才会被引入结果中",
                 MessageType.None);
@@ -170,9 +187,22 @@ namespace UnityBox.PrefabDiffPatcher
         {
             _selectionAggregateByPath.Clear();
             BuildSelectionStateCache(_diffRoot);
-            _diffScroll = EditorGUILayout.BeginScrollView(_diffScroll, GUILayout.MinHeight(260));
-            DrawNode(_diffRoot);
-            EditorGUILayout.EndScrollView();
+            EnsureTreeView();
+
+            using (new EditorGUILayout.HorizontalScope(GUILayout.MinHeight(420f)))
+            {
+                using (new EditorGUILayout.VerticalScope(GUILayout.MinWidth(420f), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true)))
+                {
+                    DrawTreeHeader();
+                    var treeRect = GUILayoutUtility.GetRect(0f, 100000f, 320f, 460f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                    _treeView?.OnGUI(treeRect);
+                }
+
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.Width(Mathf.Max(320f, position.width * 0.38f)), GUILayout.ExpandHeight(true)))
+                {
+                    DrawSelectedNodeDetails();
+                }
+            }
         }
 
         private void DrawApplyButton()
@@ -187,13 +217,170 @@ namespace UnityBox.PrefabDiffPatcher
             }
         }
 
+        private void DrawTreeHeader()
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                GUILayout.Label("Apply", EditorStyles.toolbarButton, GUILayout.Width(52f));
+                GUILayout.Label("Name", EditorStyles.toolbarButton, GUILayout.Width(230f));
+                GUILayout.Label("Status", EditorStyles.toolbarButton, GUILayout.Width(74f));
+                GUILayout.Label("Summary", EditorStyles.toolbarButton, GUILayout.Width(140f));
+                GUILayout.Label("Path", EditorStyles.toolbarButton, GUILayout.ExpandWidth(true));
+            }
+        }
+
+        private void DrawSelectedNodeDetails()
+        {
+            var node = _treeView?.SelectedNode ?? _diffRoot;
+            EditorGUILayout.LabelField("Selection Details", EditorStyles.boldLabel);
+
+            if (node == null)
+            {
+                EditorGUILayout.HelpBox("请先分析 Diff。", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.LabelField(node.Path == string.Empty ? "<Root>" : node.DisplayName, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Path", string.IsNullOrEmpty(node.Path) ? "<Root>" : node.Path, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Status", $"{node.StatusLabel} · {node.DetailSummary}", EditorStyles.miniLabel);
+
+            EditorGUILayout.Space(6f);
+
+            if (!string.IsNullOrEmpty(node.Path))
+            {
+                bool objectSelected = _selectionByPath.TryGetValue(node.Path, out var selected) && selected;
+                bool nextObjectSelected = EditorGUILayout.ToggleLeft("Use B object shell for this node only", objectSelected);
+                if (nextObjectSelected != objectSelected)
+                {
+                    _selectionByPath[node.Path] = nextObjectSelected;
+                    Repaint();
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Select Subtree", GUILayout.Width(110f)))
+                    {
+                        SetNodeSelectionRecursive(node, true);
+                        Repaint();
+                    }
+
+                    if (GUILayout.Button("Clear Subtree", GUILayout.Width(110f)))
+                    {
+                        SetNodeSelectionRecursive(node, false);
+                        Repaint();
+                    }
+                }
+
+                EditorGUILayout.Space(4f);
+            }
+
+            _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll, GUILayout.ExpandHeight(true));
+
+            if (node.ObjectChanges.Count > 0)
+            {
+                EditorGUILayout.LabelField("Object Changes", EditorStyles.boldLabel);
+                foreach (var change in node.ObjectChanges)
+                    EditorGUILayout.LabelField("• " + change, CreateTintedStyle(EditorStyles.wordWrappedMiniLabel, GetNodeTextColor(node.Kind)));
+                EditorGUILayout.Space(6f);
+            }
+
+            if (node.ComponentDiffs.Count > 0)
+            {
+                EditorGUILayout.LabelField("Component Changes", EditorStyles.boldLabel);
+                foreach (var component in node.ComponentDiffs)
+                    DrawComponentDetails(node, component);
+            }
+
+            if (node.ObjectChanges.Count == 0 && node.ComponentDiffs.Count == 0)
+                EditorGUILayout.HelpBox("当前节点本体没有直接差异；它可能只是包含有变化的子节点。", MessageType.None);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawComponentDetails(DiffNode node, ComponentDiff component)
+        {
+            var selectionId = PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key);
+            var foldoutKey = "component:" + selectionId;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    bool expanded = GetFoldout(foldoutKey, component.PropertyChanges.Count <= 8);
+                    bool nextExpanded = EditorGUILayout.Foldout(expanded, GUIContent.none, false);
+                    if (nextExpanded != expanded)
+                        _foldoutByPath[foldoutKey] = nextExpanded;
+
+                    bool canSelect = component.IsSelectable;
+                    using (new EditorGUI.DisabledScope(!canSelect))
+                    {
+                        bool current = _componentSelectionById.TryGetValue(selectionId, out var selected) && selected;
+                        bool next = EditorGUILayout.Toggle(current, GUILayout.Width(18f));
+                        if (next != current)
+                        {
+                            _componentSelectionById[selectionId] = next;
+                            Repaint();
+                        }
+                    }
+
+                    GUILayout.Label(component.KindLabel, CreateTintedStyle(EditorStyles.miniBoldLabel, GetNodeTextColor(component.Kind)), GUILayout.Width(18f));
+                    EditorGUILayout.LabelField(component.TypeName, CreateTintedStyle(EditorStyles.boldLabel, GetNodeTextColor(component.Kind)), GUILayout.Width(190f));
+                    EditorGUILayout.LabelField(component.Key, EditorStyles.miniLabel, GUILayout.ExpandWidth(true));
+                }
+
+                if (!GetFoldout(foldoutKey, component.PropertyChanges.Count <= 8))
+                    return;
+
+                if (component.PropertyChanges.Count == 0)
+                {
+                    EditorGUILayout.LabelField("无属性级变化（新增/删除组件）。", EditorStyles.miniLabel);
+                    return;
+                }
+
+                foreach (var propertyChange in component.PropertyChanges.Take(40))
+                {
+                    EditorGUILayout.LabelField(propertyChange.Path, EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField("A: " + propertyChange.Before, CreateTintedStyle(EditorStyles.wordWrappedMiniLabel, new Color(0.88f, 0.45f, 0.45f)));
+                    EditorGUILayout.LabelField("B: " + propertyChange.After, CreateTintedStyle(EditorStyles.wordWrappedMiniLabel, new Color(0.4f, 0.78f, 0.45f)));
+                    EditorGUILayout.Space(3f);
+                }
+
+                if (component.PropertyChanges.Count > 40)
+                    EditorGUILayout.HelpBox($"其余 {component.PropertyChanges.Count - 40} 项属性变化已折叠省略。", MessageType.None);
+            }
+        }
+
+        private void EnsureTreeView()
+        {
+            _treeViewState ??= new TreeViewState();
+            _treeView ??= new PrefabDiffTreeView(
+                _treeViewState,
+                () => _diffRoot,
+                GetSelectionAggregate,
+                OnTreeNodeToggle,
+                Repaint);
+            _treeView.SyncModel(resetExpansion: false);
+        }
+
+        private void OnTreeNodeToggle(DiffNode node, bool selected)
+        {
+            SetNodeSelectionRecursive(node, selected);
+            Repaint();
+        }
+
         private void DrawNode(DiffNode node)
         {
             if (node == null || (!node.HasAnyChanges && node.Path != string.Empty))
                 return;
 
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            using (new EditorGUILayout.VerticalScope())
             {
+                var headerRect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight + 4f);
+                if (Event.current.type == EventType.Repaint)
+                {
+                    EditorGUI.DrawRect(headerRect, GetNodeBackgroundColor(node.Kind, node.Path == string.Empty ? 0.14f : 0.08f));
+                }
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(node.Depth * TreeIndentWidth);
@@ -219,7 +406,10 @@ namespace UnityBox.PrefabDiffPatcher
                         bool next = EditorGUILayout.Toggle(displayValue, GUILayout.Width(18));
                         EditorGUI.showMixedValue = false;
                         if (next != displayValue || aggregate.State == TreeSelectionState.Partial)
+                        {
                             SetNodeSelectionRecursive(node, next);
+                            Repaint();
+                        }
                     }
 
                     GUILayout.Label(GetNodeKindIcon(node.Kind), GUILayout.Width(18));
@@ -235,7 +425,7 @@ namespace UnityBox.PrefabDiffPatcher
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.Space(node.Depth * TreeIndentWidth + 38f);
-                        EditorGUILayout.SelectableLabel(node.Path, EditorStyles.miniLabel, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                        EditorGUILayout.LabelField(node.Path, EditorStyles.miniLabel, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                     }
                 }
 
@@ -260,6 +450,8 @@ namespace UnityBox.PrefabDiffPatcher
 
                 foreach (var child in node.Children)
                     DrawNode(child);
+
+                GUILayout.Space(2f);
             }
         }
 
@@ -269,7 +461,7 @@ namespace UnityBox.PrefabDiffPatcher
             {
                 GUILayout.Space(depth * TreeIndentWidth + 36f);
                 GUILayout.Label(prefix, CreateTintedStyle(EditorStyles.miniBoldLabel, textColor), GUILayout.Width(70));
-                EditorGUILayout.SelectableLabel(text, CreateTintedStyle(EditorStyles.miniLabel, textColor), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                EditorGUILayout.LabelField(text, CreateTintedStyle(EditorStyles.miniLabel, textColor), GUILayout.Height(EditorGUIUtility.singleLineHeight));
             }
         }
 
@@ -293,13 +485,16 @@ namespace UnityBox.PrefabDiffPatcher
                 GUILayout.Space((node.Depth + 1) * TreeIndentWidth + 18f);
 
                 var selectionId = PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key);
-                bool canSelectIndividually = component.IsSelectable && node.ExistsInA && node.ExistsInB;
+                bool canSelectIndividually = component.IsSelectable;
                 using (new EditorGUI.DisabledScope(!canSelectIndividually))
                 {
                     bool current = _componentSelectionById.TryGetValue(selectionId, out var selected) && selected;
                     bool next = EditorGUILayout.Toggle(current, GUILayout.Width(18));
                     if (next != current)
+                    {
                         _componentSelectionById[selectionId] = next;
+                        Repaint();
+                    }
                 }
 
                 var detail = canSelectIndividually
@@ -325,8 +520,9 @@ namespace UnityBox.PrefabDiffPatcher
                 _selectionByPath.Clear();
                 _componentSelectionById.Clear();
                 _foldoutByPath.Clear();
-                ExpandChangedAncestors(_diffRoot);
                 SelectAllChanges();
+                EnsureTreeView();
+                _treeView.SyncModel(resetExpansion: true);
                 Debug.Log($"[PrefabDiffPatcher] Analyze complete. Changed nodes: {EnumerateChangedNodes(_diffRoot).Count()}");
             }
             catch (Exception ex)
@@ -435,7 +631,7 @@ namespace UnityBox.PrefabDiffPatcher
                     selectedUnits++;
             }
 
-            if (node.ExistsInA && node.ExistsInB)
+            if (node.HasAnyChanges)
             {
                 foreach (var component in node.ComponentDiffs)
                 {
@@ -490,22 +686,35 @@ namespace UnityBox.PrefabDiffPatcher
         {
             _selectionByPath.Clear();
             _componentSelectionById.Clear();
-            foreach (var node in EnumerateChangedNodes(_diffRoot))
-                SetNodeSelectionRecursive(node, true);
+            SetNodeSelectionRecursive(_diffRoot, true);
         }
 
         private void SelectAllComponents()
         {
             foreach (var node in EnumerateChangedNodes(_diffRoot))
             {
-                if (!node.ExistsInA || !node.ExistsInB)
-                    continue;
                 foreach (var component in node.ComponentDiffs)
                 {
                     if (!component.IsSelectable)
                         continue;
                     _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = true;
                 }
+            }
+        }
+
+        private void SetObjectSelectionsRecursive(DiffNode node, bool selected)
+        {
+            if (node == null)
+                return;
+
+            if (!string.IsNullOrEmpty(node.Path) && node.HasAnyChanges)
+                _selectionByPath[node.Path] = selected;
+
+            foreach (var child in node.Children)
+            {
+                if (!child.HasAnyChanges)
+                    continue;
+                SetObjectSelectionsRecursive(child, selected);
             }
         }
 
@@ -519,7 +728,7 @@ namespace UnityBox.PrefabDiffPatcher
                 _selectionByPath[node.Path] = selected;
                 foreach (var component in node.ComponentDiffs)
                 {
-                    if (!component.IsSelectable || !node.ExistsInA || !node.ExistsInB)
+                    if (!component.IsSelectable)
                         continue;
                     _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = selected;
                 }
@@ -600,6 +809,17 @@ namespace UnityBox.PrefabDiffPatcher
             };
         }
 
+        private static Color GetNodeBackgroundColor(DiffKind kind, float alpha)
+        {
+            return kind switch
+            {
+                DiffKind.Added => new Color(0.14f, 0.35f, 0.18f, alpha),
+                DiffKind.Removed => new Color(0.35f, 0.14f, 0.14f, alpha),
+                DiffKind.Modified => new Color(0.35f, 0.27f, 0.08f, alpha),
+                _ => new Color(0.18f, 0.18f, 0.18f, alpha)
+            };
+        }
+
         private static string SanitizeFileName(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -607,6 +827,270 @@ namespace UnityBox.PrefabDiffPatcher
             var invalid = Path.GetInvalidFileNameChars();
             var chars = value.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray();
             return new string(chars);
+        }
+    }
+
+    internal sealed class PrefabDiffTreeView : TreeView
+    {
+        private const float ApplyColumnWidth = 52f;
+        private const float NameColumnWidth = 230f;
+        private const float StatusColumnWidth = 74f;
+        private const float SummaryColumnWidth = 140f;
+
+        private readonly Func<DiffNode> _rootProvider;
+        private readonly Func<string, TreeSelectionAggregate> _aggregateProvider;
+        private readonly Action<DiffNode, bool> _toggleNodeSelection;
+        private readonly Action _requestRepaint;
+        private string _selectedPath = string.Empty;
+
+        public DiffNode SelectedNode { get; private set; }
+
+        public PrefabDiffTreeView(
+            TreeViewState state,
+            Func<DiffNode> rootProvider,
+            Func<string, TreeSelectionAggregate> aggregateProvider,
+            Action<DiffNode, bool> toggleNodeSelection,
+            Action requestRepaint) : base(state)
+        {
+            _rootProvider = rootProvider ?? throw new ArgumentNullException(nameof(rootProvider));
+            _aggregateProvider = aggregateProvider ?? throw new ArgumentNullException(nameof(aggregateProvider));
+            _toggleNodeSelection = toggleNodeSelection ?? throw new ArgumentNullException(nameof(toggleNodeSelection));
+            _requestRepaint = requestRepaint ?? throw new ArgumentNullException(nameof(requestRepaint));
+
+            rowHeight = 22f;
+            showAlternatingRowBackgrounds = true;
+            showBorder = true;
+            Reload();
+        }
+
+        public void SyncModel(bool resetExpansion)
+        {
+            Reload();
+            RestoreSelection();
+            if (resetExpansion)
+                ExpandFirstLevels();
+        }
+
+        protected override TreeViewItem BuildRoot()
+        {
+            var hiddenRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            var rootNode = _rootProvider();
+            if (rootNode == null)
+            {
+                hiddenRoot.children = new List<TreeViewItem>();
+                return hiddenRoot;
+            }
+
+            int nextId = 1;
+            var rootItem = BuildItem(rootNode, ref nextId);
+            hiddenRoot.AddChild(rootItem);
+            SetupDepthsFromParentsAndChildren(hiddenRoot);
+            SelectedNode = rootNode;
+            return hiddenRoot;
+        }
+
+        protected override void RowGUI(RowGUIArgs args)
+        {
+            if (args.item is not DiffTreeViewItem item)
+            {
+                base.RowGUI(args);
+                return;
+            }
+
+            var node = item.Node;
+            var rowRect = args.rowRect;
+            if (!args.selected && Event.current.type == EventType.Repaint)
+                EditorGUI.DrawRect(rowRect, GetNodeBackgroundColor(node.Kind, 0.06f));
+
+            var applyRect = new Rect(rowRect.x, rowRect.y + 1f, ApplyColumnWidth, rowRect.height - 2f);
+            var nameRect = new Rect(applyRect.xMax, rowRect.y, NameColumnWidth, rowRect.height);
+            var statusRect = new Rect(nameRect.xMax, rowRect.y, StatusColumnWidth, rowRect.height);
+            var summaryRect = new Rect(statusRect.xMax, rowRect.y, SummaryColumnWidth, rowRect.height);
+            var pathRect = new Rect(summaryRect.xMax, rowRect.y, rowRect.xMax - summaryRect.xMax, rowRect.height);
+
+            DrawSelectionCell(applyRect, node);
+            DrawNameCell(nameRect, item);
+            EditorGUI.LabelField(statusRect, node.StatusLabel, CreateTintedStyle(EditorStyles.miniBoldLabel, GetNodeTextColor(node.Kind), TextAnchor.MiddleCenter));
+            EditorGUI.LabelField(summaryRect, node.DetailSummary, EditorStyles.miniLabel);
+            EditorGUI.LabelField(pathRect, string.IsNullOrEmpty(node.Path) ? "<Root>" : node.Path, EditorStyles.miniLabel);
+        }
+
+        protected override void SelectionChanged(IList<int> selectedIds)
+        {
+            base.SelectionChanged(selectedIds);
+            if (selectedIds == null || selectedIds.Count == 0)
+            {
+                SelectedNode = _rootProvider();
+                _selectedPath = SelectedNode?.Path ?? string.Empty;
+                _requestRepaint();
+                return;
+            }
+
+            var item = FindItem(selectedIds[0], rootItem) as DiffTreeViewItem;
+            SelectedNode = item?.Node ?? _rootProvider();
+            _selectedPath = SelectedNode?.Path ?? string.Empty;
+            _requestRepaint();
+        }
+
+        private void RestoreSelection()
+        {
+            var rootNode = _rootProvider();
+            if (rootNode == null)
+                return;
+
+            var target = FindItemByPath(rootItem, string.IsNullOrEmpty(_selectedPath) ? string.Empty : _selectedPath);
+            if (target == null)
+                target = rootItem?.children?.FirstOrDefault() as DiffTreeViewItem;
+
+            if (target != null)
+            {
+                SetSelection(new List<int> { target.id }, TreeViewSelectionOptions.RevealAndFrame);
+                if (target is DiffTreeViewItem targetItem)
+                    SelectedNode = targetItem.Node;
+            }
+            else
+            {
+                SelectedNode = rootNode;
+            }
+        }
+
+        private DiffTreeViewItem BuildItem(DiffNode node, ref int nextId)
+        {
+            var item = new DiffTreeViewItem(nextId++, node.Depth, node.DisplayName, node);
+            var changedChildren = node.Children.Where(child => child.HasAnyChanges).ToList();
+            if (changedChildren.Count > 0)
+            {
+                item.children = new List<TreeViewItem>(changedChildren.Count);
+                foreach (var child in changedChildren)
+                    item.AddChild(BuildItem(child, ref nextId));
+            }
+            return item;
+        }
+
+        private void ExpandFirstLevels()
+        {
+            CollapseAll();
+            if (rootItem?.children == null)
+                return;
+
+            foreach (var child in rootItem.children)
+            {
+                SetExpanded(child.id, true);
+                if (child.children == null)
+                    continue;
+
+                foreach (var grandChild in child.children)
+                    SetExpanded(grandChild.id, true);
+            }
+        }
+
+        private void DrawSelectionCell(Rect rect, DiffNode node)
+        {
+            var aggregate = _aggregateProvider(node.Path);
+            bool displayValue = aggregate.State == TreeSelectionState.All;
+            EditorGUI.showMixedValue = aggregate.State == TreeSelectionState.Partial;
+            bool nextValue = EditorGUI.Toggle(new Rect(rect.x + 16f, rect.y + 2f, 18f, rect.height - 4f), displayValue);
+            EditorGUI.showMixedValue = false;
+            if (nextValue != displayValue || aggregate.State == TreeSelectionState.Partial)
+            {
+                _toggleNodeSelection(node, nextValue);
+                _requestRepaint();
+            }
+        }
+
+        private void DrawNameCell(Rect rect, DiffTreeViewItem item)
+        {
+            var contentRect = rect;
+            contentRect.xMin += GetContentIndent(item);
+
+            if (item.hasChildren)
+            {
+                var foldoutRect = new Rect(contentRect.x, contentRect.y + 2f, 14f, contentRect.height - 4f);
+                bool expanded = IsExpanded(item.id);
+                bool nextExpanded = EditorGUI.Foldout(foldoutRect, expanded, GUIContent.none, false);
+                if (nextExpanded != expanded)
+                    SetExpanded(item.id, nextExpanded);
+                contentRect.xMin = foldoutRect.xMax + 2f;
+            }
+            else
+            {
+                contentRect.xMin += 16f;
+            }
+
+            var iconRect = new Rect(contentRect.x, contentRect.y, 18f, contentRect.height);
+            var labelRect = new Rect(iconRect.xMax + 2f, contentRect.y, Mathf.Max(0f, rect.xMax - (iconRect.xMax + 2f)), contentRect.height);
+            EditorGUI.LabelField(iconRect, GetNodeKindIcon(item.Node.Kind), CreateTintedStyle(EditorStyles.miniBoldLabel, GetNodeTextColor(item.Node.Kind), TextAnchor.MiddleCenter));
+            EditorGUI.LabelField(labelRect, item.Node.Path == string.Empty ? "<Root>" : item.Node.DisplayName, item.Node.HasDirectChanges ? EditorStyles.boldLabel : EditorStyles.label);
+        }
+
+        private DiffTreeViewItem FindItemByPath(TreeViewItem current, string path)
+        {
+            if (current is DiffTreeViewItem diffItem && string.Equals(diffItem.Node.Path, path ?? string.Empty, StringComparison.Ordinal))
+                return diffItem;
+
+            if (current?.children == null)
+                return null;
+
+            foreach (var child in current.children)
+            {
+                var found = FindItemByPath(child, path);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
+        }
+
+        private static GUIStyle CreateTintedStyle(GUIStyle baseStyle, Color textColor, TextAnchor? alignment = null)
+        {
+            var style = new GUIStyle(baseStyle);
+            style.normal.textColor = textColor;
+            if (alignment.HasValue)
+                style.alignment = alignment.Value;
+            return style;
+        }
+
+        private static Color GetNodeTextColor(DiffKind kind)
+        {
+            return kind switch
+            {
+                DiffKind.Added => new Color(0.25f, 0.72f, 0.35f),
+                DiffKind.Removed => new Color(0.88f, 0.38f, 0.38f),
+                DiffKind.Modified => new Color(0.95f, 0.68f, 0.18f),
+                _ => EditorStyles.label.normal.textColor
+            };
+        }
+
+        private static string GetNodeKindIcon(DiffKind kind)
+        {
+            return kind switch
+            {
+                DiffKind.Added => "+",
+                DiffKind.Removed => "-",
+                DiffKind.Modified => "~",
+                _ => "="
+            };
+        }
+
+        private static Color GetNodeBackgroundColor(DiffKind kind, float alpha)
+        {
+            return kind switch
+            {
+                DiffKind.Added => new Color(0.14f, 0.35f, 0.18f, alpha),
+                DiffKind.Removed => new Color(0.35f, 0.14f, 0.14f, alpha),
+                DiffKind.Modified => new Color(0.35f, 0.27f, 0.08f, alpha),
+                _ => new Color(0.18f, 0.18f, 0.18f, alpha)
+            };
+        }
+
+        private sealed class DiffTreeViewItem : TreeViewItem
+        {
+            public DiffNode Node { get; }
+
+            public DiffTreeViewItem(int id, int depth, string displayName, DiffNode node) : base(id, depth, displayName)
+            {
+                Node = node;
+            }
         }
     }
 
