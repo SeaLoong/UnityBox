@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.7.16] - 2026-07-11
+
+### Fixed
+
+- 修复 NDMF 子程序集直接引用 `ASSComponent` 导致缺少 Runtime 程序集引用的编译错误
+- NDMF 配置捕获改为通过 `ASSConfigData.FromAvatar()` 间接读取，避免 NDMF 插件源码直接依赖 Runtime 类型
+
 ## [0.7.15] - 2026-07-11
 
 ### Changed

@@ -32,7 +32,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public bool enablePlayableLayerObfuscation;
         public bool enableDecoyLayers;
         public bool enableDecoyStates;
-        public ASSComponent.WriteDefaultsMode writeDefaultsMode;
+        public int writeDefaultsMode;
+        public string sourceObjectName;
+
+        public static ASSConfigData FromAvatar(GameObject avatarRoot)
+        {
+            if (avatarRoot == null) return null;
+
+            return FromComponent(
+                avatarRoot.GetComponent<ASSComponent>()
+                ?? avatarRoot.GetComponentInChildren<ASSComponent>(true));
+        }
 
         public static ASSConfigData FromComponent(ASSComponent source)
         {
@@ -64,7 +74,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 enablePlayableLayerObfuscation = source.enablePlayableLayerObfuscation,
                 enableDecoyLayers = source.enableDecoyLayers,
                 enableDecoyStates = source.enableDecoyStates,
-                writeDefaultsMode = source.writeDefaultsMode
+                writeDefaultsMode = (int)source.writeDefaultsMode,
+                sourceObjectName = source.gameObject != null ? source.gameObject.name : null
             };
         }
 
@@ -155,9 +166,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.LogError("[ASS] VRCAvatarDescriptor not found");
                 return true;
             }
-            var assComponent = avatarGameObject.GetComponent<ASSComponent>()
-                ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true);
-            var assConfig = configOverride ?? ASSConfigData.FromComponent(assComponent);
+            var assConfig = configOverride ?? ASSConfigData.FromAvatar(avatarGameObject);
             if (assConfig == null)
             {
                 Debug.LogWarning($"[ASS] No AvatarSecuritySystem component found on '{avatarGameObject.name}' or its children, skipping");
@@ -167,9 +176,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.Log("[ASS] Using captured AvatarSecuritySystem configuration");
             }
-            else if (assComponent != null && assComponent.gameObject != avatarGameObject)
+            else if (!string.IsNullOrEmpty(assConfig.sourceObjectName) && assConfig.sourceObjectName != avatarGameObject.name)
             {
-                Debug.Log($"[ASS] Using AvatarSecuritySystem component from child object '{assComponent.gameObject.name}'");
+                Debug.Log($"[ASS] Using AvatarSecuritySystem component from child object '{assConfig.sourceObjectName}'");
             }
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
@@ -306,13 +315,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (avatarGameObject == null) return;
 
-            var assComponent = avatarGameObject.GetComponent<ASSComponent>()
-                ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true);
-            var config = ASSConfigData.FromComponent(assComponent);
+            var config = ASSConfigData.FromAvatar(avatarGameObject);
             if (config == null) return;
 
             ConfigSnapshots[avatarGameObject.GetInstanceID()] = config;
-            Debug.Log($"[ASS] Captured AvatarSecuritySystem configuration at {stage} from '{assComponent.gameObject.name}'");
+            Debug.Log($"[ASS] Captured AvatarSecuritySystem configuration at {stage} from '{config.sourceObjectName}'");
         }
 
         internal static ASSConfigData GetCapturedConfig(GameObject avatarGameObject)
@@ -465,9 +472,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
 
             var assConfig = GetCapturedConfig(avatarGameObject)
-                ?? ASSConfigData.FromComponent(
-                    avatarGameObject.GetComponent<ASSComponent>()
-                    ?? avatarGameObject.GetComponentInChildren<ASSComponent>(true));
+                ?? ASSConfigData.FromAvatar(avatarGameObject);
             if (assConfig == null)
                 return true;
 

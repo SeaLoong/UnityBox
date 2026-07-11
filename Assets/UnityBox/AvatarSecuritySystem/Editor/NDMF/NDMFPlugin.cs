@@ -26,12 +26,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (avatarRoot == null) return;
 
-                var config = avatarRoot.GetComponent<ASSComponent>()
-                    ?? avatarRoot.GetComponentInChildren<ASSComponent>(true);
+                var config = ASSConfigData.FromAvatar(avatarRoot);
                 if (config == null) return;
 
-                Snapshots[avatarRoot.GetInstanceID()] = ASSConfigData.FromComponent(config);
-                Debug.Log($"[ASS] NDMF captured ASS configuration from '{config.gameObject.name}'");
+                Snapshots[avatarRoot.GetInstanceID()] = config;
+                Debug.Log($"[ASS] NDMF captured ASS configuration from '{config.sourceObjectName}'");
             }
 
             public static ASSConfigData GetCapturedConfig(GameObject avatarRoot)

@@ -3,6 +3,7 @@
   "rootNamespace": "UnityBox.AvatarSecuritySystem.Editor",
   "references": [
     "UnityBox.AvatarSecuritySystem",
+    "UnityBox.AvatarSecuritySystem.Runtime",
     "nadena.dev.ndmf"
   ],
   "includePlatforms": [
