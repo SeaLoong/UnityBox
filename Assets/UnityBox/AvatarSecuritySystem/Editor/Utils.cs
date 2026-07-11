@@ -86,6 +86,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       var actualType = GetParameterType(controller, parameterName);
       if (!actualType.HasValue || actualType.Value == expectedType)
         return;
+      if (parameterName == Constants.PARAM_IS_LOCAL &&
+        (actualType.Value == AnimatorControllerParameterType.Float ||
+         actualType.Value == AnimatorControllerParameterType.Int))
+      {
+        Debug.Log(
+          $"[ASS] Parameter '{parameterName}' type is {actualType.Value}; " +
+          "transition conditions have been adapted automatically.");
+        return;
+      }
       Debug.LogWarning(
         $"[ASS] Parameter '{parameterName}' type is {actualType.Value} (expected {expectedType}). " +
         "This may cause transition conditions to behave unexpectedly.");

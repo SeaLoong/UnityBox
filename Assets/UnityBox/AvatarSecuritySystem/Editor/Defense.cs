@@ -25,6 +25,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static string SubEmitterPrefix => GO_SUB_EMITTER_PREFIX;
         private static string LightPrefix => GO_LIGHT_PREFIX;
         private static string DefenseMeshName => GO_DEFENSE_MESH;
+        private static string SharedDefenseMaterialName => Obfuscator.GameObject("GO_SHARED_DEFENSE_MATERIAL", "ASS_SharedDefenseMat");
+        private const float AggressiveSimulationSpeed = 50000000f;
+        private const float AggressiveExternalForceMultiplier = 50000000f;
+        private const float AggressiveShapeRadius = 12f;
+        private const float AggressiveRandomPosition = 6f;
+        private const float AggressiveRendererMaxParticleSize = 50f;
+        private const int AggressiveTextureTiles = 8;
+        private const int AggressiveTextureCycles = 8;
         private bool IsLightweightDefense => config != null && config.lightweightDefense;
         public void Generate()
         {
@@ -270,7 +278,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var material = new Material(heavyShader)
                 {
-                    name = "ASS_SharedDefenseMat",
+                    name = SharedDefenseMaterialName,
                     renderQueue = 3000
                 };
                 material.enableInstancing = true;
@@ -361,7 +369,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var material = new Material(shader)
             {
-                name = "ASS_SharedDefenseMat"
+                name = SharedDefenseMaterialName
             };
             material.enableInstancing = true;
             if (material.HasProperty("_Color"))
@@ -515,9 +523,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 main.loop = true;
                 main.prewarm = true;
                 main.playOnAwake = true;
-                main.simulationSpeed = 10000000f;
+                main.simulationSpeed = AggressiveSimulationSpeed;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 12f);
-                main.startSpeed = new ParticleSystem.MinMaxCurve(1f, 5f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(20f, 80f);
                 main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.5f);
                 main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
                 main.startColor = new ParticleSystem.MinMaxGradient(
@@ -550,26 +558,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 shape.shapeType = (s % 3 == 0) ? ParticleSystemShapeType.Sphere :
                                   (s % 3 == 1) ? ParticleSystemShapeType.Cone :
                                                   ParticleSystemShapeType.Box;
-                shape.radius = 2f;
-                shape.angle = 45f;
-                shape.randomDirectionAmount = 0.5f;
-                shape.randomPositionAmount = 1f;
+                shape.radius = AggressiveShapeRadius;
+                shape.angle = 90f;
+                shape.randomDirectionAmount = 1f;
+                shape.randomPositionAmount = AggressiveRandomPosition;
                 var velocityOverLifetime = ps.velocityOverLifetime;
                 velocityOverLifetime.enabled = true;
                 velocityOverLifetime.space = ParticleSystemSimulationSpace.World;
-                velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                velocityOverLifetime.orbitalX = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                velocityOverLifetime.orbitalY = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(-1f, 1f);
-                velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+                velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(-50f, 50f);
+                velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(-50f, 50f);
+                velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(-50f, 50f);
+                velocityOverLifetime.orbitalX = new ParticleSystem.MinMaxCurve(10f, 50f);
+                velocityOverLifetime.orbitalY = new ParticleSystem.MinMaxCurve(10f, 50f);
+                velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(10f, 50f);
+                velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(-20f, 20f);
+                velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(2f, 8f);
                 var forceOverLifetime = ps.forceOverLifetime;
                 forceOverLifetime.enabled = true;
-                forceOverLifetime.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
-                forceOverLifetime.y = new ParticleSystem.MinMaxCurve(-1f, 3f);
-                forceOverLifetime.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
+                forceOverLifetime.x = new ParticleSystem.MinMaxCurve(-50f, 50f);
+                forceOverLifetime.y = new ParticleSystem.MinMaxCurve(-30f, 70f);
+                forceOverLifetime.z = new ParticleSystem.MinMaxCurve(-50f, 50f);
                 forceOverLifetime.randomized = true;
                 var colorOverLifetime = ps.colorOverLifetime;
                 colorOverLifetime.enabled = true;
@@ -602,21 +610,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 var noise = ps.noise;
                 noise.enabled = true;
-                noise.strength = new ParticleSystem.MinMaxCurve(1f, 3f);
-                noise.frequency = 2f;
-                noise.scrollSpeed = 1.5f;
+                noise.strength = new ParticleSystem.MinMaxCurve(10f, 30f);
+                noise.frequency = 8f;
+                noise.scrollSpeed = 10f;
                 noise.damping = true;
-                noise.octaveCount = 4;
-                noise.octaveMultiplier = 0.5f;
-                noise.octaveScale = 2f;
+                noise.octaveCount = 8;
+                noise.octaveMultiplier = 0.8f;
+                noise.octaveScale = 4f;
                 noise.quality = ParticleSystemNoiseQuality.High;
                 noise.separateAxes = true;
-                noise.strengthX = new ParticleSystem.MinMaxCurve(1f, 3f);
-                noise.strengthY = new ParticleSystem.MinMaxCurve(1f, 3f);
-                noise.strengthZ = new ParticleSystem.MinMaxCurve(1f, 3f);
-                noise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
-                noise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
-                noise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
+                noise.strengthX = new ParticleSystem.MinMaxCurve(10f, 30f);
+                noise.strengthY = new ParticleSystem.MinMaxCurve(10f, 30f);
+                noise.strengthZ = new ParticleSystem.MinMaxCurve(10f, 30f);
+                noise.positionAmount = new ParticleSystem.MinMaxCurve(4f);
+                noise.rotationAmount = new ParticleSystem.MinMaxCurve(2f);
+                noise.sizeAmount = new ParticleSystem.MinMaxCurve(1f);
                 if (enableCollision)
                 {
                     var collision = ps.collision;
@@ -661,20 +669,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var textureSheet = ps.textureSheetAnimation;
                 textureSheet.enabled = true;
                 textureSheet.mode = ParticleSystemAnimationMode.Grid;
-                textureSheet.numTilesX = 4;
-                textureSheet.numTilesY = 4;
+                textureSheet.numTilesX = AggressiveTextureTiles;
+                textureSheet.numTilesY = AggressiveTextureTiles;
                 textureSheet.animation = ParticleSystemAnimationType.WholeSheet;
                 textureSheet.frameOverTime = new ParticleSystem.MinMaxCurve(0f, 1f);
-                textureSheet.startFrame = new ParticleSystem.MinMaxCurve(0f, 15f);
-                textureSheet.cycleCount = 3;
+                textureSheet.startFrame = new ParticleSystem.MinMaxCurve(0f, AggressiveTextureTiles * AggressiveTextureTiles - 1);
+                textureSheet.cycleCount = AggressiveTextureCycles;
                 var limitVelocity = ps.limitVelocityOverLifetime;
                 limitVelocity.enabled = true;
                 limitVelocity.separateAxes = true;
-                limitVelocity.limitX = new ParticleSystem.MinMaxCurve(5f);
-                limitVelocity.limitY = new ParticleSystem.MinMaxCurve(5f);
-                limitVelocity.limitZ = new ParticleSystem.MinMaxCurve(5f);
-                limitVelocity.dampen = 0.5f;
-                limitVelocity.drag = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+                limitVelocity.limitX = new ParticleSystem.MinMaxCurve(100f);
+                limitVelocity.limitY = new ParticleSystem.MinMaxCurve(100f);
+                limitVelocity.limitZ = new ParticleSystem.MinMaxCurve(100f);
+                limitVelocity.dampen = 0.05f;
+                limitVelocity.drag = new ParticleSystem.MinMaxCurve(0.1f, 5f);
                 limitVelocity.multiplyDragByParticleSize = true;
                 limitVelocity.multiplyDragByParticleVelocity = true;
                 var inheritVelocity = ps.inheritVelocity;
@@ -684,7 +692,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var lifetimeBySpeed = ps.lifetimeByEmitterSpeed;
                 lifetimeBySpeed.enabled = true;
                 lifetimeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
-                lifetimeBySpeed.range = new Vector2(0f, 10f);
+                lifetimeBySpeed.range = new Vector2(0f, 100f);
                 var colorBySpeed = ps.colorBySpeed;
                 colorBySpeed.enabled = true;
                 var speedGradient = new Gradient();
@@ -700,25 +708,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                 );
                 colorBySpeed.color = new ParticleSystem.MinMaxGradient(speedGradient);
-                colorBySpeed.range = new Vector2(0f, 10f);
+                colorBySpeed.range = new Vector2(0f, 100f);
                 var sizeBySpeed = ps.sizeBySpeed;
                 sizeBySpeed.enabled = true;
                 sizeBySpeed.separateAxes = true;
-                sizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                sizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                sizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                sizeBySpeed.range = new Vector2(0f, 10f);
+                sizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                sizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                sizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                sizeBySpeed.range = new Vector2(0f, 100f);
                 var rotationBySpeed = ps.rotationBySpeed;
                 rotationBySpeed.enabled = true;
                 rotationBySpeed.separateAxes = true;
-                rotationBySpeed.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                rotationBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                rotationBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                rotationBySpeed.range = new Vector2(0f, 10f);
+                rotationBySpeed.x = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                rotationBySpeed.y = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                rotationBySpeed.z = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                rotationBySpeed.range = new Vector2(0f, 100f);
                 var externalForces = ps.externalForces;
                 externalForces.enabled = true;
-                externalForces.multiplier = 10000000f;
-                externalForces.multiplierCurve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 1f, 1, 10000000f));
+                externalForces.multiplier = AggressiveExternalForceMultiplier;
+                externalForces.multiplierCurve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0, 1f, 1, AggressiveExternalForceMultiplier));
                 Light particleLight = (lights != null && lights.Length > 0) ? lights[s % lights.Length] : null;
                 var lightsModule = ps.lights;
                 if (particleLight != null)
@@ -763,7 +771,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         renderer.sharedMaterial = particleMaterial;
                         renderer.trailMaterial = particleMaterial;
                     }
-                    renderer.maxParticleSize = 5f;
+                    renderer.maxParticleSize = AggressiveRendererMaxParticleSize;
                     renderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                     renderer.receiveShadows = true;
                     renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -798,9 +806,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subMain.loop = true;
                 subMain.prewarm = true;
                 subMain.playOnAwake = true;
-                subMain.simulationSpeed = 10000000f;
+                subMain.simulationSpeed = AggressiveSimulationSpeed;
                 subMain.startLifetime = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                subMain.startSpeed = new ParticleSystem.MinMaxCurve(1f, 4f);
+                subMain.startSpeed = new ParticleSystem.MinMaxCurve(25f, 90f);
                 subMain.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
                 subMain.maxParticles = subParticles;
                 subMain.gravityModifier = 1.5f;
@@ -826,23 +834,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var subShape = subPs.shape;
                 subShape.enabled = true;
                 subShape.shapeType = ParticleSystemShapeType.Sphere;
-                subShape.radius = 2f;
-                subShape.randomDirectionAmount = 0.5f;
-                subShape.randomPositionAmount = 1f;
+                subShape.radius = AggressiveShapeRadius;
+                subShape.randomDirectionAmount = 1f;
+                subShape.randomPositionAmount = AggressiveRandomPosition;
                 var subVelocity = subPs.velocityOverLifetime;
                 subVelocity.enabled = true;
                 subVelocity.space = ParticleSystemSimulationSpace.World;
-                subVelocity.x = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                subVelocity.y = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                subVelocity.z = new ParticleSystem.MinMaxCurve(-3f, 3f);
-                subVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                subVelocity.orbitalY = new ParticleSystem.MinMaxCurve(0.5f, 2f);
-                subVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0.5f, 2f);
+                subVelocity.x = new ParticleSystem.MinMaxCurve(-60f, 60f);
+                subVelocity.y = new ParticleSystem.MinMaxCurve(-60f, 60f);
+                subVelocity.z = new ParticleSystem.MinMaxCurve(-60f, 60f);
+                subVelocity.orbitalX = new ParticleSystem.MinMaxCurve(12f, 60f);
+                subVelocity.orbitalY = new ParticleSystem.MinMaxCurve(12f, 60f);
+                subVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(12f, 60f);
                 var subForce = subPs.forceOverLifetime;
                 subForce.enabled = true;
-                subForce.x = new ParticleSystem.MinMaxCurve(-2f, 2f);
-                subForce.y = new ParticleSystem.MinMaxCurve(-1f, 3f);
-                subForce.z = new ParticleSystem.MinMaxCurve(-2f, 2f);
+                subForce.x = new ParticleSystem.MinMaxCurve(-60f, 60f);
+                subForce.y = new ParticleSystem.MinMaxCurve(-40f, 80f);
+                subForce.z = new ParticleSystem.MinMaxCurve(-60f, 60f);
                 subForce.randomized = true;
                 var subColor = subPs.colorOverLifetime;
                 subColor.enabled = true;
@@ -874,19 +882,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subRotation.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
                 var subNoise = subPs.noise;
                 subNoise.enabled = true;
-                subNoise.strength = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
-                subNoise.frequency = 3f;
+                subNoise.strength = new ParticleSystem.MinMaxCurve(8f, 24f);
+                subNoise.frequency = 10f;
                 subNoise.quality = ParticleSystemNoiseQuality.High;
-                subNoise.octaveCount = 4;
-                subNoise.octaveMultiplier = 0.5f;
-                subNoise.octaveScale = 2f;
+                subNoise.octaveCount = 8;
+                subNoise.octaveMultiplier = 0.8f;
+                subNoise.octaveScale = 4f;
                 subNoise.separateAxes = true;
-                subNoise.strengthX = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
-                subNoise.strengthY = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
-                subNoise.strengthZ = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
-                subNoise.positionAmount = new ParticleSystem.MinMaxCurve(1f);
-                subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(0.5f);
-                subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(0.3f);
+                subNoise.strengthX = new ParticleSystem.MinMaxCurve(8f, 24f);
+                subNoise.strengthY = new ParticleSystem.MinMaxCurve(8f, 24f);
+                subNoise.strengthZ = new ParticleSystem.MinMaxCurve(8f, 24f);
+                subNoise.positionAmount = new ParticleSystem.MinMaxCurve(4f);
+                subNoise.rotationAmount = new ParticleSystem.MinMaxCurve(2f);
+                subNoise.sizeAmount = new ParticleSystem.MinMaxCurve(1f);
                 if (enableCollision)
                 {
                     var subCollision = subPs.collision;
@@ -918,17 +926,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var subTexSheet = subPs.textureSheetAnimation;
                 subTexSheet.enabled = true;
                 subTexSheet.mode = ParticleSystemAnimationMode.Grid;
-                subTexSheet.numTilesX = 4;
-                subTexSheet.numTilesY = 4;
+                subTexSheet.numTilesX = AggressiveTextureTiles;
+                subTexSheet.numTilesY = AggressiveTextureTiles;
                 subTexSheet.animation = ParticleSystemAnimationType.WholeSheet;
-                subTexSheet.cycleCount = 3;
+                subTexSheet.cycleCount = AggressiveTextureCycles;
                 var subLimitVel = subPs.limitVelocityOverLifetime;
                 subLimitVel.enabled = true;
                 subLimitVel.separateAxes = true;
-                subLimitVel.limitX = new ParticleSystem.MinMaxCurve(5f);
-                subLimitVel.limitY = new ParticleSystem.MinMaxCurve(5f);
-                subLimitVel.limitZ = new ParticleSystem.MinMaxCurve(5f);
-                subLimitVel.dampen = 0.5f;
+                subLimitVel.limitX = new ParticleSystem.MinMaxCurve(100f);
+                subLimitVel.limitY = new ParticleSystem.MinMaxCurve(100f);
+                subLimitVel.limitZ = new ParticleSystem.MinMaxCurve(100f);
+                subLimitVel.dampen = 0.05f;
                 var subInheritVel = subPs.inheritVelocity;
                 subInheritVel.enabled = true;
                 subInheritVel.mode = ParticleSystemInheritVelocityMode.Current;
@@ -936,27 +944,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var subLifeBySpeed = subPs.lifetimeByEmitterSpeed;
                 subLifeBySpeed.enabled = true;
                 subLifeBySpeed.curve = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 1.5f));
-                subLifeBySpeed.range = new Vector2(0f, 10f);
+                subLifeBySpeed.range = new Vector2(0f, 100f);
                 var subColorBySpeed = subPs.colorBySpeed;
                 subColorBySpeed.enabled = true;
-                subColorBySpeed.range = new Vector2(0f, 10f);
+                subColorBySpeed.range = new Vector2(0f, 100f);
                 var subSizeBySpeed = subPs.sizeBySpeed;
                 subSizeBySpeed.enabled = true;
                 subSizeBySpeed.separateAxes = true;
-                subSizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                subSizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                subSizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2f));
-                subSizeBySpeed.range = new Vector2(0f, 10f);
+                subSizeBySpeed.x = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                subSizeBySpeed.y = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                subSizeBySpeed.z = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 6f));
+                subSizeBySpeed.range = new Vector2(0f, 100f);
                 var subRotBySpeed = subPs.rotationBySpeed;
                 subRotBySpeed.enabled = true;
                 subRotBySpeed.separateAxes = true;
-                subRotBySpeed.x = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                subRotBySpeed.y = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                subRotBySpeed.z = new ParticleSystem.MinMaxCurve(-360f, 360f);
-                subRotBySpeed.range = new Vector2(0f, 10f);
+                subRotBySpeed.x = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                subRotBySpeed.y = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                subRotBySpeed.z = new ParticleSystem.MinMaxCurve(-7200f, 7200f);
+                subRotBySpeed.range = new Vector2(0f, 100f);
                 var subExtForces = subPs.externalForces;
                 subExtForces.enabled = true;
-                subExtForces.multiplier = 10000000f;
+                subExtForces.multiplier = AggressiveExternalForceMultiplier;
                 Light subParticleLight = (lights != null && lights.Length > 0) ? lights[(s + mainCount) % lights.Length] : null;
                 var subLightsModule = subPs.lights;
                 if (subParticleLight != null)
@@ -995,7 +1003,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         subRenderer.sharedMaterial = particleMaterial;
                         subRenderer.trailMaterial = particleMaterial;
                     }
-                    subRenderer.maxParticleSize = 5f;
+                    subRenderer.maxParticleSize = AggressiveRendererMaxParticleSize;
                     subRenderer.shadowCastingMode = ShadowCastingMode.TwoSided;
                     subRenderer.receiveShadows = true;
                     subRenderer.lightProbeUsage = LightProbeUsage.BlendProbes;
