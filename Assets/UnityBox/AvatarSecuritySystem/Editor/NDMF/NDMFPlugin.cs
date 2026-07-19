@@ -15,8 +15,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     /// </summary>
     public class NDMFPlugin : Plugin<NDMFPlugin>
     {
-        public override string QualifiedName => "com.unitybox.avatarsecuritysystem";
-        public override string DisplayName => "UnityBox Avatar Security System";
+        public override string QualifiedName => "top.sealoong.unitybox.avatar-security-system";
+        public override string DisplayName => "Avatar Security System";
 
         private sealed class ASSConfigSnapshot
         {
@@ -53,6 +53,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 .Run("Capture Avatar Security System Config", ctx =>
             {
                 ASSConfigSnapshot.Capture(ctx.AvatarRootObject);
+                // 同步写入 Processor.ConfigSnapshots，确保 PlayableObfuscationProcessor
+                // （VRCSDK callback，int.MaxValue-1）也能拿到配置快照
+                Processor.CaptureConfigSnapshot(ctx.AvatarRootObject,
+                    "NDMF Resolving (synced to Processor)");
             });
 
             InPhase(BuildPhase.PlatformFinish)

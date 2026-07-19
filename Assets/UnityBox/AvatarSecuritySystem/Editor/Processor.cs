@@ -112,20 +112,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// <summary>
         /// 固定在 -1024：与 VRCFury 自身的 VrcfRemoveEditorOnlyObjectsHook 相同的 callbackOrder
         /// 不会造成问题（两者处理的内容互不影响，谁先谁后结果一致）。
-        /// 无需按 NDMF 是否存在动态切换：是否存在 NDMF 在编译期已由 NDMF_AVAILABLE 决定——
-        /// 存在 NDMF 时，实际处理改由 Editor/NDMF 子程序集中的 NDMFPlugin 在 NDMF
-        /// BuildPhase.PlatformFinish（NDMF 概念中真正的最后一个阶段）内完成，此回调直接跳过；
-        /// 不存在 NDMF 时才由本回调处理。
+        /// NDMF 存在时优先由 NDMFPlugin（Editor/NDMF 子程序集）在 NDMF 构建管线中处理；
+        /// 但 `NDMF_AVAILABLE` 仅为编译期符号（由 asmdef versionDefine 提供），
+        /// NDMF 子程序集可能因版本不匹配等原因未成功编译，此时此回调作为运行时兜底路径，
+        /// 通过检测 Processor.ConfigSnapshots 中是否存在 NDMFPlugin 写入的快照判断。
         /// </summary>
         public int callbackOrder => -1024;
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
 #if NDMF_AVAILABLE
-            // 存在 NDMF 时，统一由 NDMFPlugin 在 NDMF 构建管线中处理，
-            // VRCSDK callback 路径直接跳过，避免重复执行。
-            return true;
-#else
+            // 存在 NDMF 时，由 NDMFPlugin 在 NDMF 构建管线中处理。
+            // 通过 Processor.ConfigSnapshots 检测 NDMFPlugin 是否真的运行了
+            // （NDMFPlugin.Resolving 已调用 CaptureConfigSnapshot）：
+            //   - 快照存在 → NDMFPlugin 正常运行，此回调跳过
+            //   - 快照不存在 → NDMF 子程序集可能未编译或 NDMFPlugin 未运行，
+            //     走独立处理路径作为兜底
+            var capturedConfig = GetCapturedConfig(avatarGameObject);
+            if (capturedConfig != null)
+            {
+                Debug.Log("[ASS] NDMFPlugin 已处理该 Avatar，VRCSDK callback 跳过");
+                return true;
+            }
+            Debug.LogWarning("[ASS] NDMF_AVAILABLE 已定义但 NDMFPlugin 未捕获到配置，" +
+                "可能 NDMF 版本过旧或子程序集未编译，回退到独立处理路径");
+#endif
             Debug.Log($"[ASS] OnPreprocessAvatar called (callbackOrder={callbackOrder})");
             try
             {
@@ -145,14 +156,27 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ClearConfigSnapshots("preprocess exception");
                 return false;
             }
-#endif
         }
 
         public void OnPostprocessAvatar()
         {
+            // 判断当前构建走的是哪个路径：
+            //   - NDMF 路径：NDMFPlugin 在 NDMF 管线内处理，未调用 SnapshotPlayableLayers
+            //   - 独立路径：OnPreprocessAvatar 调用了 SnapshotPlayableLayers
+            // 通过 PlayableLayerSnapshots 有无快照来区分，以决定是否清理 Generated。
+            bool hasSnapshots = PlayableLayerSnapshots.Count > 0;
+
             RestorePlayableLayerSnapshots("postprocess");
             ClearConfigSnapshots("postprocess");
-            CleanupTransientGeneratedAssets("postprocess");
+
+            // 只有独立路径才需要清理 Generated（该路径下控制器已被复制到 Generated 中，
+            // 构建完成后通过快照恢复原始控制器，删除 Generated 副本）。
+            // NDMF 路径下控制器是原地修改的，可能引用了 Generated 中的资产（如 _E.anim），
+            // 删除 Generated 将导致引用断裂。
+            if (hasSnapshots)
+            {
+                CleanupTransientGeneratedAssets("postprocess");
+            }
         }
         /// <summary>
         /// 核心处理逻辑。由 <see cref="OnPreprocessAvatar"/>（无 NDMF 场景）
@@ -311,7 +335,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        internal static void CaptureConfigSnapshot(GameObject avatarGameObject, string stage)
+        public static void CaptureConfigSnapshot(GameObject avatarGameObject, string stage)
         {
             if (avatarGameObject == null) return;
 
