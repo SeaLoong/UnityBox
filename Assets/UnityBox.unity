@@ -13974,7 +13974,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
@@ -14022,7 +14022,7 @@ MonoBehaviour:
   enablePlayableLayerObfuscation: 1
   enableDecoyLayers: 1
   enableDecoyStates: 1
-  writeDefaultsMode: 0
+  writeDefaultsMode: 1
 --- !u!114 &688602979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17818,7 +17818,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
@@ -21615,7 +21615,20 @@ MonoBehaviour:
     parametersPerMenu:
       objects:
       - obj: {fileID: 1326228217}
-        value: 0
+        value: 1
+      blendShapeModifiers: []
+      materialReplacers: []
+      materialPropertyModifiers: []
+      clips: []
+  - menuName: 
+    icon: {fileID: 0}
+    parentOverride: {fileID: 0}
+    parentOverrideMA: {fileID: 0}
+    autoDresser: {fileID: 0}
+    parametersPerMenu:
+      objects:
+      - obj: {fileID: 184227753}
+        value: 1
       blendShapeModifiers: []
       materialReplacers: []
       materialPropertyModifiers: []
@@ -24782,7 +24795,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
@@ -35232,7 +35245,7 @@ MonoBehaviour:
   enablePlayableLayerObfuscation: 1
   enableDecoyLayers: 1
   enableDecoyStates: 1
-  writeDefaultsMode: 0
+  writeDefaultsMode: 1
 --- !u!114 &1679610433
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35299,7 +35312,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
@@ -35312,7 +35325,7 @@ MonoBehaviour:
       type: {class: FixWriteDefaults, ns: VF.Model.Feature, asm: VRCFury}
       data:
         version: 0
-        mode: 0
+        mode: 1
 --- !u!1 &1681630306
 GameObject:
   m_ObjectHideFlags: 0
@@ -43626,7 +43639,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
@@ -61829,7 +61842,7 @@ MonoBehaviour:
   enablePlayableLayerObfuscation: 0
   enableDecoyLayers: 1
   enableDecoyStates: 1
-  writeDefaultsMode: 0
+  writeDefaultsMode: 1
 --- !u!114 &6481149578489306160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61844,7 +61857,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1348.0
+  vrcfuryVersion: 1.1363.0
   somethingIsBroken: 0
   config:
     features: []
