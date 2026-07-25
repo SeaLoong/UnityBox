@@ -31,9 +31,11 @@ namespace UnityBox.AdvancedCostumeController
 
         if (processedOutfitObjects.Contains(t.gameObject)) continue;
 
-        // 只有拥有骨架且有网格的节点才是服装本体。命中后不进入其后代，
-        // 从而保证嵌套网格/嵌套骨架都被当作同一套服装的部件。
-        if (!Utils.OwnsSkeleton(t) || !Utils.HasMeshInHierarchy(t))
+        // 默认由骨架和网格识别服装；ACCOutfitMarker 是完全显式的服装声明，
+        // 不要求骨架或网格。命中后不进入其后代，从而避免嵌套对象被重复识别。
+        bool isExplicitOutfit = t.GetComponent<ACCOutfitMarker>() != null;
+        bool isAutoDetectedOutfit = Utils.OwnsSkeleton(t) && Utils.HasMeshInHierarchy(t);
+        if (!isExplicitOutfit && !isAutoDetectedOutfit)
         {
           for (int i = t.childCount - 1; i >= 0; i--)
             stack.Push(t.GetChild(i));
@@ -53,10 +55,11 @@ namespace UnityBox.AdvancedCostumeController
           {
             var sibling = outfitParent.GetChild(i);
             var materialVariant = sibling.GetComponent<ACCVariantMaterialOverride>();
+            bool isExplicitVariant = sibling.GetComponent<ACCOutfitMarker>() != null;
             bool isMaterialVariant = materialVariant != null &&
               materialVariant.OutfitBase == outfitBase.gameObject;
             if (sibling != outfitBase &&
-                (Utils.HasMeshInHierarchy(sibling) || isMaterialVariant))
+                (Utils.HasMeshInHierarchy(sibling) || isMaterialVariant || isExplicitVariant))
               variants.Add(sibling.gameObject);
           }
         }

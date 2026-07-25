@@ -7,14 +7,15 @@ Advanced Costume Controller（以下简称 **ACC**）是一个基于 [Modular Av
 - FX Animator Controller（通过 `ModularAvatarMergeAnimator` 合并）；
 - 服装切换、部件开关、混搭和材质替换所需的 AnimationClip。
 
-ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等任意“拥有独立骨架和网格”的 Avatar 区域。
+ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar 区域；默认通过独立骨架识别，也可用 `ACCOutfitMarker` 显式标记任意服装根容器。
 
 ## 前置条件
 
 - Unity `2022.3` 或兼容版本；
 - VRChat SDK Avatars；
 - Modular Avatar `1.10.0` 或更高版本；
-- 目标区域中至少有一个 `SkinnedMeshRenderer`，且正确指定了 `rootBone`；
+- 自动识别时：目标区域中至少有一个 `SkinnedMeshRenderer`，且正确指定了 `rootBone`；
+- 无独立骨架或网格时：将 `ACCOutfitMarker` 挂到服装根对象；
 - 服装或可控区域已放在 Avatar 的层级中。
 
 打开工具：
@@ -52,7 +53,7 @@ Avatar
 | 名称 | 含义 |
 |---|---|
 | **Costumes Root** | 本次 ACC 扫描与动画绑定的根节点；生成动画路径都相对它计算。 |
-| **Outfit Base** | 被识别为一套服装本体的对象；它拥有服装骨架分支。 |
+| **Outfit Base** | 被识别为一套服装本体的对象；它拥有服装骨架分支，或带有 `ACCOutfitMarker` 显式标记。 |
 | **Outfit Object** | 菜单中代表一套服装的对象；有变体时是共同父对象，无变体时等于 Outfit Base。 |
 | **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
@@ -70,6 +71,26 @@ ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。�
 4. 从 root bone 向上到 Outfit Base 的顶层骨架分支本身不含 Mesh。
 
 因此，识别由真实骨架结构决定，**不依赖对象名称**。`Armature`、`Bone`、`Skeleton` 等名称无需配置忽略列表；ACC 已没有 Ignore Names 选项。
+
+### 无独立骨架的原版服装
+
+部分原版服装、Mesh 拆分件或复用 Avatar 骨架的服装层级只有网格，没有自身的 `Armature` 分支。这类对象无法通过自动骨架扫描识别，可显式添加组件：
+
+```text
+UnityBox > ACC Outfit Marker
+```
+
+将 `ACCOutfitMarker` 挂到希望作为 Outfit Base 的对象上：
+
+```text
+Costumes Root
+└── Original Outfit Meshes       ← 添加 ACC Outfit Marker
+    ├── Top Mesh
+    ├── Bottom Mesh
+    └── Shoes Mesh
+```
+
+Marker 是完全显式的声明：即使对象本身及后代没有网格或骨架，ACC 也会将它识别为服装。带 Marker 的同级对象也可作为无网格变体加入同一变体组。标记命中后，ACC 和自动识别服装一样停止扫描其后代，因此其中嵌套网格会继续按部件规则处理，不会成为另一套服装。
 
 ### 为什么嵌套网格不会被重复识别
 
@@ -368,6 +389,8 @@ Hair/Mixer_{OutfitGroup}
 4. rootBone 是否位于预期 Outfit Base 的后代；
 5. 顶层骨架分支是否意外包含 Mesh。
 
+如果服装没有独立骨架、只有网格，或希望手动指定某个容器为服装根，请在其 Outfit Base 上添加 `ACCOutfitMarker` 后重新刷新预览。
+
 ### 部件没有出现在 Parts 菜单
 
 检查对象是否：
@@ -412,7 +435,8 @@ Assets/UnityBox/AdvancedCostumeController/
 │   ├── ACCVariantMaterialOverrideEditor.cs
 │   └── Localization.cs                   编辑器中英文本地化
 └── Runtime/
-    └── ACCVariantMaterialOverride.cs     材质变体标记组件
+    ├── ACCOutfitMarker.cs                 无骨架服装的显式识别标记
+    └── ACCVariantMaterialOverride.cs      材质变体标记组件
 ```
 
 ## 注意事项
