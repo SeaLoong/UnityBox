@@ -1,0 +1,14 @@
+{
+  "name": "UnityBox.AdvancedCostumeController.Runtime",
+  "rootNamespace": "UnityBox.AdvancedCostumeController",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

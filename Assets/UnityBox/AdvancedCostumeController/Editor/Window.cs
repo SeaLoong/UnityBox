@@ -17,16 +17,18 @@ namespace UnityBox.AdvancedCostumeController
     private ACCConfig config = new ACCConfig();
 
     // ── 运行时状态 ──
-    private HashSet<string> ignoreSet = new();
     private List<OutfitData> currentOutfitDataList = new();
     private Dictionary<OutfitData, bool> outfitSelections = new();
     private Dictionary<OutfitData, Dictionary<GameObject, bool>> outfitObjectSelections = new();
     private Dictionary<OutfitData, Dictionary<GameObject, bool>> partSelections = new();
+    private Dictionary<OutfitData, Dictionary<GameObject, string>> partGroupNames = new();
     private bool previewFoldout = true;
     private Vector2 scrollPosition = Vector2.zero;
 
 [MenuItem("Tools/UnityBox/Advanced Costume Controller")]
     public static void ShowWindow() => GetWindow<Window>("Advanced Costume Controller");
+
+    private string T(string chinese, string english) => Localization.Text(config, chinese, english);
 
     private void OnEnable()
     {
@@ -42,11 +44,11 @@ namespace UnityBox.AdvancedCostumeController
       outfitSelections.Clear();
       outfitObjectSelections.Clear();
       partSelections.Clear();
+      partGroupNames.Clear();
 
       if (config.CostumesRoot == null) return;
 
-      ignoreSet = Utils.BuildIgnoreSet(config.IgnoreNamesCsv);
-      currentOutfitDataList = Scanner.FindOutfits(config.CostumesRoot, ignoreSet);
+      currentOutfitDataList = Scanner.FindOutfits(config.CostumesRoot);
 
       foreach (var outfit in currentOutfitDataList)
       {
@@ -57,8 +59,12 @@ namespace UnityBox.AdvancedCostumeController
           outfitObjectSelections[outfit][obj] = true;
 
         partSelections[outfit] = new Dictionary<GameObject, bool>();
+        partGroupNames[outfit] = new Dictionary<GameObject, string>();
         foreach (var part in outfit.Parts)
+        {
           partSelections[outfit][part] = true;
+          partGroupNames[outfit][part] = "";
+        }
       }
     }
 
@@ -70,9 +76,17 @@ namespace UnityBox.AdvancedCostumeController
     {
       EditorGUILayout.LabelField("Advanced Costume Controller", EditorStyles.boldLabel);
 
+      var languageOptions = new[]
+      {
+        "Auto / 自动",
+        "English",
+        "中文"
+      };
+      config.Language = (ACCLanguage)EditorGUILayout.Popup(
+        T("语言", "Language"), (int)config.Language, languageOptions);
+
       DrawConfigSection();
       DrawHelpBox();
-      DrawIgnoreNames();
       DrawPreviewSection();
       DrawGenerateButton();
     }
@@ -81,38 +95,40 @@ namespace UnityBox.AdvancedCostumeController
     {
       var oldRoot = config.CostumesRoot;
       config.CostumesRoot = (GameObject)EditorGUILayout.ObjectField(
-        "Costumes Root", config.CostumesRoot, typeof(GameObject), true);
+        T("服装根节点", "Costumes Root"), config.CostumesRoot, typeof(GameObject), true);
       if (config.CostumesRoot != oldRoot)
       {
         config.ApplyAutoDefaultsFromRoot();
         RefreshPreview();
       }
 
-      var paramPrefix = EditorGUILayout.TextField("Parameter Prefix", config.ParamPrefix);
+      var paramPrefix = EditorGUILayout.TextField(T("参数前缀", "Parameter Prefix"), config.ParamPrefix);
       if (paramPrefix != config.ParamPrefix)
       {
         config.ParamPrefix = paramPrefix;
         config.AutoParamPrefix = false;
       }
 
-      var costumeParamName = EditorGUILayout.TextField("Costume Parameter Name", config.CostumeParamName);
-      if (costumeParamName != config.CostumeParamName)
-      {
-        config.CostumeParamName = costumeParamName;
-        config.AutoCostumeParamName = false;
-      }
+      EditorGUILayout.HelpBox(
+        T("参数前缀同时作为主服装 Int 参数、Animator Layer 和生成文件的命名空间；同一 Avatar 上必须唯一。",
+          "Parameter Prefix is also the main costume Int parameter and the namespace for Animator Layers and generated files; it must be unique per Avatar."),
+        MessageType.Info);
 
       config.DefaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField(
-        "Default Outfit (optional)", config.DefaultOutfitOverride, typeof(GameObject), true);
-      config.EnableParts = EditorGUILayout.Toggle("Enable Parts Control", config.EnableParts);
-      config.EnableCustomMixer = EditorGUILayout.Toggle("Enable Custom Mixer", config.EnableCustomMixer);
+        T("默认服装（可选）", "Default Outfit (optional)"), config.DefaultOutfitOverride, typeof(GameObject), true);
+      config.EnableParts = EditorGUILayout.Toggle(T("启用部件控制", "Enable Parts Control"), config.EnableParts);
+      if (!config.EnableParts)
+        config.EnableCustomMixer = false;
+
+      using (new EditorGUI.DisabledScope(!config.EnableParts))
+        config.EnableCustomMixer = EditorGUILayout.Toggle(T("启用混搭模式", "Enable Custom Mixer"), config.EnableCustomMixer);
       if (config.EnableCustomMixer)
       {
         EditorGUI.indentLevel++;
-        config.CustomMixerName = EditorGUILayout.TextField("Custom Mixer Name", config.CustomMixerName);
+        config.CustomMixerName = EditorGUILayout.TextField(T("混搭菜单名称", "Custom Mixer Name"), config.CustomMixerName);
         EditorGUILayout.HelpBox(
-          "Custom Mixer 是一个特殊服装，可以自由组合所有服装的部件和变体。\n" +
-          "启用后会生成一个额外的菜单入口和对应的独立动画层，不依赖 Parts Control。",
+          T("混搭模式会激活各服装本体，再用独立参数控制部件与变体；必须启用部件控制。",
+            "Custom Mixer activates outfit bases, then controls parts and variants with independent parameters; Parts Control is required."),
           MessageType.Info);
         EditorGUI.indentLevel--;
       }
@@ -124,9 +140,9 @@ namespace UnityBox.AdvancedCostumeController
     private void DrawFolderPicker()
     {
       EditorGUILayout.BeginHorizontal();
-      config.GeneratedFolder = EditorGUILayout.TextField("Output Folder", config.GeneratedFolder);
+      config.GeneratedFolder = EditorGUILayout.TextField(T("输出目录", "Output Folder"), config.GeneratedFolder);
 
-      if (GUILayout.Button("Browse…", GUILayout.MaxWidth(80)))
+      if (GUILayout.Button(T("浏览…", "Browse…"), GUILayout.MaxWidth(80)))
       {
         string defaultPath = Application.dataPath;
         if (!string.IsNullOrEmpty(config.GeneratedFolder) && config.GeneratedFolder.StartsWith("Assets"))
@@ -154,7 +170,7 @@ namespace UnityBox.AdvancedCostumeController
           }
         }
 
-        var abs = EditorUtility.OpenFolderPanel("Select folder under Assets", defaultPath, "");
+        var abs = EditorUtility.OpenFolderPanel(T("选择 Assets 下的目录", "Select folder under Assets"), defaultPath, "");
         if (!string.IsNullOrEmpty(abs))
         {
           var assetsAbs = Application.dataPath.Replace('\\', '/');
@@ -167,7 +183,8 @@ namespace UnityBox.AdvancedCostumeController
           }
           else
           {
-            EditorUtility.DisplayDialog("Invalid Folder", "请选择 Assets 目录内的文件夹。", "OK");
+            EditorUtility.DisplayDialog(T("无效目录", "Invalid Folder"),
+              T("请选择 Assets 目录内的文件夹。", "Please select a folder under Assets."), "OK");
           }
         }
       }
@@ -177,24 +194,16 @@ namespace UnityBox.AdvancedCostumeController
     private void DrawHelpBox()
     {
       EditorGUILayout.HelpBox(
-        "使用指南：\n" +
-        "1) 选择 Costumes Root\n" +
-        "2) 预览并选择要生成的服装和部件\n" +
-        "3) 点击 Generate 生成控制菜单",
+        T("使用指南：\n1) 选择服装根节点\n2) 刷新预览并选择服装和部件\n3) 点击生成",
+          "Quick start:\n1) Select Costumes Root\n2) Refresh and select outfits and parts\n3) Click Generate"),
         MessageType.Info);
-    }
-
-    private void DrawIgnoreNames()
-    {
-      EditorGUILayout.LabelField("Ignore Names (逗号/分号/换行分隔)");
-      config.IgnoreNamesCsv = EditorGUILayout.TextArea(config.IgnoreNamesCsv, GUILayout.MinHeight(40));
     }
 
     private void DrawGenerateButton()
     {
       using (new EditorGUI.DisabledScope(config.CostumesRoot == null))
       {
-        if (GUILayout.Button("Generate"))
+        if (GUILayout.Button(T("生成", "Generate")))
         {
           try { DoGenerate(); }
           catch (Exception ex) { Debug.LogError($"[ACC] Generation failed: {ex}"); }
@@ -208,9 +217,19 @@ namespace UnityBox.AdvancedCostumeController
 
     private void DrawPreviewSection()
     {
-      if (config.CostumesRoot == null || currentOutfitDataList.Count == 0) return;
+      if (config.CostumesRoot == null) return;
 
-      previewFoldout = EditorGUILayout.Foldout(previewFoldout, "预览服装和部件", true);
+      if (GUILayout.Button(T("刷新预览", "Refresh Preview")))
+        RefreshPreview();
+
+      if (currentOutfitDataList.Count == 0)
+      {
+        EditorGUILayout.HelpBox(T("未找到拥有骨架和网格的服装。", "No outfit with both a skeleton and mesh was found."),
+          MessageType.Warning);
+        return;
+      }
+
+      previewFoldout = EditorGUILayout.Foldout(previewFoldout, T("预览服装和部件", "Outfit and Parts Preview"), true);
       if (!previewFoldout) return;
 
       scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.MaxHeight(400));
@@ -220,7 +239,8 @@ namespace UnityBox.AdvancedCostumeController
       var previewIndexMap = BuildIndexMap(selectedOutfits);
 
       EditorGUILayout.LabelField(
-        $"总计: {currentOutfitDataList.Count} 个服装, 已选中: {selectedOutfits.Count} 个",
+        T($"总计：{currentOutfitDataList.Count} 个服装，已选中：{selectedOutfits.Count} 个",
+          $"Total: {currentOutfitDataList.Count} outfits, selected: {selectedOutfits.Count}"),
         EditorStyles.boldLabel);
       EditorGUILayout.Space(5);
 
@@ -271,7 +291,7 @@ namespace UnityBox.AdvancedCostumeController
         }
         EditorGUILayout.LabelField(obj.name, GUILayout.Width(200));
         EditorGUILayout.LabelField(
-          objIndex >= 0 ? $"[{config.CostumeParamName} = {objIndex}]" : "(未选中)",
+          objIndex >= 0 ? $"[{config.MainParameterName} = {objIndex}]" : T("（未选中）", "(not selected)"),
           GUILayout.Width(150));
         EditorGUILayout.EndHorizontal();
       }
@@ -282,7 +302,7 @@ namespace UnityBox.AdvancedCostumeController
         EditorGUILayout.Space(3);
         EditorGUILayout.BeginHorizontal();
         GUILayout.Space(20);
-        EditorGUILayout.LabelField("部件:", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(T("部件：", "Parts:"), EditorStyles.boldLabel);
         EditorGUILayout.EndHorizontal();
 
         foreach (var part in outfit.Parts)
@@ -298,6 +318,9 @@ namespace UnityBox.AdvancedCostumeController
             partSelections[outfit][part] = newPartSel;
           EditorGUILayout.LabelField(part.name, GUILayout.Width(200));
           EditorGUILayout.LabelField($"[{partParam}]", GUILayout.Width(250));
+          EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(45));
+          partGroupNames[outfit][part] = EditorGUILayout.TextField(
+            partGroupNames[outfit][part], GUILayout.Width(120));
           EditorGUILayout.EndHorizontal();
         }
       }
@@ -313,7 +336,37 @@ namespace UnityBox.AdvancedCostumeController
     {
       if (config.CostumesRoot == null)
       {
-        EditorUtility.DisplayDialog("错误", "请先指定 Costumes Root。", "确定");
+        EditorUtility.DisplayDialog(T("错误", "Error"), T("请先指定服装根节点。", "Please select Costumes Root."), "OK");
+        return;
+      }
+
+      if (config.EnableCustomMixer && !config.EnableParts)
+      {
+        EditorUtility.DisplayDialog(T("错误", "Error"),
+          T("Custom Mixer 需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
+        return;
+      }
+
+      if (!Utils.HasUsableGenerationNamespace(config.MainParameterName))
+      {
+        EditorUtility.DisplayDialog(T("错误", "Error"),
+          T("参数前缀必须至少包含一个字母或数字。", "Parameter Prefix must contain at least one letter or digit."), "OK");
+        return;
+      }
+
+      if (!Utils.IsSafeAssetsFolder(config.GeneratedFolder))
+      {
+        EditorUtility.DisplayDialog(T("错误", "Error"),
+          T("参数前缀必须可用于生成文件，且输出目录必须是 Assets 下不含 . 或 .. 的相对路径。",
+            "Parameter Prefix must be usable in generated filenames, and Output Folder must be an Assets-relative path without . or .. segments."),
+          "OK");
+        return;
+      }
+
+      if (config.EnableCustomMixer && string.IsNullOrWhiteSpace(config.CustomMixerName))
+      {
+        EditorUtility.DisplayDialog(T("错误", "Error"),
+          T("混搭菜单名称不能为空。", "Custom Mixer Name cannot be empty."), "OK");
         return;
       }
 
@@ -337,6 +390,7 @@ namespace UnityBox.AdvancedCostumeController
           Variants = selectedVariants,
           Parts = o.Parts.Where(p =>
             partSelections[o].ContainsKey(p) && partSelections[o][p]).ToList(),
+          PartControls = BuildPartControls(o),
           Name = o.Name,
           RelativePath = o.RelativePath,
           IsDefaultOutfit = o.IsDefaultOutfit,
@@ -346,7 +400,7 @@ namespace UnityBox.AdvancedCostumeController
 
       if (selectedOutfits.Count == 0)
       {
-        EditorUtility.DisplayDialog("错误", "没有选中任何服装", "确定");
+        EditorUtility.DisplayDialog(T("错误", "Error"), T("没有选中任何服装。", "No outfit is selected."), "OK");
         return;
       }
 
@@ -359,6 +413,35 @@ namespace UnityBox.AdvancedCostumeController
       // 执行生成
       var generator = new Generator(config);
       generator.Execute(selectedOutfits, outfitIndexMap, defaultOutfit);
+    }
+
+    private List<PartControlData> BuildPartControls(OutfitData outfit)
+    {
+      var result = new List<PartControlData>();
+      var groups = new Dictionary<string, PartControlData>();
+
+      foreach (var part in outfit.Parts)
+      {
+        if (!partSelections[outfit].TryGetValue(part, out var selected) || !selected)
+          continue;
+
+        string groupName = partGroupNames[outfit].TryGetValue(part, out var value)
+          ? value.Trim() : "";
+        string key = string.IsNullOrEmpty(groupName)
+          ? "@" + part.GetInstanceID() : groupName;
+        if (!groups.TryGetValue(key, out var control))
+        {
+          control = new PartControlData
+          {
+            Name = string.IsNullOrEmpty(groupName) ? part.name : groupName,
+            IsGroup = !string.IsNullOrEmpty(groupName)
+          };
+          groups[key] = control;
+          result.Add(control);
+        }
+        control.Parts.Add(part);
+      }
+      return result;
     }
 
     /// <summary>构建索引映射（用于预览）</summary>

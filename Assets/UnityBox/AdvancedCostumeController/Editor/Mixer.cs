@@ -35,18 +35,18 @@ namespace UnityBox.AdvancedCostumeController
     {
       var costumesRoot = config.CostumesRoot;
       string mixerName = config.CustomMixerName;
-      string costumeParamName = config.CostumeParamName;
+      string mainParameterName = config.MainParameterName;
 
       // 创建 CustomMixer 子菜单
       var mixerSubmenu = Utils.FindOrCreateChild(menuRoot, mixerName);
       Utils.EnsureSubmenuOnNode(mixerSubmenu, mixerName);
 
-      // 添加 CustomMixer 总开关（设置 costume = customMixerIndex）
+      // 添加 CustomMixer 总开关（设置主 Parameter Prefix = customMixerIndex）
       var enableNode = Utils.FindOrCreateChild(mixerSubmenu, "Enable");
       var enableMi = Utils.CreateMenuItem(enableNode);
       Undo.RecordObject(enableMi, "Configure CustomMixer enable toggle");
       enableMi.PortableControl.Type = PortableControlType.Toggle;
-      enableMi.PortableControl.Parameter = costumeParamName;
+      enableMi.PortableControl.Parameter = mainParameterName;
       enableMi.automaticValue = false;
       enableMi.PortableControl.Value = customMixerIndex;
       enableMi.isSaved = true;
@@ -62,7 +62,7 @@ namespace UnityBox.AdvancedCostumeController
         processedOutfitObjects.Add(outfit.OutfitObject);
 
         // 无部件也无变体则跳过
-        if (outfit.Parts.Count == 0 && !outfit.HasVariants()) continue;
+        if (outfit.GetPartControls().Count == 0 && !outfit.HasVariants()) continue;
 
         // 计算菜单路径
         string outfitRelPath = Utils.GetRelativePath(costumesRoot, outfit.OutfitObject);
@@ -83,7 +83,7 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         // 有部件的情况
-        if (outfit.Parts.Count > 0)
+        if (outfit.GetPartControls().Count > 0)
         {
           bool useParts = outfit.HasVariants(); // 有变体时放到 Parts 子菜单
           var partsParent = useParts
@@ -155,12 +155,12 @@ namespace UnityBox.AdvancedCostumeController
     {
       string outfitRelPath = outfit.RelativePath;
 
-      foreach (var part in outfit.Parts)
+      foreach (var control in outfit.GetPartControls())
       {
-        string partRelPath = Utils.GetRelativePath(outfit.BaseObject, part);
-        string partParamName = BuildMixerPartParamName(config, outfitRelPath, partRelPath);
+        string controlKey = GetPartControlKey(outfit, control);
+        string partParamName = BuildMixerPartParamName(config, outfitRelPath, controlKey);
 
-        var partNode = Utils.FindOrCreateChild(partsParent, part.name);
+        var partNode = Utils.FindOrCreateChild(partsParent, control.Name);
         var partMi = Utils.CreateMenuItem(partNode);
         Undo.RecordObject(partMi, "Configure CustomMixer part toggle");
         partMi.PortableControl.Type = PortableControlType.Toggle;
@@ -187,6 +187,13 @@ namespace UnityBox.AdvancedCostumeController
     {
       string raw = config.CustomMixerName + "/" + outfitRelPath + "/" + partRelPath;
       return Utils.BuildParamName(config.ParamPrefix, raw);
+    }
+
+    private static string GetPartControlKey(OutfitData outfit, PartControlData control)
+    {
+      if (control.IsGroup)
+        return "Groups/" + control.Name;
+      return Utils.GetRelativePath(outfit.BaseObject, control.Parts[0]);
     }
 
     /// <summary>

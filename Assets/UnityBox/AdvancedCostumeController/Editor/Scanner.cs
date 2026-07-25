@@ -16,38 +16,34 @@ namespace UnityBox.AdvancedCostumeController
     /// 扫描 CostumesRoot 下的所有服装
     /// </summary>
     /// <param name="costumesRoot">服装根节点</param>
-    /// <param name="ignoreSet">忽略名称集合</param>
     /// <returns>发现的服装列表</returns>
-    public static List<OutfitData> FindOutfits(GameObject costumesRoot, HashSet<string> ignoreSet)
+    public static List<OutfitData> FindOutfits(GameObject costumesRoot)
     {
       var outfitDataList = new List<OutfitData>();
-      var processedBases = new HashSet<GameObject>();
+      var processedOutfitObjects = new HashSet<GameObject>();
       var stack = new Stack<Transform>();
-      stack.Push(costumesRoot.transform);
+      for (int i = costumesRoot.transform.childCount - 1; i >= 0; i--)
+        stack.Push(costumesRoot.transform.GetChild(i));
 
       while (stack.Count > 0)
       {
         var t = stack.Pop();
 
-        // 不是 mesh 节点则继续往下遍历
-        if (!Utils.HasMeshOn(t))
+        if (processedOutfitObjects.Contains(t.gameObject)) continue;
+
+        // 只有拥有骨架且有网格的节点才是服装本体。命中后不进入其后代，
+        // 从而保证嵌套网格/嵌套骨架都被当作同一套服装的部件。
+        if (!Utils.OwnsSkeleton(t) || !Utils.HasMeshInHierarchy(t))
         {
           for (int i = t.childCount - 1; i >= 0; i--)
-          {
-            var child = t.GetChild(i);
-            if (!Utils.IsNameIgnored(child.name, ignoreSet))
-              stack.Push(child);
-          }
+            stack.Push(t.GetChild(i));
           continue;
         }
 
-        // 找到 mesh 节点，其父节点视为 outfit base
-        var outfitBase = t.parent;
-        if (outfitBase == null) continue;
-        if (processedBases.Contains(outfitBase.gameObject)) continue;
-        processedBases.Add(outfitBase.gameObject);
+        var outfitBase = t;
 
-        // 查找变体（同级的其他节点）
+        // 查找变体（同级的其他含网格节点）。允许变体复用本体骨架，
+        // 因而不强制每个变体都各自拥有骨架。
         var variants = new List<GameObject>();
         var outfitParent = outfitBase.parent;
         // 只有当父节点存在且不是根节点时才查找变体
@@ -56,19 +52,28 @@ namespace UnityBox.AdvancedCostumeController
           for (int i = 0; i < outfitParent.childCount; i++)
           {
             var sibling = outfitParent.GetChild(i);
-            if (sibling != outfitBase && !Utils.IsNameIgnored(sibling.name, ignoreSet))
+            var materialVariant = sibling.GetComponent<ACCVariantMaterialOverride>();
+            bool isMaterialVariant = materialVariant != null &&
+              materialVariant.OutfitBase == outfitBase.gameObject;
+            if (sibling != outfitBase &&
+                (Utils.HasMeshInHierarchy(sibling) || isMaterialVariant))
               variants.Add(sibling.gameObject);
           }
         }
 
         var outfitObject = variants.Count > 0 ? outfitParent.gameObject : outfitBase.gameObject;
+        processedOutfitObjects.Add(outfitBase.gameObject);
+        foreach (var variant in variants)
+          processedOutfitObjects.Add(variant);
 
-        // 收集部件（BaseObject 下的子节点）
+        // 收集服装根下的顶层网格部件。功能节点（菜单、动骨等）没有网格，
+        // 骨架分支也不会成为部件。
         var parts = new List<GameObject>();
         for (int i = 0; i < outfitBase.childCount; i++)
         {
           var child = outfitBase.GetChild(i);
-          if (!Utils.IsNameIgnored(child.name, ignoreSet))
+            if (!Utils.IsSkeletonNode(child, outfitBase) &&
+              Utils.HasMeshInHierarchy(child))
             parts.Add(child.gameObject);
         }
 
@@ -84,18 +89,6 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       return outfitDataList;
-    }
-
-    /// <summary>
-    /// 检查 Transform 下是否有任何子节点包含 Mesh 组件
-    /// </summary>
-    private static bool HasMeshChild(Transform t)
-    {
-      for (int i = 0; i < t.childCount; i++)
-      {
-        if (Utils.HasMeshOn(t.GetChild(i))) return true;
-      }
-      return false;
     }
 
     /// <summary>

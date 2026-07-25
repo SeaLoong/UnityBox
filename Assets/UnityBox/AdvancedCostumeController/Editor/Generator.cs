@@ -23,6 +23,8 @@ namespace UnityBox.AdvancedCostumeController
       this.animBuilder = new AnimationBuilder(config);
     }
 
+    private string T(string chinese, string english) => Localization.Text(config, chinese, english);
+
     /// <summary>
     /// 执行完整的生成流程
     /// </summary>
@@ -31,12 +33,44 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData defaultOutfit)
     {
+      if (config.EnableCustomMixer && !config.EnableParts)
+      {
+        EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
+          T("Custom Mixer 需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
+        return;
+      }
+
+      if (!Utils.HasUsableGenerationNamespace(config.MainParameterName))
+      {
+        EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
+          T("参数前缀必须至少包含一个字母或数字。", "Parameter Prefix must contain at least one letter or digit."), "OK");
+        return;
+      }
+
+      if (!Utils.IsSafeAssetsFolder(config.GeneratedFolder))
+      {
+        EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
+          T("参数前缀必须可用于生成文件，且输出目录必须是 Assets 下不含 . 或 .. 的相对路径。",
+            "Parameter Prefix must be usable in generated filenames, and Output Folder must be an Assets-relative path without . or .. segments."),
+          "OK");
+        return;
+      }
+
+      if (config.EnableCustomMixer && string.IsNullOrWhiteSpace(config.CustomMixerName))
+      {
+        EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
+          T("混搭菜单名称不能为空。", "Custom Mixer Name cannot be empty."), "OK");
+        return;
+      }
+
       var resolvedFolder = config.GetResolvedGeneratedFolder();
       string controllerPath = Path.Combine(resolvedFolder, config.GetControllerFileName()).Replace("\\", "/");
       if (File.Exists(controllerPath))
       {
-        if (!EditorUtility.DisplayDialog("覆盖确认",
-              $"控制器文件已存在:\n{controllerPath}\n\n是否覆盖?", "覆盖", "取消"))
+          if (!EditorUtility.DisplayDialog(T("覆盖确认", "Overwrite Confirmation"),
+            T($"控制器文件已存在：\n{controllerPath}\n\n是否覆盖？",
+              $"The controller already exists:\n{controllerPath}\n\nOverwrite it?"),
+            T("覆盖", "Overwrite"), T("取消", "Cancel")))
           return;
       }
 
@@ -44,7 +78,7 @@ namespace UnityBox.AdvancedCostumeController
 
       try
       {
-        EditorUtility.DisplayProgressBar("生成中", "初始化...", 0.1f);
+        EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("初始化…", "Initializing…"), 0.1f);
 
         int undoGroup = Undo.GetCurrentGroup();
         Undo.SetCurrentGroupName("Generate Advanced Costume Controller");
@@ -52,29 +86,26 @@ namespace UnityBox.AdvancedCostumeController
         // 创建菜单根节点
         var costumesRoot = config.CostumesRoot;
         var menuRoot = Utils.PrepareChildRoot(costumesRoot, costumesRoot.name + " Menu");
+        Utils.EnsureMenuInstaller(menuRoot);
         var mergeAnimator = Undo.AddComponent<ModularAvatarMergeAnimator>(menuRoot);
         var rootParams = Utils.EnsureParametersComponent(menuRoot);
         Utils.EnsureSubmenuOnNode(menuRoot, costumesRoot.name);
 
-        EditorUtility.DisplayProgressBar("生成中", "构建菜单...", 0.3f);
+        EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("构建菜单…", "Building menus…"), 0.3f);
         BuildMenus(menuRoot, selectedOutfits, outfitIndexMap, rootParams, defaultOutfit);
 
         // CustomMixer 菜单
         if (config.EnableCustomMixer)
         {
-          EditorUtility.DisplayProgressBar("生成中", "创建混搭菜单...", 0.5f);
+          EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("创建混搭菜单…", "Creating mixer menu…"), 0.5f);
           int customMixerIndex = outfitIndexMap.Count;
           Mixer.BuildCustomMixerMenu(
             config, menuRoot, selectedOutfits, outfitIndexMap,
             customMixerIndex, rootParams, defaultOutfit);
         }
 
-        EditorUtility.DisplayProgressBar("生成中", "创建动画控制器...", 0.7f);
-        if (!Directory.Exists(resolvedFolder))
-        {
-          Directory.CreateDirectory(resolvedFolder);
-          AssetDatabase.Refresh();
-        }
+        EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("创建动画控制器…", "Creating animator controller…"), 0.7f);
+        PrepareGeneratedFolder(resolvedFolder);
 
         var controller = animBuilder.CreateController(selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
 
@@ -100,6 +131,17 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
+    private static void PrepareGeneratedFolder(string resolvedFolder)
+    {
+      // 输出目录按 ParamPrefix 隔离，因而可以在重新生成时安全清理旧 Controller 与 Clip，
+      // 避免 AssetDatabase.CreateAsset 因同名旧动画文件而失败。
+      if (AssetDatabase.IsValidFolder(resolvedFolder))
+        AssetDatabase.DeleteAsset(resolvedFolder);
+
+      Directory.CreateDirectory(resolvedFolder);
+      AssetDatabase.Refresh();
+    }
+
     #region 菜单构建
 
     private void BuildMenus(
@@ -110,9 +152,8 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit)
     {
       // 添加服装参数
-      int defaultIndex = defaultOutfit != null && outfitIndexMap.ContainsKey(defaultOutfit.BaseObject)
-        ? outfitIndexMap[defaultOutfit.BaseObject] : 0;
-      Utils.AddOrUpdateParameter(rootParams, config.CostumeParamName, ParameterSyncType.Int, defaultIndex, true);
+      int defaultIndex = ResolveDefaultIndex(defaultOutfit, outfitIndexMap);
+        Utils.AddOrUpdateParameter(rootParams, config.MainParameterName, ParameterSyncType.Int, defaultIndex, true);
 
       var costumesRoot = config.CostumesRoot;
 
@@ -149,7 +190,7 @@ namespace UnityBox.AdvancedCostumeController
             var itemNode = Utils.FindOrCreateChild(outfitSubmenu, obj.name);
             var menuItem = Utils.CreateMenuItem(itemNode);
             menuItem.PortableControl.Type = PortableControlType.Toggle;
-            menuItem.PortableControl.Parameter = config.CostumeParamName;
+              menuItem.PortableControl.Parameter = config.MainParameterName;
             menuItem.PortableControl.Value = outfitIndexMap[obj];
             menuItem.automaticValue = false;
             menuItem.isSaved = true;
@@ -163,13 +204,31 @@ namespace UnityBox.AdvancedCostumeController
           var itemNode = Utils.FindOrCreateChild(parentMenu, outfitName);
           var menuItem = Utils.CreateMenuItem(itemNode);
           menuItem.PortableControl.Type = PortableControlType.Toggle;
-          menuItem.PortableControl.Parameter = config.CostumeParamName;
+            menuItem.PortableControl.Parameter = config.MainParameterName;
           menuItem.PortableControl.Value = outfitIndexMap[outfit.BaseObject];
           menuItem.automaticValue = false;
           menuItem.isSaved = true;
           menuItem.isSynced = true;
         }
       }
+    }
+
+    private static int ResolveDefaultIndex(
+      OutfitData defaultOutfit,
+      Dictionary<GameObject, int> outfitIndexMap)
+    {
+      if (defaultOutfit != null)
+      {
+        if (outfitIndexMap.TryGetValue(defaultOutfit.BaseObject, out var baseIndex))
+          return baseIndex;
+
+        foreach (var obj in defaultOutfit.GetAllObjects())
+        {
+          if (outfitIndexMap.TryGetValue(obj, out var variantIndex))
+            return variantIndex;
+        }
+      }
+      return 0;
     }
 
     private void BuildPartsMenu(
@@ -180,12 +239,12 @@ namespace UnityBox.AdvancedCostumeController
       var partsMenu = Utils.FindOrCreateChild(outfitSubmenu, "Parts");
       Utils.EnsureSubmenuOnNode(partsMenu);
 
-      foreach (var part in outfit.Parts)
+      foreach (var control in outfit.GetPartControls())
       {
-        string partParamName = animBuilder.GetPartParamName(outfit, part);
-        bool partDefaultActive = part.activeSelf;
+        string partParamName = animBuilder.GetPartParamName(outfit, control);
+        bool partDefaultActive = control.Parts.All(part => part.activeSelf);
 
-        var partNode = Utils.FindOrCreateChild(partsMenu, part.name);
+        var partNode = Utils.FindOrCreateChild(partsMenu, control.Name);
         var partItem = Utils.CreateMenuItem(partNode);
 
         partItem.PortableControl.Type = PortableControlType.Toggle;
@@ -207,15 +266,18 @@ namespace UnityBox.AdvancedCostumeController
     private bool ShowPreflightDialog(List<OutfitData> outfits, OutfitData defaultOutfit)
     {
       var sb = new System.Text.StringBuilder();
-      sb.AppendLine("即将生成，摘要：");
-      sb.AppendLine($"- 服装数量：{outfits.Count}");
-      sb.AppendLine($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}");
-      sb.AppendLine($"- 输出目录：{config.GetResolvedGeneratedFolder()}");
-      sb.AppendLine($"- 默认服装：{defaultOutfit?.Name ?? "未设置"}");
+      sb.AppendLine(T("即将生成，摘要：", "Generation summary:"));
+      sb.AppendLine(T($"- 服装数量：{outfits.Count}", $"- Outfits: {outfits.Count}"));
+      sb.AppendLine(T($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}", $"- Parts: {outfits.Sum(o => o.Parts.Count)}"));
+      sb.AppendLine(T($"- 输出目录：{config.GetResolvedGeneratedFolder()}", $"- Output: {config.GetResolvedGeneratedFolder()}"));
+      sb.AppendLine(T($"- 默认服装：{defaultOutfit?.Name ?? "未设置"}",
+        $"- Default outfit: {defaultOutfit?.Name ?? "Not set"}"));
       if (config.EnableCustomMixer)
-        sb.AppendLine($"- 混搭模式：已启用 ({config.CustomMixerName})");
+        sb.AppendLine(T($"- 混搭模式：已启用 ({config.CustomMixerName})",
+          $"- Custom Mixer: enabled ({config.CustomMixerName})"));
 
-      return EditorUtility.DisplayDialog("生成确认", sb.ToString(), "继续", "取消");
+      return EditorUtility.DisplayDialog(T("生成确认", "Confirm Generation"), sb.ToString(),
+        T("继续", "Continue"), T("取消", "Cancel"));
     }
 
     #endregion

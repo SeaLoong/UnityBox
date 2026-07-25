@@ -25,37 +25,49 @@ public static class Utils
     return mr != null && mf != null;
   }
 
-  /// <summary>
-  /// 检查名称是否在忽略列表中
-  /// </summary>
-  public static bool IsNameIgnored(string name, HashSet<string> ignoreSet)
+  /// <summary>检查节点或其后代是否包含可渲染网格。</summary>
+  public static bool HasMeshInHierarchy(Transform root)
   {
-    if (string.IsNullOrEmpty(name)) return true;
-    if (ignoreSet == null || ignoreSet.Count == 0) return false;
+    if (root == null) return false;
+    return root.GetComponentsInChildren<Renderer>(true)
+      .Any(renderer => renderer is SkinnedMeshRenderer ||
+        (renderer is MeshRenderer && renderer.GetComponent<MeshFilter>() != null));
+  }
 
-    foreach (var ig in ignoreSet)
+  /// <summary>
+  /// 检查节点是否拥有服装骨架：节点必须直接拥有一个不含网格的骨架分支，
+  /// 并且至少一个 SkinnedMeshRenderer 的 rootBone 位于该分支中。
+  /// 这避免把仅用于组织多个变体的上层容器误识别为一套服装。
+  /// </summary>
+  public static bool OwnsSkeleton(Transform root)
+  {
+    if (root == null) return false;
+
+    foreach (var renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
     {
-      if (string.IsNullOrEmpty(ig)) continue;
-      if (name.IndexOf(ig, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+      if (renderer.rootBone == null || !renderer.rootBone.IsChildOf(root)) continue;
+
+      var branch = renderer.rootBone;
+      while (branch.parent != null && branch.parent != root)
+        branch = branch.parent;
+
+      if (branch.parent == root && !HasMeshInHierarchy(branch))
+        return true;
     }
     return false;
   }
 
-  /// <summary>
-  /// 从 CSV 字符串构建忽略集合
-  /// </summary>
-  public static HashSet<string> BuildIgnoreSet(string ignoreNamesCsv)
+  /// <summary>检查节点是否位于任一 SkinnedMeshRenderer 的骨架分支中。</summary>
+  public static bool IsSkeletonNode(Transform node, Transform outfitRoot)
   {
-    var set = new HashSet<string>(StringComparer.Ordinal);
-    if (string.IsNullOrWhiteSpace(ignoreNamesCsv)) return set;
+    if (node == null || outfitRoot == null) return false;
 
-    var parts = ignoreNamesCsv
-      .Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
-      .Select(s => s.Trim())
-      .Where(s => !string.IsNullOrEmpty(s));
-
-    foreach (var p in parts) set.Add(p);
-    return set;
+    foreach (var renderer in outfitRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+    {
+      if (renderer.rootBone != null && node.IsChildOf(renderer.rootBone))
+        return true;
+    }
+    return false;
   }
 
   /// <summary>
@@ -63,13 +75,27 @@ public static class Utils
   /// </summary>
   public static GameObject FindOrCreateChild(GameObject parent, string name)
   {
-    var child = parent.transform.Find(name);
+    var child = FindDirectChild(parent.transform, name);
     if (child != null) return child.gameObject;
 
     var go = new GameObject(name);
     Undo.RegisterCreatedObjectUndo(go, "Create Node");
     go.transform.SetParent(parent.transform, false);
     return go;
+  }
+
+  /// <summary>
+  /// 按精确名称查找直接子对象。不能使用 Transform.Find，
+  /// 因为它会将名称中的 '/' 解释成层级路径。
+  /// </summary>
+  public static Transform FindDirectChild(Transform parent, string name)
+  {
+    for (int i = 0; i < parent.childCount; i++)
+    {
+      var child = parent.GetChild(i);
+      if (child.name == name) return child;
+    }
+    return null;
   }
 
   /// <summary>
@@ -146,6 +172,34 @@ public static class Utils
     return new string(arr);
   }
 
+  /// <summary>检查命名空间能否产生至少包含一个字母或数字的稳定资产名。</summary>
+  public static bool HasUsableGenerationNamespace(string value)
+  {
+    return !string.IsNullOrWhiteSpace(value) &&
+      SanitizeForFileName(value).Any(char.IsLetterOrDigit);
+  }
+
+  /// <summary>
+  /// 验证用户输入的输出目录是 Assets 内的安全相对路径。
+  /// 生成时会删除该目录下当前 ACC 的专属子目录，不能接受绝对路径或父级跳转。
+  /// </summary>
+  public static bool IsSafeAssetsFolder(string path)
+  {
+    if (string.IsNullOrWhiteSpace(path)) return false;
+
+    string normalized = path.Replace('\\', '/').TrimEnd('/');
+    if (normalized != "Assets" && !normalized.StartsWith("Assets/")) return false;
+
+    return normalized.Split('/').All(segment =>
+      !string.IsNullOrWhiteSpace(segment) && segment != "." && segment != "..");
+  }
+
+  /// <summary>将合法的 Assets 路径规范化为 Unity AssetDatabase 使用的斜杠形式。</summary>
+  public static string NormalizeAssetsFolder(string path)
+  {
+    return path.Replace('\\', '/').TrimEnd('/');
+  }
+
   /// <summary>
   /// 构建参数名称
   /// </summary>
@@ -188,7 +242,7 @@ public static class Utils
   /// </summary>
   public static GameObject PrepareChildRoot(GameObject parent, string name)
   {
-    var existing = parent.transform.Find(name);
+    var existing = FindDirectChild(parent.transform, name);
     if (existing != null) Undo.DestroyObjectImmediate(existing.gameObject);
 
     var go = new GameObject(name);
@@ -216,6 +270,16 @@ public static class Utils
       comp.parameters = new List<ParameterConfig>();
     }
     return comp;
+  }
+
+  /// <summary>确保菜单根节点可由 Modular Avatar 安装到 Avatar Expressions Menu。</summary>
+  public static ModularAvatarMenuInstaller EnsureMenuInstaller(GameObject host)
+  {
+    var installer = host.GetComponent<ModularAvatarMenuInstaller>();
+    if (installer != null) return installer;
+
+    try { return Undo.AddComponent<ModularAvatarMenuInstaller>(host); }
+    catch { return host.AddComponent<ModularAvatarMenuInstaller>(); }
   }
 
   /// <summary>

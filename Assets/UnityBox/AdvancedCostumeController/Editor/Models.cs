@@ -1,15 +1,24 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 
 namespace UnityBox.AdvancedCostumeController
 {
+  /// <summary>一个可单独控制的服装部件，或由多个部件组成的命名分组。</summary>
+  public class PartControlData
+  {
+    public string Name { get; set; }
+    public List<GameObject> Parts { get; set; } = new List<GameObject>();
+    public bool IsGroup { get; set; }
+  }
+
   /// <summary>
   /// 服装数据结构 — 描述一套服装的所有信息
   /// </summary>
   public class OutfitData
   {
-    /// <summary>服装本体 GameObject（包含 Mesh 的直接父节点）</summary>
+    /// <summary>服装本体 GameObject（拥有服装骨架的最高识别节点）</summary>
     public GameObject BaseObject { get; set; }
 
     /// <summary>服装根对象（有变体时为更上层的组节点，无变体时等于 BaseObject）</summary>
@@ -20,6 +29,9 @@ namespace UnityBox.AdvancedCostumeController
 
     /// <summary>部件列表（BaseObject 下的子节点）</summary>
     public List<GameObject> Parts { get; set; } = new List<GameObject>();
+
+    /// <summary>生成时使用的部件控制项；为空时每个 Parts 项各自生成开关。</summary>
+    public List<PartControlData> PartControls { get; set; } = new List<PartControlData>();
 
     /// <summary>服装显示名称</summary>
     public string Name { get; set; }
@@ -44,6 +56,19 @@ namespace UnityBox.AdvancedCostumeController
       result.AddRange(Variants);
       return result;
     }
+
+    public List<PartControlData> GetPartControls()
+    {
+      if (PartControls != null && PartControls.Count > 0)
+        return PartControls;
+
+      return Parts.Select(part => new PartControlData
+      {
+        Name = part.name,
+        Parts = new List<GameObject> { part },
+        IsGroup = false
+      }).ToList();
+    }
   }
 
   /// <summary>
@@ -51,17 +76,13 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public class ACCConfig
   {
-    public const string LegacyParamPrefix = "CST";
-    public const string LegacyCostumeParamName = "costume";
     public const string DefaultControllerFileName = "CostumeController";
 
     public GameObject CostumesRoot;
     public string ParamPrefix = "";
-    public string CostumeParamName = "";
     public bool AutoParamPrefix = true;
-    public bool AutoCostumeParamName = true;
+    public ACCLanguage Language = ACCLanguage.Auto;
     public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeController";
-    public string IgnoreNamesCsv = "Armature,Bone,Skeleton";
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
@@ -72,16 +93,16 @@ namespace UnityBox.AdvancedCostumeController
       string rootName = GetRootBasedDefaultName();
       if (string.IsNullOrWhiteSpace(rootName)) return;
 
-      if (AutoParamPrefix || ParamPrefix == LegacyParamPrefix)
+      if (AutoParamPrefix)
         ParamPrefix = rootName;
-
-      if (AutoCostumeParamName || CostumeParamName == LegacyCostumeParamName)
-        CostumeParamName = rootName;
     }
+
+    /// <summary>服装切换主 Int 参数始终使用 ParamPrefix，确保所有生成物共用唯一命名空间。</summary>
+    public string MainParameterName => ParamPrefix;
 
     public string GetControllerFileName()
     {
-      string sourceName = GetRootBasedDefaultName();
+      string sourceName = GetGenerationNamespace();
       if (string.IsNullOrWhiteSpace(sourceName))
         sourceName = DefaultControllerFileName;
 
@@ -93,8 +114,8 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 获取实际的生成目录（在 GeneratedFolder 后追加当前 Avatar 名称）
-    /// 防止切换不同 Avatar 生成时互相覆盖
+    /// 获取实际的生成目录（在 GeneratedFolder 后追加 Avatar 和参数命名空间），
+    /// 防止同一 Avatar 上的多个 ACC 实例互相覆盖。
     /// </summary>
     public string GetResolvedGeneratedFolder()
     {
@@ -109,7 +130,15 @@ namespace UnityBox.AdvancedCostumeController
       }
       if (string.IsNullOrEmpty(avatarName))
         return GeneratedFolder;
-      return GeneratedFolder.TrimEnd('/') + "/" + avatarName;
+      return Utils.NormalizeAssetsFolder(GeneratedFolder) + "/" +
+        Utils.SanitizeForFileName(avatarName) + "/" +
+        Utils.SanitizeForFileName(GetGenerationNamespace());
+    }
+
+    /// <summary>生成资产和 Animator Layer 使用的稳定命名空间。</summary>
+    public string GetGenerationNamespace()
+    {
+      return ParamPrefix;
     }
 
     private string GetRootBasedDefaultName()
