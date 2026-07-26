@@ -315,11 +315,16 @@ public static class Utils
     return comp;
   }
 
-  /// <summary>确保菜单根节点可由 Modular Avatar 安装到 Avatar Expressions Menu。</summary>
+  /// <summary>确保菜单根节点可由 Modular Avatar 安装到 Avatar Expressions Menu。
+  /// 若自身或任一父节点已有 Installer，则跳过创建。</summary>
   public static ModularAvatarMenuInstaller EnsureMenuInstaller(GameObject host)
   {
+    // 已有自身 Installer，复用
     var installer = host.GetComponent<ModularAvatarMenuInstaller>();
     if (installer != null) return installer;
+
+    // 父路径上已有 Installer，无需再挂载
+    if (host.GetComponentInParent<ModularAvatarMenuInstaller>() != null) return null;
 
     try
     {
