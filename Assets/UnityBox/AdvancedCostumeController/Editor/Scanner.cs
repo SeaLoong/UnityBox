@@ -33,7 +33,8 @@ namespace UnityBox.AdvancedCostumeController
 
         // 默认由骨架和网格识别服装；ACCOutfitMarker 是完全显式的服装声明，
         // 不要求骨架或网格。命中后不进入其后代，从而避免嵌套对象被重复识别。
-        bool isExplicitOutfit = t.GetComponent<ACCOutfitMarker>() != null;
+        var outfitMarker = t.GetComponent<ACCOutfitMarker>();
+        bool isExplicitOutfit = outfitMarker != null;
         bool isAutoDetectedOutfit = Utils.OwnsSkeleton(t) && Utils.HasMeshInHierarchy(t);
         if (!isExplicitOutfit && !isAutoDetectedOutfit)
         {
@@ -69,7 +70,7 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var variant in variants)
           processedOutfitObjects.Add(variant);
 
-        CollectParts(outfitBase, out var parts, out var partControls);
+        CollectParts(outfitBase, out var parts, out var excludedParts, out var partControls);
 
         outfitDataList.Add(new OutfitData
         {
@@ -78,7 +79,9 @@ namespace UnityBox.AdvancedCostumeController
           Name = outfitObject.name,
           RelativePath = Utils.GetRelativePath(costumesRoot, outfitObject),
           Parts = parts,
+          ExcludedParts = excludedParts,
           PartControls = partControls,
+          Marker = outfitMarker,
           Variants = variants
         });
       }
@@ -90,12 +93,14 @@ namespace UnityBox.AdvancedCostumeController
     /// 收集自动部件与显式分组标记。标记对象可以位于服装层级的任意位置；
     /// 同名标记会组合为一个控制项，并覆盖包含它们的自动顶层部件，避免重叠动画。
     /// </summary>
-    private static void CollectParts(
+    public static void CollectParts(
       Transform outfitBase,
       out List<GameObject> parts,
+      out List<GameObject> excludedParts,
       out List<PartControlData> partControls)
     {
       parts = new List<GameObject>();
+      excludedParts = new List<GameObject>();
       partControls = new List<PartControlData>();
       var markedParts = new List<ACCPartGroupMarker>();
       var controlsByName = new Dictionary<string, PartControlData>();
@@ -106,6 +111,12 @@ namespace UnityBox.AdvancedCostumeController
           continue;
 
         markedParts.Add(marker);
+        if (marker.Mode == ACCPartControlMode.Exclude)
+        {
+          excludedParts.Add(marker.gameObject);
+          continue;
+        }
+
         if (!parts.Contains(marker.gameObject))
           parts.Add(marker.gameObject);
 
@@ -131,6 +142,12 @@ namespace UnityBox.AdvancedCostumeController
           continue;
 
         parts.Add(child.gameObject);
+        partControls.Add(new PartControlData
+        {
+          Name = child.name,
+          Parts = new List<GameObject> { child.gameObject },
+          IsGroup = false
+        });
       }
     }
 

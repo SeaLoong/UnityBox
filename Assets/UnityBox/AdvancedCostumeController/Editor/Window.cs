@@ -279,7 +279,9 @@ namespace UnityBox.AdvancedCostumeController
         Repaint();
       }
       EditorGUILayout.LabelField(
-        outfit.HasVariants() ? $"({outfit.GetAllObjects().Count} 个变体)" : "",
+        outfit.HasVariants()
+          ? T($"（{outfit.GetAllObjects().Count} 个变体）", $"({outfit.GetAllObjects().Count} variants)")
+          : "",
         GUILayout.Width(100));
       EditorGUILayout.EndHorizontal();
 
@@ -306,35 +308,75 @@ namespace UnityBox.AdvancedCostumeController
         EditorGUILayout.EndHorizontal();
       }
 
-      // 部件区域（启用 Parts Control 或 Custom Mixer 时都需显示）
-      if ((config.EnableParts || config.EnableCustomMixer) && outfit.Parts.Count > 0)
+      // 始终展示扫描到的部件决策，方便确认自动、Marker 分组和排除结果。
+      if (outfit.Parts.Count > 0 || outfit.ExcludedParts.Count > 0)
       {
         EditorGUILayout.Space(3);
         EditorGUILayout.BeginHorizontal();
         GUILayout.Space(20);
-        EditorGUILayout.LabelField(T("部件：", "Parts:"), EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(T(
+          $"部件预览（可控制：{outfit.Parts.Count}，已排除：{outfit.ExcludedParts.Count}）",
+          $"Part Preview (controlled: {outfit.Parts.Count}, excluded: {outfit.ExcludedParts.Count})"),
+          EditorStyles.boldLabel);
         EditorGUILayout.EndHorizontal();
 
         foreach (var part in outfit.Parts)
-        {
-          var partParam = GetPreviewPartParamName(outfit, part);
+          DrawControlledPartPreviewRow(outfit, part);
 
-          EditorGUILayout.BeginHorizontal();
-          GUILayout.Space(20);
-          bool curPartSel = partSelections[outfit][part];
-          bool newPartSel = EditorGUILayout.Toggle(curPartSel, GUILayout.Width(20));
-          if (newPartSel != curPartSel)
-            partSelections[outfit][part] = newPartSel;
-          EditorGUILayout.LabelField(part.name, GUILayout.Width(200));
-          EditorGUILayout.LabelField($"[{partParam}]", GUILayout.Width(250));
-          EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(45));
-          partGroupNames[outfit][part] = EditorGUILayout.TextField(
-            partGroupNames[outfit][part], GUILayout.Width(120));
-          EditorGUILayout.EndHorizontal();
-        }
+        foreach (var part in outfit.ExcludedParts)
+          DrawExcludedPartPreviewRow(outfit, part);
+
+        EditorGUILayout.LabelField(T(
+          "[A] 自动 · [MG] 持久分组 · [SG] 临时分组 · [X] 已排除",
+          "[A] Auto · [MG] Persistent · [SG] Session · [X] Excluded"),
+          EditorStyles.miniLabel);
       }
 
       EditorGUILayout.Space(8);
+    }
+
+    private void DrawControlledPartPreviewRow(OutfitData outfit, GameObject part)
+    {
+      var partParam = GetPreviewPartParamName(outfit, part);
+      string groupName = partGroupNames[outfit].TryGetValue(part, out var value) ? value.Trim() : "";
+      var partMarker = part.GetComponent<ACCPartGroupMarker>();
+      bool isPersistentGroup = partMarker != null &&
+        partMarker.Mode == ACCPartControlMode.Group;
+      string source = !string.IsNullOrEmpty(groupName)
+        ? (isPersistentGroup
+          ? $"[MG: {groupName}]"
+          : $"[SG: {groupName}]")
+        : T("[A] 自动", "[A] Auto");
+
+      EditorGUILayout.BeginHorizontal();
+      GUILayout.Space(20);
+      bool curPartSel = partSelections[outfit][part];
+      bool newPartSel = EditorGUILayout.Toggle(curPartSel, GUILayout.Width(20));
+      if (newPartSel != curPartSel)
+        partSelections[outfit][part] = newPartSel;
+      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
+        GUILayout.Width(150));
+      EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.Width(100));
+      EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(8));
+      partGroupNames[outfit][part] = EditorGUILayout.TextField(groupName, GUILayout.Width(120));
+      GUILayout.Space(20);
+      EditorGUILayout.LabelField(partParam, EditorStyles.label, GUILayout.ExpandWidth(true));
+      EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawExcludedPartPreviewRow(OutfitData outfit, GameObject part)
+    {
+      EditorGUILayout.BeginHorizontal();
+      GUILayout.Space(20);
+      using (new EditorGUI.DisabledScope(true))
+        EditorGUILayout.Toggle(false, GUILayout.Width(20));
+      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
+        GUILayout.Width(150));
+      EditorGUILayout.LabelField(T("[X] 已排除", "[X] Excluded"), EditorStyles.label,
+        GUILayout.Width(100));
+      EditorGUILayout.LabelField(T("不会生成控制", "No control"), EditorStyles.label,
+        GUILayout.ExpandWidth(true));
+      EditorGUILayout.EndHorizontal();
     }
 
     private string GetPreviewPartParamName(OutfitData outfit, GameObject part)
@@ -345,6 +387,18 @@ namespace UnityBox.AdvancedCostumeController
         ? Utils.GetRelativePath(outfit.BaseObject, part)
         : "Groups/" + groupName;
       return Utils.BuildParamName(config.ParamPrefix, outfit.RelativePath + "/" + controlPath);
+    }
+
+    private string FormatPartDisplayName(OutfitData outfit, string partName)
+    {
+      var marker = outfit.Marker;
+      if (marker == null) return partName;
+
+      return Utils.FormatPartDisplayName(partName,
+        marker.PartNamePrefixToRemove,
+        marker.PartNameSuffixToRemove,
+        marker.PartNameRegexPattern,
+        marker.PartNameRegexReplacement);
     }
 
     #endregion
@@ -409,7 +463,9 @@ namespace UnityBox.AdvancedCostumeController
           Variants = selectedVariants,
           Parts = o.Parts.Where(p =>
             partSelections[o].ContainsKey(p) && partSelections[o][p]).ToList(),
+          ExcludedParts = o.ExcludedParts,
           PartControls = BuildPartControls(o),
+          Marker = o.Marker,
           Name = o.Name,
           RelativePath = o.RelativePath,
           IsDefaultOutfit = o.IsDefaultOutfit,
@@ -452,7 +508,7 @@ namespace UnityBox.AdvancedCostumeController
         {
           control = new PartControlData
           {
-            Name = string.IsNullOrEmpty(groupName) ? part.name : groupName,
+            Name = string.IsNullOrEmpty(groupName) ? FormatPartDisplayName(outfit, part.name) : groupName,
             IsGroup = !string.IsNullOrEmpty(groupName)
           };
           groups[key] = control;

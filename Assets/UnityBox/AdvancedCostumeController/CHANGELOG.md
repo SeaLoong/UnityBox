@@ -5,6 +5,9 @@
 ### Added
 
 - 新增 `ACCPartGroupMarker`，支持以持久化 Group Name 将任意部件或容器组合为一个开关控制项。
+- `ACCPartGroupMarker` 新增 `Exclude` 模式，可显式排除不应由 ACC 控制的部件。
+- `ACCOutfitMarker` 新增持久化自动部件菜单名称格式化，支持移除统一前缀/后缀及正则替换和 Inspector 预览。
+- Outfit、Part Group、Material Variant 组件新增与 ACC 主窗口一致的 Auto 中英 Inspector 界面。
 
 ## [0.3.1] - 2026-07-26
 

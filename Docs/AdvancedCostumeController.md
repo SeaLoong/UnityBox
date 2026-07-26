@@ -72,6 +72,8 @@ ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。�
 
 因此，识别由真实骨架结构决定，**不依赖对象名称**。`Armature`、`Bone`、`Skeleton` 等名称无需配置忽略列表；ACC 已没有 Ignore Names 选项。
 
+<a id="acc-outfit-marker"></a>
+
 ### 无独立骨架的原版服装
 
 部分原版服装、Mesh 拆分件或复用 Avatar 骨架的服装层级只有网格，没有自身的 `Armature` 分支。这类对象无法通过自动骨架扫描识别，可显式添加组件：
@@ -91,6 +93,8 @@ Costumes Root
 ```
 
 Marker 是完全显式的声明：即使对象本身及后代没有网格或骨架，ACC 也会将它识别为服装。带 Marker 的同级对象也可作为无网格变体加入同一变体组。标记命中后，ACC 和自动识别服装一样停止扫描其后代，因此其中嵌套网格会继续按部件规则处理，不会成为另一套服装。
+
+`ACC Outfit Marker` 的 Inspector 同时提供该套服装的部件菜单名称格式化设置；规则会随 Marker 持久保存，不受 ACC 窗口关闭或刷新影响。
 
 ### 为什么嵌套网格不会被重复识别
 
@@ -204,6 +208,8 @@ Outfit Base
 
 这种分组保存于 Avatar 层级或 Prefab 中，是推荐的长期工作流。
 
+<a id="acc-part-group-marker"></a>
+
 ### 持久方式：ACC Part Group Marker
 
 当部件无法或不适合调整父子层级时，可在任意部件或容器对象上添加：
@@ -226,6 +232,23 @@ Outfit Base
 
 带 Marker 的对象会优先于普通顶层部件自动识别：若 Marker 位于某个顶层部件的后代，ACC 只生成 Marker 对应的控制项，避免父对象和标记子对象同时写入重叠动画。
 
+#### 不控制部件
+
+`ACC Part Group Marker` 的 **Mode** 设为 `Exclude` 时，ACC 不会为该对象生成部件菜单、参数或动画控制。它也会抑制包含该对象的自动顶层部件控制，适用于不希望被 ACC 管理的内置网格、功能节点或已有其他动画控制的部件。
+
+`Exclude` 模式不使用 Group Name。
+
+### 部件扫描预览
+
+ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未启用 Parts Control：
+
+- **`[A]`**：自动识别的普通部件；
+- **`[MG: 名称]`**：由 `ACC Part Group Marker` 持久分组；
+- **`[SG: 名称]`**：当前 ACC 窗口中临时填写的分组；
+- **`[X]`**：由 `Exclude` Marker 排除，不会生成菜单、参数或动画。
+
+预览标题会统计可控制与已排除的部件数量。每个可控制卡片仍可勾选是否参与本次生成；参数路径显示在卡片最后一行，便于长路径换行阅读。
+
 ### 临时方式：预览中的“分组 / Group”文本框
 
 在预览中为多个已识别部件填写相同分组名，会让它们共用：
@@ -236,6 +259,24 @@ Outfit Base
 - 一张同时设置多个 `m_IsActive` 的动画 Clip。
 
 此分组名只保存于当前 ACC 窗口会话。关闭窗口、切换 Root 或刷新预览后会清空，不适合作为长期配置。
+
+### 菜单名称格式化
+
+在该 Outfit Base 的 **ACC Outfit Marker** Inspector 中，可以为该套服装的自动部件菜单标签配置：
+
+- **Remove Prefix / 移除前缀**：精确移除统一前缀；
+- **Remove Suffix / 移除后缀**：精确移除统一后缀；
+- **Regex Pattern / Regex Replacement**：在前后缀处理后执行正则替换。
+
+Inspector 会列出该 Outfit Marker 下所有扫描到的可控制与已排除部件，并显示 `Auto`、`Marker Group`、`Excluded Marker` 决策标签和格式化后的菜单名称。例如，前缀设置为 `Clothes_` 时，`Clothes_Hat` 在预览和菜单中显示为 `Hat`。没有 `ACC Outfit Marker` 的自动识别服装不会应用名称格式化。
+
+格式化只影响自动部件的**菜单显示名称**。参数名、Animator 控制条件和动画绑定路径仍使用原始层级，确保重命名显示文本不会破坏已有参数契约。`ACC Part Group Marker` 的显式 Group Name 不会被格式化。
+
+### 组件 Inspector 语言
+
+`ACC Outfit Marker`、`ACC Part Group Marker` 和 `ACC Variant Material Override` 都使用与 ACC 主窗口一致的系统 Auto 中英显示规则：中文系统显示中文，其他系统显示英文。它们的 Inspector 会显示组件用途和必要的配置提示。
+
+每个组件标题右侧的 `?` 按钮会打开本手册中对应的仓库文档章节。
 
 ## 变体
 
@@ -264,6 +305,8 @@ ACC 将 `Jacket Variants` 作为菜单节点，并生成 `Jacket Red`、`Jacket 
 1. `Default Outfit` 显式指定的对象；
 2. 名称或路径含 `origin`、`original`、`default`、`base`、`vanilla`、`standard`、`normal` 的服装；
 3. 扫描顺序中的第一个服装。
+
+<a id="acc-variant-material-override"></a>
 
 ## 材质变体
 

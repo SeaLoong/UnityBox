@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using nadena.dev.modular_avatar.core;
@@ -208,6 +209,48 @@ public static class Utils
     if (string.IsNullOrEmpty(paramPrefix))
       return Sanitize(relPath);
     return paramPrefix + "/" + Sanitize(relPath);
+  }
+
+  /// <summary>
+  /// 格式化菜单显示名称。格式化仅用于标签，不会改变动画绑定或参数路径。
+  /// 依次执行精确前缀/后缀移除和可选正则替换；无效正则会保留前两步结果。
+  /// </summary>
+  public static string FormatPartDisplayName(
+    string source,
+    string prefixToRemove,
+    string suffixToRemove,
+    string regexPattern,
+    string regexReplacement)
+  {
+    string result = source ?? "";
+    if (!string.IsNullOrEmpty(prefixToRemove) &&
+        result.StartsWith(prefixToRemove, StringComparison.Ordinal))
+      result = result.Substring(prefixToRemove.Length);
+    if (!string.IsNullOrEmpty(suffixToRemove) &&
+        result.EndsWith(suffixToRemove, StringComparison.Ordinal))
+      result = result.Substring(0, result.Length - suffixToRemove.Length);
+
+    if (!string.IsNullOrWhiteSpace(regexPattern))
+    {
+      try { result = Regex.Replace(result, regexPattern, regexReplacement ?? ""); }
+      catch (ArgumentException) { }
+    }
+
+    return string.IsNullOrWhiteSpace(result) ? source : result;
+  }
+
+  public static bool IsValidRegex(string pattern)
+  {
+    if (string.IsNullOrWhiteSpace(pattern)) return true;
+    try
+    {
+      _ = new Regex(pattern);
+      return true;
+    }
+    catch (ArgumentException)
+    {
+      return false;
+    }
   }
 
   /// <summary>

@@ -30,8 +30,14 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>部件列表（BaseObject 下的子节点）</summary>
     public List<GameObject> Parts { get; set; } = new List<GameObject>();
 
+    /// <summary>被 Exclude Marker 显式排除、仅用于预览说明的对象。</summary>
+    public List<GameObject> ExcludedParts { get; set; } = new List<GameObject>();
+
     /// <summary>生成时使用的部件控制项；为空时每个 Parts 项各自生成开关。</summary>
     public List<PartControlData> PartControls { get; set; } = new List<PartControlData>();
+
+    /// <summary>当前 Outfit Base 上 Marker 提供的持久菜单显示名称格式规则。</summary>
+    public ACCOutfitMarker Marker { get; set; }
 
     /// <summary>服装显示名称</summary>
     public string Name { get; set; }
