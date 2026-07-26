@@ -357,7 +357,7 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
         GUILayout.Width(150));
       EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.Width(100));
-      EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(8));
+      EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(32));
       partGroupNames[outfit][part] = EditorGUILayout.TextField(groupName, GUILayout.Width(120));
       GUILayout.Space(20);
       EditorGUILayout.LabelField(partParam, EditorStyles.label, GUILayout.ExpandWidth(true));
