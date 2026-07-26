@@ -321,8 +321,15 @@ public static class Utils
     var installer = host.GetComponent<ModularAvatarMenuInstaller>();
     if (installer != null) return installer;
 
-    try { return Undo.AddComponent<ModularAvatarMenuInstaller>(host); }
-    catch { return host.AddComponent<ModularAvatarMenuInstaller>(); }
+    try
+    {
+      installer = Undo.AddComponent<ModularAvatarMenuInstaller>(host);
+      return installer;
+    }
+    catch
+    {
+      return host.AddComponent<ModularAvatarMenuInstaller>();
+    }
   }
 
   /// <summary>

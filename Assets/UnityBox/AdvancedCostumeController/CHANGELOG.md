@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.6] - 2026-07-26
+
+### Fixed
+
+- 生成菜单时若根节点已存在 `ModularAvatarMenuInstaller`，将直接复用现有组件，不再重复创建并覆盖。
+
 ## [0.3.2] - 2026-07-26
 
 ### Added
