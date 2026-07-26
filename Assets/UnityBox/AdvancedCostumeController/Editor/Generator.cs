@@ -56,13 +56,6 @@ namespace UnityBox.AdvancedCostumeController
         return;
       }
 
-      if (config.EnableCustomMixer && string.IsNullOrWhiteSpace(config.CustomMixerName))
-      {
-        EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
-          T("混搭菜单名称不能为空。", "Custom Mixer Name cannot be empty."), "OK");
-        return;
-      }
-
       var resolvedFolder = config.GetResolvedGeneratedFolder();
       string controllerPath = Path.Combine(resolvedFolder, config.GetControllerFileName()).Replace("\\", "/");
       if (File.Exists(controllerPath))
@@ -85,11 +78,11 @@ namespace UnityBox.AdvancedCostumeController
 
         // 创建菜单根节点
         var costumesRoot = config.CostumesRoot;
-        var menuRoot = Utils.PrepareChildRoot(costumesRoot, costumesRoot.name + " Menu");
+        var menuRoot = Utils.PrepareChildRoot(costumesRoot, ACCConfig.MenuObjectName);
         Utils.EnsureMenuInstaller(menuRoot);
         var mergeAnimator = Undo.AddComponent<ModularAvatarMergeAnimator>(menuRoot);
         var rootParams = Utils.EnsureParametersComponent(menuRoot);
-        Utils.EnsureSubmenuOnNode(menuRoot, costumesRoot.name);
+        Utils.EnsureSubmenuOnNode(menuRoot, config.EffectiveRootMenuName);
 
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("构建菜单…", "Building menus…"), 0.3f);
         BuildMenus(menuRoot, selectedOutfits, outfitIndexMap, rootParams, defaultOutfit);
@@ -237,7 +230,7 @@ namespace UnityBox.AdvancedCostumeController
       ModularAvatarParameters rootParams)
     {
       var partsMenu = Utils.FindOrCreateChild(outfitSubmenu, "Parts");
-      Utils.EnsureSubmenuOnNode(partsMenu);
+      Utils.EnsureSubmenuOnNode(partsMenu, T("部件", "Parts"));
 
       foreach (var control in outfit.GetPartControls())
       {
@@ -267,17 +260,69 @@ namespace UnityBox.AdvancedCostumeController
     {
       var sb = new System.Text.StringBuilder();
       sb.AppendLine(T("即将生成，摘要：", "Generation summary:"));
+      sb.AppendLine(T($"- 根菜单名称：{config.EffectiveRootMenuName}", $"- Root Menu: {config.EffectiveRootMenuName}"));
+      sb.AppendLine(T($"- 参数前缀：{config.EffectiveParamPrefix}", $"- Prefix: {config.EffectiveParamPrefix}"));
       sb.AppendLine(T($"- 服装数量：{outfits.Count}", $"- Outfits: {outfits.Count}"));
       sb.AppendLine(T($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}", $"- Parts: {outfits.Sum(o => o.Parts.Count)}"));
       sb.AppendLine(T($"- 输出目录：{config.GetResolvedGeneratedFolder()}", $"- Output: {config.GetResolvedGeneratedFolder()}"));
       sb.AppendLine(T($"- 默认服装：{defaultOutfit?.Name ?? "未设置"}",
         $"- Default outfit: {defaultOutfit?.Name ?? "Not set"}"));
+      var paramCounts = CountParameterBits(config, outfits, T);
+      sb.AppendLine(T($"- 预计占用参数：{paramCounts}", $"- Estimated parameters: {paramCounts}"));
       if (config.EnableCustomMixer)
-        sb.AppendLine(T($"- 混搭模式：已启用 ({config.CustomMixerName})",
-          $"- Custom Mixer: enabled ({config.CustomMixerName})"));
+      {
+        string mixerLabel = string.IsNullOrWhiteSpace(config.CustomMixerName)
+          ? T("混搭", "Custom Mix")
+          : config.CustomMixerName;
+        sb.AppendLine(T($"- 混搭模式：已启用（{mixerLabel}）",
+          $"- Custom Mixer: enabled ({mixerLabel})"));
+      }
 
       return EditorUtility.DisplayDialog(T("生成确认", "Confirm Generation"), sb.ToString(),
         T("继续", "Continue"), T("取消", "Cancel"));
+    }
+
+    /// <summary>
+    /// 估算 VRChat 参数位占用。
+    /// </summary>
+    /// <param name="config">ACC 配置</param>
+    /// <param name="outfits">已过滤的服装列表（含有效 PartControls）</param>
+    /// <param name="loc">本地化函数 (zh, en) => 结果</param>
+    /// <returns>格式化的位占用说明，如 "19bit (主 Int 1×8=8bit, 部件 Bool 3×1=3bit)"</returns>
+    public static string CountParameterBits(ACCConfig config, List<OutfitData> outfits,
+      System.Func<string, string, string> loc)
+    {
+      const int boolBits = 1;
+      const int intBits = 8;
+
+      int mainInt = 1;
+      int partBools = 0;
+      int mixerExtraInts = 0;
+      int mixerPartBools = 0;
+
+      foreach (var outfit in outfits)
+      {
+        if (config.EnableParts)
+          partBools += outfit.GetPartControls().Count;
+
+        if (config.EnableCustomMixer)
+        {
+          if (outfit.HasVariants())
+            mixerExtraInts += 1;
+          if (outfit.GetPartControls().Count > 0)
+            mixerPartBools += outfit.GetPartControls().Count;
+        }
+      }
+
+      int totalBits = mainInt * intBits + partBools * boolBits +
+                      mixerExtraInts * intBits + mixerPartBools * boolBits;
+      var parts = new System.Collections.Generic.List<string>();
+      parts.Add($"{loc("主 Int", "main Int")} 1 × {intBits} = {mainInt * intBits}bit");
+      if (partBools > 0)
+        parts.Add($"{loc("部件 Bool", "part Bool")} {partBools} × {boolBits} = {partBools * boolBits}bit");
+      if (mixerExtraInts > 0 || mixerPartBools > 0)
+        parts.Add($"{loc("混搭", "mixer")} {mixerExtraInts}Int × {intBits} + {mixerPartBools}Bool × {boolBits} = {mixerExtraInts * intBits + mixerPartBools * boolBits}bit");
+      return $"{totalBits}bit ({string.Join(", ", parts)})";
     }
 
     #endregion

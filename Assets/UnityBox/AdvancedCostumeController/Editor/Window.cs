@@ -94,6 +94,7 @@ namespace UnityBox.AdvancedCostumeController
       };
       config.Language = (ACCLanguage)EditorGUILayout.Popup(
         T("语言", "Language"), (int)config.Language, languageOptions);
+      Localization.CurrentLanguage = config.Language;
 
       DrawConfigSection();
       DrawHelpBox();
@@ -112,17 +113,27 @@ namespace UnityBox.AdvancedCostumeController
         RefreshPreview();
       }
 
+      config.RootMenuName = EditorGUILayout.TextField(T("根菜单名称", "Root Menu Name"), config.RootMenuName);
+
       var paramPrefix = EditorGUILayout.TextField(T("参数前缀", "Parameter Prefix"), config.ParamPrefix);
       if (paramPrefix != config.ParamPrefix)
       {
         config.ParamPrefix = paramPrefix;
-        config.AutoParamPrefix = false;
       }
-
-      EditorGUILayout.HelpBox(
-        T("参数前缀同时作为主服装 Int 参数、Animator Layer 和生成文件的命名空间；同一 Avatar 上必须唯一。",
-          "Parameter Prefix is also the main costume Int parameter and the namespace for Animator Layers and generated files; it must be unique per Avatar."),
-        MessageType.Info);
+      if (string.IsNullOrWhiteSpace(config.ParamPrefix))
+      {
+        EditorGUILayout.HelpBox(
+          T("参数前缀为空，将使用服装根节点名称作为默认值。",
+            "Parameter Prefix is empty; the costumes root name will be used as fallback."),
+          MessageType.Info);
+      }
+      else
+      {
+        EditorGUILayout.HelpBox(
+          T("参数前缀同时作为主服装 Int 参数、Animator Layer 和生成文件的命名空间；同一 Avatar 上必须唯一。",
+            "Parameter Prefix is also the main costume Int parameter and the namespace for Animator Layers and generated files; it must be unique per Avatar."),
+          MessageType.Info);
+      }
 
       config.DefaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField(
         T("默认服装（可选）", "Default Outfit (optional)"), config.DefaultOutfitOverride, typeof(GameObject), true);
@@ -135,10 +146,13 @@ namespace UnityBox.AdvancedCostumeController
       if (config.EnableCustomMixer)
       {
         EditorGUI.indentLevel++;
+        string effectiveMixerLabel = string.IsNullOrWhiteSpace(config.CustomMixerName)
+          ? T("混搭", "Custom Mix")
+          : config.CustomMixerName;
         config.CustomMixerName = EditorGUILayout.TextField(T("混搭菜单名称", "Custom Mixer Name"), config.CustomMixerName);
         EditorGUILayout.HelpBox(
-          T("混搭模式会激活各服装本体，再用独立参数控制部件与变体；必须启用部件控制。",
-            "Custom Mixer activates outfit bases, then controls parts and variants with independent parameters; Parts Control is required."),
+          T($"混搭模式：菜单名称“{effectiveMixerLabel}”，参数使用固定前缀“{ACCConfig.MixerParamPrefix}”。",
+            $"Custom Mixer: menu label \"{effectiveMixerLabel}\", parameter prefix \"{ACCConfig.MixerParamPrefix}\"."),
           MessageType.Info);
         EditorGUI.indentLevel--;
       }
@@ -260,6 +274,40 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       EditorGUILayout.EndScrollView();
+
+      EditorGUILayout.Space(3);
+      DrawParameterEstimate();
+    }
+
+    private void DrawParameterEstimate()
+    {
+      // 从当前勾选状态构建过滤后的服装列表，复用 Generator 的估算方法
+      var filteredOutfits = new List<OutfitData>();
+      foreach (var o in currentOutfitDataList)
+      {
+        if (!outfitSelections[o]) continue;
+
+        var enabledParts = o.Parts.Where(p =>
+          partSelections[o].TryGetValue(p, out var sel) && sel).ToList();
+        var enabledControls = BuildPartControls(o);
+
+        filteredOutfits.Add(new OutfitData
+        {
+          BaseObject = o.BaseObject,
+          OutfitObject = o.OutfitObject,
+          Variants = o.Variants,
+          Parts = enabledParts,
+          PartControls = enabledControls,
+          Name = o.Name,
+          RelativePath = o.RelativePath
+        });
+      }
+
+      string estimate = Generator.CountParameterBits(config, filteredOutfits,
+        (zh, en) => Localization.Text(config, zh, en));
+      EditorGUILayout.LabelField(
+        T($"VRChat 参数占用：{estimate}", $"VRChat parameter usage: {estimate}"),
+        EditorStyles.miniLabel);
     }
 
     private void DrawOutfitPreview(OutfitData outfit, Dictionary<GameObject, int> previewIndexMap)
@@ -410,7 +458,7 @@ namespace UnityBox.AdvancedCostumeController
       string controlPath = string.IsNullOrEmpty(groupName)
         ? Utils.GetRelativePath(outfit.BaseObject, part)
         : "Groups/" + groupName;
-      return Utils.BuildParamName(config.ParamPrefix, outfit.RelativePath + "/" + controlPath);
+      return Utils.BuildParamName(config.MainParameterName, outfit.RelativePath + "/" + controlPath);
     }
 
     private string FormatPartDisplayName(OutfitData outfit, string partName)
@@ -457,13 +505,6 @@ namespace UnityBox.AdvancedCostumeController
           T("参数前缀必须可用于生成文件，且输出目录必须是 Assets 下不含 . 或 .. 的相对路径。",
             "Parameter Prefix must be usable in generated filenames, and Output Folder must be an Assets-relative path without . or .. segments."),
           "OK");
-        return;
-      }
-
-      if (config.EnableCustomMixer && string.IsNullOrWhiteSpace(config.CustomMixerName))
-      {
-        EditorUtility.DisplayDialog(T("错误", "Error"),
-          T("混搭菜单名称不能为空。", "Custom Mixer Name cannot be empty."), "OK");
         return;
       }
 

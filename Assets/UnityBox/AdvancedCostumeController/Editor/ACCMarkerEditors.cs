@@ -4,6 +4,19 @@ using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
 {
+  internal static class ACCInspectorUI
+  {
+    /// <summary>画一个本地化的组件头部栏，配说明图标。</summary>
+    public static void DrawHeader(string title)
+    {
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.LabelField(EditorGUIUtility.IconContent("console.infoicon"), GUILayout.Width(20));
+      EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+      EditorGUILayout.EndHorizontal();
+      EditorGUILayout.Space(3);
+    }
+  }
+
   [CustomEditor(typeof(ACCOutfitMarker))]
   [CanEditMultipleObjects]
   public class ACCOutfitMarkerEditor : Editor
@@ -135,14 +148,6 @@ namespace UnityBox.AdvancedCostumeController
         groupNameProp.stringValue = string.Empty;
 
       serializedObject.ApplyModifiedProperties();
-    }
-  }
-
-  internal static class ACCInspectorUI
-  {
-    public static void DrawHeader(string title)
-    {
-      EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
     }
   }
 }

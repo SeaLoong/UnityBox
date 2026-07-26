@@ -83,28 +83,54 @@ namespace UnityBox.AdvancedCostumeController
   public class ACCConfig
   {
     public const string DefaultControllerFileName = "CostumeController";
+    public const string MenuObjectName = "ACC_Menu";
+    /// <summary>混搭模式参数路径中使用的固定前缀。</summary>
+    public const string MixerParamPrefix = "Mixer";
 
     public GameObject CostumesRoot;
     public string ParamPrefix = "";
-    public bool AutoParamPrefix = true;
     public ACCLanguage Language = ACCLanguage.Auto;
     public string GeneratedFolder = "Assets/UnityBox/Generated/AdvancedCostumeController";
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
-    public string CustomMixerName = "CustomMix";
+    public string CustomMixerName = "";
+    public string RootMenuName = "";
 
+    /// <summary>当 CostumesRoot 变更时自动从根对象名称刷新 ParamPrefix 和 RootMenuName。</summary>
     public void ApplyAutoDefaultsFromRoot()
     {
       string rootName = GetRootBasedDefaultName();
       if (string.IsNullOrWhiteSpace(rootName)) return;
 
-      if (AutoParamPrefix)
-        ParamPrefix = rootName;
+      ParamPrefix = rootName;
+      RootMenuName = rootName;
     }
 
-    /// <summary>服装切换主 Int 参数始终使用 ParamPrefix，确保所有生成物共用唯一命名空间。</summary>
-    public string MainParameterName => ParamPrefix;
+    /// <summary>服装切换主 Int 参数始终使用有效的命名空间。</summary>
+    public string MainParameterName => EffectiveParamPrefix;
+
+    /// <summary>ParamPrefix 为空时回退到服装根对象名称。</summary>
+    public string EffectiveParamPrefix
+    {
+      get
+      {
+        if (!string.IsNullOrWhiteSpace(ParamPrefix))
+          return ParamPrefix;
+        return GetRootBasedDefaultName();
+      }
+    }
+
+    /// <summary>菜单显示名称。为空时默认与 Parameter Prefix 一致。</summary>
+    public string EffectiveRootMenuName
+    {
+      get
+      {
+        if (!string.IsNullOrWhiteSpace(RootMenuName))
+          return RootMenuName;
+        return EffectiveParamPrefix;
+      }
+    }
 
     public string GetControllerFileName()
     {
@@ -120,31 +146,21 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 获取实际的生成目录（在 GeneratedFolder 后追加 Avatar 和参数命名空间），
-    /// 防止同一 Avatar 上的多个 ACC 实例互相覆盖。
+    /// 获取实际的生成目录（在 GeneratedFolder 后追加菜单名称和命名空间），
+    /// 确保不同 ACC 实例的输出互不覆盖。
     /// </summary>
     public string GetResolvedGeneratedFolder()
     {
-      string avatarName = null;
-      if (CostumesRoot != null)
-      {
-        var descriptor = CostumesRoot.GetComponentInParent<VRCAvatarDescriptor>();
-        if (descriptor != null)
-          avatarName = descriptor.gameObject.name;
-        else
-          avatarName = CostumesRoot.transform.root.gameObject.name;
-      }
-      if (string.IsNullOrEmpty(avatarName))
-        return GeneratedFolder;
-      return Utils.NormalizeAssetsFolder(GeneratedFolder) + "/" +
-        Utils.SanitizeForFileName(avatarName) + "/" +
-        Utils.SanitizeForFileName(GetGenerationNamespace());
+      string folder = Utils.NormalizeAssetsFolder(GeneratedFolder);
+      string menuName = Utils.SanitizeForFileName(EffectiveRootMenuName);
+      string ns = Utils.SanitizeForFileName(GetGenerationNamespace());
+      return folder + "/" + menuName + "/" + ns;
     }
 
     /// <summary>生成资产和 Animator Layer 使用的稳定命名空间。</summary>
     public string GetGenerationNamespace()
     {
-      return ParamPrefix;
+      return EffectiveParamPrefix;
     }
 
     private string GetRootBasedDefaultName()

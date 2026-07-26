@@ -12,7 +12,6 @@ namespace UnityBox.AdvancedCostumeController
   [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-outfit-marker")]
   public class ACCOutfitMarker : MonoBehaviour, IEditorOnly
   {
-    [Header("Part Name Formatting")]
     [Tooltip("移除自动部件菜单显示名称中的统一前缀。")]
     public string PartNamePrefixToRemove = "";
 

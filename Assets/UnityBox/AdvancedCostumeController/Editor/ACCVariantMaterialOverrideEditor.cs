@@ -13,7 +13,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       serializedObject.Update();
       var marker = (ACCVariantMaterialOverride)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 材质变体", "ACC Material Variant"));
+      ACCInspectorUI.DrawHeader(Localization.Text("ACC 材质变体替换", "ACC Material Variant Override"));
       EditorGUILayout.HelpBox(Localization.Text(
         "为当前变体指定服装本体的材质替换。替换材质留空时保持原材质。",
         "Assign material replacements for this variant's outfit base. Leave a replacement empty to keep the original material."),
@@ -66,9 +66,6 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       EditorGUILayout.Space();
-      EditorGUILayout.LabelField(Localization.Text("材质替换", "Material Replacements"), EditorStyles.boldLabel);
-      EditorGUILayout.HelpBox(Localization.Text("替换材质留空时保留原材质。",
-        "Leave a replacement empty to keep the original material."), MessageType.None);
       EditorGUILayout.PropertyField(serializedObject.FindProperty("Replacements"), new GUIContent(Localization.Text("材质替换", "Material Replacements")), true);
       serializedObject.ApplyModifiedProperties();
     }

@@ -41,12 +41,13 @@ Avatar
 1. 打开 ACC 窗口。
 2. 在顶部选择界面语言；默认 `Auto / 自动` 跟随 Unity 系统语言。
 3. 将 `Clothes Root` 拖入 **Costumes Root / 服装根节点**。
-4. 确认 **Parameter Prefix / 参数前缀**。默认自动使用 Root 名称。
-5. 点击 **Refresh Preview / 刷新预览**，确认服装和部件识别正确。
-6. 如需开关帽子、眼镜等，开启 **Enable Parts Control / 启用部件控制**。
-7. 点击 **Generate / 生成**，阅读摘要并确认。
+4. 参数前缀和根菜单名称自动填充为 Root 名称，可手动修改。
+5. 如需自定义根菜单在 VRChat 中的显示名，修改 **Root Menu Name**。
+6. 点击 **Refresh Preview / 刷新预览**，确认服装和部件识别正确。
+7. 如需开关帽子、眼镜等，开启 **Enable Parts Control / 启用部件控制**。
+8. 点击 **Generate / 生成**，阅读摘要并确认。
 
-生成后，`Clothes Root` 下会出现 `Clothes Root Menu`。该对象已添加 MA Menu Installer、MA Parameters 和 MA Merge Animator，上传时由 Modular Avatar 自动处理。
+生成后，`Clothes Root` 下会出现 `ACC_Menu` 对象。该对象已添加 MA Menu Installer、MA Parameters 和 MA Merge Animator，上传时由 Modular Avatar 自动处理。
 
 ## 核心概念
 
@@ -58,6 +59,7 @@ Avatar
 | **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
 | **Parameter Prefix** | ACC 的唯一命名空间，同时也是主服装 Int 参数。 |
+| **Root Menu Name** | VRChat 菜单中根节点的显示名称；留空时与 Parameter Prefix 一致。 |
 
 ## 层级与扫描规则
 
@@ -123,14 +125,15 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 
 | 选项 | 说明 |
 |---|---|
-| **Language / 语言** | `Auto / 自动`、`English`、`中文`。影响 ACC 编辑器窗口和生成确认对话框。 |
+| **Language / 语言** | `Auto / 自动`、`English`、`中文`。影响 ACC 编辑器窗口、生成确认对话框和组件 Inspector。 |
 | **Costumes Root / 服装根节点** | 必填。选择本次 ACC 的扫描和动画根。 |
-| **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主 Int 参数、参数前缀、Layer 前缀、Controller 名和输出目录命名空间。 |
+| **Root Menu Name / 根菜单名称** | VRChat 菜单中根节点的显示名；为空时默认与参数前缀一致。 |
+| **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主 Int 参数、参数前缀、Layer 前缀、Controller 名和输出目录命名空间。为空时自动回退到根对象名称。 |
 | **Default Outfit / 默认服装** | 可选。指定初始服装；未指定时按名称关键词匹配，最后回退到第一个服装。 |
 | **Enable Parts Control / 启用部件控制** | 启用普通模式的部件开关。 |
 | **Enable Custom Mixer / 启用混搭模式** | 仅在已启用 Parts Control 时可选；启用独立的混搭参数和动画层。 |
-| **Custom Mixer Name / 混搭菜单名称** | 菜单中的混搭入口名，默认 `CustomMix`。 |
-| **Output Folder / 输出目录** | 自动生成资产的基础目录；必须是安全的 `Assets/...` 相对路径，实际路径会追加 Avatar 名和 Parameter Prefix。 |
+| **Custom Mixer Name / 混搭菜单名称** | 菜单中混搭入口的显示名；留空时默认显示「混搭」/「Custom Mix」（按语言），参数路径固定使用 `Mixer` 前缀。 |
+| **Output Folder / 输出目录** | 自动生成资产的基础目录；必须是安全的 `Assets/...` 相对路径，实际路径追加 `{RootMenuName}/{ParameterPrefix}`。 |
 
 ### Parameter Prefix 的规则
 
@@ -139,9 +142,11 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 ```text
 主服装 Int 参数：Hair
 普通部件参数：Hair/{OutfitPath}/{PartPath}
-混搭部件参数：Hair/{CustomMixerName}/{OutfitPath}/{PartPath}
-混搭变体参数：Hair/{CustomMixerName}/{OutfitGroupPath}
+混搭部件参数：Hair/Mixer/{OutfitPath}/{PartPath}
+混搭变体参数：Hair/Mixer/{OutfitGroupPath}
 ```
+
+混搭参数路径统一使用固定前缀 `Mixer`，不受用户自定义的混搭菜单名称影响。
 
 同一 Avatar 上每套 ACC 必须使用不同前缀。例如：
 
@@ -272,31 +277,42 @@ Inspector 会列出该 Outfit Marker 下所有扫描到的可控制与已排除�
 
 格式化只影响自动部件的**菜单显示名称**。参数名、Animator 控制条件和动画绑定路径仍使用原始层级，确保重命名显示文本不会破坏已有参数契约。`ACC Part Group Marker` 的显式 Group Name 不会被格式化。
 
-### 组件 Inspector 语言
+### 组件 Inspector
 
-`ACC Outfit Marker`、`ACC Part Group Marker` 和 `ACC Variant Material Override` 都使用与 ACC 主窗口一致的系统 Auto 中英显示规则：中文系统显示中文，其他系统显示英文。它们的 Inspector 会显示组件用途和必要的配置提示。
+`ACC Outfit Marker`、`ACC Part Group Marker` 和 `ACC Variant Material Override` 的 Inspector 会显示组件用途说明和必要的配置字段。
 
-三个组件都支持多选同时编辑：同时选中多个对象时，Inspector 会提示当前修改将应用到所有选中对象。
-
-每个组件 Inspector 标题栏右上角的 Unity 原生帮助按钮（`?`）会打开本手册中对应的仓库文档章节。
+- **语言跟随 ACC 窗口设置**：三个组件的文字会与 ACC 主窗口的语言选择同步（Auto / English / 中文），不再只依赖系统语言。
+- **多选同时编辑**：选中多个同类组件时，Inspector 会提示修改将应用到所有选中对象。
+- **原生帮助按钮**：每个组件标题栏右上角的 Unity 原生 `?` 按钮会打开本手册对应的章节。
+- **简洁的头部**：组件顶部有用途图标和简短描述（如「显式服装标记」/「Explicit Outfit Marker」），与 Unity 组件名区隔。
 
 ## 变体
 
 ### 对象变体
 
-对象变体位于 Outfit Base 的同级，共同父对象不能是 Costumes Root：
+对象变体位于 Outfit Base 的同级（可在任意层级），可以是容器内或直接位于 Costumes Root 下：
 
 ```text
 Costumes Root
-└── Jacket Variants
-    ├── Jacket Red           ← Outfit Base；拥有骨架
-    │   ├── Armature
-    │   └── Jacket Mesh
-    └── Jacket Blue          ← 同级对象变体
-        └── Jacket Mesh
+├── Jacket Variants
+│   ├── Jacket Red           ← Outfit Base；拥有骨架
+│   │   ├── Armature
+│   │   └── Jacket Mesh
+│   └── Jacket Blue          ← 同级对象变体
+│       └── Jacket Mesh
+├── Hair Base                ← 也可直接位于根下
+└── Hair Variant             ← 同级变体
 ```
 
-ACC 将 `Jacket Variants` 作为菜单节点，并生成 `Jacket Red`、`Jacket Blue` 选择项。
+识别规则：
+- 自动排除自身就是完整服装（拥有骨架）的同级对象；
+- 自动排除挂有 `ACCOutfitMarker` 的同级对象；
+- 如果同级对象带有 `ACCVariantMaterialOverride`，仅当其所指服装为本体时才作为变体；
+- 如果同级对象只有网格但无明确归属，且尚未被其他 Outfit 认领，则作为当前服装的变体。
+
+> 当同层存在多套服装时，建议为变体添加 `ACCVariantMaterialOverride` 组件并正确设置 Outfit Base，以避免归属歧义。
+
+ACC 将变体组的共同父对象作为菜单节点，并生成各变体的选择项。
 
 > 选择任意对象变体时，ACC 会保持 Outfit Base 活动，以承载可能位于本体下的共享部件。若所有同级变体都包含完整 Mesh，请先在 Avatar 中验证 Base 与变体同时 active 时不会产生叠穿。
 
@@ -348,7 +364,7 @@ Custom Mixer 用于从多套服装中自由组合部件。它**必须启用 Part
 
 1. 启用 **Enable Parts Control**。
 2. 启用 **Enable Custom Mixer**。
-3. 按需修改 `Custom Mixer Name`（不能为空）。
+3. 按需修改 `Custom Mixer Name`（留空时默认显示「混搭」/「Custom Mix」）。
 4. 刷新预览，确认需要参加混搭的部件均已勾选。
 5. 生成。
 
@@ -390,13 +406,15 @@ Clothes Root Menu
 每次生成会删除并重建：
 
 ```text
-{CostumesRoot}/{CostumesRoot.name} Menu
+{CostumesRoot}/ACC_Menu
 ```
+
+菜单 GameObject 名称固定为 `ACC_Menu`，其在 VRChat 中的显示标签由 **Root Menu Name** 字段控制。
 
 菜单根包含：
 
-- `ModularAvatarMenuInstaller`；
-- `ModularAvatarMenuItem`（Children 子菜单）；
+- `ModularAvatarMenuInstaller`（若父级已有则跳过）；
+- `ModularAvatarMenuItem`（Children 子菜单，标签为 Root Menu Name）；
 - `ModularAvatarParameters`；
 - `ModularAvatarMergeAnimator`（FX，Relative Path Root 为 Costumes Root）。
 
@@ -405,15 +423,17 @@ Clothes Root Menu
 实际输出路径：
 
 ```text
-{OutputFolder}/{AvatarName}/{SanitizedParameterPrefix}/
+{OutputFolder}/{SanitizedRootMenuName}/{SanitizedParameterPrefix}/
 ├── {SanitizedParameterPrefix}.controller
 └── Animations/
     ├── Outfit_000_*.anim
-    ├── Outfit_XXX_CustomMixer.anim
+    ├── Outfit_XXX_Mixer.anim
     ├── PartsInit_OFF.anim
     ├── Parts/*.anim
-    └── Mixer/MixerVariant_*.anim
+    └── Mixer/*.anim
 ```
+
+菜单对象名固定 `ACC_Menu`，输出目录取决于 **Root Menu Name**（而非 Avatar 名称），不同 ACC 实例使用不同名称即可隔离。
 
 Layer 名也带 Parameter Prefix：
 
@@ -425,7 +445,7 @@ Hair/Mixer Parts
 Hair/Mixer_{OutfitGroup}
 ```
 
-头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。
+头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。ACC 主面板预览区底部会显示实时的 VRChat 参数位占用估算（Int 8bit、Bool 1bit）。
 
 ## 重新生成与清理规则
 
@@ -487,7 +507,11 @@ Hair/Mixer_{OutfitGroup}
 
 ### 生成后手工修改的菜单或参数消失
 
-这是预期行为。ACC 会重建 `{CostumesRoot.name} Menu` 与当前 Parameter Prefix 的输出目录。自定义菜单或手工资产应放在 ACC 生成范围之外。
+这是预期行为。ACC 会重建 `ACC_Menu` 与当前 Parameter Prefix 的输出目录。自定义菜单或手工资产应放在 ACC 生成范围之外。
+
+### VRChat 参数占用超过限制
+
+ACC 主面板的预览区底部和生成前摘要会显示估算的参数位占用。Int 参数占用 8 bits，Bool 参数占用 1 bit，VRChat 总上限为 256 bits。如超出限制，可减少部件或分组数量、关闭混搭模式等方式降低占用。
 
 ## 开发结构
 
@@ -499,11 +523,15 @@ Assets/UnityBox/AdvancedCostumeController/
 │   ├── Generator.cs                      菜单、参数、Controller 生成协调
 │   ├── AnimationBuilder.cs               Animator Layer 与 Clip 创建
 │   ├── Mixer.cs                          Custom Mixer 菜单创建
+│   ├── Models.cs                         数据模型与配置
+│   ├── Utils.cs                          工具类
+│   ├── Localization.cs                   编辑器中英文本地化
+│   ├── ACCMarkerEditors.cs               ACC Outfit Marker / Part Group Marker Inspector
 │   ├── ACCVariantMaterialOverrideEditor.cs
-│   └── Localization.cs                   编辑器中英文本地化
+│   └── ACCInspectorUI                    (在 ACCMarkerEditors.cs 中，组件头部绘制)
 └── Runtime/
     ├── ACCOutfitMarker.cs                 无骨架服装的显式识别标记
-    ├── ACCPartGroupMarker.cs               持久化部件分组标记
+    ├── ACCPartGroupMarker.cs              持久化部件分组标记
     └── ACCVariantMaterialOverride.cs      材质变体标记组件
 ```
 

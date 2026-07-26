@@ -49,18 +49,32 @@ namespace UnityBox.AdvancedCostumeController
         // 因而不强制每个变体都各自拥有骨架。
         var variants = new List<GameObject>();
         var outfitParent = outfitBase.parent;
-        // 只有当父节点存在且不是根节点时才查找变体
-        if (outfitParent != null && outfitParent.gameObject != costumesRoot)
+        if (outfitParent != null)
         {
           for (int i = 0; i < outfitParent.childCount; i++)
           {
             var sibling = outfitParent.GetChild(i);
+            if (sibling == outfitBase) continue;
+
+            // 排除自身就是一个完整服装的兄弟（自动识别或显式标记）
+            if (Utils.OwnsSkeleton(sibling) && Utils.HasMeshInHierarchy(sibling))
+              continue;
+            if (sibling.GetComponent<ACCOutfitMarker>() != null)
+              continue;
+
             var materialVariant = sibling.GetComponent<ACCVariantMaterialOverride>();
-            bool isExplicitVariant = sibling.GetComponent<ACCOutfitMarker>() != null;
+
+            // 已由其他服装的 ACCVariantMaterialOverride 指向 → 不属于当前服装
+            if (materialVariant != null && materialVariant.OutfitBase != null &&
+                materialVariant.OutfitBase != outfitBase.gameObject)
+              continue;
+
             bool isMaterialVariant = materialVariant != null &&
               materialVariant.OutfitBase == outfitBase.gameObject;
-            if (sibling != outfitBase &&
-                (Utils.HasMeshInHierarchy(sibling) || isMaterialVariant || isExplicitVariant))
+            // 有网格且未被其他服装认领 → 加入当前变体；如果已由其他 Outfit 处理过变体加入逻辑，
+            // 则 processedOutfitObjects 会跳过此对象，此处仅添加仍未处理的网格兄弟。
+            if (!processedOutfitObjects.Contains(sibling.gameObject) &&
+                (Utils.HasMeshInHierarchy(sibling) || isMaterialVariant))
               variants.Add(sibling.gameObject);
           }
         }

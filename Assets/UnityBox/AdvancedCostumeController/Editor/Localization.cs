@@ -14,6 +14,9 @@ namespace UnityBox.AdvancedCostumeController
   /// <summary>轻量的中英文编辑器本地化工具。</summary>
   public static class Localization
   {
+    /// <summary>ACC 窗口设置语言时同步到此静态字段，供组件 Inspector 读取。</summary>
+    public static ACCLanguage CurrentLanguage { get; set; } = ACCLanguage.Auto;
+
     public static bool UseChinese(ACCLanguage language)
     {
       if (language == ACCLanguage.Chinese) return true;
@@ -30,7 +33,7 @@ namespace UnityBox.AdvancedCostumeController
 
     public static string Text(string chinese, string english)
     {
-      return UseChinese(ACCLanguage.Auto) ? chinese : english;
+      return UseChinese(CurrentLanguage) ? chinese : english;
     }
   }
 }

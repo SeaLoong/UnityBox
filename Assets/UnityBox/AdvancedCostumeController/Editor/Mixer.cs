@@ -14,6 +14,9 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public static class Mixer
   {
+    private static string T(ACCConfig config, string chinese, string english) =>
+      Localization.Text(config, chinese, english);
+
     /// <summary>
     /// 构建 CustomMixer 的完整菜单结构
     /// </summary>
@@ -34,12 +37,17 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit)
     {
       var costumesRoot = config.CostumesRoot;
-      string mixerName = config.CustomMixerName;
+      string mixerObjectName = string.IsNullOrWhiteSpace(config.CustomMixerName)
+        ? "CustomMixer"
+        : config.CustomMixerName;
+      string mixerLabel = string.IsNullOrWhiteSpace(config.CustomMixerName)
+        ? T(config, "混搭", "Custom Mix")
+        : config.CustomMixerName;
       string mainParameterName = config.MainParameterName;
 
       // 创建 CustomMixer 子菜单
-      var mixerSubmenu = Utils.FindOrCreateChild(menuRoot, mixerName);
-      Utils.EnsureSubmenuOnNode(mixerSubmenu, mixerName);
+      var mixerSubmenu = Utils.FindOrCreateChild(menuRoot, mixerObjectName);
+      Utils.EnsureSubmenuOnNode(mixerSubmenu, mixerLabel);
 
       // 添加 CustomMixer 总开关（设置主 Parameter Prefix = customMixerIndex）
       var enableNode = Utils.FindOrCreateChild(mixerSubmenu, "Enable");
@@ -51,6 +59,7 @@ namespace UnityBox.AdvancedCostumeController
       enableMi.PortableControl.Value = customMixerIndex;
       enableMi.isSaved = true;
       enableMi.isSynced = true;
+      enableMi.label = T(config, "启用", "Enable");
 
       // 已处理的服装组（防止变体组重复处理）
       var processedOutfitObjects = new HashSet<GameObject>();
@@ -87,7 +96,7 @@ namespace UnityBox.AdvancedCostumeController
         {
           bool useParts = outfit.HasVariants(); // 有变体时放到 Parts 子菜单
           var partsParent = useParts
-            ? CreatePartsSubmenu(curMenu)
+            ? CreatePartsSubmenu(config, curMenu)
             : curMenu;
 
           BuildMixerPartsMenu(config, partsParent, outfit, rootParams);
@@ -136,10 +145,11 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>
     /// 创建 Parts 子菜单节点
     /// </summary>
-    private static GameObject CreatePartsSubmenu(GameObject parent)
+    private static GameObject CreatePartsSubmenu(ACCConfig config, GameObject parent)
     {
       var partsMenu = Utils.FindOrCreateChild(parent, "Parts");
-      Utils.EnsureSubmenuOnNode(partsMenu);
+      // 使用本地化菜单标签，GameObject 名保持英文以防 PrepareChildRoot 无法识别
+      Utils.EnsureSubmenuOnNode(partsMenu, T(config, "部件", "Parts"));
       return partsMenu;
     }
 
@@ -185,8 +195,8 @@ namespace UnityBox.AdvancedCostumeController
     /// </summary>
     public static string BuildMixerPartParamName(ACCConfig config, string outfitRelPath, string partRelPath)
     {
-      string raw = config.CustomMixerName + "/" + outfitRelPath + "/" + partRelPath;
-      return Utils.BuildParamName(config.ParamPrefix, raw);
+      string raw = ACCConfig.MixerParamPrefix + "/" + outfitRelPath + "/" + partRelPath;
+      return Utils.BuildParamName(config.MainParameterName, raw);
     }
 
     private static string GetPartControlKey(OutfitData outfit, PartControlData control)
@@ -203,8 +213,8 @@ namespace UnityBox.AdvancedCostumeController
     public static string BuildMixerVariantGroupParamName(ACCConfig config, OutfitData outfit)
     {
       string groupRelPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
-      string raw = config.CustomMixerName + "/" + groupRelPath;
-      return Utils.BuildParamName(config.ParamPrefix, raw);
+      string raw = ACCConfig.MixerParamPrefix + "/" + groupRelPath;
+      return Utils.BuildParamName(config.MainParameterName, raw);
     }
 
     #endregion

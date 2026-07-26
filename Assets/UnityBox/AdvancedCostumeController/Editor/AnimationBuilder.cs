@@ -595,7 +595,7 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>获取部件参数名（普通模式）</summary>
     public string GetPartParamName(OutfitData outfit, PartControlData control)
     {
-      return Utils.BuildParamName(config.ParamPrefix,
+      return Utils.BuildParamName(config.MainParameterName,
         outfit.RelativePath + "/" + GetPartControlKey(outfit, control));
     }
 
@@ -603,8 +603,8 @@ namespace UnityBox.AdvancedCostumeController
     public string GetMixerPartParamName(OutfitData outfit, PartControlData control)
     {
       string outfitRelPath = outfit.RelativePath;
-      return Utils.BuildParamName(config.ParamPrefix,
-        config.CustomMixerName + "/" + outfitRelPath + "/" + GetPartControlKey(outfit, control));
+      return Utils.BuildParamName(config.MainParameterName,
+        ACCConfig.MixerParamPrefix + "/" + outfitRelPath + "/" + GetPartControlKey(outfit, control));
     }
 
     private static string GetPartControlKey(OutfitData outfit, PartControlData control)
@@ -618,8 +618,8 @@ namespace UnityBox.AdvancedCostumeController
     public string GetMixerVariantGroupParamName(OutfitData outfit)
     {
       string groupRelPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
-      return Utils.BuildParamName(config.ParamPrefix,
-        config.CustomMixerName + "/" + groupRelPath);
+      return Utils.BuildParamName(config.MainParameterName,
+        ACCConfig.MixerParamPrefix + "/" + groupRelPath);
     }
 
     private AnimatorControllerLayer CreateLayer(string name, AnimatorController controller)
