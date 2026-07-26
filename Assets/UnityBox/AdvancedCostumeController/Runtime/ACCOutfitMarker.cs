@@ -1,4 +1,5 @@
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -8,7 +9,7 @@ namespace UnityBox.AdvancedCostumeController
   /// 也可用于将任意容器节点明确指定为服装根。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Outfit Marker")]
-  public class ACCOutfitMarker : MonoBehaviour
+  public class ACCOutfitMarker : MonoBehaviour, IEditorOnly
   {
     [Header("Part Name Formatting")]
     [Tooltip("移除自动部件菜单显示名称中的统一前缀。")]

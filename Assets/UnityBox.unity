@@ -4771,6 +4771,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2060933235}
+    - targetCorrespondingSourceObject: {fileID: 8689100816423088731, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2060933236}
+    - targetCorrespondingSourceObject: {fileID: 1975829576297352292, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 237068059}
   m_SourcePrefab: {fileID: 100100000, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
 --- !u!4 &237068049 stripped
 Transform:
@@ -4837,6 +4843,20 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1975829576297352292, guid: 15047c38802a9914ebc075ce3ebb523c, type: 3}
   m_PrefabInstance: {fileID: 237068048}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &237068059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 237068058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 594421b5520f47b892549d6e70c660fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Mode: 1
+  GroupName: Bottom
 --- !u!1 &239639895
 GameObject:
   m_ObjectHideFlags: 0
@@ -13974,7 +13994,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
@@ -17818,7 +17838,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
@@ -24415,7 +24435,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1230535414
 Transform:
   m_ObjectHideFlags: 0
@@ -24795,7 +24815,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
@@ -35312,7 +35332,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
@@ -43639,7 +43659,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
@@ -44178,6 +44198,22 @@ MonoBehaviour:
       referencePath: Costumes/ViolenceRabbit/Armature.1
       targetObject: {fileID: 237068050}
     Active: 1
+--- !u!114 &2060933236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2060933233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e98f908c5fb14a479a7cc0ce3492a7d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PartNamePrefixToRemove: 
+  PartNameSuffixToRemove: 
+  PartNameRegexPattern: 
+  PartNameRegexReplacement: 
 --- !u!1 &2065777814
 GameObject:
   m_ObjectHideFlags: 0
@@ -61857,7 +61893,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 3
   unityVersion: 2022.3.22f1
-  vrcfuryVersion: 1.1363.0
+  vrcfuryVersion: 1.1369.0
   somethingIsBroken: 0
   config:
     features: []
