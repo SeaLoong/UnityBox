@@ -13,7 +13,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       serializedObject.Update();
       var marker = (ACCVariantMaterialOverride)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 材质变体替换", "ACC Material Variant Override"));
+      Localization.DrawInspectorHeader(Localization.Text("ACC 材质变体替换", "ACC Material Variant Override"));
       EditorGUILayout.HelpBox(Localization.Text(
         "为当前变体指定服装本体的材质替换。替换材质留空时保持原材质。",
         "Assign material replacements for this variant's outfit base. Leave a replacement empty to keep the original material."),

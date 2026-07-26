@@ -4,19 +4,6 @@ using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
 {
-  internal static class ACCInspectorUI
-  {
-    /// <summary>画一个本地化的组件头部栏，配说明图标。</summary>
-    public static void DrawHeader(string title)
-    {
-      EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.LabelField(EditorGUIUtility.IconContent("console.infoicon"), GUILayout.Width(20));
-      EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-      EditorGUILayout.EndHorizontal();
-      EditorGUILayout.Space(3);
-    }
-  }
-
   [CustomEditor(typeof(ACCOutfitMarker))]
   [CanEditMultipleObjects]
   public class ACCOutfitMarkerEditor : Editor
@@ -25,7 +12,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       serializedObject.Update();
       var marker = (ACCOutfitMarker)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 服装标记", "ACC Outfit Marker"));
+      Localization.DrawInspectorHeader(Localization.Text("ACC 服装标记", "ACC Outfit Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
         "将当前对象明确作为服装根。部件名称格式化会持久保存在此组件，并仅影响自动部件的菜单显示名称。",
         "Explicitly declares this object as an outfit root. Part name formatting is stored here and changes automatic part menu labels only."),
@@ -118,7 +105,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       serializedObject.Update();
       var marker = (ACCPartGroupMarker)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 部件控制标记", "ACC Part Control Marker"));
+      Localization.DrawInspectorHeader(Localization.Text("ACC 部件控制标记", "ACC Part Control Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
         "Group 会将同名对象合并为一个开关；Exclude 不会生成当前对象或所在自动部件的 ACC 控制。",
         "Group combines same-name objects into one toggle. Exclude prevents ACC controls for this object and its containing automatic part."),

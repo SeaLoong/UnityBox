@@ -88,7 +88,7 @@ namespace UnityBox.AdvancedCostumeController
 
       var languageOptions = new[]
       {
-        "Auto / 自动",
+        "Auto（自动）",
         "English",
         "中文"
       };
@@ -298,6 +298,9 @@ namespace UnityBox.AdvancedCostumeController
           Variants = o.Variants,
           Parts = enabledParts,
           PartControls = enabledControls,
+          VariantPartData = o.VariantPartData.Where(item =>
+            (item.VariantObject == o.BaseObject && outfitObjectSelections[o][o.BaseObject]) ||
+            (item.VariantObject != o.BaseObject && outfitObjectSelections[o].TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
           Name = o.Name,
           RelativePath = o.RelativePath
         });
@@ -395,9 +398,8 @@ namespace UnityBox.AdvancedCostumeController
     {
       var partParam = GetPreviewPartParamName(outfit, part);
       string groupName = partGroupNames[outfit].TryGetValue(part, out var value) ? value.Trim() : "";
-      var partMarker = part.GetComponent<ACCPartGroupMarker>();
-      bool isPersistentGroup = partMarker != null &&
-        partMarker.Mode == ACCPartControlMode.Group;
+      var control = FindPreviewPartControl(outfit, part);
+      bool isPersistentGroup = control != null && control.IsGroup;
       string source = !string.IsNullOrEmpty(groupName)
         ? (isPersistentGroup
           ? $"[MG: {groupName}]"
@@ -422,11 +424,10 @@ namespace UnityBox.AdvancedCostumeController
 
     private void DrawReadOnlyPartPreviewRow(OutfitData outfit, GameObject part)
     {
-      var partMarker = part.GetComponent<ACCPartGroupMarker>();
-      bool isPersistentGroup = partMarker != null &&
-        partMarker.Mode == ACCPartControlMode.Group;
+      var control = FindPreviewPartControl(outfit, part);
+      bool isPersistentGroup = control != null && control.IsGroup;
       string source = isPersistentGroup
-        ? $"[MG: {partMarker.GroupName}]"
+        ? $"[MG: {control.Name}]"
         : T("[A] 自动", "[A] Auto");
 
       EditorGUILayout.BeginHorizontal();
@@ -436,6 +437,11 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.Width(100));
       EditorGUILayout.LabelField("", GUILayout.ExpandWidth(true));
       EditorGUILayout.EndHorizontal();
+    }
+
+    private static PartControlData FindPreviewPartControl(OutfitData outfit, GameObject part)
+    {
+      return outfit.GetPartControls().FirstOrDefault(control => control.Parts.Contains(part));
     }
 
     private void DrawExcludedPartPreviewRow(OutfitData outfit, GameObject part)
@@ -456,7 +462,7 @@ namespace UnityBox.AdvancedCostumeController
       string groupName = partGroupNames[outfit].TryGetValue(part, out var value)
         ? value.Trim() : "";
       string controlPath = string.IsNullOrEmpty(groupName)
-        ? Utils.GetRelativePath(outfit.BaseObject, part)
+        ? "Parts/" + Utils.GetRelativePath(outfit.BaseObject, part)
         : "Groups/" + groupName;
       return Utils.BuildParamName(config.MainParameterName, outfit.RelativePath + "/" + controlPath);
     }
@@ -530,6 +536,9 @@ namespace UnityBox.AdvancedCostumeController
             partSelections[o].ContainsKey(p) && partSelections[o][p]).ToList(),
           ExcludedParts = o.ExcludedParts,
           PartControls = BuildPartControls(o),
+          VariantPartData = o.VariantPartData.Where(item =>
+            (item.VariantObject == o.BaseObject && outfitObjectSelections[o][o.BaseObject]) ||
+            (item.VariantObject != o.BaseObject && outfitObjectSelections[o].TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
           Marker = o.Marker,
           Name = o.Name,
           RelativePath = o.RelativePath,

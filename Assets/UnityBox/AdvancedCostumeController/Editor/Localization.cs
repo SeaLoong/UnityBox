@@ -14,6 +14,15 @@ namespace UnityBox.AdvancedCostumeController
   /// <summary>轻量的中英文编辑器本地化工具。</summary>
   public static class Localization
   {
+    public static void DrawInspectorHeader(string title)
+    {
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.LabelField(EditorGUIUtility.IconContent("console.infoicon"), GUILayout.Width(20));
+      EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+      EditorGUILayout.EndHorizontal();
+      EditorGUILayout.Space(3);
+    }
+
     /// <summary>ACC 窗口设置语言时同步到此静态字段，供组件 Inspector 读取。</summary>
     public static ACCLanguage CurrentLanguage { get; set; } = ACCLanguage.Auto;
 

@@ -85,6 +85,15 @@ namespace UnityBox.AdvancedCostumeController
           processedOutfitObjects.Add(variant);
 
         CollectParts(outfitBase, out var parts, out var excludedParts, out var partControls);
+        var variantPartData = new List<VariantPartData>();
+        AddVariantPartData(variantPartData, outfitBase.gameObject, parts, excludedParts, partControls);
+        foreach (var variant in variants)
+        {
+          CollectParts(variant.transform, out var variantParts,
+            out var variantExcludedParts, out var variantPartControls);
+          AddVariantPartData(variantPartData, variant.gameObject, variantParts,
+            variantExcludedParts, variantPartControls);
+        }
 
         outfitDataList.Add(new OutfitData
         {
@@ -95,12 +104,29 @@ namespace UnityBox.AdvancedCostumeController
           Parts = parts,
           ExcludedParts = excludedParts,
           PartControls = partControls,
+          VariantPartData = variantPartData,
           Marker = outfitMarker,
           Variants = variants
         });
       }
 
       return outfitDataList;
+    }
+
+    private static void AddVariantPartData(
+      List<VariantPartData> result,
+      GameObject variantObject,
+      List<GameObject> parts,
+      List<GameObject> excludedParts,
+      List<PartControlData> partControls)
+    {
+      result.Add(new VariantPartData
+      {
+        VariantObject = variantObject,
+        Parts = parts,
+        ExcludedParts = excludedParts,
+        PartControls = partControls
+      });
     }
 
     /// <summary>

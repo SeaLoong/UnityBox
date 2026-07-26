@@ -39,7 +39,7 @@ Avatar
 ```
 
 1. 打开 ACC 窗口。
-2. 在顶部选择界面语言；默认 `Auto / 自动` 跟随 Unity 系统语言。
+2. 在顶部选择界面语言；默认 `Auto（自动）` 跟随 Unity 系统语言。
 3. 将 `Clothes Root` 拖入 **Costumes Root / 服装根节点**。
 4. 参数前缀和根菜单名称自动填充为 Root 名称，可手动修改。
 5. 如需自定义根菜单在 VRChat 中的显示名，修改 **Root Menu Name**。
@@ -125,7 +125,7 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 
 | 选项 | 说明 |
 |---|---|
-| **Language / 语言** | `Auto / 自动`、`English`、`中文`。影响 ACC 编辑器窗口、生成确认对话框和组件 Inspector。 |
+| **Language / 语言** | `Auto（自动）`、`English`、`中文`。影响 ACC 编辑器窗口、生成确认对话框和组件 Inspector。 |
 | **Costumes Root / 服装根节点** | 必填。选择本次 ACC 的扫描和动画根。 |
 | **Root Menu Name / 根菜单名称** | VRChat 菜单中根节点的显示名；为空时默认与参数前缀一致。 |
 | **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主 Int 参数、参数前缀、Layer 前缀、Controller 名和输出目录命名空间。为空时自动回退到根对象名称。 |
@@ -141,9 +141,8 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 
 ```text
 主服装 Int 参数：Hair
-普通部件参数：Hair/{OutfitPath}/{PartPath}
-混搭部件参数：Hair/Mixer/{OutfitPath}/{PartPath}
-混搭变体参数：Hair/Mixer/{OutfitGroupPath}
+普通部件参数：Hair/{OutfitPath}/Parts/{PartPath}
+混搭部件槽位参数：Hair/Mixer/{OutfitGroupPath}/{PartSlotPath}
 ```
 
 混搭参数路径统一使用固定前缀 `Mixer`，不受用户自定义的混搭菜单名称影响。
@@ -358,45 +357,75 @@ Costumes Root
 
 ## Custom Mixer 混搭
 
-Custom Mixer 用于从多套服装中自由组合部件。它**必须启用 Parts Control**。
+Custom Mixer 是一个特殊的服装状态，用于从多套服装以及它们的变体中组合部件。它**必须启用 Parts Control**。
+
+混搭不会重新扫描并创建一套独立的部件控制。它直接复用普通模式已经生成的部件分组；各变体只为这些普通部件分组提供对应候选对象。
+
+它不是“选择一套变体后控制这套变体的部件”，而是把每个服装组的部件拆成多个**槽位**。混搭菜单不会额外显示普通模式中的 `Parts` / `Groups` 分类层，部件项直接放在变体菜单下；普通模式的分组只用于决定槽位和参数复用。槽位顺序严格沿用普通模式的部件控制顺序，`Parts` 与 `Groups` 不会改变先后关系：
+
+- 同一服装组、同一槽位：只能选择一个变体提供的部件；
+- 同一服装组、不同槽位：可以同时选择；
+- 不同服装组之间：可以自由组合；
+- 变体本身没有额外的启用开关，选择候选部件即代表选择该变体的该槽位。
+
+例如：
+
+```text
+Outfit A：A / B / C
+Variant A1：A / B / C
+Outfit B：D / E / F
+Variant B1：D / E / F
+```
+
+允许：`Outfit A 的 A + Variant A1 的 B + Outfit B 的 D + Variant B1 的 E`。
+
+不允许：`Outfit A 的 A + Variant A1 的 A`，因为它们属于同一服装组的同一槽位。
 
 ### 启用步骤
 
 1. 启用 **Enable Parts Control**。
 2. 启用 **Enable Custom Mixer**。
 3. 按需修改 `Custom Mixer Name`（留空时默认显示「混搭」/「Custom Mix」）。
-4. 刷新预览，确认需要参加混搭的部件均已勾选。
+4. 刷新预览，确认需要参加混搭的 Base/变体均已勾选。
 5. 生成。
 
 ### Mixer 的运行逻辑
 
-点击 `CustomMix/Enable` 后，主 `{ParameterPrefix}` 被设为普通服装索引后的特殊值：
+点击混搭菜单中的 **Enable / 启用** 后，主 `{ParameterPrefix}` 被设为普通服装索引后的特殊值：
 
-1. `Outfit Switching` 进入 `Custom Mixer` 状态；
-2. 所有选中服装的 Outfit Base 被激活；
-3. `Parts Init` 保持所有可控部件 OFF；
-4. 普通 `Parts Control` 进入无曲线 Off 状态，不再干扰混搭；
-5. `Mixer Parts` 使用独立参数开启部件或分组；
-6. 每个有变体的服装组由 `Mixer_{Group}` Layer 选择变体；
-7. Mixer 中选择材质变体时会同步应用材质曲线。
+1. `Outfit Switching` 进入特殊混搭状态；
+2. 所有已选服装的 Base/变体容器保持激活；
+3. 每个部件槽位使用一个独立 Int 参数；
+4. 槽位 Int 的值对应某个变体提供的候选部件，值为 0 表示该槽位关闭；
+5. 槽位动画只关闭并打开该槽位的候选部件，不影响同服装组的其他槽位；
+6. 退出混搭后，混搭层进入无曲线状态，不覆盖普通服装和普通部件控制。
 
-普通模式与混搭模式的部件参数互不共用；模式切换不会直接改写另一模式已保存的参数值。
+混搭参数路径格式为：
+
+```text
+{ParameterPrefix}/Mixer/{OutfitGroupPath}/{PartSlotPath}
+```
+
+每个槽位使用一个 Int（8 bits），不再为每个变体部件额外创建 Bool，也不再为每个变体创建独立的整体选择层。混搭特殊值固定为 `255`，因此启用混搭时选中的普通服装对象数量不能超过 255。
 
 ### Mixer 菜单示例
 
 ```text
 Clothes Root Menu
-└── CustomMix
-    ├── Enable                  → Clothes = N
+└── Custom Mix
+    ├── Enable                     → Clothes = 255
     ├── Jacket Variants
-    │   ├── Jacket Red          → Clothes/CustomMix/Jacket_Variants = 0
-    │   ├── Jacket Blue         → Clothes/CustomMix/Jacket_Variants = 1
-    │   └── Parts
-    │       ├── Collar          → Clothes/CustomMix/Jacket_Variants/Collar
-    │       └── Sleeves         → Clothes/CustomMix/Jacket_Variants/Sleeves
-    └── Casual Outfit
-        ├── Hat                 → Clothes/CustomMix/Casual_Outfit/Hat
-        └── Glasses             → Clothes/CustomMix/Casual_Outfit/Glasses
+    │   ├── Jacket Base
+    │   │   ├── Collar              → Clothes/Mixer/Jacket_Variants/Parts/Collar = 1
+    │   │   └── Upper               → Clothes/Mixer/Jacket_Variants/Groups/Upper = 1
+    │   └── Jacket Red
+    │       ├── Collar              → Clothes/Mixer/Jacket_Variants/Parts/Collar = 2
+    │       └── Upper               → Clothes/Mixer/Jacket_Variants/Groups/Upper = 2
+    └── Pants Variants
+        ├── Pants Base
+        │   └── Belt                → .../Pants_Variants/Parts/Belt = 1
+        └── Pants Blue
+            └── Belt                → .../Pants_Variants/Parts/Belt = 2
 ```
 
 ## 生成结果与多实例隔离
@@ -409,7 +438,7 @@ Clothes Root Menu
 {CostumesRoot}/ACC_Menu
 ```
 
-菜单 GameObject 名称固定为 `ACC_Menu`，其在 VRChat 中的显示标签由 **Root Menu Name** 字段控制。
+菜单 GameObject 名称固定为 `ACC_Menu`，其在 VRChat 中的显示标签由 **Root Menu Name** 字段控制。重新生成时会复用已有 `ACC_Menu` 和 `ModularAvatarMenuItem`，保留用户设置的菜单图标等非 ACC 属性；参数、菜单类型和子菜单来源等 ACC 必须管理的属性会按当前配置更新。
 
 菜单根包含：
 
@@ -441,8 +470,7 @@ Layer 名也带 Parameter Prefix：
 Hair/Outfit Switching
 Hair/Parts Init
 Hair/Parts Control
-Hair/Mixer Parts
-Hair/Mixer_{OutfitGroup}
+Hair/Mixer_{OutfitGroup}_{PartSlot}
 ```
 
 头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。ACC 主面板预览区底部会显示实时的 VRChat 参数位占用估算（Int 8bit、Bool 1bit）。
@@ -507,7 +535,7 @@ Hair/Mixer_{OutfitGroup}
 
 ### 生成后手工修改的菜单或参数消失
 
-这是预期行为。ACC 会重建 `ACC_Menu` 与当前 Parameter Prefix 的输出目录。自定义菜单或手工资产应放在 ACC 生成范围之外。
+这是预期行为。ACC 会复用并更新 `ACC_Menu`，同时清理并重建当前 Parameter Prefix 的输出目录。ACC 会尽量保留已有菜单组件的图标等非 ACC 属性；自定义菜单节点和手工资产仍建议放在 ACC 生成结构之外。
 
 ### VRChat 参数占用超过限制
 

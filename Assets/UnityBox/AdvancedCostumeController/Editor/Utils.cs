@@ -258,9 +258,6 @@ public static class Utils
   /// </summary>
   public static void EnsureSubmenuOnNode(GameObject node, string label = "")
   {
-    var old = node.GetComponent<ModularAvatarMenuItem>();
-    if (old != null) Undo.DestroyObjectImmediate(old);
-
     var mi = CreateMenuItem(node);
     if (!string.IsNullOrEmpty(label)) mi.label = label;
     mi.PortableControl.Type = PortableControlType.SubMenu;
@@ -274,7 +271,12 @@ public static class Utils
   public static ModularAvatarMenuItem CreateMenuItem(GameObject node)
   {
     var existing = node.GetComponent<ModularAvatarMenuItem>();
-    if (existing != null) Undo.DestroyObjectImmediate(existing);
+    if (existing != null)
+    {
+      // 复用已有组件，保留用户配置的 icon、icon material 等非 ACC 属性。
+      Undo.RecordObject(existing, "Update ACC menu item");
+      return existing;
+    }
 
     try { return Undo.AddComponent<ModularAvatarMenuItem>(node); }
     catch { return node.AddComponent<ModularAvatarMenuItem>(); }
@@ -286,7 +288,12 @@ public static class Utils
   public static GameObject PrepareChildRoot(GameObject parent, string name)
   {
     var existing = FindDirectChild(parent.transform, name);
-    if (existing != null) Undo.DestroyObjectImmediate(existing.gameObject);
+    if (existing != null)
+    {
+      // ACC_Menu 是稳定根节点；重新生成时复用它，保留用户补充的菜单图标等组件属性。
+      Undo.RecordObject(existing.gameObject, "Reuse ACC menu root");
+      return existing.gameObject;
+    }
 
     var go = new GameObject(name);
     Undo.RegisterCreatedObjectUndo(go, "Create Root Child");

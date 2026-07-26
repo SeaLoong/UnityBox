@@ -8,9 +8,9 @@ using nadena.dev.modular_avatar.core;
 namespace UnityBox.AdvancedCostumeController
 {
   /// <summary>
-  /// 混搭器 — 负责 CustomMixer 的菜单构建和参数注册
-  /// CustomMixer 是一个特殊"虚拟服装"，允许用户在 VRC 表情菜单中
-  /// 自由组合不同服装的部件和变体。
+  /// 混搭器 — 负责混搭模式的菜单构建和参数注册。
+  /// 混搭是一个特殊"虚拟服装"，选中后激活所有服装本体，
+  /// 允许用户跨服装自由搭配变体和部件。
   /// </summary>
   public static class Mixer
   {
@@ -18,15 +18,8 @@ namespace UnityBox.AdvancedCostumeController
       Localization.Text(config, chinese, english);
 
     /// <summary>
-    /// 构建 CustomMixer 的完整菜单结构
+    /// 构建混搭模式的完整菜单结构
     /// </summary>
-    /// <param name="config">ACC 配置</param>
-    /// <param name="menuRoot">菜单根节点</param>
-    /// <param name="outfits">所有服装数据</param>
-    /// <param name="outfitIndexMap">服装→索引映射</param>
-    /// <param name="customMixerIndex">CustomMixer 使用的索引值</param>
-    /// <param name="rootParams">MA 参数组件</param>
-    /// <param name="defaultOutfit">默认服装</param>
     public static void BuildCustomMixerMenu(
       ACCConfig config,
       GameObject menuRoot,
@@ -45,39 +38,37 @@ namespace UnityBox.AdvancedCostumeController
         : config.CustomMixerName;
       string mainParameterName = config.MainParameterName;
 
-      // 创建 CustomMixer 子菜单
+      // 创建混搭子菜单
       var mixerSubmenu = Utils.FindOrCreateChild(menuRoot, mixerObjectName);
       Utils.EnsureSubmenuOnNode(mixerSubmenu, mixerLabel);
 
-      // 添加 CustomMixer 总开关（设置主 Parameter Prefix = customMixerIndex）
+      // 混搭特殊服装入口：设置主参数到混搭索引；变体本身不再有额外开关
       var enableNode = Utils.FindOrCreateChild(mixerSubmenu, "Enable");
       var enableMi = Utils.CreateMenuItem(enableNode);
-      Undo.RecordObject(enableMi, "Configure CustomMixer enable toggle");
+      Undo.RecordObject(enableMi, "Configure mixer toggle");
+      enableMi.label = T(config, "启用", "Enable");
       enableMi.PortableControl.Type = PortableControlType.Toggle;
       enableMi.PortableControl.Parameter = mainParameterName;
       enableMi.automaticValue = false;
       enableMi.PortableControl.Value = customMixerIndex;
       enableMi.isSaved = true;
       enableMi.isSynced = true;
-      enableMi.label = T(config, "启用", "Enable");
 
-      // 已处理的服装组（防止变体组重复处理）
+      // 已处理的服装组
       var processedOutfitObjects = new HashSet<GameObject>();
 
       foreach (var outfit in outfits)
       {
-        // 避免同一个 OutfitObject 被重复处理（多个变体共享同一个 OutfitObject）
         if (processedOutfitObjects.Contains(outfit.OutfitObject)) continue;
         processedOutfitObjects.Add(outfit.OutfitObject);
 
-        // 无部件也无变体则跳过
-        if (outfit.GetPartControls().Count == 0 && !outfit.HasVariants()) continue;
+        var slots = outfit.GetMixerPartSlots();
+        if (slots.Count == 0) continue;
 
-        // 计算菜单路径
         string outfitRelPath = Utils.GetRelativePath(costumesRoot, outfit.OutfitObject);
         var pathParts = outfitRelPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-        // 创建菜单层级
+        // 创建服装组菜单层级
         var curMenu = mixerSubmenu;
         for (int i = 0; i < pathParts.Length; i++)
         {
@@ -85,138 +76,47 @@ namespace UnityBox.AdvancedCostumeController
           Utils.EnsureSubmenuOnNode(curMenu, pathParts[i]);
         }
 
-        // 有变体的情况
-        if (outfit.HasVariants())
+        // 菜单按“服装组 → 变体 → 部件”组织。
+        // 不在混搭菜单中显示普通模式的 Parts/Groups 分类层，参数仍复用普通分组槽位。
+        foreach (var variant in outfit.GetAllObjects())
         {
-          BuildMixerVariantGroup(config, curMenu, outfit, rootParams);
+          var variantMenu = Utils.FindOrCreateChild(curMenu, variant.name);
+          Utils.EnsureSubmenuOnNode(variantMenu, variant.name);
+
+          foreach (var slot in slots)
+          {
+            int candidateIndex = slot.Candidates.FindIndex(item => item.VariantObject == variant);
+            if (candidateIndex < 0) continue;
+
+            string slotParamName = BuildMixerSlotParamName(config, outfit, slot);
+            Utils.AddOrUpdateParameter(rootParams, slotParamName,
+              ParameterSyncType.Int, 0, true);
+
+            // 使用槽位键作为对象名，避免同名普通部件与分组相互覆盖；显示标签仍使用分组名称。
+            string slotObjectName = "Slot_" + Utils.SanitizeForFileName(slot.Key);
+            var candidateNode = Utils.FindOrCreateChild(variantMenu, slotObjectName);
+            var candidateMi = Utils.CreateMenuItem(candidateNode);
+            Undo.RecordObject(candidateMi, "Configure mixer part candidate");
+            candidateMi.label = slot.Name;
+            candidateMi.PortableControl.Type = PortableControlType.Toggle;
+            candidateMi.PortableControl.Parameter = slotParamName;
+            candidateMi.PortableControl.Value = candidateIndex + 1;
+            candidateMi.automaticValue = false;
+            candidateMi.isSaved = true;
+            candidateMi.isSynced = true;
+          }
         }
-
-        // 有部件的情况
-        if (outfit.GetPartControls().Count > 0)
-        {
-          bool useParts = outfit.HasVariants(); // 有变体时放到 Parts 子菜单
-          var partsParent = useParts
-            ? CreatePartsSubmenu(config, curMenu)
-            : curMenu;
-
-          BuildMixerPartsMenu(config, partsParent, outfit, rootParams);
-        }
       }
     }
 
-    #region 变体组
-
-    /// <summary>
-    /// 为有变体的服装创建变体切换菜单
-    /// 使用 Int 参数控制变体选择
-    /// </summary>
-    private static void BuildMixerVariantGroup(
-      ACCConfig config,
-      GameObject parentMenu,
-      OutfitData outfit,
-      ModularAvatarParameters rootParams)
+    /// <summary>混搭模式下一个部件槽位的 Int 参数名。</summary>
+    public static string BuildMixerSlotParamName(
+      ACCConfig config, OutfitData outfit, MixerPartSlot slot)
     {
-      string variantParamName = BuildMixerVariantGroupParamName(config, outfit);
-
-      // 注册变体组参数
-      Utils.AddOrUpdateParameter(rootParams, variantParamName, ParameterSyncType.Int, 0, true);
-
-      // 为每个变体创建 Toggle
-      var allVariants = outfit.GetAllObjects();
-      for (int i = 0; i < allVariants.Count; i++)
-      {
-        var variant = allVariants[i];
-        var variantNode = Utils.FindOrCreateChild(parentMenu, variant.name);
-        var variantMi = Utils.CreateMenuItem(variantNode);
-        Undo.RecordObject(variantMi, "Configure CustomMixer variant toggle");
-        variantMi.PortableControl.Type = PortableControlType.Toggle;
-        variantMi.PortableControl.Parameter = variantParamName;
-        variantMi.automaticValue = false;
-        variantMi.PortableControl.Value = i;
-        variantMi.isSaved = true;
-        variantMi.isSynced = true;
-      }
-    }
-
-    #endregion
-
-    #region 部件菜单
-
-    /// <summary>
-    /// 创建 Parts 子菜单节点
-    /// </summary>
-    private static GameObject CreatePartsSubmenu(ACCConfig config, GameObject parent)
-    {
-      var partsMenu = Utils.FindOrCreateChild(parent, "Parts");
-      // 使用本地化菜单标签，GameObject 名保持英文以防 PrepareChildRoot 无法识别
-      Utils.EnsureSubmenuOnNode(partsMenu, T(config, "部件", "Parts"));
-      return partsMenu;
-    }
-
-    /// <summary>
-    /// 为指定服装创建混搭模式下的部件开关菜单
-    /// 使用独立于普通模式的参数，避免参数冲突
-    /// </summary>
-    private static void BuildMixerPartsMenu(
-      ACCConfig config,
-      GameObject partsParent,
-      OutfitData outfit,
-      ModularAvatarParameters rootParams)
-    {
-      string outfitRelPath = outfit.RelativePath;
-
-      foreach (var control in outfit.GetPartControls())
-      {
-        string controlKey = GetPartControlKey(outfit, control);
-        string partParamName = BuildMixerPartParamName(config, outfitRelPath, controlKey);
-
-        var partNode = Utils.FindOrCreateChild(partsParent, control.Name);
-        var partMi = Utils.CreateMenuItem(partNode);
-        Undo.RecordObject(partMi, "Configure CustomMixer part toggle");
-        partMi.PortableControl.Type = PortableControlType.Toggle;
-        partMi.PortableControl.Parameter = partParamName;
-        partMi.automaticValue = true;
-        partMi.isDefault = false; // 混搭模式下默认全部关闭
-        partMi.isSaved = true;
-        partMi.isSynced = true;
-
-        // 注册参数
-        Utils.AddOrUpdateParameter(rootParams, partParamName, ParameterSyncType.Bool, 0f, true);
-      }
-    }
-
-    #endregion
-
-    #region 参数名构建
-
-    /// <summary>
-    /// 构建混搭模式下的部件参数名
-    /// 格式: {prefix}/{mixerName}/{outfitRelPath}/{partRelPath}
-    /// </summary>
-    public static string BuildMixerPartParamName(ACCConfig config, string outfitRelPath, string partRelPath)
-    {
-      string raw = ACCConfig.MixerParamPrefix + "/" + outfitRelPath + "/" + partRelPath;
+      string groupPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
+      string raw = ACCConfig.MixerParamPrefix + "/" + groupPath + "/" + slot.Key;
       return Utils.BuildParamName(config.MainParameterName, raw);
     }
 
-    private static string GetPartControlKey(OutfitData outfit, PartControlData control)
-    {
-      if (control.IsGroup)
-        return "Groups/" + control.Name;
-      return Utils.GetRelativePath(outfit.BaseObject, control.Parts[0]);
-    }
-
-    /// <summary>
-    /// 构建混搭模式下的变体组参数名
-    /// 格式: {prefix}/{mixerName}/{outfitGroupRelPath}
-    /// </summary>
-    public static string BuildMixerVariantGroupParamName(ACCConfig config, OutfitData outfit)
-    {
-      string groupRelPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
-      string raw = ACCConfig.MixerParamPrefix + "/" + groupRelPath;
-      return Utils.BuildParamName(config.MainParameterName, raw);
-    }
-
-    #endregion
   }
 }
