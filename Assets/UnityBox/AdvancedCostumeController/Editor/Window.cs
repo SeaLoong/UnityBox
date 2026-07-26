@@ -320,8 +320,16 @@ namespace UnityBox.AdvancedCostumeController
           EditorStyles.boldLabel);
         EditorGUILayout.EndHorizontal();
 
-        foreach (var part in outfit.Parts)
-          DrawControlledPartPreviewRow(outfit, part);
+        if (config.EnableParts)
+        {
+          foreach (var part in outfit.Parts)
+            DrawControlledPartPreviewRow(outfit, part);
+        }
+        else
+        {
+          foreach (var part in outfit.Parts)
+            DrawReadOnlyPartPreviewRow(outfit, part);
+        }
 
         foreach (var part in outfit.ExcludedParts)
           DrawExcludedPartPreviewRow(outfit, part);
@@ -364,12 +372,28 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.EndHorizontal();
     }
 
+    private void DrawReadOnlyPartPreviewRow(OutfitData outfit, GameObject part)
+    {
+      var partMarker = part.GetComponent<ACCPartGroupMarker>();
+      bool isPersistentGroup = partMarker != null &&
+        partMarker.Mode == ACCPartControlMode.Group;
+      string source = isPersistentGroup
+        ? $"[MG: {partMarker.GroupName}]"
+        : T("[A] 自动", "[A] Auto");
+
+      EditorGUILayout.BeginHorizontal();
+      GUILayout.Space(20);
+      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
+        GUILayout.Width(150));
+      EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.Width(100));
+      EditorGUILayout.LabelField("", GUILayout.ExpandWidth(true));
+      EditorGUILayout.EndHorizontal();
+    }
+
     private void DrawExcludedPartPreviewRow(OutfitData outfit, GameObject part)
     {
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);
-      using (new EditorGUI.DisabledScope(true))
-        EditorGUILayout.Toggle(false, GUILayout.Width(20));
       EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
         GUILayout.Width(150));
       EditorGUILayout.LabelField(T("[X] 已排除", "[X] Excluded"), EditorStyles.label,
