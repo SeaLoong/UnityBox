@@ -5,28 +5,39 @@ using UnityEngine;
 namespace UnityBox.AdvancedCostumeController
 {
   [CustomEditor(typeof(ACCOutfitMarker))]
+  [CanEditMultipleObjects]
   public class ACCOutfitMarkerEditor : Editor
   {
     public override void OnInspectorGUI()
     {
+      serializedObject.Update();
       var marker = (ACCOutfitMarker)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 服装标记", "ACC Outfit Marker"),
-        "acc-outfit-marker");
+      ACCInspectorUI.DrawHeader(Localization.Text("ACC 服装标记", "ACC Outfit Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
         "将当前对象明确作为服装根。部件名称格式化会持久保存在此组件，并仅影响自动部件的菜单显示名称。",
         "Explicitly declares this object as an outfit root. Part name formatting is stored here and changes automatic part menu labels only."),
         MessageType.Info);
 
+      if (targets.Length > 1)
+      {
+        EditorGUILayout.HelpBox(Localization.Text(
+          "当前正在同时编辑多个 ACC 服装标记，修改会应用到所有选中的对象。",
+          "Multiple ACC outfit markers are selected. Changes will be applied to all selected objects."),
+          MessageType.Info);
+      }
+
       EditorGUILayout.Space();
       EditorGUILayout.LabelField(Localization.Text("部件名称格式化", "Part Name Formatting"), EditorStyles.boldLabel);
-      DrawTextField(marker, Localization.Text("移除前缀", "Remove Prefix"),
-        () => marker.PartNamePrefixToRemove, value => marker.PartNamePrefixToRemove = value);
-      DrawTextField(marker, Localization.Text("移除后缀", "Remove Suffix"),
-        () => marker.PartNameSuffixToRemove, value => marker.PartNameSuffixToRemove = value);
-      DrawTextField(marker, Localization.Text("正则表达式", "Regex Pattern"),
-        () => marker.PartNameRegexPattern, value => marker.PartNameRegexPattern = value);
-      DrawTextField(marker, Localization.Text("正则替换为", "Regex Replacement"),
-        () => marker.PartNameRegexReplacement, value => marker.PartNameRegexReplacement = value);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("PartNamePrefixToRemove"),
+        new GUIContent(Localization.Text("移除前缀", "Remove Prefix")));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("PartNameSuffixToRemove"),
+        new GUIContent(Localization.Text("移除后缀", "Remove Suffix")));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("PartNameRegexPattern"),
+        new GUIContent(Localization.Text("正则表达式", "Regex Pattern")));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("PartNameRegexReplacement"),
+        new GUIContent(Localization.Text("正则替换为", "Regex Replacement")));
+
+      serializedObject.ApplyModifiedProperties();
 
       if (!Utils.IsValidRegex(marker.PartNameRegexPattern))
         EditorGUILayout.HelpBox(Localization.Text("正则表达式无效，将忽略正则替换。",
@@ -60,19 +71,6 @@ namespace UnityBox.AdvancedCostumeController
         EditorStyles.miniLabel);
     }
 
-    private static void DrawTextField(
-      ACCOutfitMarker marker,
-      string label,
-      System.Func<string> getter,
-      System.Action<string> setter)
-    {
-      var value = EditorGUILayout.TextField(label, getter());
-      if (value == getter()) return;
-      Undo.RecordObject(marker, "Configure ACC outfit marker");
-      setter(value);
-      EditorUtility.SetDirty(marker);
-    }
-
     private static void DrawPartPreviewRow(
       ACCOutfitMarker outfitMarker,
       GameObject part,
@@ -100,47 +98,51 @@ namespace UnityBox.AdvancedCostumeController
   }
 
   [CustomEditor(typeof(ACCPartGroupMarker))]
+  [CanEditMultipleObjects]
   public class ACCPartGroupMarkerEditor : Editor
   {
     public override void OnInspectorGUI()
     {
+      serializedObject.Update();
       var marker = (ACCPartGroupMarker)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 部件控制标记", "ACC Part Control Marker"),
-        "acc-part-group-marker");
+      ACCInspectorUI.DrawHeader(Localization.Text("ACC 部件控制标记", "ACC Part Control Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
         "Group 会将同名对象合并为一个开关；Exclude 不会生成当前对象或所在自动部件的 ACC 控制。",
         "Group combines same-name objects into one toggle. Exclude prevents ACC controls for this object and its containing automatic part."),
         MessageType.Info);
 
-      EditorGUI.BeginChangeCheck();
-      int modeIndex = EditorGUILayout.Popup(Localization.Text("模式", "Mode"),
-        (int)marker.Mode, new[]
+      if (targets.Length > 1)
+      {
+        EditorGUILayout.HelpBox(Localization.Text(
+          "当前正在同时编辑多个 ACC 部件控制标记，修改会应用到所有选中的对象。",
+          "Multiple ACC part control markers are selected. Changes will be applied to all selected objects."),
+          MessageType.Info);
+      }
+
+      var modeProp = serializedObject.FindProperty("Mode");
+      var modeIndex = EditorGUILayout.Popup(Localization.Text("模式", "Mode"),
+        modeProp.enumValueIndex, new[]
         {
           Localization.Text("分组", "Group"),
           Localization.Text("不控制", "Exclude")
         });
-      var mode = (ACCPartControlMode)modeIndex;
-      var groupName = marker.GroupName;
-      if (mode == ACCPartControlMode.Group)
-        groupName = EditorGUILayout.TextField(Localization.Text("分组名称", "Group Name"), groupName);
+      modeProp.enumValueIndex = modeIndex;
 
-      if (!EditorGUI.EndChangeCheck()) return;
-      Undo.RecordObject(marker, "Configure ACC part control marker");
-      marker.Mode = mode;
-      marker.GroupName = groupName;
-      EditorUtility.SetDirty(marker);
+      var groupNameProp = serializedObject.FindProperty("GroupName");
+      if ((ACCPartControlMode)modeIndex == ACCPartControlMode.Group)
+        EditorGUILayout.PropertyField(groupNameProp, new GUIContent(Localization.Text("分组名称", "Group Name")));
+      else
+        groupNameProp.stringValue = string.Empty;
+
+      serializedObject.ApplyModifiedProperties();
     }
   }
 
   internal static class ACCInspectorUI
   {
-    public static void DrawHeader(string title, string documentationAnchor)
+    public static void DrawHeader(string title)
     {
-      EditorGUILayout.BeginHorizontal();
       EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-      GUILayout.FlexibleSpace();
-      Localization.DrawDocumentationButton(documentationAnchor);
-      EditorGUILayout.EndHorizontal();
     }
   }
 }

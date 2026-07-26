@@ -276,7 +276,9 @@ Inspector 会列出该 Outfit Marker 下所有扫描到的可控制与已排除�
 
 `ACC Outfit Marker`、`ACC Part Group Marker` 和 `ACC Variant Material Override` 都使用与 ACC 主窗口一致的系统 Auto 中英显示规则：中文系统显示中文，其他系统显示英文。它们的 Inspector 会显示组件用途和必要的配置提示。
 
-每个组件标题右侧的 `?` 按钮会打开本手册中对应的仓库文档章节。
+三个组件都支持多选同时编辑：同时选中多个对象时，Inspector 会提示当前修改将应用到所有选中对象。
+
+每个组件 Inspector 标题栏右上角的 Unity 原生帮助按钮（`?`）会打开本手册中对应的仓库文档章节。
 
 ## 变体
 

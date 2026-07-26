@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.7] - 2026-07-26
+
+### Fixed
+
+- 生成菜单时，若父路径上已存在 `ModularAvatarMenuInstaller`，也会跳过挂载，避免嵌套 Modular Avatar 层级下产生重复 Installer。
+
 ## [0.3.6] - 2026-07-26
 
 ### Fixed

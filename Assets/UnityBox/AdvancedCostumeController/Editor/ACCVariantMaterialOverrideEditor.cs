@@ -6,36 +6,55 @@ using UnityEngine;
 namespace UnityBox.AdvancedCostumeController
 {
   [CustomEditor(typeof(ACCVariantMaterialOverride))]
+  [CanEditMultipleObjects]
   public class ACCVariantMaterialOverrideEditor : Editor
   {
     public override void OnInspectorGUI()
     {
+      serializedObject.Update();
       var marker = (ACCVariantMaterialOverride)target;
-      ACCInspectorUI.DrawHeader(Localization.Text("ACC 材质变体", "ACC Material Variant"),
-        "acc-variant-material-override");
+      ACCInspectorUI.DrawHeader(Localization.Text("ACC 材质变体", "ACC Material Variant"));
       EditorGUILayout.HelpBox(Localization.Text(
         "为当前变体指定服装本体的材质替换。替换材质留空时保持原材质。",
         "Assign material replacements for this variant's outfit base. Leave a replacement empty to keep the original material."),
         MessageType.Info);
 
+      if (targets.Length > 1)
+      {
+        EditorGUILayout.HelpBox(Localization.Text(
+          "当前正在同时编辑多个 ACC 材质变体，修改会应用到所有选中的对象。",
+          "Multiple ACC material variants are selected. Changes will be applied to all selected objects."),
+          MessageType.Info);
+      }
+
+      var outfitBaseProp = serializedObject.FindProperty("OutfitBase");
       EditorGUI.BeginChangeCheck();
-      var outfitBase = (GameObject)EditorGUILayout.ObjectField(Localization.Text("服装本体", "Outfit Base"), marker.OutfitBase,
-        typeof(GameObject), true);
+      EditorGUILayout.PropertyField(outfitBaseProp, new GUIContent(Localization.Text("服装本体", "Outfit Base")));
       if (EditorGUI.EndChangeCheck())
       {
-        Undo.RecordObject(marker, "Set ACC variant outfit base");
-        marker.OutfitBase = outfitBase;
-        PopulateMaterialEntries(marker);
-        EditorUtility.SetDirty(marker);
+        serializedObject.ApplyModifiedProperties();
+        foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
+        {
+          Undo.RecordObject(selectedMarker, "Set ACC variant outfit base");
+          PopulateMaterialEntries(selectedMarker);
+          EditorUtility.SetDirty(selectedMarker);
+        }
+      }
+      else
+      {
+        serializedObject.ApplyModifiedProperties();
       }
 
       using (new EditorGUI.DisabledScope(marker.OutfitBase == null))
       {
         if (GUILayout.Button(Localization.Text("刷新材质列表", "Refresh Materials")))
         {
-          Undo.RecordObject(marker, "Refresh ACC variant materials");
-          PopulateMaterialEntries(marker);
-          EditorUtility.SetDirty(marker);
+          foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
+          {
+            Undo.RecordObject(selectedMarker, "Refresh ACC variant materials");
+            PopulateMaterialEntries(selectedMarker);
+            EditorUtility.SetDirty(selectedMarker);
+          }
         }
       }
 
@@ -50,21 +69,8 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(Localization.Text("材质替换", "Material Replacements"), EditorStyles.boldLabel);
       EditorGUILayout.HelpBox(Localization.Text("替换材质留空时保留原材质。",
         "Leave a replacement empty to keep the original material."), MessageType.None);
-      foreach (var entry in marker.Replacements)
-      {
-        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-        EditorGUILayout.ObjectField(Localization.Text("原材质", "Source Material"), entry.Source,
-          typeof(Material), false);
-        var replacement = (Material)EditorGUILayout.ObjectField(
-          Localization.Text("替换为", "Replace With"), entry.Replacement, typeof(Material), false);
-        if (replacement != entry.Replacement)
-        {
-          Undo.RecordObject(marker, "Change ACC material replacement");
-          entry.Replacement = replacement;
-          EditorUtility.SetDirty(marker);
-        }
-        EditorGUILayout.EndVertical();
-      }
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("Replacements"), new GUIContent(Localization.Text("材质替换", "Material Replacements")), true);
+      serializedObject.ApplyModifiedProperties();
     }
 
     private static void PopulateMaterialEntries(ACCVariantMaterialOverride marker)

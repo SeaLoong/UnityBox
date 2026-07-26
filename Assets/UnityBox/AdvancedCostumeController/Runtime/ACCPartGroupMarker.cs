@@ -14,6 +14,7 @@ namespace UnityBox.AdvancedCostumeController
   /// 同一服装下拥有相同 Group Name 的分组对象会共用一个菜单开关和参数。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Part Group Marker")]
+  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-part-group-marker")]
   public class ACCPartGroupMarker : MonoBehaviour, IEditorOnly
   {
     [Tooltip("Group 会将同名对象组合为一个开关；Exclude 会排除当前对象及其所在自动部件。")]

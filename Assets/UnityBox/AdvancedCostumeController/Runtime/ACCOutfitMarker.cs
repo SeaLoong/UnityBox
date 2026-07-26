@@ -9,6 +9,7 @@ namespace UnityBox.AdvancedCostumeController
   /// 也可用于将任意容器节点明确指定为服装根。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Outfit Marker")]
+  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-outfit-marker")]
   public class ACCOutfitMarker : MonoBehaviour, IEditorOnly
   {
     [Header("Part Name Formatting")]

@@ -10,6 +10,7 @@ namespace UnityBox.AdvancedCostumeController
   /// ACC 在生成时读取此组件，为 OutfitBase 中匹配的材质槽生成替换动画。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Variant Material Override")]
+  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-variant-material-override")]
   public class ACCVariantMaterialOverride : MonoBehaviour, IEditorOnly
   {
     [Serializable]
