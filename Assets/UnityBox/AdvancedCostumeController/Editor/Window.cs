@@ -65,6 +65,16 @@ namespace UnityBox.AdvancedCostumeController
           partSelections[outfit][part] = true;
           partGroupNames[outfit][part] = "";
         }
+
+        foreach (var control in outfit.GetPartControls())
+        {
+          if (!control.IsGroup) continue;
+          foreach (var part in control.Parts)
+          {
+            if (partGroupNames[outfit].ContainsKey(part))
+              partGroupNames[outfit][part] = control.Name;
+          }
+        }
       }
     }
 
@@ -307,8 +317,7 @@ namespace UnityBox.AdvancedCostumeController
 
         foreach (var part in outfit.Parts)
         {
-          var partPath = Utils.GetRelativePath(outfit.BaseObject, part);
-          var partParam = Utils.BuildParamName(config.ParamPrefix, outfit.RelativePath + "/" + partPath);
+          var partParam = GetPreviewPartParamName(outfit, part);
 
           EditorGUILayout.BeginHorizontal();
           GUILayout.Space(20);
@@ -326,6 +335,16 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       EditorGUILayout.Space(8);
+    }
+
+    private string GetPreviewPartParamName(OutfitData outfit, GameObject part)
+    {
+      string groupName = partGroupNames[outfit].TryGetValue(part, out var value)
+        ? value.Trim() : "";
+      string controlPath = string.IsNullOrEmpty(groupName)
+        ? Utils.GetRelativePath(outfit.BaseObject, part)
+        : "Groups/" + groupName;
+      return Utils.BuildParamName(config.ParamPrefix, outfit.RelativePath + "/" + controlPath);
     }
 
     #endregion

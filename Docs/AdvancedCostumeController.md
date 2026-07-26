@@ -204,6 +204,28 @@ Outfit Base
 
 这种分组保存于 Avatar 层级或 Prefab 中，是推荐的长期工作流。
 
+### 持久方式：ACC Part Group Marker
+
+当部件无法或不适合调整父子层级时，可在任意部件或容器对象上添加：
+
+```text
+UnityBox > ACC Part Group Marker
+```
+
+设置组件的 **Group Name**：同一 Outfit Base 下所有 Group Name 相同的 Marker 会共用一个菜单开关、参数和动画 Clip。
+
+```text
+Outfit Base
+├── Armature
+├── Hat Mesh                 ← ACC Part Group Marker：Head Set
+├── Glasses Mesh             ← ACC Part Group Marker：Head Set
+└── Bag Mesh                 ← ACC Part Group Marker：Bag
+```
+
+上述例子生成 `Head Set` 和 `Bag` 两个控制项；`Head Set` 会同时开关帽子和眼镜。Marker 也可挂在没有 Mesh 的容器对象上，控制该容器的 `m_IsActive`。Group Name 留空时默认使用对象名称。
+
+带 Marker 的对象会优先于普通顶层部件自动识别：若 Marker 位于某个顶层部件的后代，ACC 只生成 Marker 对应的控制项，避免父对象和标记子对象同时写入重叠动画。
+
 ### 临时方式：预览中的“分组 / Group”文本框
 
 在预览中为多个已识别部件填写相同分组名，会让它们共用：
@@ -436,6 +458,7 @@ Assets/UnityBox/AdvancedCostumeController/
 │   └── Localization.cs                   编辑器中英文本地化
 └── Runtime/
     ├── ACCOutfitMarker.cs                 无骨架服装的显式识别标记
+    ├── ACCPartGroupMarker.cs               持久化部件分组标记
     └── ACCVariantMaterialOverride.cs      材质变体标记组件
 ```
 

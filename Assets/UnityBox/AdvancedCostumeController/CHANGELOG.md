@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2] - 2026-07-26
+
+### Added
+
+- 新增 `ACCPartGroupMarker`，支持以持久化 Group Name 将任意部件或容器组合为一个开关控制项。
+
 ## [0.3.1] - 2026-07-26
 
 ### Added

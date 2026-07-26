@@ -69,16 +69,7 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var variant in variants)
           processedOutfitObjects.Add(variant);
 
-        // 收集服装根下的顶层网格部件。功能节点（菜单、动骨等）没有网格，
-        // 骨架分支也不会成为部件。
-        var parts = new List<GameObject>();
-        for (int i = 0; i < outfitBase.childCount; i++)
-        {
-          var child = outfitBase.GetChild(i);
-            if (!Utils.IsSkeletonNode(child, outfitBase) &&
-              Utils.HasMeshInHierarchy(child))
-            parts.Add(child.gameObject);
-        }
+        CollectParts(outfitBase, out var parts, out var partControls);
 
         outfitDataList.Add(new OutfitData
         {
@@ -87,11 +78,79 @@ namespace UnityBox.AdvancedCostumeController
           Name = outfitObject.name,
           RelativePath = Utils.GetRelativePath(costumesRoot, outfitObject),
           Parts = parts,
+          PartControls = partControls,
           Variants = variants
         });
       }
 
       return outfitDataList;
+    }
+
+    /// <summary>
+    /// 收集自动部件与显式分组标记。标记对象可以位于服装层级的任意位置；
+    /// 同名标记会组合为一个控制项，并覆盖包含它们的自动顶层部件，避免重叠动画。
+    /// </summary>
+    private static void CollectParts(
+      Transform outfitBase,
+      out List<GameObject> parts,
+      out List<PartControlData> partControls)
+    {
+      parts = new List<GameObject>();
+      partControls = new List<PartControlData>();
+      var markedParts = new List<ACCPartGroupMarker>();
+      var controlsByName = new Dictionary<string, PartControlData>();
+
+      foreach (var marker in outfitBase.GetComponentsInChildren<ACCPartGroupMarker>(true))
+      {
+        if (marker.transform == outfitBase || IsUnderNestedOutfit(marker.transform, outfitBase))
+          continue;
+
+        markedParts.Add(marker);
+        if (!parts.Contains(marker.gameObject))
+          parts.Add(marker.gameObject);
+
+        string groupName = string.IsNullOrWhiteSpace(marker.GroupName)
+          ? marker.gameObject.name
+          : marker.GroupName.Trim();
+        if (!controlsByName.TryGetValue(groupName, out var control))
+        {
+          control = new PartControlData { Name = groupName, IsGroup = true };
+          controlsByName.Add(groupName, control);
+          partControls.Add(control);
+        }
+        control.Parts.Add(marker.gameObject);
+      }
+
+      // 未被标记覆盖的顶层 Mesh 容器仍按原逻辑作为独立部件。
+      for (int i = 0; i < outfitBase.childCount; i++)
+      {
+        var child = outfitBase.GetChild(i);
+        if (Utils.IsSkeletonNode(child, outfitBase) ||
+            !Utils.HasMeshInHierarchy(child) ||
+            ContainsMarkedPart(child, markedParts))
+          continue;
+
+        parts.Add(child.gameObject);
+      }
+    }
+
+    private static bool ContainsMarkedPart(Transform root, List<ACCPartGroupMarker> markers)
+    {
+      foreach (var marker in markers)
+      {
+        if (marker.transform.IsChildOf(root)) return true;
+      }
+      return false;
+    }
+
+    private static bool IsUnderNestedOutfit(Transform node, Transform outfitBase)
+    {
+      for (var current = node.parent; current != null && current != outfitBase; current = current.parent)
+      {
+        if (current.GetComponent<ACCOutfitMarker>() != null)
+          return true;
+      }
+      return false;
     }
 
     /// <summary>
