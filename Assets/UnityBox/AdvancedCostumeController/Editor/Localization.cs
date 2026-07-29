@@ -57,10 +57,16 @@ namespace UnityBox.AdvancedCostumeController
       return Text(config, "混搭", "Custom Mix");
     }
 
-    /// <summary>默认 Mixer 启用控制的对象名。</summary>
-    public static string DefaultMixerEnableObjectName(ACCConfig config)
+    /// <summary>返回带本地化“启用”前缀的菜单对象名。</summary>
+    public static string EnableObjectName(ACCConfig config, string objectName)
     {
-      return Text(config, "启用", "Enable");
+      return Text(config, $"启用{objectName}", $"Enable {objectName}");
+    }
+
+    /// <summary>默认 Mixer 启用控制的对象名。</summary>
+    public static string DefaultMixerEnableObjectName(ACCConfig config, string mixerObjectName)
+    {
+      return EnableObjectName(config, mixerObjectName);
     }
 
     public static string PartSourceLegend()

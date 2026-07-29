@@ -96,9 +96,9 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
 
-      // 最后创建 Enable，避免服装组恰好也叫“Enable/启用”时覆盖其菜单；再将它置顶。
+      // 最后创建“启用混搭”，避免服装组恰好同名时覆盖其菜单；再将它置顶。
       var enableNode = Utils.FindOrCreateUniqueChild(mixerSubmenu,
-        Localization.DefaultMixerEnableObjectName(config));
+        Localization.DefaultMixerEnableObjectName(config, mixerObjectName));
       enableNode.transform.SetAsFirstSibling();
       var enableMi = Utils.CreateMenuItem(enableNode);
       Undo.RecordObject(enableMi, "Configure mixer toggle");

@@ -10,7 +10,7 @@ ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并�
 4. 按需启用**部件控制**、**混搭模式**和**参数压缩**。
 5. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
 
-ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其 GameObject 名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点也直接使用当前语言的对象名，例如中文为“部件 / 混搭 / 启用”，英文为“Parts / Custom Mix / Enable”。填写 **Custom Mixer Name** 后，该文本会直接成为 Mixer 节点对象名。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按根菜单名称和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产。
+ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其 GameObject 名称。服装与部件沿用实际对象名；当服装选择需要进入子菜单时，服装启用项会使用当前语言的“启用 + 对象名”（中文如“启用Orignial”，英文如“Enable Orignial”）。ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；Mixer 启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按根菜单名称和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产。
 
 ## 配置项
 
@@ -113,6 +113,7 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 - ACC 会跳过已被识别为嵌套服装的层级，避免重复控制。
 - 同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
 - 主服装切换和 Mixer 槽位候选使用 `Simple1D BlendTree` 根据连续的离散选择值选择动画，避免为每个候选创建独立状态转移；所有树显式保留手工阈值，不使用 Unity 自动阈值。Animator 内部以 Float 参数读取这些值，菜单侧仍使用 Int。
+- 启用部件控制或存在服装变体时，服装选择会进入一层子菜单；其中的服装控件名称使用本地化的“启用 + 对象名”，普通一级服装菜单仍直接使用对象名。
 - 主服装与 Mixer Enable 使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。Mixer 槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；普通 Parts 保持 Bool Toggle。
 - 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；内部使用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择。
 - Mixer 服装组激活 Clip 只负责根对象、变体和非槽位部件；槽位候选部件只由对应槽位子树负责，避免合并后同一属性被重复加权。

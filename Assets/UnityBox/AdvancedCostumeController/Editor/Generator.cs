@@ -199,7 +199,8 @@ namespace UnityBox.AdvancedCostumeController
           {
             if (!outfitIndexMap.ContainsKey(obj)) continue;
 
-            var itemNode = Utils.FindOrCreateChild(outfitSubmenu, obj.name);
+            var itemNode = Utils.FindOrCreateChild(outfitSubmenu,
+              Localization.EnableObjectName(config, obj.name));
             var menuItem = Utils.CreateMenuItem(itemNode);
             // Button controls are momentary in VRChat; outfit choices must persist after release.
             menuItem.PortableControl.Type = PortableControlType.Toggle;

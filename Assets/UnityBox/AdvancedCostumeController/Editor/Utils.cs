@@ -659,7 +659,9 @@ public static class Utils
   {
     return name == "Enable" || name == "启用" ||
       name.StartsWith("Enable (", StringComparison.Ordinal) ||
-      name.StartsWith("启用 (", StringComparison.Ordinal);
+      name.StartsWith("启用 (", StringComparison.Ordinal) ||
+      name.StartsWith("Enable ", StringComparison.Ordinal) ||
+      name.StartsWith("启用", StringComparison.Ordinal);
   }
 
   private static bool IsKnownDefaultMixerName(string name)
