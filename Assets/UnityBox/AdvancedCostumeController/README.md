@@ -70,11 +70,11 @@ $$
 
 Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$ 个值计算。
 
-共享压缩 Layer 内，每个选择域仍有自己的状态、Driver 与精确 AnyState 条件：
+共享压缩 Layer 内，每个选择域仍有自己的状态、Driver 与精确 AnyState 条件；本地编码状态和远端解码状态分开，且默认 `Idle` 状态不写入任何参数：
 
 - 本地客户端根据本地 `Int` 编码同步 Bool 位；
 - 其他客户端根据同步 Bool 位解码本地 `Int`；
-- `IsLocal` Animator 参数用于区分本地菜单输入和远端位同步。
+- `IsLocal` Animator 参数用于区分本地菜单输入和远端位同步；`localOnly=false` 的 Driver 是“本地和远端都可执行”，因此解码状态只有在 `IsLocal=false` 的转移条件满足时才会进入。
 
 压缩会新增同步 Bool 位参数、本地 Int 参数，以及一个由所有有效选择域共用的编码/解码 Animator Layer。预览与生成确认会显示实际 bit 占用、有效选择域数量、压缩 Layer 数量和 Controller 总 Layer 数；参数类型已知，因此只显示最终 bit 总数，不显示冗余的乘法表达式。
 

@@ -30,7 +30,6 @@ namespace UnityBox.AdvancedCostumeController
       public string LocalParameter;
       public ChoiceParameterLayout Layout;
       public List<int> Values;
-      public int DefaultValue;
     }
 
     public AnimationBuilder(ACCConfig config)
@@ -59,7 +58,7 @@ namespace UnityBox.AdvancedCostumeController
       AddChoiceParameters(controller, config.MainParameterName, mainLayout, defaultIndex);
       var compressionDomains = new List<ChoiceCompressionDomain>();
       AddChoiceCompressionDomain(compressionDomains, "Outfit Selection",
-        config.MainParameterName, mainLayout, GetMainChoiceValues(outfitIndexMap), defaultIndex);
+        config.MainParameterName, mainLayout, GetMainChoiceValues(outfitIndexMap));
 
       // 添加部件参数
       if (config.EnableParts)
@@ -567,8 +566,7 @@ namespace UnityBox.AdvancedCostumeController
             outfitIndexMap, outfit, slot);
           AddChoiceParameters(controller, slotParamName, slotLayout, slotDefaultValue);
           AddChoiceCompressionDomain(compressionDomains, "Mixer " + slotParamName,
-            slotParamName, slotLayout, Enumerable.Range(0, slot.Candidates.Count + 1),
-            slotDefaultValue);
+            slotParamName, slotLayout, Enumerable.Range(0, slot.Candidates.Count + 1));
         }
       }
     }
@@ -790,8 +788,7 @@ namespace UnityBox.AdvancedCostumeController
       string label,
       string localParameter,
       ChoiceParameterLayout layout,
-      IEnumerable<int> choiceValues,
-      int defaultValue)
+      IEnumerable<int> choiceValues)
     {
       if (!layout.UsesCompression || layout.BitCount == 0) return;
 
@@ -804,8 +801,7 @@ namespace UnityBox.AdvancedCostumeController
         Label = label,
         LocalParameter = localParameter,
         Layout = layout,
-        Values = values,
-        DefaultValue = defaultValue
+        Values = values
       });
     }
 
@@ -822,7 +818,13 @@ namespace UnityBox.AdvancedCostumeController
 
       EnsureIsLocalParameter(controller);
       var compressionLayer = CreateLayer("Parameter Compression", controller);
-      bool hasDefaultState = false;
+      // localOnly=false means the Driver may run on both local and remote
+      // avatars, not remote-only. Keep the default state free of Drivers so
+      // loading the controller cannot overwrite saved/local parameter values.
+      var idleState = compressionLayer.stateMachine.AddState("Idle",
+        new Vector3(300, 0, 0));
+      idleState.writeDefaultValues = false;
+      compressionLayer.stateMachine.defaultState = idleState;
 
       foreach (var domain in domains)
       {
@@ -830,13 +832,13 @@ namespace UnityBox.AdvancedCostumeController
         {
           int localValue = domain.Values[encodedValue];
 
-          var state = compressionLayer.stateMachine.AddState(
+          var encodeState = compressionLayer.stateMachine.AddState(
             domain.Label + " = " + localValue,
             new Vector3(300, compressionLayer.stateMachine.states.Length * 50, 0));
           // 该层只运行 Parameter Driver，不应借由 WD 重置任意动画绑定。
-          state.writeDefaultValues = false;
+          encodeState.writeDefaultValues = false;
 
-          var compressDriver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+          var compressDriver = encodeState.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
           compressDriver.localOnly = true;
           compressDriver.parameters = new List<VRC_AvatarParameterDriver.Parameter>();
           for (int bit = 0; bit < domain.Layout.BitCount; bit++)
@@ -848,20 +850,16 @@ namespace UnityBox.AdvancedCostumeController
               type = VRC_AvatarParameterDriver.ChangeType.Set
             });
           }
-          for (int bit = 0; bit < domain.Layout.BitCount; bit++)
-          {
-            var encodeTransition = CreateAnyStateTransition(compressionLayer.stateMachine, state,
-              canTransitionToSelf: true);
-            AddChoiceValueConditions(encodeTransition, domain.LocalParameter, localValue);
-            encodeTransition.AddCondition(AnimatorConditionMode.If, 0, IsLocalParameter);
-            encodeTransition.AddCondition(
-              (encodedValue & (1 << bit)) != 0
-                ? AnimatorConditionMode.IfNot
-                : AnimatorConditionMode.If,
-              0, domain.Layout.GetBitParameterName(domain.LocalParameter, bit));
-          }
 
-          var decompressDriver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+          // Keep the global decoder in a separate state. On a local avatar a
+          // global Driver is also eligible to run, so sharing this state would
+          // make the local/remote split implicit and fragile.
+          var decodeState = compressionLayer.stateMachine.AddState(
+            domain.Label + " = " + localValue + " (Remote)",
+            new Vector3(550, compressionLayer.stateMachine.states.Length * 50, 0));
+          decodeState.writeDefaultValues = false;
+
+          var decompressDriver = decodeState.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
           decompressDriver.localOnly = false;
           decompressDriver.parameters = new List<VRC_AvatarParameterDriver.Parameter>
           {
@@ -872,22 +870,29 @@ namespace UnityBox.AdvancedCostumeController
               type = VRC_AvatarParameterDriver.ChangeType.Set
             }
           };
-          AddDecodeTransition(compressionLayer.stateMachine, state, domain.LocalParameter,
+
+          for (int bit = 0; bit < domain.Layout.BitCount; bit++)
+          {
+            var encodeTransition = CreateAnyStateTransition(compressionLayer.stateMachine, encodeState,
+              canTransitionToSelf: true);
+            AddChoiceValueConditions(encodeTransition, domain.LocalParameter, localValue);
+            encodeTransition.AddCondition(AnimatorConditionMode.If, 0, IsLocalParameter);
+            encodeTransition.AddCondition(
+              (encodedValue & (1 << bit)) != 0
+                ? AnimatorConditionMode.IfNot
+                : AnimatorConditionMode.If,
+              0, domain.Layout.GetBitParameterName(domain.LocalParameter, bit));
+          }
+
+          AddDecodeTransition(compressionLayer.stateMachine, decodeState, domain.LocalParameter,
             domain.Layout, encodedValue, AnimatorConditionMode.Less,
             localValue - ChoiceValueTolerance);
-          AddDecodeTransition(compressionLayer.stateMachine, state, domain.LocalParameter,
+          AddDecodeTransition(compressionLayer.stateMachine, decodeState, domain.LocalParameter,
             domain.Layout, encodedValue, AnimatorConditionMode.Greater,
             localValue + ChoiceValueTolerance);
-          if (!hasDefaultState && localValue == domain.DefaultValue)
-          {
-            compressionLayer.stateMachine.defaultState = state;
-            hasDefaultState = true;
-          }
         }
       }
 
-      if (!hasDefaultState && compressionLayer.stateMachine.states.Length > 0)
-        compressionLayer.stateMachine.defaultState = compressionLayer.stateMachine.states[0].state;
       AddLayer(controller, compressionLayer);
     }
 
