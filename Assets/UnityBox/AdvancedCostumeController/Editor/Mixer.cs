@@ -102,7 +102,8 @@ namespace UnityBox.AdvancedCostumeController
       enableNode.transform.SetAsFirstSibling();
       var enableMi = Utils.CreateMenuItem(enableNode);
       Undo.RecordObject(enableMi, "Configure mixer toggle");
-      enableMi.PortableControl.Type = PortableControlType.Button;
+      // The mixer entry is a persistent state; Button would only apply while held.
+      enableMi.PortableControl.Type = PortableControlType.Toggle;
       Generator.ConfigureChoiceMenuItem(enableMi, mainParameterName, mainLayout, customMixerValue);
       enableMi.isSaved = true;
       enableMi.isSynced = !mainLayout.UsesCompression;

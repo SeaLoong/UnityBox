@@ -201,7 +201,8 @@ namespace UnityBox.AdvancedCostumeController
 
             var itemNode = Utils.FindOrCreateChild(outfitSubmenu, obj.name);
             var menuItem = Utils.CreateMenuItem(itemNode);
-            menuItem.PortableControl.Type = PortableControlType.Button;
+            // Button controls are momentary in VRChat; outfit choices must persist after release.
+            menuItem.PortableControl.Type = PortableControlType.Toggle;
             ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout, outfitIndexMap[obj]);
             menuItem.isSaved = true;
             menuItem.isSynced = !mainLayout.UsesCompression;
@@ -218,7 +219,8 @@ namespace UnityBox.AdvancedCostumeController
 
           var itemNode = Utils.FindOrCreateChild(parentMenu, outfitName);
           var menuItem = Utils.CreateMenuItem(itemNode);
-          menuItem.PortableControl.Type = PortableControlType.Button;
+          // Button controls are momentary in VRChat; outfit choices must persist after release.
+          menuItem.PortableControl.Type = PortableControlType.Toggle;
           ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout,
             outfitIndexMap[outfit.BaseObject]);
           menuItem.isSaved = true;

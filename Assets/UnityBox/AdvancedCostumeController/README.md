@@ -113,7 +113,7 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 - ACC 会跳过已被识别为嵌套服装的层级，避免重复控制。
 - 同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
 - 主服装切换和 Mixer 槽位候选使用 `Simple1D BlendTree` 根据连续的离散选择值选择动画，避免为每个候选创建独立状态转移；所有树显式保留手工阈值，不使用 Unity 自动阈值。Animator 内部以 Float 参数读取这些值，菜单侧仍使用 Int。
-- 主服装与 Mixer Enable 使用 Button 写入必须始终有效的离散 Int 值，避免点击已选 Toggle 回写 0；Mixer 槽位候选使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；普通 Parts 保持 Bool Toggle。
+- 主服装与 Mixer Enable 使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。Mixer 槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；普通 Parts 保持 Bool Toggle。
 - 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；内部使用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择。
 - Mixer 服装组激活 Clip 只负责根对象、变体和非槽位部件；槽位候选部件只由对应槽位子树负责，避免合并后同一属性被重复加权。
 - 所有参数压缩选择域共用一个事件分发状态机 Layer；每个域仍有自己的状态、Driver 与 AnyState 条件，因此域间不会共享参数写入。
