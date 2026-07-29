@@ -7,13 +7,14 @@ Advanced Costume Controller（以下简称 **ACC**）是一个基于 [Modular Av
 - FX Animator Controller（通过 `ModularAvatarMergeAnimator` 合并）；
 - 服装切换、部件开关、混搭和材质替换所需的 AnimationClip。
 
-ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar 区域；默认通过独立骨架识别，也可用 `ACCOutfitMarker` 显式标记任意服装根容器。
+ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar 区域；优先通过独立骨架分支中的 `MA Merge Armature` 识别，也兼容原有独立骨架识别，并可用 `ACCOutfitMarker` 显式标记任意服装根容器。
 
 ## 前置条件
 
 - Unity `2022.3` 或兼容版本；
 - VRChat SDK Avatars；
 - Modular Avatar `1.10.0` 或更高版本；
+- 已有 `MA Merge Armature` 的服装会被优先识别；
 - 自动识别时：目标区域中至少有一个 `SkinnedMeshRenderer`，且正确指定了 `rootBone`；
 - 无独立骨架或网格时：将 `ACCOutfitMarker` 挂到服装根对象；
 - 服装或可控区域已放在 Avatar 的层级中。
@@ -54,7 +55,7 @@ Avatar
 | 名称 | 含义 |
 |---|---|
 | **Costumes Root** | 本次 ACC 扫描与动画绑定的根节点；生成动画路径都相对它计算。 |
-| **Outfit Base** | 被识别为一套服装本体的对象；它拥有服装骨架分支，或带有 `ACCOutfitMarker` 显式标记。 |
+| **Outfit Base** | 被识别为一套服装本体的对象；它拥有 `MA Merge Armature` 骨架分支、可推导的独立骨架，或带有 `ACCOutfitMarker` 显式标记。 |
 | **Outfit Object** | 菜单中代表一套服装的对象；有变体时是共同父对象，无变体时等于 Outfit Base。 |
 | **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
@@ -65,7 +66,7 @@ Avatar
 
 ### Outfit Base 的识别条件
 
-ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。一个对象成为 Outfit Base，需要同时满足：
+ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。若对象的直接无 Mesh 骨架分支中已有 `MA Merge Armature`，ACC 会优先将其作为明确的服装骨架信号；否则兼容原有规则，一个对象成为 Outfit Base 需要同时满足：
 
 1. 后代包含可渲染网格；
 2. 后代包含 `SkinnedMeshRenderer`；
@@ -73,6 +74,8 @@ ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。�
 4. 从 root bone 向上到 Outfit Base 的顶层骨架分支本身不含 Mesh。
 
 因此，识别由真实骨架结构决定，**不依赖对象名称**。`Armature`、`Bone`、`Skeleton` 等名称无需配置忽略列表；ACC 已没有 Ignore Names 选项。
+
+对于由旧规则识别出的独立骨架，若尚未存在 `MA Merge Armature`，ACC 会在用户确认 **Generate** 后直接调用 Modular Avatar 的 **Setup Outfit**。因此 Armature 目标、锁定模式、骨骼命名修正、Mesh Settings 与未来 MA 版本的修复逻辑均由 MA 自己处理；刷新预览不会改动 Avatar。若 MA 的调用失败或没有实际添加组件，ACC 才会以当前 MA 默认语义（Avatar Armature、`BaseToMerge`、默认名称处理）创建最小兜底，并写入 Warning。
 
 <a id="acc-outfit-marker"></a>
 
@@ -176,8 +179,7 @@ Clothes Root Menu
 启用后，ACC 额外生成：
 
 - 每个部件或分组一个同步 Bool 参数；
-- `Parts Init` Layer，在启动时将全部可控部件明确置为 OFF；
-- `Parts Control` Direct BlendTree，根据普通部件参数播放 ON Clip；
+- `Parts Control` Direct BlendTree，根据普通部件参数播放 OFF/ON Clip；
 - 每套服装下的 `Parts` 子菜单。
 
 ```text
@@ -189,7 +191,7 @@ Clothes Root Menu
     └── Casual Outfit     → Clothes = 0
 ```
 
-部件菜单的默认值取自当前 `activeSelf`。运行时仍由 `Parts Init` 初始化所有可控部件，因此请以生成菜单和 Animator 行为为准。
+部件菜单的默认值取自当前 `activeSelf`，`Parts Control` 会直接使用这些 Bool 参数在 OFF/ON Clip 间选择，不再生成独立的 `Parts Init` Layer。
 
 ## 部件分组
 
@@ -394,11 +396,16 @@ Variant B1：D / E / F
 点击混搭菜单中的 **Enable / 启用** 后，主 `{ParameterPrefix}` 被设为普通服装索引后的特殊值：
 
 1. `Outfit Switching` 进入特殊混搭状态；
-2. 所有已选服装的 Base/变体容器保持激活；
+2. 默认服装组与默认选择对象保持激活；没有可混搭槽位的默认服装也会保持显示；
 3. 每个部件槽位使用一个独立 Int 参数；
-4. 槽位 Int 的值对应某个变体提供的候选部件，值为 0 表示该槽位关闭；
-5. 槽位动画只关闭并打开该槽位的候选部件，不影响同服装组的其他槽位；
-6. 退出混搭后，混搭层进入无曲线状态，不覆盖普通服装和普通部件控制。
+4. 默认服装组的槽位会预选默认对象对应候选，并且 On/Off 严格沿用普通 `Parts` 菜单的默认 `activeSelf` 状态；其他服装组的槽位默认是 0；
+5. 槽位 Int 的值对应某个变体提供的候选部件，值为 0 表示该槽位关闭；
+6. 槽位动画只关闭并打开该槽位的候选部件，不影响同服装组的其他槽位；
+7. 退出混搭后，混搭层进入无曲线状态，不覆盖普通服装和普通部件控制。
+
+主服装选择与 Mixer 的 Enable 使用 **Button**：它们表示必须始终存在的互斥主选择，点击已选项不会把主参数回写为 `0`。Mixer 槽位候选使用 **Toggle**：槽位 `0` 是合法的 Off 状态，因此再次点击当前候选会将该槽位关闭；切换到另一个候选则直接写入新的候选值。
+
+启用参数压缩时，主选择和所有 Mixer 槽位仍保持各自独立的本地 Int、同步 Bool 位、状态和 AnyState 条件；这些状态共享一个事件分发 Animator Layer。状态只在进入时对自己所属的选择域执行 Driver，不需要为所有域创建组合状态。
 
 混搭参数路径格式为：
 
@@ -406,7 +413,7 @@ Variant B1：D / E / F
 {ParameterPrefix}/Mixer/{OutfitGroupPath}/{PartSlotPath}
 ```
 
-每个槽位使用一个 Int（8 bits），不再为每个变体部件额外创建 Bool，也不再为每个变体创建独立的整体选择层。混搭特殊值固定为 `255`，因此启用混搭时选中的普通服装对象数量不能超过 255。
+每个槽位使用一个 Int（8 bits），不再为每个变体部件额外创建 Bool，也不再为每个变体创建独立的整体选择层。Mixer 主选择值紧随最后一个普通服装对象；VRChat Int 可表达范围限制普通服装对象数量最多为 255。
 
 ### Mixer 菜单示例
 
@@ -432,20 +439,24 @@ Clothes Root Menu
 
 ### Avatar 层级
 
-每次生成会删除并重建：
+每次生成会复用或创建菜单根：
 
 ```text
 {CostumesRoot}/ACC_Menu
 ```
 
-菜单 GameObject 名称固定为 `ACC_Menu`，其在 VRChat 中的显示标签由 **Root Menu Name** 字段控制。重新生成时会复用已有 `ACC_Menu` 和 `ModularAvatarMenuItem`，保留用户设置的菜单图标等非 ACC 属性；参数、菜单类型和子菜单来源等 ACC 必须管理的属性会按当前配置更新。
+菜单 GameObject 名称固定为 `ACC_Menu`，其在 VRChat 中的显示标签由 **Root Menu Name** 字段控制。重新生成时会完整重置 `ModularAvatarMenuItem` 的 `Parameter`、`Value`、子参数和菜单源，并直接在 `ACC_Menu` 下重建全部 ACC 子菜单。这样不会复用参数相关控制字段，也不会保留旧控件让 MA 的全层级参数扫描再次收集。
+
+ACC 会保存并恢复旧 ACC 子菜单项的展示属性：除根菜单外，默认 Label 保持为空并由 MA 显示节点 GameObject 名称。服装和部件直接沿用实际对象名；ACC 的默认节点使用当前语言的对象名（中文为“部件 / 混搭 / 启用”，英文为“Parts / Custom Mix / Enable”），而填写 Custom Mixer Name 后会直接使用用户文本。若用户将 Label 改为不同的自定义文本则保留该文本，图标同样保留；语言切换造成默认节点名变化时，ACC 会通过生成语义和控制参数恢复展示属性。该恢复只处理展示属性，不会恢复任何旧控制参数。
+
+ACC 创建的 `ModularAvatarParameters` 直接挂在 `ACC_Menu` 上（MA 不允许在同一对象上挂多个该组件）。ACC 只按精确名称更新或删除自身当前/旧 Controller 声明过的参数，前缀声明和无关手工参数均保持不变。请将需要手工维护的菜单节点放在 `ACC_Menu` 之外。
 
 菜单根包含：
 
 - `ModularAvatarMenuInstaller`（若父级已有则跳过）；
 - `ModularAvatarMenuItem`（Children 子菜单，标签为 Root Menu Name）；
-- `ModularAvatarParameters`；
 - `ModularAvatarMergeAnimator`（FX，Relative Path Root 为 Costumes Root）。
+- `ModularAvatarParameters`（ACC 自己的精确参数声明）。
 
 ### 输出资产
 
@@ -499,10 +510,11 @@ Hair/Mixer_{OutfitGroup}_{PartSlot}
 检查：
 
 1. Costumes Root 是否选对；
-2. 服装是否有 `SkinnedMeshRenderer`；
-3. `SkinnedMeshRenderer.rootBone` 是否已赋值；
-4. rootBone 是否位于预期 Outfit Base 的后代；
-5. 顶层骨架分支是否意外包含 Mesh。
+2. 服装 Armature 是否已有 `MA Merge Armature`；
+3. 服装是否有 `SkinnedMeshRenderer`；
+4. `SkinnedMeshRenderer.rootBone` 是否已赋值；
+5. rootBone 是否位于预期 Outfit Base 的后代；
+6. 顶层骨架分支是否意外包含 Mesh。
 
 如果服装没有独立骨架、只有网格，或希望手动指定某个容器为服装根，请在其 Outfit Base 上添加 `ACCOutfitMarker` 后重新刷新预览。
 
@@ -535,7 +547,7 @@ Hair/Mixer_{OutfitGroup}_{PartSlot}
 
 ### 生成后手工修改的菜单或参数消失
 
-这是预期行为。ACC 会复用并更新 `ACC_Menu`，同时清理并重建当前 Parameter Prefix 的输出目录。ACC 会尽量保留已有菜单组件的图标等非 ACC 属性；自定义菜单节点和手工资产仍建议放在 ACC 生成结构之外。
+这是预期行为。ACC 会复用并更新 `ACC_Menu`，同时清理并重建当前 Parameter Prefix 的输出目录。ACC 会保留已有菜单组件的图标等展示属性，但会重建 `ACC_Menu` 下的所有控制项；自定义菜单节点和手工资产应放在 ACC 生成结构之外。
 
 ### VRChat 参数占用超过限制
 

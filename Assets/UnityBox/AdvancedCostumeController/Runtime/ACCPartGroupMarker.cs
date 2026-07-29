@@ -14,13 +14,13 @@ namespace UnityBox.AdvancedCostumeController
   /// 同一服装下拥有相同 Group Name 的分组对象会共用一个菜单开关和参数。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Part Group Marker")]
-  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-part-group-marker")]
+  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Assets/UnityBox/AdvancedCostumeController/README.md#accpartgroupmarker")]
   public class ACCPartGroupMarker : MonoBehaviour, IEditorOnly
   {
-    [Tooltip("Group 会将同名对象组合为一个开关；Exclude 会排除当前对象及其所在自动部件。")]
+    [Tooltip("Group 会将同名对象组合为一个开关；Exclude 会排除当前对象及其所在自动部件。\nGroup combines same-name objects into one toggle; Exclude removes this object from automatic part control.")]
     public ACCPartControlMode Mode = ACCPartControlMode.Group;
 
-    [Tooltip("同名标记对象会一起开关。留空时默认使用当前对象名称。")]
+    [Tooltip("同名标记对象会一起开关。留空时默认使用当前对象名称。\nMarkers with the same name toggle together; empty uses this object's name.")]
     public string GroupName;
 
     private void Reset()

@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using VRC.SDK3.Avatars.Components;
+using VRC.SDKBase;
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -12,8 +14,24 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public class AnimationBuilder
   {
+    private const string IsLocalParameter = "IsLocal";
+    private const string AlwaysOneParameterSuffix = "Internal/AlwaysOne";
+    private const float ChoiceValueTolerance = 0.25f;
     private readonly ACCConfig config;
     private readonly GameObject costumesRoot;
+
+    /// <summary>
+    /// 一个可压缩的离散选择域。每个域仍有独立的参数、状态与 AnyState 条件；
+    /// 仅 Animator Layer 由所有域共享。
+    /// </summary>
+    private sealed class ChoiceCompressionDomain
+    {
+      public string Label;
+      public string LocalParameter;
+      public ChoiceParameterLayout Layout;
+      public List<int> Values;
+      public int DefaultValue;
+    }
 
     public AnimationBuilder(ACCConfig config)
     {
@@ -32,8 +50,16 @@ namespace UnityBox.AdvancedCostumeController
     {
       var controller = AnimatorController.CreateAnimatorControllerAtPath(path);
 
-      // 添加服装参数
-        controller.AddParameter(config.MainParameterName, AnimatorControllerParameterType.Int);
+      if (config.EnableParts)
+        EnsureAlwaysOneParameter(controller);
+
+      var mainLayout = Generator.GetMainChoiceLayout(outfitIndexMap, config.EnableCustomMixer,
+        config.EnableParameterCompression);
+      int defaultIndex = Generator.ResolveDefaultChoiceIndex(defaultOutfit, outfitIndexMap);
+      AddChoiceParameters(controller, config.MainParameterName, mainLayout, defaultIndex);
+      var compressionDomains = new List<ChoiceCompressionDomain>();
+      AddChoiceCompressionDomain(compressionDomains, "Outfit Selection",
+        config.MainParameterName, mainLayout, GetMainChoiceValues(outfitIndexMap), defaultIndex);
 
       // 添加部件参数
       if (config.EnableParts)
@@ -51,8 +77,11 @@ namespace UnityBox.AdvancedCostumeController
       // 添加 CustomMixer 参数
       if (config.EnableCustomMixer)
       {
-        AddCustomMixerParameters(controller, outfits);
+        AddCustomMixerParameters(controller, outfits, outfitIndexMap, defaultOutfit,
+          compressionDomains);
       }
+
+      CreateSharedChoiceCompressionLayer(controller, compressionDomains);
 
       // 创建服装切换层
       CreateOutfitSwitchingLayer(controller, outfits, outfitIndexMap, defaultOutfit);
@@ -60,14 +89,7 @@ namespace UnityBox.AdvancedCostumeController
       // 创建部件相关层
       if (config.EnableParts)
       {
-        CreatePartsInitLayer(controller, outfits);
-        CreatePartsControlLayer(controller, outfits);
-      }
-
-      // 创建 CustomMixer 动画层
-      if (config.EnableCustomMixer)
-      {
-        CreateCustomMixerLayers(controller, outfits, outfitIndexMap);
+          CreatePartsControlLayer(controller, outfits);
       }
 
       AssetDatabase.SaveAssets();
@@ -84,47 +106,51 @@ namespace UnityBox.AdvancedCostumeController
     {
       var layer = CreateLayer("Outfit Switching", controller);
       var allObjects = outfitIndexMap.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
-      var defaultObject = ResolveDefaultObject(defaultOutfit, outfitIndexMap);
-
-      AnimatorState defaultState = null;
-      AnimatorState firstState = null;
+      var blendTree = new BlendTree
+      {
+        name = "Outfit Switching",
+        blendType = BlendTreeType.Simple1D,
+        blendParameter = config.MainParameterName,
+        useAutomaticThresholds = false,
+        hideFlags = HideFlags.HideInHierarchy
+      };
+      AssetDatabase.AddObjectToAsset(blendTree, controller);
+      var children = new List<ChildMotion>();
       foreach (var obj in allObjects)
       {
         int index = outfitIndexMap[obj];
-        var state = layer.stateMachine.AddState(obj.name, new Vector3(300, 50 + index * 60, 0));
-
         var clip = CreateOutfitSwitchClip(outfits, allObjects, obj, index);
-        state.motion = clip;
-        state.writeDefaultValues = true;
-        firstState ??= state;
-
-        if (obj == defaultObject)
-          defaultState = state;
-
-        var transition = layer.stateMachine.AddAnyStateTransition(state);
-          transition.AddCondition(AnimatorConditionMode.Equals, index, config.MainParameterName);
-        transition.duration = 0;
-        transition.hasExitTime = false;
+        children.Add(new ChildMotion
+        {
+          motion = clip,
+          threshold = index,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        });
       }
-
-      layer.stateMachine.defaultState = defaultState ?? firstState;
 
       if (config.EnableCustomMixer)
       {
-        int customMixerIndex = ACCConfig.CustomMixerIndex;
-        var mixerState = layer.stateMachine.AddState("Custom Mixer",
-          new Vector3(300, 50 + customMixerIndex * 60, 0));
-        mixerState.motion = CreateCustomMixerEntryClip(outfits, allObjects, customMixerIndex);
-        mixerState.writeDefaultValues = true;
-
-        var mixerTransition = layer.stateMachine.AddAnyStateTransition(mixerState);
-        mixerTransition.AddCondition(AnimatorConditionMode.Equals,
-           customMixerIndex, config.MainParameterName);
-        mixerTransition.duration = 0;
-        mixerTransition.hasExitTime = false;
+        int customMixerValue = Generator.GetCustomMixerValue(outfitIndexMap.Count);
+        children.Add(new ChildMotion
+        {
+          motion = CreateCustomMixerEntryClip(outfits, allObjects, customMixerValue,
+            defaultOutfit, outfitIndexMap),
+          threshold = customMixerValue,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        });
       }
 
-      controller.AddLayer(layer);
+      blendTree.children = children.ToArray();
+      var state = layer.stateMachine.AddState("Outfit Switching", new Vector3(300, 50, 0));
+      state.motion = blendTree;
+      state.writeDefaultValues = true;
+      layer.stateMachine.defaultState = state;
+
+      AddLayer(controller, layer);
     }
 
     private AnimationClip CreateOutfitSwitchClip(
@@ -134,8 +160,10 @@ namespace UnityBox.AdvancedCostumeController
       int index)
     {
       string animFolder = EnsureAnimFolder();
-      string sanitizedName = Utils.SanitizeForFileName(activeObject.name);
-      string animPath = Path.Combine(animFolder, $"Outfit_{index:D3}_{sanitizedName}.anim").Replace("\\", "/");
+      string sanitizedName = activeObject != null
+        ? Utils.SanitizeForFileName(activeObject.name)
+        : "None";
+      string animPath = Utils.CombineAssetPath(animFolder, $"Outfit_{index:D3}_{sanitizedName}.anim");
 
       var clip = CreateBaseClip();
       var activeOutfit = outfits.FirstOrDefault(o => o.GetAllObjects().Contains(activeObject));
@@ -169,93 +197,118 @@ namespace UnityBox.AdvancedCostumeController
     private AnimationClip CreateCustomMixerEntryClip(
       List<OutfitData> outfits,
       List<GameObject> allObjects,
-      int index)
+      int index,
+      OutfitData defaultOutfit,
+      Dictionary<GameObject, int> outfitIndexMap)
     {
       string animFolder = EnsureAnimFolder();
-      string animPath = Path.Combine(animFolder, $"Outfit_{index:D3}_CustomMixer.anim")
-        .Replace("\\", "/");
+      string animPath = Utils.CombineAssetPath(animFolder, $"Outfit_{index:D3}_CustomMixer.anim");
       var clip = CreateBaseClip();
       var mixerObjects = new HashSet<GameObject>(
         outfits.SelectMany(outfit => outfit.GetAllObjects()));
-      var objectsToAnimate = allObjects.Concat(mixerObjects).Distinct();
-      var mixerControlledParts = new HashSet<GameObject>(
-        outfits.SelectMany(outfit => outfit.GetMixerPartSlots())
-          .SelectMany(slot => slot.Candidates)
-          .SelectMany(candidate => candidate.Control.Parts));
+      var objectsToAnimate = allObjects
+        .Concat(mixerObjects)
+        .Concat(outfits.Select(outfit => outfit.OutfitObject))
+        .Where(obj => obj != null)
+        .Distinct();
 
-      // 混搭时所有 Base/Variant 容器保持激活，但普通模式分组对应的部件先全部关闭；
-      // 槽位层随后只打开用户选中的候选部件。
+      var defaultChoice = Generator.ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
+      bool defaultChoiceIsVariant = defaultOutfit != null && defaultChoice != null &&
+        defaultOutfit.Variants.Contains(defaultChoice);
+
+      // 混搭入口先关闭非默认服装组，同时保留默认服装组与其默认选择对象。
+      // 槽位子树随后依据与普通 Parts 相同的默认参数值，决定受控部件的 On/Off。
       foreach (var obj in objectsToAnimate)
       {
-        bool active = mixerObjects.Contains(obj) && !mixerControlledParts.Contains(obj);
+        bool active = defaultOutfit != null &&
+          (obj == defaultOutfit.OutfitObject || obj == defaultChoice ||
+           (defaultChoiceIsVariant && obj == defaultOutfit.BaseObject));
         var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
         string path = Utils.GetRelativePath(costumesRoot, obj);
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
       }
 
-      foreach (var part in mixerControlledParts)
+      if (defaultOutfit != null)
       {
-        var curve = AnimationCurve.Constant(0, 1f / 60f, 0f);
-        string path = Utils.GetRelativePath(costumesRoot, part);
-        clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
+        var controlledParts = new HashSet<GameObject>(defaultOutfit.GetMixerPartSlots()
+          .SelectMany(slot => slot.Candidates)
+          .SelectMany(candidate => candidate.Control.Parts));
+        var allParts = defaultOutfit.Parts
+          .Concat((defaultOutfit.VariantPartData ?? new List<VariantPartData>())
+            .SelectMany(data => data.Parts))
+          .Where(part => part != null)
+          .Distinct();
+        var activeCurve = AnimationCurve.Constant(0, 1f / 60f, 1f);
+        foreach (var part in allParts)
+        {
+          if (controlledParts.Contains(part)) continue;
+          string path = Utils.GetRelativePath(costumesRoot, part);
+          clip.SetCurve(path, typeof(GameObject), "m_IsActive", activeCurve);
+        }
       }
 
-      WriteMaterialVariantCurves(clip, outfits, null);
+      WriteMaterialVariantCurves(clip, outfits, defaultChoice);
       AssetDatabase.CreateAsset(clip, animPath);
       return clip;
-    }
-
-    private static GameObject ResolveDefaultObject(
-      OutfitData defaultOutfit,
-      Dictionary<GameObject, int> outfitIndexMap)
-    {
-      if (defaultOutfit == null) return null;
-      if (outfitIndexMap.ContainsKey(defaultOutfit.BaseObject))
-        return defaultOutfit.BaseObject;
-
-      return defaultOutfit.GetAllObjects()
-        .FirstOrDefault(outfitIndexMap.ContainsKey);
     }
 
     #endregion
 
     #region 部件层
 
-    private void CreatePartsInitLayer(AnimatorController controller, List<OutfitData> outfits)
+    private void CreatePartsControlLayer(
+      AnimatorController controller,
+      List<OutfitData> outfits)
     {
-      var layer = CreateLayer("Parts Init", controller);
-
-      string animFolder = EnsureAnimFolder();
-      string animPath = Path.Combine(animFolder, "PartsInit_OFF.anim").Replace("\\", "/");
-      var clip = CreateBaseClip();
-
-      // 为所有部件设置初始 OFF 状态
-      foreach (var outfit in outfits)
-      {
-        foreach (var part in outfit.Parts)
-        {
-          var curve = AnimationCurve.Constant(0, 1f / 60f, 0f);
-          string path = Utils.GetRelativePath(costumesRoot, part);
-          clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
-        }
-      }
-
-      AssetDatabase.CreateAsset(clip, animPath);
-
-      var state = layer.stateMachine.AddState("Init", new Vector3(300, 50, 0));
-      state.motion = clip;
-      state.writeDefaultValues = true;
-      layer.stateMachine.defaultState = state;
-
-      controller.AddLayer(layer);
-    }
-
-    private void CreatePartsControlLayer(AnimatorController controller, List<OutfitData> outfits)
-    {
-      if (!outfits.Any(o => o.GetPartControls().Count > 0)) return;
+      bool hasNormalParts = outfits.Any(o => o.GetPartControls().Count > 0);
+      bool hasMixerParts = config.EnableCustomMixer && outfits
+        .GroupBy(outfit => outfit.OutfitObject)
+        .Any(group => group.First().GetMixerPartSlots().Count > 0);
+      if (!hasNormalParts && !hasMixerParts) return;
 
       var layer = CreateLayer("Parts Control", controller);
 
+      var normalTree = hasNormalParts ? CreateNormalPartsBlendTree(controller, outfits) : null;
+      var mixerTree = hasMixerParts ? CreateMixerPartsBlendTree(controller, outfits) : null;
+
+      AnimatorState normalState = null;
+      if (normalTree != null)
+      {
+        normalState = layer.stateMachine.AddState("Normal", new Vector3(300, 50, 0));
+        normalState.motion = normalTree;
+        normalState.writeDefaultValues = true;
+        layer.stateMachine.defaultState = normalState;
+      }
+
+      if (mixerTree != null)
+      {
+        var mixerState = layer.stateMachine.AddState("Mixer", new Vector3(300, 150, 0));
+        mixerState.motion = mixerTree;
+        mixerState.writeDefaultValues = true;
+
+        int mixerValue = Generator.GetCustomMixerValue(
+          outfits.SelectMany(outfit => outfit.GetAllObjects()).Distinct().Count());
+        var toMixer = CreateAnyStateTransition(layer.stateMachine, mixerState);
+        AddChoiceValueConditions(toMixer, config.MainParameterName, mixerValue);
+
+        if (normalState != null)
+        {
+          AddNotChoiceTransitions(layer.stateMachine, normalState,
+            config.MainParameterName, mixerValue);
+        }
+        else
+        {
+          layer.stateMachine.defaultState = mixerState;
+        }
+      }
+
+      AddLayer(controller, layer);
+    }
+
+    private BlendTree CreateNormalPartsBlendTree(
+      AnimatorController controller,
+      IEnumerable<OutfitData> outfits)
+    {
       var blendTree = new BlendTree
       {
         name = "Parts",
@@ -270,12 +323,38 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var control in outfit.GetPartControls())
         {
           string partParamName = GetPartParamName(outfit, control);
-          var onClip = CreatePartToggleClip(control.Parts, true, partParamName);
-
+          var partTree = new BlendTree
+          {
+            name = "Part " + control.Name,
+            blendType = BlendTreeType.Simple1D,
+            blendParameter = partParamName,
+            useAutomaticThresholds = false,
+            hideFlags = HideFlags.HideInHierarchy
+          };
+          AssetDatabase.AddObjectToAsset(partTree, controller);
+          partTree.children = new[]
+          {
+            new ChildMotion
+            {
+              motion = CreatePartToggleClip(control.Parts, false, partParamName),
+              threshold = 0f,
+              timeScale = 1f,
+              mirror = false,
+              cycleOffset = 0f
+            },
+            new ChildMotion
+            {
+              motion = CreatePartToggleClip(control.Parts, true, partParamName),
+              threshold = 1f,
+              timeScale = 1f,
+              mirror = false,
+              cycleOffset = 0f
+            }
+          };
           children.Add(new ChildMotion
           {
-            motion = onClip,
-            directBlendParameter = partParamName,
+            motion = partTree,
+            directBlendParameter = GetAlwaysOneParameterName(),
             timeScale = 1f,
             mirror = false,
             cycleOffset = 0f
@@ -283,39 +362,114 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
       blendTree.children = children.ToArray();
+      return blendTree;
+    }
 
-      var state = layer.stateMachine.AddState("Parts", new Vector3(300, 50, 0));
-      state.motion = blendTree;
-      state.writeDefaultValues = true;
-      layer.stateMachine.defaultState = state;
-
-      if (config.EnableCustomMixer)
+    private BlendTree CreateMixerPartsBlendTree(
+      AnimatorController controller,
+      IEnumerable<OutfitData> outfits)
+    {
+      var blendTree = new BlendTree
       {
-        int customMixerIndex = GetCustomMixerIndex(outfits);
-        var offState = layer.stateMachine.AddState("Off", new Vector3(300, 150, 0));
-        offState.writeDefaultValues = false;
+        name = "Mixer Parts",
+        blendType = BlendTreeType.Direct,
+        hideFlags = HideFlags.HideInHierarchy
+      };
+      AssetDatabase.AddObjectToAsset(blendTree, controller);
 
-        var toOff = layer.stateMachine.AddAnyStateTransition(offState);
-        toOff.AddCondition(AnimatorConditionMode.Equals, customMixerIndex,
-           config.MainParameterName);
-        toOff.duration = 0;
-        toOff.hasExitTime = false;
-
-        var toParts = offState.AddTransition(state);
-        toParts.AddCondition(AnimatorConditionMode.NotEqual, customMixerIndex,
-           config.MainParameterName);
-        toParts.duration = 0;
-        toParts.hasExitTime = false;
+      var children = new List<ChildMotion>();
+      var processedOutfitObjects = new HashSet<GameObject>();
+      foreach (var outfit in outfits)
+      {
+        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        var slots = outfit.GetMixerPartSlots();
+        if (slots.Count == 0) continue;
+        var activationClip = CreateMixerOutfitActivationClip(outfit,
+          Utils.GetRelativePath(costumesRoot, outfit.OutfitObject));
+        foreach (var slot in slots)
+        {
+          var slotTree = CreateMixerSlotBlendTree(controller, outfit, slot);
+          string slotParam = Mixer.BuildMixerSlotParamName(config, outfit, slot);
+          children.Add(new ChildMotion
+          {
+            motion = CreateMixerOutfitActivationBlendTree(controller, activationClip,
+              slotParam, Utils.GetRelativePath(costumesRoot, outfit.OutfitObject) + "_" + slot.Key),
+            directBlendParameter = GetAlwaysOneParameterName(),
+            timeScale = 1f,
+            mirror = false,
+            cycleOffset = 0f
+          });
+          children.Add(new ChildMotion
+          {
+            motion = slotTree,
+            directBlendParameter = GetAlwaysOneParameterName(),
+            timeScale = 1f,
+            mirror = false,
+            cycleOffset = 0f
+          });
+        }
       }
+      blendTree.children = children.ToArray();
+      return blendTree;
+    }
 
-      controller.AddLayer(layer);
+    /// <summary>
+    /// 槽位值是离散选择序号，不能直接用作 Direct BlendTree 权重：值 2、3… 会把
+    /// 根对象激活 Clip 加权到大于 1。改用 Simple1D 门控后，0 不输出激活曲线，任意
+    /// 正值都会在阈值 1 钳制为同一份激活 Clip。
+    /// </summary>
+    private BlendTree CreateMixerOutfitActivationBlendTree(
+      AnimatorController controller,
+      AnimationClip activationClip,
+      string slotParameter,
+      string label)
+    {
+      var blendTree = new BlendTree
+      {
+        name = "Mixer Activate " + label,
+        blendType = BlendTreeType.Simple1D,
+        blendParameter = slotParameter,
+        useAutomaticThresholds = false,
+        hideFlags = HideFlags.HideInHierarchy
+      };
+      AssetDatabase.AddObjectToAsset(blendTree, controller);
+      blendTree.children = new[]
+      {
+        new ChildMotion
+        {
+          motion = CreateEmptyMixerActivationClip(label),
+          threshold = 0f,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        },
+        new ChildMotion
+        {
+          motion = activationClip,
+          threshold = 1f,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        }
+      };
+      return blendTree;
+    }
+
+    private AnimationClip CreateEmptyMixerActivationClip(string label)
+    {
+      string animFolder = EnsureAnimFolder("Mixer");
+      string safeName = Utils.SanitizeForFileName(label);
+      string animPath = Utils.CombineAssetPath(animFolder, $"MixerOutfit_{safeName}_Inactive.anim");
+      var clip = CreateBaseClip();
+      AssetDatabase.CreateAsset(clip, animPath);
+      return clip;
     }
 
     private AnimationClip CreatePartToggleClip(IEnumerable<GameObject> parts, bool active, string paramName)
     {
       string animFolder = EnsureAnimFolder("Parts");
       string sanitized = Utils.SanitizeForFileName(paramName);
-      string animPath = Path.Combine(animFolder, $"{sanitized}_{(active ? "ON" : "OFF")}.anim").Replace("\\", "/");
+      string animPath = Utils.CombineAssetPath(animFolder, $"{sanitized}_{(active ? "ON" : "OFF")}.anim");
 
       var clip = CreateBaseClip();
       var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
@@ -392,106 +546,117 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>
     /// 为 CustomMixer 添加参数到 AnimatorController
     /// </summary>
-    private void AddCustomMixerParameters(AnimatorController controller, List<OutfitData> outfits)
-    {
-      // CustomMixer 各部件的独立参数
-        foreach (var outfit in outfits)
-        {
-          foreach (var slot in outfit.GetMixerPartSlots())
-          {
-            string slotParamName = Mixer.BuildMixerSlotParamName(config, outfit, slot);
-            if (!controller.parameters.Any(p => p.name == slotParamName))
-              controller.AddParameter(slotParamName, AnimatorControllerParameterType.Int);
-          }
-        }
-    }
-
-    /// <summary>
-    /// 创建 CustomMixer 的动画层：每个服装组的每个部件槽位一个 Int 状态层。
-    /// 这些层只有在主 Parameter Prefix == customMixerIndex 时才写入部件曲线。
-    /// </summary>
-    private void CreateCustomMixerLayers(
+    private void AddCustomMixerParameters(
       AnimatorController controller,
       List<OutfitData> outfits,
-      Dictionary<GameObject, int> outfitIndexMap)
+      Dictionary<GameObject, int> outfitIndexMap,
+      OutfitData defaultOutfit,
+      List<ChoiceCompressionDomain> compressionDomains)
     {
-      int customMixerIndex = GetCustomMixerIndex(outfits);
-
+      // CustomMixer 各部件的独立参数
+      var processedOutfitObjects = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
+        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
         foreach (var slot in outfit.GetMixerPartSlots())
-          CreateMixerSlotLayer(controller, outfit, slot, customMixerIndex);
+        {
+          string slotParamName = Mixer.BuildMixerSlotParamName(config, outfit, slot);
+          var slotLayout = new ChoiceParameterLayout(slot.Candidates.Count + 1,
+            config.EnableParameterCompression);
+          int slotDefaultValue = Generator.GetMixerSlotDefaultValue(defaultOutfit,
+            outfitIndexMap, outfit, slot);
+          AddChoiceParameters(controller, slotParamName, slotLayout, slotDefaultValue);
+          AddChoiceCompressionDomain(compressionDomains, "Mixer " + slotParamName,
+            slotParamName, slotLayout, Enumerable.Range(0, slot.Candidates.Count + 1),
+            slotDefaultValue);
+        }
       }
     }
 
-    /// <summary>
-    /// 创建混搭模式的部件槽位层。
-    /// 同一槽位的候选部件由一个 Int 参数互斥选择。
-    /// </summary>
-    private void CreateMixerSlotLayer(
+    private AnimationClip CreateMixerOutfitActivationClip(OutfitData outfit, string label)
+    {
+      string animFolder = EnsureAnimFolder("Mixer");
+      string safeName = Utils.SanitizeForFileName(label);
+      string animPath = Utils.CombineAssetPath(animFolder, $"MixerOutfit_{safeName}.anim");
+      var clip = CreateBaseClip();
+      var objects = new[] { outfit.OutfitObject }
+        .Concat(outfit.GetAllObjects())
+        .Where(obj => obj != null)
+        .Distinct();
+      var controlledParts = new HashSet<GameObject>(outfit.GetMixerPartSlots()
+        .SelectMany(slot => slot.Candidates)
+        .SelectMany(candidate => candidate.Control.Parts));
+      var allParts = outfit.Parts
+        .Concat((outfit.VariantPartData ?? new List<VariantPartData>())
+          .SelectMany(data => data.Parts))
+        .Where(part => part != null)
+        .Distinct();
+      var activeCurve = AnimationCurve.Constant(0, 1f / 60f, 1f);
+      foreach (var obj in objects)
+      {
+        string path = Utils.GetRelativePath(costumesRoot, obj);
+        clip.SetCurve(path, typeof(GameObject), "m_IsActive", activeCurve);
+      }
+      foreach (var part in allParts)
+      {
+        // Mixer 槽位候选完全由对应的 Simple1D 子树负责；这里不再写入 0，
+        // 避免同一 DirectBlendTree 中激活 Clip 与槽位 Clip 重复绑定并被 AAO 重新加权。
+        if (controlledParts.Contains(part)) continue;
+        string path = Utils.GetRelativePath(costumesRoot, part);
+        clip.SetCurve(path, typeof(GameObject), "m_IsActive", activeCurve);
+      }
+      AssetDatabase.CreateAsset(clip, animPath);
+      return clip;
+    }
+
+    private BlendTree CreateMixerSlotBlendTree(
       AnimatorController controller,
       OutfitData outfit,
-      MixerPartSlot slot,
-      int customMixerIndex)
+      MixerPartSlot slot)
     {
       string groupPath = Utils.GetRelativePath(costumesRoot, outfit.OutfitObject);
-      string layerName = "Mixer_" + Utils.SanitizeForFileName(groupPath + "_" + slot.Key);
-      var layer = CreateLayer(layerName, controller);
-
       string slotParam = Mixer.BuildMixerSlotParamName(config, outfit, slot);
       var allCandidateParts = slot.Candidates
         .SelectMany(candidate => candidate.Control.Parts)
         .Distinct()
         .ToList();
 
-      var inactiveState = layer.stateMachine.AddState("Inactive", new Vector3(80, 50, 0));
-      inactiveState.writeDefaultValues = false;
-      layer.stateMachine.defaultState = inactiveState;
-
-      var offState = layer.stateMachine.AddState("MixerOff", new Vector3(300, 50, 0));
-      offState.motion = CreateMixerSlotClip(allCandidateParts, null,
-        groupPath + "_" + slot.Key + "_Off");
-      offState.writeDefaultValues = true;
-
-      var enterOff = inactiveState.AddTransition(offState);
-      enterOff.AddCondition(AnimatorConditionMode.Equals,
-        customMixerIndex, config.MainParameterName);
-      enterOff.AddCondition(AnimatorConditionMode.Equals, 0, slotParam);
-      enterOff.duration = 0;
-      enterOff.hasExitTime = false;
-
+      var blendTree = new BlendTree
+      {
+        name = "Mixer " + slot.Key,
+        blendType = BlendTreeType.Simple1D,
+        blendParameter = slotParam,
+        useAutomaticThresholds = false,
+        hideFlags = HideFlags.HideInHierarchy
+      };
+      AssetDatabase.AddObjectToAsset(blendTree, controller);
+      var children = new List<ChildMotion>
+      {
+        new ChildMotion
+        {
+          motion = CreateMixerSlotClip(allCandidateParts, null,
+            groupPath + "_" + slot.Key + "_Off"),
+          threshold = 0f,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        }
+      };
       for (int i = 0; i < slot.Candidates.Count; i++)
       {
         var candidate = slot.Candidates[i];
-        var state = layer.stateMachine.AddState(
-          candidate.VariantObject.name + "_" + candidate.Control.Name,
-          new Vector3(300, 120 + i * 60, 0));
-        state.motion = CreateMixerSlotClip(allCandidateParts, candidate.Control.Parts,
-          groupPath + "_" + slot.Key + "_" + i);
-        state.writeDefaultValues = true;
-
-        var anyTrans = layer.stateMachine.AddAnyStateTransition(state);
-        anyTrans.AddCondition(AnimatorConditionMode.Equals,
-          customMixerIndex, config.MainParameterName);
-        anyTrans.AddCondition(AnimatorConditionMode.Equals, i + 1, slotParam);
-        anyTrans.duration = 0;
-        anyTrans.hasExitTime = false;
+        children.Add(new ChildMotion
+        {
+          motion = CreateMixerSlotClip(allCandidateParts, candidate.Control.Parts,
+            groupPath + "_" + slot.Key + "_" + i),
+          threshold = i + 1,
+          timeScale = 1f,
+          mirror = false,
+          cycleOffset = 0f
+        });
       }
-
-      var exitTrans = layer.stateMachine.AddAnyStateTransition(inactiveState);
-      exitTrans.AddCondition(AnimatorConditionMode.NotEqual,
-        customMixerIndex, config.MainParameterName);
-      exitTrans.duration = 0;
-      exitTrans.hasExitTime = false;
-
-      var mixerOffTrans = layer.stateMachine.AddAnyStateTransition(offState);
-      mixerOffTrans.AddCondition(AnimatorConditionMode.Equals,
-        customMixerIndex, config.MainParameterName);
-      mixerOffTrans.AddCondition(AnimatorConditionMode.Equals, 0, slotParam);
-      mixerOffTrans.duration = 0;
-      mixerOffTrans.hasExitTime = false;
-
-      controller.AddLayer(layer);
+      blendTree.children = children.ToArray();
+      return blendTree;
     }
 
     private AnimationClip CreateMixerSlotClip(
@@ -501,7 +666,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       string animFolder = EnsureAnimFolder("Mixer");
       string safeName = Utils.SanitizeForFileName(label);
-      string animPath = Path.Combine(animFolder, $"MixerVariant_{safeName}.anim").Replace("\\", "/");
+      string animPath = Utils.CombineAssetPath(animFolder, $"MixerVariant_{safeName}.anim");
 
       var clip = CreateBaseClip();
       var activeSet = activeParts != null
@@ -537,12 +702,260 @@ namespace UnityBox.AdvancedCostumeController
       return "Parts/" + Utils.GetRelativePath(outfit.BaseObject, control.Parts[0]);
     }
 
+    private static int ResolveDefaultIndex(OutfitData defaultOutfit,
+      Dictionary<GameObject, int> outfitIndexMap)
+    {
+      if (defaultOutfit == null) return 0;
+      return defaultOutfit.GetAllObjects()
+        .Where(outfitIndexMap.ContainsKey)
+        .Select(obj => outfitIndexMap[obj])
+        .DefaultIfEmpty(0)
+        .First();
+    }
+
+    private static void AddChoiceParameters(AnimatorController controller, string baseParameterName,
+      ChoiceParameterLayout layout, int defaultChoiceIndex)
+    {
+      if (!controller.parameters.Any(parameter => parameter.name == baseParameterName))
+      {
+        controller.AddParameter(new AnimatorControllerParameter
+        {
+          name = baseParameterName,
+          // VRCFury 会将非 Float 的 BlendTree 输入替换为 Controller 中的第一个 Float；
+          // MA MMD Relay 注入时该 Float 可能正是 __MA/Internal/MMDNotActive。表达式菜单
+          // 参数仍保持 Int，只有 Animator 内部读取选择值时使用 Float。
+          type = AnimatorControllerParameterType.Float,
+          defaultFloat = defaultChoiceIndex
+        });
+      }
+      if (!layout.UsesCompression || layout.BitCount == 0) return;
+
+      for (int i = 0; i < layout.BitCount; i++)
+      {
+        string parameterName = layout.GetBitParameterName(baseParameterName, i);
+        if (!controller.parameters.Any(parameter => parameter.name == parameterName))
+        {
+          controller.AddParameter(new AnimatorControllerParameter
+          {
+            name = parameterName,
+            type = AnimatorControllerParameterType.Bool,
+            defaultBool = (defaultChoiceIndex & (1 << i)) != 0
+          });
+        }
+      }
+    }
+
+    private static AnimatorStateTransition CreateAnyStateTransition(AnimatorStateMachine stateMachine,
+      AnimatorState state, bool canTransitionToSelf = false)
+    {
+      var transition = stateMachine.AddAnyStateTransition(state);
+      transition.duration = 0;
+      transition.hasExitTime = false;
+      transition.canTransitionToSelf = canTransitionToSelf;
+      return transition;
+    }
+
+    /// <summary>为 Animator Float 选择值添加稳定的离散值匹配区间。</summary>
+    private static void AddChoiceValueConditions(AnimatorStateTransition transition,
+      string parameterName, int choiceIndex)
+    {
+      transition.AddCondition(AnimatorConditionMode.Greater,
+        choiceIndex - ChoiceValueTolerance, parameterName);
+      transition.AddCondition(AnimatorConditionMode.Less,
+        choiceIndex + ChoiceValueTolerance, parameterName);
+    }
+
+    /// <summary>
+    /// Animator Float 没有精确 NotEqual 条件，使用低于/高于目标选择区间的两条
+    /// AnyState Transition 表达“不等于”。
+    /// </summary>
+    private static void AddNotChoiceTransitions(AnimatorStateMachine stateMachine,
+      AnimatorState targetState, string parameterName, int choiceIndex)
+    {
+      var below = CreateAnyStateTransition(stateMachine, targetState);
+      below.AddCondition(AnimatorConditionMode.Less,
+        choiceIndex - ChoiceValueTolerance, parameterName);
+
+      var above = CreateAnyStateTransition(stateMachine, targetState);
+      above.AddCondition(AnimatorConditionMode.Greater,
+        choiceIndex + ChoiceValueTolerance, parameterName);
+    }
+
+    /// <summary>
+    /// 注册一个需要压缩的选择域。状态会由共享压缩 Layer 统一承载，但每个域仍保留
+    /// 自己的参数、Driver 与 AnyState 条件，因此多个域可在相邻帧独立触发。
+    /// </summary>
+    private static void AddChoiceCompressionDomain(
+      List<ChoiceCompressionDomain> domains,
+      string label,
+      string localParameter,
+      ChoiceParameterLayout layout,
+      IEnumerable<int> choiceValues,
+      int defaultValue)
+    {
+      if (!layout.UsesCompression || layout.BitCount == 0) return;
+
+      var values = choiceValues.Distinct().ToList();
+      if (values.Count != layout.ChoiceCount)
+        throw new System.ArgumentException("Choice values must match the parameter layout.");
+
+      domains.Add(new ChoiceCompressionDomain
+      {
+        Label = label,
+        LocalParameter = localParameter,
+        Layout = layout,
+        Values = values,
+        DefaultValue = defaultValue
+      });
+    }
+
+    /// <summary>
+    /// 创建一个共享的压缩事件分发 Layer。每个状态只在进入时读写自己所属域的参数；
+    /// 所有转换均从 AnyState 出发并带有域专属条件，当前状态不需要表示所有域的
+    /// 笛卡尔积组合。
+    /// </summary>
+    private void CreateSharedChoiceCompressionLayer(
+      AnimatorController controller,
+      List<ChoiceCompressionDomain> domains)
+    {
+      if (domains.Count == 0) return;
+
+      EnsureIsLocalParameter(controller);
+      var compressionLayer = CreateLayer("Parameter Compression", controller);
+      bool hasDefaultState = false;
+
+      foreach (var domain in domains)
+      {
+        for (int encodedValue = 0; encodedValue < domain.Values.Count; encodedValue++)
+        {
+          int localValue = domain.Values[encodedValue];
+
+          var state = compressionLayer.stateMachine.AddState(
+            domain.Label + " = " + localValue,
+            new Vector3(300, compressionLayer.stateMachine.states.Length * 50, 0));
+          // 该层只运行 Parameter Driver，不应借由 WD 重置任意动画绑定。
+          state.writeDefaultValues = false;
+
+          var compressDriver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+          compressDriver.localOnly = true;
+          compressDriver.parameters = new List<VRC_AvatarParameterDriver.Parameter>();
+          for (int bit = 0; bit < domain.Layout.BitCount; bit++)
+          {
+            compressDriver.parameters.Add(new VRC_AvatarParameterDriver.Parameter
+            {
+              name = domain.Layout.GetBitParameterName(domain.LocalParameter, bit),
+              value = (encodedValue & (1 << bit)) != 0 ? 1 : 0,
+              type = VRC_AvatarParameterDriver.ChangeType.Set
+            });
+          }
+          for (int bit = 0; bit < domain.Layout.BitCount; bit++)
+          {
+            var encodeTransition = CreateAnyStateTransition(compressionLayer.stateMachine, state,
+              canTransitionToSelf: true);
+            AddChoiceValueConditions(encodeTransition, domain.LocalParameter, localValue);
+            encodeTransition.AddCondition(AnimatorConditionMode.If, 0, IsLocalParameter);
+            encodeTransition.AddCondition(
+              (encodedValue & (1 << bit)) != 0
+                ? AnimatorConditionMode.IfNot
+                : AnimatorConditionMode.If,
+              0, domain.Layout.GetBitParameterName(domain.LocalParameter, bit));
+          }
+
+          var decompressDriver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+          decompressDriver.localOnly = false;
+          decompressDriver.parameters = new List<VRC_AvatarParameterDriver.Parameter>
+          {
+            new VRC_AvatarParameterDriver.Parameter
+            {
+              name = domain.LocalParameter,
+              value = localValue,
+              type = VRC_AvatarParameterDriver.ChangeType.Set
+            }
+          };
+          AddDecodeTransition(compressionLayer.stateMachine, state, domain.LocalParameter,
+            domain.Layout, encodedValue, AnimatorConditionMode.Less,
+            localValue - ChoiceValueTolerance);
+          AddDecodeTransition(compressionLayer.stateMachine, state, domain.LocalParameter,
+            domain.Layout, encodedValue, AnimatorConditionMode.Greater,
+            localValue + ChoiceValueTolerance);
+          if (!hasDefaultState && localValue == domain.DefaultValue)
+          {
+            compressionLayer.stateMachine.defaultState = state;
+            hasDefaultState = true;
+          }
+        }
+      }
+
+      if (!hasDefaultState && compressionLayer.stateMachine.states.Length > 0)
+        compressionLayer.stateMachine.defaultState = compressionLayer.stateMachine.states[0].state;
+      AddLayer(controller, compressionLayer);
+    }
+
+    private static void AddDecodeTransition(
+      AnimatorStateMachine stateMachine,
+      AnimatorState targetState,
+      string localParameter,
+      ChoiceParameterLayout layout,
+      int encodedValue,
+      AnimatorConditionMode localMismatchMode,
+      float localMismatchThreshold)
+    {
+      var decodeTransition = CreateAnyStateTransition(stateMachine, targetState,
+        canTransitionToSelf: true);
+      decodeTransition.AddCondition(AnimatorConditionMode.IfNot, 0, IsLocalParameter);
+      decodeTransition.AddCondition(localMismatchMode, localMismatchThreshold, localParameter);
+      for (int bit = 0; bit < layout.BitCount; bit++)
+      {
+        decodeTransition.AddCondition(
+          (encodedValue & (1 << bit)) != 0 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot,
+          0, layout.GetBitParameterName(localParameter, bit));
+      }
+    }
+
+    private static void EnsureIsLocalParameter(AnimatorController controller)
+    {
+      if (!controller.parameters.Any(parameter => parameter.name == IsLocalParameter))
+        controller.AddParameter(IsLocalParameter, AnimatorControllerParameterType.Bool);
+    }
+
+    private string GetAlwaysOneParameterName()
+    {
+      return Utils.BuildParamName(config.MainParameterName, AlwaysOneParameterSuffix);
+    }
+
+    private void EnsureAlwaysOneParameter(AnimatorController controller)
+    {
+      string parameterName = GetAlwaysOneParameterName();
+      if (controller.parameters.Any(parameter => parameter.name == parameterName)) return;
+
+      controller.AddParameter(new AnimatorControllerParameter
+      {
+        name = parameterName,
+        type = AnimatorControllerParameterType.Float,
+        defaultFloat = 1f
+      });
+    }
+
+    private IEnumerable<int> GetMainChoiceValues(Dictionary<GameObject, int> outfitIndexMap)
+    {
+      var values = outfitIndexMap.Values.OrderBy(value => value).ToList();
+      if (config.EnableCustomMixer)
+        values.Add(Generator.GetCustomMixerValue(outfitIndexMap.Count));
+      return values;
+    }
+
     private AnimatorControllerLayer CreateLayer(string name, AnimatorController controller)
     {
       string namespaceLabel = Utils.SanitizeForFileName(config.GetGenerationNamespace());
+      string layerName = string.IsNullOrEmpty(namespaceLabel)
+        ? name : namespaceLabel + "/" + name;
+
+      // Unity 的 Controller 首层具有特殊权重语义，MA 的 MMD Relay 也会依据 FX
+      // 的原始前几层调整控制层。不要把 ACC 的选择树复用到默认 Base Layer，避免
+      // 后续构建链把服装参数与 MMD Relay 的内部参数混入同一个首层对象。
       var layer = new AnimatorControllerLayer
       {
-        name = string.IsNullOrEmpty(namespaceLabel) ? name : namespaceLabel + "/" + name,
+        name = layerName,
         defaultWeight = 1f,
         stateMachine = new AnimatorStateMachine()
       };
@@ -552,9 +965,17 @@ namespace UnityBox.AdvancedCostumeController
       return layer;
     }
 
-    private int GetCustomMixerIndex(IEnumerable<OutfitData> outfits)
+    private static void AddLayer(AnimatorController controller, AnimatorControllerLayer layer)
     {
-      return ACCConfig.CustomMixerIndex;
+      var layers = controller.layers;
+      for (int i = 0; i < layers.Length; i++)
+      {
+        if (layers[i].stateMachine != layer.stateMachine) continue;
+        layers[i] = layer;
+        controller.layers = layers;
+        return;
+      }
+      controller.AddLayer(layer);
     }
 
     private AnimationClip CreateBaseClip()
@@ -568,9 +989,9 @@ namespace UnityBox.AdvancedCostumeController
 
     private string EnsureAnimFolder(string subfolder = null)
     {
-      string folder = Path.Combine(config.GetResolvedGeneratedFolder(), "Animations");
+      string folder = Utils.CombineAssetPath(config.GetResolvedGeneratedFolder(), "Animations");
       if (!string.IsNullOrEmpty(subfolder))
-        folder = Path.Combine(folder, subfolder);
+        folder = Utils.CombineAssetPath(folder, subfolder);
       if (!Directory.Exists(folder))
       {
         Directory.CreateDirectory(folder);

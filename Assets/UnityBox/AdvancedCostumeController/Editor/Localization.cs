@@ -44,5 +44,30 @@ namespace UnityBox.AdvancedCostumeController
     {
       return UseChinese(CurrentLanguage) ? chinese : english;
     }
+
+    /// <summary>ACC 默认 Parts 子菜单的对象名。空 Label 时 MA 会直接显示该名称。</summary>
+    public static string DefaultPartsMenuObjectName(ACCConfig config)
+    {
+      return Text(config, "部件", "Parts");
+    }
+
+    /// <summary>未填写 Custom Mixer Name 时默认 Mixer 节点的对象名。</summary>
+    public static string DefaultMixerMenuObjectName(ACCConfig config)
+    {
+      return Text(config, "混搭", "Custom Mix");
+    }
+
+    /// <summary>默认 Mixer 启用控制的对象名。</summary>
+    public static string DefaultMixerEnableObjectName(ACCConfig config)
+    {
+      return Text(config, "启用", "Enable");
+    }
+
+    public static string PartSourceLegend()
+    {
+      return Text(
+        "[A] 自动 · [MG] 持久分组 · [SG] 临时分组 · [X] 已排除",
+        "[A] Auto · [MG] Persistent Group · [SG] Session Group · [X] Excluded");
+    }
   }
 }

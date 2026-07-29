@@ -5,6 +5,34 @@ using VRC.SDK3.Avatars.Components;
 
 namespace UnityBox.AdvancedCostumeController
 {
+  /// <summary>互斥选择参数的布局。压缩模式使用本地 Int 与同步二进制 Bool 位。</summary>
+  public sealed class ChoiceParameterLayout
+  {
+    public int ChoiceCount { get; }
+    public bool UsesCompression { get; }
+    public int BitCount
+    {
+      get
+      {
+        int bits = 0;
+        for (int valueCount = ChoiceCount - 1; valueCount > 0; valueCount >>= 1)
+          bits++;
+        return bits;
+      }
+    }
+
+    public ChoiceParameterLayout(int choiceCount, bool usesCompression)
+    {
+      ChoiceCount = choiceCount;
+      UsesCompression = usesCompression;
+    }
+
+    public string GetBitParameterName(string baseParameterName, int bitIndex)
+    {
+      return Utils.BuildParamName(baseParameterName, $"Bits/{bitIndex:D2}");
+    }
+  }
+
   /// <summary>一个可单独控制的服装部件，或由多个部件组成的命名分组。</summary>
   public class PartControlData
   {
@@ -44,6 +72,9 @@ namespace UnityBox.AdvancedCostumeController
   {
     /// <summary>服装本体 GameObject（拥有服装骨架的最高识别节点）</summary>
     public GameObject BaseObject { get; set; }
+
+    /// <summary>服装对应的 Armature。存在时，生成会确保其具有 MA Merge Armature。</summary>
+    public GameObject ArmatureObject { get; set; }
 
     /// <summary>服装根对象（有变体时为更上层的组节点，无变体时等于 BaseObject）</summary>
     public GameObject OutfitObject { get; set; }
@@ -185,8 +216,6 @@ namespace UnityBox.AdvancedCostumeController
     public const string MenuObjectName = "ACC_Menu";
     /// <summary>混搭模式参数路径中使用的固定前缀。</summary>
     public const string MixerParamPrefix = "Mixer";
-    /// <summary>混搭特殊服装使用的固定主参数值。</summary>
-    public const int CustomMixerIndex = 255;
 
     public GameObject CostumesRoot;
     public string ParamPrefix = "";
@@ -195,6 +224,7 @@ namespace UnityBox.AdvancedCostumeController
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
+    public bool EnableParameterCompression = false;
     public string CustomMixerName = "";
     public string RootMenuName = "";
 

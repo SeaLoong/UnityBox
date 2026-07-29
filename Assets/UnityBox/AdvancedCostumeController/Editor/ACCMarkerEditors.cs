@@ -65,10 +65,8 @@ namespace UnityBox.AdvancedCostumeController
           DrawPartPreviewRow(marker, part, controls, true);
       }
 
-      EditorGUILayout.LabelField(Localization.Text(
-        "[A] 自动 · [MG] 持久分组 · [X] 已排除",
-        "[A] Auto · [MG] Persistent · [X] Excluded"),
-        EditorStyles.miniLabel);
+        EditorGUILayout.LabelField(Localization.PartSourceLegend(),
+          EditorStyles.miniLabel);
     }
 
     private static void DrawPartPreviewRow(

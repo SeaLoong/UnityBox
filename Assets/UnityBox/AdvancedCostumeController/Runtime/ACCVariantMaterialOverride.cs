@@ -10,7 +10,7 @@ namespace UnityBox.AdvancedCostumeController
   /// ACC 在生成时读取此组件，为 OutfitBase 中匹配的材质槽生成替换动画。
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Variant Material Override")]
-  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Docs/AdvancedCostumeController.md#acc-variant-material-override")]
+  [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Assets/UnityBox/AdvancedCostumeController/README.md#accvariantmaterialoverride")]
   public class ACCVariantMaterialOverride : MonoBehaviour, IEditorOnly
   {
     [Serializable]
@@ -20,10 +20,10 @@ namespace UnityBox.AdvancedCostumeController
       public Material Replacement;
     }
 
-    [Tooltip("需要进行材质替换的服装本体。创建组件时会尝试选择同级的另一个对象。")]
+    [Tooltip("需要进行材质替换的服装本体。创建组件时会尝试选择同级的另一个对象。\nOutfit base whose materials should be replaced; Reset tries to select a sibling.")]
     public GameObject OutfitBase;
 
-    [Tooltip("留空 Replacement 表示保持 Source 材质不变。")]
+    [Tooltip("留空 Replacement 表示保持 Source 材质不变。\nAn empty Replacement keeps the Source material unchanged.")]
     public List<MaterialReplacement> Replacements = new List<MaterialReplacement>();
 
     private void Reset()

@@ -26,7 +26,7 @@ namespace UnityBox.AdvancedCostumeController
     private Vector2 scrollPosition = Vector2.zero;
 
 [MenuItem("Tools/UnityBox/Advanced Costume Controller")]
-    public static void ShowWindow() => GetWindow<Window>("Advanced Costume Controller");
+    public static void ShowWindow() => GetWindow<Window>("高级服装控制器");
 
     private string T(string chinese, string english) => Localization.Text(config, chinese, english);
 
@@ -84,7 +84,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private void OnGUI()
     {
-      EditorGUILayout.LabelField("Advanced Costume Controller", EditorStyles.boldLabel);
+      EditorGUILayout.LabelField(T("高级服装控制器", "Advanced Costume Controller"), EditorStyles.boldLabel);
 
       var languageOptions = new[]
       {
@@ -146,15 +146,25 @@ namespace UnityBox.AdvancedCostumeController
       if (config.EnableCustomMixer)
       {
         EditorGUI.indentLevel++;
-        string effectiveMixerLabel = string.IsNullOrWhiteSpace(config.CustomMixerName)
-          ? T("混搭", "Custom Mix")
-          : config.CustomMixerName;
+        string effectiveMixerObjectName = string.IsNullOrWhiteSpace(config.CustomMixerName)
+          ? Localization.DefaultMixerMenuObjectName(config)
+          : config.CustomMixerName.Trim();
         config.CustomMixerName = EditorGUILayout.TextField(T("混搭菜单名称", "Custom Mixer Name"), config.CustomMixerName);
         EditorGUILayout.HelpBox(
-          T($"混搭模式：菜单名称“{effectiveMixerLabel}”，参数使用固定前缀“{ACCConfig.MixerParamPrefix}”。",
-            $"Custom Mixer: menu label \"{effectiveMixerLabel}\", parameter prefix \"{ACCConfig.MixerParamPrefix}\"."),
+          T($"混搭模式：生成节点名称“{effectiveMixerObjectName}”，菜单默认直接显示该对象名；参数使用固定前缀“{ACCConfig.MixerParamPrefix}”。",
+            $"Custom Mixer: generated node name \"{effectiveMixerObjectName}\"; the menu displays that object name by default. Parameter prefix: \"{ACCConfig.MixerParamPrefix}\"."),
           MessageType.Info);
         EditorGUI.indentLevel--;
+      }
+
+      config.EnableParameterCompression = EditorGUILayout.Toggle(
+        T("启用参数压缩", "Enable Parameter Compression"), config.EnableParameterCompression);
+      if (config.EnableParameterCompression)
+      {
+        EditorGUILayout.HelpBox(
+          T("将菜单本地 Int 压缩为同步 Bool 位；所有有效选择域共用 1 个编码/解码 Animator Layer。",
+            "Compresses local menu Int values into synced Bool bits; all active choice domains share one encode/decode Animator layer."),
+          MessageType.Info);
       }
 
       EditorGUILayout.Space(5);
@@ -287,6 +297,12 @@ namespace UnityBox.AdvancedCostumeController
       {
         if (!outfitSelections[o]) continue;
 
+        bool baseSelected = outfitObjectSelections[o].TryGetValue(o.BaseObject, out var baseValue) &&
+          baseValue;
+        var selectedVariants = o.Variants.Where(variant =>
+          outfitObjectSelections[o].TryGetValue(variant, out var selected) && selected).ToList();
+        if (!baseSelected && selectedVariants.Count == 0) continue;
+
         var enabledParts = o.Parts.Where(p =>
           partSelections[o].TryGetValue(p, out var sel) && sel).ToList();
         var enabledControls = BuildPartControls(o);
@@ -294,15 +310,17 @@ namespace UnityBox.AdvancedCostumeController
         filteredOutfits.Add(new OutfitData
         {
           BaseObject = o.BaseObject,
+          ArmatureObject = o.ArmatureObject,
           OutfitObject = o.OutfitObject,
-          Variants = o.Variants,
+          Variants = selectedVariants,
           Parts = enabledParts,
           PartControls = enabledControls,
           VariantPartData = o.VariantPartData.Where(item =>
             (item.VariantObject == o.BaseObject && outfitObjectSelections[o][o.BaseObject]) ||
             (item.VariantObject != o.BaseObject && outfitObjectSelections[o].TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
           Name = o.Name,
-          RelativePath = o.RelativePath
+          RelativePath = o.RelativePath,
+          IsBaseSelected = baseSelected
         });
       }
 
@@ -311,6 +329,14 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(
         T($"VRChat 参数占用：{estimate}", $"VRChat parameter usage: {estimate}"),
         EditorStyles.miniLabel);
+      EditorGUILayout.LabelField(Generator.GetAnimatorLayerSummary(config, filteredOutfits,
+        (zh, en) => Localization.Text(config, zh, en)), EditorStyles.miniLabel);
+      if (config.EnableParameterCompression)
+      {
+        string compressionSummary = Generator.GetCompressionSummary(config, filteredOutfits,
+          (zh, en) => Localization.Text(config, zh, en));
+        EditorGUILayout.HelpBox(compressionSummary, MessageType.Info);
+      }
     }
 
     private void DrawOutfitPreview(OutfitData outfit, Dictionary<GameObject, int> previewIndexMap)
@@ -385,10 +411,7 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var part in outfit.ExcludedParts)
           DrawExcludedPartPreviewRow(outfit, part);
 
-        EditorGUILayout.LabelField(T(
-          "[A] 自动 · [MG] 持久分组 · [SG] 临时分组 · [X] 已排除",
-          "[A] Auto · [MG] Persistent · [SG] Session · [X] Excluded"),
-          EditorStyles.miniLabel);
+          EditorGUILayout.LabelField(Localization.PartSourceLegend(), EditorStyles.miniLabel);
       }
 
       EditorGUILayout.Space(8);
@@ -530,6 +553,7 @@ namespace UnityBox.AdvancedCostumeController
         selectedOutfits.Add(new OutfitData
         {
           BaseObject = o.BaseObject,
+          ArmatureObject = o.ArmatureObject,
           OutfitObject = o.OutfitObject,
           Variants = selectedVariants,
           Parts = o.Parts.Where(p =>

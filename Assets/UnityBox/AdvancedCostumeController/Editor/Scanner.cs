@@ -31,11 +31,13 @@ namespace UnityBox.AdvancedCostumeController
 
         if (processedOutfitObjects.Contains(t.gameObject)) continue;
 
-        // 默认由骨架和网格识别服装；ACCOutfitMarker 是完全显式的服装声明，
-        // 不要求骨架或网格。命中后不进入其后代，从而避免嵌套对象被重复识别。
+        // MA Merge Armature 是服装骨架的明确声明；没有该组件时仍兼容原有的
+        // 骨架/网格识别。ACCOutfitMarker 是完全显式的服装声明，不要求骨架或网格。
+        // 命中后不进入其后代，从而避免嵌套对象被重复识别。
         var outfitMarker = t.GetComponent<ACCOutfitMarker>();
         bool isExplicitOutfit = outfitMarker != null;
-        bool isAutoDetectedOutfit = Utils.OwnsSkeleton(t) && Utils.HasMeshInHierarchy(t);
+        bool hasOwnedArmature = Utils.TryGetOwnedArmature(t, out var armatureRoot);
+        bool isAutoDetectedOutfit = hasOwnedArmature && Utils.HasMeshInHierarchy(t);
         if (!isExplicitOutfit && !isAutoDetectedOutfit)
         {
           for (int i = t.childCount - 1; i >= 0; i--)
@@ -47,9 +49,11 @@ namespace UnityBox.AdvancedCostumeController
 
         // 查找变体（同级的其他含网格节点）。允许变体复用本体骨架，
         // 因而不强制每个变体都各自拥有骨架。
+        // 注意：本体直接位于 CostumesRoot 下时不做父级分组，
+        // 否则 OutfitObject 会取到根结点本身，导致根结点被识别为服装。
         var variants = new List<GameObject>();
         var outfitParent = outfitBase.parent;
-        if (outfitParent != null)
+        if (outfitParent != null && outfitParent != costumesRoot.transform)
         {
           for (int i = 0; i < outfitParent.childCount; i++)
           {
@@ -57,7 +61,7 @@ namespace UnityBox.AdvancedCostumeController
             if (sibling == outfitBase) continue;
 
             // 排除自身就是一个完整服装的兄弟（自动识别或显式标记）
-            if (Utils.OwnsSkeleton(sibling) && Utils.HasMeshInHierarchy(sibling))
+            if (Utils.TryGetOwnedArmature(sibling, out _) && Utils.HasMeshInHierarchy(sibling))
               continue;
             if (sibling.GetComponent<ACCOutfitMarker>() != null)
               continue;
@@ -98,6 +102,7 @@ namespace UnityBox.AdvancedCostumeController
         outfitDataList.Add(new OutfitData
         {
           BaseObject = outfitBase.gameObject,
+          ArmatureObject = armatureRoot != null ? armatureRoot.gameObject : null,
           OutfitObject = outfitObject,
           Name = outfitObject.name,
           RelativePath = Utils.GetRelativePath(costumesRoot, outfitObject),
