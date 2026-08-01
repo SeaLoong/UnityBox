@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
@@ -130,8 +131,8 @@ namespace UnityBox.AdvancedCostumeController
       else
       {
         EditorGUILayout.HelpBox(
-          T("参数前缀同时作为主服装 Int 参数、Animator Layer 和生成文件的命名空间；同一 Avatar 上必须唯一。",
-            "Parameter Prefix is also the main costume Int parameter and the namespace for Animator Layers and generated files; it must be unique per Avatar."),
+          T("参数前缀同时作为主服装选择参数、Animator Layer 和生成文件的命名空间；同一 Avatar 上必须唯一。只有一个固定服装选择时，主参数仅本地使用且不占同步 bit。",
+            "Parameter Prefix is also the main outfit choice parameter and the namespace for Animator Layers and generated files; it must be unique per Avatar. With one fixed outfit choice, the main parameter is local-only and uses no synced bits."),
           MessageType.Info);
       }
 
@@ -411,10 +412,99 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var part in outfit.ExcludedParts)
           DrawExcludedPartPreviewRow(outfit, part);
 
-          EditorGUILayout.LabelField(Localization.PartSourceLegend(), EditorStyles.miniLabel);
+        EditorGUILayout.LabelField(Localization.PartSourceLegend(), EditorStyles.miniLabel);
+        if (config.EnableParts)
+          DrawPersistPartGroupsButton(outfit);
       }
 
       EditorGUILayout.Space(8);
+    }
+
+    private void DrawPersistPartGroupsButton(OutfitData outfit)
+    {
+      var changes = new List<(GameObject Part, string GroupName, string Action,
+        bool Apply, bool Remove)>();
+      foreach (var part in outfit.Parts)
+      {
+        if (!partGroupNames[outfit].TryGetValue(part, out var value)) continue;
+        string groupName = value.Trim();
+
+        var marker = part.GetComponent<ACCPartGroupMarker>();
+        if (string.IsNullOrEmpty(groupName))
+        {
+          if (marker != null && marker.Mode == ACCPartControlMode.Group)
+            changes.Add((part, "-", T("移除标记", "Remove marker"), true, true));
+          continue;
+        }
+        if (marker != null && marker.Mode == ACCPartControlMode.Exclude)
+        {
+          changes.Add((part, groupName,
+            T("跳过：当前为不控制", "Skip: currently excluded"), false, false));
+          continue;
+        }
+        if (marker != null && marker.Mode == ACCPartControlMode.Group &&
+            marker.GroupName == groupName)
+          continue;
+        changes.Add((part, groupName,
+          marker == null ? T("新增标记", "Add marker") : T("更新标记", "Update marker"),
+          true, false));
+      }
+
+      bool sceneLocal = outfit.BaseObject != null &&
+        PrefabStageUtility.GetCurrentPrefabStage() == null;
+      if (!sceneLocal)
+      {
+        EditorGUILayout.HelpBox(T(
+          "Prefab Mode 中不会自动写入分组组件；请回到普通场景后保存分组。",
+          "ACC does not write grouping components in Prefab Mode; return to a regular scene to save groups."),
+          MessageType.Warning);
+      }
+      using (new EditorGUI.DisabledScope(!sceneLocal || !changes.Any(change => change.Apply)))
+      {
+        if (!GUILayout.Button(T("保存预览分组到服装", "Save Preview Groups to Outfit")))
+          return;
+      }
+
+      var preview = new System.Text.StringBuilder();
+      preview.AppendLine(T(
+        $"将持久化“{outfit.Name}”中的预览分组：",
+        $"The following preview groups in “{outfit.Name}” will be persisted:"));
+      foreach (var change in changes)
+        preview.AppendLine(T(
+          $"- {change.Part.name} → {change.GroupName}（{change.Action}）",
+          $"- {change.Part.name} → {change.GroupName} ({change.Action})"));
+      preview.AppendLine();
+      preview.AppendLine(T(
+        "将添加、更新或移除 ACC Part Group Marker。Exclude 标记不会被覆盖。",
+        "ACC Part Group Marker components will be added, updated, or removed. Exclude markers will not be overwritten."));
+
+      if (!EditorUtility.DisplayDialog(T("保存持久分组", "Save Persistent Groups"),
+        preview.ToString(), T("保存", "Save"), T("取消", "Cancel")))
+        return;
+
+      int undoGroup = Undo.GetCurrentGroup();
+      Undo.SetCurrentGroupName("Persist ACC part groups");
+      foreach (var change in changes)
+      {
+        if (!change.Apply) continue;
+        var marker = change.Part.GetComponent<ACCPartGroupMarker>();
+        if (change.Remove)
+        {
+          if (marker != null && marker.Mode == ACCPartControlMode.Group)
+            Undo.DestroyObjectImmediate(marker);
+          continue;
+        }
+        if (marker != null && marker.Mode == ACCPartControlMode.Exclude) continue;
+        if (marker == null) marker = Undo.AddComponent<ACCPartGroupMarker>(change.Part);
+        Undo.RecordObject(marker, "Configure ACC part group marker");
+        marker.Mode = ACCPartControlMode.Group;
+        marker.GroupName = change.GroupName;
+        EditorUtility.SetDirty(marker);
+      }
+      Undo.CollapseUndoOperations(undoGroup);
+      RefreshPreview();
+      Repaint();
+      GUIUtility.ExitGUI();
     }
 
     private void DrawControlledPartPreviewRow(OutfitData outfit, GameObject part)
@@ -422,12 +512,15 @@ namespace UnityBox.AdvancedCostumeController
       var partParam = GetPreviewPartParamName(outfit, part);
       string groupName = partGroupNames[outfit].TryGetValue(part, out var value) ? value.Trim() : "";
       var control = FindPreviewPartControl(outfit, part);
-      bool isPersistentGroup = control != null && control.IsGroup;
+      bool hasPersistentGroup = control != null && control.IsGroup;
+      bool isUnchangedPersistentGroup = hasPersistentGroup && control.Name == groupName;
       string source = !string.IsNullOrEmpty(groupName)
-        ? (isPersistentGroup
+        ? (isUnchangedPersistentGroup
           ? $"[MG: {groupName}]"
           : $"[SG: {groupName}]")
-        : T("[A] 自动", "[A] Auto");
+        : hasPersistentGroup
+          ? T("[SG] 待移除", "[SG] Pending removal")
+          : T("[A] 自动", "[A] Auto");
 
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);

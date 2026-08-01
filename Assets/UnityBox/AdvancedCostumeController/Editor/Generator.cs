@@ -206,7 +206,8 @@ namespace UnityBox.AdvancedCostumeController
             menuItem.PortableControl.Type = PortableControlType.Toggle;
             ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout, outfitIndexMap[obj]);
             menuItem.isSaved = true;
-            menuItem.isSynced = !mainLayout.UsesCompression;
+            menuItem.isSynced = mainLayout.RequiresSynchronization &&
+              !mainLayout.UsesCompression;
             Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
           }
 
@@ -225,7 +226,8 @@ namespace UnityBox.AdvancedCostumeController
           ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout,
             outfitIndexMap[outfit.BaseObject]);
           menuItem.isSaved = true;
-          menuItem.isSynced = !mainLayout.UsesCompression;
+          menuItem.isSynced = mainLayout.RequiresSynchronization &&
+            !mainLayout.UsesCompression;
           Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
         }
       }
@@ -251,6 +253,13 @@ namespace UnityBox.AdvancedCostumeController
       ChoiceParameterLayout layout,
       int defaultChoiceIndex)
     {
+      if (!layout.RequiresSynchronization)
+      {
+        // 单一固定选择仍保留本地参数供菜单/Animator 使用，但不占表达式同步预算。
+        Utils.AddOrUpdateParameter(rootParams, baseParameterName,
+          ParameterSyncType.Int, defaultChoiceIndex, true, true);
+        return;
+      }
       if (!layout.UsesCompression)
       {
         Utils.AddOrUpdateParameter(rootParams, baseParameterName,
@@ -485,12 +494,16 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
 
-      int mainBits = mainLayout.UsesCompression ? mainLayout.BitCount : intBits;
+      int mainBits = !mainLayout.RequiresSynchronization
+        ? 0
+        : mainLayout.UsesCompression ? mainLayout.BitCount : intBits;
       int totalBits = mainBits + partBits + mixerSlotBits;
       var parts = new System.Collections.Generic.List<string>();
-      parts.Add(mainLayout.UsesCompression
-        ? $"{loc("主选择压缩 Bool", "compressed main Bool")} {mainBits}bit"
-        : $"{loc("主 Int", "main Int")} {mainBits}bit");
+      parts.Add(!mainLayout.RequiresSynchronization
+        ? loc("主选择固定值 0bit", "fixed main choice 0bit")
+        : mainLayout.UsesCompression
+          ? $"{loc("主选择压缩 Bool", "compressed main Bool")} {mainBits}bit"
+          : $"{loc("主 Int", "main Int")} {mainBits}bit");
       if (partBits > 0)
         parts.Add($"{loc("部件 Bool", "part Bool")} {partBits}bit");
       if (mixerSlotBits > 0)

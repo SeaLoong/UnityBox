@@ -166,18 +166,23 @@ namespace UnityBox.AdvancedCostumeController
 
       var clip = CreateBaseClip();
       var activeOutfit = outfits.FirstOrDefault(o => o.GetAllObjects().Contains(activeObject));
+      var activeMaterialVariant = activeObject != null
+        ? activeObject.GetComponent<ACCVariantMaterialOverride>()
+        : null;
       var objectsToAnimate = allObjects
         .Concat(outfits.Select(outfit => outfit.BaseObject))
         .Distinct();
 
       foreach (var obj in objectsToAnimate)
       {
-        bool active = obj == activeObject;
+        // 完整预制件转换成材质变体后只作为材质对照来源，运行时不激活其网格。
+        bool active = obj == activeObject && activeMaterialVariant == null;
 
         // 变体可能依赖本体下的共享部件，因此选择任意变体时保持本体活动。
         if (!active && activeOutfit != null &&
             obj == activeOutfit.BaseObject &&
-          activeOutfit.Variants.Contains(activeObject))
+            (activeOutfit.Variants.Contains(activeObject) ||
+             (activeMaterialVariant != null && activeMaterialVariant.OutfitBase == obj)))
         {
           active = true;
         }
@@ -214,13 +219,17 @@ namespace UnityBox.AdvancedCostumeController
       var defaultChoice = Generator.ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
       bool defaultChoiceIsVariant = defaultOutfit != null && defaultChoice != null &&
         defaultOutfit.Variants.Contains(defaultChoice);
+      var defaultMaterialMarker = defaultChoice != null
+        ? defaultChoice.GetComponent<ACCVariantMaterialOverride>()
+        : null;
 
       // 混搭入口先关闭非默认服装组，同时保留默认服装组与其默认选择对象。
       // 槽位子树随后依据与普通 Parts 相同的默认参数值，决定受控部件的 On/Off。
       foreach (var obj in objectsToAnimate)
       {
         bool active = defaultOutfit != null &&
-          (obj == defaultOutfit.OutfitObject || obj == defaultChoice ||
+          (obj == defaultOutfit.OutfitObject ||
+           (obj == defaultChoice && defaultMaterialMarker == null) ||
            (defaultChoiceIsVariant && obj == defaultOutfit.BaseObject));
         var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
         string path = Utils.GetRelativePath(costumesRoot, obj);
@@ -524,10 +533,20 @@ namespace UnityBox.AdvancedCostumeController
           var material = materials[slot];
           if (marker != null)
           {
-            var replacement = marker.Replacements.FirstOrDefault(entry =>
-              entry != null && entry.Source == material);
-            if (replacement != null && replacement.Replacement != null)
-              material = replacement.Replacement;
+            var rendererOverride = marker.RendererOverrides?.FirstOrDefault(entry =>
+              entry != null && entry.TargetRenderer == renderer &&
+              entry.MaterialSlot == slot && entry.Replacement != null);
+            if (rendererOverride != null)
+            {
+              material = rendererOverride.Replacement;
+            }
+            else
+            {
+              var replacement = marker.Replacements?.FirstOrDefault(entry =>
+                entry != null && entry.Source == material);
+              if (replacement != null && replacement.Replacement != null)
+                material = replacement.Replacement;
+            }
           }
 
           var binding = EditorCurveBinding.PPtrCurve(path, typeof(Renderer),
@@ -579,7 +598,8 @@ namespace UnityBox.AdvancedCostumeController
       var clip = CreateBaseClip();
       var objects = new[] { outfit.OutfitObject }
         .Concat(outfit.GetAllObjects())
-        .Where(obj => obj != null)
+        .Where(obj => obj != null &&
+          obj.GetComponent<ACCVariantMaterialOverride>() == null)
         .Distinct();
       var controlledParts = new HashSet<GameObject>(outfit.GetMixerPartSlots()
         .SelectMany(slot => slot.Candidates)

@@ -10,6 +10,8 @@ namespace UnityBox.AdvancedCostumeController
   {
     public int ChoiceCount { get; }
     public bool UsesCompression { get; }
+    /// <summary>只有一个固定选择值时无需网络同步。</summary>
+    public bool RequiresSynchronization => ChoiceCount > 1;
     public int BitCount
     {
       get

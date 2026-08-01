@@ -884,7 +884,6 @@ public static class Utils
       mergeArmature.mangleNames = true;
       mergeArmature.InferPrefixSuffix();
       EditorUtility.SetDirty(mergeArmature);
-      PrefabUtility.RecordPrefabInstancePropertyModifications(mergeArmature);
       return true;
     }
     catch (Exception exception)

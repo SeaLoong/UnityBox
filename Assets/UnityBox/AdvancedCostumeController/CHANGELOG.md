@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] - 2026-08-01
+
+### Added
+
+- 材质变体新增精准 Renderer 材质槽位覆盖；全局 `Source → Replacement` 快捷规则继续保留，精准规则优先。
+- 材质变体 Inspector 支持自动对照 Outfit Base 与完整变体预制件，只生成实际材质差异槽位。
+- 新增 **GameObject > ACC > 转换成服装变体**，支持通过本体和完整预制件一键生成材质变体配置。
+- ACC 预览中的临时分组可在确认预览后持久化为 `ACCPartGroupMarker`。
+
+### Changed
+
+- 材质变体 Inspector 改为默认展开的本地化卡片布局；刷新、分析、转换与持久化分组均支持 Undo/Redo，仅修改场景对象且不会 Apply 到 Prefab 资产。
+- 只有一个固定服装选择且未启用 Mixer 时，主选择参数改为 local-only；无论是否启用参数压缩均不占用同步 bit。
+
 ## [0.3.25] - 2026-07-30
 
 ### Fixed

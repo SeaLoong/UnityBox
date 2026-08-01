@@ -31,6 +31,13 @@ namespace UnityBox.AdvancedCostumeController
 
         if (processedOutfitObjects.Contains(t.gameObject)) continue;
 
+        // 完整服装预制件也可以被转换为材质变体；此时它只作为材质对照来源，
+        // 不应再被独立识别为 Outfit Base。
+        var explicitMaterialVariant = t.GetComponent<ACCVariantMaterialOverride>();
+        if (explicitMaterialVariant != null && explicitMaterialVariant.OutfitBase != null &&
+            explicitMaterialVariant.OutfitBase != t.gameObject)
+          continue;
+
         // MA Merge Armature 是服装骨架的明确声明；没有该组件时仍兼容原有的
         // 骨架/网格识别。ACCOutfitMarker 是完全显式的服装声明，不要求骨架或网格。
         // 命中后不进入其后代，从而避免嵌套对象被重复识别。
@@ -60,21 +67,21 @@ namespace UnityBox.AdvancedCostumeController
             var sibling = outfitParent.GetChild(i);
             if (sibling == outfitBase) continue;
 
-            // 排除自身就是一个完整服装的兄弟（自动识别或显式标记）
-            if (Utils.TryGetOwnedArmature(sibling, out _) && Utils.HasMeshInHierarchy(sibling))
-              continue;
-            if (sibling.GetComponent<ACCOutfitMarker>() != null)
-              continue;
-
             var materialVariant = sibling.GetComponent<ACCVariantMaterialOverride>();
+            bool isMaterialVariant = materialVariant != null &&
+              materialVariant.OutfitBase == outfitBase.gameObject;
 
             // 已由其他服装的 ACCVariantMaterialOverride 指向 → 不属于当前服装
             if (materialVariant != null && materialVariant.OutfitBase != null &&
                 materialVariant.OutfitBase != outfitBase.gameObject)
               continue;
 
-            bool isMaterialVariant = materialVariant != null &&
-              materialVariant.OutfitBase == outfitBase.gameObject;
+            // 显式材质变体优先于“完整服装兄弟”排除规则，支持直接转换完整预制件。
+            if (!isMaterialVariant &&
+                Utils.TryGetOwnedArmature(sibling, out _) && Utils.HasMeshInHierarchy(sibling))
+              continue;
+            if (!isMaterialVariant && sibling.GetComponent<ACCOutfitMarker>() != null)
+              continue;
             // 有网格且未被其他服装认领 → 加入当前变体；如果已由其他 Outfit 处理过变体加入逻辑，
             // 则 processedOutfitObjects 会跳过此对象，此处仅添加仍未处理的网格兄弟。
             if (!processedOutfitObjects.Contains(sibling.gameObject) &&
@@ -93,6 +100,14 @@ namespace UnityBox.AdvancedCostumeController
         AddVariantPartData(variantPartData, outfitBase.gameObject, parts, excludedParts, partControls);
         foreach (var variant in variants)
         {
+          var materialVariant = variant.GetComponent<ACCVariantMaterialOverride>();
+          if (materialVariant != null)
+          {
+            // 材质变体只提供材质曲线，不作为 Mixer 的网格部件来源。
+            AddVariantPartData(variantPartData, variant,
+              new List<GameObject>(), new List<GameObject>(), new List<PartControlData>());
+            continue;
+          }
           CollectParts(variant.transform, out var variantParts,
             out var variantExcludedParts, out var variantPartControls);
           AddVariantPartData(variantPartData, variant.gameObject, variantParts,

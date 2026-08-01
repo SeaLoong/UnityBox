@@ -161,6 +161,8 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 
 Parameter Prefix 必须至少包含一个字母或数字；只包含空格、符号或分隔符的前缀无法产生稳定的 Controller 文件名，ACC 会拒绝生成。
 
+如果最终只有一个实际可选服装对象、没有变体且未启用 Mixer，主选择值是固定常量，不包含需要网络同步的信息。ACC 仍保留 local-only 参数供菜单与 Animator 内部使用，但无论是否启用参数压缩都占用 `0 bit`。普通部件 Bool 参数仍按实际控制项数量计算；一旦存在变体或 Mixer，主选择重新成为多值选择域并需要同步。
+
 ## 普通服装与部件控制
 
 ### 仅服装切换
@@ -266,6 +268,8 @@ ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未�
 
 此分组名只保存于当前 ACC 窗口会话。关闭窗口、切换 Root 或刷新预览后会清空，不适合作为长期配置。
 
+如果确认预览分组正确，可点击当前服装预览末尾的 **保存预览分组到服装 / Save Preview Groups to Outfit**。ACC 会先弹出变更预览，列出将新增、更新、移除或因 `Exclude` 而跳过的对象；确认后通过 Unity Undo 修改场景中的 `ACCPartGroupMarker` 并刷新预览。预览与持久 Marker 完全一致时按钮不可点击；清空已有持久组名并保存会移除对应 Group Marker。ACC 不会 Apply 或写回 Project 中的 Prefab 资产。
+
 ### 菜单名称格式化
 
 在该 Outfit Base 的 **ACC Outfit Marker** Inspector 中，可以为该套服装的自动部件菜单标签配置：
@@ -329,7 +333,7 @@ ACC 将变体组的共同父对象作为菜单节点，并生成各变体的选�
 
 ## 材质变体
 
-材质变体适用于“不复制 Mesh，只更换同一 Outfit Base 的材质”的场景。
+材质变体适用于“不复制运行时 Mesh，只更换同一 Outfit Base 的材质”的场景。变体对象既可以是空对象，也可以是服装作者提供的完整对照预制件；完整对照预制件运行时不会与本体网格同时激活。
 
 ### 层级示例
 
@@ -345,17 +349,41 @@ Costumes Root
 
 材质标记对象必须与 Outfit Base 同级，并将 `Outfit Base` 字段指向 `Jacket Base`。
 
+### 两种替换方式
+
+Inspector 的两个列表默认展开：
+
+1. **全局材质替换 / Global Material Replacements**
+    - 一条 `Source → Replacement` 会替换 Outfit Base 中所有使用该 Source 的 Renderer 槽位；
+    - 适合统一换色；Replacement 留空表示不替换。
+2. **精准 Renderer 槽位覆盖 / Precise Renderer Slot Overrides**
+    - 只覆盖指定 Renderer 的指定槽位；
+    - 优先于全局替换；
+    - 适合同一 Source 只在部分 Mesh 上需要替换的情况。
+
+点击 **自动分析最优替换 / Analyze Optimal Replacements** 会按本体和当前变体中 Renderer 的相对路径、类型和同节点组件序号进行匹配。对每个 Source 材质，出现次数最多的目标材质生成全局规则，其他少数映射生成精准例外；如果“保持原材质”占多数，则不生成全局规则，只记录少数变化。重复分析会重建相同的确定性配置，不会累积重复项。
+
 ### 配置步骤
 
-1. 新建空对象作为材质变体，放在 Outfit Base 同级。
-2. 添加组件：`UnityBox > ACC Variant Material Override`。
-3. 在 Inspector 设置 **Outfit Base**。
-   - 新增组件时会尝试选择第一个同级对象，必须人工确认引用正确。
-4. 点击 **Refresh Materials**。
-5. 为每个 Source Material 设置 **Replace With**；留空表示保留 Source Material。
-6. 回到 ACC 窗口，点击 Refresh Preview 并 Generate。
+#### 空对象材质变体
 
-材质曲线会写入普通 `Outfit Switching` Clip 或 Mixer 变体 Clip，不会生成独立材质 Layer。每次切换都会先恢复原材质，再应用当前材质变体，避免前一个变体残留。
+1. 在 Outfit Base 同级新建空对象并添加 `ACC Variant Material Override`。
+2. 设置 **Outfit Base**。
+3. 使用**刷新全局材质**配置统一替换，或手工添加精准覆盖。
+4. 回到 ACC 窗口刷新预览并生成。
+
+#### 从完整服装预制件转换
+
+1. 将本体与另一套完整服装预制件放在同一个父对象下。
+2. 在场景中右键要转换的变体对象。
+3. 使用 **GameObject > ACC > 转换成服装变体 (Convert to Outfit Variant)**。
+4. ACC 会按 Outfit Marker、MA Merge Armature/独立骨架和 Renderer 匹配度自动识别同级本体；无法唯一判断时会停止，不会猜测修改。
+5. 在确认窗口核对自动识别的本体和变体来源。
+6. ACC 会添加或更新组件并生成多数全局规则与少数精准例外；可在 Inspector 中继续调整。
+
+所有转换、自动分析、刷新和列表编辑都支持 Unity Undo/Redo，只修改场景对象；ACC 不会 Apply 或写回 Project 中的 Prefab 资产。重复转换会复用现有组件并重新生成确定性配置。
+
+材质曲线会写入普通 `Outfit Switching` Clip，不会生成独立材质 Layer。每次切换都会先恢复原材质，再应用当前材质变体，避免前一个变体残留。
 
 ## Custom Mixer 混搭
 
@@ -543,7 +571,7 @@ Hair/Mixer_{OutfitGroup}_{PartSlot}
 
 1. `ACCVariantMaterialOverride` 是否挂在 Outfit Base 的同级对象；
 2. 组件的 Outfit Base 引用是否正确；
-3. 是否在设置 Outfit Base 后点击过 Refresh Materials；
+3. 是否在设置 Outfit Base 后点击过“刷新全局材质”，或对完整预制件点击过“自动分析最优替换”；
 4. 是否填写了 Replace With；
 5. 修改标记后是否重新 Refresh Preview 并 Generate。
 
@@ -581,5 +609,5 @@ Assets/UnityBox/AdvancedCostumeController/
 
 - 生成操作支持 Unity Undo；输出目录中资产的删除属于 AssetDatabase 操作，生成前请确认摘要。
 - ACC 使用 Write Defaults 策略；与其他 FX 工具混用时，上传前应使用 Modular Avatar 的构建预览检查最终 Animator。
-- 部件分组优先使用层级父对象；预览中的文本分组仅为临时会话配置，不会持久化。
+- 部件分组优先使用层级父对象；预览中的文本分组默认是临时会话配置，也可以通过“保存预览分组到服装”持久化为 Marker。
 - Parameter Prefix 同时是参数和隔离键。修改它等同于创建新的 ACC 命名空间；旧 Prefix 的输出目录不会被新 Prefix 自动清理。

@@ -63,6 +63,7 @@ namespace UnityBox.AdvancedCostumeController
         // 不在混搭菜单中显示普通模式的 Parts/Groups 分类层，参数仍复用普通分组槽位。
         foreach (var variant in outfit.GetAllObjects())
         {
+          if (variant.GetComponent<ACCVariantMaterialOverride>() != null) continue;
           var variantMenu = Utils.FindOrCreateChild(curMenu, variant.name);
           Utils.EnsureSubmenuOnNode(variantMenu, presentation: menuPresentation,
             semanticKey: Utils.GetMixerPathSemanticKey(outfitRelPath, variant.name));
@@ -90,7 +91,8 @@ namespace UnityBox.AdvancedCostumeController
             Generator.ConfigureChoiceMenuItem(candidateMi, slotParamName, slotLayout, candidateIndex + 1);
             candidateMi.isDefault = candidateIndex + 1 == slotDefaultValue;
             candidateMi.isSaved = true;
-            candidateMi.isSynced = !slotLayout.UsesCompression;
+            candidateMi.isSynced = slotLayout.RequiresSynchronization &&
+              !slotLayout.UsesCompression;
             Utils.ApplyMenuPresentation(menuPresentation, candidateNode, candidateMi, "");
           }
         }
@@ -106,7 +108,8 @@ namespace UnityBox.AdvancedCostumeController
       enableMi.PortableControl.Type = PortableControlType.Toggle;
       Generator.ConfigureChoiceMenuItem(enableMi, mainParameterName, mainLayout, customMixerValue);
       enableMi.isSaved = true;
-      enableMi.isSynced = !mainLayout.UsesCompression;
+      enableMi.isSynced = mainLayout.RequiresSynchronization &&
+        !mainLayout.UsesCompression;
       Utils.ApplyMenuPresentation(menuPresentation, enableNode, enableMi, "");
     }
 
