@@ -138,10 +138,15 @@ namespace UnityBox.AdvancedCostumeController
       }
       else
       {
-        foreach (var part in parts)
-          DrawPartPreviewRow(marker, part, controls, false);
-        foreach (var part in excludedParts)
-          DrawPartPreviewRow(marker, part, controls, true);
+        var excludedSet = new System.Collections.Generic.HashSet<GameObject>(excludedParts);
+        foreach (var part in parts.Concat(excludedParts)
+          .Where(part => part != null)
+          .Distinct()
+          .OrderBy(part => Utils.GetHierarchyPath(marker.gameObject, part),
+            System.StringComparer.Ordinal))
+        {
+          DrawPartPreviewRow(marker, part, controls, excludedSet.Contains(part));
+        }
       }
 
         EditorGUILayout.LabelField(Localization.PartSourceLegend(),
@@ -190,13 +195,15 @@ namespace UnityBox.AdvancedCostumeController
           ? $"[MG: {control.Name}]"
           : Localization.Text("[A] 自动", "[A] Auto");
 
-      using (new EditorGUI.DisabledScope(excluded))
+      EditorGUILayout.BeginHorizontal();
+      var content = new GUIContent(label,
+        "点击选择并定位对象 / Click to select and locate this object");
+      if (GUILayout.Button(content, EditorStyles.linkLabel, GUILayout.Width(180)))
       {
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField(label, EditorStyles.label, GUILayout.Width(180));
-        EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.ExpandWidth(true));
-        EditorGUILayout.EndHorizontal();
+        Utils.SelectAndPingObject(part);
       }
+      EditorGUILayout.LabelField(source, EditorStyles.label, GUILayout.ExpandWidth(true));
+      EditorGUILayout.EndHorizontal();
     }
   }
 

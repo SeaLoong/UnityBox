@@ -452,7 +452,8 @@ namespace UnityBox.AdvancedCostumeController
         try
         {
           if (marker == null)
-            marker = Undo.AddComponent<ACCVariantMaterialOverride>(variant);
+            marker = ACCEditorUndo.AddComponent<ACCVariantMaterialOverride>(variant,
+              "Create ACC variant material override");
           else
             ACCEditorUndo.RecordObjects(new Object[] { marker },
               "Convert to ACC outfit variant");

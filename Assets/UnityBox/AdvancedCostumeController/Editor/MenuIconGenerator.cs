@@ -127,7 +127,12 @@ namespace UnityBox.AdvancedCostumeController
         light.intensity = 1.1f;
         lightObject.transform.rotation = Quaternion.Euler(35f, 145f, 0f);
 
-        Bounds? sharedOutfitBounds = CalculateAvatarFramingBounds(cloneRoot);
+        // Outfit/variant icons share one framing box built from all requested
+        // outfit renderers. This keeps a local ACC use case such as hair at
+        // the hair's actual center instead of framing it against the whole avatar.
+        Bounds? sharedOutfitBounds = CalculateSharedOutfitBounds(
+          sourceAvatarRoot, cloneRoot, cloneRenderers, originalSharedMaterials,
+          validRequests);
 
         int generated = 0;
         var generatedNodes = new HashSet<GameObject>();
@@ -556,28 +561,44 @@ namespace UnityBox.AdvancedCostumeController
       return result ?? new Bounds(Vector3.zero, Vector3.one * 0.1f);
     }
 
-    private static Bounds? CalculateAvatarFramingBounds(GameObject cloneRoot)
+    private static Bounds? CalculateSharedOutfitBounds(
+      GameObject sourceRoot,
+      GameObject cloneRoot,
+      IReadOnlyList<Renderer> cloneRenderers,
+      IReadOnlyDictionary<Renderer, Material[]> originalSharedMaterials,
+      IReadOnlyList<MenuIconRequest> requests)
     {
-      var animator = cloneRoot.GetComponentInChildren<Animator>(true);
-      if (animator != null && animator.isHuman)
+      Bounds? result = null;
+      foreach (var request in requests.Where(request => request.UseSharedOutfitFraming))
       {
-        var points = new List<Vector3>();
-        for (var bone = HumanBodyBones.Hips; bone < HumanBodyBones.LastBone; bone++)
+        RestoreSharedMaterials(originalSharedMaterials);
+        var targets = request.Targets
+          .Where(target => target != null)
+          .Select(target => FindClone(sourceRoot, cloneRoot, target))
+          .Where(target => target != null)
+          .Distinct()
+          .ToList();
+        if (targets.Count == 0) continue;
+
+        var visibleRenderers = ConfigureRequestState(cloneRoot, cloneRenderers, targets);
+        if (request.MaterialVariant != null)
+          ApplyMaterialVariant(sourceRoot, cloneRoot, request.MaterialVariant);
+        if (visibleRenderers.Count == 0) continue;
+
+        PrepareOriginalRenderers(visibleRenderers);
+        var bounds = CalculateBounds(visibleRenderers);
+        if (!result.HasValue)
         {
-          var transform = animator.GetBoneTransform(bone);
-          if (transform != null) points.Add(transform.position);
+          result = bounds;
         }
-        if (points.Count > 1)
+        else
         {
-          var bounds = new Bounds(points[0], Vector3.zero);
-          foreach (var point in points.Skip(1)) bounds.Encapsulate(point);
-          float height = Mathf.Max(bounds.size.y, 0.5f);
-          // Bones do not include garment thickness; provide stable full-avatar margins.
-          bounds.Expand(new Vector3(height * 0.18f, height * 0.08f, height * 0.18f));
-          return bounds;
+          var combined = result.Value;
+          combined.Encapsulate(bounds);
+          result = combined;
         }
       }
-      return null;
+      return result;
     }
 
     private static void ApplyMaterialVariant(

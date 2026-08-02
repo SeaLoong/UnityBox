@@ -69,13 +69,15 @@ namespace UnityBox.AdvancedCostumeController
     {
       UpdateWindowTitle();
       config.ApplyAutoDefaultsFromRoot();
-      if (config.CostumesRoot != null) RefreshPreview();
+      if (config.CostumesRoot != null) RefreshPreview(confirmDiscard: true);
     }
 
     #region 预览刷新
 
-    private void RefreshPreview()
+    private bool RefreshPreview(bool confirmDiscard)
     {
+      if (confirmDiscard && !ConfirmDiscardPreviewChanges()) return false;
+
       currentOutfitDataList.Clear();
       outfitSelections.Clear();
       outfitObjectSelections.Clear();
@@ -84,7 +86,7 @@ namespace UnityBox.AdvancedCostumeController
       previewGroupColors.Clear();
       nextPreviewGroupColor = 0;
 
-      if (config.CostumesRoot == null) return;
+      if (config.CostumesRoot == null) return true;
 
       currentOutfitDataList = Scanner.FindOutfits(config.CostumesRoot);
 
@@ -98,9 +100,9 @@ namespace UnityBox.AdvancedCostumeController
 
         partSelections[outfit] = new Dictionary<GameObject, bool>();
         partGroupNames[outfit] = new Dictionary<GameObject, string>();
-        foreach (var part in outfit.Parts)
+        foreach (var part in GetOrderedPreviewParts(outfit))
         {
-          partSelections[outfit][part] = true;
+          partSelections[outfit][part] = outfit.Parts.Contains(part);
           partGroupNames[outfit][part] = "";
         }
 
@@ -114,6 +116,105 @@ namespace UnityBox.AdvancedCostumeController
           }
         }
       }
+      return true;
+    }
+
+    private bool ConfirmDiscardPreviewChanges()
+    {
+      if (!HasUnsavedPreviewChanges()) return true;
+
+      return EditorUtility.DisplayDialog(
+        T("存在未保存的预览修改", "Unsaved Preview Changes"),
+        T("当前预览包含未保存的服装、变体或部件勾选，以及临时分组编辑。继续刷新预览或切换服装根节点会丢失这些修改。是否丢弃并继续？",
+          "The preview contains unsaved outfit, variant, or part selections and temporary group edits. Refreshing the preview or changing Costumes Root will discard them. Discard and continue?"),
+        T("丢弃并继续", "Discard and Continue"),
+        T("取消", "Cancel"));
+    }
+
+    private bool HasUnsavedPreviewChanges(OutfitData ignoredOutfit = null)
+    {
+      foreach (var outfit in currentOutfitDataList)
+      {
+        if (outfit == ignoredOutfit) continue;
+
+        if (!outfitSelections.TryGetValue(outfit, out var outfitSelected) || !outfitSelected)
+          return true;
+
+        if (!outfitObjectSelections.TryGetValue(outfit, out var objectSelections))
+          return true;
+        foreach (var obj in outfit.GetAllObjects())
+        {
+          if (!objectSelections.TryGetValue(obj, out var selected) || !selected)
+            return true;
+        }
+
+        if (!partSelections.TryGetValue(outfit, out var selections) ||
+            !partGroupNames.TryGetValue(outfit, out var groupNames))
+          return true;
+        foreach (var part in GetOrderedPreviewParts(outfit))
+        {
+          string currentGroupName = groupNames.TryGetValue(part, out var groupName)
+            ? groupName.Trim()
+            : "";
+          bool selected = selections.TryGetValue(part, out var partSelected) && partSelected;
+          var marker = part.GetComponent<ACCPartGroupMarker>();
+          if (!selected)
+          {
+            if (!string.IsNullOrEmpty(currentGroupName))
+              return true;
+            if (marker == null || marker.Mode != ACCPartControlMode.Exclude)
+              return true;
+            continue;
+          }
+
+          if (marker != null && marker.Mode == ACCPartControlMode.Exclude)
+            return true;
+
+          string persistentGroupName = marker != null && marker.Mode == ACCPartControlMode.Group
+            ? GetPersistentGroupName(part, marker)
+            : "";
+          if (!string.Equals(currentGroupName, persistentGroupName,
+            StringComparison.Ordinal))
+            return true;
+        }
+      }
+      return false;
+    }
+
+    private bool HasUnsavedSelectionChanges(OutfitData outfit)
+    {
+      if (outfit == null) return false;
+      if (!outfitSelections.TryGetValue(outfit, out var outfitSelected) || !outfitSelected)
+        return true;
+
+      if (!outfitObjectSelections.TryGetValue(outfit, out var objectSelections))
+        return true;
+      return outfit.GetAllObjects().Any(obj =>
+        !objectSelections.TryGetValue(obj, out var selected) || !selected);
+    }
+
+    private bool ConfirmDiscardOtherPreviewChanges(OutfitData savedOutfit)
+    {
+      if (!HasUnsavedPreviewChanges(savedOutfit) &&
+          !HasUnsavedSelectionChanges(savedOutfit))
+        return true;
+
+      return EditorUtility.DisplayDialog(
+        T("存在其他未保存的预览修改", "Other Unsaved Preview Changes"),
+        T("保存当前服装的分组后会刷新整个预览，其他服装或当前服装中未纳入本次保存的临时选择和分组编辑将会丢失。是否继续并丢弃这些修改？",
+          "Saving this outfit's groups will refresh the entire preview. Temporary selections or group edits on other outfits or outside this save will be discarded. Continue and discard them?"),
+        T("继续并丢弃", "Continue and Discard"),
+        T("取消", "Cancel"));
+    }
+
+    private static string GetPersistentGroupName(
+      GameObject part,
+      ACCPartGroupMarker marker)
+    {
+      if (marker == null || marker.Mode != ACCPartControlMode.Group) return "";
+      return string.IsNullOrWhiteSpace(marker.GroupName)
+        ? part.name
+        : marker.GroupName.Trim();
     }
 
     #endregion
@@ -158,8 +259,13 @@ namespace UnityBox.AdvancedCostumeController
         config.CostumesRoot, typeof(GameObject), true);
       if (config.CostumesRoot != oldRoot)
       {
+        if (!ConfirmDiscardPreviewChanges())
+        {
+          config.CostumesRoot = oldRoot;
+          GUIUtility.ExitGUI();
+        }
         config.ApplyAutoDefaultsFromRoot();
-        RefreshPreview();
+        RefreshPreview(confirmDiscard: false);
       }
 
       config.RootMenuName = EditorGUILayout.TextField(
@@ -332,7 +438,7 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(T("预览", "Preview"), EditorStyles.boldLabel);
 
       if (GUILayout.Button(T("刷新预览", "Refresh Preview")))
-        RefreshPreview();
+        RefreshPreview(confirmDiscard: true);
 
       if (currentOutfitDataList.Count == 0)
       {
@@ -529,13 +635,13 @@ namespace UnityBox.AdvancedCostumeController
 
       // 标题行
       EditorGUILayout.BeginHorizontal();
-      bool newSel = EditorGUILayout.ToggleLeft(displayName, outfitSelections[outfit],
-        EditorStyles.boldLabel, GUILayout.Width(300));
+      bool newSel = EditorGUILayout.Toggle(outfitSelections[outfit], GUILayout.Width(20));
       if (newSel != outfitSelections[outfit])
       {
         outfitSelections[outfit] = newSel;
         Repaint();
       }
+      DrawObjectLink(outfit.OutfitObject ?? outfit.BaseObject, displayName, 280);
       EditorGUILayout.LabelField(
         outfit.HasVariants()
           ? T($"（{outfit.GetAllObjects().Count} 个变体）", $"({outfit.GetAllObjects().Count} variants)")
@@ -546,7 +652,7 @@ namespace UnityBox.AdvancedCostumeController
       if (!outfitSelections[outfit]) return;
 
       // 服装对象（本体 + 变体）
-      foreach (var obj in outfit.GetAllObjects())
+      foreach (var obj in GetOrderedPreviewObjects(outfit.GetAllObjects()))
       {
         bool objSel = outfitObjectSelections[outfit][obj];
         int objIndex = objSel && previewIndexMap.ContainsKey(obj) ? previewIndexMap[obj] : -1;
@@ -559,7 +665,7 @@ namespace UnityBox.AdvancedCostumeController
           outfitObjectSelections[outfit][obj] = newObjSel;
           Repaint();
         }
-        EditorGUILayout.LabelField(obj.name, GUILayout.Width(200));
+        DrawObjectLink(obj, obj.name, 200);
         EditorGUILayout.LabelField(
           objIndex >= 0 ? $"[{config.MainParameterName} = {objIndex}]" : T("（未选中）", "(not selected)"),
           GUILayout.Width(150));
@@ -578,19 +684,17 @@ namespace UnityBox.AdvancedCostumeController
           EditorStyles.boldLabel);
         EditorGUILayout.EndHorizontal();
 
-        if (config.EnableParts)
+        var excludedParts = new HashSet<GameObject>(outfit.ExcludedParts ??
+          new List<GameObject>());
+        foreach (var part in GetOrderedPreviewParts(outfit))
         {
-          foreach (var part in outfit.Parts)
+          if (excludedParts.Contains(part))
+            DrawExcludedPartPreviewRow(outfit, part);
+          else if (config.EnableParts)
             DrawControlledPartPreviewRow(outfit, part);
-        }
-        else
-        {
-          foreach (var part in outfit.Parts)
+          else
             DrawReadOnlyPartPreviewRow(outfit, part);
         }
-
-        foreach (var part in outfit.ExcludedParts)
-          DrawExcludedPartPreviewRow(outfit, part);
 
         EditorGUILayout.LabelField(Localization.PartSourceLegend(), EditorStyles.miniLabel);
         if (config.EnableParts)
@@ -603,31 +707,46 @@ namespace UnityBox.AdvancedCostumeController
     private void DrawPersistPartGroupsButton(OutfitData outfit)
     {
       var changes = new List<(GameObject Part, string GroupName, string Action,
-        bool Apply, bool Remove)>();
-      foreach (var part in outfit.Parts)
+        bool Apply, bool Remove, bool Exclude)>();
+      foreach (var part in GetOrderedPreviewParts(outfit))
       {
-        if (!partGroupNames[outfit].TryGetValue(part, out var value)) continue;
-        string groupName = value.Trim();
-
+        bool selected = partSelections[outfit].TryGetValue(part, out var partSelected) &&
+          partSelected;
+        string groupName = partGroupNames[outfit].TryGetValue(part, out var value)
+          ? value.Trim()
+          : "";
         var marker = part.GetComponent<ACCPartGroupMarker>();
+
+        if (!selected)
+        {
+          if (marker == null || marker.Mode != ACCPartControlMode.Exclude)
+            changes.Add((part, "-", T("设置为不控制", "Set as Exclude"), true, false, true));
+          continue;
+        }
+
+        if (marker != null && marker.Mode == ACCPartControlMode.Exclude)
+        {
+          string restoredGroupName = string.IsNullOrEmpty(groupName)
+            ? part.name
+            : groupName;
+          changes.Add((part, restoredGroupName,
+            T("恢复为分组", "Restore as Group"), true, false, false));
+          continue;
+        }
+
         if (string.IsNullOrEmpty(groupName))
         {
           if (marker != null && marker.Mode == ACCPartControlMode.Group)
-            changes.Add((part, "-", T("移除标记", "Remove marker"), true, true));
-          continue;
-        }
-        if (marker != null && marker.Mode == ACCPartControlMode.Exclude)
-        {
-          changes.Add((part, groupName,
-            T("跳过：当前为不控制", "Skip: currently excluded"), false, false));
+            changes.Add((part, "-", T("移除标记", "Remove marker"), true, true, false));
           continue;
         }
         if (marker != null && marker.Mode == ACCPartControlMode.Group &&
-            marker.GroupName == groupName)
+            string.Equals(GetPersistentGroupName(part, marker), groupName,
+              StringComparison.Ordinal))
           continue;
         changes.Add((part, groupName,
           marker == null ? T("新增标记", "Add marker") : T("更新标记", "Update marker"),
-          true, false));
+          true, false, false));
       }
 
       using (new EditorGUI.DisabledScope(!changes.Any(change => change.Apply)))
@@ -646,11 +765,14 @@ namespace UnityBox.AdvancedCostumeController
           $"- {change.Part.name} → {change.GroupName} ({change.Action})"));
       preview.AppendLine();
       preview.AppendLine(T(
-        "将添加、更新或移除 ACC Part Group Marker。Exclude 标记不会被覆盖。",
-        "ACC Part Group Marker components will be added, updated, or removed. Exclude markers will not be overwritten."));
+        "将添加、更新、移除或设置为 Exclude 的 ACC Part Group Marker。保存后预览会刷新，未列出的临时勾选和分组编辑会丢失。",
+        "ACC Part Group Marker components will be added, updated, removed, or set to Exclude. The preview will refresh after saving; unlisted temporary selections and group edits will be discarded."));
 
       if (!EditorUtility.DisplayDialog(T("保存持久分组", "Save Persistent Groups"),
         preview.ToString(), T("保存", "Save"), T("取消", "Cancel")))
+        return;
+
+      if (!ConfirmDiscardOtherPreviewChanges(outfit))
         return;
 
       int undoGroup = ACCEditorUndo.Begin("Persist ACC part groups");
@@ -662,15 +784,18 @@ namespace UnityBox.AdvancedCostumeController
           var marker = change.Part.GetComponent<ACCPartGroupMarker>();
           if (change.Remove)
           {
-            if (marker != null && marker.Mode == ACCPartControlMode.Group)
+            if (marker != null)
               Undo.DestroyObjectImmediate(marker);
             continue;
           }
-          if (marker != null && marker.Mode == ACCPartControlMode.Exclude) continue;
-          if (marker == null) marker = Undo.AddComponent<ACCPartGroupMarker>(change.Part);
+          if (marker == null)
+            marker = ACCEditorUndo.AddComponent<ACCPartGroupMarker>(change.Part,
+              "Create ACC part group marker");
           Undo.RecordObject(marker, "Configure ACC part group marker");
-          marker.Mode = ACCPartControlMode.Group;
-          marker.GroupName = change.GroupName;
+          marker.Mode = change.Exclude
+            ? ACCPartControlMode.Exclude
+            : ACCPartControlMode.Group;
+          marker.GroupName = change.Exclude ? string.Empty : change.GroupName;
           EditorUtility.SetDirty(marker);
           ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { marker });
         }
@@ -679,7 +804,7 @@ namespace UnityBox.AdvancedCostumeController
       {
         ACCEditorUndo.Complete(undoGroup);
       }
-      RefreshPreview();
+      RefreshPreview(confirmDiscard: false);
       Repaint();
       GUIUtility.ExitGUI();
     }
@@ -706,9 +831,11 @@ namespace UnityBox.AdvancedCostumeController
       bool curPartSel = partSelections[outfit][part];
       bool newPartSel = EditorGUILayout.Toggle(curPartSel, GUILayout.Width(20));
       if (newPartSel != curPartSel)
+      {
         partSelections[outfit][part] = newPartSel;
-      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
-        GUILayout.Width(150));
+        Repaint();
+      }
+      DrawObjectLink(part, FormatPartDisplayName(outfit, part.name), 150);
       EditorGUILayout.LabelField(ColorizeGroupText(source, groupColor),
         GetRichLabelStyle(), GUILayout.Width(100));
       EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(32));
@@ -731,8 +858,7 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);
       DrawDisabledPartToggle();
-      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
-        GUILayout.Width(150));
+      DrawObjectLink(part, FormatPartDisplayName(outfit, part.name), 150);
       EditorGUILayout.LabelField(ColorizeGroupText(source, groupColor),
         GetRichLabelStyle(), GUILayout.Width(100));
       EditorGUILayout.LabelField("", GUILayout.ExpandWidth(true));
@@ -743,6 +869,30 @@ namespace UnityBox.AdvancedCostumeController
     {
       using (new EditorGUI.DisabledScope(true))
         EditorGUILayout.Toggle(false, GUILayout.Width(20));
+    }
+
+    private static void DrawObjectLink(GameObject target, string label, float width)
+    {
+      var content = new GUIContent(label,
+        "点击选择并定位对象 / Click to select and locate this object");
+      if (GUILayout.Button(content, EditorStyles.linkLabel, GUILayout.Width(width)))
+        Utils.SelectAndPingObject(target);
+    }
+
+    private IEnumerable<GameObject> GetOrderedPreviewObjects(
+      IEnumerable<GameObject> objects)
+    {
+      return (objects ?? Enumerable.Empty<GameObject>())
+        .Where(obj => obj != null)
+        .Distinct()
+        .OrderBy(obj => Utils.GetHierarchyPath(config.CostumesRoot, obj),
+          StringComparer.Ordinal);
+    }
+
+    private IEnumerable<GameObject> GetOrderedPreviewParts(OutfitData outfit)
+    {
+      return GetOrderedPreviewObjects((outfit.Parts ?? new List<GameObject>())
+        .Concat(outfit.ExcludedParts ?? new List<GameObject>()));
     }
 
     private Color GetPreviewGroupColor(
@@ -787,15 +937,55 @@ namespace UnityBox.AdvancedCostumeController
 
     private void DrawExcludedPartPreviewRow(OutfitData outfit, GameObject part)
     {
+      bool selected = partSelections[outfit].TryGetValue(part, out var partSelected) &&
+        partSelected;
+      string groupName = partGroupNames[outfit].TryGetValue(part, out var value)
+        ? value.Trim()
+        : "";
+
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);
-      DrawDisabledPartToggle();
-      EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
-        GUILayout.Width(150));
-      EditorGUILayout.LabelField(T("[X] 已排除", "[X] Excluded"), EditorStyles.label,
-        GUILayout.Width(100));
-      EditorGUILayout.LabelField(T("不会生成控制", "No control"), EditorStyles.label,
-        GUILayout.ExpandWidth(true));
+      if (config.EnableParts)
+      {
+        bool newSelected = EditorGUILayout.Toggle(selected, GUILayout.Width(20));
+        if (newSelected != selected)
+        {
+          selected = newSelected;
+          partSelections[outfit][part] = newSelected;
+          if (newSelected && string.IsNullOrEmpty(groupName))
+          {
+            groupName = part.name;
+            partGroupNames[outfit][part] = groupName;
+          }
+          else if (!newSelected)
+          {
+            partGroupNames[outfit][part] = "";
+          }
+          Repaint();
+        }
+      }
+      else
+      {
+        DrawDisabledPartToggle();
+      }
+      DrawObjectLink(part, FormatPartDisplayName(outfit, part.name), 150);
+      if (config.EnableParts && selected)
+      {
+        var groupColor = GetPreviewGroupColor(part, groupName, null, false);
+        EditorGUILayout.LabelField(ColorizeGroupText(
+          $"[SG: {groupName}]", groupColor), GetRichLabelStyle(),
+          GUILayout.Width(100));
+        EditorGUILayout.LabelField(T("分组", "Group"), GUILayout.Width(32));
+        partGroupNames[outfit][part] = EditorGUILayout.TextField(
+          groupName, GUILayout.Width(120));
+      }
+      else
+      {
+        EditorGUILayout.LabelField(T("[X] 已排除", "[X] Excluded"), EditorStyles.label,
+          GUILayout.Width(100));
+        EditorGUILayout.LabelField(T("不会生成控制", "No control"), EditorStyles.label,
+          GUILayout.ExpandWidth(true));
+      }
       EditorGUILayout.EndHorizontal();
     }
 

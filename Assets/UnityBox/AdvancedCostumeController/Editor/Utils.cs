@@ -18,6 +18,58 @@ using VRC.SDK3.Avatars.Components;
 public static class Utils
 {
   /// <summary>
+  /// 选中并定位场景对象。用于 ACC 预览中的对象链接，不改变对象或生成配置。
+  /// </summary>
+  public static void SelectAndPingObject(GameObject target)
+  {
+    if (target == null) return;
+
+    Selection.objects = new UnityEngine.Object[] { target };
+    EditorGUIUtility.PingObject(target);
+    var sceneView = SceneView.lastActiveSceneView ??
+      SceneView.sceneViews.OfType<SceneView>().FirstOrDefault();
+    if (sceneView == null) return;
+
+    sceneView.Focus();
+    if (TryGetObjectBounds(target, out var bounds))
+      sceneView.Frame(bounds, false);
+    else
+      sceneView.FrameSelected();
+  }
+
+  /// <summary>获取对象及其子层级 Renderer 的世界空间包围盒。</summary>
+  public static bool TryGetObjectBounds(GameObject target, out Bounds bounds)
+  {
+    bounds = default;
+    if (target == null) return false;
+
+    bool hasBounds = false;
+    foreach (var renderer in target.GetComponentsInChildren<Renderer>(true))
+    {
+      if (renderer == null) continue;
+      if (!hasBounds)
+      {
+        bounds = renderer.bounds;
+        hasBounds = true;
+      }
+      else
+      {
+        bounds.Encapsulate(renderer.bounds);
+      }
+    }
+    if (hasBounds) return true;
+
+    var transforms = target.GetComponentsInChildren<Transform>(true);
+    if (transforms.Length == 0) return false;
+
+    bounds = new Bounds(transforms[0].position, Vector3.zero);
+    for (int i = 1; i < transforms.Length; i++)
+      bounds.Encapsulate(transforms[i].position);
+    bounds.Expand(Mathf.Max(bounds.size.magnitude * 0.05f, 0.1f));
+    return true;
+  }
+
+  /// <summary>
   /// 检查 Transform 上是否有网格组件
   /// </summary>
   public static bool HasMeshOn(Transform t)
