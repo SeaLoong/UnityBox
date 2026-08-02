@@ -11,6 +11,8 @@ namespace UnityBox.AdvancedCostumeController
   {
       private const string ConvertMenuPath =
         "GameObject/AdvancedCostumeController/转换成服装变体 (Convert to Outfit Variant)";
+      private bool showGlobalReplacements = true;
+      private bool showRendererOverrides = true;
 
       private void OnEnable()
       {
@@ -64,8 +66,8 @@ namespace UnityBox.AdvancedCostumeController
         Localization.DrawInspectorHeader(Localization.Text(
           "ACC 材质变体替换", "ACC Material Variant Override"));
         EditorGUILayout.HelpBox(Localization.Text(
-          "全局规则适合一次替换所有相同材质；精准覆盖只记录特定 Renderer 的差异槽位，并优先于全局规则。",
-          "Global rules replace every matching material. Precise overrides store only differing renderer slots and take priority."),
+          "全局规则按材质匹配；精准覆盖按 Renderer 槽位匹配，精准覆盖优先。",
+          "Global rules match materials; precise overrides match renderer slots and take priority."),
           MessageType.Info);
 
         if (targets.Length > 1)
@@ -118,11 +120,21 @@ namespace UnityBox.AdvancedCostumeController
         if (marker.OutfitBase == null)
         {
           EditorGUILayout.HelpBox(Localization.Text(
-            "请选择服装本体；也可同时选中本体与变体对象后使用 GameObject 右键转换菜单。",
-            "Select an Outfit Base, or select a base and variant together and use the GameObject conversion menu."),
+            "请选择 Outfit Base，或使用 GameObject 转换菜单。",
+            "Select an Outfit Base, or use the GameObject conversion menu."),
             MessageType.Info);
           return;
         }
+
+        if (marker.OutfitBase == marker.gameObject)
+        {
+          EditorGUILayout.HelpBox(Localization.Text(
+            "服装本体不能指向材质变体自身，请选择同级的 Outfit Base。",
+            "Outfit Base cannot reference the material variant itself. Select its sibling Outfit Base."),
+            MessageType.Warning);
+        }
+
+        DrawRuleSummary(marker);
 
         EditorGUILayout.Space();
         DrawGlobalReplacementList(
@@ -142,7 +154,9 @@ namespace UnityBox.AdvancedCostumeController
       private void DrawGlobalReplacementList(string label, string help)
       {
         var property = serializedObject.FindProperty("Replacements");
-        EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+        showGlobalReplacements = EditorGUILayout.Foldout(showGlobalReplacements,
+          $"{label} ({property.arraySize})", true);
+        if (!showGlobalReplacements) return;
         EditorGUILayout.HelpBox(help, MessageType.None);
         for (int i = 0; i < property.arraySize; i++)
         {
@@ -173,7 +187,9 @@ namespace UnityBox.AdvancedCostumeController
       private void DrawRendererOverrideList(string label, string help)
       {
         var property = serializedObject.FindProperty("RendererOverrides");
-        EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+        showRendererOverrides = EditorGUILayout.Foldout(showRendererOverrides,
+          $"{label} ({property.arraySize})", true);
+        if (!showRendererOverrides) return;
         EditorGUILayout.HelpBox(help, MessageType.None);
         for (int i = 0; i < property.arraySize; i++)
         {
@@ -205,6 +221,36 @@ namespace UnityBox.AdvancedCostumeController
           entry.FindPropertyRelative("MaterialSlot").intValue = 0;
           entry.FindPropertyRelative("Source").objectReferenceValue = null;
           entry.FindPropertyRelative("Replacement").objectReferenceValue = null;
+        }
+      }
+
+      private static void DrawRuleSummary(ACCVariantMaterialOverride marker)
+      {
+        int globalCount = marker.Replacements?.Count ?? 0;
+        int preciseCount = marker.RendererOverrides?.Count ?? 0;
+        int totalCount = globalCount + preciseCount;
+        var totalStyle = new GUIStyle(EditorStyles.boldLabel)
+        {
+          alignment = TextAnchor.MiddleRight
+        };
+        totalStyle.normal.textColor = totalCount > 0
+          ? new Color(0.35f, 0.85f, 0.5f)
+          : EditorStyles.label.normal.textColor;
+
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+          EditorGUILayout.BeginHorizontal();
+          EditorGUILayout.LabelField(Localization.Text(
+            "材质替换摘要", "Material Replacement Summary"), EditorStyles.boldLabel);
+          GUILayout.FlexibleSpace();
+          EditorGUILayout.LabelField(Localization.Text(
+            $"{totalCount} 条规则", $"{totalCount} rules"), totalStyle,
+            GUILayout.MinWidth(80));
+          EditorGUILayout.EndHorizontal();
+          EditorGUILayout.LabelField(Localization.Text(
+            $"全局：{globalCount} · 精准槽位：{preciseCount}",
+            $"Global: {globalCount} · Precise slots: {preciseCount}"),
+            EditorStyles.miniLabel);
         }
       }
 

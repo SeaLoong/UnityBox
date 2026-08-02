@@ -111,6 +111,11 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>是否为默认服装</summary>
     public bool IsDefaultOutfit { get; set; }
 
+    /// <summary>
+    /// 用户显式指定的默认本体或变体对象。为空时由生成器回退到本体或第一个已选对象。
+    /// </summary>
+    public GameObject DefaultChoiceObject { get; set; }
+
     /// <summary>本体是否被选中（默认 true，用于生成时过滤未勾选的本体）</summary>
     public bool IsBaseSelected { get; set; } = true;
 

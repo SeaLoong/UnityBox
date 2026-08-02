@@ -11,6 +11,8 @@ ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并�
 5. 可选启用**自动生成菜单图标**。
 6. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
 
+**默认服装或变体**可以直接拖入某套服装本体、对象变体或材质变体。生成时会优先使用指定对象作为普通服装选择和 Mixer 的初始版本；留空时仍按名称关键词和扫描顺序自动选择。
+
 ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其 GameObject 名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；Mixer 启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按场景、Avatar 和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产；关闭**自动生成菜单图标**时会保留该目录下已有的 `MenuIcons` 资产。
 
 ## 配置项
@@ -35,6 +37,8 @@ ACC 优先将服装骨架分支中的 `MA Merge Armature` 视为明确的服装�
 启用后，ACC 会为扫描到的部件生成独立 Toggle。部件可以通过 `ACCPartGroupMarker` 按持久分组组合，也可以使用窗口预览中的临时分组。`Exclude` 标记会排除当前对象或其所在自动部件，不生成部件控制。
 
 在预览中填写临时分组后，可以点击服装预览末尾的**保存预览分组到服装**。确认窗口会列出将新增、更新、移除和跳过的对象；确认后 ACC 使用 Undo 添加、更新或移除场景中的 `ACCPartGroupMarker`，已有 `Exclude` 标记不会被覆盖。预览与现有 Marker 完全一致时按钮保持禁用。
+
+部件预览会为每个分组显示颜色标记：相同分组名使用同色，未分组的自动部件按对象路径分别分配颜色，便于快速检查分组是否一致。
 
 ### 混搭模式
 
@@ -102,7 +106,7 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 - 其他客户端根据同步 Bool 位解码本地 `Int`；
 - `IsLocal` Animator 参数用于区分本地菜单输入和远端位同步；`localOnly=false` 的 Driver 是“本地和远端都可执行”，因此解码状态只有在 `IsLocal=false` 的转移条件满足时才会进入。
 
-压缩会新增同步 Bool 位参数、本地 Int 参数，以及一个由所有有效选择域共用的编码/解码 Animator Layer。预览与生成确认会显示实际 bit 占用、有效选择域数量、压缩 Layer 数量和 Controller 总 Layer 数；参数类型已知，因此只显示最终 bit 总数，不显示冗余的乘法表达式。
+压缩会新增同步 Bool 位参数、本地 Int 参数，以及一个由所有有效选择域共用的编码/解码 Animator Layer。预览区第一行显示 `动画层(N)。主选择(Int/Bool) + 部件(Int/Bool) + 混搭槽位(Int/Bool) = 总 bit`，占用为 0 的分类会省略；全 0 时显示“无同步参数占用”。启用参数压缩后，第二行显示各分类的 `本地 Int → 同步 Bool` 压缩方式，并在存在 local-only 参数时追加 `本地参数(Int + Bool + Float)`；生成确认仍会显示完整的计算明细。
 
 ## 参数占用示例
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
@@ -231,19 +232,32 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 自动选择默认服装
+    /// 选择默认服装组，并保留用户显式指定的本体/变体对象。
     /// </summary>
     public static OutfitData FindDefaultOutfit(List<OutfitData> outfits, GameObject overrideObject)
     {
+      if (outfits == null || outfits.Count == 0) return null;
+
+      foreach (var outfit in outfits)
+      {
+        if (outfit != null) outfit.DefaultChoiceObject = null;
+      }
+
       OutfitData result = null;
 
-      // 优先使用用户指定的默认服装
+      // 优先使用用户指定的默认服装或变体。精确命中变体后，后续主选择和
+      // Mixer 默认槽位都会使用该变体，而不是再次强制回退到 Outfit Base。
       if (overrideObject != null)
       {
-        result = outfits.Find(o =>
-          o.BaseObject == overrideObject ||
-          o.BaseObject.transform.IsChildOf(overrideObject.transform) ||
-          overrideObject.transform.IsChildOf(o.BaseObject.transform));
+        foreach (var outfit in outfits)
+        {
+          var choiceObject = FindOverrideChoiceObject(outfit, overrideObject);
+          if (choiceObject == null) continue;
+
+          outfit.DefaultChoiceObject = choiceObject;
+          result = outfit;
+          break;
+        }
       }
 
       // 按名称关键词匹配
@@ -259,6 +273,26 @@ namespace UnityBox.AdvancedCostumeController
 
       // 兜底：使用第一个
       return result ?? (outfits.Count > 0 ? outfits[0] : null);
+    }
+
+    private static GameObject FindOverrideChoiceObject(
+      OutfitData outfit, GameObject overrideObject)
+    {
+      if (outfit == null || overrideObject == null) return null;
+
+      var choices = new List<GameObject>();
+      if (outfit.BaseObject != null) choices.Add(outfit.BaseObject);
+      if (outfit.Variants != null)
+        choices.AddRange(outfit.Variants.Where(variant => variant != null));
+
+      // 精确命中优先，允许直接把某个变体拖入 Default Outfit 字段。
+      var exact = choices.FirstOrDefault(choice => choice == overrideObject);
+      if (exact != null) return exact;
+
+      // 兼容拖入共同父节点、服装容器或某个本体/变体子节点的用法。
+      return choices.FirstOrDefault(choice =>
+        choice.transform.IsChildOf(overrideObject.transform) ||
+        overrideObject.transform.IsChildOf(choice.transform));
     }
   }
 }

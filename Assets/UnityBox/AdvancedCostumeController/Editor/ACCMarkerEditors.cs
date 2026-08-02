@@ -14,8 +14,8 @@ namespace UnityBox.AdvancedCostumeController
       var marker = (ACCOutfitMarker)target;
       Localization.DrawInspectorHeader(Localization.Text("ACC 服装标记", "ACC Outfit Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
-        "将当前对象明确作为服装根。部件名称格式化会持久保存在此组件，并仅影响自动部件的菜单显示名称。",
-        "Explicitly declares this object as an outfit root. Part name formatting is stored here and changes automatic part menu labels only."),
+        "将当前对象声明为服装根；名称格式化仅影响自动部件的菜单标签。",
+        "Declares this object as an outfit root; name formatting only affects automatic part menu labels."),
         MessageType.Info);
 
       if (targets.Length > 1)
@@ -45,10 +45,7 @@ namespace UnityBox.AdvancedCostumeController
 
       Scanner.CollectParts(marker.transform, out var parts, out var excludedParts, out var controls);
       EditorGUILayout.Space();
-      EditorGUILayout.LabelField(Localization.Text(
-        $"部件预览（可控制：{parts.Count}，已排除：{excludedParts.Count}）",
-        $"Part Preview (controlled: {parts.Count}, excluded: {excludedParts.Count})"),
-        EditorStyles.boldLabel);
+      DrawPartSummary(parts.Count, excludedParts.Count);
 
       if (parts.Count == 0 && excludedParts.Count == 0)
       {
@@ -67,6 +64,32 @@ namespace UnityBox.AdvancedCostumeController
 
         EditorGUILayout.LabelField(Localization.PartSourceLegend(),
           EditorStyles.miniLabel);
+    }
+
+    private static void DrawPartSummary(int controlledCount, int excludedCount)
+    {
+      var countStyle = new GUIStyle(EditorStyles.boldLabel)
+      {
+        alignment = TextAnchor.MiddleRight
+      };
+      countStyle.normal.textColor = controlledCount > 0
+        ? new Color(0.35f, 0.85f, 0.5f)
+        : EditorStyles.label.normal.textColor;
+
+      using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+      {
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField(Localization.Text(
+          "部件扫描摘要", "Part Scan Summary"), EditorStyles.boldLabel);
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.LabelField(Localization.Text(
+          $"{controlledCount} 可控制", $"{controlledCount} controllable"), countStyle,
+          GUILayout.MinWidth(100));
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.LabelField(Localization.Text(
+          $"已排除：{excludedCount}", $"Excluded: {excludedCount}"),
+          EditorStyles.miniLabel);
+      }
     }
 
     private static void DrawPartPreviewRow(
@@ -105,8 +128,8 @@ namespace UnityBox.AdvancedCostumeController
       var marker = (ACCPartGroupMarker)target;
       Localization.DrawInspectorHeader(Localization.Text("ACC 部件控制标记", "ACC Part Control Marker"));
       EditorGUILayout.HelpBox(Localization.Text(
-        "Group 会将同名对象合并为一个开关；Exclude 不会生成当前对象或所在自动部件的 ACC 控制。",
-        "Group combines same-name objects into one toggle. Exclude prevents ACC controls for this object and its containing automatic part."),
+        "Group 合并为一个开关；Exclude 排除当前对象及其自动部件控制。",
+        "Group combines objects into one toggle; Exclude removes this object and its automatic part from ACC control."),
         MessageType.Info);
 
       if (targets.Length > 1)
@@ -128,9 +151,22 @@ namespace UnityBox.AdvancedCostumeController
 
       var groupNameProp = serializedObject.FindProperty("GroupName");
       if ((ACCPartControlMode)modeIndex == ACCPartControlMode.Group)
+      {
         EditorGUILayout.PropertyField(groupNameProp, new GUIContent(Localization.Text("分组名称", "Group Name")));
+        string effectiveName = string.IsNullOrWhiteSpace(groupNameProp.stringValue)
+          ? marker.gameObject.name
+          : groupNameProp.stringValue.Trim();
+        EditorGUILayout.LabelField(Localization.Text(
+          "有效分组名称", "Effective Group Name"), effectiveName);
+      }
       else
+      {
         groupNameProp.stringValue = string.Empty;
+        EditorGUILayout.HelpBox(Localization.Text(
+          "当前对象及其所在自动部件不会生成 ACC 控制。",
+          "This object and its containing automatic part will not receive ACC control."),
+          MessageType.Warning);
+      }
 
       serializedObject.ApplyModifiedProperties();
     }

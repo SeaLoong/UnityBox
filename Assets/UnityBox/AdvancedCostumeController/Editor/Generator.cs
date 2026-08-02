@@ -14,6 +14,15 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public class Generator
   {
+    /// <summary>VRChat 同步 Int 参数的位成本。</summary>
+    public const int IntParameterBits = 8;
+
+    /// <summary>VRChat 同步 Bool 参数的位成本。</summary>
+    public const int BoolParameterBits = 1;
+
+    /// <summary>VRChat Avatar Parameters 的同步预算上限。</summary>
+    public const int MaxParameterBits = 256;
+
     private readonly ACCConfig config;
     private readonly AnimationBuilder animBuilder;
     private readonly List<MenuIconRequest> menuIconRequests = new List<MenuIconRequest>();
@@ -137,7 +146,8 @@ namespace UnityBox.AdvancedCostumeController
             T("生成菜单图标…", "Generating menu icons…"), 0.9f);
           int iconCount = MenuIconGenerator.Generate(costumesRoot, menuRoot,
             resolvedFolder, menuIconRequests);
-          Debug.Log($"[ACC] Generated {iconCount} menu icons.");
+          Debug.Log(T($"[ACC] 已生成 {iconCount} 个菜单图标。",
+            $"[ACC] Generated {iconCount} menu icons."));
         }
 
         // 配置 MergeAnimator
@@ -152,12 +162,19 @@ namespace UnityBox.AdvancedCostumeController
         EditorUtility.SetDirty(mergeAnimator);
         Undo.CollapseUndoOperations(undoGroup);
 
-        Debug.Log($"[ACC] 生成完成: {selectedOutfits.Count} 个服装, " +
-                  $"{selectedOutfits.Sum(o => o.Parts.Count)} 个部件" +
-                  (config.EnableCustomMixer ? ", 已启用混搭模式" : "") +
-                  (generatedMergeArmatures > 0
-                    ? $", 已配置 {generatedMergeArmatures} 个 MA Merge Armature"
-                    : ""));
+        string completionMessage = T(
+          $"[ACC] 生成完成：{selectedOutfits.Count} 个服装，{selectedOutfits.Sum(o => o.Parts.Count)} 个部件" +
+          (config.EnableCustomMixer ? "，已启用混搭模式" : "") +
+          (generatedMergeArmatures > 0
+            ? $"，已配置 {generatedMergeArmatures} 个 MA Merge Armature"
+            : ""),
+          $"[ACC] Generation complete: {selectedOutfits.Count} outfits, " +
+          $"{selectedOutfits.Sum(o => o.Parts.Count)} parts" +
+          (config.EnableCustomMixer ? ", Custom Mixer enabled" : "") +
+          (generatedMergeArmatures > 0
+            ? $", configured {generatedMergeArmatures} MA Merge Armature components"
+            : ""));
+        Debug.Log(completionMessage);
       }
       finally
       {
@@ -403,6 +420,9 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap)
     {
       if (defaultOutfit == null) return null;
+      if (defaultOutfit.DefaultChoiceObject != null &&
+          outfitIndexMap.ContainsKey(defaultOutfit.DefaultChoiceObject))
+        return defaultOutfit.DefaultChoiceObject;
       if (outfitIndexMap.ContainsKey(defaultOutfit.BaseObject))
         return defaultOutfit.BaseObject;
 
@@ -540,8 +560,11 @@ namespace UnityBox.AdvancedCostumeController
           $"- Controller: existing file will be overwritten {controllerPath}")
         : T($"- Controller：将新建 {controllerPath}",
           $"- Controller: new file will be created {controllerPath}"));
-      sb.AppendLine(T($"- 默认服装：{defaultOutfit?.Name ?? "未设置"}",
-        $"- Default outfit: {defaultOutfit?.Name ?? "Not set"}"));
+      string defaultChoiceName = defaultOutfit?.DefaultChoiceObject != null
+        ? defaultOutfit.DefaultChoiceObject.name
+        : defaultOutfit?.Name;
+      sb.AppendLine(T($"- 默认服装：{defaultChoiceName ?? "未设置"}",
+        $"- Default outfit: {defaultChoiceName ?? "Not set"}"));
       if (Utils.FindDirectChild(config.CostumesRoot.transform, ACCConfig.MenuObjectName) != null)
       {
         sb.AppendLine(T("- 菜单对象：复用现有 ACC_Menu 的展示属性（如图标）；控制字段和子菜单会重建，不会复用旧参数。",
@@ -572,54 +595,196 @@ namespace UnityBox.AdvancedCostumeController
         T("继续", "Continue"), T("取消", "Cancel"));
     }
 
-    /// <summary>
-    /// 估算 VRChat 参数位占用。压缩模式仅同步二进制 Bool，菜单 Int 保持本地。
-    /// </summary>
-    public static string CountParameterBits(ACCConfig config, List<OutfitData> outfits,
-      System.Func<string, string, string> loc)
+    /// <summary>一类选择域在 VRChat 同步预算中的参数占用。</summary>
+    public sealed class ParameterUsageSection
     {
-      const int intBits = 8;
+      public int IntCount { get; internal set; }
+      public int BoolCount { get; internal set; }
+      public int LocalIntCount { get; internal set; }
+      public int CompressedIntCount { get; internal set; }
+      public int CompressedBoolCount { get; internal set; }
+
+      public int TotalBits => IntCount * IntParameterBits + BoolCount * BoolParameterBits;
+
+      public bool HasAny => IntCount > 0 || BoolCount > 0;
+
+      public bool HasCompression => CompressedIntCount > 0 && CompressedBoolCount > 0;
+    }
+
+    /// <summary>
+    /// 不计入 VRChat 同步 bit 的 local-only 参数。类型字段保留 Int、Bool、Float，
+    /// 以便不同本地参数来源统一展示；Animator 内部 Float 和 IsLocal 不计入此项。
+    /// </summary>
+    public sealed class LocalParameterUsage
+    {
+      public int IntCount { get; internal set; }
+      public int BoolCount { get; internal set; }
+      public int FloatCount { get; internal set; }
+
+      public bool HasAny => IntCount > 0 || BoolCount > 0 || FloatCount > 0;
+    }
+
+    /// <summary>VRChat 同步参数的类型与位占用统计。</summary>
+    public sealed class ParameterUsageSummary
+    {
+      /// <summary>主服装选择域。</summary>
+      public ParameterUsageSection Main { get; } = new ParameterUsageSection();
+
+      /// <summary>普通部件控制域。</summary>
+      public ParameterUsageSection Parts { get; } = new ParameterUsageSection();
+
+      /// <summary>Mixer 部件槽位域。</summary>
+      public ParameterUsageSection Mixer { get; } = new ParameterUsageSection();
+
+      /// <summary>不计入同步预算的本地参数。</summary>
+      public LocalParameterUsage Local { get; } = new LocalParameterUsage();
+
+      /// <summary>同步 Int 参数数量；每个参数占 8 bit。</summary>
+      public int IntCount { get; internal set; }
+
+      /// <summary>同步 Bool 参数数量；每个参数占 1 bit。</summary>
+      public int BoolCount { get; internal set; }
+
+      /// <summary>本地辅助 Int 数量，不计入 VRChat 同步预算。</summary>
+      public int LocalIntCount => Local.IntCount;
+
+      /// <summary>本地 Bool 数量，不计入 VRChat 同步预算。</summary>
+      public int LocalBoolCount => Local.BoolCount;
+
+      /// <summary>本地 Float 数量，不计入 VRChat 同步预算。</summary>
+      public int LocalFloatCount => Local.FloatCount;
+
+      public int TotalBits => IntCount * IntParameterBits + BoolCount * BoolParameterBits;
+
+      public string TypeBreakdown => $"{IntCount} Int + {BoolCount} Bool";
+
+      public string GetSectionBreakdown(System.Func<string, string, string> loc)
+      {
+        var sections = new List<string>();
+        AddSectionText(sections, Main, "主选择", "main choice", loc);
+        AddSectionText(sections, Parts, "部件", "parts", loc);
+        AddSectionText(sections, Mixer, "混搭槽位", "mixer slots", loc);
+        return string.Join(" + ", sections);
+      }
+
+      private static void AddSectionText(
+        List<string> sections,
+        ParameterUsageSection section,
+        string chineseLabel,
+        string englishLabel,
+        System.Func<string, string, string> loc)
+      {
+        if (!section.HasAny) return;
+        var types = new List<string>();
+        if (section.IntCount > 0)
+          types.Add($"{section.IntCount} Int");
+        if (section.BoolCount > 0)
+          types.Add($"{section.BoolCount} Bool");
+        string typeText = types.Count > 0 ? string.Join(" + ", types) : "0";
+        sections.Add(loc($"{chineseLabel}({typeText})",
+          $"{englishLabel}({typeText})"));
+      }
+    }
+
+    /// <summary>
+    /// 统计生成结果实际使用的同步参数类型。两值域使用 Bool，多值未压缩域使用
+    /// Int，多值压缩域只将编码所需的 Bool 位计入同步预算。
+    /// </summary>
+    public static ParameterUsageSummary CalculateParameterUsage(
+      ACCConfig config, List<OutfitData> outfits)
+    {
+      var summary = new ParameterUsageSummary();
+      if (config == null || outfits == null) return summary;
 
       int outfitChoices = outfits.SelectMany(outfit => outfit.GetAllObjects()).Distinct().Count();
       int mainChoices = outfitChoices + (config.EnableCustomMixer ? 1 : 0);
-      var mainLayout = new ChoiceParameterLayout(mainChoices, config.EnableParameterCompression);
-      int partBits = 0;
-      int mixerSlotBits = 0;
-      int GetSynchronizedBits(ChoiceParameterLayout layout)
-      {
-        if (!layout.RequiresSynchronization) return 0;
-        if (layout.UsesBoolean) return 1;
-        return layout.UsesCompression ? layout.BitCount : intBits;
-      }
+      AddParameterUsage(summary, summary.Main,
+        new ChoiceParameterLayout(mainChoices, config.EnableParameterCompression));
 
       foreach (var outfit in outfits)
       {
         if (config.EnableParts)
-          partBits += outfit.GetPartControls().Count;
-
-        if (config.EnableCustomMixer && IsFirstMixerOutfit(outfit, outfits))
         {
-          foreach (var slot in outfit.GetMixerPartSlots())
-            mixerSlotBits += GetSynchronizedBits(new ChoiceParameterLayout(
-              slot.Candidates.Count + 1, config.EnableParameterCompression));
+          foreach (var control in outfit.GetPartControls())
+            AddParameterUsage(summary, summary.Parts,
+              new ChoiceParameterLayout(2, config.EnableParameterCompression));
         }
+
+        if (!config.EnableCustomMixer || !IsFirstMixerOutfit(outfit, outfits))
+          continue;
+
+        foreach (var slot in outfit.GetMixerPartSlots())
+          AddParameterUsage(summary, summary.Mixer,
+            new ChoiceParameterLayout(slot.Candidates.Count + 1,
+              config.EnableParameterCompression));
       }
 
-      int mainBits = GetSynchronizedBits(mainLayout);
-      int totalBits = mainBits + partBits + mixerSlotBits;
-      var parts = new System.Collections.Generic.List<string>();
-      parts.Add(!mainLayout.RequiresSynchronization
-        ? loc("主选择固定值 0bit", "fixed main choice 0bit")
-        : mainLayout.UsesBoolean
-          ? loc("主选择 Bool", "main Bool")
-        : mainLayout.UsesCompression
-          ? $"{loc("主选择压缩 Bool", "compressed main Bool")} {mainBits}bit"
-          : $"{loc("主 Int", "main Int")} {mainBits}bit");
-      if (partBits > 0)
-        parts.Add($"{loc("部件 Bool", "part Bool")} {partBits}bit");
-      if (mixerSlotBits > 0)
-        parts.Add($"{loc("混搭槽位", "mixer slots")} {mixerSlotBits}bit");
-      return $"{totalBits}bit ({string.Join(", ", parts)})";
+      return summary;
+    }
+
+    private static void AddParameterUsage(
+      ParameterUsageSummary summary,
+      ParameterUsageSection section,
+      ChoiceParameterLayout layout)
+    {
+      if (!layout.RequiresSynchronization)
+      {
+        summary.Local.IntCount++;
+        section.LocalIntCount++;
+        return;
+      }
+
+      if (layout.UsesBoolean)
+      {
+        summary.BoolCount++;
+        section.BoolCount++;
+        return;
+      }
+
+      if (layout.UsesCompression)
+      {
+        summary.Local.IntCount++;
+        section.LocalIntCount++;
+        summary.BoolCount += layout.BitCount;
+        section.BoolCount += layout.BitCount;
+        section.CompressedIntCount++;
+        section.CompressedBoolCount += layout.BitCount;
+        return;
+      }
+
+      summary.IntCount++;
+      section.IntCount++;
+    }
+
+    /// <summary>
+    /// 估算 VRChat 参数位占用，并附带同步参数类型和计算式。
+    /// </summary>
+    public static string CountParameterBits(ACCConfig config, List<OutfitData> outfits,
+      System.Func<string, string, string> loc)
+    {
+      var usage = CalculateParameterUsage(config, outfits);
+      string calculation = loc(
+        $"计算：{usage.IntCount} Int × {IntParameterBits} + {usage.BoolCount} Bool × {BoolParameterBits} = {usage.TotalBits}bit",
+        $"Calculation: {usage.IntCount} Int × {IntParameterBits} + {usage.BoolCount} Bool × {BoolParameterBits} = {usage.TotalBits}bit");
+      string sectionSummary = usage.GetSectionBreakdown(loc);
+      var details = new List<string> { calculation };
+      if (usage.Local.HasAny)
+      {
+        details.Add(loc(
+          $"本地参数({FormatLocalParameterTypes(usage.Local)})",
+          $"Local parameters ({FormatLocalParameterTypes(usage.Local)})"));
+      }
+      string usagePrefix = string.IsNullOrEmpty(sectionSummary) ? "0" : sectionSummary;
+      return $"{usagePrefix} = {usage.TotalBits} Bit ({string.Join(loc("；", "; "), details)})";
+    }
+
+    private static string FormatLocalParameterTypes(LocalParameterUsage local)
+    {
+      var types = new List<string>();
+      if (local.IntCount > 0) types.Add($"{local.IntCount} Int");
+      if (local.BoolCount > 0) types.Add($"{local.BoolCount} Bool");
+      if (local.FloatCount > 0) types.Add($"{local.FloatCount} Float");
+      return string.Join(" + ", types);
     }
 
     /// <summary>返回压缩模式实际新增的共享编码/解码 Animator Layer 数。</summary>
@@ -675,8 +840,8 @@ namespace UnityBox.AdvancedCostumeController
       int domainCount = CountCompressedChoiceDomains(config, outfits);
       int totalLayerCount = CountGeneratedAnimatorLayers(config, outfits);
       return loc(
-        $"参数压缩：{domainCount} 个有效选择域共用 {layerCount} 个编码/解码 Animator Layer；Controller 总计 {totalLayerCount} 个 Layer，并新增对应的本地 Int 与同步 Bool 位参数。",
-        $"Parameter compression: {domainCount} active choice domains share {layerCount} encode/decode Animator Layer; the Controller has {totalLayerCount} Layers total, plus the corresponding local Int and synced Bool-bit parameters.");
+        $"参数压缩：{domainCount} 个选择域，共用 {layerCount} 个编码/解码 Layer；Controller 共 {totalLayerCount} 个 Layer。",
+        $"Compression: {domainCount} choice domains share {layerCount} encode/decode Layers; the Controller has {totalLayerCount} Layers.");
     }
 
     public static string GetAnimatorLayerSummary(ACCConfig config, List<OutfitData> outfits,

@@ -132,7 +132,7 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 | **Costumes Root / 服装根节点** | 必填。选择本次 ACC 的扫描和动画根。 |
 | **Root Menu Name / 根菜单名称** | VRChat 菜单中根节点的显示名；为空时默认与参数前缀一致。 |
 | **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主服装选择参数、Layer 前缀、Controller 名和输出目录命名空间；两值主选择可使用 Bool。为空时自动回退到根对象名称。 |
-| **Default Outfit / 默认服装** | 可选。指定初始服装；未指定时按名称关键词匹配，最后回退到第一个服装。 |
+| **Default Outfit / 默认服装** | 可选。可指定服装本体、对象变体或材质变体作为初始选择；未指定时按名称关键词匹配，最后回退到第一个服装。 |
 | **Enable Parts Control / 启用部件控制** | 启用普通模式的部件开关。 |
 | **Enable Custom Mixer / 启用混搭模式** | 仅在已启用 Parts Control 时可选；启用独立的混搭参数和动画层。 |
 | **Custom Mixer Name / 混搭菜单名称** | 菜单中混搭入口的显示名；留空时默认显示「混搭」/「Custom Mix」（按语言），参数路径固定使用 `Mixer` 前缀。 |
@@ -256,7 +256,7 @@ ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未�
 - **`[SG: 名称]`**：当前 ACC 窗口中临时填写的分组；
 - **`[X]`**：由 `Exclude` Marker 排除，不会生成菜单、参数或动画。
 
-预览标题会统计可控制与已排除的部件数量。每个可控制卡片仍可勾选是否参与本次生成；参数路径显示在卡片最后一行，便于长路径换行阅读。
+预览标题会统计可控制与已排除的部件数量。每个可控制卡片仍可勾选是否参与本次生成；参数路径显示在卡片最后一行，便于长路径换行阅读。分组标识带有颜色：相同分组名使用同色，自动部件按对象路径分别分配颜色。
 
 ### 临时方式：预览中的“分组 / Group”文本框
 
@@ -326,9 +326,11 @@ ACC 将变体组的共同父对象作为菜单节点，并生成各变体的选�
 
 优先级如下：
 
-1. `Default Outfit` 显式指定的对象；
+1. `Default Outfit` 显式指定的对象；如果指定的是某个变体，该变体会作为普通服装参数的初始值，并作为 Mixer 默认服装组的初始候选；
 2. 名称或路径含 `origin`、`original`、`default`、`base`、`vanilla`、`standard`、`normal` 的服装；
 3. 扫描顺序中的第一个服装。
+
+`Default Outfit` 支持直接拖入 Outfit Base、对象变体或 `ACCVariantMaterialOverride` 材质变体。指定对象必须在本次预览中保持勾选；如果指定变体未被选中，它不会进入生成，ACC 会按名称关键词和扫描顺序执行普通默认选择回退。
 
 <a id="acc-variant-material-override"></a>
 
@@ -533,7 +535,7 @@ Hair/Parts Control
 Hair/Parameter Compression（启用压缩时）
 ```
 
-头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。ACC 主面板预览区底部会显示实时的 VRChat 参数位占用估算（Int 8bit、Bool 1bit）。
+头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。ACC 主面板预览区底部第一行显示 `动画层(N)。主选择(Int/Bool) + 部件(Int/Bool) + 混搭槽位(Int/Bool) = 总 bit`，占用为 0 的分类会省略；全 0 时显示“无同步参数占用”。启用参数压缩后，第二行显示各分类的 `本地 Int → 同步 Bool` 压缩方式，并在存在 local-only 参数时追加 `本地参数(Int + Bool + Float)`；生成确认窗口会继续显示完整参数明细。
 
 ## 重新生成与清理规则
 
@@ -601,7 +603,7 @@ Hair/Parameter Compression（启用压缩时）
 
 ### VRChat 参数占用超过限制
 
-ACC 主面板的预览区底部和生成前摘要会显示估算的参数位占用。Int 参数占用 8 bits，Bool 参数占用 1 bit，VRChat 总上限为 256 bits。如超出限制，可减少部件或分组数量、关闭混搭模式等方式降低占用。
+ACC 主面板的预览区底部和生成前摘要会显示估算的参数位占用及计算式。Int 参数占用 8 bits，Bool 参数占用 1 bit，VRChat 总上限为 256 bits。如超出限制，可减少部件或分组数量、关闭混搭模式等方式降低占用。
 
 ## 开发结构
 
