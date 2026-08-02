@@ -39,6 +39,29 @@ namespace UnityBox.AdvancedCostumeController
       public GameObject CloneRoot;
     }
 
+    internal static void AddRequest(
+      ACCConfig config,
+      IList<MenuIconRequest> requests,
+      GameObject menuNode,
+      IEnumerable<GameObject> targets,
+      string stableKey,
+      ACCVariantMaterialOverride materialVariant = null,
+      bool useSharedOutfitFraming = false)
+    {
+      if (config == null || !config.AutoGenerateMenuIcons || requests == null || menuNode == null)
+        return;
+
+      requests.Add(new MenuIconRequest
+      {
+        MenuNode = menuNode,
+        Targets = targets?.Where(target => target != null).Distinct().ToList()
+          ?? new List<GameObject>(),
+        StableKey = stableKey,
+        MaterialVariant = materialVariant,
+        UseSharedOutfitFraming = useSharedOutfitFraming
+      });
+    }
+
     public static int Generate(
       GameObject costumesRoot,
       GameObject menuRoot,
@@ -151,13 +174,8 @@ namespace UnityBox.AdvancedCostumeController
           string assetPath = Utils.CombineAssetPath(iconFolder, safeKey + ".png");
           Debug.Log($"[ACC/Icon] Direct renderer capture: {request.StableKey}; " +
             $"layer={CaptureLayer}, boundsCenter={bounds.center}, boundsSize={bounds.size}");
-          if (!RenderIsolatedOriginalRenderers(camera, visibleRenderers, assetPath,
-            request.StableKey))
-          {
-            Debug.LogWarning($"[ACC] Menu icon skipped (transparent capture): {request.StableKey}; " +
-              $"visible renderers: {visibleRenderers.Count}");
-            continue;
-          }
+          RenderIsolatedOriginalRenderers(camera, visibleRenderers, assetPath,
+            request.StableKey);
           ConfigureTextureImporter(assetPath);
           var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
           var menuItem = request.MenuNode.GetComponent<ModularAvatarMenuItem>();
@@ -165,6 +183,7 @@ namespace UnityBox.AdvancedCostumeController
           Undo.RecordObject(menuItem, "Assign ACC generated menu icon");
           menuItem.PortableControl.Icon = texture;
           EditorUtility.SetDirty(menuItem);
+          ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { menuItem });
           generatedNodes.Add(request.MenuNode);
           generated++;
         }
@@ -431,7 +450,7 @@ namespace UnityBox.AdvancedCostumeController
       Physics.SyncTransforms();
     }
 
-    private static bool RenderIsolatedOriginalRenderers(
+    private static void RenderIsolatedOriginalRenderers(
       Camera camera, IReadOnlyList<Renderer> renderers, string assetPath,
       string stableKey)
     {
@@ -450,8 +469,8 @@ namespace UnityBox.AdvancedCostumeController
         // First use the renderer's real bounds. If its imported AABB is stale,
         // retry with a large local bound without changing the camera framing.
         bool hasPixels;
-        if (!RenderPng(camera, assetPath, out hasPixels)) return false;
-        if (hasPixels) return true;
+        RenderPng(camera, assetPath, out hasPixels);
+        if (hasPixels) return;
 
         foreach (var renderer in renderers)
         {
@@ -459,10 +478,9 @@ namespace UnityBox.AdvancedCostumeController
             skinned.localBounds = new Bounds(Vector3.zero, Vector3.one * 100000f);
         }
         Physics.SyncTransforms();
-        bool captured = RenderPng(camera, assetPath, out hasPixels);
-        if (captured && hasPixels)
+        RenderPng(camera, assetPath, out hasPixels);
+        if (hasPixels)
           Debug.Log($"[ACC/Icon] Original skinned renderer retry succeeded: {stableKey}");
-        return captured;
       }
       finally
       {
@@ -659,7 +677,7 @@ namespace UnityBox.AdvancedCostumeController
       yield return new Vector3(max.x, max.y, max.z);
     }
 
-    private static bool RenderPng(
+    private static void RenderPng(
       Camera camera, string assetPath, out bool hasVisiblePixels)
     {
       var rt = RenderTexture.GetTemporary(IconSize, IconSize, 24,
@@ -692,7 +710,6 @@ namespace UnityBox.AdvancedCostumeController
         RenderTexture.ReleaseTemporary(rt);
       }
       AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
-      return true;
     }
 
     private static void ConfigureTextureImporter(string assetPath)
@@ -719,12 +736,13 @@ namespace UnityBox.AdvancedCostumeController
       }
       var item = node.GetComponent<ModularAvatarMenuItem>();
       if (item == null) return descendant;
-        if (!generatedNodes.Contains(node) &&
-          !Utils.HasUsableMenuIcon(item) && descendant != null)
+      if (!generatedNodes.Contains(node) &&
+        !Utils.HasUsableMenuIcon(item) && descendant != null)
       {
         Undo.RecordObject(item, "Assign inherited ACC menu icon");
         item.PortableControl.Icon = descendant;
         EditorUtility.SetDirty(item);
+        ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { item });
       }
       return item.PortableControl.Icon ?? descendant;
     }
@@ -738,6 +756,7 @@ namespace UnityBox.AdvancedCostumeController
         Undo.RecordObject(item, "Replace ACC menu icon");
         item.PortableControl.Icon = null;
         EditorUtility.SetDirty(item);
+        ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { item });
       }
     }
 

@@ -155,7 +155,6 @@ namespace UnityBox.AdvancedCostumeController
     /// </summary>
     public List<MixerPartSlot> GetMixerPartSlots()
     {
-      var slots = new Dictionary<string, MixerPartSlot>();
       var orderedSlots = new List<MixerPartSlot>();
       var variantDataList = VariantPartData ?? new List<VariantPartData>();
       var baseData = variantDataList.FirstOrDefault(item => item.VariantObject == BaseObject);
@@ -207,7 +206,6 @@ namespace UnityBox.AdvancedCostumeController
       {
         string key = definition.Key;
         var slot = new MixerPartSlot { Key = key, Name = definition.Name };
-        slots.Add(key, slot);
         orderedSlots.Add(slot);
 
         if (baseData != null && baseData.PartControls != null)
@@ -358,7 +356,7 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 获取实际的生成目录（在 GeneratedFolder 后追加菜单名称和命名空间），
+    /// 获取实际的生成目录（在 GeneratedFolder 后追加场景、Avatar 和命名空间），
     /// 确保不同 ACC 实例的输出互不覆盖。
     /// </summary>
     public string GetResolvedGeneratedFolder()

@@ -58,7 +58,7 @@ namespace UnityBox.AdvancedCostumeController
         .Where(target => target != null)
         .Distinct()
         .ToList();
-      AddIconRequest(config, menuIconRequests, mixerSubmenu, allOutfitTargets,
+      MenuIconGenerator.AddRequest(config, menuIconRequests, mixerSubmenu, allOutfitTargets,
         "Mixer_AllOutfits", useSharedOutfitFraming: true);
       // 已处理的服装组
       var processedOutfitObjects = new HashSet<GameObject>();
@@ -72,10 +72,11 @@ namespace UnityBox.AdvancedCostumeController
         if (slots.Count == 0) continue;
 
         // 创建服装组菜单层级
-        string outfitRelPath = Utils.GetRelativePath(costumesRoot, outfit.OutfitObject);
-        var curMenu = Utils.EnsureSubmenuPath(mixerSubmenu, outfitRelPath, menuPresentation,
-          Utils.MixerPathSemanticKeyPrefix);
-        AddIconRequest(config, menuIconRequests, curMenu,
+        var outfitPathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
+        string outfitRelPath = string.Join("/", outfitPathSegments);
+        var curMenu = Utils.EnsureSubmenuPathSegments(mixerSubmenu, outfitPathSegments,
+          menuPresentation, Utils.MixerPathSemanticKeyPrefix);
+        MenuIconGenerator.AddRequest(config, menuIconRequests, curMenu,
           new[] { outfit.BaseObject },
           "Mixer_Group_" + outfitRelPath, useSharedOutfitFraming: true);
 
@@ -85,9 +86,10 @@ namespace UnityBox.AdvancedCostumeController
         {
           var variantMenu = Utils.FindOrCreateChild(curMenu, variant.name);
           Utils.EnsureSubmenuOnNode(variantMenu, presentation: menuPresentation,
-            semanticKey: Utils.GetMixerPathSemanticKey(outfitRelPath, variant.name));
+            semanticKey: Utils.GetMixerPathSemanticKeySegments(
+              outfitPathSegments.Concat(new[] { variant.name })));
           var variantMarker = variant.GetComponent<ACCVariantMaterialOverride>();
-          AddIconRequest(config, menuIconRequests, variantMenu,
+          MenuIconGenerator.AddRequest(config, menuIconRequests, variantMenu,
             variantMarker != null && variantMarker.OutfitBase != null
               ? new[] { variantMarker.OutfitBase }
               : new[] { variant },
@@ -111,14 +113,11 @@ namespace UnityBox.AdvancedCostumeController
             var candidateNode = Utils.FindOrCreateUniqueChild(variantMenu, slot.Name);
             var candidateMi = Utils.CreateMenuItem(candidateNode);
             Undo.RecordObject(candidateMi, "Configure mixer part candidate");
-            Utils.ConfigureAsToggle(candidateMi);
-            Generator.ConfigureChoiceMenuItem(candidateMi, slotParamName,
+            Generator.ConfigurePersistentChoiceMenuItem(candidateMi, slotParamName,
               slotLayout, candidateIndex + 1);
             candidateMi.isDefault = candidateIndex + 1 == slotDefaultValue;
-            candidateMi.isSaved = true;
-            candidateMi.isSynced = slotLayout.RequiresSynchronization &&
-              !slotLayout.UsesCompression;
             Utils.ApplyMenuPresentation(menuPresentation, candidateNode, candidateMi, "");
+            ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { candidateMi });
 
             var iconTargets = slot.Candidates[candidateIndex].Control?.Parts
               ?.Where(part => part != null)
@@ -127,7 +126,7 @@ namespace UnityBox.AdvancedCostumeController
               ?? new List<GameObject>();
             string partStableKey = "Mixer_Part_" + outfitRelPath + "_" +
               variant.name + "_" + slot.Key;
-            AddIconRequest(config, menuIconRequests, candidateNode, iconTargets,
+            MenuIconGenerator.AddRequest(config, menuIconRequests, candidateNode, iconTargets,
               partStableKey, variantMarker);
           }
         }
@@ -139,14 +138,11 @@ namespace UnityBox.AdvancedCostumeController
       enableNode.transform.SetAsFirstSibling();
       var enableMi = Utils.CreateMenuItem(enableNode);
       Undo.RecordObject(enableMi, "Configure mixer toggle");
-      // The mixer entry is a persistent state; Button would only apply while held.
-      Utils.ConfigureAsToggle(enableMi);
-      Generator.ConfigureChoiceMenuItem(enableMi, mainParameterName, mainLayout, customMixerValue);
-      enableMi.isSaved = true;
-      enableMi.isSynced = mainLayout.RequiresSynchronization &&
-        !mainLayout.UsesCompression;
+      Generator.ConfigurePersistentChoiceMenuItem(enableMi, mainParameterName,
+        mainLayout, customMixerValue);
       Utils.ApplyMenuPresentation(menuPresentation, enableNode, enableMi, "");
-      AddIconRequest(config, menuIconRequests, enableNode, allOutfitTargets,
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { enableMi });
+      MenuIconGenerator.AddRequest(config, menuIconRequests, enableNode, allOutfitTargets,
         "Mixer_AllOutfits", useSharedOutfitFraming: true);
     }
 
@@ -157,27 +153,6 @@ namespace UnityBox.AdvancedCostumeController
       string groupPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
       string raw = ACCConfig.MixerParamPrefix + "/" + groupPath + "/" + slot.Key;
       return Utils.BuildParamName(config.MainParameterName, raw);
-    }
-
-    private static void AddIconRequest(
-      ACCConfig config,
-      List<MenuIconRequest> requests,
-      GameObject menuNode,
-      IEnumerable<GameObject> targets,
-      string stableKey,
-      ACCVariantMaterialOverride materialVariant = null,
-      bool useSharedOutfitFraming = false)
-    {
-      if (!config.AutoGenerateMenuIcons || requests == null || menuNode == null) return;
-      requests.Add(new MenuIconRequest
-      {
-        MenuNode = menuNode,
-        Targets = targets?.Where(target => target != null).Distinct().ToList()
-          ?? new List<GameObject>(),
-        StableKey = stableKey,
-        MaterialVariant = materialVariant,
-        UseSharedOutfitFraming = useSharedOutfitFraming
-      });
     }
 
   }

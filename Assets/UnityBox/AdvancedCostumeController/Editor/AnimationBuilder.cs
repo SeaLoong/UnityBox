@@ -91,7 +91,7 @@ namespace UnityBox.AdvancedCostumeController
       // 创建部件相关层
       if (config.EnableParts)
       {
-          CreatePartsControlLayer(controller, outfits);
+        CreatePartsControlLayer(controller, outfits);
       }
 
       AssetDatabase.SaveAssets();
@@ -521,13 +521,14 @@ namespace UnityBox.AdvancedCostumeController
       IEnumerable<OutfitData> outfits,
       GameObject activeObject)
     {
-      foreach (var marker in outfits
+      var materialVariantBases = outfits
         .SelectMany(outfit => outfit.GetAllObjects())
         .Select(obj => obj.GetComponent<ACCVariantMaterialOverride>())
-        .Where(marker => marker != null && marker.OutfitBase != null))
-      {
-        WriteRendererMaterials(clip, marker.OutfitBase, null);
-      }
+        .Where(marker => marker != null && marker.OutfitBase != null)
+        .Select(marker => marker.OutfitBase)
+        .Distinct();
+      foreach (var outfitBase in materialVariantBases)
+        WriteRendererMaterials(clip, outfitBase, null);
 
       var activeMarker = activeObject != null
         ? activeObject.GetComponent<ACCVariantMaterialOverride>()
@@ -779,17 +780,6 @@ namespace UnityBox.AdvancedCostumeController
       if (control.IsGroup)
         return "Groups/" + control.Name;
       return "Parts/" + Utils.GetRelativePath(outfit.BaseObject, control.Parts[0]);
-    }
-
-    private static int ResolveDefaultIndex(OutfitData defaultOutfit,
-      Dictionary<GameObject, int> outfitIndexMap)
-    {
-      if (defaultOutfit == null) return 0;
-      return defaultOutfit.GetAllObjects()
-        .Where(outfitIndexMap.ContainsKey)
-        .Select(obj => outfitIndexMap[obj])
-        .DefaultIfEmpty(0)
-        .First();
     }
 
     private static void AddChoiceParameters(AnimatorController controller, string baseParameterName,

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-08-02
+
+### Fixed
+
+- 修复 ACC 标记组件 Inspector 的 Undo 可能与刚添加组件合并的问题；修改 `ACCPartGroupMarker` 的 `Mode` 或 `Group Name` 后，Undo 会先恢复字段，不会直接回退到组件不存在。
+- 修复材质变体转换、自动分析、预览分组持久化和生成过程中的组件修改没有统一 Undo 边界的问题；备用 `AddComponent` 路径现在也会注册 Undo。
+- 修复生成或持久化分组异常时 Undo group 未收口的问题；普通服装嵌套菜单父级也会使用稳定语义键恢复展示属性。
+- 修复图标、Mixer 菜单项和 Merge Animator 在 Prefab 实例上的修改未登记覆盖的问题。
+- 修复普通服装嵌套父级菜单展示属性在跨语言重新生成时无法稳定恢复的问题。
+
+### Changed
+
+- 统一三个 ACC 组件、批量编辑和自动分析的 Undo/Redo 行为；同一次用户操作会合并为一个可理解的 Undo 记录。
+- ACC 组件 Inspector 文档补充字段编辑、组件创建、自动初始化和生成资产清理的 Undo 范围说明。
+- 预览界面为只读和 Exclude 部件补充禁用勾选框占位，保持部件名称、来源和分组列对齐。
+- 统一菜单入口文档为 `GameObject > AdvancedCostumeController`，并更新开发结构、Prefab 覆盖和生成清理说明。
+
 ## [0.4.2] - 2026-08-02
 
 ### Added
@@ -47,7 +64,7 @@
 
 - 材质变体新增精准 Renderer 材质槽位覆盖；全局 `Source → Replacement` 快捷规则继续保留，精准规则优先。
 - 材质变体 Inspector 支持自动对照 Outfit Base 与完整变体预制件，只生成实际材质差异槽位。
-- 新增 **GameObject > ACC > 转换成服装变体**，支持通过本体和完整预制件一键生成材质变体配置。
+- 新增 **GameObject > AdvancedCostumeController > 转换成服装变体**，支持通过本体和完整预制件一键生成材质变体配置。
 - ACC 预览中的临时分组可在确认预览后持久化为 `ACCPartGroupMarker`。
 
 ### Changed

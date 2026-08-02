@@ -258,6 +258,8 @@ ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未�
 
 预览标题会统计可控制与已排除的部件数量。每个可控制卡片仍可勾选是否参与本次生成；参数路径显示在卡片最后一行，便于长路径换行阅读。分组标识带有颜色：相同分组名使用同色，自动部件按对象路径分别分配颜色。
 
+启用部件控制时，Exclude 部件会显示禁用的勾选框占位以保持列对齐；关闭部件控制时，所有部件勾选框均为禁用状态。这些占位框不会参与选择或生成。
+
 ### 临时方式：预览中的“分组 / Group”文本框
 
 在预览中为多个已识别部件填写相同分组名，会让它们共用：
@@ -291,6 +293,19 @@ Inspector 会列出该 Outfit Marker 下所有扫描到的可控制与已排除�
 - **多选同时编辑**：选中多个同类组件时，Inspector 会提示修改将应用到所有选中对象。
 - **原生帮助按钮**：每个组件标题栏右上角的 Unity 原生 `?` 按钮会打开本手册对应的章节。
 - **简洁的头部**：组件顶部有用途图标和简短描述（如「显式服装标记」/「Explicit Outfit Marker」），与 Unity 组件名区隔。
+
+### 组件操作与 Undo/Redo
+
+ACC 组件编辑使用显式的 Unity Undo 分组，确保“字段编辑”和“组件创建”不会被错误合并：
+
+- `ACCOutfitMarker` 的部件名称格式化字段支持 Undo/Redo；
+- `ACCPartGroupMarker` 的 `Mode`、`Group Name` 支持 Undo/Redo。切换到 `Exclude` 会同时清空 `Group Name`，这两个字段会作为同一次编辑恢复；第一次 Undo 会恢复字段状态，不会直接删除组件；
+- `ACCVariantMaterialOverride` 的 `Outfit Base`、全局材质规则、精准 Renderer 槽位规则支持 Undo/Redo；
+- 材质变体的刷新全局材质、自动分析、完整预制件转换，以及预览中的持久分组保存，均作为一个完整操作撤销，避免逐条规则或逐个对象产生难以使用的 Undo 历史；
+- 多选编辑会将同一按钮或字段操作应用到所有可编辑目标，并合并为一次 Undo；
+- 在 Prefab 实例中修改 ACC 组件、菜单项或参数组件时，ACC 会登记 Prefab 覆盖，保存场景后修改不会丢失；
+- 通过 Unity 添加/移除组件仍由 Unity 管理。刚添加 ACC 组件后立即修改字段时，Undo 顺序是先恢复字段，再撤销组件添加；
+- 材质变体首次打开 Inspector 的自动初始化是独立的 Undo 操作；生成资产目录的清理属于 AssetDatabase 文件操作，不受场景 Undo 保护。
 
 ## 变体
 
@@ -381,7 +396,7 @@ Inspector 的两个列表默认展开：
 
 1. 将本体与另一套完整服装预制件放在同一个父对象下。
 2. 在场景中右键要转换的变体对象。
-3. 使用 **GameObject > ACC > 转换成服装变体 (Convert to Outfit Variant)**。
+3. 使用 **GameObject > AdvancedCostumeController > 转换成服装变体 (Convert to Outfit Variant)**。
 4. ACC 会按 Outfit Marker、MA Merge Armature/独立骨架和 Renderer 匹配度自动识别同级本体；无法唯一判断时会停止，不会猜测修改。
 5. 在确认窗口核对自动识别的本体和变体来源。
 6. ACC 会添加或更新组件并生成多数全局规则与少数精准例外；可在 Inspector 中继续调整。
@@ -501,6 +516,8 @@ Clothes Root Menu
 
 ACC 会保存并恢复旧 ACC 子菜单项的展示属性：除根菜单外，默认 Label 保持为空并由 MA 显示节点 GameObject 名称。服装和部件直接沿用实际对象名；ACC 的默认节点使用当前语言的对象名（中文为“部件 / 混搭 / 启用”，英文为“Parts / Custom Mix / Enable”），而填写 Custom Mixer Name 后会直接使用用户文本。若用户将 Label 改为不同的自定义文本则保留该文本，图标同样保留；语言切换造成默认节点名变化时，ACC 会通过生成语义和控制参数恢复展示属性。该恢复只处理展示属性，不会恢复任何旧控制参数。
 
+普通服装的嵌套父级菜单、Mixer 路径和 Parts 菜单都使用稳定语义键；跨语言或重新生成时，ACC 会优先恢复对应节点的图标和自定义 Label。
+
 ACC 创建的 `ModularAvatarParameters` 直接挂在 `ACC_Menu` 上（MA 不允许在同一对象上挂多个该组件）。ACC 只按精确名称更新或删除自身当前/旧 Controller 声明过的参数，前缀声明和无关手工参数均保持不变。请将需要手工维护的菜单节点放在 `ACC_Menu` 之外。
 
 菜单根包含：
@@ -618,9 +635,9 @@ Assets/UnityBox/AdvancedCostumeController/
 │   ├── Models.cs                         数据模型与配置
 │   ├── Utils.cs                          工具类
 │   ├── Localization.cs                   编辑器中英文本地化
-│   ├── ACCMarkerEditors.cs               ACC Outfit Marker / Part Group Marker Inspector
+│   ├── ACCMarkerEditors.cs               ACC 标记 Inspector 与统一 Undo 边界
 │   ├── ACCVariantMaterialOverrideEditor.cs
-│   └── ACCInspectorUI                    (在 ACCMarkerEditors.cs 中，组件头部绘制)
+│   └── MenuIconGenerator.cs              菜单图标 Preview Scene 渲染
 └── Runtime/
     ├── ACCOutfitMarker.cs                 无骨架服装的显式识别标记
     ├── ACCPartGroupMarker.cs              持久化部件分组标记

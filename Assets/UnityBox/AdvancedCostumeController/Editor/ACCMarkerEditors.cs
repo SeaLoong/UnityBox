@@ -1,9 +1,90 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
 {
+  /// <summary>
+  /// 统一 ACC Inspector 的 Undo 边界。SerializedObject 默认会创建隐式记录，
+  /// 但在刚添加组件、延迟初始化或多对象编辑时可能与组件创建合并；显式分组
+  /// 后再使用 ApplyModifiedPropertiesWithoutUndo，确保一次用户操作对应一次 Undo。
+  /// </summary>
+  internal static class ACCEditorUndo
+  {
+    public static int Begin(string undoName)
+    {
+      Undo.IncrementCurrentGroup();
+      int group = Undo.GetCurrentGroup();
+      Undo.SetCurrentGroupName(undoName);
+      return group;
+    }
+
+    public static void Complete(int group)
+    {
+      Undo.CollapseUndoOperations(group);
+    }
+
+    public static void RecordObjects(
+      IEnumerable<Object> objects,
+      string undoName)
+    {
+      var validObjects = objects?.Where(target => target != null).ToArray()
+        ?? new Object[0];
+      if (validObjects.Length > 0)
+        Undo.RecordObjects(validObjects, undoName);
+    }
+
+    public static void RecordPrefabInstanceModifications(
+      IEnumerable<Object> objects)
+    {
+      foreach (var target in objects?.Where(target => target != null) ??
+        Enumerable.Empty<Object>())
+      {
+        if (PrefabUtility.IsPartOfPrefabInstance(target))
+          PrefabUtility.RecordPrefabInstancePropertyModifications(target);
+      }
+    }
+
+    public static T AddComponent<T>(GameObject target, string undoName)
+      where T : Component
+    {
+      try
+      {
+        return Undo.AddComponent<T>(target);
+      }
+      catch
+      {
+        var created = target.AddComponent<T>();
+        Undo.RegisterCreatedObjectUndo(created, undoName);
+        Undo.RegisterCompleteObjectUndo(created, undoName);
+        return created;
+      }
+    }
+
+    public static bool ApplySerializedProperties(
+      SerializedObject serializedObject,
+      IEnumerable<Object> targets,
+      string undoName)
+    {
+      if (serializedObject == null || !serializedObject.hasModifiedProperties)
+        return false;
+
+      int group = Begin(undoName);
+      try
+      {
+        RecordObjects(targets, undoName);
+        serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        RecordPrefabInstanceModifications(targets);
+      }
+      finally
+      {
+        Complete(group);
+      }
+      return true;
+    }
+  }
+
   [CustomEditor(typeof(ACCOutfitMarker))]
   [CanEditMultipleObjects]
   public class ACCOutfitMarkerEditor : Editor
@@ -37,7 +118,8 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.PropertyField(serializedObject.FindProperty("PartNameRegexReplacement"),
         new GUIContent(Localization.Text("正则替换为", "Regex Replacement")));
 
-      serializedObject.ApplyModifiedProperties();
+      ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
+        "Edit ACC outfit marker");
 
       if (!Utils.IsValidRegex(marker.PartNameRegexPattern))
         EditorGUILayout.HelpBox(Localization.Text("正则表达式无效，将忽略正则替换。",
@@ -168,7 +250,8 @@ namespace UnityBox.AdvancedCostumeController
           MessageType.Warning);
       }
 
-      serializedObject.ApplyModifiedProperties();
+      ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
+        "Edit ACC part group marker");
     }
   }
 }

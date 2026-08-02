@@ -207,13 +207,28 @@ public static class Utils
   {
     if (string.IsNullOrEmpty(relativePath)) return parent;
 
+    return EnsureSubmenuPathSegments(parent,
+      relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries)
+        .Select(part => part.Trim()), presentation, semanticKeyPrefix);
+  }
+
+  /// <summary>按已经分解的层级名称创建菜单路径，不把对象名称中的 '/' 当作分隔符。</summary>
+  public static GameObject EnsureSubmenuPathSegments(
+    GameObject parent,
+    IEnumerable<string> pathSegments,
+    MenuPresentationSnapshot presentation = null,
+    string semanticKeyPrefix = null)
+  {
+    if (pathSegments == null) return parent;
+
     var current = parent;
     var segments = new List<string>();
-    foreach (var part in relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries))
+    foreach (var part in pathSegments)
     {
-      string trimmedPart = part.Trim();
-      segments.Add(trimmedPart);
-      current = FindOrCreateChild(current, trimmedPart);
+      if (string.IsNullOrEmpty(part)) continue;
+
+      segments.Add(part);
+      current = FindOrCreateChild(current, part);
       string semanticKey = string.IsNullOrEmpty(semanticKeyPrefix)
         ? null
         : semanticKeyPrefix + GetStablePathFromSegments(segments);
@@ -228,10 +243,8 @@ public static class Utils
     return "acc:parts|" + GetStableMenuPath(menuRoot.transform, outfitSubmenu.transform);
   }
 
-  /// <summary>
-  /// 获取从 root 到 node 的相对路径
-  /// </summary>
-  public static string GetRelativePath(GameObject root, GameObject node)
+  /// <summary>获取相对路径中的所有层级名称，每个名称保持原样。</summary>
+  public static List<string> GetRelativePathSegments(GameObject root, GameObject node)
   {
     var parts = new List<string>();
     var t = node.transform;
@@ -241,7 +254,15 @@ public static class Utils
       t = t.parent;
     }
     parts.Reverse();
-    return string.Join("/", parts);
+    return parts;
+  }
+
+  /// <summary>
+  /// 获取从 root 到 node 的相对路径
+  /// </summary>
+  public static string GetRelativePath(GameObject root, GameObject node)
+  {
+    return string.Join("/", GetRelativePathSegments(root, node));
   }
 
   /// <summary>
@@ -412,6 +433,7 @@ public static class Utils
     Undo.RecordObject(menuItem, "Assign ACC default menu icon");
     menuItem.PortableControl.Icon = icon;
     EditorUtility.SetDirty(menuItem);
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { menuItem });
   }
 
   /// <summary>
@@ -458,8 +480,8 @@ public static class Utils
       return existing;
     }
 
-    try { return Undo.AddComponent<ModularAvatarMenuItem>(node); }
-    catch { return node.AddComponent<ModularAvatarMenuItem>(); }
+    return ACCEditorUndo.AddComponent<ModularAvatarMenuItem>(node,
+      "Create ACC menu item");
   }
 
   /// <summary>
@@ -478,10 +500,11 @@ public static class Utils
     menuItem.PortableControl.VRChatSubMenu = null;
     menuItem.MenuSource = default(SubmenuSource);
     menuItem.menuSource_otherObjectChildren = null;
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { menuItem });
   }
 
   /// <summary>
-  /// 准备子根节点（会删除已存在的同名节点）
+  /// 准备子根节点（复用或创建同名节点）
   /// </summary>
   public static GameObject PrepareChildRoot(GameObject parent, string name)
   {
@@ -546,6 +569,7 @@ public static class Utils
     if (saved == null)
     {
       menuItem.label = isAutomaticObjectName ? "" : generatedName;
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { menuItem });
       return;
     }
 
@@ -553,6 +577,7 @@ public static class Utils
     menuItem.label = IsCustomMenuLabel(saved.Label, saved.NodeName, generatedName)
       ? saved.Label
       : isAutomaticObjectName ? "" : generatedName;
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { menuItem });
   }
 
   private static bool IsCustomMenuLabel(string label, string nodeName, string defaultLabel)
@@ -613,6 +638,12 @@ public static class Utils
         if (item.gameObject == menuRoot) continue;
         var presentation = FindByPath(item.transform);
         if (presentation == null) continue;
+
+        if (item.PortableControl.Type == PortableControlType.SubMenu)
+        {
+          bySemanticKey[OutfitPathSemanticKeyPrefix +
+            GetStableMenuPath(menuRoot.transform, item.transform)] = presentation;
+        }
 
         if (item.PortableControl.Type == PortableControlType.SubMenu &&
             IsKnownPartsMenuName(item.gameObject.name) && item.transform.parent != menuRoot.transform)
@@ -710,6 +741,7 @@ public static class Utils
 
   public const string MixerRootSemanticKey = "acc:mixer-root";
   public const string MixerPathSemanticKeyPrefix = "acc:mixer-path|";
+  public const string OutfitPathSemanticKeyPrefix = "acc:outfit-path|";
 
   public static string GetMixerPathSemanticKey(params string[] pathsOrSegments)
   {
@@ -718,6 +750,13 @@ public static class Utils
       .SelectMany(path => path.Split('/', StringSplitOptions.RemoveEmptyEntries))
       .Select(segment => segment.Trim());
     return MixerPathSemanticKeyPrefix + GetStablePathFromSegments(segments);
+  }
+
+  /// <summary>为已分解的 Mixer 菜单层级生成稳定语义键。</summary>
+  public static string GetMixerPathSemanticKeySegments(IEnumerable<string> segments)
+  {
+    return MixerPathSemanticKeyPrefix + GetStablePathFromSegments(
+      (segments ?? Enumerable.Empty<string>()).Where(segment => !string.IsNullOrEmpty(segment)));
   }
 
   private static bool IsKnownPartsMenuName(string name)
@@ -757,15 +796,14 @@ public static class Utils
   {
     var comp = host.GetComponent<ModularAvatarParameters>();
     if (comp == null)
-    {
-      try { comp = Undo.AddComponent<ModularAvatarParameters>(host); }
-      catch { comp = host.AddComponent<ModularAvatarParameters>(); }
-    }
+      comp = ACCEditorUndo.AddComponent<ModularAvatarParameters>(host,
+        "Create ACC parameters");
 
     if (comp.parameters == null)
     {
       Undo.RecordObject(comp, "Init parameters list");
       comp.parameters = new List<ParameterConfig>();
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { comp });
     }
     return comp;
   }
@@ -832,11 +870,13 @@ public static class Utils
     {
       Undo.RecordObject(destination, "Migrate ACC parameter declarations");
       destination.parameters.AddRange(additions);
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { destination });
     }
 
     Undo.RecordObject(source, "Remove migrated ACC parameter declarations");
     source.parameters.RemoveAll(parameter =>
       !parameter.isPrefix && nameSet.Contains(parameter.nameOrPrefix));
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { source });
   }
 
   /// <summary>提取旧 ACC Controller 声明过的参数，以便精确清理旧生成声明。</summary>
@@ -865,6 +905,7 @@ public static class Utils
     Undo.RecordObject(parameters, "Remove ACC parameter declarations");
     parameters.parameters.RemoveAll(parameter =>
       !parameter.isPrefix && nameSet.Contains(parameter.nameOrPrefix));
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { parameters });
   }
 
   /// <summary>统计已识别但尚未配置 MA Merge Armature 的服装 Armature。</summary>
@@ -947,8 +988,8 @@ public static class Utils
     try
     {
       ModularAvatarMergeArmature mergeArmature;
-      try { mergeArmature = Undo.AddComponent<ModularAvatarMergeArmature>(outfit.ArmatureObject); }
-      catch { mergeArmature = outfit.ArmatureObject.AddComponent<ModularAvatarMergeArmature>(); }
+      mergeArmature = ACCEditorUndo.AddComponent<ModularAvatarMergeArmature>(
+        outfit.ArmatureObject, "Create ACC merge armature");
 
       mergeArmature.mergeTarget = new AvatarObjectReference();
       mergeArmature.mergeTarget.Set(hips.parent.gameObject);
@@ -956,6 +997,7 @@ public static class Utils
       mergeArmature.mangleNames = true;
       mergeArmature.InferPrefixSuffix();
       EditorUtility.SetDirty(mergeArmature);
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { mergeArmature });
       return true;
     }
     catch (Exception exception)
@@ -976,15 +1018,8 @@ public static class Utils
     // 父路径上已有 Installer，无需再挂载
     if (host.GetComponentInParent<ModularAvatarMenuInstaller>() != null) return null;
 
-    try
-    {
-      installer = Undo.AddComponent<ModularAvatarMenuInstaller>(host);
-      return installer;
-    }
-    catch
-    {
-      return host.AddComponent<ModularAvatarMenuInstaller>();
-    }
+    return ACCEditorUndo.AddComponent<ModularAvatarMenuInstaller>(host,
+      "Create ACC menu installer");
   }
 
   /// <summary>
@@ -1004,6 +1039,7 @@ public static class Utils
       existing.saved = saved;
       existing.localOnly = localOnly;
       maParams.parameters[existingIndex] = existing;
+      ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { maParams });
       return;
     }
 
@@ -1020,6 +1056,7 @@ public static class Utils
       saved = saved,
       hasExplicitDefaultValue = true
     });
+    ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { maParams });
   }
 
   /// <summary>移除由指定选择参数布局留下的旧参数，避免重新生成后残留占用。</summary>

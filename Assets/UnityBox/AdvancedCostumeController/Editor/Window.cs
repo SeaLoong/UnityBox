@@ -336,7 +336,9 @@ namespace UnityBox.AdvancedCostumeController
 
       if (currentOutfitDataList.Count == 0)
       {
-        EditorGUILayout.HelpBox(T("未找到拥有骨架和网格的服装。", "No outfit with both a skeleton and mesh was found."),
+        EditorGUILayout.HelpBox(T(
+          "未找到可识别的服装。请检查骨架/网格结构，或添加 ACC Outfit Marker。",
+          "No recognizable outfits were found. Check the skeleton/mesh structure or add an ACC Outfit Marker."),
           MessageType.Warning);
         return;
       }
@@ -348,7 +350,9 @@ namespace UnityBox.AdvancedCostumeController
 
       // 计算当前选择下的实时索引映射
       var selectedOutfits = currentOutfitDataList.Where(o => outfitSelections[o]).ToList();
-      var previewIndexMap = BuildIndexMap(selectedOutfits);
+      var previewIndexMap = BuildIndexMap(selectedOutfits.SelectMany(outfit =>
+        outfit.GetAllObjects().Where(obj => outfitObjectSelections[outfit]
+          .TryGetValue(obj, out var selected) && selected)));
 
       EditorGUILayout.LabelField(
         T($"总计：{currentOutfitDataList.Count} 个服装，已选中：{selectedOutfits.Count} 个",
@@ -369,39 +373,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private void DrawParameterEstimate()
     {
-      // 从当前勾选状态构建过滤后的服装列表，复用 Generator 的估算方法
-      var filteredOutfits = new List<OutfitData>();
-      foreach (var o in currentOutfitDataList)
-      {
-        if (!outfitSelections[o]) continue;
-
-        bool baseSelected = outfitObjectSelections[o].TryGetValue(o.BaseObject, out var baseValue) &&
-          baseValue;
-        var selectedVariants = o.Variants.Where(variant =>
-          outfitObjectSelections[o].TryGetValue(variant, out var selected) && selected).ToList();
-        if (!baseSelected && selectedVariants.Count == 0) continue;
-
-        var enabledParts = o.Parts.Where(p =>
-          partSelections[o].TryGetValue(p, out var sel) && sel).ToList();
-        var enabledControls = BuildPartControls(o);
-
-        filteredOutfits.Add(new OutfitData
-        {
-          BaseObject = o.BaseObject,
-          ArmatureObject = o.ArmatureObject,
-          OutfitObject = o.OutfitObject,
-          Variants = selectedVariants,
-          Parts = enabledParts,
-          PartControls = enabledControls,
-          VariantPartData = o.VariantPartData.Where(item =>
-            (item.VariantObject == o.BaseObject && outfitObjectSelections[o][o.BaseObject]) ||
-            (item.VariantObject != o.BaseObject && outfitObjectSelections[o].TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
-          Name = o.Name,
-          RelativePath = o.RelativePath,
-          IsBaseSelected = baseSelected
-        });
-      }
-
+      var filteredOutfits = BuildSelectedOutfits();
       var usage = Generator.CalculateParameterUsage(config, filteredOutfits);
       DrawParameterUsageSummary(usage, filteredOutfits);
     }
@@ -681,26 +653,32 @@ namespace UnityBox.AdvancedCostumeController
         preview.ToString(), T("保存", "Save"), T("取消", "Cancel")))
         return;
 
-      int undoGroup = Undo.GetCurrentGroup();
-      Undo.SetCurrentGroupName("Persist ACC part groups");
-      foreach (var change in changes)
+      int undoGroup = ACCEditorUndo.Begin("Persist ACC part groups");
+      try
       {
-        if (!change.Apply) continue;
-        var marker = change.Part.GetComponent<ACCPartGroupMarker>();
-        if (change.Remove)
+        foreach (var change in changes)
         {
-          if (marker != null && marker.Mode == ACCPartControlMode.Group)
-            Undo.DestroyObjectImmediate(marker);
-          continue;
+          if (!change.Apply) continue;
+          var marker = change.Part.GetComponent<ACCPartGroupMarker>();
+          if (change.Remove)
+          {
+            if (marker != null && marker.Mode == ACCPartControlMode.Group)
+              Undo.DestroyObjectImmediate(marker);
+            continue;
+          }
+          if (marker != null && marker.Mode == ACCPartControlMode.Exclude) continue;
+          if (marker == null) marker = Undo.AddComponent<ACCPartGroupMarker>(change.Part);
+          Undo.RecordObject(marker, "Configure ACC part group marker");
+          marker.Mode = ACCPartControlMode.Group;
+          marker.GroupName = change.GroupName;
+          EditorUtility.SetDirty(marker);
+          ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { marker });
         }
-        if (marker != null && marker.Mode == ACCPartControlMode.Exclude) continue;
-        if (marker == null) marker = Undo.AddComponent<ACCPartGroupMarker>(change.Part);
-        Undo.RecordObject(marker, "Configure ACC part group marker");
-        marker.Mode = ACCPartControlMode.Group;
-        marker.GroupName = change.GroupName;
-        EditorUtility.SetDirty(marker);
       }
-      Undo.CollapseUndoOperations(undoGroup);
+      finally
+      {
+        ACCEditorUndo.Complete(undoGroup);
+      }
       RefreshPreview();
       Repaint();
       GUIUtility.ExitGUI();
@@ -752,12 +730,19 @@ namespace UnityBox.AdvancedCostumeController
 
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);
+      DrawDisabledPartToggle();
       EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
         GUILayout.Width(150));
       EditorGUILayout.LabelField(ColorizeGroupText(source, groupColor),
         GetRichLabelStyle(), GUILayout.Width(100));
       EditorGUILayout.LabelField("", GUILayout.ExpandWidth(true));
       EditorGUILayout.EndHorizontal();
+    }
+
+    private static void DrawDisabledPartToggle()
+    {
+      using (new EditorGUI.DisabledScope(true))
+        EditorGUILayout.Toggle(false, GUILayout.Width(20));
     }
 
     private Color GetPreviewGroupColor(
@@ -804,6 +789,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       EditorGUILayout.BeginHorizontal();
       GUILayout.Space(20);
+      DrawDisabledPartToggle();
       EditorGUILayout.LabelField(FormatPartDisplayName(outfit, part.name), EditorStyles.label,
         GUILayout.Width(150));
       EditorGUILayout.LabelField(T("[X] 已排除", "[X] Excluded"), EditorStyles.label,
@@ -864,21 +850,45 @@ namespace UnityBox.AdvancedCostumeController
       if (!Utils.IsSafeAssetsFolder(config.GeneratedFolder))
       {
         EditorUtility.DisplayDialog(T("错误", "Error"),
-          T("参数前缀必须可用于生成文件，且输出目录必须是 Assets 下不含 . 或 .. 的相对路径。",
-            "Parameter Prefix must be usable in generated filenames, and Output Folder must be an Assets-relative path without . or .. segments."),
+          T("输出目录必须是 Assets 下不含 . 或 .. 的安全相对路径。",
+            "Output Folder must be a safe Assets-relative path without . or .. segments."),
           "OK");
         return;
       }
 
-      // 构建过滤后的服装列表
+      var selectedOutfits = BuildSelectedOutfits();
+
+      // 本体和所有变体都未选中时，跳过此服装。
+      if (selectedOutfits.Count == 0)
+      {
+        EditorUtility.DisplayDialog(T("错误", "Error"), T("没有选中任何服装。", "No outfit is selected."), "OK");
+        return;
+      }
+
+      // 生成索引映射（仅包含用户勾选的对象）
+      var outfitIndexMap = BuildIndexMap(selectedOutfits.SelectMany(outfit =>
+        outfit.GetAllObjects()));
+
+      // 查找默认服装
+      var defaultOutfit = Scanner.FindDefaultOutfit(selectedOutfits, config.DefaultOutfitOverride);
+
+      // 执行生成
+      var generator = new Generator(config);
+      generator.Execute(selectedOutfits, outfitIndexMap, defaultOutfit);
+    }
+
+    private List<OutfitData> BuildSelectedOutfits()
+    {
       var selectedOutfits = new List<OutfitData>();
       foreach (var o in currentOutfitDataList)
       {
-        if (!outfitSelections[o]) continue;
+        if (!outfitSelections.TryGetValue(o, out var outfitSelected) || !outfitSelected)
+          continue;
 
-        bool baseSelected = outfitObjectSelections[o].ContainsKey(o.BaseObject) && outfitObjectSelections[o][o.BaseObject];
-        var selectedVariants = o.Variants
-          .Where(v => outfitObjectSelections[o].ContainsKey(v) && outfitObjectSelections[o][v]).ToList();
+        var objectSelections = outfitObjectSelections[o];
+        bool baseSelected = objectSelections.TryGetValue(o.BaseObject, out var baseValue) && baseValue;
+        var selectedVariants = o.Variants.Where(variant =>
+          objectSelections.TryGetValue(variant, out var selected) && selected).ToList();
 
         // 本体和所有变体都未选中时，跳过此服装
         if (!baseSelected && selectedVariants.Count == 0) continue;
@@ -890,12 +900,12 @@ namespace UnityBox.AdvancedCostumeController
           OutfitObject = o.OutfitObject,
           Variants = selectedVariants,
           Parts = o.Parts.Where(p =>
-            partSelections[o].ContainsKey(p) && partSelections[o][p]).ToList(),
+            partSelections[o].TryGetValue(p, out var sel) && sel).ToList(),
           ExcludedParts = o.ExcludedParts,
           PartControls = BuildPartControls(o),
           VariantPartData = o.VariantPartData.Where(item =>
-            (item.VariantObject == o.BaseObject && outfitObjectSelections[o][o.BaseObject]) ||
-            (item.VariantObject != o.BaseObject && outfitObjectSelections[o].TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
+            (item.VariantObject == o.BaseObject && baseSelected) ||
+            (item.VariantObject != o.BaseObject && objectSelections.TryGetValue(item.VariantObject, out var selected) && selected)).ToList(),
           Marker = o.Marker,
           Name = o.Name,
           RelativePath = o.RelativePath,
@@ -903,22 +913,7 @@ namespace UnityBox.AdvancedCostumeController
           IsBaseSelected = baseSelected
         });
       }
-
-      if (selectedOutfits.Count == 0)
-      {
-        EditorUtility.DisplayDialog(T("错误", "Error"), T("没有选中任何服装。", "No outfit is selected."), "OK");
-        return;
-      }
-
-      // 生成索引映射（仅包含用户勾选的对象）
-      var outfitIndexMap = BuildIndexMapFromSelected(selectedOutfits);
-
-      // 查找默认服装
-      var defaultOutfit = Scanner.FindDefaultOutfit(selectedOutfits, config.DefaultOutfitOverride);
-
-      // 执行生成
-      var generator = new Generator(config);
-      generator.Execute(selectedOutfits, outfitIndexMap, defaultOutfit);
+      return selectedOutfits;
     }
 
     private List<PartControlData> BuildPartControls(OutfitData outfit)
@@ -950,24 +945,10 @@ namespace UnityBox.AdvancedCostumeController
       return result;
     }
 
-    /// <summary>构建索引映射（用于预览）</summary>
-    private Dictionary<GameObject, int> BuildIndexMap(List<OutfitData> selectedOutfits)
+    /// <summary>按层级顺序构建生成菜单与动画使用的对象索引映射。</summary>
+    private Dictionary<GameObject, int> BuildIndexMap(IEnumerable<GameObject> objects)
     {
-      return selectedOutfits
-        .SelectMany(o => o.GetAllObjects()
-          .Where(obj => outfitObjectSelections[o].ContainsKey(obj) && outfitObjectSelections[o][obj]))
-        .Distinct()
-        .OrderBy(go => Utils.GetHierarchyPath(config.CostumesRoot, go))
-        .Select((go, index) => new { go, index })
-        .ToDictionary(x => x.go, x => x.index);
-    }
-
-    /// <summary>构建索引映射（用于生成，从过滤后的列表）</summary>
-    private Dictionary<GameObject, int> BuildIndexMapFromSelected(List<OutfitData> selectedOutfits)
-    {
-      // 过滤后的 OutfitData 中 GetAllObjects() 已只包含用户选中的对象
-      return selectedOutfits
-        .SelectMany(o => o.GetAllObjects())
+      return objects
         .Distinct()
         .OrderBy(go => Utils.GetHierarchyPath(config.CostumesRoot, go))
         .Select((go, index) => new { go, index })

@@ -31,28 +31,41 @@ namespace UnityBox.AdvancedCostumeController
       {
         if (this == null || targets == null) return;
 
-        foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
-        {
-          if (selectedMarker == null || selectedMarker.EditorPreviewInitialized ||
-              selectedMarker.OutfitBase == null || !IsEditableSceneObject(selectedMarker.gameObject))
-            continue;
+        var pendingMarkers = targets.OfType<ACCVariantMaterialOverride>()
+          .Where(selectedMarker => selectedMarker != null &&
+            !selectedMarker.EditorPreviewInitialized &&
+            selectedMarker.OutfitBase != null &&
+            IsEditableSceneObject(selectedMarker.gameObject))
+          .ToList();
+        if (pendingMarkers.Count == 0) return;
 
-          // Components created before the one-time initialization flag was
-          // introduced may already contain user-authored rules. Preserve them
-          // rather than treating an old serialized false flag as a new marker.
-          if ((selectedMarker.Replacements?.Count ?? 0) > 0 ||
-              (selectedMarker.RendererOverrides?.Count ?? 0) > 0)
+        const string undoName = "Initialize ACC variant material preview";
+        int undoGroup = ACCEditorUndo.Begin(undoName);
+        try
+        {
+          ACCEditorUndo.RecordObjects(pendingMarkers.Cast<Object>(), undoName);
+          foreach (var selectedMarker in pendingMarkers)
           {
-            Undo.RecordObject(selectedMarker, "Mark ACC variant preview initialized");
+            // Components created before the one-time initialization flag was
+            // introduced may already contain user-authored rules. Preserve them
+            // rather than treating an old serialized false flag as a new marker.
+            if ((selectedMarker.Replacements?.Count ?? 0) > 0 ||
+                (selectedMarker.RendererOverrides?.Count ?? 0) > 0)
+            {
+              selectedMarker.MarkEditorPreviewInitialized();
+              EditorUtility.SetDirty(selectedMarker);
+              continue;
+            }
+
+            AnalyzeOrPopulate(selectedMarker);
             selectedMarker.MarkEditorPreviewInitialized();
             EditorUtility.SetDirty(selectedMarker);
-            continue;
           }
-
-          Undo.RecordObject(selectedMarker, "Initialize ACC variant material preview");
-          AnalyzeOrPopulate(selectedMarker);
-          selectedMarker.MarkEditorPreviewInitialized();
-          EditorUtility.SetDirty(selectedMarker);
+          ACCEditorUndo.RecordPrefabInstanceModifications(pendingMarkers.Cast<Object>());
+        }
+        finally
+        {
+          ACCEditorUndo.Complete(undoGroup);
         }
 
         serializedObject.Update();
@@ -84,7 +97,6 @@ namespace UnityBox.AdvancedCostumeController
           new GUIContent(Localization.Text("服装本体", "Outfit Base")));
         if (EditorGUI.EndChangeCheck())
         {
-          serializedObject.ApplyModifiedProperties();
           ForEachMarker("Set ACC variant outfit base", selectedMarker =>
           {
             AnalyzeOrPopulate(selectedMarker);
@@ -148,7 +160,8 @@ namespace UnityBox.AdvancedCostumeController
           Localization.Text("仅保存自动对照发现的差异槽位，无需配置每个 Mesh 的所有材质。",
             "Stores only differing slots found by comparison; no need to configure every material on every mesh."));
 
-        serializedObject.ApplyModifiedProperties();
+        ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
+          "Edit ACC material variant");
       }
 
       private void DrawGlobalReplacementList(string label, string help)
@@ -257,12 +270,29 @@ namespace UnityBox.AdvancedCostumeController
       private void ForEachMarker(string undoName,
         System.Action<ACCVariantMaterialOverride> action)
       {
-        foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
+        var selectedMarkers = targets.OfType<ACCVariantMaterialOverride>()
+          .Where(selectedMarker => selectedMarker != null &&
+            IsEditableSceneObject(selectedMarker.gameObject))
+          .ToList();
+        if (selectedMarkers.Count == 0) return;
+
+        int undoGroup = ACCEditorUndo.Begin(undoName);
+        try
         {
-          if (!IsEditableSceneObject(selectedMarker.gameObject)) continue;
-          Undo.RecordObject(selectedMarker, undoName);
-          action(selectedMarker);
-          EditorUtility.SetDirty(selectedMarker);
+          ACCEditorUndo.RecordObjects(selectedMarkers.Cast<Object>(), undoName);
+          if (serializedObject.hasModifiedProperties)
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+          foreach (var selectedMarker in selectedMarkers)
+          {
+            action(selectedMarker);
+            EditorUtility.SetDirty(selectedMarker);
+          }
+          ACCEditorUndo.RecordPrefabInstanceModifications(selectedMarkers.Cast<Object>());
+        }
+        finally
+        {
+          ACCEditorUndo.Complete(undoGroup);
         }
       }
 
@@ -418,15 +448,28 @@ namespace UnityBox.AdvancedCostumeController
           return;
 
         var marker = variant.GetComponent<ACCVariantMaterialOverride>();
-        if (marker == null) marker = Undo.AddComponent<ACCVariantMaterialOverride>(variant);
-        Undo.RecordObject(marker, "Convert to ACC outfit variant");
-        marker.OutfitBase = outfitBase;
-        int ruleCount = AnalyzeOrPopulate(marker);
-        marker.MarkEditorPreviewInitialized();
-        EditorUtility.SetDirty(marker);
-        Debug.Log(Localization.Text(
-          $"[ACC] 已将 {variant.name} 转换为 {outfitBase.name} 的材质变体，生成 {ruleCount} 条最优替换规则。",
-          $"[ACC] Converted {variant.name} to a material variant of {outfitBase.name}; generated {ruleCount} optimized replacement rules."), marker);
+        int undoGroup = ACCEditorUndo.Begin("Convert to ACC outfit variant");
+        try
+        {
+          if (marker == null)
+            marker = Undo.AddComponent<ACCVariantMaterialOverride>(variant);
+          else
+            ACCEditorUndo.RecordObjects(new Object[] { marker },
+              "Convert to ACC outfit variant");
+
+          marker.OutfitBase = outfitBase;
+          int ruleCount = AnalyzeOrPopulate(marker);
+          marker.MarkEditorPreviewInitialized();
+          EditorUtility.SetDirty(marker);
+          ACCEditorUndo.RecordPrefabInstanceModifications(new Object[] { marker });
+          Debug.Log(Localization.Text(
+            $"[ACC] 已将 {variant.name} 转换为 {outfitBase.name} 的材质变体，生成 {ruleCount} 条最优替换规则。",
+            $"[ACC] Converted {variant.name} to a material variant of {outfitBase.name}; generated {ruleCount} optimized replacement rules."), marker);
+        }
+        finally
+        {
+          ACCEditorUndo.Complete(undoGroup);
+        }
       }
 
       private static GameObject FindLikelyOutfitBase(GameObject variant)
