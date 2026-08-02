@@ -392,6 +392,60 @@ public static class Utils
   }
 
   /// <summary>
+  /// Assigns an ACC-provided menu icon only when the menu item has no icon yet.
+  /// Once assigned, the reference is intentionally left untouched so a user can
+  /// replace the preset without the next generation overwriting it.
+  /// </summary>
+  public static void EnsureDefaultMenuIcon(GameObject node, string resourceName)
+  {
+    if (node == null) return;
+    var menuItem = node.GetComponent<ModularAvatarMenuItem>();
+    if (menuItem == null || HasUsableMenuIcon(menuItem)) return;
+
+    var icon = Resources.Load<Texture2D>(resourceName);
+    if (icon == null)
+    {
+      Debug.LogWarning($"[ACC] Default menu icon resource not found: {resourceName}");
+      return;
+    }
+
+    Undo.RecordObject(menuItem, "Assign ACC default menu icon");
+    menuItem.PortableControl.Icon = icon;
+    EditorUtility.SetDirty(menuItem);
+  }
+
+  /// <summary>
+  /// Checks both the managed reference and its serialized object reference.
+  /// Unity can retain a non-null-looking wrapper for a deleted asset, which is
+  /// displayed as Missing in the Inspector and must be treated as absent.
+  /// </summary>
+  public static bool HasUsableMenuIcon(ModularAvatarMenuItem menuItem)
+  {
+    if (menuItem == null || menuItem.PortableControl.Icon == null) return false;
+
+    try
+    {
+      var serializedObject = new SerializedObject(menuItem);
+      var property = serializedObject.GetIterator();
+      bool enterChildren = true;
+      while (property.NextVisible(enterChildren))
+      {
+        enterChildren = false;
+        if (property.propertyType != SerializedPropertyType.ObjectReference ||
+            !string.Equals(property.name, "icon", StringComparison.OrdinalIgnoreCase))
+          continue;
+        return property.objectReferenceValue != null;
+      }
+    }
+    catch (Exception)
+    {
+      // The managed Unity reference is still the best fallback if the object
+      // cannot be inspected during an assembly or serialization transition.
+    }
+    return true;
+  }
+
+  /// <summary>
   /// 创建菜单项组件
   /// </summary>
   public static ModularAvatarMenuItem CreateMenuItem(GameObject node)
@@ -406,6 +460,24 @@ public static class Utils
 
     try { return Undo.AddComponent<ModularAvatarMenuItem>(node); }
     catch { return node.AddComponent<ModularAvatarMenuItem>(); }
+  }
+
+  /// <summary>
+  /// Resets submenu-only fields when an old generated folder node is reused as
+  /// a Toggle item. Without this, a stale MenuSource/VRChatSubMenu can make a
+  /// regenerated part control continue behaving like a folder.
+  /// </summary>
+  public static void ConfigureAsToggle(ModularAvatarMenuItem menuItem)
+  {
+    if (menuItem == null) return;
+    if (menuItem.PortableControl.Type == PortableControlType.SubMenu ||
+        menuItem.transform.childCount > 0)
+      ClearMenuChildren(menuItem.gameObject);
+    menuItem.PortableControl.Type = PortableControlType.Toggle;
+    menuItem.PortableControl.SubParameters = ImmutableList<string>.Empty;
+    menuItem.PortableControl.VRChatSubMenu = null;
+    menuItem.MenuSource = default(SubmenuSource);
+    menuItem.menuSource_otherObjectChildren = null;
   }
 
   /// <summary>

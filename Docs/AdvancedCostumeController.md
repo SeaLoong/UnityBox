@@ -59,7 +59,7 @@ Avatar
 | **Outfit Object** | 菜单中代表一套服装的对象；有变体时是共同父对象，无变体时等于 Outfit Base。 |
 | **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
-| **Parameter Prefix** | ACC 的唯一命名空间，同时也是主服装 Int 参数。 |
+| **Parameter Prefix** | ACC 的唯一命名空间，同时也是主服装选择参数；两值选择域可使用 Bool，多值域使用 Int。 |
 | **Root Menu Name** | VRChat 菜单中根节点的显示名称；留空时与 Parameter Prefix 一致。 |
 
 ## 层级与扫描规则
@@ -131,19 +131,20 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 | **Language / 语言** | `Auto（自动）`、`English`、`中文`。影响 ACC 编辑器窗口、生成确认对话框和组件 Inspector。 |
 | **Costumes Root / 服装根节点** | 必填。选择本次 ACC 的扫描和动画根。 |
 | **Root Menu Name / 根菜单名称** | VRChat 菜单中根节点的显示名；为空时默认与参数前缀一致。 |
-| **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主 Int 参数、参数前缀、Layer 前缀、Controller 名和输出目录命名空间。为空时自动回退到根对象名称。 |
+| **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主服装选择参数、Layer 前缀、Controller 名和输出目录命名空间；两值主选择可使用 Bool。为空时自动回退到根对象名称。 |
 | **Default Outfit / 默认服装** | 可选。指定初始服装；未指定时按名称关键词匹配，最后回退到第一个服装。 |
 | **Enable Parts Control / 启用部件控制** | 启用普通模式的部件开关。 |
 | **Enable Custom Mixer / 启用混搭模式** | 仅在已启用 Parts Control 时可选；启用独立的混搭参数和动画层。 |
 | **Custom Mixer Name / 混搭菜单名称** | 菜单中混搭入口的显示名；留空时默认显示「混搭」/「Custom Mix」（按语言），参数路径固定使用 `Mixer` 前缀。 |
-| **Output Folder / 输出目录** | 自动生成资产的基础目录；必须是安全的 `Assets/...` 相对路径，实际路径追加 `{RootMenuName}/{ParameterPrefix}`。 |
+| **Auto Generate Menu Icons / 自动生成菜单图标** | 在隐藏 Preview Scene 中为 ACC 菜单项拍摄透明 256×256 PNG；会覆盖本次生成菜单项的图标。 |
+| **Output Folder / 输出目录** | 自动生成资产的基础目录；必须是安全的 `Assets/...` 相对路径。实际路径会追加场景、Avatar 和 ACC 命名空间。 |
 
 ### Parameter Prefix 的规则
 
 假设 `Parameter Prefix = Hair`：
 
 ```text
-主服装 Int 参数：Hair
+主服装选择参数：Hair（两值域可为 Bool，多值域为 Int）
 普通部件参数：Hair/{OutfitPath}/Parts/{PartPath}
 混搭部件槽位参数：Hair/Mixer/{OutfitGroupPath}/{PartSlotPath}
 ```
@@ -167,7 +168,7 @@ Parameter Prefix 必须至少包含一个字母或数字；只包含空格、符
 
 ### 仅服装切换
 
-关闭 Parts Control 时，ACC 只生成服装/变体选择菜单和主 Int 参数：
+关闭 Parts Control 时，ACC 只生成服装/变体选择菜单和主选择参数：
 
 ```text
 Clothes Root Menu
@@ -214,7 +215,7 @@ Outfit Base
 
 `Bag Set` 是 Outfit Base 的直接子对象且后代含 Mesh，因此会作为一个整体部件。ACC 只动画其 `m_IsActive`，关闭它会连带关闭所有子网格。
 
-这种分组保存于 Avatar 层级或 Prefab 中，是推荐的长期工作流。
+这种分组保存于 Avatar 层级中，是推荐的长期工作流。
 
 <a id="acc-part-group-marker"></a>
 
@@ -268,7 +269,7 @@ ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未�
 
 此分组名只保存于当前 ACC 窗口会话。关闭窗口、切换 Root 或刷新预览后会清空，不适合作为长期配置。
 
-如果确认预览分组正确，可点击当前服装预览末尾的 **保存预览分组到服装 / Save Preview Groups to Outfit**。ACC 会先弹出变更预览，列出将新增、更新、移除或因 `Exclude` 而跳过的对象；确认后通过 Unity Undo 修改场景中的 `ACCPartGroupMarker` 并刷新预览。预览与持久 Marker 完全一致时按钮不可点击；清空已有持久组名并保存会移除对应 Group Marker。ACC 不会 Apply 或写回 Project 中的 Prefab 资产。
+如果确认预览分组正确，可点击当前服装预览末尾的 **保存预览分组到服装 / Save Preview Groups to Outfit**。ACC 会先弹出变更预览，列出将新增、更新、移除或因 `Exclude` 而跳过的对象；确认后通过 Unity Undo 修改 `ACCPartGroupMarker` 并刷新预览。预览与持久 Marker 完全一致时按钮不可点击；清空已有持久组名并保存会移除对应 Group Marker。
 
 ### 菜单名称格式化
 
@@ -363,6 +364,8 @@ Inspector 的两个列表默认展开：
 
 点击 **自动分析最优替换 / Analyze Optimal Replacements** 会按本体和当前变体中 Renderer 的相对路径、类型和同节点组件序号进行匹配。对每个 Source 材质，出现次数最多的目标材质生成全局规则，其他少数映射生成精准例外；如果“保持原材质”占多数，则不生成全局规则，只记录少数变化。重复分析会重建相同的确定性配置，不会累积重复项。
 
+首次添加 `ACCVariantMaterialOverride` 且已经有可用的 `OutfitBase` 时，Inspector 会自动执行一次上述材质对照并刷新列表；已有非空规则会被视为用户配置，不会因重新打开 Inspector 被覆盖。
+
 ### 配置步骤
 
 #### 空对象材质变体
@@ -381,35 +384,33 @@ Inspector 的两个列表默认展开：
 5. 在确认窗口核对自动识别的本体和变体来源。
 6. ACC 会添加或更新组件并生成多数全局规则与少数精准例外；可在 Inspector 中继续调整。
 
-所有转换、自动分析、刷新和列表编辑都支持 Unity Undo/Redo，只修改场景对象；ACC 不会 Apply 或写回 Project 中的 Prefab 资产。重复转换会复用现有组件并重新生成确定性配置。
+所有转换、自动分析、刷新和列表编辑都支持 Unity Undo/Redo。重复转换会复用现有组件并重新生成确定性配置。
 
 材质曲线会写入普通 `Outfit Switching` Clip，不会生成独立材质 Layer。每次切换都会先恢复原材质，再应用当前材质变体，避免前一个变体残留。
 
 ## Custom Mixer 混搭
 
-Custom Mixer 是一个特殊的服装状态，用于从多套服装以及它们的变体中组合部件。它**必须启用 Parts Control**。
+Custom Mixer 是一个特殊的服装状态，用于按部件/分组选择不同服装组的本体或变体候选。它**必须启用 Parts Control**。
 
-混搭不会重新扫描并创建一套独立的部件控制。它直接复用普通模式已经生成的部件分组；各变体只为这些普通部件分组提供对应候选对象。
+每种部件/分组使用一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件。不同服装组之间可以自由组合；材质变体作为候选时，只对当前部件槽位的 Renderer 应用材质替换，不会因为一个部件开关重染整套服装。
 
-它不是“选择一套变体后控制这套变体的部件”，而是把每个服装组的部件拆成多个**槽位**。混搭菜单不会额外显示普通模式中的 `Parts` / `Groups` 分类层，部件项直接放在变体菜单下；普通模式的分组只用于决定槽位和参数复用。槽位顺序严格沿用普通模式的部件控制顺序，`Parts` 与 `Groups` 不会改变先后关系：
+Mixer 菜单按“服装组 → 版本 → 部件/分组候选”组织。普通模式的部件控制顺序和分组名称会被复用：
 
-- 同一服装组、同一槽位：只能选择一个变体提供的部件；
-- 同一服装组、不同槽位：可以同时选择；
+- 同一服装组、同一部件/分组槽位只能选择一个候选；
+- 同一服装组、不同部件/分组槽位可以同时选择；
 - 不同服装组之间：可以自由组合；
-- 变体本身没有额外的启用开关，选择候选部件即代表选择该变体的该槽位。
+- 没有变体的槽位只有 `0/1` 两个值，直接使用 Bool；出现多个版本候选时使用 `0..N` 的 Int。
 
 例如：
 
 ```text
-Outfit A：A / B / C
-Variant A1：A / B / C
-Outfit B：D / E / F
-Variant B1：D / E / F
+Outfit A：Base + Variant A1，部件 A / B / C
+Outfit B：Base + Variant B1，部件 D / E / F
 ```
 
-允许：`Outfit A 的 A + Variant A1 的 B + Outfit B 的 D + Variant B1 的 E`。
+允许：`选择 Outfit A 的 Variant A1 的 A 和 B，再选择 Outfit B 的 Base 的 D`。
 
-不允许：`Outfit A 的 A + Variant A1 的 A`，因为它们属于同一服装组的同一槽位。
+不允许：同时打开 `Outfit A` 的 A 槽位 Base 候选和 Variant A1 候选，因为它们属于同一部件槽位。
 
 ### 启用步骤
 
@@ -425,17 +426,17 @@ Variant B1：D / E / F
 
 1. `Outfit Switching` 进入特殊混搭状态；
 2. 默认服装组与默认选择对象保持激活；没有可混搭槽位的默认服装也会保持显示；
-3. 每个部件槽位使用一个独立 Int 参数；
-4. 默认服装组的槽位会预选默认对象对应候选，并且 On/Off 严格沿用普通 `Parts` 菜单的默认 `activeSelf` 状态；其他服装组的槽位默认是 0；
-5. 槽位 Int 的值对应某个变体提供的候选部件，值为 0 表示该槽位关闭；
-6. 槽位动画只关闭并打开该槽位的候选部件，不影响同服装组的其他槽位；
+3. 每个部件/分组槽位使用一个参数，`0` 表示关闭，`1..N` 对应本体或变体候选；
+4. 默认服装组的槽位会选择默认服装对应候选，并沿用普通 `Parts` 的初始 `activeSelf` 状态；其他服装组槽位默认为 `0`；
+5. 槽位动画会先关闭该槽位的所有候选，再只打开当前值对应的候选；材质变体候选会先恢复当前部件的本体材质，再应用当前替换；
+6. 所有槽位为 `0` 时服装组关闭；至少一个槽位非零时激活该组，以便其它服装组自由组合；
 7. 退出混搭后，混搭层进入无曲线状态，不覆盖普通服装和普通部件控制。
 
-主服装选择与 Mixer 的 Enable 使用 **Toggle**，以便松开菜单后仍保持选择；VRChat 的 **Button** 是瞬时控件，不适合服装状态。主选择参数的 `0` 对应第一个服装，关闭主 Toggle 时会回到该值。Mixer 槽位候选也使用 **Toggle**：槽位 `0` 是合法的 Off 状态，因此再次点击当前候选会将该槽位关闭；切换到另一个候选则直接写入新的候选值。
+主服装选择与 Mixer 的 Enable 使用 **Toggle**，以便松开菜单后仍保持选择；VRChat 的 **Button** 是瞬时控件，不适合服装状态。Mixer 候选也使用 **Toggle**，写入对应槽位值；两值槽位直接写 Bool，多值槽位写入 Int 值。
 
-启用部件控制时，服装选择项位于服装子菜单内，并以“启用 + 对象名”作为菜单对象名，例如 `启用Orignial`；英文界面对应 `Enable Orignial`。关闭部件控制且不需要变体子菜单时，服装项仍直接使用对象名。
+启用部件控制时，服装选择项位于服装子菜单内，并直接使用服装对象名；关闭部件控制且不需要变体子菜单时，服装项同样直接使用对象名。
 
-启用参数压缩时，主选择和所有 Mixer 槽位仍保持各自独立的本地 Int、同步 Bool 位、状态和 AnyState 条件；这些状态共享一个事件分发 Animator Layer。每个选择域的本地编码状态和远端解码状态分开，默认 `Idle` 状态不写入参数；解码状态只有在 `IsLocal=false` 的转移条件满足时才会进入，避免全局 Driver 在本地初始化时覆盖保存值。
+启用参数压缩时，多值主选择和 Mixer 槽位保持各自独立的本地 Int、同步 Bool 位、状态和 AnyState 条件；两值域不会再额外创建压缩 Int。所有压缩状态共享一个事件分发 Animator Layer；默认 `Idle` 状态不写入参数，避免全局 Driver 在本地初始化时覆盖保存值。
 
 混搭参数路径格式为：
 
@@ -443,7 +444,7 @@ Variant B1：D / E / F
 {ParameterPrefix}/Mixer/{OutfitGroupPath}/{PartSlotPath}
 ```
 
-每个槽位使用一个 Int（8 bits），不再为每个变体部件额外创建 Bool，也不再为每个变体创建独立的整体选择层。Mixer 主选择值紧随最后一个普通服装对象；VRChat Int 可表达范围限制普通服装对象数量最多为 255。
+每个部件/分组槽位使用一个参数；两值槽位为 Bool，多值槽位未压缩时为同步 Int（8 bits），启用压缩后为对应数量的同步 Bool 位。Mixer 主选择值紧随最后一个普通服装对象；VRChat Int 可表达范围限制普通服装对象数量最多为 255。
 
 ### Mixer 菜单示例
 
@@ -451,21 +452,40 @@ Variant B1：D / E / F
 Clothes Root Menu
 └── Custom Mix
     ├── Enable                     → Clothes = 255
-    ├── Jacket Variants
-    │   ├── Jacket Base
-    │   │   ├── Collar              → Clothes/Mixer/Jacket_Variants/Parts/Collar = 1
-    │   │   └── Upper               → Clothes/Mixer/Jacket_Variants/Groups/Upper = 1
-    │   └── Jacket Red
-    │       ├── Collar              → Clothes/Mixer/Jacket_Variants/Parts/Collar = 2
-    │       └── Upper               → Clothes/Mixer/Jacket_Variants/Groups/Upper = 2
-    └── Pants Variants
-        ├── Pants Base
-        │   └── Belt                → .../Pants_Variants/Parts/Belt = 1
-        └── Pants Blue
-            └── Belt                → .../Pants_Variants/Parts/Belt = 2
+    ├── Jacket Base
+    │   ├── Collar                  → Clothes/Mixer/Jacket_Variants/Parts/Collar = 1
+    │   └── Upper                   → Clothes/Mixer/Jacket_Variants/Groups/Upper = 1
+    ├── Jacket Red
+    │   ├── Collar                  → Clothes/Mixer/Jacket_Variants/Parts/Collar = 2
+    │   └── Upper                   → Clothes/Mixer/Jacket_Variants/Groups/Upper = 2
+    └── Pants Base
+        └── Belt                    → Clothes/Mixer/Pants/Parts/Belt = 1
 ```
 
 ## 生成结果与多实例隔离
+
+### 自动菜单图标
+
+启用 **自动生成菜单图标** 后，ACC 在菜单和 Controller 生成完成后执行离线拍摄：
+
+1. 将完整 Avatar 克隆到隐藏 Preview Scene，以取得 SkinnedMeshRenderer 的正确骨骼姿势；
+2. 保留当前菜单目标的原始 `SkinnedMeshRenderer`、材质和骨骼引用，不对蒙皮网格调用 `BakeMesh`；
+3. 为目标 Renderer 临时设置专用 Layer，并让相机只通过 `cullingMask` 渲染该 Layer：服装/变体只显示自身，部件/分组只显示其控制对象，其他 Avatar 与场景内容不参与渲染；
+4. 服装和变体使用所有服装共享的 Bounds 取景基准，保证不同服装在图标中的比例一致；Mixer 入口使用所有服装组启用时的组合目标；Parts 文件夹使用 ACC 预置空白图标，部件控制项按自身控制对象独立拍摄；关闭自动图标时不会给部件子项补预置图标；
+5. 根据 Avatar 实际朝向使用正交相机从正面取景，并使用方向光补光；
+6. 通过 RenderTexture 和 `ReadPixels` 导出透明 256×256 PNG；
+7. 将 PNG 导入为无压缩、无 Mipmap 的 Texture2D，并写入 MA Menu Item 的 Icon；
+8. 即使 RenderTexture 中没有可见像素，也会保存透明 PNG 并赋给当前拍摄项；未单独拍摄且没有已有图标的父级子菜单才会继承第一个有图标的后代图标，部件子项不会继承 Parts 文件夹图标。
+
+输出路径：
+
+```text
+{ResolvedGeneratedFolder}/MenuIcons/*.png
+```
+
+生成过程不会进入 Play Mode、不会修改场景对象，也不依赖 Av3Emulator。材质变体会在克隆 Avatar 的原始 Renderer 上应用全局替换与精准 Renderer 槽位覆盖。自动生成只会清理并替换本次实际拍摄请求的图标；根菜单、Parts 菜单及其它未拍摄节点的已有图标会保留。根菜单缺省使用 `Resources/OutlineClothing2.png`，Parts 文件夹使用 `Resources/OutlineBlank2.png`；开启自动图标时部件子项拍摄自身网格，关闭时不会给部件子项补这张预置图。
+
+设计参考：[Narazaka/ParameterIconGenerator](https://github.com/Narazaka/ParameterIconGenerator)（Zlib License）。参考项目在 Play Mode 中通过 Av3Emulator 切换参数；ACC 仅复用通用的 Camera、RenderTexture 与 PNG 输出思路，并根据自身生成数据采用独立的 Preview Scene 实现。
 
 ### Avatar 层级
 
@@ -493,35 +513,34 @@ ACC 创建的 `ModularAvatarParameters` 直接挂在 `ACC_Menu` 上（MA 不允�
 实际输出路径：
 
 ```text
-{OutputFolder}/{SanitizedRootMenuName}/{SanitizedParameterPrefix}/
+{OutputFolder}/{SceneName}/{AvatarName}/{ParameterPrefix}/
 ├── {SanitizedParameterPrefix}.controller
-└── Animations/
+├── Animations/
     ├── Outfit_000_*.anim
     ├── Outfit_XXX_Mixer.anim
-    ├── PartsInit_OFF.anim
     ├── Parts/*.anim
     └── Mixer/*.anim
+└── MenuIcons/*.png
 ```
 
-菜单对象名固定 `ACC_Menu`，输出目录取决于 **Root Menu Name**（而非 Avatar 名称），不同 ACC 实例使用不同名称即可隔离。
+外层 Scene 和 Avatar 两级用于隔离不同场景中的同名 Avatar，以及同一场景中不同名称的 Avatar。最后一级只使用 **Parameter Prefix**，不再使用 Root Menu Name，因此默认不会出现 `Costumes/Costumes`。
 
 Layer 名也带 Parameter Prefix：
 
 ```text
 Hair/Outfit Switching
-Hair/Parts Init
 Hair/Parts Control
-Hair/Mixer_{OutfitGroup}_{PartSlot}
+Hair/Parameter Compression（启用压缩时）
 ```
 
 头发、眼睛、衣服等多个 ACC 可以在同一 Avatar 上共存，前提是它们的 Parameter Prefix 不同。ACC 主面板预览区底部会显示实时的 VRChat 参数位占用估算（Int 8bit、Bool 1bit）。
 
 ## 重新生成与清理规则
 
-若当前 ACC Controller 已存在，ACC 会询问是否覆盖。确认后，会删除并重建：
+若当前 ACC Controller 已存在，生成摘要会提示继续生成将覆盖。确认后，会清理并重建当前 Scene / Avatar / ACC 专属目录：
 
 ```text
-{OutputFolder}/{AvatarName}/{ParameterPrefix}/
+{OutputFolder}/{SceneName}/{AvatarName}/{ParameterPrefix}/
 ```
 
 因此：
@@ -529,6 +548,7 @@ Hair/Mixer_{OutfitGroup}_{PartSlot}
 - 可以安全反复 Generate；
 - 同名旧 Clip 不会残留；
 - 不会影响其他 Parameter Prefix 对应的 ACC 输出；
+- 开启自动图标时会重建 `MenuIcons`；关闭自动图标时会保留已有 `MenuIcons`，因此仅切换生成开关不会丢失菜单图标。
 - **不要**将需要保留的手工资产放进 ACC 专属输出目录。
 - Output Folder 必须位于 `Assets` 下，且不能包含 `.` 或 `..` 路径段；不满足时 ACC 会拒绝生成。
 - 对象名称可以包含 `/`；ACC 在重生成菜单时会按精确对象名称处理，不会将它误解析为层级路径。
@@ -571,7 +591,7 @@ Hair/Mixer_{OutfitGroup}_{PartSlot}
 
 1. `ACCVariantMaterialOverride` 是否挂在 Outfit Base 的同级对象；
 2. 组件的 Outfit Base 引用是否正确；
-3. 是否在设置 Outfit Base 后点击过“刷新全局材质”，或对完整预制件点击过“自动分析最优替换”；
+3. 是否已设置 Outfit Base；新建组件会自动初始化材质列表，已有组件也可以手动点击“刷新全局材质”或“自动分析最优替换”；
 4. 是否填写了 Replace With；
 5. 修改标记后是否重新 Refresh Preview 并 Generate。
 

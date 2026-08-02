@@ -47,6 +47,22 @@ namespace UnityBox.AdvancedCostumeController
     public List<RendererMaterialReplacement> RendererOverrides =
       new List<RendererMaterialReplacement>();
 
+    /// <summary>
+    /// Hidden editor state used to distinguish a newly added component from a
+    /// user intentionally clearing all replacement rules. The custom Inspector
+    /// performs the initial comparison once and never rebuilds an edited setup
+    /// merely because the Inspector was reopened.
+    /// </summary>
+    [SerializeField, HideInInspector]
+    private bool editorPreviewInitialized;
+
+    public bool EditorPreviewInitialized => editorPreviewInitialized;
+
+    public void MarkEditorPreviewInitialized()
+    {
+      editorPreviewInitialized = true;
+    }
+
     private void Reset()
     {
       if (transform.parent == null) return;

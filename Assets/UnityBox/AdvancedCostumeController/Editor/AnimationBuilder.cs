@@ -68,7 +68,10 @@ namespace UnityBox.AdvancedCostumeController
           foreach (var control in outfit.GetPartControls())
           {
             string partParamName = GetPartParamName(outfit, control);
-            controller.AddParameter(partParamName, AnimatorControllerParameterType.Float);
+            AddChoiceParameters(controller, partParamName,
+              new ChoiceParameterLayout(2, config.EnableParameterCompression),
+              control.Parts != null && control.Parts.All(part => part != null && part.activeSelf)
+                ? 1 : 0);
           }
         }
       }
@@ -171,12 +174,21 @@ namespace UnityBox.AdvancedCostumeController
         : null;
       var objectsToAnimate = allObjects
         .Concat(outfits.Select(outfit => outfit.BaseObject))
+        .Concat(outfits.Select(outfit => outfit.OutfitObject))
+        .Where(obj => obj != null)
         .Distinct();
 
       foreach (var obj in objectsToAnimate)
       {
+        // Mixer entry clips can disable a shared OutfitObject parent. Normal
+        // outfit clips must explicitly restore the selected outfit group root
+        // when leaving Mixer; activating only its child version is insufficient
+        // because an inactive parent still hides the complete hierarchy.
+        bool active = activeOutfit != null && obj == activeOutfit.OutfitObject;
+
         // 完整预制件转换成材质变体后只作为材质对照来源，运行时不激活其网格。
-        bool active = obj == activeObject && activeMaterialVariant == null;
+        if (obj == activeObject && activeMaterialVariant == null)
+          active = true;
 
         // 变体可能依赖本体下的共享部件，因此选择任意变体时保持本体活动。
         if (!active && activeOutfit != null &&
@@ -209,7 +221,12 @@ namespace UnityBox.AdvancedCostumeController
       string animPath = Utils.CombineAssetPath(animFolder, $"Outfit_{index:D3}_CustomMixer.anim");
       var clip = CreateBaseClip();
       var mixerObjects = new HashSet<GameObject>(
-        outfits.SelectMany(outfit => outfit.GetAllObjects()));
+        outfits.SelectMany(outfit => outfit.GetAllObjects()
+          .Concat((outfit.Variants ?? new List<GameObject>())
+            .Select(variant => variant.GetComponent<ACCVariantMaterialOverride>() != null
+              ? variant.GetComponent<ACCVariantMaterialOverride>().OutfitBase
+              : null)))
+          .Where(obj => obj != null));
       var objectsToAnimate = allObjects
         .Concat(mixerObjects)
         .Concat(outfits.Select(outfit => outfit.OutfitObject))
@@ -394,6 +411,7 @@ namespace UnityBox.AdvancedCostumeController
         if (slots.Count == 0) continue;
         var activationClip = CreateMixerOutfitActivationClip(outfit,
           Utils.GetRelativePath(costumesRoot, outfit.OutfitObject));
+
         foreach (var slot in slots)
         {
           var slotTree = CreateMixerSlotBlendTree(controller, outfit, slot);
@@ -422,9 +440,8 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 槽位值是离散选择序号，不能直接用作 Direct BlendTree 权重：值 2、3… 会把
-    /// 根对象激活 Clip 加权到大于 1。改用 Simple1D 门控后，0 不输出激活曲线，任意
-    /// 正值都会在阈值 1 钳制为同一份激活 Clip。
+    /// Mixer 槽位使用 Simple1D 按 0..N 值门控服装组根对象；槽位子树只处理
+    /// 当前部件/分组参数对应的版本候选对象。
     /// </summary>
     private BlendTree CreateMixerOutfitActivationBlendTree(
       AnimatorController controller,
@@ -522,9 +539,11 @@ namespace UnityBox.AdvancedCostumeController
     private void WriteRendererMaterials(
       AnimationClip clip,
       GameObject outfitBase,
-      ACCVariantMaterialOverride marker)
+      ACCVariantMaterialOverride marker,
+      IEnumerable<Renderer> rendererSubset = null)
     {
-      foreach (var renderer in outfitBase.GetComponentsInChildren<Renderer>(true))
+      var renderers = rendererSubset ?? outfitBase.GetComponentsInChildren<Renderer>(true);
+      foreach (var renderer in renderers)
       {
         var materials = renderer.sharedMaterials;
         for (int slot = 0; slot < materials.Length; slot++)
@@ -587,6 +606,7 @@ namespace UnityBox.AdvancedCostumeController
           AddChoiceCompressionDomain(compressionDomains, "Mixer " + slotParamName,
             slotParamName, slotLayout, Enumerable.Range(0, slot.Candidates.Count + 1));
         }
+
       }
     }
 
@@ -598,6 +618,10 @@ namespace UnityBox.AdvancedCostumeController
       var clip = CreateBaseClip();
       var objects = new[] { outfit.OutfitObject }
         .Concat(outfit.GetAllObjects())
+        .Concat((outfit.Variants ?? new List<GameObject>())
+          .Select(variant => variant.GetComponent<ACCVariantMaterialOverride>() != null
+            ? variant.GetComponent<ACCVariantMaterialOverride>().OutfitBase
+            : null))
         .Where(obj => obj != null &&
           obj.GetComponent<ACCVariantMaterialOverride>() == null)
         .Distinct();
@@ -652,20 +676,21 @@ namespace UnityBox.AdvancedCostumeController
       {
         new ChildMotion
         {
-          motion = CreateMixerSlotClip(allCandidateParts, null,
+          motion = CreateMixerSlotClip(outfit, allCandidateParts, null, null,
             groupPath + "_" + slot.Key + "_Off"),
           threshold = 0f,
           timeScale = 1f,
           mirror = false,
           cycleOffset = 0f
-        }
+        },
       };
       for (int i = 0; i < slot.Candidates.Count; i++)
       {
         var candidate = slot.Candidates[i];
         children.Add(new ChildMotion
         {
-          motion = CreateMixerSlotClip(allCandidateParts, candidate.Control.Parts,
+          motion = CreateMixerSlotClip(outfit, allCandidateParts,
+            candidate.Control.Parts, candidate.VariantObject,
             groupPath + "_" + slot.Key + "_" + i),
           threshold = i + 1,
           timeScale = 1f,
@@ -678,8 +703,10 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     private AnimationClip CreateMixerSlotClip(
+      OutfitData outfit,
       List<GameObject> allParts,
       List<GameObject> activeParts,
+      GameObject activeVariant,
       string label)
     {
       string animFolder = EnsureAnimFolder("Mixer");
@@ -698,8 +725,42 @@ namespace UnityBox.AdvancedCostumeController
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
       }
 
+      // Material variants reuse the Outfit Base mesh. Their replacement must
+      // be limited to this slot's part renderers; otherwise enabling one part
+      // recolors every material slot in the outfit.
+      WriteMaterialVariantCurvesForParts(clip, outfit, activeVariant,
+        activeParts ?? allParts);
+
       AssetDatabase.CreateAsset(clip, animPath);
       return clip;
+    }
+
+    private void WriteMaterialVariantCurvesForParts(
+      AnimationClip clip,
+      OutfitData outfit,
+      GameObject activeVariant,
+      IEnumerable<GameObject> partRoots)
+    {
+      var marker = activeVariant != null
+        ? activeVariant.GetComponent<ACCVariantMaterialOverride>()
+        : null;
+      // Ordinary mesh variants use their own materials and must not receive
+      // material bindings from this helper. Null means the slot is Off and
+      // should restore base materials; a non-null marker applies a material
+      // variant to the scoped part.
+      if (activeVariant != null && marker == null) return;
+
+      var renderers = (partRoots ?? Enumerable.Empty<GameObject>())
+        .Where(part => part != null)
+        .SelectMany(part => part.GetComponentsInChildren<Renderer>(true))
+        .Where(renderer => renderer != null)
+        .Distinct()
+        .ToList();
+      if (renderers.Count == 0) return;
+
+      WriteRendererMaterials(clip, outfit.BaseObject, null, renderers);
+      if (marker != null && marker.OutfitBase == outfit.BaseObject)
+        WriteRendererMaterials(clip, outfit.BaseObject, marker, renderers);
     }
 
     #endregion
@@ -739,9 +800,9 @@ namespace UnityBox.AdvancedCostumeController
         controller.AddParameter(new AnimatorControllerParameter
         {
           name = baseParameterName,
-          // VRCFury 会将非 Float 的 BlendTree 输入替换为 Controller 中的第一个 Float；
-          // MA MMD Relay 注入时该 Float 可能正是 __MA/Internal/MMDNotActive。表达式菜单
-          // 参数仍保持 Int，只有 Animator 内部读取选择值时使用 Float。
+          // Keep the Animator-side parameter Float because BlendTree inputs
+          // consume numeric values. The Modular Avatar expression parameter
+          // uses Bool for two-value domains; its 0/1 value maps directly here.
           type = AnimatorControllerParameterType.Float,
           defaultFloat = defaultChoiceIndex
         });
@@ -893,8 +954,8 @@ namespace UnityBox.AdvancedCostumeController
 
           for (int bit = 0; bit < domain.Layout.BitCount; bit++)
           {
-            var encodeTransition = CreateAnyStateTransition(compressionLayer.stateMachine, encodeState,
-              canTransitionToSelf: true);
+            var encodeTransition = CreateAnyStateTransition(
+              compressionLayer.stateMachine, encodeState, canTransitionToSelf: true);
             AddChoiceValueConditions(encodeTransition, domain.LocalParameter, localValue);
             encodeTransition.AddCondition(AnimatorConditionMode.If, 0, IsLocalParameter);
             encodeTransition.AddCondition(

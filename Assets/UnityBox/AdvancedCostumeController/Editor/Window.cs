@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
@@ -165,6 +164,16 @@ namespace UnityBox.AdvancedCostumeController
         EditorGUILayout.HelpBox(
           T("将菜单本地 Int 压缩为同步 Bool 位；所有有效选择域共用 1 个编码/解码 Animator Layer。",
             "Compresses local menu Int values into synced Bool bits; all active choice domains share one encode/decode Animator layer."),
+          MessageType.Info);
+      }
+
+      config.AutoGenerateMenuIcons = EditorGUILayout.Toggle(
+        T("自动生成菜单图标", "Auto Generate Menu Icons"), config.AutoGenerateMenuIcons);
+      if (config.AutoGenerateMenuIcons)
+      {
+        EditorGUILayout.HelpBox(T(
+          "生成时会在空白预览场景中渲染当前服装、变体、部件和混搭入口，输出 256×256 透明 PNG；部件控制项按自身控制对象拍摄，Parts 文件夹使用 ACC 预置图标。关闭此选项时不会给部件子项补 OutlineBlank2。",
+          "Generation directly renders outfits, variants, parts, and the all-outfits mixer entry in an empty preview scene, exporting transparent 256×256 PNGs; part controls capture their own targets while the Parts folder uses an ACC preset icon. When disabled, ACC does not assign OutlineBlank2 to part child items."),
           MessageType.Info);
       }
 
@@ -450,16 +459,7 @@ namespace UnityBox.AdvancedCostumeController
           true, false));
       }
 
-      bool sceneLocal = outfit.BaseObject != null &&
-        PrefabStageUtility.GetCurrentPrefabStage() == null;
-      if (!sceneLocal)
-      {
-        EditorGUILayout.HelpBox(T(
-          "Prefab Mode 中不会自动写入分组组件；请回到普通场景后保存分组。",
-          "ACC does not write grouping components in Prefab Mode; return to a regular scene to save groups."),
-          MessageType.Warning);
-      }
-      using (new EditorGUI.DisabledScope(!sceneLocal || !changes.Any(change => change.Apply)))
+      using (new EditorGUI.DisabledScope(!changes.Any(change => change.Apply)))
       {
         if (!GUILayout.Button(T("保存预览分组到服装", "Save Preview Groups to Outfit")))
           return;

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace UnityBox.AdvancedCostumeController
@@ -11,7 +10,52 @@ namespace UnityBox.AdvancedCostumeController
   public class ACCVariantMaterialOverrideEditor : Editor
   {
       private const string ConvertMenuPath =
-        "GameObject/ACC/转换成服装变体 (Convert to Outfit Variant)";
+        "GameObject/AdvancedCostumeController/转换成服装变体 (Convert to Outfit Variant)";
+
+      private void OnEnable()
+      {
+        // Unity calls Reset when the component is added, but Reset cannot safely
+        // compare imported Renderer data. Defer one frame so serialized OutfitBase
+        // and the sibling hierarchy are ready, then initialize the preview once.
+        EditorApplication.delayCall += AutoInitializePreview;
+      }
+
+      private void OnDisable()
+      {
+        EditorApplication.delayCall -= AutoInitializePreview;
+      }
+
+      private void AutoInitializePreview()
+      {
+        if (this == null || targets == null) return;
+
+        foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
+        {
+          if (selectedMarker == null || selectedMarker.EditorPreviewInitialized ||
+              selectedMarker.OutfitBase == null || !IsEditableSceneObject(selectedMarker.gameObject))
+            continue;
+
+          // Components created before the one-time initialization flag was
+          // introduced may already contain user-authored rules. Preserve them
+          // rather than treating an old serialized false flag as a new marker.
+          if ((selectedMarker.Replacements?.Count ?? 0) > 0 ||
+              (selectedMarker.RendererOverrides?.Count ?? 0) > 0)
+          {
+            Undo.RecordObject(selectedMarker, "Mark ACC variant preview initialized");
+            selectedMarker.MarkEditorPreviewInitialized();
+            EditorUtility.SetDirty(selectedMarker);
+            continue;
+          }
+
+          Undo.RecordObject(selectedMarker, "Initialize ACC variant material preview");
+          AnalyzeOrPopulate(selectedMarker);
+          selectedMarker.MarkEditorPreviewInitialized();
+          EditorUtility.SetDirty(selectedMarker);
+        }
+
+        serializedObject.Update();
+        Repaint();
+      }
 
       public override void OnInspectorGUI()
       {
@@ -33,38 +77,39 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         var outfitBaseProp = serializedObject.FindProperty("OutfitBase");
-        bool sceneLocal = IsSceneLocal(marker.gameObject);
-        if (!sceneLocal)
-        {
-          EditorGUILayout.HelpBox(Localization.Text(
-            "自动分析和转换仅允许在普通场景中执行，Prefab Mode 中不会修改 Prefab 资产。",
-            "Automatic analysis and conversion are available only in regular scenes; Prefab assets are not modified in Prefab Mode."),
-            MessageType.Warning);
-        }
         EditorGUI.BeginChangeCheck();
         EditorGUILayout.PropertyField(outfitBaseProp,
           new GUIContent(Localization.Text("服装本体", "Outfit Base")));
         if (EditorGUI.EndChangeCheck())
         {
           serializedObject.ApplyModifiedProperties();
-          if (sceneLocal)
-            ForEachMarker("Set ACC variant outfit base", selectedMarker =>
-              AnalyzeOrPopulate(selectedMarker));
+          ForEachMarker("Set ACC variant outfit base", selectedMarker =>
+          {
+            AnalyzeOrPopulate(selectedMarker);
+            selectedMarker.MarkEditorPreviewInitialized();
+          });
           serializedObject.Update();
         }
 
-        using (new EditorGUI.DisabledScope(marker.OutfitBase == null || !sceneLocal))
+        using (new EditorGUI.DisabledScope(marker.OutfitBase == null))
         {
           EditorGUILayout.BeginHorizontal();
           if (GUILayout.Button(Localization.Text("刷新全局材质", "Refresh Global Materials")))
           {
-            ForEachMarker("Refresh ACC global materials", PopulateGlobalMaterialEntries);
+            ForEachMarker("Refresh ACC global materials", selectedMarker =>
+            {
+              PopulateGlobalMaterialEntries(selectedMarker);
+              selectedMarker.MarkEditorPreviewInitialized();
+            });
             serializedObject.Update();
           }
           if (GUILayout.Button(Localization.Text("自动分析最优替换", "Analyze Optimal Replacements")))
           {
             ForEachMarker("Analyze ACC material replacements", selectedMarker =>
-              AnalyzeOrPopulate(selectedMarker));
+            {
+              AnalyzeOrPopulate(selectedMarker);
+              selectedMarker.MarkEditorPreviewInitialized();
+            });
             serializedObject.Update();
           }
           EditorGUILayout.EndHorizontal();
@@ -168,7 +213,7 @@ namespace UnityBox.AdvancedCostumeController
       {
         foreach (var selectedMarker in targets.OfType<ACCVariantMaterialOverride>())
         {
-          if (!IsSceneLocal(selectedMarker.gameObject)) continue;
+          if (!IsEditableSceneObject(selectedMarker.gameObject)) continue;
           Undo.RecordObject(selectedMarker, undoName);
           action(selectedMarker);
           EditorUtility.SetDirty(selectedMarker);
@@ -303,11 +348,11 @@ namespace UnityBox.AdvancedCostumeController
       private static void ConvertSelectedObjectsToVariant()
       {
         var variant = Selection.activeGameObject;
-        if (variant == null || !IsSceneLocal(variant))
+        if (!IsEditableSceneObject(variant))
         {
           EditorUtility.DisplayDialog(Localization.Text("无法转换", "Cannot Convert"),
-            Localization.Text("请选择场景中的服装变体对象；ACC 不会修改 Project 中的 Prefab 资产。",
-              "Select an outfit variant object in the scene; ACC will not modify Prefab assets in the Project."), "OK");
+            Localization.Text("请选择可编辑的服装变体对象。",
+              "Select an editable outfit variant object."), "OK");
           return;
         }
 
@@ -331,6 +376,7 @@ namespace UnityBox.AdvancedCostumeController
         Undo.RecordObject(marker, "Convert to ACC outfit variant");
         marker.OutfitBase = outfitBase;
         int ruleCount = AnalyzeOrPopulate(marker);
+        marker.MarkEditorPreviewInitialized();
         EditorUtility.SetDirty(marker);
         Debug.Log(Localization.Text(
           $"[ACC] 已将 {variant.name} 转换为 {outfitBase.name} 的材质变体，生成 {ruleCount} 条最优替换规则。",
@@ -393,16 +439,15 @@ namespace UnityBox.AdvancedCostumeController
       private static bool ValidateConvertSelectedObjectsToVariant()
       {
         var selected = Selection.activeGameObject;
-        return selected != null && IsSceneLocal(selected);
+        return IsEditableSceneObject(selected);
       }
 
-      private static bool IsSceneLocal(GameObject gameObject)
+      private static bool IsEditableSceneObject(GameObject gameObject)
       {
         if (gameObject == null || EditorUtility.IsPersistent(gameObject) ||
             !gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
           return false;
-        var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-        return prefabStage == null || prefabStage.scene != gameObject.scene;
+        return true;
       }
   }
 }

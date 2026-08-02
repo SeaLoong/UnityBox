@@ -9,7 +9,10 @@ namespace UnityBox.AdvancedCostumeController
   public sealed class ChoiceParameterLayout
   {
     public int ChoiceCount { get; }
-    public bool UsesCompression { get; }
+    private readonly bool requestedCompression;
+    /// <summary>恰好两个取值时可直接使用一个 Bool，而不需要 Int 或压缩位。</summary>
+    public bool UsesBoolean => ChoiceCount == 2;
+    public bool UsesCompression => requestedCompression && !UsesBoolean;
     /// <summary>只有一个固定选择值时无需网络同步。</summary>
     public bool RequiresSynchronization => ChoiceCount > 1;
     public int BitCount
@@ -26,7 +29,7 @@ namespace UnityBox.AdvancedCostumeController
     public ChoiceParameterLayout(int choiceCount, bool usesCompression)
     {
       ChoiceCount = choiceCount;
-      UsesCompression = usesCompression;
+      requestedCompression = usesCompression;
     }
 
     public string GetBitParameterName(string baseParameterName, int bitIndex)
@@ -52,7 +55,7 @@ namespace UnityBox.AdvancedCostumeController
     public List<PartControlData> PartControls { get; set; } = new List<PartControlData>();
   }
 
-  /// <summary>混搭中同一服装组的一个部件槽位。</summary>
+  /// <summary>混搭中同一服装组的一个部件/分组候选参数及其版本对象映射。</summary>
   public class MixerPartSlot
   {
     public string Key { get; set; }
@@ -142,33 +145,71 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 按相对部件路径或持久分组名构建混搭槽位。
-    /// 同一服装组内相同槽位互斥，不同槽位可以同时选择。
+    /// 按相对部件路径或持久分组名构建混搭候选参数。
+    /// Candidates 把同一个参数槽位映射到不同版本的实际对象；0 为 Off。
     /// </summary>
     public List<MixerPartSlot> GetMixerPartSlots()
     {
       var slots = new Dictionary<string, MixerPartSlot>();
       var orderedSlots = new List<MixerPartSlot>();
-      // 普通模式的 PartControls 是唯一的控制定义。
-      // Mixer 只为这些既有控制寻找各变体的对应对象，不重新收集一套“所有网格控制”。
-      var normalControls = GetPartControls();
       var variantDataList = VariantPartData ?? new List<VariantPartData>();
       var baseData = variantDataList.FirstOrDefault(item => item.VariantObject == BaseObject);
+      var baseControls = GetPartControls();
+      var definitions = new List<(string Key, string Name, bool IsGroup, string PartName)>();
+      var definitionKeys = new HashSet<string>();
 
-      foreach (var normalControl in normalControls)
+      void AddDefinitions(
+        GameObject owner,
+        IEnumerable<PartControlData> controls,
+        bool allowVariantNameFallback)
       {
-        if (normalControl.Parts == null || normalControl.Parts.Count == 0) continue;
-        string key = GetMixerSlotKey(BaseObject, normalControl);
-        if (!slots.TryGetValue(key, out var slot))
+        foreach (var control in controls ?? Enumerable.Empty<PartControlData>())
         {
-          slot = new MixerPartSlot { Key = key, Name = normalControl.Name };
-          slots.Add(key, slot);
-          orderedSlots.Add(slot);
+          if (control?.Parts == null || control.Parts.Count == 0) continue;
+          string key = GetMixerSlotKey(owner, control);
+          if (string.IsNullOrEmpty(key)) continue;
+          if (!definitionKeys.Add(key)) continue;
+          string partName = !control.IsGroup
+            ? control.Parts.FirstOrDefault()?.name ?? ""
+            : "";
+          // Different outfit versions often wrap the same logical part in a
+          // different container. Reuse an existing non-group definition with
+          // the same control name instead of creating a second disconnected
+          // Mixer slot for the path difference.
+          if (allowVariantNameFallback && !control.IsGroup && definitions.Any(definition =>
+              !definition.IsGroup &&
+              (definition.Name == control.Name ||
+               (!string.IsNullOrEmpty(partName) && definition.PartName == partName))))
+          {
+            definitionKeys.Remove(key);
+            continue;
+          }
+          definitions.Add((key, control.Name, control.IsGroup, partName));
         }
+      }
 
-        if (baseData != null)
+      // 先保持本体控制顺序，再追加实体变体独有的控制项；材质变体没有
+      // VariantPartData 部件，因此只会复用本体定义。
+      AddDefinitions(BaseObject, baseControls, allowVariantNameFallback: false);
+      foreach (var variantData in variantDataList)
+      {
+        if (variantData == null || variantData.VariantObject == BaseObject) continue;
+        AddDefinitions(variantData.VariantObject, variantData.PartControls,
+          allowVariantNameFallback: true);
+      }
+
+      foreach (var definition in definitions)
+      {
+        string key = definition.Key;
+        var slot = new MixerPartSlot { Key = key, Name = definition.Name };
+        slots.Add(key, slot);
+        orderedSlots.Add(slot);
+
+        if (baseData != null && baseData.PartControls != null)
         {
-          var baseControl = FindMatchingControl(baseData, key, normalControl);
+          var baseControl = FindMatchingControl(baseData, key,
+            new PartControlData { Name = definition.Name, IsGroup = definition.IsGroup },
+            definition.PartName);
           if (baseControl != null)
             slot.Candidates.Add(new VariantPartCandidate
             {
@@ -180,7 +221,27 @@ namespace UnityBox.AdvancedCostumeController
         foreach (var variantData in variantDataList)
         {
           if (variantData.VariantObject == BaseObject) continue;
-          var variantControl = FindMatchingControl(variantData, key, normalControl);
+          var variantControl = FindMatchingControl(variantData, key,
+            new PartControlData { Name = definition.Name, IsGroup = definition.IsGroup },
+            definition.PartName);
+          if (variantControl == null)
+          {
+            var materialVariant = variantData.VariantObject != null
+              ? variantData.VariantObject.GetComponent<ACCVariantMaterialOverride>()
+              : null;
+            if (materialVariant != null && materialVariant.OutfitBase == BaseObject)
+            {
+              // A material variant reuses the Outfit Base's part hierarchy.
+              // Keep it as a candidate; its material curves are scoped to the
+              // selected part by the Mixer animation builder.
+              variantControl = baseControls.FirstOrDefault(control =>
+                GetMixerSlotKey(BaseObject, control) == key ||
+                (definition.IsGroup && control.IsGroup &&
+                  control.Name == definition.Name) ||
+                (!definition.IsGroup && control.Parts != null &&
+                  control.Parts.FirstOrDefault()?.name == definition.PartName));
+            }
+          }
           if (variantControl == null) continue;
           slot.Candidates.Add(new VariantPartCandidate
           {
@@ -194,15 +255,27 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     private static PartControlData FindMatchingControl(
-      VariantPartData variantData, string expectedKey, PartControlData normalControl)
+      VariantPartData variantData,
+      string expectedKey,
+      PartControlData normalControl,
+      string expectedPartName)
     {
+      if (variantData?.PartControls == null) return null;
       return variantData.PartControls.FirstOrDefault(control =>
         GetMixerSlotKey(variantData.VariantObject, control) == expectedKey ||
-        (normalControl.IsGroup && control.IsGroup && control.Name == normalControl.Name));
+        (control != null && normalControl != null &&
+          control.IsGroup == normalControl.IsGroup &&
+          (string.Equals(control.Name, normalControl.Name, System.StringComparison.Ordinal) ||
+           (!control.IsGroup &&
+            control.Parts != null && normalControl.Parts != null &&
+            control.Parts.FirstOrDefault()?.name == expectedPartName))));
     }
 
     public static string GetMixerSlotKey(GameObject variantObject, PartControlData control)
     {
+      if (variantObject == null || control == null || control.Parts == null ||
+          control.Parts.Count == 0 || control.Parts[0] == null)
+        return "";
       return control.IsGroup
         ? "Groups/" + control.Name
         : "Parts/" + Utils.GetRelativePath(variantObject, control.Parts[0]);
@@ -227,6 +300,7 @@ namespace UnityBox.AdvancedCostumeController
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
     public bool EnableParameterCompression = false;
+    public bool AutoGenerateMenuIcons = false;
     public string CustomMixerName = "";
     public string RootMenuName = "";
 
@@ -285,9 +359,26 @@ namespace UnityBox.AdvancedCostumeController
     public string GetResolvedGeneratedFolder()
     {
       string folder = Utils.NormalizeAssetsFolder(GeneratedFolder);
-      string menuName = Utils.SanitizeForFileName(EffectiveRootMenuName);
+      string sceneName = CostumesRoot != null && CostumesRoot.scene.IsValid()
+        ? (string.IsNullOrWhiteSpace(CostumesRoot.scene.path)
+          ? CostumesRoot.scene.name
+          : System.IO.Path.GetFileNameWithoutExtension(CostumesRoot.scene.path))
+        : "UnsavedScene";
+      string sceneIdentity = Utils.SanitizeForFileName(sceneName);
+      if (string.IsNullOrWhiteSpace(sceneIdentity)) sceneIdentity = "UnsavedScene";
+
+      var descriptor = CostumesRoot != null
+        ? CostumesRoot.GetComponentInParent<VRCAvatarDescriptor>()
+        : null;
+      var avatarRoot = descriptor != null
+        ? descriptor.gameObject
+        : CostumesRoot != null ? CostumesRoot.transform.root.gameObject : null;
+      string avatarName = avatarRoot != null ? avatarRoot.name : "Avatar";
+      string avatarIdentity = Utils.SanitizeForFileName(avatarName);
+      if (string.IsNullOrWhiteSpace(avatarIdentity)) avatarIdentity = "Avatar";
       string ns = Utils.SanitizeForFileName(GetGenerationNamespace());
-      return folder + "/" + menuName + "/" + ns;
+      if (string.IsNullOrWhiteSpace(ns)) ns = DefaultControllerFileName;
+      return folder + "/" + sceneIdentity + "/" + avatarIdentity + "/" + ns;
     }
 
     /// <summary>生成资产和 Animator Layer 使用的稳定命名空间。</summary>

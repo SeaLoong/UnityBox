@@ -8,9 +8,10 @@ ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并�
 2. 选择服装根节点，点击**刷新预览**。
 3. 勾选要生成的服装、本体/变体和部件。
 4. 按需启用**部件控制**、**混搭模式**和**参数压缩**。
-5. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
+5. 可选启用**自动生成菜单图标**。
+6. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
 
-ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其 GameObject 名称。服装与部件沿用实际对象名；当服装选择需要进入子菜单时，服装启用项会使用当前语言的“启用 + 对象名”（中文如“启用Orignial”，英文如“Enable Orignial”）。ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；Mixer 启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按根菜单名称和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产。
+ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其 GameObject 名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；Mixer 启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按场景、Avatar 和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产；关闭**自动生成菜单图标**时会保留该目录下已有的 `MenuIcons` 资产。
 
 ## 配置项
 
@@ -37,32 +38,55 @@ ACC 优先将服装骨架分支中的 `MA Merge Armature` 视为明确的服装�
 
 ### 混搭模式
 
-Custom Mixer 要求启用部件控制。启用后，ACC 会准备所有服装的部件槽位候选菜单，使不同服装的部件可以自由组合；实际未使用的服装组不会保持激活。
+Custom Mixer 要求启用部件控制。启用后，ACC 会为每种部件/分组生成一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件；这样不同服装组的部件可以自由组合，材质变体候选只会对当前部件应用材质替换。
 
-进入 Mixer 时，ACC 会先保留**默认服装**：默认服装组会显示，其每个 Mixer 槽位会选择默认服装对应候选，且 On/Off 状态严格沿用普通 `Parts` 菜单的初始 `activeSelf` 状态。普通 Parts 默认关闭的部件在 Mixer 中也保持未选择；其他服装组的槽位初始均为未选择。没有可混搭槽位的默认服装也会保持显示，不会因进入 Mixer 而消失。
+进入 Mixer 时，ACC 会先保留**默认服装**：默认服装组的每个槽位会选择默认服装对应的候选，并严格沿用普通 `Parts` 菜单的初始 `activeSelf` 状态；其它服装组的槽位为 Off。切换到其它服装候选后，动画只打开该候选的部件，不会把同一槽位的其它版本部件一起打开。
 
 主服装参数取值连续排列：
 
 - 服装/变体使用 `0` 到 `服装对象数量 - 1`；
 - Mixer 使用 `服装对象数量`。
 
-例如有 3 个服装对象时，普通选择值为 `0`、`1`、`2`，Mixer 值为 `3`。每个 Mixer 槽位保留 `0` 表示未选择，候选从 `1` 开始。
+例如有 3 个服装对象时，普通选择值为 `0`、`1`、`2`，Mixer 值为 `3`。没有变体的部件槽位只有 `0/1` 两个值，会直接使用 Bool；有多个版本候选时使用 `0..N` 的 Int，启用参数压缩后再编码为 Bool 位。
 
-进入 Mixer 时不会默认激活所有服装组。ACC 使用一个合并的 `Direct BlendTree` 激活层管理所有服装组：只有某组至少一个部件槽位选择了候选部件时，该组服装根对象及其候选变体才会激活；该组所有槽位恢复为未选择，或退出 Mixer 后，该组会关闭。这样未参与混搭的服装及其骨架不会持续处于激活状态。被选中的服装组仍会保留其所需骨架层级，避免 `SkinnedMeshRenderer` 绑定失效。
+进入 Mixer 时不会默认激活所有服装组。ACC 使用一个合并的 `Direct BlendTree` 管理每个槽位：某组任一槽位为非零时激活该组，槽位的 `Simple1D` 子树只打开当前值对应的候选部件；全部槽位回到 `0`，或退出 Mixer 后，该组会关闭。
+
+### 自动生成菜单图标
+
+启用后，Generate 会为 ACC 生成的服装、变体、部件和 Mixer 入口/服装项生成图标；部件菜单文件夹使用 ACC 预置的空白图标，部件控制项优先拍摄其自身网格：
+
+- 在隐藏的 Unity Preview Scene 中克隆完整 Avatar，并保留原始 `SkinnedMeshRenderer`、材质和骨骼引用；
+- 为当前目标 Renderer 临时设置专用渲染 Layer，Camera 只通过 `cullingMask` 渲染该 Layer：服装图标只展示该服装，部件/分组图标只展示该控制项包含的对象，Avatar 身体、其他服装和场景内容不会进入画面；
+- 所有服装/变体共享同一服装 Bounds 和比例，部件则按自身 Bounds 独立特写；
+- 根据 Avatar 实际朝向自动从正面使用正交相机取景；
+- 使用透明背景导出 256×256 PNG；
+- 即使拍摄结果完全透明或空白，也会保存 PNG 并作为该菜单项的图标，不会跳过或继承无关图标；
+- Mixer 入口会在所有服装组启用的状态下拍摄组合图标；
+- 部件菜单文件夹使用 `Resources/OutlineBlank2.png`；开启自动图标后部件控制项拍摄自身控制对象，关闭自动图标时不向部件子项补预置图标；根菜单默认使用 `Resources/OutlineClothing2.png`；
+- 材质变体图标会应用全局规则和精准槽位覆盖；
+- 父级子菜单没有独立目标时，会继承第一个有图标的后代图标。
+
+图标保存到当前 ACC 输出目录下的 `MenuIcons/`，重新生成时会更新实际拍摄请求对应的 PNG。开启此选项不会清理根菜单、Parts 菜单或其它未参与拍摄节点的已有图标；实际拍摄请求会更新对应菜单项图标。关闭时不会运行图标生成器，Parts 文件夹仍可使用 `OutlineBlank2`，但不会给部件子项补这张预置图标。
+
+ACC 输出目录固定按 `{SceneName}/{AvatarName}/{ParameterPrefix}` 隔离，不再使用 Root Menu Name 作为目录。不同场景的同名 Avatar、同一场景中不同名称的 Avatar 均不会互相覆盖，也不会再出现默认的 `Costumes/Costumes`。
+
+实现参考了 [ParameterIconGenerator](https://github.com/Narazaka/ParameterIconGenerator) 的“原始 Renderer + 专用 Layer + Camera.cullingMask + Camera.Render”方案，以及 Unity `PreviewRenderUtility` 的预览场景做法。参考项目通过 Play Mode 与 Av3Emulator 驱动参数，而 ACC 因为已知每个生成菜单项的目标对象，采用无外部依赖的 Preview Scene 离线渲染；不再调用 `SkinnedMeshRenderer.BakeMesh`，避免导入服装的补偿性 Transform 导致网格坐标被重复解释。
 
 ## 参数压缩
 
-**启用参数压缩**默认关闭。关闭时，主选择和每个 Mixer 槽位使用同步 `Int`，每个 `Int` 占用 8 bit。
+**启用参数压缩**默认关闭。两值选择域（包括两套服装的主切换和无变体部件槽位）直接使用同步 Bool；多值域关闭压缩时使用同步 `Int`，每个 `Int` 占用 8 bit，开启压缩后编码为若干同步 Bool 位。
 
-启用后，每个 ACC 选择域会生成：
+启用后，每个多值 ACC 选择域会生成：
 
-- 一个仅本地使用的 `Int`，供菜单输入与同步编码逻辑使用；
+- 一个仅本地使用的 `Int`，供多值菜单输入与同步编码逻辑使用；
 - 表示该选择域的最少数量同步 `Bool` 位；
 - 由所有有效选择域共用的编码/解码 Animator Layer。
 
-表达式菜单仍写入离散 `Int` 值；生成的 Animator Controller 会以同名 `Float`
+多值表达式菜单仍写入离散 `Int` 值；生成的 Animator Controller 会以同名 `Float`
 参数读取这些整数值。这样 `Simple1D` 和 `Direct BlendTree` 的输入始终符合 Unity/VRCFury
 对 Float 权重参数的要求，不会被后处理器替换为其他内部 Float 参数。
+
+恰好只有两个取值的选择域直接使用表达式 `Bool`；Animator 内部仍使用数值 `Float` 读取其 `0/1` 值，不额外创建本地 Int 或压缩位。
 
 选择域有 $N$ 个可用值时，同步位数为：
 
@@ -111,14 +135,15 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 
 ### `ACCVariantMaterialOverride`
 
-将组件添加到材质变体对象并指定 `OutfitBase`。Inspector 提供两种互补方式：
+将组件添加到材质变体对象并指定 `OutfitBase`。首次创建组件且本体引用有效时，Inspector 会自动执行一次材质对照并刷新列表；已有规则不会因为重新打开 Inspector 被覆盖。Inspector 提供两种互补方式：
+
 
 - **全局材质替换**：一次配置 `Source → Replacement`，替换本体中所有使用该 Source 的槽位；
 - **精准 Renderer 槽位覆盖**：只覆盖指定 Renderer 的指定材质槽位，优先于全局规则。
 
 点击**自动分析最优替换**会按本体与当前变体的 Renderer 相对路径进行比较：每个 Source 出现最多的目标材质生成全局规则，少数不同映射生成精准例外；若保持原材质是多数，则只生成少数精准变化。无需像逐 Mesh Material Setter 那样配置所有槽位。列表默认展开并支持直接调整检测结果。
 
-如果服装作者提供了两套完整预制件，只需在场景中右键要转换的变体并使用 **GameObject > ACC > 转换成服装变体**。ACC 会从同级对象中自动识别唯一/最佳匹配的 Outfit Base，确认后添加或更新组件并生成最优规则。重复触发会重算同一套配置，不会重复添加组件。转换后的完整变体预制件只作为材质对照来源，运行时不会与本体网格同时激活。ACC 不会 Apply 或修改 Project 中的 Prefab 资产。
+如果服装作者提供了两套完整预制件，只需选中要转换的变体并使用 **GameObject > ACC > 转换成服装变体**。ACC 会从同级对象中自动识别唯一/最佳匹配的 Outfit Base，确认后添加或更新组件并生成最优规则。重复触发会重算同一套配置，不会重复添加组件。转换后的完整变体预制件只作为材质对照来源，运行时不会与本体网格同时激活。
 
 生成时材质曲线会合并到服装/变体切换动画中，不会额外生成材质 Layer。
 
@@ -126,7 +151,7 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 
 - ACC 会跳过已被识别为嵌套服装的层级，避免重复控制。
 - 同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
-- 主服装切换和 Mixer 槽位候选使用 `Simple1D BlendTree` 根据连续的离散选择值选择动画，避免为每个候选创建独立状态转移；所有树显式保留手工阈值，不使用 Unity 自动阈值。Animator 内部以 Float 参数读取这些值，菜单侧仍使用 Int。
+- 主服装切换和 Mixer 槽位候选使用 `Simple1D BlendTree` 根据离散值选择动画，避免为每个候选创建独立状态转移；两值域使用 Bool，多值域使用 Float Animator 参数，所有树显式保留手工阈值，不使用 Unity 自动阈值。
 - 启用部件控制或存在服装变体时，服装选择会进入一层子菜单；其中的服装控件名称使用本地化的“启用 + 对象名”，普通一级服装菜单仍直接使用对象名。
 - 主服装与 Mixer Enable 使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。Mixer 槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；普通 Parts 保持 Bool Toggle。
 - 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；内部使用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择。

@@ -16,6 +16,7 @@ namespace UnityBox.AdvancedCostumeController
   {
     private readonly ACCConfig config;
     private readonly AnimationBuilder animBuilder;
+    private readonly List<MenuIconRequest> menuIconRequests = new List<MenuIconRequest>();
 
     public Generator(ACCConfig config)
     {
@@ -74,6 +75,7 @@ namespace UnityBox.AdvancedCostumeController
 
       try
       {
+        menuIconRequests.Clear();
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("初始化…", "Initializing…"), 0.1f);
 
         int undoGroup = Undo.GetCurrentGroup();
@@ -104,6 +106,7 @@ namespace UnityBox.AdvancedCostumeController
         Utils.RemoveParameterDeclarations(rootParams, previousControllerParameters);
         Utils.RemoveParameterDeclarations(rootParams, generatedParameterNames);
         Utils.EnsureSubmenuOnNode(menuRoot, config.EffectiveRootMenuName);
+        Utils.EnsureDefaultMenuIcon(menuRoot, "OutlineClothing2");
 
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("构建菜单…", "Building menus…"), 0.3f);
         BuildMenus(menuRoot, selectedOutfits, outfitIndexMap, rootParams, defaultOutfit,
@@ -116,13 +119,26 @@ namespace UnityBox.AdvancedCostumeController
           int customMixerValue = GetCustomMixerValue(outfitIndexMap.Count);
           Mixer.BuildCustomMixerMenu(
             config, menuRoot, selectedOutfits, outfitIndexMap,
-            customMixerValue, rootParams, menuPresentation, defaultOutfit);
+            customMixerValue, rootParams, menuPresentation, defaultOutfit, menuIconRequests);
         }
 
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("创建动画控制器…", "Creating animator controller…"), 0.7f);
-        PrepareGeneratedFolder(resolvedFolder);
+        // When icon generation is disabled, keep the existing MenuIcons assets.
+        // The menu presentation snapshot restores their references after the
+        // generated menu tree is rebuilt; deleting the folder here would turn
+        // those restored references into Missing assets.
+        PrepareGeneratedFolder(resolvedFolder, preserveMenuIcons: !config.AutoGenerateMenuIcons);
 
         var controller = animBuilder.CreateController(selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
+
+        if (config.AutoGenerateMenuIcons)
+        {
+          EditorUtility.DisplayProgressBar(T("生成中", "Generating"),
+            T("生成菜单图标…", "Generating menu icons…"), 0.9f);
+          int iconCount = MenuIconGenerator.Generate(costumesRoot, menuRoot,
+            resolvedFolder, menuIconRequests);
+          Debug.Log($"[ACC] Generated {iconCount} menu icons.");
+        }
 
         // 配置 MergeAnimator
         mergeAnimator.layerType = VRCAvatarDescriptor.AnimLayerType.FX;
@@ -149,15 +165,54 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
-    private static void PrepareGeneratedFolder(string resolvedFolder)
+    private static void PrepareGeneratedFolder(string resolvedFolder, bool preserveMenuIcons)
     {
       // 输出目录按 ParamPrefix 隔离，因而可以在重新生成时安全清理旧 Controller 与 Clip，
-      // 避免 AssetDatabase.CreateAsset 因同名旧动画文件而失败。
+      // 避免 AssetDatabase.CreateAsset 因同名旧动画文件而失败。自动图标关闭时保留
+      // MenuIcons，否则菜单展示快照恢复的 Texture2D 引用会因资产被删除而变成 Missing。
       if (AssetDatabase.IsValidFolder(resolvedFolder))
-        AssetDatabase.DeleteAsset(resolvedFolder);
+      {
+        if (!preserveMenuIcons)
+        {
+          AssetDatabase.DeleteAsset(resolvedFolder);
+        }
+        else
+        {
+          string menuIconFolder = Utils.CombineAssetPath(resolvedFolder, "MenuIcons");
+          foreach (var subfolder in AssetDatabase.GetSubFolders(resolvedFolder))
+          {
+            if (string.Equals(subfolder, menuIconFolder, StringComparison.OrdinalIgnoreCase))
+              continue;
+            AssetDatabase.DeleteAsset(subfolder);
+          }
+
+          string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+          string fullFolder = Path.Combine(projectRoot,
+            resolvedFolder.Replace('/', Path.DirectorySeparatorChar));
+          if (Directory.Exists(fullFolder))
+          {
+            foreach (var file in Directory.GetFiles(fullFolder, "*",
+              SearchOption.TopDirectoryOnly))
+            {
+              if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
+              AssetDatabase.DeleteAsset(ToAssetPath(file));
+            }
+          }
+        }
+      }
 
       Directory.CreateDirectory(resolvedFolder);
       AssetDatabase.Refresh();
+    }
+
+    private static string ToAssetPath(string fullPath)
+    {
+      string normalizedPath = Path.GetFullPath(fullPath).Replace('\\', '/');
+      string projectRoot = Directory.GetParent(Application.dataPath).FullName
+        .Replace('\\', '/');
+      if (normalizedPath.StartsWith(projectRoot + "/", StringComparison.OrdinalIgnoreCase))
+        return normalizedPath.Substring(projectRoot.Length + 1);
+      return normalizedPath;
     }
 
     #region 菜单构建
@@ -200,15 +255,18 @@ namespace UnityBox.AdvancedCostumeController
             if (!outfitIndexMap.ContainsKey(obj)) continue;
 
             var itemNode = Utils.FindOrCreateChild(outfitSubmenu,
-              Localization.EnableObjectName(config, obj.name));
+              obj.name);
             var menuItem = Utils.CreateMenuItem(itemNode);
             // Button controls are momentary in VRChat; outfit choices must persist after release.
-            menuItem.PortableControl.Type = PortableControlType.Toggle;
+            Utils.ConfigureAsToggle(menuItem);
             ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout, outfitIndexMap[obj]);
             menuItem.isSaved = true;
             menuItem.isSynced = mainLayout.RequiresSynchronization &&
               !mainLayout.UsesCompression;
             Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
+            AddMenuIconRequest(itemNode,
+              GetMenuIconTargets(obj), "Choice_" + Utils.GetHierarchyPath(costumesRoot, obj),
+              obj.GetComponent<ACCVariantMaterialOverride>(), true);
           }
 
           // 先写入本体和变体；若它们恰好也叫“Parts/部件”，部件菜单会安全追加后缀。
@@ -222,13 +280,16 @@ namespace UnityBox.AdvancedCostumeController
           var itemNode = Utils.FindOrCreateChild(parentMenu, outfitName);
           var menuItem = Utils.CreateMenuItem(itemNode);
           // Button controls are momentary in VRChat; outfit choices must persist after release.
-          menuItem.PortableControl.Type = PortableControlType.Toggle;
+          Utils.ConfigureAsToggle(menuItem);
           ConfigureChoiceMenuItem(menuItem, config.MainParameterName, mainLayout,
             outfitIndexMap[outfit.BaseObject]);
           menuItem.isSaved = true;
           menuItem.isSynced = mainLayout.RequiresSynchronization &&
             !mainLayout.UsesCompression;
           Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
+          AddMenuIconRequest(itemNode, new[] { outfit.BaseObject },
+            "Choice_" + Utils.GetHierarchyPath(costumesRoot, outfit.BaseObject),
+            useSharedOutfitFraming: true);
         }
       }
     }
@@ -258,6 +319,12 @@ namespace UnityBox.AdvancedCostumeController
         // 单一固定选择仍保留本地参数供菜单/Animator 使用，但不占表达式同步预算。
         Utils.AddOrUpdateParameter(rootParams, baseParameterName,
           ParameterSyncType.Int, defaultChoiceIndex, true, true);
+        return;
+      }
+      if (layout.UsesBoolean)
+      {
+        Utils.AddOrUpdateParameter(rootParams, baseParameterName,
+          ParameterSyncType.Bool, defaultChoiceIndex == 1 ? 1 : 0, true);
         return;
       }
       if (!layout.UsesCompression)
@@ -353,8 +420,8 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// Mixer 进入时只预选默认服装组中的候选部件，并沿用普通 Parts 菜单的默认开关
-    /// 状态。默认关闭的 Parts 对应 Mixer 槽位保持 0（Off）。
+    /// Mixer 进入时预选默认服装组中与默认版本对应的部件候选，并沿用普通 Parts
+    /// 菜单的初始 activeSelf 状态；其它服装组及默认关闭部件均为 0（Off）。
     /// </summary>
     public static int GetMixerSlotDefaultValue(
       OutfitData defaultOutfit,
@@ -367,8 +434,6 @@ namespace UnityBox.AdvancedCostumeController
         return 0;
 
       var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      if (defaultChoice == null) return 0;
-
       int candidateIndex = slot.Candidates.FindIndex(candidate =>
         candidate.VariantObject == defaultChoice);
       if (candidateIndex < 0) return 0;
@@ -378,7 +443,8 @@ namespace UnityBox.AdvancedCostumeController
         OutfitData.GetMixerSlotKey(outfit.BaseObject, control) == slot.Key);
       bool defaultActive = normalControl != null
         ? normalControl.Parts.All(part => part != null && part.activeSelf)
-        : slot.Candidates[candidateIndex].Control.Parts.All(part => part != null && part.activeSelf);
+        : slot.Candidates[candidateIndex].Control.Parts.All(part =>
+          part != null && part.activeSelf);
       return defaultActive ? candidateIndex + 1 : 0;
     }
 
@@ -393,6 +459,7 @@ namespace UnityBox.AdvancedCostumeController
         Localization.DefaultPartsMenuObjectName(config));
       Utils.EnsureSubmenuOnNode(partsMenu, presentation: menuPresentation,
         semanticKey: Utils.GetPartsMenuSemanticKey(menuRoot, outfitSubmenu));
+      Utils.EnsureDefaultMenuIcon(partsMenu, "OutlineBlank2");
 
       foreach (var control in outfit.GetPartControls())
       {
@@ -402,17 +469,53 @@ namespace UnityBox.AdvancedCostumeController
         var partNode = Utils.FindOrCreateChild(partsMenu, control.Name);
         var partItem = Utils.CreateMenuItem(partNode);
 
-        partItem.PortableControl.Type = PortableControlType.Toggle;
+        Utils.ConfigureAsToggle(partItem);
         partItem.PortableControl.Parameter = partParamName;
         partItem.automaticValue = true;
         partItem.isDefault = partDefaultActive;
         partItem.isSaved = true;
         partItem.isSynced = true;
         Utils.ApplyMenuPresentation(menuPresentation, partNode, partItem, "");
+        var iconTargets = (control.Parts ?? new List<GameObject>())
+          .Where(part => part != null)
+          .Distinct()
+          .ToList();
+        string partStableKey = "Part_" + string.Join("_",
+          iconTargets.Select(part => Utils.GetHierarchyPath(config.CostumesRoot, part)));
+        AddMenuIconRequest(partNode, iconTargets, partStableKey);
 
         Utils.AddOrUpdateParameter(rootParams, partParamName, ParameterSyncType.Bool,
           partDefaultActive ? 1 : 0, true);
       }
+    }
+
+    private IEnumerable<GameObject> GetMenuIconTargets(GameObject choiceObject)
+    {
+      var materialVariant = choiceObject != null
+        ? choiceObject.GetComponent<ACCVariantMaterialOverride>()
+        : null;
+      if (materialVariant != null && materialVariant.OutfitBase != null)
+        return new[] { materialVariant.OutfitBase };
+      return choiceObject != null ? new[] { choiceObject } : Array.Empty<GameObject>();
+    }
+
+    private void AddMenuIconRequest(
+      GameObject menuNode,
+      IEnumerable<GameObject> targets,
+      string stableKey,
+      ACCVariantMaterialOverride materialVariant = null,
+      bool useSharedOutfitFraming = false)
+    {
+      if (!config.AutoGenerateMenuIcons || menuNode == null) return;
+      menuIconRequests.Add(new MenuIconRequest
+      {
+        MenuNode = menuNode,
+        Targets = targets?.Where(target => target != null).Distinct().ToList()
+          ?? new List<GameObject>(),
+        StableKey = stableKey,
+        MaterialVariant = materialVariant,
+        UseSharedOutfitFraming = useSharedOutfitFraming
+      });
     }
 
     #endregion
@@ -461,6 +564,9 @@ namespace UnityBox.AdvancedCostumeController
         sb.AppendLine(T($"- 混搭模式：已启用（节点名称：{mixerObjectName}）",
           $"- Custom Mixer: enabled (node name: {mixerObjectName})"));
       }
+      if (config.AutoGenerateMenuIcons)
+        sb.AppendLine(T("- 菜单图标：将仅拍摄各服装/部件并替换 ACC 菜单树现有图标。",
+          "- Menu icons: each outfit/part will be captured in isolation and existing ACC menu-tree icons will be replaced."));
 
       return EditorUtility.DisplayDialog(T("生成确认", "Confirm Generation"), sb.ToString(),
         T("继续", "Continue"), T("取消", "Cancel"));
@@ -479,6 +585,12 @@ namespace UnityBox.AdvancedCostumeController
       var mainLayout = new ChoiceParameterLayout(mainChoices, config.EnableParameterCompression);
       int partBits = 0;
       int mixerSlotBits = 0;
+      int GetSynchronizedBits(ChoiceParameterLayout layout)
+      {
+        if (!layout.RequiresSynchronization) return 0;
+        if (layout.UsesBoolean) return 1;
+        return layout.UsesCompression ? layout.BitCount : intBits;
+      }
 
       foreach (var outfit in outfits)
       {
@@ -488,19 +600,18 @@ namespace UnityBox.AdvancedCostumeController
         if (config.EnableCustomMixer && IsFirstMixerOutfit(outfit, outfits))
         {
           foreach (var slot in outfit.GetMixerPartSlots())
-            mixerSlotBits += config.EnableParameterCompression
-              ? new ChoiceParameterLayout(slot.Candidates.Count + 1, true).BitCount
-              : intBits;
+            mixerSlotBits += GetSynchronizedBits(new ChoiceParameterLayout(
+              slot.Candidates.Count + 1, config.EnableParameterCompression));
         }
       }
 
-      int mainBits = !mainLayout.RequiresSynchronization
-        ? 0
-        : mainLayout.UsesCompression ? mainLayout.BitCount : intBits;
+      int mainBits = GetSynchronizedBits(mainLayout);
       int totalBits = mainBits + partBits + mixerSlotBits;
       var parts = new System.Collections.Generic.List<string>();
       parts.Add(!mainLayout.RequiresSynchronization
         ? loc("主选择固定值 0bit", "fixed main choice 0bit")
+        : mainLayout.UsesBoolean
+          ? loc("主选择 Bool", "main Bool")
         : mainLayout.UsesCompression
           ? $"{loc("主选择压缩 Bool", "compressed main Bool")} {mainBits}bit"
           : $"{loc("主 Int", "main Int")} {mainBits}bit");
@@ -524,7 +635,8 @@ namespace UnityBox.AdvancedCostumeController
 
       int outfitChoices = outfits.SelectMany(outfit => outfit.GetAllObjects()).Distinct().Count();
       int mainChoices = outfitChoices + (config.EnableCustomMixer ? 1 : 0);
-      int domains = new ChoiceParameterLayout(mainChoices, true).BitCount > 0 ? 1 : 0;
+      var mainLayout = new ChoiceParameterLayout(mainChoices, true);
+      int domains = mainLayout.UsesCompression && mainLayout.BitCount > 0 ? 1 : 0;
 
       if (!config.EnableCustomMixer) return domains;
       foreach (var outfit in outfits)
@@ -532,7 +644,8 @@ namespace UnityBox.AdvancedCostumeController
         if (!IsFirstMixerOutfit(outfit, outfits)) continue;
         foreach (var slot in outfit.GetMixerPartSlots())
         {
-          if (new ChoiceParameterLayout(slot.Candidates.Count + 1, true).BitCount > 0)
+          var slotLayout = new ChoiceParameterLayout(slot.Candidates.Count + 1, true);
+          if (slotLayout.UsesCompression && slotLayout.BitCount > 0)
             domains++;
         }
       }
