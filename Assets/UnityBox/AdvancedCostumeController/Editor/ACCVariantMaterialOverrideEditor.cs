@@ -13,6 +13,9 @@ namespace UnityBox.AdvancedCostumeController
         "GameObject/AdvancedCostumeController/转换成服装变体 (Convert to Outfit Variant)";
       private bool showGlobalReplacements = true;
       private bool showRendererOverrides = true;
+      private GameObject analysisSource;
+      private string analysisStatus;
+      private MessageType analysisStatusType = MessageType.Info;
 
       private void OnEnable()
       {
@@ -79,15 +82,15 @@ namespace UnityBox.AdvancedCostumeController
         Localization.DrawInspectorHeader(Localization.Text(
           "ACC 材质变体替换", "ACC Material Variant Override"));
         EditorGUILayout.HelpBox(Localization.Text(
-          "全局规则按材质匹配；精准覆盖按 Renderer 槽位匹配，精准覆盖优先。",
-          "Global rules match materials; precise overrides match renderer slots and take priority."),
+          "全局规则按材质匹配，精准覆盖按 Renderer 槽位匹配且优先。",
+          "Global rules match materials; precise overrides match Renderer slots and take priority."),
           MessageType.Info);
 
         if (targets.Length > 1)
         {
           EditorGUILayout.HelpBox(Localization.Text(
-            "当前正在同时编辑多个材质变体；刷新和自动对照会应用到所有选中对象。",
-            "Multiple material variants are selected; refresh and compare actions apply to all selected objects."),
+            "多选编辑：操作将应用到所有选中对象。",
+            "Multi-edit: actions apply to all selected objects."),
             MessageType.Info);
         }
 
@@ -99,41 +102,20 @@ namespace UnityBox.AdvancedCostumeController
         {
           ForEachMarker("Set ACC variant outfit base", selectedMarker =>
           {
-            AnalyzeOrPopulate(selectedMarker);
+            if (CanAnalyzeMarker(selectedMarker))
+              AnalyzeOrPopulate(selectedMarker);
+            else if (CanRefreshMarker(selectedMarker))
+              PopulateGlobalMaterialEntries(selectedMarker);
             selectedMarker.MarkEditorPreviewInitialized();
           });
           serializedObject.Update();
         }
 
-        using (new EditorGUI.DisabledScope(marker.OutfitBase == null))
-        {
-          EditorGUILayout.BeginHorizontal();
-          if (GUILayout.Button(Localization.Text("刷新全局材质", "Refresh Global Materials")))
-          {
-            ForEachMarker("Refresh ACC global materials", selectedMarker =>
-            {
-              PopulateGlobalMaterialEntries(selectedMarker);
-              selectedMarker.MarkEditorPreviewInitialized();
-            });
-            serializedObject.Update();
-          }
-          if (GUILayout.Button(Localization.Text("自动分析最优替换", "Analyze Optimal Replacements")))
-          {
-            ForEachMarker("Analyze ACC material replacements", selectedMarker =>
-            {
-              AnalyzeOrPopulate(selectedMarker);
-              selectedMarker.MarkEditorPreviewInitialized();
-            });
-            serializedObject.Update();
-          }
-          EditorGUILayout.EndHorizontal();
-        }
-
         if (marker.OutfitBase == null)
         {
           EditorGUILayout.HelpBox(Localization.Text(
-            "请选择 Outfit Base，或使用 GameObject 转换菜单。",
-            "Select an Outfit Base, or use the GameObject conversion menu."),
+            "请先设置 Outfit Base。",
+            "Set an Outfit Base first."),
             MessageType.Info);
           return;
         }
@@ -141,27 +123,230 @@ namespace UnityBox.AdvancedCostumeController
         if (marker.OutfitBase == marker.gameObject)
         {
           EditorGUILayout.HelpBox(Localization.Text(
-            "服装本体不能指向材质变体自身，请选择同级的 Outfit Base。",
-            "Outfit Base cannot reference the material variant itself. Select its sibling Outfit Base."),
+            "Outfit Base 不能指向自身。",
+            "Outfit Base cannot reference itself."),
             MessageType.Warning);
+        }
+
+        bool canRefresh = targets.OfType<ACCVariantMaterialOverride>()
+          .Any(CanRefreshMarker);
+        bool canAnalyze = targets.OfType<ACCVariantMaterialOverride>()
+          .Any(CanAnalyzeMarker);
+        EditorGUILayout.BeginHorizontal();
+        using (new EditorGUI.DisabledScope(!canRefresh))
+        {
+          if (GUILayout.Button(Localization.Text(
+            "刷新本体材质", "Refresh Outfit Materials")))
+          {
+            ForEachMarker("Refresh ACC outfit materials", selectedMarker =>
+            {
+              PopulateGlobalMaterialEntries(selectedMarker);
+              selectedMarker.MarkEditorPreviewInitialized();
+            }, CanRefreshMarker);
+            serializedObject.Update();
+          }
+        }
+        using (new EditorGUI.DisabledScope(!canAnalyze))
+        {
+          if (GUILayout.Button(Localization.Text(
+            "分析当前对象", "Analyze Current Object")))
+          {
+            ForEachMarker("Analyze ACC material replacements", selectedMarker =>
+            {
+              AnalyzeOrPopulate(selectedMarker);
+              selectedMarker.MarkEditorPreviewInitialized();
+            }, CanAnalyzeMarker);
+            serializedObject.Update();
+          }
+        }
+        EditorGUILayout.EndHorizontal();
+
+        DrawAnalysisTool();
+
+        if (IsAlreadyConvertedEmptyVariant(marker) && analysisSource == null)
+        {
+          EditorGUILayout.HelpBox(Localization.Text(
+            "当前对象已转换且为空，请使用外部来源分析。",
+            "This object is converted and empty; use an external source to analyze it."),
+            MessageType.Info);
         }
 
         DrawRuleSummary(marker);
 
         EditorGUILayout.Space();
         DrawGlobalReplacementList(
-          Localization.Text("全局材质替换", "Global Material Replacements"),
-          Localization.Text("同一 Source 在所有 Renderer 中统一替换；Replacement 留空表示不替换。",
-            "Replaces the same Source across all Renderers; empty Replacement means no override."));
+          Localization.Text("全局替换", "Global Replacements"),
+          Localization.Text("在所有 Renderer 中替换同一 Source；留空表示不替换。",
+            "Replaces a Source on all Renderers; empty means no override."));
 
         EditorGUILayout.Space();
         DrawRendererOverrideList(
-          Localization.Text("精准 Renderer 槽位覆盖", "Precise Renderer Slot Overrides"),
-          Localization.Text("仅保存自动对照发现的差异槽位，无需配置每个 Mesh 的所有材质。",
-            "Stores only differing slots found by comparison; no need to configure every material on every mesh."));
+          Localization.Text("精准槽位覆盖", "Precise Slot Overrides"),
+          Localization.Text("仅记录差异槽位，且优先于全局规则。",
+            "Stores differing slots only and takes priority over global rules."));
 
         ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
           "Edit ACC material variant");
+      }
+
+      private void DrawAnalysisTool()
+      {
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField(Localization.Text(
+          "外部材质来源", "External Material Source"),
+          EditorStyles.boldLabel);
+        EditorGUILayout.BeginHorizontal();
+        EditorGUI.BeginChangeCheck();
+        analysisSource = (GameObject)EditorGUILayout.ObjectField(
+          new GUIContent(Localization.Text("来源", "Source")),
+          analysisSource, typeof(GameObject), true);
+        bool sourceChanged = EditorGUI.EndChangeCheck();
+        if (sourceChanged)
+          analysisStatus = null;
+
+        bool validSource = IsValidAnalysisSource(analysisSource);
+        bool canApply = validSource && targets.OfType<ACCVariantMaterialOverride>()
+          .Any(CanApplyAnalysisMarker);
+        using (new EditorGUI.DisabledScope(!canApply))
+        {
+          if (GUILayout.Button(Localization.Text("应用", "Apply"),
+            GUILayout.Width(58)))
+          {
+            ApplyAnalysisSource(analysisSource);
+            serializedObject.Update();
+            Repaint();
+          }
+        }
+        using (new EditorGUI.DisabledScope(analysisSource == null))
+        {
+          if (GUILayout.Button(Localization.Text("清除", "Clear"),
+            GUILayout.Width(58)))
+          {
+            analysisSource = null;
+            analysisStatus = null;
+          }
+        }
+        EditorGUILayout.EndHorizontal();
+
+        if (sourceChanged && analysisSource != null && canApply &&
+            ApplyAnalysisSource(analysisSource))
+        {
+          serializedObject.Update();
+          Repaint();
+          GUIUtility.ExitGUI();
+        }
+
+        EditorGUILayout.LabelField(Localization.Text(
+          "拖入即应用；来源只读。",
+          "Drop to apply; the source stays read-only."),
+          EditorStyles.miniLabel);
+
+        if (analysisSource != null && !validSource)
+        {
+          EditorGUILayout.HelpBox(Localization.Text(
+            "请拖入场景 GameObject 或 Project Prefab。",
+            "Drop a scene GameObject or Project Prefab."),
+            MessageType.Warning);
+        }
+        else if (analysisSource != null && !canApply)
+        {
+          EditorGUILayout.HelpBox(Localization.Text(
+            "请先设置 Outfit Base。",
+            "Set an Outfit Base first."), MessageType.Warning);
+        }
+
+        if (!string.IsNullOrEmpty(analysisStatus))
+          EditorGUILayout.HelpBox(analysisStatus, analysisStatusType);
+      }
+
+      private bool ApplyAnalysisSource(GameObject source)
+      {
+        analysisStatus = null;
+        analysisStatusType = MessageType.Info;
+
+        if (!IsValidAnalysisSource(source))
+        {
+          analysisStatus = Localization.Text(
+            "来源无效，未修改。",
+            "Invalid source; no changes made.");
+          analysisStatusType = MessageType.Warning;
+          return false;
+        }
+
+        var selectedMarkers = targets.OfType<ACCVariantMaterialOverride>()
+          .Where(CanApplyAnalysisMarker)
+          .ToList();
+        if (selectedMarkers.Count == 0)
+        {
+          analysisStatus = Localization.Text(
+            "没有可用的 ACC 组件，请先设置 Outfit Base。",
+            "No ACC component is ready. Set an Outfit Base first.");
+          analysisStatusType = MessageType.Warning;
+          return false;
+        }
+
+        // Do this read-only preflight before opening an Undo group. A source
+        // with no matching renderer slots must not clear existing rules or
+        // create an empty Undo entry.
+        var analyzableMarkers = selectedMarkers
+          .Where(marker => CollectMaterialSlotObservations(
+            marker.OutfitBase.transform, source.transform).Count > 0)
+          .ToList();
+        if (analyzableMarkers.Count == 0)
+        {
+          analysisStatus = Localization.Text(
+            $"未找到匹配槽位，规则未修改：{source.name}",
+            $"No matching slots; rules unchanged: {source.name}");
+          analysisStatusType = MessageType.Warning;
+          return false;
+        }
+
+        const string undoName = "Apply ACC material analysis";
+        int undoGroup = ACCEditorUndo.Begin(undoName);
+        int appliedCount = 0;
+        int totalRuleCount = 0;
+        try
+        {
+          ACCEditorUndo.RecordObjects(analyzableMarkers.Cast<Object>(), undoName);
+          if (serializedObject.hasModifiedProperties)
+            serializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+          foreach (var selectedMarker in analyzableMarkers)
+          {
+            int ruleCount = AnalyzeOptimalReplacements(selectedMarker, source);
+            if (ruleCount < 0) continue;
+
+            selectedMarker.MarkEditorPreviewInitialized();
+            EditorUtility.SetDirty(selectedMarker);
+            appliedCount++;
+            totalRuleCount += ruleCount;
+          }
+          ACCEditorUndo.RecordPrefabInstanceModifications(analyzableMarkers.Cast<Object>());
+        }
+        finally
+        {
+          ACCEditorUndo.Complete(undoGroup);
+        }
+
+        if (appliedCount == 0)
+        {
+          analysisStatus = Localization.Text(
+            "未生成规则，当前规则未修改。",
+            "No rules generated; existing rules unchanged.");
+          analysisStatusType = MessageType.Warning;
+          return false;
+        }
+
+        int skippedCount = selectedMarkers.Count - appliedCount;
+        string skippedText = skippedCount > 0
+          ? Localization.Text($"；跳过 {skippedCount} 个无匹配对象",
+            $"; skipped {skippedCount} without matching slots")
+          : string.Empty;
+        analysisStatus = Localization.Text(
+          $"已应用 {source.name}：{totalRuleCount} 条规则{skippedText}。",
+          $"Applied {source.name}: {totalRuleCount} rule(s){skippedText}.");
+        analysisStatusType = MessageType.Info;
+        return true;
       }
 
       private void DrawGlobalReplacementList(string label, string help)
@@ -181,14 +366,14 @@ namespace UnityBox.AdvancedCostumeController
               new GUIContent(Localization.Text("原材质", "Source")));
             EditorGUILayout.PropertyField(entry.FindPropertyRelative("Replacement"),
               new GUIContent(Localization.Text("替换为", "Replacement")));
-            if (GUILayout.Button(Localization.Text("移除此规则", "Remove Rule")))
+            if (GUILayout.Button(Localization.Text("删除规则", "Delete Rule")))
             {
               property.DeleteArrayElementAtIndex(i);
               break;
             }
           }
         }
-        if (GUILayout.Button(Localization.Text("添加全局规则", "Add Global Rule")))
+        if (GUILayout.Button(Localization.Text("添加规则", "Add Rule")))
         {
           property.InsertArrayElementAtIndex(property.arraySize);
           var entry = property.GetArrayElementAtIndex(property.arraySize - 1);
@@ -210,23 +395,36 @@ namespace UnityBox.AdvancedCostumeController
           entry.isExpanded = true;
           using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
           {
-            EditorGUILayout.PropertyField(entry.FindPropertyRelative("TargetRenderer"),
+            var targetRendererProperty = entry.FindPropertyRelative("TargetRenderer");
+            var slotProperty = entry.FindPropertyRelative("MaterialSlot");
+            var sourceProperty = entry.FindPropertyRelative("Source");
+            var previousRenderer = targetRendererProperty.objectReferenceValue as Renderer;
+            int previousSlot = slotProperty.intValue;
+            EditorGUILayout.PropertyField(targetRendererProperty,
               new GUIContent(Localization.Text("目标 Renderer", "Target Renderer")));
-            EditorGUILayout.PropertyField(entry.FindPropertyRelative("MaterialSlot"),
-              new GUIContent(Localization.Text("材质槽位", "Material Slot")));
+            DrawMaterialSlotPopup(
+              slotProperty,
+              targetRendererProperty.objectReferenceValue as Renderer);
+            if (previousRenderer != targetRendererProperty.objectReferenceValue as Renderer ||
+                previousSlot != slotProperty.intValue)
+            {
+              sourceProperty.objectReferenceValue = GetMaterialAtSlot(
+                targetRendererProperty.objectReferenceValue as Renderer,
+                slotProperty.intValue);
+            }
             using (new EditorGUI.DisabledScope(true))
-              EditorGUILayout.PropertyField(entry.FindPropertyRelative("Source"),
+              EditorGUILayout.PropertyField(sourceProperty,
                 new GUIContent(Localization.Text("原材质", "Source")));
             EditorGUILayout.PropertyField(entry.FindPropertyRelative("Replacement"),
               new GUIContent(Localization.Text("替换为", "Replacement")));
-            if (GUILayout.Button(Localization.Text("移除此覆盖", "Remove Override")))
+              if (GUILayout.Button(Localization.Text("删除覆盖", "Delete Override")))
             {
               property.DeleteArrayElementAtIndex(i);
               break;
             }
           }
         }
-        if (GUILayout.Button(Localization.Text("添加精准覆盖", "Add Precise Override")))
+        if (GUILayout.Button(Localization.Text("添加覆盖", "Add Override")))
         {
           property.InsertArrayElementAtIndex(property.arraySize);
           var entry = property.GetArrayElementAtIndex(property.arraySize - 1);
@@ -235,6 +433,55 @@ namespace UnityBox.AdvancedCostumeController
           entry.FindPropertyRelative("Source").objectReferenceValue = null;
           entry.FindPropertyRelative("Replacement").objectReferenceValue = null;
         }
+      }
+
+      private static void DrawMaterialSlotPopup(
+        SerializedProperty slotProperty,
+        Renderer targetRenderer)
+      {
+        Material[] materials = targetRenderer != null
+          ? targetRenderer.sharedMaterials
+          : null;
+        bool hasSlots = materials != null && materials.Length > 0;
+        string[] options = hasSlots
+          ? materials.Select((material, index) =>
+            string.Format("{0}: {1}", index, GetMaterialSlotName(material)))
+            .ToArray()
+          : new[]
+          {
+            targetRenderer == null
+              ? Localization.Text("请先选择目标 Renderer", "Select a Target Renderer first")
+              : Localization.Text("目标 Renderer 没有材质槽", "Target Renderer has no material slots")
+          };
+
+        using (new EditorGUI.DisabledScope(!hasSlots))
+        {
+          int selectedSlot = hasSlots
+            ? Mathf.Clamp(slotProperty.intValue, 0, options.Length - 1)
+            : 0;
+          int newSlot = EditorGUILayout.Popup(
+            Localization.Text("材质槽位", "Material Slot"), selectedSlot, options);
+          if (hasSlots)
+            slotProperty.intValue = newSlot;
+        }
+      }
+
+      private static string GetMaterialSlotName(Material material)
+      {
+        if (material == null)
+          return Localization.Text("<空槽位>", "<Empty Slot>");
+        return string.IsNullOrEmpty(material.name)
+          ? Localization.Text("<未命名材质>", "<Unnamed Material>")
+          : material.name;
+      }
+
+      private static Material GetMaterialAtSlot(Renderer renderer, int slot)
+      {
+        if (renderer == null) return null;
+        var materials = renderer.sharedMaterials;
+        return materials != null && slot >= 0 && slot < materials.Length
+          ? materials[slot]
+          : null;
       }
 
       private static void DrawRuleSummary(ACCVariantMaterialOverride marker)
@@ -254,25 +501,27 @@ namespace UnityBox.AdvancedCostumeController
         {
           EditorGUILayout.BeginHorizontal();
           EditorGUILayout.LabelField(Localization.Text(
-            "材质替换摘要", "Material Replacement Summary"), EditorStyles.boldLabel);
+            "规则摘要", "Rule Summary"), EditorStyles.boldLabel);
           GUILayout.FlexibleSpace();
           EditorGUILayout.LabelField(Localization.Text(
             $"{totalCount} 条规则", $"{totalCount} rules"), totalStyle,
             GUILayout.MinWidth(80));
           EditorGUILayout.EndHorizontal();
           EditorGUILayout.LabelField(Localization.Text(
-            $"全局：{globalCount} · 精准槽位：{preciseCount}",
-            $"Global: {globalCount} · Precise slots: {preciseCount}"),
+            $"全局：{globalCount} · 精准：{preciseCount}",
+            $"Global: {globalCount} · Precise: {preciseCount}"),
             EditorStyles.miniLabel);
         }
       }
 
       private void ForEachMarker(string undoName,
-        System.Action<ACCVariantMaterialOverride> action)
+        System.Action<ACCVariantMaterialOverride> action,
+        System.Func<ACCVariantMaterialOverride, bool> predicate = null)
       {
         var selectedMarkers = targets.OfType<ACCVariantMaterialOverride>()
           .Where(selectedMarker => selectedMarker != null &&
-            IsEditableSceneObject(selectedMarker.gameObject))
+            IsEditableSceneObject(selectedMarker.gameObject) &&
+            (predicate == null || predicate(selectedMarker)))
           .ToList();
         if (selectedMarkers.Count == 0) return;
 
@@ -298,7 +547,7 @@ namespace UnityBox.AdvancedCostumeController
 
       internal static void PopulateGlobalMaterialEntries(ACCVariantMaterialOverride marker)
       {
-        if (marker.OutfitBase == null) return;
+        if (marker == null || marker.OutfitBase == null) return;
         var previous = (marker.Replacements ??
           new List<ACCVariantMaterialOverride.MaterialReplacement>())
           .Where(entry => entry != null && entry.Source != null)
@@ -322,31 +571,24 @@ namespace UnityBox.AdvancedCostumeController
 
       internal static int AnalyzeOptimalReplacements(ACCVariantMaterialOverride marker)
       {
-        if (marker.OutfitBase == null) return 0;
-        var baseRenderers = BuildRendererMap(marker.OutfitBase.transform);
-        var variantRenderers = BuildRendererMap(marker.transform);
-        var observations = new List<MaterialSlotObservation>();
+        return AnalyzeOptimalReplacements(marker,
+          marker != null ? marker.gameObject : null);
+      }
 
-        foreach (var pair in baseRenderers)
+      internal static int AnalyzeOptimalReplacements(
+        ACCVariantMaterialOverride marker,
+        GameObject variantSource)
+      {
+        if (marker == null || marker.OutfitBase == null || variantSource == null)
+          return 0;
+        if (variantSource == marker.gameObject && IsAlreadyConvertedEmptyVariant(marker))
         {
-          if (!variantRenderers.TryGetValue(pair.Key, out var variantRenderer)) continue;
-          var baseMaterials = pair.Value.sharedMaterials;
-          var variantMaterials = variantRenderer.sharedMaterials;
-          int slots = Mathf.Min(baseMaterials.Length, variantMaterials.Length);
-          for (int slot = 0; slot < slots; slot++)
-          {
-            // 空目标材质表示清空槽位；当前组件以空 Replacement 表示“不覆盖”，
-            // 因此不自动生成这种不可表达的规则。
-            if (variantMaterials[slot] == null) continue;
-            observations.Add(new MaterialSlotObservation
-            {
-              Renderer = pair.Value,
-              Slot = slot,
-              Source = baseMaterials[slot],
-              Target = variantMaterials[slot]
-            });
-          }
+          return (marker.Replacements?.Count ?? 0) +
+            (marker.RendererOverrides?.Count ?? 0);
         }
+
+        var observations = CollectMaterialSlotObservations(
+          marker.OutfitBase.transform, variantSource.transform);
 
         if (observations.Count == 0) return -1;
 
@@ -389,6 +631,38 @@ namespace UnityBox.AdvancedCostumeController
         return globalRules.Count + overrides.Count;
       }
 
+      private static List<MaterialSlotObservation> CollectMaterialSlotObservations(
+        Transform outfitBase,
+        Transform variantSource)
+      {
+        var observations = new List<MaterialSlotObservation>();
+        if (outfitBase == null || variantSource == null) return observations;
+
+        var baseRenderers = BuildRendererMap(outfitBase);
+        var variantRenderers = BuildRendererMap(variantSource);
+        foreach (var pair in baseRenderers)
+        {
+          if (!variantRenderers.TryGetValue(pair.Key, out var variantRenderer)) continue;
+          var baseMaterials = pair.Value.sharedMaterials;
+          var variantMaterials = variantRenderer.sharedMaterials;
+          int slots = Mathf.Min(baseMaterials.Length, variantMaterials.Length);
+          for (int slot = 0; slot < slots; slot++)
+          {
+            // 空目标材质表示清空槽位；当前组件以空 Replacement 表示“不覆盖”，
+            // 因此不自动生成这种不可表达的规则。
+            if (variantMaterials[slot] == null) continue;
+            observations.Add(new MaterialSlotObservation
+            {
+              Renderer = pair.Value,
+              Slot = slot,
+              Source = baseMaterials[slot],
+              Target = variantMaterials[slot]
+            });
+          }
+        }
+        return observations;
+      }
+
       private static int AnalyzeOrPopulate(ACCVariantMaterialOverride marker)
       {
         int result = AnalyzeOptimalReplacements(marker);
@@ -396,6 +670,48 @@ namespace UnityBox.AdvancedCostumeController
         PopulateGlobalMaterialEntries(marker);
         marker.RendererOverrides = new List<ACCVariantMaterialOverride.RendererMaterialReplacement>();
         return 0;
+      }
+
+      private static bool CanAnalyzeMarker(ACCVariantMaterialOverride marker)
+      {
+        return CanRefreshMarker(marker) &&
+          !IsAlreadyConvertedEmptyVariant(marker);
+      }
+
+      private static bool CanRefreshMarker(ACCVariantMaterialOverride marker)
+      {
+        return marker != null && IsEditableSceneObject(marker.gameObject) &&
+          marker.OutfitBase != null && marker.OutfitBase != marker.gameObject;
+      }
+
+      private static bool CanApplyAnalysisMarker(
+        ACCVariantMaterialOverride marker)
+      {
+        return CanRefreshMarker(marker);
+      }
+
+      private static bool IsValidAnalysisSource(GameObject source)
+      {
+        if (source == null) return false;
+        // Persistent GameObjects are read-only analysis sources here, which
+        // allows a Prefab from the Project window without editing its asset.
+        return EditorUtility.IsPersistent(source) ||
+          IsEditableSceneObject(source);
+      }
+
+      private static bool IsAlreadyConvertedEmptyVariant(
+        ACCVariantMaterialOverride marker)
+      {
+        if (marker == null || !marker.EditorPreviewInitialized ||
+            marker.transform.childCount != 0)
+          return false;
+
+        // A converted variant deliberately keeps only Transform and the ACC
+        // marker. Do not classify a normal object with a root Renderer or an
+        // unrelated component as an already-converted empty variant.
+        return marker.GetComponents<Component>()
+          .All(component => component == null || component == marker ||
+            component is Transform);
       }
 
       private sealed class MaterialSlotObservation
@@ -423,54 +739,103 @@ namespace UnityBox.AdvancedCostumeController
       [MenuItem(ConvertMenuPath, false, 20)]
       private static void ConvertSelectedObjectsToVariant()
       {
-        var variant = Selection.activeGameObject;
+        ConvertObjectToVariantWithConfirmation(Selection.activeGameObject);
+      }
+
+      private static bool ConvertObjectToVariantWithConfirmation(GameObject variant)
+      {
         if (!IsEditableSceneObject(variant))
         {
           EditorUtility.DisplayDialog(Localization.Text("无法转换", "Cannot Convert"),
             Localization.Text("请选择可编辑的服装变体对象。",
               "Select an editable outfit variant object."), "OK");
-          return;
+          return false;
         }
 
         var outfitBase = FindLikelyOutfitBase(variant);
         if (outfitBase == null)
         {
           EditorUtility.DisplayDialog(Localization.Text("无法转换", "Cannot Convert"),
-            Localization.Text("未能在同级对象中自动识别唯一的服装本体。请先确保本体具有 ACC Outfit Marker、MA Merge Armature 或可识别的独立骨架。",
-              "Could not identify a unique sibling Outfit Base. Ensure the base has an ACC Outfit Marker, MA Merge Armature, or a recognizable owned armature."), "OK");
-          return;
+            Localization.Text("未找到同级 Outfit Base。",
+              "No sibling Outfit Base found."), "OK");
+          return false;
         }
         if (!EditorUtility.DisplayDialog(Localization.Text("转换成服装变体", "Convert to Outfit Variant"),
           Localization.Text(
-            $"自动识别本体：{outfitBase.name}\n变体来源：{variant.name}\n\n将添加或更新材质变体组件，并生成多数全局规则与少数精准例外。",
-            $"Detected Outfit Base: {outfitBase.name}\nVariant Source: {variant.name}\n\nThe material variant component will be added or updated using majority global rules plus precise exceptions."),
+            $"本体：{outfitBase.name}\n来源：{variant.name}\n\n将解压来源、生成规则并清理其组件和子对象。",
+            $"Base: {outfitBase.name}\nSource: {variant.name}\n\nThe source will be unpacked, analyzed, and stripped of its components and children."),
           Localization.Text("转换", "Convert"), Localization.Text("取消", "Cancel")))
-          return;
+          return false;
 
-        var marker = variant.GetComponent<ACCVariantMaterialOverride>();
-        int undoGroup = ACCEditorUndo.Begin("Convert to ACC outfit variant");
+        return ConvertObjectToVariant(variant, outfitBase);
+      }
+
+      private static bool ConvertObjectToVariant(
+        GameObject variant,
+        GameObject outfitBase)
+      {
+        const string undoName = "Convert to ACC outfit variant";
+        int undoGroup = ACCEditorUndo.Begin(undoName);
         try
         {
+          // Unpacking is intentionally best-effort. Unity does not expose a
+          // reliable scene Undo for every prefab unpack edge case. The rest
+          // of this conversion is kept in the same ACC Undo group.
+          UnpackPrefabCompletely(variant);
+
+          var marker = variant.GetComponent<ACCVariantMaterialOverride>();
           if (marker == null)
+          {
             marker = ACCEditorUndo.AddComponent<ACCVariantMaterialOverride>(variant,
               "Create ACC variant material override");
+            ACCEditorUndo.RecordObjects(new Object[] { marker }, undoName);
+          }
           else
-            ACCEditorUndo.RecordObjects(new Object[] { marker },
-              "Convert to ACC outfit variant");
+            ACCEditorUndo.RecordObjects(new Object[] { marker }, undoName);
 
           marker.OutfitBase = outfitBase;
           int ruleCount = AnalyzeOrPopulate(marker);
           marker.MarkEditorPreviewInitialized();
           EditorUtility.SetDirty(marker);
+
+          RemoveOtherComponentsAndChildren(variant, marker, undoName);
           ACCEditorUndo.RecordPrefabInstanceModifications(new Object[] { marker });
           Debug.Log(Localization.Text(
             $"[ACC] 已将 {variant.name} 转换为 {outfitBase.name} 的材质变体，生成 {ruleCount} 条最优替换规则。",
             $"[ACC] Converted {variant.name} to a material variant of {outfitBase.name}; generated {ruleCount} optimized replacement rules."), marker);
+          return true;
         }
         finally
         {
           ACCEditorUndo.Complete(undoGroup);
         }
+      }
+
+      private static void UnpackPrefabCompletely(GameObject target)
+      {
+        var prefabRoot = PrefabUtility.GetNearestPrefabInstanceRoot(target);
+        if (prefabRoot == null || !PrefabUtility.IsPartOfPrefabInstance(prefabRoot))
+          return;
+
+        PrefabUtility.UnpackPrefabInstance(prefabRoot,
+          PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+      }
+
+      private static void RemoveOtherComponentsAndChildren(
+        GameObject target,
+        ACCVariantMaterialOverride marker,
+        string undoName)
+      {
+        var removableComponents = target.GetComponents<Component>()
+          .Where(component => component != null && component != marker &&
+            !(component is Transform))
+          .ToList();
+        ACCEditorUndo.RecordObjects(removableComponents.Cast<Object>(), undoName);
+        foreach (var component in removableComponents)
+          Undo.DestroyObjectImmediate(component);
+
+        for (int i = target.transform.childCount - 1; i >= 0; i--)
+          Undo.DestroyObjectImmediate(target.transform.GetChild(i).gameObject);
       }
 
       private static GameObject FindLikelyOutfitBase(GameObject variant)
@@ -482,7 +847,6 @@ namespace UnityBox.AdvancedCostumeController
           return existing.OutfitBase;
         if (variant.transform.parent == null) return null;
 
-        var candidates = new List<GameObject>();
         for (int i = 0; i < variant.transform.parent.childCount; i++)
         {
           var sibling = variant.transform.parent.GetChild(i).gameObject;
@@ -492,37 +856,9 @@ namespace UnityBox.AdvancedCostumeController
           bool explicitOutfit = sibling.GetComponent<ACCOutfitMarker>() != null;
           bool detectedOutfit = Utils.TryGetOwnedArmature(sibling.transform, out _) &&
             Utils.HasMeshInHierarchy(sibling.transform);
-          if (explicitOutfit || detectedOutfit) candidates.Add(sibling);
+          if (explicitOutfit || detectedOutfit) return sibling;
         }
-
-        if (candidates.Count == 1) return candidates[0];
-        if (candidates.Count == 0) return null;
-        var ranked = candidates
-          .Select(candidate => new
-          {
-            Candidate = candidate,
-            Score = CountMatchingRendererSlots(candidate.transform, variant.transform)
-          })
-          .OrderByDescending(item => item.Score)
-          .ThenBy(item => item.Candidate.transform.GetSiblingIndex())
-          .ToList();
-        if (ranked.Count > 1 && ranked[0].Score == ranked[1].Score)
-          return null;
-        return ranked[0].Candidate;
-      }
-
-      private static int CountMatchingRendererSlots(Transform outfitBase, Transform variant)
-      {
-        var baseRenderers = BuildRendererMap(outfitBase);
-        var variantRenderers = BuildRendererMap(variant);
-        int score = 0;
-        foreach (var pair in baseRenderers)
-        {
-          if (!variantRenderers.TryGetValue(pair.Key, out var variantRenderer)) continue;
-          score += Mathf.Min(pair.Value.sharedMaterials.Length,
-            variantRenderer.sharedMaterials.Length);
-        }
-        return score;
+        return null;
       }
 
       [MenuItem(ConvertMenuPath, true)]
