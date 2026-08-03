@@ -171,8 +171,6 @@ namespace UnityBox.AdvancedCostumeController
             MessageType.Info);
         }
 
-        DrawRuleSummary(marker);
-
         EditorGUILayout.Space();
         DrawGlobalReplacementList(
           Localization.Text("全局替换", "Global Replacements"),
@@ -235,11 +233,6 @@ namespace UnityBox.AdvancedCostumeController
           Repaint();
           GUIUtility.ExitGUI();
         }
-
-        EditorGUILayout.LabelField(Localization.Text(
-          "拖入即应用；来源只读。",
-          "Drop to apply; the source stays read-only."),
-          EditorStyles.miniLabel);
 
         if (analysisSource != null && !validSource)
         {
@@ -313,7 +306,7 @@ namespace UnityBox.AdvancedCostumeController
 
           foreach (var selectedMarker in analyzableMarkers)
           {
-            int ruleCount = AnalyzeOptimalReplacements(selectedMarker, source);
+            int ruleCount = AnalyzeOrPopulate(selectedMarker, source);
             if (ruleCount < 0) continue;
 
             selectedMarker.MarkEditorPreviewInitialized();
@@ -484,36 +477,6 @@ namespace UnityBox.AdvancedCostumeController
           : null;
       }
 
-      private static void DrawRuleSummary(ACCVariantMaterialOverride marker)
-      {
-        int globalCount = marker.Replacements?.Count ?? 0;
-        int preciseCount = marker.RendererOverrides?.Count ?? 0;
-        int totalCount = globalCount + preciseCount;
-        var totalStyle = new GUIStyle(EditorStyles.boldLabel)
-        {
-          alignment = TextAnchor.MiddleRight
-        };
-        totalStyle.normal.textColor = totalCount > 0
-          ? new Color(0.35f, 0.85f, 0.5f)
-          : EditorStyles.label.normal.textColor;
-
-        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-        {
-          EditorGUILayout.BeginHorizontal();
-          EditorGUILayout.LabelField(Localization.Text(
-            "规则摘要", "Rule Summary"), EditorStyles.boldLabel);
-          GUILayout.FlexibleSpace();
-          EditorGUILayout.LabelField(Localization.Text(
-            $"{totalCount} 条规则", $"{totalCount} rules"), totalStyle,
-            GUILayout.MinWidth(80));
-          EditorGUILayout.EndHorizontal();
-          EditorGUILayout.LabelField(Localization.Text(
-            $"全局：{globalCount} · 精准：{preciseCount}",
-            $"Global: {globalCount} · Precise: {preciseCount}"),
-            EditorStyles.miniLabel);
-        }
-      }
-
       private void ForEachMarker(string undoName,
         System.Action<ACCVariantMaterialOverride> action,
         System.Func<ACCVariantMaterialOverride, bool> predicate = null)
@@ -587,14 +550,20 @@ namespace UnityBox.AdvancedCostumeController
             (marker.RendererOverrides?.Count ?? 0);
         }
 
+        // Start with the same complete Source list used by "Refresh Outfit
+        // Materials". Automatic analysis only fills in the replacements; it
+        // must not produce a shorter, structurally different list.
+        PopulateGlobalMaterialEntries(marker);
         var observations = CollectMaterialSlotObservations(
           marker.OutfitBase.transform, variantSource.transform);
 
         if (observations.Count == 0) return -1;
 
-        var globalRules = new List<ACCVariantMaterialOverride.MaterialReplacement>();
+        var majorityTargets = new Dictionary<Material, Material>();
         var overrides = new List<ACCVariantMaterialOverride.RendererMaterialReplacement>();
-        foreach (var sourceGroup in observations.GroupBy(item => item.Source))
+        foreach (var sourceGroup in observations
+          .Where(item => item.Source != null)
+          .GroupBy(item => item.Source))
         {
           // 最常见映射作为全局规则；票数相同时优先保持原材质，避免过度替换。
           var majorityTarget = sourceGroup
@@ -605,13 +574,7 @@ namespace UnityBox.AdvancedCostumeController
             .FirstOrDefault();
 
           if (majorityTarget != sourceGroup.Key)
-          {
-            globalRules.Add(new ACCVariantMaterialOverride.MaterialReplacement
-            {
-              Source = sourceGroup.Key,
-              Replacement = majorityTarget
-            });
-          }
+            majorityTargets[sourceGroup.Key] = majorityTarget;
 
           foreach (var observation in sourceGroup)
           {
@@ -626,9 +589,16 @@ namespace UnityBox.AdvancedCostumeController
           }
         }
 
-        marker.Replacements = globalRules;
+        foreach (var entry in marker.Replacements ??
+          new List<ACCVariantMaterialOverride.MaterialReplacement>())
+        {
+          if (entry == null || entry.Source == null) continue;
+          entry.Replacement = majorityTargets.TryGetValue(entry.Source,
+            out var replacement) ? replacement : null;
+        }
+
         marker.RendererOverrides = overrides;
-        return globalRules.Count + overrides.Count;
+        return majorityTargets.Count + overrides.Count;
       }
 
       private static List<MaterialSlotObservation> CollectMaterialSlotObservations(
@@ -665,7 +635,15 @@ namespace UnityBox.AdvancedCostumeController
 
       private static int AnalyzeOrPopulate(ACCVariantMaterialOverride marker)
       {
-        int result = AnalyzeOptimalReplacements(marker);
+        return AnalyzeOrPopulate(marker,
+          marker != null ? marker.gameObject : null);
+      }
+
+      private static int AnalyzeOrPopulate(
+        ACCVariantMaterialOverride marker,
+        GameObject variantSource)
+      {
+        int result = AnalyzeOptimalReplacements(marker, variantSource);
         if (result >= 0) return result;
         PopulateGlobalMaterialEntries(marker);
         marker.RendererOverrides = new List<ACCVariantMaterialOverride.RendererMaterialReplacement>();
