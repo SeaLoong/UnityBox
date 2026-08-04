@@ -186,7 +186,7 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 - 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；内部使用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择。
 - Mixer 服装组激活 Clip 只负责根对象、变体和非槽位部件；槽位候选部件只由对应槽位子树负责，避免合并后同一属性被重复加权。
 - 所有参数压缩选择域共用一个事件分发状态机 Layer；每个域仍有自己的状态、Driver 与 AnyState 条件，因此域间不会共享参数写入。
-- 可视控制状态使用 Write Defaults On；纯参数压缩 Layer 使用 Write Defaults Off，避免 Driver 状态重置动画绑定。普通 AnyState Transition 禁止过渡到当前状态自身；压缩同步 Transition 允许自身重入，以便修正丢失或延迟到达的 Bool 位。
+- 可视控制状态使用 Write Defaults On；纯参数压缩 Layer 使用 Write Defaults Off，避免 Driver 状态重置动画绑定。所有 AnyState Transition 都禁止过渡到当前状态自身；压缩 Encode/Decode 状态执行一次后回到无 Driver 的 Idle，若位仍未同步则从 Idle 重新检查，避免在当前状态内反复执行 Driver。Idle 不需要空白 AnimationClip。
 - 菜单节点按服装相对路径创建，名称中的 `/` 会按普通对象名称处理，不会被误解释为路径。
 - 重新生成会复用 `ACC_Menu` 根节点的展示属性，例如图标；因此可在首次生成后直接为 `ACC_Menu` 设置图标，后续生成不会丢失。旧子菜单控件会被清理，ACC 控制节点会直接在 `ACC_Menu` 下重建，参数声明位于同一 `ACC_Menu` 的 `ModularAvatarParameters` 中；旧菜单项的 `Parameter`、`Value`、子参数和菜单来源绝不会复用。
 

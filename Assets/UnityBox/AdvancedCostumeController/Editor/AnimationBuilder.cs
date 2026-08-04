@@ -814,13 +814,23 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
-    private static AnimatorStateTransition CreateAnyStateTransition(AnimatorStateMachine stateMachine,
-      AnimatorState state, bool canTransitionToSelf = false)
+    private static AnimatorStateTransition CreateAnyStateTransition(
+      AnimatorStateMachine stateMachine, AnimatorState state)
     {
       var transition = stateMachine.AddAnyStateTransition(state);
       transition.duration = 0;
       transition.hasExitTime = false;
-      transition.canTransitionToSelf = canTransitionToSelf;
+      transition.canTransitionToSelf = false;
+      return transition;
+    }
+
+    private static AnimatorStateTransition CreateStateTransition(
+      AnimatorState sourceState, AnimatorState targetState)
+    {
+      var transition = sourceState.AddTransition(targetState);
+      transition.duration = 0;
+      transition.hasExitTime = false;
+      transition.canTransitionToSelf = false;
       return transition;
     }
 
@@ -877,9 +887,9 @@ namespace UnityBox.AdvancedCostumeController
     }
 
     /// <summary>
-    /// 创建一个共享的压缩事件分发 Layer。每个状态只在进入时读写自己所属域的参数；
-    /// 所有转换均从 AnyState 出发并带有域专属条件，当前状态不需要表示所有域的
-    /// 笛卡尔积组合。
+    /// 创建一个共享的压缩事件分发 Layer。每个 Driver 状态只在进入时读写自己所属域
+    /// 的参数；进入由带域专属条件的 AnyState 转换完成，执行后回到无 Driver 的 Idle，
+    /// 因此当前状态不需要表示所有域的笛卡尔积组合。
     /// </summary>
     private void CreateSharedChoiceCompressionLayer(
       AnimatorController controller,
@@ -945,7 +955,7 @@ namespace UnityBox.AdvancedCostumeController
           for (int bit = 0; bit < domain.Layout.BitCount; bit++)
           {
             var encodeTransition = CreateAnyStateTransition(
-              compressionLayer.stateMachine, encodeState, canTransitionToSelf: true);
+              compressionLayer.stateMachine, encodeState);
             AddChoiceValueConditions(encodeTransition, domain.LocalParameter, localValue);
             encodeTransition.AddCondition(AnimatorConditionMode.If, 0, IsLocalParameter);
             encodeTransition.AddCondition(
@@ -955,12 +965,21 @@ namespace UnityBox.AdvancedCostumeController
               0, domain.Layout.GetBitParameterName(domain.LocalParameter, bit));
           }
 
+          // Driver 状态只应执行一次。完成后先回到无 Driver 的 Idle，后续若位仍未
+          // 同步，下一次再从 Idle 进入目标状态；不要通过 AnyState 自身过渡在当前
+          // 状态内反复执行 Driver。
+          var encodeCompletion = CreateStateTransition(encodeState, idleState);
+          AddChoiceValueConditions(encodeCompletion, domain.LocalParameter, localValue);
+
           AddDecodeTransition(compressionLayer.stateMachine, decodeState, domain.LocalParameter,
             domain.Layout, encodedValue, AnimatorConditionMode.Less,
             localValue - ChoiceValueTolerance);
           AddDecodeTransition(compressionLayer.stateMachine, decodeState, domain.LocalParameter,
             domain.Layout, encodedValue, AnimatorConditionMode.Greater,
             localValue + ChoiceValueTolerance);
+
+          var decodeCompletion = CreateStateTransition(decodeState, idleState);
+          AddChoiceValueConditions(decodeCompletion, domain.LocalParameter, localValue);
         }
       }
 
@@ -976,8 +995,7 @@ namespace UnityBox.AdvancedCostumeController
       AnimatorConditionMode localMismatchMode,
       float localMismatchThreshold)
     {
-      var decodeTransition = CreateAnyStateTransition(stateMachine, targetState,
-        canTransitionToSelf: true);
+      var decodeTransition = CreateAnyStateTransition(stateMachine, targetState);
       decodeTransition.AddCondition(AnimatorConditionMode.IfNot, 0, IsLocalParameter);
       decodeTransition.AddCondition(localMismatchMode, localMismatchThreshold, localParameter);
       for (int bit = 0; bit < layout.BitCount; bit++)

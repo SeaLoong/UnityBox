@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-08-05
+
+### Fixed
+
+- 修复参数压缩层允许 AnyState 过渡到当前 Encode/Decode 状态自身，导致 Parameter Driver 反复执行的问题。压缩状态现在执行一次后返回无 Driver 的 Idle，再按需重新检查；不再依赖自循环或空白 AnimationClip。
+
 ## [0.4.6] - 2026-08-04
 
 ### Changed
