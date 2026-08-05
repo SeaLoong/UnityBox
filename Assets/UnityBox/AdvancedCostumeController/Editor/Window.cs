@@ -60,6 +60,21 @@ namespace UnityBox.AdvancedCostumeController
 
     private string T(string chinese, string english) => Localization.Text(config, chinese, english);
 
+    private void NormalizeDefaultOutfitOverride()
+    {
+      var overrideObject = config.DefaultOutfitOverride;
+      var root = config.CostumesRoot;
+      if (overrideObject == null) return;
+
+      bool isUnderRoot = root != null &&
+        overrideObject != root && overrideObject.transform.IsChildOf(root.transform);
+      bool isKnownChoice = currentOutfitDataList.Count == 0 ||
+        currentOutfitDataList.Any(outfit =>
+          Scanner.FindOverrideChoiceObject(outfit, overrideObject) != null);
+      if (!isUnderRoot || !isKnownChoice)
+        config.DefaultOutfitOverride = null;
+    }
+
     private void UpdateWindowTitle()
     {
       titleContent = new GUIContent(T("高级服装控制器", "Advanced Costume Controller"));
@@ -223,6 +238,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private void OnGUI()
     {
+      NormalizeDefaultOutfitOverride();
       UpdateWindowTitle();
       EditorGUILayout.LabelField(T("高级服装控制器", "Advanced Costume Controller"), EditorStyles.boldLabel);
 
@@ -266,6 +282,7 @@ namespace UnityBox.AdvancedCostumeController
         }
         config.ApplyAutoDefaultsFromRoot();
         RefreshPreview(confirmDiscard: false);
+        NormalizeDefaultOutfitOverride();
       }
 
       config.RootMenuName = EditorGUILayout.TextField(
@@ -292,9 +309,10 @@ namespace UnityBox.AdvancedCostumeController
 
       config.DefaultOutfitOverride = (GameObject)EditorGUILayout.ObjectField(
         new GUIContent(T("默认服装或变体（可选）", "Default Outfit or Variant (optional)"), T(
-          "可指定服装本体、对象变体或材质变体作为初始选择。",
-          "Assign an outfit base, object variant, or material variant as the initial choice.")),
+          "可指定服装本体、对象变体或材质变体作为初始选择；移出服装根节点会自动清空，未指定时使用第一个启用对象所属的服装。",
+          "Assign an outfit base, object variant, or material variant as the initial choice; it is cleared when moved outside Costumes Root, and the outfit of the first enabled object is used when empty.")),
         config.DefaultOutfitOverride, typeof(GameObject), true);
+      NormalizeDefaultOutfitOverride();
       config.EnableParts = EditorGUILayout.Toggle(new GUIContent(
         T("启用部件控制", "Enable Parts Control"), T(
           "为部件或分组生成独立开关。",
@@ -335,7 +353,7 @@ namespace UnityBox.AdvancedCostumeController
 
       config.AutoGenerateMenuIcons = EditorGUILayout.Toggle(
         new GUIContent(T("自动生成菜单图标", "Auto Generate Menu Icons"), T(
-          "生成服装、变体、部件和 Mixer 项的 256×256 透明 PNG。",
+          "生成服装、变体、部件和混搭项的 256×256 透明 PNG。",
           "Generate 256×256 transparent PNGs for outfits, variants, parts, and Mixer items.")),
         config.AutoGenerateMenuIcons);
 
@@ -405,13 +423,13 @@ namespace UnityBox.AdvancedCostumeController
       EditorGUILayout.LabelField(T("使用方式", "How to use"), EditorStyles.boldLabel);
       EditorGUILayout.HelpBox(
         T("1. 选择服装根节点，确认扫描到目标服装。\n" +
-          "2. 设置参数前缀；需要时指定默认服装或变体。\n" +
+          "2. 设置参数前缀；需要时指定默认服装或变体；留空时使用第一个启用对象所属服装。\n" +
           "3. 点击“刷新预览”，勾选要生成的服装、本体/变体和部件。\n" +
           "4. 按需启用部件控制、混搭（可选择独立部件参数）、参数压缩或自动图标。\n" +
           "5. 查看预览下方的参数占用和动画层信息。\n" +
           "6. 点击“生成”，在确认窗口核对输出路径和默认选择。",
           "1. Select Costumes Root and confirm the outfits were scanned.\n" +
-          "2. Set the parameter prefix; optionally assign a default outfit or variant.\n" +
+          "2. Set the parameter prefix; optionally assign a default outfit or variant. If empty, the outfit of the first enabled GameObject is used.\n" +
           "3. Click Refresh Preview, then select outfits, base/variants, and parts.\n" +
           "4. Enable Parts, Custom Mixer (optionally independent Mixer part parameters), parameter compression, or menu icons as needed.\n" +
           "5. Review parameter usage and Animator layer information below the preview.\n" +
@@ -469,6 +487,7 @@ namespace UnityBox.AdvancedCostumeController
         T($"总计：{currentOutfitDataList.Count} 个服装，已选中：{selectedOutfits.Count} 个",
           $"Total: {currentOutfitDataList.Count} outfits, selected: {selectedOutfits.Count}"),
         EditorStyles.boldLabel);
+      DrawDefaultOutfitPreview(BuildSelectedOutfits());
       EditorGUILayout.Space(5);
 
       foreach (var outfit in currentOutfitDataList)
@@ -480,6 +499,41 @@ namespace UnityBox.AdvancedCostumeController
 
       EditorGUILayout.Space(3);
       DrawParameterEstimate();
+    }
+
+    private void DrawDefaultOutfitPreview(List<OutfitData> selectedOutfits)
+    {
+      var defaultOutfit = Scanner.FindDefaultOutfit(selectedOutfits,
+        config.DefaultOutfitOverride, config.CostumesRoot);
+      if (defaultOutfit == null)
+      {
+        EditorGUILayout.HelpBox(T(
+          "当前没有可用的默认服装。请至少启用一个对象。",
+          "There is no available default outfit. Enable at least one object."),
+          MessageType.Warning);
+        return;
+      }
+
+      var defaultChoice = defaultOutfit.DefaultChoiceObject ??
+        defaultOutfit.GetAllObjects().FirstOrDefault();
+      string outfitName = defaultOutfit.OutfitObject != null
+        ? Utils.GetRelativePath(config.CostumesRoot, defaultOutfit.OutfitObject)
+        : defaultOutfit.Name;
+      if (string.IsNullOrEmpty(outfitName)) outfitName = defaultOutfit.Name;
+      string choiceName = defaultChoice != null ? defaultChoice.name : defaultOutfit.Name;
+      bool explicitlyAssigned = config.DefaultOutfitOverride != null &&
+        defaultChoice != null &&
+        (defaultChoice == config.DefaultOutfitOverride ||
+         defaultChoice.transform.IsChildOf(config.DefaultOutfitOverride.transform) ||
+         config.DefaultOutfitOverride.transform.IsChildOf(defaultChoice.transform));
+      string source = explicitlyAssigned
+        ? T("指定对象", "Assigned object")
+          : T("第一个启用对象所属服装", "Outfit of the first enabled object");
+
+      EditorGUILayout.HelpBox(T(
+        $"当前默认服装组：{outfitName}\n当前默认对象/变体：{choiceName}\n来源：{source}",
+        $"Current default outfit group: {outfitName}\nCurrent default object/variant: {choiceName}\nSource: {source}"),
+        MessageType.Info);
     }
 
     private void DrawParameterEstimate()
@@ -1026,6 +1080,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private void DoGenerate()
     {
+      NormalizeDefaultOutfitOverride();
       if (config.CostumesRoot == null)
       {
         EditorUtility.DisplayDialog(T("错误", "Error"), T("请先指定服装根节点。", "Please select Costumes Root."), "OK");
@@ -1035,7 +1090,7 @@ namespace UnityBox.AdvancedCostumeController
       if (config.EnableCustomMixer && !config.EnableParts)
       {
         EditorUtility.DisplayDialog(T("错误", "Error"),
-          T("Custom Mixer 需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
+          T("混搭需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
         return;
       }
 
@@ -1069,7 +1124,8 @@ namespace UnityBox.AdvancedCostumeController
         outfit.GetAllObjects()));
 
       // 查找默认服装
-      var defaultOutfit = Scanner.FindDefaultOutfit(selectedOutfits, config.DefaultOutfitOverride);
+      var defaultOutfit = Scanner.FindDefaultOutfit(selectedOutfits,
+        config.DefaultOutfitOverride, config.CostumesRoot);
 
       // 执行生成
       var generator = new Generator(config);

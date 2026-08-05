@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using nadena.dev.modular_avatar.core;
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -9,10 +11,6 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   public static class Scanner
   {
-    /// <summary>用于自动识别默认服装的关键词</summary>
-    public static readonly string[] DefaultOutfitHints =
-      { "origin", "original", "default", "base", "vanilla", "standard", "normal" };
-
     /// <summary>
     /// 扫描 CostumesRoot 下的所有服装
     /// </summary>
@@ -32,18 +30,21 @@ namespace UnityBox.AdvancedCostumeController
 
         if (processedOutfitObjects.Contains(t.gameObject)) continue;
 
-        // 完整服装预制件也可以被转换为材质变体；此时它只作为材质对照来源，
-        // 不应再被独立识别为 Outfit Base。
+        var outfitMarker = t.GetComponent<ACCOutfitMarker>();
+        var modularAvatarOutfitRoot = t.GetComponent<ModularAvatarOutfitRoot>();
         var explicitMaterialVariant = t.GetComponent<ACCVariantMaterialOverride>();
-        if (explicitMaterialVariant != null && explicitMaterialVariant.OutfitBase != null &&
+        // ACC 自己的显式服装标记优先级最高；其次是 MA Outfit Root，最后才把
+        // 材质变体标记视为“不要独立识别”的信号。
+        if (outfitMarker == null && modularAvatarOutfitRoot == null &&
+            explicitMaterialVariant != null && explicitMaterialVariant.OutfitBase != null &&
             explicitMaterialVariant.OutfitBase != t.gameObject)
           continue;
 
-        // MA Merge Armature 是服装骨架的明确声明；没有该组件时仍兼容原有的
-        // 骨架/网格识别。ACCOutfitMarker 是完全显式的服装声明，不要求骨架或网格。
-        // 命中后不进入其后代，从而避免嵌套对象被重复识别。
-        var outfitMarker = t.GetComponent<ACCOutfitMarker>();
-        bool isExplicitOutfit = outfitMarker != null;
+        // ACCOutfitMarker 是 ACC 自己的最高优先级显式服装声明；MA Outfit Root
+        // 是其次的显式声明。两者都不要求骨架或网格，命中后不进入其后代，
+        // 从而避免嵌套对象被重复识别。其余对象再按 MA Merge Armature 和旧版
+        // 骨架/网格规则自动识别。
+        bool isExplicitOutfit = outfitMarker != null || modularAvatarOutfitRoot != null;
         bool hasOwnedArmature = Utils.TryGetOwnedArmature(t, out var armatureRoot);
         bool isAutoDetectedOutfit = hasOwnedArmature && Utils.HasMeshInHierarchy(t);
         if (!isExplicitOutfit && !isAutoDetectedOutfit)
@@ -81,7 +82,10 @@ namespace UnityBox.AdvancedCostumeController
             if (!isMaterialVariant &&
                 Utils.TryGetOwnedArmature(sibling, out _) && Utils.HasMeshInHierarchy(sibling))
               continue;
-            if (!isMaterialVariant && sibling.GetComponent<ACCOutfitMarker>() != null)
+            // 显式服装根优先级高于材质变体标记，不能把另一个 ACC/MA 服装吞成变体。
+            if (sibling.GetComponent<ACCOutfitMarker>() != null)
+              continue;
+            if (sibling.GetComponent<ModularAvatarOutfitRoot>() != null)
               continue;
             // 有网格且未被其他服装认领 → 加入当前变体；如果已由其他 Outfit 处理过变体加入逻辑，
             // 则 processedOutfitObjects 会跳过此对象，此处仅添加仍未处理的网格兄弟。
@@ -233,8 +237,12 @@ namespace UnityBox.AdvancedCostumeController
 
     /// <summary>
     /// 选择默认服装组，并保留用户显式指定的本体/变体对象。
+    /// 未指定或未命中时按 Costumes Root 的层级顺序选择第一个启用对象。
     /// </summary>
-    public static OutfitData FindDefaultOutfit(List<OutfitData> outfits, GameObject overrideObject)
+    public static OutfitData FindDefaultOutfit(
+      List<OutfitData> outfits,
+      GameObject overrideObject,
+      GameObject costumesRoot = null)
     {
       if (outfits == null || outfits.Count == 0) return null;
 
@@ -260,30 +268,37 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
 
-      // 按名称关键词匹配
-      if (result == null)
+      if (result != null) return result;
+
+      // 未指定时严格使用预览中第一个启用的 GameObject 所属服装，而不是按名称关键词猜测。
+      // 用层级路径排序，确保 Base/Variant 的实际显示顺序与默认值一致。
+      var enabledChoices = outfits
+        .Where(outfit => outfit != null)
+        .SelectMany(outfit => outfit.GetAllObjects()
+          .Select(choice => new { Outfit = outfit, Choice = choice }))
+        .Where(item => item.Choice != null);
+      if (costumesRoot != null)
       {
-        foreach (var hint in DefaultOutfitHints)
-        {
-          result = outfits.Find(o =>
-            (o.Name + "/" + o.RelativePath).ToLowerInvariant().Contains(hint));
-          if (result != null) break;
-        }
+        enabledChoices = enabledChoices.OrderBy(item =>
+          Utils.GetHierarchyPath(costumesRoot, item.Choice), StringComparer.Ordinal);
       }
 
-      // 兜底：使用第一个
-      return result ?? (outfits.Count > 0 ? outfits[0] : null);
+      foreach (var item in enabledChoices)
+      {
+        item.Outfit.DefaultChoiceObject = item.Choice;
+        return item.Outfit;
+      }
+
+      return null;
     }
 
-    private static GameObject FindOverrideChoiceObject(
+    public static GameObject FindOverrideChoiceObject(
       OutfitData outfit, GameObject overrideObject)
     {
       if (outfit == null || overrideObject == null) return null;
 
       var choices = new List<GameObject>();
-      if (outfit.BaseObject != null) choices.Add(outfit.BaseObject);
-      if (outfit.Variants != null)
-        choices.AddRange(outfit.Variants.Where(variant => variant != null));
+      choices.AddRange(outfit.GetAllObjects().Where(choice => choice != null));
 
       // 精确命中优先，允许直接把某个变体拖入 Default Outfit 字段。
       var exact = choices.FirstOrDefault(choice => choice == overrideObject);

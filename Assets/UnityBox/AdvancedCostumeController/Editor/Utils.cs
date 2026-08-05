@@ -112,6 +112,16 @@ public static class Utils
     armature = null;
     if (root == null) return false;
 
+    // ACCOutfitMarker 的服装根优先级由 Scanner 处理；这里仅负责读取骨架归属。
+    // Modular Avatar 的 Setup Outfit 会在服装根上写入 MA Outfit Root，
+    // 其 armatureRoot 是 MA 路径下最可靠的服装骨架归属信息。
+    var outfitRoot = root.GetComponent<ModularAvatarOutfitRoot>();
+    if (outfitRoot != null && outfitRoot.armatureRoot != null)
+    {
+      armature = outfitRoot.armatureRoot;
+      return true;
+    }
+
     if (TryGetOwnedMergeArmature(root, out var mergeArmature))
     {
       armature = mergeArmature.transform;
@@ -136,8 +146,8 @@ public static class Utils
   }
 
   /// <summary>
-  /// 查找属于当前服装根的 MA Merge Armature。只接受位于其直接无网格骨架分支中的
-  /// 组件，避免把嵌套服装或仅用于组织变体的容器误判为一套服装。
+  /// 查找属于当前服装根的 MA Merge Armature。组件必须位于当前根的直接骨架分支中；
+  /// MA Outfit Root/ACC Outfit Marker 下的嵌套服装会被隔离，避免外层组织节点吞掉子服装。
   /// </summary>
   public static bool TryGetOwnedMergeArmature(
     Transform root,
@@ -158,7 +168,12 @@ public static class Utils
       var branch = candidate.transform;
       while (branch.parent != null && branch.parent != root)
         branch = branch.parent;
-      if (branch.parent != root || HasMeshInHierarchy(branch)) continue;
+      if (branch.parent != root) continue;
+
+      var nestedOutfitRoot = candidate.GetComponentInParent<ModularAvatarOutfitRoot>();
+      if (nestedOutfitRoot != null && nestedOutfitRoot.transform != root) continue;
+      var nestedAccMarker = candidate.GetComponentInParent<ACCOutfitMarker>();
+      if (nestedAccMarker != null && nestedAccMarker.transform != root) continue;
 
       mergeArmature = candidate;
       return true;

@@ -46,7 +46,7 @@ namespace UnityBox.AdvancedCostumeController
       if (config.EnableCustomMixer && !config.EnableParts)
       {
         EditorUtility.DisplayDialog(T("生成失败", "Generation Failed"),
-          T("Custom Mixer 需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
+          T("混搭需要启用部件控制。", "Custom Mixer requires Parts Control."), "OK");
         return;
       }
 
@@ -162,7 +162,7 @@ namespace UnityBox.AdvancedCostumeController
         EditorUtility.SetDirty(mergeAnimator);
         string completionMessage = T(
           $"[ACC] 生成完成：{selectedOutfits.Count} 个服装，{selectedOutfits.Sum(o => o.Parts.Count)} 个部件" +
-          (config.EnableCustomMixer ? "，已启用混搭模式" : "") +
+          (config.EnableCustomMixer ? "，已启用混搭" : "") +
           (generatedMergeArmatures > 0
             ? $"，已配置 {generatedMergeArmatures} 个 MA Merge Armature"
             : ""),
@@ -260,9 +260,10 @@ namespace UnityBox.AdvancedCostumeController
         string outfitName = outfitPathSegments.Count > 0
           ? outfitPathSegments[outfitPathSegments.Count - 1]
           : outfit.Name;
-        bool needSubmenu = config.EnableParts || outfit.HasVariants();
+        bool hasControllableParts = config.EnableParts &&
+          outfit.GetPartControls().Count > 0;
 
-        if (needSubmenu)
+        if (hasControllableParts)
         {
           var outfitSubmenu = Utils.FindOrCreateChild(parentMenu, outfitName);
           Utils.EnsureSubmenuOnNode(outfitSubmenu, presentation: menuPresentation);
@@ -289,18 +290,41 @@ namespace UnityBox.AdvancedCostumeController
         }
         else
         {
-          if (!outfitIndexMap.ContainsKey(outfit.BaseObject)) continue;
-
-          var itemNode = Utils.FindOrCreateChild(parentMenu, outfitName);
-          var menuItem = Utils.CreateMenuItem(itemNode);
-          ConfigurePersistentChoiceMenuItem(menuItem, config.MainParameterName,
-            mainLayout, outfitIndexMap[outfit.BaseObject]);
-          Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
-          MenuIconGenerator.AddRequest(config, menuIconRequests, itemNode,
-            new[] { outfit.BaseObject },
-            "Choice_" + Utils.GetHierarchyPath(costumesRoot, outfit.BaseObject),
-            useSharedOutfitFraming: true);
+          // 没有可控制部件时，不为“变体/部件”额外创建一层；若有多个已选
+          // 对象，直接把各个 Base/Variant 项放到当前父菜单下。
+          BuildFlatOutfitChoiceMenu(parentMenu, outfit, outfitName,
+            outfitIndexMap, mainLayout, menuPresentation, costumesRoot);
         }
+      }
+    }
+
+    private void BuildFlatOutfitChoiceMenu(
+      GameObject parentMenu,
+      OutfitData outfit,
+      string outfitName,
+      Dictionary<GameObject, int> outfitIndexMap,
+      ChoiceParameterLayout mainLayout,
+      Utils.MenuPresentationSnapshot menuPresentation,
+      GameObject costumesRoot)
+    {
+      var choices = outfit.GetAllObjects()
+        .Where(outfitIndexMap.ContainsKey)
+        .ToList();
+      if (choices.Count == 0) return;
+
+      bool showChoiceNames = choices.Count > 1 || outfit.HasVariants() ||
+        outfit.OutfitObject != outfit.BaseObject;
+      foreach (var choice in choices)
+      {
+        string itemName = showChoiceNames ? choice.name : outfitName;
+        var itemNode = Utils.FindOrCreateUniqueChild(parentMenu, itemName);
+        var menuItem = Utils.CreateMenuItem(itemNode);
+        ConfigurePersistentChoiceMenuItem(menuItem, config.MainParameterName,
+          mainLayout, outfitIndexMap[choice]);
+        Utils.ApplyMenuPresentation(menuPresentation, itemNode, menuItem, "");
+        MenuIconGenerator.AddRequest(config, menuIconRequests, itemNode,
+          GetMenuIconTargets(choice), "Choice_" + Utils.GetHierarchyPath(costumesRoot, choice),
+          choice.GetComponent<ACCVariantMaterialOverride>(), useSharedOutfitFraming: true);
       }
     }
 
@@ -576,11 +600,25 @@ namespace UnityBox.AdvancedCostumeController
           $"- Controller: existing file will be overwritten {controllerPath}")
         : T($"- Controller：将新建 {controllerPath}",
           $"- Controller: new file will be created {controllerPath}"));
-      string defaultChoiceName = defaultOutfit?.DefaultChoiceObject != null
-        ? defaultOutfit.DefaultChoiceObject.name
+      var defaultChoice = defaultOutfit?.DefaultChoiceObject ??
+        defaultOutfit?.GetAllObjects().FirstOrDefault();
+      string defaultGroupName = defaultOutfit?.OutfitObject != null
+        ? Utils.GetRelativePath(config.CostumesRoot, defaultOutfit.OutfitObject)
         : defaultOutfit?.Name;
-      sb.AppendLine(T($"- 默认服装：{defaultChoiceName ?? "未设置"}",
-        $"- Default outfit: {defaultChoiceName ?? "Not set"}"));
+      if (string.IsNullOrEmpty(defaultGroupName)) defaultGroupName = defaultOutfit?.Name;
+      string defaultChoiceName = defaultChoice?.name;
+      sb.AppendLine(T($"- 默认服装组：{defaultGroupName ?? "未设置"}",
+        $"- Default outfit group: {defaultGroupName ?? "Not set"}"));
+      sb.AppendLine(T($"- 默认对象/变体：{defaultChoiceName ?? "未设置"}",
+        $"- Default object/variant: {defaultChoiceName ?? "Not set"}"));
+      bool explicitDefault = config.DefaultOutfitOverride != null &&
+        defaultChoice != null &&
+        (defaultChoice == config.DefaultOutfitOverride ||
+         defaultChoice.transform.IsChildOf(config.DefaultOutfitOverride.transform) ||
+         config.DefaultOutfitOverride.transform.IsChildOf(defaultChoice.transform));
+      sb.AppendLine(explicitDefault
+        ? T("- 默认来源：指定对象", "- Default source: assigned object")
+          : T("- 默认来源：第一个启用对象所属服装", "- Default source: outfit of the first enabled object"));
       if (Utils.FindDirectChild(config.CostumesRoot.transform, ACCConfig.MenuObjectName) != null)
       {
         sb.AppendLine(T("- 菜单对象：复用现有 ACC_Menu 的展示属性（如图标）；控制字段和子菜单会重建，不会复用旧参数。",
@@ -600,12 +638,12 @@ namespace UnityBox.AdvancedCostumeController
         string mixerObjectName = string.IsNullOrWhiteSpace(config.CustomMixerName)
           ? Localization.DefaultMixerMenuObjectName(config)
           : config.CustomMixerName.Trim();
-        sb.AppendLine(T($"- 混搭模式：已启用（节点名称：{mixerObjectName}）",
+        sb.AppendLine(T($"- 混搭：已启用（节点名称：{mixerObjectName}）",
           $"- Custom Mixer: enabled (node name: {mixerObjectName})"));
         sb.AppendLine(config.UseIndependentMixerPartParameters
           ? T("- 混搭部件参数：独立槽位参数（支持本体/变体候选选择）",
             "- Mixer part parameters: independent slot parameters (base/variant candidate selection enabled)")
-          : T("- 混搭部件参数：复用普通部件参数（不新增 Mixer 槽位参数）",
+          : T("- 混搭部件参数：复用普通部件参数（不新增混搭槽位参数）",
             "- Mixer part parameters: reuse normal part parameters (no additional Mixer slot parameters)"));
       }
       if (config.AutoGenerateMenuIcons)

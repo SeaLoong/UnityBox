@@ -7,14 +7,14 @@ Advanced Costume Controller（以下简称 **ACC**）是一个基于 [Modular Av
 - FX Animator Controller（通过 `ModularAvatarMergeAnimator` 合并）；
 - 服装切换、部件开关、混搭和材质替换所需的 AnimationClip。
 
-ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar 区域；优先通过独立骨架分支中的 `MA Merge Armature` 识别，也兼容原有独立骨架识别，并可用 `ACCOutfitMarker` 显式标记任意服装根容器。
+ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar 区域；识别优先级为 ACC 自己的 `ACCOutfitMarker`，其次是 `MA Outfit Root`/`armatureRoot` 和独立骨架分支中的 `MA Merge Armature`，最后兼容原有独立骨架识别。也可用 `ACCOutfitMarker` 显式标记任意服装根容器。
 
 ## 前置条件
 
 - Unity `2022.3` 或兼容版本；
 - VRChat SDK Avatars；
 - Modular Avatar `1.10.0` 或更高版本；
-- 已有 `MA Merge Armature` 的服装会被优先识别；
+- 已有 `ACCOutfitMarker`、`MA Outfit Root` 或 `MA Merge Armature` 的服装会被优先识别，其中 ACC 自己的标记优先级最高；
 - 自动识别时：目标区域中至少有一个 `SkinnedMeshRenderer`，且正确指定了 `rootBone`；
 - 无独立骨架或网格时：将 `ACCOutfitMarker` 挂到服装根对象；
 - 服装或可控区域已放在 Avatar 的层级中。
@@ -55,7 +55,7 @@ Avatar
 | 名称 | 含义 |
 |---|---|
 | **Costumes Root** | 本次 ACC 扫描与动画绑定的根节点；生成动画路径都相对它计算。 |
-| **Outfit Base** | 被识别为一套服装本体的对象；它拥有 `MA Merge Armature` 骨架分支、可推导的独立骨架，或带有 `ACCOutfitMarker` 显式标记。 |
+| **Outfit Base** | 被识别为一套服装本体的对象；它拥有 `MA Outfit Root`、`MA Merge Armature` 骨架分支、可推导的独立骨架，或带有 `ACCOutfitMarker` 显式标记。 |
 | **Outfit Object** | 菜单中代表一套服装的对象；有变体时是共同父对象，无变体时等于 Outfit Base。 |
 | **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
@@ -66,7 +66,7 @@ Avatar
 
 ### Outfit Base 的识别条件
 
-ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。若对象的直接无 Mesh 骨架分支中已有 `MA Merge Armature`，ACC 会优先将其作为明确的服装骨架信号；否则兼容原有规则，一个对象成为 Outfit Base 需要同时满足：
+ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。若对象拥有 ACC 自己的 `ACCOutfitMarker`，或拥有 `MA Outfit Root`/直接骨架分支中的 `MA Merge Armature`，ACC 会优先将其作为明确的服装信号；否则兼容原有规则，一个对象成为 Outfit Base 需要同时满足：
 
 1. 后代包含可渲染网格；
 2. 后代包含 `SkinnedMeshRenderer`；
@@ -132,7 +132,7 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 | **Costumes Root / 服装根节点** | 必填。选择本次 ACC 的扫描和动画根。 |
 | **Root Menu Name / 根菜单名称** | VRChat 菜单中根节点的显示名；为空时默认与参数前缀一致。 |
 | **Parameter Prefix / 参数前缀** | 必填且同一 Avatar 内必须唯一。它同时是主服装选择参数、Layer 前缀、Controller 名和输出目录命名空间；两值主选择可使用 Bool。为空时自动回退到根对象名称。 |
-| **Default Outfit / 默认服装** | 可选。可指定服装本体、对象变体或材质变体作为初始选择；未指定时按名称关键词匹配，最后回退到第一个服装。 |
+| **Default Outfit / 默认服装** | 可选。可指定服装本体、对象变体或材质变体作为初始选择；对象移出 `Costumes Root` 会自动清空；未指定或未启用时使用第一个启用对象所属服装组和对象/变体。 |
 | **Enable Parts Control / 启用部件控制** | 启用普通模式的部件开关。 |
 | **Enable Custom Mixer / 启用混搭** | 仅在已启用 Parts Control 时可选；启用 Mixer 服装入口。默认复用普通部件参数，不新增 Mixer 槽位参数。 |
 | **Use Independent Part Parameters / 使用独立部件参数** | 仅在已启用 Mixer 时显示；开启后为每个 Mixer 槽位生成 `0..N` 候选参数，可选择本体/变体；默认关闭以减少同步参数。 |
@@ -164,7 +164,7 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 
 Parameter Prefix 必须至少包含一个字母或数字；只包含空格、符号或分隔符的前缀无法产生稳定的 Controller 文件名，ACC 会拒绝生成。
 
-如果最终只有一个实际可选服装对象、没有变体且未启用 Mixer，主选择值是固定常量，不包含需要网络同步的信息。ACC 仍保留 local-only 参数供菜单与 Animator 内部使用，但无论是否启用参数压缩都占用 `0 bit`。普通部件 Bool 参数仍按实际控制项数量计算；一旦存在变体或 Mixer，主选择重新成为多值选择域并需要同步。
+如果最终只有一个实际可选服装对象、没有变体且未启用混搭，主选择值是固定常量，不包含需要网络同步的信息。ACC 仍保留 local-only 参数供菜单与 Animator 内部使用，但无论是否启用参数压缩都占用 `0 bit`。普通部件 Bool 参数仍按实际控制项数量计算；一旦存在变体或混搭，主选择重新成为多值选择域并需要同步。
 
 ## 普通服装与部件控制
 
@@ -184,7 +184,7 @@ Clothes Root Menu
 启用后，ACC 额外生成：
 
 - 每个部件或分组一个同步 Bool 参数；
-- `Parts Control` Layer 的单一 `Parts` State，根据普通部件参数播放 OFF/ON Clip；启用独立 Mixer 参数时，State 内部再由主服装参数外层 `Simple1D` 选择 Normal 或 Mixer 部件树；
+- `Parts Control` Layer 的单一 `Parts` State，根据普通部件参数播放 OFF/ON Clip；启用独立混搭参数时，State 内部再由主服装参数外层 `Simple1D` 选择 Normal 或混搭部件树；
 - 每套服装下的 `Parts` 子菜单。
 
 ```text
@@ -196,7 +196,7 @@ Clothes Root Menu
     └── Casual Outfit     → Clothes = 0
 ```
 
-部件菜单的默认值取自当前 `activeSelf`，`Parts Control` 会直接使用这些 Bool 参数在 OFF/ON Clip 间选择，不再生成独立的 `Parts Init` Layer。共享普通部件参数模式的 Mixer 复用同一部件树和这些 Bool 参数。
+部件菜单的默认值取自当前 `activeSelf`，`Parts Control` 会直接使用这些 Bool 参数在 OFF/ON Clip 间选择，不再生成独立的 `Parts Init` Layer。共享普通部件参数模式的混搭复用同一部件树和这些 Bool 参数。
 
 ## 部件分组
 
@@ -341,19 +341,18 @@ Costumes Root
 
 > 当同层存在多套服装时，建议为变体添加 `ACCVariantMaterialOverride` 组件并正确设置 Outfit Base，以避免归属歧义。
 
-ACC 将变体组的共同父对象作为菜单节点，并生成各变体的选择项。
+有可控制部件时，ACC 将变体组的共同父对象作为菜单节点，并在其中生成各变体和 Parts 菜单；没有可控制部件时，已选 Base/Variant 直接放到当前父菜单，不再额外生成“变体/部件”层。`MA Outfit Root`、`ACCOutfitMarker` 和已配置的 `MA Merge Armature` 会阻止 ACC 继续向下把嵌套服装误识别为当前服装的变体。
 
 > 选择任意对象变体时，ACC 会保持 Outfit Base 活动，以承载可能位于本体下的共享部件。若所有同级变体都包含完整 Mesh，请先在 Avatar 中验证 Base 与变体同时 active 时不会产生叠穿。
 
 ### 默认服装选择
 
-优先级如下：
+选择规则如下：
 
-1. `Default Outfit` 显式指定的对象；如果指定的是某个变体，该变体会作为普通服装参数的初始值，并作为 Mixer 默认服装组的初始候选；
-2. 名称或路径含 `origin`、`original`、`default`、`base`、`vanilla`、`standard`、`normal` 的服装；
-3. 扫描顺序中的第一个服装。
+1. `Default Outfit` 显式指定的对象；如果指定的是某个变体，该变体会作为普通服装参数的初始值，并作为混搭默认服装组的初始候选；
+2. 未指定或指定对象未启用时，使用预览中第一个启用对象所属服装组和对象/变体。
 
-`Default Outfit` 支持直接拖入 Outfit Base、对象变体或 `ACCVariantMaterialOverride` 材质变体。指定对象必须在本次预览中保持勾选；如果指定变体未被选中，它不会进入生成，ACC 会按名称关键词和扫描顺序执行普通默认选择回退。
+`Default Outfit` 支持直接拖入 Outfit Base、对象变体或 `ACCVariantMaterialOverride` 材质变体。对象必须位于当前 `Costumes Root` 下；移出根节点后输入会自动清空。指定对象未被选中时，ACC 使用第一个启用对象所属服装组和对象/变体作为默认值。
 
 <a id="acc-variant-material-override"></a>
 
@@ -415,13 +414,13 @@ Inspector 的两个列表默认展开：
 
 ## Custom Mixer 混搭
 
-Custom Mixer 是一个特殊的服装状态，用于在主服装选择中进入混搭入口。它**必须启用 Parts Control**，并提供两种部件参数策略。
+Custom Mixer（混搭）是主服装选择中的一个特殊服装状态。它**必须启用 Parts Control**，并提供两种部件参数策略。
 
-默认关闭 **Use Independent Part Parameters / 使用独立部件参数** 时，Mixer 复用普通部件菜单已经生成的 Bool 参数：进入 Mixer 后激活所有已选基础服装组，由各服装组的普通部件参数控制部件；这种模式不新增 Mixer 槽位参数，适合优先减少同步参数的 Avatar。共享部件菜单带有 Parts 默认图标；服装组存在多个已选对象时，会在服装组菜单内与该菜单同级新增一个整体变体选择域用于选择 Base/Variant，关闭压缩时为同步 Int，开启压缩时按选择域规则编码为同步 Bool 位；只有一个对象时不生成该参数。它不再为每个部件槽位分别生成变体参数。
+默认关闭 **Use Independent Part Parameters / 使用独立部件参数** 时，混搭复用普通部件菜单已经生成的 Bool 参数：进入混搭后激活所有已选基础服装组，由各服装组的普通部件参数控制部件；这种模式不新增混搭槽位参数，适合优先减少同步参数的 Avatar。共享部件菜单带有 Parts 默认图标；服装组存在多个已选对象时，会在服装组菜单内与该菜单同级新增一个整体变体选择域用于选择 Base/Variant，关闭压缩时为同步 Int，开启压缩时按选择域规则编码为同步 Bool 位；只有一个对象时不生成该参数。它不再为每个部件槽位分别生成变体参数。
 
 开启 **Use Independent Part Parameters / 使用独立部件参数** 时，每种部件/分组使用一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件。不同服装组之间可以自由组合；材质变体作为候选时，只对当前部件槽位的 Renderer 应用材质替换，不会因为一个部件开关重染整套服装。
 
-独立参数模式的 Mixer 菜单按“服装组 → 版本 → 部件/分组候选”组织。普通模式的部件控制顺序和分组名称会被复用：
+独立参数模式的混搭菜单按“服装组 → 版本 → 部件/分组候选”组织。普通模式的部件控制顺序和分组名称会被复用：
 
 - 同一服装组、同一部件/分组槽位只能选择一个候选；
 - 同一服装组、不同部件/分组槽位可以同时选择；
@@ -439,33 +438,33 @@ Outfit B：Base + Variant B1，部件 D / E / F
 
 不允许：同时打开 `Outfit A` 的 A 槽位 Base 候选和 Variant A1 候选，因为它们属于同一部件槽位。
 
-共享普通部件参数模式的 Mixer 菜单按“服装组 → 变体项目 + 共享部件 / Shared Parts 菜单”组织；变体项目与 Shared Parts 同级，Shared Parts 菜单复用对应服装组普通 Parts 菜单的 Bool 参数，整体变体项目共用该服装组的一个选择域。
+共享普通部件参数模式的混搭菜单按“服装组 → 变体项目 + 共享部件 / Shared Parts 菜单”组织；变体项目与 Shared Parts 同级，Shared Parts 菜单复用对应服装组普通 Parts 菜单的 Bool 参数，整体变体项目共用该服装组的一个选择域。
 
 ### 启用步骤
 
 1. 启用 **Enable Parts Control**。
-2. 启用 **Enable Custom Mixer**。
+2. 启用 **Enable Custom Mixer / 启用混搭**。
 3. 如需本体/变体候选槽位选择，再启用 **Use Independent Part Parameters**；默认关闭以节省同步参数。
-4. 按需修改 `Custom Mixer Name`（留空时默认显示「混搭」/「Custom Mix」）。
+4. 按需修改 `Custom Mixer Name / 混搭菜单名称`（留空时默认显示「混搭」/「Custom Mix」）。
 5. 刷新预览，确认需要参加混搭的 Base/变体均已勾选。
 6. 生成。
 
-### Mixer 的运行逻辑
+### 混搭运行逻辑
 
-点击混搭菜单中的 **启用混搭 / Enable Custom Mix** 后（自定义 Mixer 名称时为“启用 + 自定义名称”），主 `{ParameterPrefix}` 被设为普通服装索引后的特殊值：
+点击混搭菜单中的 **启用混搭 / Enable Custom Mix** 后（自定义混搭名称时为“启用 + 自定义名称”），主 `{ParameterPrefix}` 被设为普通服装索引后的特殊值：
 
-1. 主服装参数进入普通服装索引后的 Mixer 特殊值；
+1. 主服装参数进入普通服装索引后的混搭特殊值；
 2. 共享参数模式激活所有基础服装组，各组整体变体参数先选择 Base/Variant，普通部件 Bool 参数再控制各部件；只有一个已选对象的服装组不生成整体变体参数；
 3. 独立参数模式保留默认服装组及默认选择对象，默认服装槽位沿用普通 `Parts` 的初始 `activeSelf` 状态，其他服装组槽位默认为 `0`；
 4. 独立槽位动画会先关闭该槽位的所有候选，再只打开当前值对应的候选；材质变体候选会先恢复当前部件的本体材质，再应用当前替换；
 5. 独立模式下所有槽位为 `0` 时服装组关闭，至少一个槽位非零时激活该组；
-6. 两种模式的普通部件和 Mixer 部件树共用一个 `Parts` State；独立模式由主服装参数外层 `Simple1D` 选择 Normal/Mixer，共享模式直接复用普通部件树。
+6. 两种模式的普通部件和混搭部件树共用一个 `Parts` State；独立模式由主服装参数外层 `Simple1D` 选择 Normal/Mixer，共享模式直接复用普通部件树。
 
-主服装选择与 Mixer 的 Enable 使用 **Toggle**，以便松开菜单后仍保持选择；VRChat 的 **Button** 是瞬时控件，不适合服装状态。独立参数模式的 Mixer 候选也使用 **Toggle**，写入对应槽位值；共享模式的 Mixer 部件项目复用普通 Parts 的 Bool Toggle。
+主服装选择与混搭启用项使用 **Toggle**，以便松开菜单后仍保持选择；VRChat 的 **Button** 是瞬时控件，不适合服装状态。独立参数模式的混搭候选也使用 **Toggle**，写入对应槽位值；共享模式的混搭部件项目复用普通 Parts 的 Bool Toggle。
 
 启用部件控制时，服装选择项位于服装子菜单内，并直接使用服装对象名；关闭部件控制且不需要变体子菜单时，服装项同样直接使用对象名。
 
-启用参数压缩时，多值主选择、共享整体变体和独立 Mixer 槽位保持各自独立的本地 Int、同步 Bool 位、状态和 AnyState 条件；共享普通部件参数模式不生成 Mixer 槽位压缩域。两值域不会再额外创建压缩 Int。所有压缩状态共享一个事件分发 Animator Layer；默认 `Idle` 状态不写入参数，避免全局 Driver 在本地初始化时覆盖保存值。
+启用参数压缩时，多值主选择、共享整体变体和独立混搭槽位保持各自独立的本地 Int、同步 Bool 位、状态和 AnyState 条件；共享普通部件参数模式不生成混搭槽位压缩域。两值域不会再额外创建压缩 Int。所有压缩状态共享一个事件分发 Animator Layer；默认 `Idle` 状态不写入参数，避免全局 Driver 在本地初始化时覆盖保存值。
 
 混搭参数路径格式为：
 
@@ -482,7 +481,7 @@ Outfit B：Base + Variant B1，部件 D / E / F
 
 独立部件参数模式下，每个部件/分组槽位使用一个参数；两值槽位为 Bool，多值槽位未压缩时为同步 Int（8 bits），启用压缩后为对应数量的同步 Bool 位。共享模式下，每个有多个已选对象的服装组使用一个整体变体选择域，未压缩时为同步 Int，启用压缩后按选择域编码，部件仍复用普通 Bool 参数。Mixer 主选择值紧随最后一个普通服装对象；VRChat Int 可表达范围限制普通服装对象数量最多为 255。
 
-### Mixer 菜单示例
+### 混搭菜单示例
 
 独立部件参数模式示例：
 
