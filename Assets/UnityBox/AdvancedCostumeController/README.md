@@ -7,7 +7,7 @@ ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并�
 1. 打开 **Tools > UnityBox > Advanced Costume Controller**。
 2. 选择服装根节点，点击**刷新预览**。
 3. 勾选要生成的服装、本体/变体和部件。
-4. 按需启用**部件控制**、**混搭模式**和**参数压缩**。
+4. 按需启用**部件控制**、**混搭**（可选使用独立部件参数）和**参数压缩**。
 5. 可选启用**自动生成菜单图标**。
 6. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
 
@@ -48,9 +48,20 @@ ACC 优先将服装骨架分支中的 `MA Merge Armature` 视为明确的服装�
 
 ### 混搭模式
 
-Custom Mixer 要求启用部件控制。启用后，ACC 会为每种部件/分组生成一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件；这样不同服装组的部件可以自由组合，材质变体候选只会对当前部件应用材质替换。
+Custom Mixer 要求启用部件控制。启用后可以选择两种部件参数策略；面板中的**使用独立部件参数**默认关闭。
 
-进入 Mixer 时，ACC 会先保留**默认服装**：默认服装组的每个槽位会选择默认服装对应的候选，并严格沿用普通 `Parts` 菜单的初始 `activeSelf` 状态；其它服装组的槽位为 Off。切换到其它服装候选后，动画只打开该候选的部件，不会把同一槽位的其它版本部件一起打开。
+关闭**使用独立部件参数**时，Mixer 会复用普通部件菜单已经生成的 Bool 参数：
+
+- Mixer 仍然是主服装参数的一个特殊值；
+- 进入 Mixer 后打开所有已选中的基础服装组；
+- 各服装组的部件由原有普通部件 Bool 参数控制，不新增 `Mixer/...` 槽位参数；
+- Mixer 菜单中的“共享部件 / Shared Parts”项目与普通部件菜单使用同一参数，并使用 Parts 默认图标；
+- 服装组有多个已选对象时，在服装组菜单内与 Shared Parts 同级额外生成一个整体变体选择域，统一选择该组的 Base/Variant；关闭压缩时为同步 Int，开启压缩时按选择域规则编码为同步 Bool 位；只有一个已选对象时不生成变体参数；
+- 该模式主要用于减少同步参数，不再为每个部件槽位分别生成变体 Int；部件开关仍使用普通 Bool 参数。
+
+启用**使用独立部件参数**时，使用完整的槽位候选模式：ACC 会为每种部件/分组生成一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件；这样不同服装组的部件可以自由组合，材质变体候选只会对当前部件应用材质替换。此时不再使用共享模式的服装组整体变体参数。
+
+进入独立参数 Mixer 时，ACC 会先保留**默认服装**：默认服装组的每个槽位会选择默认服装对应的候选，并严格沿用普通 `Parts` 菜单的初始 `activeSelf` 状态；其它服装组的槽位为 Off。切换到其它服装候选后，动画只打开该候选的部件，不会把同一槽位的其它版本部件一起打开。
 
 主服装参数取值连续排列：
 
@@ -59,7 +70,7 @@ Custom Mixer 要求启用部件控制。启用后，ACC 会为每种部件/分�
 
 例如有 3 个服装对象时，普通选择值为 `0`、`1`、`2`，Mixer 值为 `3`。没有变体的部件槽位只有 `0/1` 两个值，会直接使用 Bool；有多个版本候选时使用 `0..N` 的 Int，启用参数压缩后再编码为 Bool 位。
 
-进入 Mixer 时不会默认激活所有服装组。ACC 使用一个合并的 `Direct BlendTree` 管理每个槽位：某组任一槽位为非零时激活该组，槽位的 `Simple1D` 子树只打开当前值对应的候选部件；全部槽位回到 `0`，或退出 Mixer 后，该组会关闭。
+共享模式进入 Mixer 后激活所有基础服装组，各组的整体变体 `Simple1D` 先选择 Base/Variant，再由普通部件 Bool 控制部件。独立参数 Mixer 不会默认激活所有服装组。ACC 使用一个合并的 `Direct BlendTree` 管理每个槽位：某组任一槽位为非零时激活该组，槽位的 `Simple1D` 子树只打开当前值对应的候选部件；全部槽位回到 `0`，或退出 Mixer 后，该组会关闭。两种模式的普通部件和 Mixer 部件树现在共用一个 `Parts` State；独立参数模式由主服装参数外层 `Simple1D` 选择 Normal 或 Mixer 子树，共享模式则在 Mixer 分支中叠加各服装组的整体变体树。
 
 ### 自动生成菜单图标
 
@@ -104,7 +115,7 @@ $$
 \lceil \log_2(N) \rceil \text{ bit}
 $$
 
-Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$ 个值计算。
+启用独立部件参数时，Mixer 有 $N$ 个候选还包含一个“未选择”值，因此按 $N+1$ 个值计算；共享普通部件参数模式不生成 Mixer 槽位选择域，但每个有多个对象的服装组会使用一个整体变体选择域。
 
 共享压缩 Layer 内，每个选择域仍有自己的状态、Driver 与精确 AnyState 条件；本地编码状态和远端解码状态分开，且默认 `Idle` 状态不写入任何参数：
 
@@ -112,7 +123,7 @@ Mixer 有 $N$ 个候选时，还包含一个“未选择”值，因此按 $N+1$
 - 其他客户端根据同步 Bool 位解码本地 `Int`；
 - `IsLocal` Animator 参数用于区分本地菜单输入和远端位同步；`localOnly=false` 的 Driver 是“本地和远端都可执行”，因此解码状态只有在 `IsLocal=false` 的转移条件满足时才会进入。
 
-压缩会新增同步 Bool 位参数、本地 Int 参数，以及一个由所有有效选择域共用的编码/解码 Animator Layer。预览区第一行显示 `动画层(N)。主选择(Int/Bool) + 部件(Int/Bool) + 混搭槽位(Int/Bool) = 总 bit`，占用为 0 的分类会省略；全 0 时显示“无同步参数占用”。启用参数压缩后，第二行显示各分类的 `本地 Int → 同步 Bool` 压缩方式，并在存在 local-only 参数时追加 `本地参数(Int + Bool + Float)`；生成确认仍会显示完整的计算明细。
+压缩会新增同步 Bool 位参数、本地 Int 参数，以及一个由所有有效选择域共用的编码/解码 Animator Layer。只有启用独立部件参数时，Mixer 槽位才会作为压缩选择域计入；共享模式的整体变体也会按选择域规则参与压缩。预览区第一行显示 `动画层(N)。主选择(Int/Bool) + 部件(Int/Bool) + 混搭槽位(Int/Bool) + 混搭变体(Int/Bool) = 总 bit`，占用为 0 的分类会省略；全 0 时显示“无同步参数占用”。启用参数压缩后，第二行显示各分类的 `本地 Int → 同步 Bool` 压缩方式，并在存在 local-only 参数时追加 `本地参数(Int + Bool + Float)`；生成确认仍会显示完整的计算明细。
 
 ## 参数占用示例
 
@@ -182,8 +193,8 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 - 同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
 - 主服装切换和 Mixer 槽位候选使用 `Simple1D BlendTree` 根据离散值选择动画，避免为每个候选创建独立状态转移；两值域使用 Bool，多值域使用 Float Animator 参数，所有树显式保留手工阈值，不使用 Unity 自动阈值。
 - 启用部件控制或存在服装变体时，服装选择会进入一层子菜单；其中的服装控件名称使用本地化的“启用 + 对象名”，普通一级服装菜单仍直接使用对象名。
-- 主服装与 Mixer Enable 使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。Mixer 槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；普通 Parts 保持 Bool Toggle。
-- 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；内部使用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择。
+- 主服装与 Mixer Enable 使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。独立部件参数模式的 Mixer 槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；共享模式的 Mixer 部件项目复用普通 Parts 的 Bool Toggle。
+- 普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer 与 `Parts` State；独立参数模式由外层 `Simple1D` 选择 Normal/Mixer，再用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择，共享模式直接复用普通部件树。
 - Mixer 服装组激活 Clip 只负责根对象、变体和非槽位部件；槽位候选部件只由对应槽位子树负责，避免合并后同一属性被重复加权。
 - 所有参数压缩选择域共用一个事件分发状态机 Layer；每个域仍有自己的状态、Driver 与 AnyState 条件，因此域间不会共享参数写入。
 - 可视控制状态使用 Write Defaults On；纯参数压缩 Layer 使用 Write Defaults Off，避免 Driver 状态重置动画绑定。所有 AnyState Transition 都禁止过渡到当前状态自身；压缩 Encode/Decode 状态执行一次后回到无 Driver 的 Idle，若位仍未同步则从 Idle 重新检查，避免在当前状态内反复执行 Driver。Idle 不需要空白 AnimationClip。
@@ -201,7 +212,7 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 所有选择域在一个事件分发状态机中完成本地编码和远端解码。每个 AnyState 转移均带有域专属参数和 bit 条件，状态只承担一次该域的 Driver 写入，不需要表示全部域的组合；预览和生成确认会显示压缩 Layer 数量及 Controller 总 Layer 数。
 
-Mixer 的服装组激活、普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；其中使用 `DirectBlendTree` 叠加服装组激活 Clip 和槽位子树，槽位候选使用嵌套的 `Simple1D BlendTree`，不再为每个槽位创建独立 Layer。
+独立参数 Mixer 的服装组激活、普通部件和所有 Mixer 槽位共用一个 `Parts Control` Layer；其中使用 `DirectBlendTree` 叠加服装组激活 Clip 和槽位子树，槽位候选使用嵌套的 `Simple1D BlendTree`，不再为每个槽位创建独立 Layer。共享普通部件参数模式则在 Mixer 入口激活基础服装组，直接复用普通部件树，不创建槽位参数。
 
 ### 什么时候不要启用压缩？
 

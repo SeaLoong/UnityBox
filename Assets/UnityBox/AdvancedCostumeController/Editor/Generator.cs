@@ -382,7 +382,7 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap)
     {
       var names = new HashSet<string>();
-      var mixerOutfits = config.EnableCustomMixer
+      var mixerOutfits = config.EnableCustomMixer && config.UseIndependentMixerPartParameters
         ? new HashSet<OutfitData>(GetUniqueMixerOutfits(outfits))
         : null;
       var mainLayout = GetMainChoiceLayout(outfitIndexMap, config.EnableCustomMixer,
@@ -395,6 +395,14 @@ namespace UnityBox.AdvancedCostumeController
         {
           foreach (var control in outfit.GetPartControls())
             names.Add(animBuilder.GetPartParamName(outfit, control));
+        }
+
+        if (config.EnableCustomMixer && !config.UseIndependentMixerPartParameters &&
+            outfit.GetAllObjects().Count > 1)
+        {
+          AddChoiceParameterNames(names, Mixer.BuildMixerVariantParamName(config, outfit),
+            new ChoiceParameterLayout(outfit.GetAllObjects().Count,
+              config.EnableParameterCompression));
         }
 
         if (mixerOutfits == null || !mixerOutfits.Contains(outfit))
@@ -473,6 +481,25 @@ namespace UnityBox.AdvancedCostumeController
         : slot.Candidates[candidateIndex].Control.Parts.All(part =>
           part != null && part.activeSelf);
       return defaultActive ? candidateIndex + 1 : 0;
+    }
+
+    /// <summary>
+    /// 获取共享部件参数模式下某个服装组的默认整体变体索引。
+    /// 非默认服装组从本体/第一个可选对象开始；默认服装组优先使用用户指定的对象。
+    /// </summary>
+    public static int GetMixerVariantDefaultValue(
+      OutfitData defaultOutfit,
+      Dictionary<GameObject, int> outfitIndexMap,
+      OutfitData outfit)
+    {
+      if (outfit == null || defaultOutfit == null ||
+          outfit.OutfitObject != defaultOutfit.OutfitObject)
+        return 0;
+
+      var choices = outfit.GetAllObjects();
+      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
+      int index = choices.IndexOf(defaultChoice);
+      return index >= 0 ? index : 0;
     }
 
     private void BuildPartsMenu(
@@ -575,6 +602,11 @@ namespace UnityBox.AdvancedCostumeController
           : config.CustomMixerName.Trim();
         sb.AppendLine(T($"- 混搭模式：已启用（节点名称：{mixerObjectName}）",
           $"- Custom Mixer: enabled (node name: {mixerObjectName})"));
+        sb.AppendLine(config.UseIndependentMixerPartParameters
+          ? T("- 混搭部件参数：独立槽位参数（支持本体/变体候选选择）",
+            "- Mixer part parameters: independent slot parameters (base/variant candidate selection enabled)")
+          : T("- 混搭部件参数：复用普通部件参数（不新增 Mixer 槽位参数）",
+            "- Mixer part parameters: reuse normal part parameters (no additional Mixer slot parameters)"));
       }
       if (config.AutoGenerateMenuIcons)
         sb.AppendLine(T("- 菜单图标：将仅拍摄各服装/部件并替换 ACC 菜单树现有图标。",
@@ -625,6 +657,9 @@ namespace UnityBox.AdvancedCostumeController
       /// <summary>Mixer 部件槽位域。</summary>
       public ParameterUsageSection Mixer { get; } = new ParameterUsageSection();
 
+      /// <summary>共享 Mixer 模式下的服装组整体变体域。</summary>
+      public ParameterUsageSection MixerVariants { get; } = new ParameterUsageSection();
+
       /// <summary>不计入同步预算的本地参数。</summary>
       public LocalParameterUsage Local { get; } = new LocalParameterUsage();
 
@@ -653,6 +688,7 @@ namespace UnityBox.AdvancedCostumeController
         AddSectionText(sections, Main, "主选择", "main choice", loc);
         AddSectionText(sections, Parts, "部件", "parts", loc);
         AddSectionText(sections, Mixer, "混搭槽位", "mixer slots", loc);
+        AddSectionText(sections, MixerVariants, "混搭变体", "mixer variants", loc);
         return string.Join(" + ", sections);
       }
 
@@ -699,7 +735,18 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
 
-      if (config.EnableCustomMixer)
+      if (config.EnableCustomMixer && !config.UseIndependentMixerPartParameters)
+      {
+        foreach (var outfit in GetUniqueMixerOutfits(outfits))
+        {
+          int choiceCount = outfit.GetAllObjects().Count;
+          if (choiceCount > 1)
+            AddParameterUsage(summary, summary.MixerVariants,
+              new ChoiceParameterLayout(choiceCount, config.EnableParameterCompression));
+        }
+      }
+
+      if (config.EnableCustomMixer && config.UseIndependentMixerPartParameters)
       {
         foreach (var outfit in GetUniqueMixerOutfits(outfits))
         {
@@ -794,6 +841,19 @@ namespace UnityBox.AdvancedCostumeController
       int domains = mainLayout.UsesCompression && mainLayout.BitCount > 0 ? 1 : 0;
 
       if (!config.EnableCustomMixer) return domains;
+
+      if (!config.UseIndependentMixerPartParameters)
+      {
+        foreach (var outfit in GetUniqueMixerOutfits(outfits))
+        {
+          var variantLayout = new ChoiceParameterLayout(
+            outfit.GetAllObjects().Count, true);
+          if (variantLayout.UsesCompression && variantLayout.BitCount > 0)
+            domains++;
+        }
+        return domains;
+      }
+
       foreach (var outfit in GetUniqueMixerOutfits(outfits))
       {
         foreach (var slot in outfit.GetMixerPartSlots())
@@ -814,8 +874,12 @@ namespace UnityBox.AdvancedCostumeController
       int layers = 2; // Unity 默认 Base Layer + Outfit Switching。
       bool hasNormalParts = config.EnableParts && outfits.Any(o => o.GetPartControls().Count > 0);
       bool hasMixerParts = config.EnableCustomMixer &&
+        config.UseIndependentMixerPartParameters &&
         GetUniqueMixerOutfits(outfits).Any(outfit => outfit.GetMixerPartSlots().Count > 0);
-      if (hasNormalParts || hasMixerParts) layers++;
+      bool hasSharedMixerVariants = config.EnableCustomMixer &&
+        !config.UseIndependentMixerPartParameters &&
+        GetUniqueMixerOutfits(outfits).Any(outfit => outfit.GetAllObjects().Count > 1);
+      if (hasNormalParts || hasMixerParts || hasSharedMixerVariants) layers++;
       layers += CountCompressionLayers(config, outfits);
       return layers;
     }

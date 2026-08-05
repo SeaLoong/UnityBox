@@ -814,8 +814,11 @@ public static class Utils
   private static bool IsKnownPartsMenuName(string name)
   {
     return name == "Parts" || name == "部件" ||
+      name == "Shared Parts" || name == "共享部件" ||
       name.StartsWith("Parts (", StringComparison.Ordinal) ||
-      name.StartsWith("部件 (", StringComparison.Ordinal);
+      name.StartsWith("部件 (", StringComparison.Ordinal) ||
+      name.StartsWith("Shared Parts (", StringComparison.Ordinal) ||
+      name.StartsWith("共享部件 (", StringComparison.Ordinal);
   }
 
   private static bool IsKnownEnableMenuName(string name)

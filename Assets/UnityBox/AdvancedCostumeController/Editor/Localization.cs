@@ -57,6 +57,12 @@ namespace UnityBox.AdvancedCostumeController
       return Text(config, "混搭", "Custom Mix");
     }
 
+    /// <summary>共享普通部件参数模式下 Mixer 部件子菜单的对象名。</summary>
+    public static string DefaultMixerSharedPartsMenuObjectName(ACCConfig config)
+    {
+      return Text(config, "共享部件", "Shared Parts");
+    }
+
     /// <summary>返回带本地化“启用”前缀的菜单对象名。</summary>
     public static string EnableObjectName(ACCConfig config, string objectName)
     {

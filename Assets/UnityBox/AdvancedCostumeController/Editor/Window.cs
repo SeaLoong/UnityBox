@@ -304,13 +304,18 @@ namespace UnityBox.AdvancedCostumeController
 
       using (new EditorGUI.DisabledScope(!config.EnableParts))
         config.EnableCustomMixer = EditorGUILayout.Toggle(new GUIContent(
-          T("启用混搭模式", "Enable Custom Mixer"), T(
+          T("启用混搭", "Enable Custom Mixer"), T(
             "按部件选择不同服装组的本体或变体；需要先启用部件控制。",
             "Choose base or variant parts across outfit groups; requires Parts Control.")),
           config.EnableCustomMixer);
       if (config.EnableCustomMixer)
       {
         EditorGUI.indentLevel++;
+        config.UseIndependentMixerPartParameters = EditorGUILayout.Toggle(
+          new GUIContent(T("使用独立部件参数", "Use Independent Part Parameters"), T(
+            "启用后为每个混搭槽位生成独立的 0..N 候选参数，可选择本体或变体；关闭时复用普通部件参数，不新增混搭槽位参数。",
+            "Generate independent 0..N candidate parameters for Mixer slots so base/variants can be selected; when disabled, reuse normal part parameters without adding Mixer slot parameters.")),
+          config.UseIndependentMixerPartParameters);
         string effectiveMixerObjectName = string.IsNullOrWhiteSpace(config.CustomMixerName)
           ? Localization.DefaultMixerMenuObjectName(config)
           : config.CustomMixerName.Trim();
@@ -402,13 +407,13 @@ namespace UnityBox.AdvancedCostumeController
         T("1. 选择服装根节点，确认扫描到目标服装。\n" +
           "2. 设置参数前缀；需要时指定默认服装或变体。\n" +
           "3. 点击“刷新预览”，勾选要生成的服装、本体/变体和部件。\n" +
-          "4. 按需启用部件控制、混搭、参数压缩或自动图标。\n" +
+          "4. 按需启用部件控制、混搭（可选择独立部件参数）、参数压缩或自动图标。\n" +
           "5. 查看预览下方的参数占用和动画层信息。\n" +
           "6. 点击“生成”，在确认窗口核对输出路径和默认选择。",
           "1. Select Costumes Root and confirm the outfits were scanned.\n" +
           "2. Set the parameter prefix; optionally assign a default outfit or variant.\n" +
           "3. Click Refresh Preview, then select outfits, base/variants, and parts.\n" +
-          "4. Enable Parts, Custom Mixer, parameter compression, or menu icons as needed.\n" +
+          "4. Enable Parts, Custom Mixer (optionally independent Mixer part parameters), parameter compression, or menu icons as needed.\n" +
           "5. Review parameter usage and Animator layer information below the preview.\n" +
           "6. Click Generate and verify the output path and default choice."),
         MessageType.Info);
@@ -510,6 +515,8 @@ namespace UnityBox.AdvancedCostumeController
         "部件", "Parts", FormatSyncTypes);
       AddParameterSection(chineseSections, englishSections, usage.Mixer,
         "混搭槽位", "Mixer slots", FormatSyncTypes);
+      AddParameterSection(chineseSections, englishSections, usage.MixerVariants,
+        "混搭变体", "Mixer variants", FormatSyncTypes);
       string sectionLine = T(
         chineseSections.Count > 0
           ? string.Join(" + ", chineseSections) + " = " + highlighted($"{usage.TotalBits} Bit")
@@ -551,6 +558,8 @@ namespace UnityBox.AdvancedCostumeController
         "部件", "Parts", highlighted);
       AddCompressionSection(chineseSections, englishSections, usage.Mixer,
         "混搭槽位", "Mixer slots", highlighted);
+      AddCompressionSection(chineseSections, englishSections, usage.MixerVariants,
+        "混搭变体", "Mixer variants", highlighted);
       if (chineseSections.Count == 0)
         return T("参数压缩：无可压缩参数", "Compression: no compressible parameters");
 

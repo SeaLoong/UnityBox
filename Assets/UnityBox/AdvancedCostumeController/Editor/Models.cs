@@ -55,7 +55,7 @@ namespace UnityBox.AdvancedCostumeController
     public List<PartControlData> PartControls { get; set; } = new List<PartControlData>();
   }
 
-  /// <summary>混搭中同一服装组的一个部件/分组候选参数及其版本对象映射。</summary>
+  /// <summary>独立参数 Mixer 中同一服装组的一个部件/分组候选参数及其版本对象映射。</summary>
   public class MixerPartSlot
   {
     public string Key { get; set; }
@@ -63,7 +63,7 @@ namespace UnityBox.AdvancedCostumeController
     public List<VariantPartCandidate> Candidates { get; set; } = new List<VariantPartCandidate>();
   }
 
-  /// <summary>一个变体为混搭部件槽位提供的候选部件。</summary>
+  /// <summary>一个变体为独立参数 Mixer 部件槽位提供的候选部件。</summary>
   public class VariantPartCandidate
   {
     public GameObject VariantObject { get; set; }
@@ -302,6 +302,11 @@ namespace UnityBox.AdvancedCostumeController
     public GameObject DefaultOutfitOverride;
     public bool EnableParts = false;
     public bool EnableCustomMixer = false;
+    /// <summary>
+    /// 为 Mixer 槽位生成独立的 0..N 候选参数。关闭时 Mixer 复用普通部件 Bool 参数，
+    /// 以减少同步参数占用；默认关闭。
+    /// </summary>
+    public bool UseIndependentMixerPartParameters = false;
     public bool EnableParameterCompression = false;
     public bool AutoGenerateMenuIcons = false;
     public string CustomMixerName = "";
