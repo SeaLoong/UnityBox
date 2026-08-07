@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-08-06
+
+### Fixed
+
+- 修复仅依赖 `MA Merge Armature` 识别时把骨架对象或上层组织容器误当成 `OutfitBase` 的问题；现在会使用骨架所属的服装父节点，并保留正确的 `ArmatureObject` 归属。
+- 修复 `Costumes Root` 直下服装的同级变体无法被识别的问题；同时避免在补全 `MA Merge Armature` 时重复添加已有组件。
+
 ## [0.4.9] - 2026-08-05
 
 ### Changed

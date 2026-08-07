@@ -30,6 +30,18 @@ namespace UnityBox.AdvancedCostumeController
 
         if (processedOutfitObjects.Contains(t.gameObject)) continue;
 
+        // MA Merge Armature 挂在骨架对象上，而不是服装对象上。没有 ACC/MA
+        // Outfit Root 时，如果当前遍历节点本身就是 Merge Armature 所在的骨架，
+        // 应先提升到其父节点（服装对象），再判断网格、部件和同级变体。
+        if (t.GetComponent<ModularAvatarMergeArmature>() != null &&
+            t.parent != null && t.parent != costumesRoot.transform &&
+            t.GetComponent<ACCOutfitMarker>() == null &&
+            t.GetComponent<ModularAvatarOutfitRoot>() == null)
+        {
+          t = t.parent;
+          if (processedOutfitObjects.Contains(t.gameObject)) continue;
+        }
+
         var outfitMarker = t.GetComponent<ACCOutfitMarker>();
         var modularAvatarOutfitRoot = t.GetComponent<ModularAvatarOutfitRoot>();
         var explicitMaterialVariant = t.GetComponent<ACCVariantMaterialOverride>();
@@ -46,7 +58,8 @@ namespace UnityBox.AdvancedCostumeController
         // 骨架/网格规则自动识别。
         bool isExplicitOutfit = outfitMarker != null || modularAvatarOutfitRoot != null;
         bool hasOwnedArmature = Utils.TryGetOwnedArmature(t, out var armatureRoot);
-        bool isAutoDetectedOutfit = hasOwnedArmature && Utils.HasMeshInHierarchy(t);
+        bool isAutoDetectedOutfit = hasOwnedArmature &&
+          armatureRoot.parent == t && Utils.HasMeshInHierarchy(t);
         if (!isExplicitOutfit && !isAutoDetectedOutfit)
         {
           for (int i = t.childCount - 1; i >= 0; i--)
@@ -57,12 +70,12 @@ namespace UnityBox.AdvancedCostumeController
         var outfitBase = t;
 
         // 查找变体（同级的其他含网格节点）。允许变体复用本体骨架，
-        // 因而不强制每个变体都各自拥有骨架。
-        // 注意：本体直接位于 CostumesRoot 下时不做父级分组，
-        // 否则 OutfitObject 会取到根结点本身，导致根结点被识别为服装。
+        // 因而不强制每个变体都各自拥有骨架。即使本体直接位于 CostumesRoot
+        // 下也要扫描同级变体；但这种情况下不能把 CostumesRoot 作为 OutfitObject，
+        // 最终使用 Outfit Base 自身作为该变体组的菜单根。
         var variants = new List<GameObject>();
         var outfitParent = outfitBase.parent;
-        if (outfitParent != null && outfitParent != costumesRoot.transform)
+        if (outfitParent != null)
         {
           for (int i = 0; i < outfitParent.childCount; i++)
           {
@@ -95,7 +108,9 @@ namespace UnityBox.AdvancedCostumeController
           }
         }
 
-        var outfitObject = variants.Count > 0 ? outfitParent.gameObject : outfitBase.gameObject;
+        var outfitObject = variants.Count > 0 && outfitParent != costumesRoot.transform
+          ? outfitParent.gameObject
+          : outfitBase.gameObject;
         processedOutfitObjects.Add(outfitBase.gameObject);
         foreach (var variant in variants)
           processedOutfitObjects.Add(variant);

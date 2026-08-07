@@ -124,6 +124,8 @@ public static class Utils
 
     if (TryGetOwnedMergeArmature(root, out var mergeArmature))
     {
+      // 返回真实挂载 MA Merge Armature 的骨架对象。若 root 是更上层组织容器，
+      // Scanner 可以据此判断它不是服装根，并继续向下扫描真正的服装对象。
       armature = mergeArmature.transform;
       return true;
     }
@@ -985,7 +987,8 @@ public static class Utils
       .Where(outfit => outfit?.ArmatureObject != null)
       .Select(outfit => outfit.ArmatureObject)
       .Distinct()
-      .Count(armature => armature.GetComponent<ModularAvatarMergeArmature>() == null);
+      .Count(armature => !armature
+        .GetComponentsInChildren<ModularAvatarMergeArmature>(true).Any());
   }
 
   /// <summary>
@@ -1000,7 +1003,8 @@ public static class Utils
       .GroupBy(outfit => outfit.ArmatureObject)
       .Select(group => group.First()))
     {
-      if (outfit.ArmatureObject.GetComponent<ModularAvatarMergeArmature>() != null) continue;
+      if (outfit.ArmatureObject
+        .GetComponentsInChildren<ModularAvatarMergeArmature>(true).Any()) continue;
 
       Exception setupException = null;
       try
@@ -1012,7 +1016,8 @@ public static class Utils
         setupException = exception;
       }
 
-      if (outfit.ArmatureObject.GetComponent<ModularAvatarMergeArmature>() == null)
+      if (!outfit.ArmatureObject
+        .GetComponentsInChildren<ModularAvatarMergeArmature>(true).Any())
       {
         if (!TryConfigureMergeArmatureFallback(outfit, out var fallbackError))
         {
