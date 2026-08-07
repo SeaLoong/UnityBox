@@ -316,12 +316,12 @@ Avatar 加载
 - **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
 - **启用**: `GO_AUDIO_WARNING`、`GO_AUDIO_Success`（用于解锁音效播放）
 - **恢复 Avatar**:
-  - **WD On 模式**: 不显式恢复，由 WD 自动恢复默认值
-  - **WD Off 模式**: 显式写入所有根子对象 `m_IsActive` 和 `localScale` 的原始值
+  - **WD On 模式**: 显式恢复所有根子对象构建时的 `m_IsActive` 和 `localScale`，不依赖 WD 自动回写
+  - **WD Off 模式**: 显式恢复根子对象的 `localScale`；不写入 `m_IsActive`，避免覆盖衣柜等外部系统的运行时开关结果
 
 #### Remote 动画 (CreateRemoteClip)
 - **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
-- **WD Off**: 显式恢复所有根子对象
+- **WD Off**: 显式恢复根子对象的 `localScale`，不覆盖 `m_IsActive`
 - 远端玩家始终停留在此状态
 
 #### 4.1.5 Write Defaults 自动检测 (ResolveWriteDefaults)

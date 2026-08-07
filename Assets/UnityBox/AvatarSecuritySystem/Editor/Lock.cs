@@ -221,22 +221,31 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
             if (avatarRoot.transform.Find(GO_OVERLAY) != null)
                 SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
-            if (!useWdOn && config.disableRootChildren)
-                WriteRestoreValues(clip);
+            if (config.disableRootChildren)
+                WriteRestoreValues(clip, restoreActiveState: useWdOn);
             return clip;
         }
-        private void WriteRestoreValues(AnimationClip clip)
+        private void WriteRestoreValues(AnimationClip clip, bool restoreActiveState = false)
         {
             int restoredCount = 0;
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                // WD Off 兼容：不恢复 m_IsActive，避免把外部系统在初始状态禁用的对象重新强制启用/禁用。
+                // WD Off 兼容：只有 WD On 的锁定动画曾经写入 m_IsActive=0，才恢复 activeSelf。
+                // WD Off 路径只写 localScale，避免覆盖外部系统（如 lilycalinventory）运行时计算的开关结果。
+                if (restoreActiveState)
+                {
+                    float activeValue = child.gameObject.activeSelf ? 1f : 0f;
+                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive",
+                        AnimationCurve.Constant(0f, 1f / 60f, activeValue));
+                }
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] WD Off restore: {restoredCount} root child objects (Scale only)");
+            Debug.Log($"[ASS] {(restoreActiveState ? "Unlock" : "WD Off")} restore: " +
+                $"{restoredCount} root child objects " +
+                $"({(restoreActiveState ? "IsActive + " : string.Empty)}Scale)");
         }
         private bool ResolveWriteDefaults()
         {

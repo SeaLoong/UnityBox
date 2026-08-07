@@ -318,7 +318,7 @@ ASS_Lock Layer
 - 进度条通过动画驱动 Shader 材质属性控制
 - 双重保护隐藏：同时设置 `m_IsActive=0` + `localScale=0`，任一被覆盖另一仍生效
 - ASS 对象（Overlay、Audio、Defense）不参与隐藏
-- WD On 模式由 WriteDefaults 自动恢复属性；WD Off 模式显式写入原始值
+- 解锁状态显式恢复构建时的根子对象 `m_IsActive` 与 `localScale`，不依赖 WD 自动回写；WD Off 仅恢复 `localScale`，避免覆盖外部衣柜系统的对象开关
 
 ---
 
