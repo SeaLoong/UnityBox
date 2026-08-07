@@ -94,9 +94,9 @@ public static class Utils
   }
 
   /// <summary>
-  /// 检查节点是否拥有服装骨架：节点必须直接拥有一个不含网格的骨架分支，
-  /// 并且至少一个 SkinnedMeshRenderer 的 rootBone 位于该分支中。
-  /// 这避免把仅用于组织多个变体的上层容器误识别为一套服装。
+  /// 检查节点是否拥有服装骨架：至少一个 SkinnedMeshRenderer 的 rootBone
+  /// 与其 Renderer 的最低公共祖先必须正好是当前节点。这样既支持骨架分支
+  /// 内包含 Mesh，也不会把包裹多个服装的上层容器误识别为服装。
   /// </summary>
   public static bool OwnsSkeleton(Transform root)
   {
@@ -132,17 +132,45 @@ public static class Utils
 
     foreach (var renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
     {
-      if (renderer.rootBone == null || !renderer.rootBone.IsChildOf(root)) continue;
+      if (renderer.rootBone == null) continue;
 
-      var branch = renderer.rootBone;
-      while (branch.parent != null && branch.parent != root)
-        branch = branch.parent;
+      var armatureCandidate = renderer.rootBone.parent ?? renderer.rootBone;
+      bool candidateIsDirectArmature = armatureCandidate.parent == root;
+      if (!candidateIsDirectArmature &&
+          !IsLowestCommonAncestor(renderer.transform, armatureCandidate, root))
+        continue;
 
-      if (branch.parent == root && !HasMeshInHierarchy(branch))
+      // Setup Outfit 采用 outfitHips.parent 作为 Armature；当 Hips 直接挂在
+      // 服装根下时，退回使用 Hips 自身作为骨架分支，兼容旧版非标准层级。
+      if (armatureCandidate == root)
       {
-        armature = branch;
-        return true;
+        armature = renderer.rootBone;
       }
+      else
+      {
+        var branch = armatureCandidate;
+        while (branch.parent != null && branch.parent != root)
+          branch = branch.parent;
+        armature = branch;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private static bool IsLowestCommonAncestor(
+    Transform first, Transform second, Transform expected)
+  {
+    if (first == null || second == null || expected == null) return false;
+
+    var ancestors = new HashSet<Transform>();
+    for (var current = first; current != null; current = current.parent)
+      ancestors.Add(current);
+
+    for (var current = second; current != null; current = current.parent)
+    {
+      if (!ancestors.Contains(current)) continue;
+      return current == expected;
     }
     return false;
   }

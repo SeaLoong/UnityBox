@@ -20,6 +20,9 @@ namespace UnityBox.AdvancedCostumeController
     {
       var outfitDataList = new List<OutfitData>();
       var processedOutfitObjects = new HashSet<GameObject>();
+      var explicitOutfitBases = new HashSet<Transform>();
+      var explicitOutfitStructureNodes = BuildExplicitOutfitStructure(costumesRoot,
+        explicitOutfitBases);
       var stack = new Stack<Transform>();
       for (int i = costumesRoot.transform.childCount - 1; i >= 0; i--)
         stack.Push(costumesRoot.transform.GetChild(i));
@@ -36,7 +39,8 @@ namespace UnityBox.AdvancedCostumeController
         if (t.GetComponent<ModularAvatarMergeArmature>() != null &&
             t.parent != null && t.parent != costumesRoot.transform &&
             t.GetComponent<ACCOutfitMarker>() == null &&
-            t.GetComponent<ModularAvatarOutfitRoot>() == null)
+            t.GetComponent<ModularAvatarOutfitRoot>() == null &&
+            !explicitOutfitStructureNodes.Contains(t.parent))
         {
           t = t.parent;
           if (processedOutfitObjects.Contains(t.gameObject)) continue;
@@ -44,10 +48,22 @@ namespace UnityBox.AdvancedCostumeController
 
         var outfitMarker = t.GetComponent<ACCOutfitMarker>();
         var modularAvatarOutfitRoot = t.GetComponent<ModularAvatarOutfitRoot>();
+        bool isAccExplicitOutfit = outfitMarker != null || explicitOutfitBases.Contains(t);
+
+        // ACC Outfit Marker 的后代结构优先于 MA/自动识别。容器可能直接拥有
+        // Armature/Merge Armature，同时把真正的 Base 和 Variants 放在同级子节点；
+        // 这种情况下不能在容器层提前结束扫描，必须继续走到被标记的 Base。
+        if (!isAccExplicitOutfit && explicitOutfitStructureNodes.Contains(t))
+        {
+          for (int i = t.childCount - 1; i >= 0; i--)
+            stack.Push(t.GetChild(i));
+          continue;
+        }
+
         var explicitMaterialVariant = t.GetComponent<ACCVariantMaterialOverride>();
         // ACC 自己的显式服装标记优先级最高；其次是 MA Outfit Root，最后才把
         // 材质变体标记视为“不要独立识别”的信号。
-        if (outfitMarker == null && modularAvatarOutfitRoot == null &&
+        if (!isAccExplicitOutfit && modularAvatarOutfitRoot == null &&
             explicitMaterialVariant != null && explicitMaterialVariant.OutfitBase != null &&
             explicitMaterialVariant.OutfitBase != t.gameObject)
           continue;
@@ -56,7 +72,7 @@ namespace UnityBox.AdvancedCostumeController
         // 是其次的显式声明。两者都不要求骨架或网格，命中后不进入其后代，
         // 从而避免嵌套对象被重复识别。其余对象再按 MA Merge Armature 和旧版
         // 骨架/网格规则自动识别。
-        bool isExplicitOutfit = outfitMarker != null || modularAvatarOutfitRoot != null;
+        bool isExplicitOutfit = isAccExplicitOutfit || modularAvatarOutfitRoot != null;
         bool hasOwnedArmature = Utils.TryGetOwnedArmature(t, out var armatureRoot);
         bool isAutoDetectedOutfit = hasOwnedArmature &&
           armatureRoot.parent == t && Utils.HasMeshInHierarchy(t);
@@ -68,13 +84,22 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         var outfitBase = t;
+        var outfitParent = outfitBase.parent;
+
+        // ACC Marker 可以明确本体位于一个共享骨架容器内。此时本体自身不一定
+        // 能向下找到 Armature，应该从其父容器读取共享骨架；这条回溯只对 ACC
+        // 显式本体开放，不会改变 MA/自动识别的边界。
+        if (isAccExplicitOutfit && armatureRoot == null &&
+            outfitParent != null && outfitParent != costumesRoot.transform)
+        {
+          Utils.TryGetOwnedArmature(outfitParent, out armatureRoot);
+        }
 
         // 查找变体（同级的其他含网格节点）。允许变体复用本体骨架，
         // 因而不强制每个变体都各自拥有骨架。即使本体直接位于 CostumesRoot
         // 下也要扫描同级变体；但这种情况下不能把 CostumesRoot 作为 OutfitObject，
         // 最终使用 Outfit Base 自身作为该变体组的菜单根。
         var variants = new List<GameObject>();
-        var outfitParent = outfitBase.parent;
         if (outfitParent != null)
         {
           for (int i = 0; i < outfitParent.childCount; i++)
@@ -100,6 +125,8 @@ namespace UnityBox.AdvancedCostumeController
               continue;
             if (sibling.GetComponent<ModularAvatarOutfitRoot>() != null)
               continue;
+            if (ContainsNestedOutfit(sibling))
+              continue;
             // 有网格且未被其他服装认领 → 加入当前变体；如果已由其他 Outfit 处理过变体加入逻辑，
             // 则 processedOutfitObjects 会跳过此对象，此处仅添加仍未处理的网格兄弟。
             if (!processedOutfitObjects.Contains(sibling.gameObject) &&
@@ -108,7 +135,12 @@ namespace UnityBox.AdvancedCostumeController
           }
         }
 
-        var outfitObject = variants.Count > 0 && outfitParent != costumesRoot.transform
+        bool hasSharedContainerArmature = isAccExplicitOutfit &&
+          outfitParent != null && outfitParent != costumesRoot.transform &&
+          armatureRoot != null && armatureRoot != outfitBase &&
+          !armatureRoot.IsChildOf(outfitBase);
+        var outfitObject = (variants.Count > 0 || hasSharedContainerArmature) &&
+          outfitParent != costumesRoot.transform
           ? outfitParent.gameObject
           : outfitBase.gameObject;
         processedOutfitObjects.Add(outfitBase.gameObject);
@@ -151,6 +183,80 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       return outfitDataList;
+    }
+
+    /// <summary>
+    /// 建立 ACC 显式服装标记及其祖先节点集合。
+    /// 集合中的祖先只能作为组织容器，不能被 MA Merge Armature 或自动网格规则
+    /// 抢先识别成另一套服装；真正的 Outfit Base 仍由标记所在节点处理。
+    /// </summary>
+    private static HashSet<Transform> BuildExplicitOutfitStructure(
+      GameObject costumesRoot,
+      HashSet<Transform> explicitOutfitBases)
+    {
+      var structureNodes = new HashSet<Transform>();
+      if (costumesRoot == null) return structureNodes;
+
+      foreach (var marker in costumesRoot.GetComponentsInChildren<ACCOutfitMarker>(true))
+        explicitOutfitBases.Add(marker.transform);
+
+      // ACCVariantMaterialOverride.OutfitBase 是另一个显式归属声明。即使本体
+      // 没有额外挂 ACCOutfitMarker，也不能让其父容器被 MA/自动网格规则抢先识别。
+      foreach (var materialVariant in
+        costumesRoot.GetComponentsInChildren<ACCVariantMaterialOverride>(true))
+      {
+        var outfitBase = materialVariant.OutfitBase != null
+          ? materialVariant.OutfitBase.transform
+          : null;
+        if (outfitBase == null || outfitBase == materialVariant.transform ||
+            outfitBase == costumesRoot.transform ||
+            !outfitBase.IsChildOf(costumesRoot.transform))
+          continue;
+        explicitOutfitBases.Add(outfitBase);
+      }
+
+      foreach (var outfitBase in explicitOutfitBases)
+      {
+        for (var current = outfitBase;
+             current != null && current != costumesRoot.transform;
+             current = current.parent)
+        {
+          structureNodes.Add(current);
+        }
+      }
+      return structureNodes;
+    }
+
+    /// <summary>
+    /// 判断一个同级节点是否只是包裹另一套服装的容器。
+    /// 例如 CostumesRoot/衣服B/本体/Armature；衣服B 自身虽然有后代网格，
+    /// 但不能因此成为衣服A 的变体，真正的服装根应继续由子节点扫描得到。
+    /// </summary>
+    private static bool ContainsNestedOutfit(Transform container)
+    {
+      if (container == null) return false;
+
+      foreach (var nested in container.GetComponentsInChildren<Transform>(true))
+      {
+        if (nested == container) continue;
+        if (nested.GetComponent<ACCOutfitMarker>() != null ||
+            nested.GetComponent<ModularAvatarOutfitRoot>() != null)
+          return true;
+
+        var materialVariant = nested.GetComponent<ACCVariantMaterialOverride>();
+        if (materialVariant != null && materialVariant.OutfitBase != null &&
+            materialVariant.OutfitBase != container.gameObject &&
+            materialVariant.OutfitBase.transform != container &&
+            materialVariant.OutfitBase.transform.IsChildOf(container))
+          return true;
+
+        if (!Utils.TryGetOwnedArmature(nested, out var armature) || armature == null)
+          continue;
+        if (armature.parent == nested && Utils.HasMeshInHierarchy(nested))
+          return true;
+      }
+
+      return false;
     }
 
     private static void AddVariantPartData(
