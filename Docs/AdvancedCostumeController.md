@@ -341,7 +341,7 @@ Costumes Root
 
 > 当同层存在多套服装时，建议为变体添加 `ACCVariantMaterialOverride` 组件并正确设置 Outfit Base，以避免归属歧义。
 
-有可控制部件时，ACC 将变体组的共同父对象作为菜单节点，并在其中生成各变体和 Parts 菜单；没有可控制部件时，已选 Base/Variant 直接放到当前父菜单，不再额外生成“变体/部件”层。`MA Outfit Root`、`ACCOutfitMarker` 和已配置的 `MA Merge Armature` 会阻止 ACC 继续向下把嵌套服装误识别为当前服装的变体。
+有可控制部件时，ACC 将变体组的共同父对象作为菜单节点，并在其中生成各变体和 Parts 菜单；没有可控制部件且只有一个已选对象时，才会直接放到当前父菜单，不再额外生成“变体/部件”层。如果存在多个已选 Base/Variant，仍保留服装组菜单层并在其中生成对象选择项，但不创建 Parts 菜单。`MA Outfit Root`、`ACCOutfitMarker` 和已配置的 `MA Merge Armature` 会阻止 ACC 继续向下把嵌套服装误识别为当前服装的变体。
 
 > 选择任意对象变体时，ACC 会保持 Outfit Base 活动，以承载可能位于本体下的共享部件。若所有同级变体都包含完整 Mesh，请先在 Avatar 中验证 Base 与变体同时 active 时不会产生叠穿。
 

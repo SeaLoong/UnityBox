@@ -260,19 +260,23 @@ namespace UnityBox.AdvancedCostumeController
         string outfitName = outfitPathSegments.Count > 0
           ? outfitPathSegments[outfitPathSegments.Count - 1]
           : outfit.Name;
+        var choices = outfit.GetAllObjects()
+          .Where(outfitIndexMap.ContainsKey)
+          .ToList();
         bool hasControllableParts = config.EnableParts &&
           outfit.GetPartControls().Count > 0;
+        bool hasMultipleChoices = choices.Count > 1;
 
-        if (hasControllableParts)
+        // 有部件控制，或同一服装组有多个 Base/Variant 时，都保留服装组这一层。
+        // 只有单个可选对象且没有部件控制时，才使用扁平菜单。
+        if (hasControllableParts || hasMultipleChoices)
         {
           var outfitSubmenu = Utils.FindOrCreateChild(parentMenu, outfitName);
           Utils.EnsureSubmenuOnNode(outfitSubmenu, presentation: menuPresentation);
 
           // 本体和变体开关
-          foreach (var obj in outfit.GetAllObjects())
+          foreach (var obj in choices)
           {
-            if (!outfitIndexMap.ContainsKey(obj)) continue;
-
             var itemNode = Utils.FindOrCreateChild(outfitSubmenu,
               obj.name);
             var menuItem = Utils.CreateMenuItem(itemNode);
@@ -290,8 +294,7 @@ namespace UnityBox.AdvancedCostumeController
         }
         else
         {
-          // 没有可控制部件时，不为“变体/部件”额外创建一层；若有多个已选
-          // 对象，直接把各个 Base/Variant 项放到当前父菜单下。
+          // 没有可控制部件且只有一个可选对象时，不额外创建“变体/部件”层。
           BuildFlatOutfitChoiceMenu(parentMenu, outfit, outfitName,
             outfitIndexMap, mainLayout, menuPresentation, costumesRoot);
         }
