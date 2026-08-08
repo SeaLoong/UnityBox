@@ -104,6 +104,7 @@ namespace UnityBox.AdvancedCostumeController
           DisableRenderers(externalBoneClone.CloneRoot);
         }
         var cloneRenderers = cloneRoot.GetComponentsInChildren<Renderer>(true);
+        var originalActiveStates = CaptureActiveStates(cloneRoot);
         var originalSharedMaterials = CaptureSharedMaterials(cloneRenderers);
 
         var cameraObject = new GameObject("ACC Menu Icon Camera");
@@ -132,7 +133,7 @@ namespace UnityBox.AdvancedCostumeController
         // the hair's actual center instead of framing it against the whole avatar.
         Bounds? sharedOutfitBounds = CalculateSharedOutfitBounds(
           sourceAvatarRoot, cloneRoot, cloneRenderers, originalSharedMaterials,
-          validRequests);
+          validRequests, originalActiveStates);
 
         int generated = 0;
         var generatedNodes = new HashSet<GameObject>();
@@ -151,7 +152,8 @@ namespace UnityBox.AdvancedCostumeController
             .ToList();
           if (targets.Count == 0) continue;
 
-          var visibleRenderers = ConfigureRequestState(cloneRoot, cloneRenderers, targets);
+          var visibleRenderers = ConfigureRequestState(cloneRoot, cloneRenderers,
+            targets, originalActiveStates);
           if (request.MaterialVariant != null)
             ApplyMaterialVariant(sourceAvatarRoot, cloneRoot, request.MaterialVariant);
           if (visibleRenderers.Count == 0)
@@ -255,6 +257,25 @@ namespace UnityBox.AdvancedCostumeController
         pair.Key.sharedMaterials = pair.Value != null
           ? (Material[])pair.Value.Clone()
           : Array.Empty<Material>();
+      }
+    }
+
+    private static Dictionary<GameObject, bool> CaptureActiveStates(GameObject root)
+    {
+      var result = new Dictionary<GameObject, bool>();
+      if (root == null) return result;
+
+      foreach (var transform in root.GetComponentsInChildren<Transform>(true))
+        result[transform.gameObject] = transform.gameObject.activeSelf;
+      return result;
+    }
+
+    private static void RestoreActiveStates(
+      IReadOnlyDictionary<GameObject, bool> originalActiveStates)
+    {
+      foreach (var pair in originalActiveStates)
+      {
+        if (pair.Key != null) pair.Key.SetActive(pair.Value);
       }
     }
 
@@ -409,24 +430,33 @@ namespace UnityBox.AdvancedCostumeController
 
     private static List<Renderer> ConfigureRequestState(
       GameObject cloneRoot, IReadOnlyList<Renderer> cloneRenderers,
-      IReadOnlyList<GameObject> targets)
+      IReadOnlyList<GameObject> targets,
+      IReadOnlyDictionary<GameObject, bool> originalActiveStates)
     {
-      // Reset: no visual object from the clone may be rendered.
+      // Restore the source Avatar's default activeSelf state before every request.
+      // A previous request may have enabled a target or a required bone chain.
+      RestoreActiveStates(originalActiveStates);
+
+      // Reset: no visual object from the clone may be rendered. Do not deactivate
+      // the renderer GameObjects here: doing so would overwrite their default
+      // activeSelf state before the target hierarchy is restored below.
       foreach (var renderer in cloneRenderers)
       {
         renderer.enabled = false;
-        renderer.gameObject.SetActive(false);
+        renderer.forceRenderingOff = true;
       }
 
       var visible = new HashSet<Renderer>();
       foreach (var target in targets)
       {
         EnableAncestorChain(target.transform, cloneRoot.transform);
-        EnableHierarchy(target.transform);
+        EnableHierarchy(target.transform, originalActiveStates);
         foreach (var renderer in target.GetComponentsInChildren<Renderer>(true))
         {
-          EnableAncestorChain(renderer.transform, cloneRoot.transform);
-          renderer.gameObject.SetActive(true);
+          // The target root is intentionally enabled for this request, but a
+          // child part must still obey the active state it had in the source
+          // Avatar. This keeps default-off accessories out of outfit icons.
+          if (!renderer.gameObject.activeInHierarchy) continue;
           renderer.enabled = true;
           renderer.forceRenderingOff = false;
           visible.Add(renderer);
@@ -495,11 +525,35 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
-    private static void EnableHierarchy(Transform root)
+    private static void EnableHierarchy(
+      Transform root, IReadOnlyDictionary<GameObject, bool> originalActiveStates)
     {
+      // A request explicitly names its target root, so keep that root visible
+      // even when the source choice is currently disabled. Descendants retain
+      // their original activeSelf values and therefore represent the default
+      // outfit state rather than an all-parts-on preview.
       root.gameObject.SetActive(true);
       for (int i = 0; i < root.childCount; i++)
-        EnableHierarchy(root.GetChild(i));
+      {
+        var child = root.GetChild(i);
+        bool defaultActive = !originalActiveStates.TryGetValue(
+          child.gameObject, out var active) || active;
+        child.gameObject.SetActive(defaultActive);
+        EnableHierarchyChildren(child, originalActiveStates);
+      }
+    }
+
+    private static void EnableHierarchyChildren(
+      Transform root, IReadOnlyDictionary<GameObject, bool> originalActiveStates)
+    {
+      for (int i = 0; i < root.childCount; i++)
+      {
+        var child = root.GetChild(i);
+        bool defaultActive = !originalActiveStates.TryGetValue(
+          child.gameObject, out var active) || active;
+        child.gameObject.SetActive(defaultActive);
+        EnableHierarchyChildren(child, originalActiveStates);
+      }
     }
 
     private static void EnableAncestorChain(Transform node, Transform stopAt)
@@ -566,7 +620,8 @@ namespace UnityBox.AdvancedCostumeController
       GameObject cloneRoot,
       IReadOnlyList<Renderer> cloneRenderers,
       IReadOnlyDictionary<Renderer, Material[]> originalSharedMaterials,
-      IReadOnlyList<MenuIconRequest> requests)
+      IReadOnlyList<MenuIconRequest> requests,
+      IReadOnlyDictionary<GameObject, bool> originalActiveStates)
     {
       Bounds? result = null;
       foreach (var request in requests.Where(request => request.UseSharedOutfitFraming))
@@ -580,7 +635,8 @@ namespace UnityBox.AdvancedCostumeController
           .ToList();
         if (targets.Count == 0) continue;
 
-        var visibleRenderers = ConfigureRequestState(cloneRoot, cloneRenderers, targets);
+        var visibleRenderers = ConfigureRequestState(cloneRoot, cloneRenderers,
+          targets, originalActiveStates);
         if (request.MaterialVariant != null)
           ApplyMaterialVariant(sourceRoot, cloneRoot, request.MaterialVariant);
         if (visibleRenderers.Count == 0) continue;
