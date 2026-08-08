@@ -31,7 +31,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteState = layer.stateMachine.AddState(
                 Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
-            remoteState.writeDefaultValues = useWdOn;
+            // Remote 只关闭 ASS 自身遮罩，不应通过 WD 重置用户对象的 active/scale。
+            remoteState.writeDefaultValues = false;
             var remoteClip = CreateRemoteClip(useWdOn);
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
@@ -73,12 +74,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 preLockState = layer.stateMachine.AddState(
                     Obfuscator.State("PreLock"),
                     new Vector3(200, 0, 0));
-                preLockState.writeDefaultValues = useWdOn;
+                preLockState.writeDefaultValues = false;
             }
             var unlockedState = layer.stateMachine.AddState(
                 Obfuscator.State("Unlocked"),
                 new Vector3(200, 200, 0));
-            unlockedState.writeDefaultValues = useWdOn;
+            // 稳定解锁状态不应继续写用户对象属性，避免抢占外部插件的 active/scale 控制权。
+            unlockedState.writeDefaultValues = false;
+            unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            var unlockRestoreState = layer.stateMachine.AddState(
+                Obfuscator.State("UnlockRestore"),
+                new Vector3(200, 250, 0));
+            // Restore clip 只采样一次恢复缩放，完成后立即进入上面的释放状态。
+            unlockRestoreState.writeDefaultValues = false;
             // LockedLocal：仅本地，在 Locked 基础上叠加遮罩和音频
             var lockedLocalState = layer.stateMachine.AddState(
                 Obfuscator.State("LockedLocal"),
@@ -88,7 +96,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var lockLocalClip = CreateLockLocalClip(useWdOn);
             var unlockClip = CreateUnlockClip(useWdOn);
             Utils.AddSubAsset(controller, unlockClip);
-            unlockedState.motion = unlockClip;
+            unlockRestoreState.motion = unlockClip;
             lockedLocalState.motion = lockLocalClip;
             Utils.AddSubAsset(controller, lockLocalClip);
             if (Obfuscator.DecoyStatesEnabled && extraShadows != null)
@@ -132,9 +140,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var remoteToLocked = Utils.CreateTransition(remoteState, lockedState);
             Utils.AddIsLocalCondition(remoteToLocked, controller, isTrue: true);
             remoteToLocked.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            // Remote → Unlocked: 如果密码已正确则直接跳过锁定
-            var toUnlockedDirect = Utils.CreateTransition(remoteState, unlockedState);
-            toUnlockedDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // Remote → UnlockRestore: 如果密码已正确则直接跳过锁定
+            var toUnlockRestoreDirect = Utils.CreateTransition(remoteState, unlockRestoreState);
+            toUnlockRestoreDirect.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             if (Obfuscator.DecoyStatesEnabled && preLockState != null)
             {
                 var toPreLock = Utils.CreateTransition(remoteState, preLockState);
@@ -148,12 +156,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var toLockedLocal = Utils.CreateTransition(lockedState, lockedLocalState);
             Utils.AddIsLocalCondition(toLockedLocal, controller, isTrue: true);
             toLockedLocal.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            // LockedLocal → Unlocked（本地解锁）
-            var lockedLocalToUnlocked = Utils.CreateTransition(lockedLocalState, unlockedState);
-            lockedLocalToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            // Locked → Unlocked（远端解锁，如果参数过渡有效）
-            var lockedToUnlocked = Utils.CreateTransition(lockedState, unlockedState);
-            lockedToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // LockedLocal → UnlockRestore（本地解锁）
+            var lockedLocalToUnlockRestore = Utils.CreateTransition(lockedLocalState, unlockRestoreState);
+            lockedLocalToUnlockRestore.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // Locked → UnlockRestore（远端解锁，如果参数过渡有效）
+            var lockedToUnlockRestore = Utils.CreateTransition(lockedState, unlockRestoreState);
+            lockedToUnlockRestore.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
+            // 恢复 clip 播放一个采样周期后，进入不写用户对象属性的稳定解锁状态。
+            var unlockRestoreToUnlocked = Utils.CreateTransition(
+                unlockRestoreState, unlockedState, hasExitTime: true, exitTime: 1f);
+            unlockRestoreToUnlocked.duration = 0f;
             var unlockedToRemote = Utils.CreateTransition(unlockedState, remoteState);
             unlockedToRemote.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
@@ -232,8 +244,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                // WD Off 兼容：只有 WD On 的锁定动画曾经写入 m_IsActive=0，才恢复 activeSelf。
-                // WD Off 路径只写 localScale，避免覆盖外部系统（如 lilycalinventory）运行时计算的开关结果。
+                // 仅在一次性的 UnlockRestore 状态恢复 m_IsActive；稳定 Unlocked 状态为空 clip，
+                // 因此外部插件只会在恢复采样后接管对象开关和缩放，不会被固定值持续覆盖。
                 if (restoreActiveState)
                 {
                     float activeValue = child.gameObject.activeSelf ? 1f : 0f;
@@ -243,18 +255,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] {(restoreActiveState ? "Unlock" : "WD Off")} restore: " +
+            Debug.Log($"[ASS] {(restoreActiveState ? "UnlockRestore" : "WD Off")} restore: " +
                 $"{restoredCount} root child objects " +
                 $"({(restoreActiveState ? "IsActive + " : string.Empty)}Scale)");
         }
         private bool ResolveWriteDefaults()
         {
-            // 当前产品策略：ASS 锁定层固定使用 WD On，避免与外部切换系统（如衣柜/菜单）在 WD Off
-            // 下出现状态恢复冲突。
+            // 当前产品策略：需要强制隐藏的 Locked 状态使用 WD On；Remote、UnlockRestore
+            // 和稳定 Unlocked 状态在 Generate() 中显式使用 WD Off，避免与外部切换系统
+            // （如衣柜/菜单）的 active/scale 动画发生持续冲突。
             //
             // 注意：历史 WD 自动检测与外部工具探测能力仍然保留在本类中（见 TryResolveFromExternalTools /
             // HasWdOffState 等方法），后续若需要回退为可配置策略，可在此处恢复分支而无需重写整套逻辑。
-            Debug.Log("[ASS] WD mode is fixed to On for ASS-generated lock layer (legacy WD resolver retained)");
+            Debug.Log("[ASS] WD mode: On for lock states, Off for release states (legacy WD resolver retained)");
             return true;
         }
         private bool? TryResolveFromExternalTools()

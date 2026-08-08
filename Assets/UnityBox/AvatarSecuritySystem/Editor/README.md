@@ -297,19 +297,22 @@ ASS_Lock Layer
 │   ├─ 显示遮罩 Mesh（m_IsActive=1）
 │   ├─ 隐藏 Avatar 根级子对象（m_IsActive=0 + localScale=0）
 │   └─ 显示全屏 Shader 遮罩 + 进度条
-└─ Unlocked — 解锁状态（PasswordCorrect=true）
+├─ UnlockRestore — 一次性恢复状态（PasswordCorrect=true）
+│   ├─ 恢复根子对象的 `m_IsActive` / `localScale`
+│   └─ 播放一个采样周期后进入 Unlocked
+└─ Unlocked — 稳定解锁状态（PasswordCorrect=true，WD Off）
     ├─ 隐藏遮罩 Mesh（m_IsActive=0）
-    ├─ 恢复 Avatar 对象
-    └─ 设置其他 ASS 层权重为 0（释放控制）
+    └─ 不再写用户对象属性，释放给外部切换系统
 ```
 
 **转换条件：**
 
 - Remote → Concealed: `ASS_PasswordCorrect == false`（所有客户端）
-- Remote → Unlocked: `ASS_PasswordCorrect == true`（参数同步）
+- Remote → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`（参数同步）
 - Concealed → Locked: `IsLocal == true && ASS_PasswordCorrect == false`（仅穿戴者）
 - Concealed → Unlocked: `ASS_PasswordCorrect == true`
-- Locked → Unlocked: `ASS_PasswordCorrect == true`
+- Locked → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`
+- LockedLocal → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`
 - Unlocked → Remote: `ASS_PasswordCorrect == false`
 
 **关键实现：**
@@ -318,7 +321,7 @@ ASS_Lock Layer
 - 进度条通过动画驱动 Shader 材质属性控制
 - 双重保护隐藏：同时设置 `m_IsActive=0` + `localScale=0`，任一被覆盖另一仍生效
 - ASS 对象（Overlay、Audio、Defense）不参与隐藏
-- 解锁状态显式恢复构建时的根子对象 `m_IsActive` 与 `localScale`，不依赖 WD 自动回写；WD Off 仅恢复 `localScale`，避免覆盖外部衣柜系统的对象开关
+- 解锁先通过一次性的 `UnlockRestore` 恢复 ASS 写入的根子对象 `m_IsActive`/`localScale`，再进入空的 WD Off 状态；稳定解锁后不再写用户对象属性，将 active/scale 控制权交还给外部衣柜/部件动画系统
 
 ---
 

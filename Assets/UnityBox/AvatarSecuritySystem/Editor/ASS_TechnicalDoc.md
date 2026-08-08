@@ -220,7 +220,7 @@ Avatar 加载
 │   └─────────────────────────────┘
 │
 ├─ [本地玩家 + PasswordCorrect = true]（跨世界保持解锁）
-│   ├─ Lock 层：Remote → Unlocked（PasswordCorrect = true）
+│   ├─ Lock 层：Remote → UnlockRestore → Unlocked（PasswordCorrect = true）
 │   ├─ Countdown 层：Remote → Unlocked（跳过倒计时）
 │   ├─ Audio 层：Remote → Stop（跳过音效）
 │   ├─ Password 层：Wait_Input 不响应（PasswordCorrect 阻止入口）
@@ -241,7 +241,7 @@ Avatar 加载
 │   │   └─ Audio 层等待警告时间
 │   │
 │   ├─ 手势输入正确 → PasswordCorrect = true
-│   │   ├─ Lock 层：Locked → Unlocked（恢复 Avatar 显示）
+│   │   ├─ Lock 层：Locked/LockedLocal → UnlockRestore → Unlocked（恢复后释放控制权）
 │   │   ├─ Countdown 层：停止倒计时
 │   │   ├─ Audio 层：停止警告
 │   │   └─ Defense 层：保持 Inactive
@@ -285,8 +285,8 @@ Avatar 加载
                          │ (遮罩+音频) │                    │
                          └────────────┘                    ↓
 ┌──────────┐                                       ┌──────────┐
-│  Remote  │──PasswordCorrect─────────────────────→│ Unlocked │
-│(默认状态) │←────────────!PasswordCorrect──────────│(恢复显示) │
+│  Remote  │──PasswordCorrect──→│UnlockRestore│──→│ Unlocked │
+│(默认状态) │←────!PasswordCorrect────────────────│(释放控制)│
 └──────────┘                                       └──────────┘
 ```
 
@@ -295,10 +295,11 @@ Avatar 加载
 | 源状态 | 目标状态 | 条件 | 说明 |
 |--------|---------|------|------|
 | Remote | Locked | `IsLocal && !PasswordCorrect` | 仅本地，身体隐藏 |
-| Remote | Unlocked | `PasswordCorrect` | 初始已解锁 |
+| Remote | UnlockRestore | `PasswordCorrect` | 初始已解锁，先恢复一次属性 |
 | Locked | LockedLocal | `IsLocal && !PasswordCorrect` | 仅本地，叠加遮罩 |
-| Locked | Unlocked | `PasswordCorrect` | 直接解锁（远端/本地） |
-| LockedLocal | Unlocked | `PasswordCorrect` | 本地正常解锁 |
+| Locked | UnlockRestore | `PasswordCorrect` | 进入一次性恢复状态 |
+| LockedLocal | UnlockRestore | `PasswordCorrect` | 本地进入一次性恢复状态 |
+| UnlockRestore | Unlocked | `exitTime = 1.0` | 恢复采样完成后释放用户属性控制权 |
 | Unlocked | Remote | `!PasswordCorrect` | 密码失效时回退 |
 
 > Locked 状态无自循环。状态 clip 播完后最后一帧的值持续保留，无需自循环维持。
@@ -312,16 +313,16 @@ Avatar 加载
 - **启用**: `GO_OVERLAY`、`GO_AUDIO_WARNING`、`GO_AUDIO_SUCCESS`
 - 仅本地通过 Locked→LockedLocal 进入
 
-#### 解锁动画 (CreateUnlockClip)
+#### 解锁动画 (CreateUnlockClip / UnlockRestore)
 - **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
 - **启用**: `GO_AUDIO_WARNING`、`GO_AUDIO_Success`（用于解锁音效播放）
 - **恢复 Avatar**:
-  - **WD On 模式**: 显式恢复所有根子对象构建时的 `m_IsActive` 和 `localScale`，不依赖 WD 自动回写
-  - **WD Off 模式**: 显式恢复根子对象的 `localScale`；不写入 `m_IsActive`，避免覆盖衣柜等外部系统的运行时开关结果
+  - `UnlockRestore` 仅采样一个周期：WD On 时恢复根子对象构建时的 `m_IsActive` 与 `localScale`，WD Off 只恢复 `localScale`
+  - 随后进入空的 `Unlocked` 状态（WD Off），不再写用户对象属性，将 active/scale 控制权交还给衣柜、部件和其它外部动画层
 
 #### Remote 动画 (CreateRemoteClip)
 - **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
-- **WD Off**: 显式恢复根子对象的 `localScale`，不覆盖 `m_IsActive`
+- **WD Off**: 显式恢复根子对象的 `localScale`，不覆盖用户对象的 `m_IsActive`
 - 远端玩家始终停留在此状态
 
 #### 4.1.5 Write Defaults 自动检测 (ResolveWriteDefaults)
