@@ -1,0 +1,18 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.Runtime",
+  "rootNamespace": "UnityBox.AnimatorOptimizer",
+  "references": [
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [
+    "VRCSDKBase.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

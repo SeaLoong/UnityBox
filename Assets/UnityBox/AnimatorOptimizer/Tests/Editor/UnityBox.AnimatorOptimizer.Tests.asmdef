@@ -1,0 +1,30 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.Tests",
+  "rootNamespace": "UnityBox.AnimatorOptimizer.Tests",
+  "references": [
+    "UnityBox.AnimatorOptimizer",
+    "UnityBox.AnimatorOptimizer.Runtime",
+    "VRC.SDK3A",
+    "VRC.SDK3A.Editor",
+    "VRC.SDKBase",
+    "VRC.SDKBase.Editor",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "VRCSDK3A.dll",
+    "VRCSDK3A-Editor.dll",
+    "VRCSDKBase.dll",
+    "VRCSDKBase-Editor.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
