@@ -53,10 +53,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            inactiveState.writeDefaultValues = false;
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
+            activeState.writeDefaultValues = false;
             var activateClip = new AnimationClip
             {
                 name = CLIP_DEFENSE_ACTIVATE
@@ -92,16 +94,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            inactiveState.writeDefaultValues = false;
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
+            activeState.writeDefaultValues = false;
             var activateClip = new AnimationClip
             {
                 name = CLIP_DEFENSE_ACTIVE_DEFAULT
             };
             activateClip.SetCurve(Constants.GO_DEFENSE_ROOT, typeof(GameObject), "m_IsActive",
                 AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            // 默认防御模式不生成 PasswordInput 层，由 Defense 层负责显示遮罩反馈。
+            if (avatarRoot.transform.Find(Constants.GO_OVERLAY) != null)
+            {
+                activateClip.SetCurve(Constants.GO_OVERLAY, typeof(GameObject), "m_IsActive",
+                    AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            }
             ApplyReusableLightActivationCurves(activateClip, reusableLight);
             Utils.AddSubAsset(controller, activateClip);
             activeState.motion = activateClip;

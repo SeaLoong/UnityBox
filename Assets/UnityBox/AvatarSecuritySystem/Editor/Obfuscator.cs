@@ -1024,7 +1024,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = PseudoInt(ref rng, 0, 1) == 0;
+                // 伪状态只用于结构混淆；WD On 会对未绑定的真实 Avatar 属性写默认值，
+                // 可能干扰衣柜、音效或其它插件，因此统一使用 WD Off。
+                fakeState.writeDefaultValues = false;
                 fakeStates.Add(fakeState);
             }
 

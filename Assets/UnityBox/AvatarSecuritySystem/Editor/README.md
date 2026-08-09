@@ -33,8 +33,8 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 - **手势保持时间控制** — 最小/最大保持时间 + 容错时间，防止猜测与误触
 - **倒计时机制** — 限时输入（默认 30 秒），增加破解难度
 - **视觉/音频反馈** — 全屏 Shader 遮罩 + 进度条 + 警告音效（支持 VR 立体渲染）
-- **初始锁定** — Avatar 启动时所有功能被禁用
-- **本地/远端分离** — 防御仅本地触发；远端看到身体隐藏(Concealed)但无遮罩，仅穿戴者本地看到全屏遮罩(Locked)
+- **可选初始锁定** — 启用 Avatar Lock 时仅本地在启动后隐藏身体；关闭时不生成 Lock 层
+- **本地/远端分离** — 防御仅本地触发；PasswordInput/Audio 层负责本地 Overlay 和音频反馈，远端不显示
 - **默认启用防御** — 上传无密码的防御版本，利用已保存的参数状态区分合法用户与盗模者
 - **智能防御** — 仅对穿戴者生效（IsLocal），不影响其他玩家
 - **非破坏性** — 编辑时零影响，仅在 VRChat 构建时自动生成
@@ -47,8 +47,8 @@ Avatar Security System (ASS) 是一个用于 VRChat Avatar 的防盗保护系统
 标准模式：
 Avatar 启动
     ↓
-所有客户端：Remote → Concealed（身体隐藏，无遮罩）
-仅本地玩家：Concealed → Locked（全屏遮罩覆盖视角）
+启用锁定时：仅本地玩家 Remote → Locked（身体缩放隐藏）
+标准密码模式：PasswordInput → InputWaiting/手势状态（显示全屏遮罩）
     ↓
 倒计时开始（默认 30 秒）
     ↓
@@ -61,8 +61,8 @@ Avatar 启动
 Avatar 启动
     ├─ PasswordCorrect = true（已保存）→ 正常使用（防御关闭）
     └─ PasswordCorrect = false（盗模者）
-        ├─ 远端：身体隐藏（Concealed）
-        ├─ 本地：全屏遮罩（Locked）+ 防御组件立即激活
+        ├─ 远端：保持身体可见，不显示本地 Overlay
+        ├─ 本地：锁定选项开启时缩放隐藏 + Overlay + 防御组件立即激活
         └─ 无法关闭，持久防御
 ```
 
@@ -142,8 +142,8 @@ Avatar 启动
 - **Disable Overlay**: 不生成全屏覆盖遮罩（仍保留音频反馈）
 - **Mute Warning Sound**: 不生成倒计时警告音效（仍保留视觉反馈）
 - **Default Enable Defense**: ⚠️ 默认启用防御模式，不生成密码系统，利用已保存的参数状态工作
-- **Hide Objects**: 锁定时隐藏所有根级子对象
-- **Write Defaults Mode**: 动画 WD 模式（Auto/On/Off）
+- **Enable Avatar Lock**: 生成 `ASS_Lock` 层，并在锁定时隐藏所有根级子对象；关闭后不生成锁定层，但密码输入与音频反馈仍然保留
+- **Write Defaults Mode**: 兼容旧配置的隐藏字段；ASS 当前统一使用 WD Off + 显式属性绑定
 
 ### 步骤 7：构建上传
 
@@ -172,9 +172,9 @@ ASSComponent (MonoBehaviour)
 Processor (IVRCSDKPreprocessAvatarCallback, callbackOrder = -1024, 无 NDMF 时使用)
 NDMFPlugin (仅存在 NDMF 时编译，通过 NDMF Plugin API 注册到 BuildPhase.PlatformFinish)
     ↓ VRChat Build & Publish 时自动执行
-生成 5 个 Animator Layer 到 FX Controller（混淆启用时层名变为 `_{描述词}_{4位hex}`）:
-    ├─ 锁定层         (Lock/Concealed/Unlocked)
-    ├─ 密码验证层     (手势序列检测)
+按配置生成 Animator Layer 到 FX Controller（混淆启用时层名变为 `_{描述词}_{4位hex}`）:
+    ├─ 锁定层         (可选，仅启用 Avatar Lock 时生成)
+    ├─ 密码验证层     (手势序列检测 + Overlay/成功音效)
     ├─ 倒计时层       (限时 + TimeUp 触发)
     ├─ 音频层         (警告音效 2D 循环)
     └─ 防御层         (GPU 组件激活，可选)
@@ -276,52 +276,43 @@ Unity 2022.3
 
 ## 功能模块
 
-### 1. 锁定系统 (Lock)
+### 1. 锁定系统 (Lock，可选)
 
 #### 功能
 
-- 锁定状态下显示全屏 Shader 遮罩覆盖视角
-- 隐藏 Avatar 根级子对象（通过 `m_IsActive` 控制）
-- 解锁后恢复 Avatar 显示，禁用其他 ASS 层
-- Remote 玩家直接跳过锁定状态
+- 启用锁定时生成 `ASS_Lock` 层，并在锁定状态将 Avatar 根级子对象缩放为 0
+- 解锁恢复只执行一次，稳定解锁状态不再写用户对象属性
+- 未启用锁定时不生成 `ASS_Lock` 层；Overlay、密码成功音效和警告音效分别由 PasswordInput/Audio 层管理
+- Remote 玩家不进入本地锁定状态
 
 #### 状态机结构
 
 ```
 ASS_Lock Layer
-├─ Remote (默认) — 所有玩家的初始状态（身体正常显示）
-├─ Concealed — !PasswordCorrect 时的中间状态
-│   └─ 身体隐藏（m_IsActive=0 + localScale=0），无遮罩
-│   └─ 远端观众停留在此状态
-├─ Locked — 仅本地玩家（Concealed 后经由 IsLocal）
-│   ├─ 显示遮罩 Mesh（m_IsActive=1）
-│   ├─ 隐藏 Avatar 根级子对象（m_IsActive=0 + localScale=0）
-│   └─ 显示全屏 Shader 遮罩 + 进度条
+├─ Remote (默认) — 所有玩家的初始状态（不写用户对象属性）
+├─ Locked — 仅本地玩家（IsLocal && !PasswordCorrect）
+│   └─ 隐藏 Avatar 根级子对象（localScale=0，WD Off）
 ├─ UnlockRestore — 一次性恢复状态（PasswordCorrect=true）
-│   ├─ 恢复根子对象的 `m_IsActive` / `localScale`
+│   ├─ 恢复根子对象的 `localScale`
 │   └─ 播放一个采样周期后进入 Unlocked
 └─ Unlocked — 稳定解锁状态（PasswordCorrect=true，WD Off）
-    ├─ 隐藏遮罩 Mesh（m_IsActive=0）
-    └─ 不再写用户对象属性，释放给外部切换系统
+    └─ 空 clip，不再写用户对象属性，释放给外部切换系统
 ```
 
 **转换条件：**
 
-- Remote → Concealed: `ASS_PasswordCorrect == false`（所有客户端）
 - Remote → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`（参数同步）
-- Concealed → Locked: `IsLocal == true && ASS_PasswordCorrect == false`（仅穿戴者）
-- Concealed → Unlocked: `ASS_PasswordCorrect == true`
+- Remote → Locked: `IsLocal == true && ASS_PasswordCorrect == false`（仅穿戴者）
 - Locked → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`
-- LockedLocal → UnlockRestore → Unlocked: `ASS_PasswordCorrect == true`
 - Unlocked → Remote: `ASS_PasswordCorrect == false`
 
 **关键实现：**
 
 - 全屏遮罩使用自定义 Shader（`UnityBox/UB_Overlay`），顶点着色器直接映射到裁剪空间全屏
 - 进度条通过动画驱动 Shader 材质属性控制
-- 双重保护隐藏：同时设置 `m_IsActive=0` + `localScale=0`，任一被覆盖另一仍生效
+- 锁定隐藏使用 `localScale=0`，Lock 层固定 WD Off，不重置其它插件属性
 - ASS 对象（Overlay、Audio、Defense）不参与隐藏
-- 解锁先通过一次性的 `UnlockRestore` 恢复 ASS 写入的根子对象 `m_IsActive`/`localScale`，再进入空的 WD Off 状态；稳定解锁后不再写用户对象属性，将 active/scale 控制权交还给外部衣柜/部件动画系统
+- 解锁先通过一次性的 `UnlockRestore` 恢复 ASS 写入的根子对象 `localScale`，再进入空的 WD Off 状态；稳定解锁后不再写用户对象属性，将 active/scale 控制权交还给外部衣柜/部件动画系统
 
 ---
 
@@ -355,6 +346,10 @@ Step_N_ErrorTolerance ───[超时]───> Wait_Input
 ```
 
 **最后一步优化：** 最后一步没有 Confirmed/ErrorTolerance 状态，Holding → Password_Success 直接转换。
+
+`InputWaiting` 及各个手势状态由 PasswordInput 层启用 Overlay；`Password_Success` 同时启用
+`ASS_Audio_Success`，状态时长跟随成功音频长度，进入 `Password_Completed` 后关闭 Overlay、
+成功音效和警告音效对象。
 
 **参数驱动：**
 
@@ -416,7 +411,7 @@ Remote (默认) ──[PasswordCorrect]──> Stop（已保存的解锁状态�
 #### 全屏覆盖结构
 
 ```
-ASS_Overlay (默认禁用，锁定时通过动画启用)
+ASS_Overlay (默认禁用，由 PasswordInput 或默认 Defense 状态按需启用)
 ├─ Overlay (MeshRenderer + MeshFilter)
 │   └── Material: UnityBox/UB_Overlay Shader（全屏遮罩 + 进度条）
 │       ├─ GPU Instancing 启用
@@ -552,8 +547,8 @@ ASS_Defense Layer
 
 | 属性                  | 类型                | 默认值 | 说明                                              |
 | --------------------- | ------------------- | ------ | ------------------------------------------------- |
-| `disableRootChildren` | `bool`              | `true` | 锁定时隐藏 Avatar 根级子对象                      |
-| `writeDefaultsMode`   | `WriteDefaultsMode` | `Auto` | Auto=自动检测（优先复用 VRCFury 设置） / On / Off |
+| `disableRootChildren` | `bool`              | `true` | 启用 `ASS_Lock` 层，并在锁定时隐藏 Avatar 根级子对象；关闭则不生成锁定层 |
+| `writeDefaultsMode`   | `WriteDefaultsMode` | `On`   | 兼容字段；锁定层现在固定使用 WD Off，避免影响外部插件属性 |
 
 #### 高级选项
 
@@ -582,8 +577,8 @@ ASS_Defense Layer
 
 | 层名（非混淆默认）    | 权重 | 功能             |
 | --------------------- | ---- | ---------------- |
-| `ASS_Lock`            | 1.0  | 锁定/解锁控制（Remote/Concealed/Locked/Unlocked） |
-| `ASS_PasswordInput`   | 1.0  | 密码验证         |
+| `ASS_Lock`            | 1.0  | 可选锁定/解锁控制（Remote/Locked/UnlockRestore/Unlocked） |
+| `ASS_PasswordInput`   | 1.0  | 密码验证、Overlay、成功音效 |
 | `ASS_Countdown`       | 1.0  | 倒计时           |
 | `ASS_Audio`           | 1.0  | 警告音效         |
 | `ASS_Defense`         | 1.0  | 防御激活（可选） |
@@ -596,7 +591,11 @@ ASS_Defense Layer
 | -------------------------- | ----------------------------- | ---------- |
 | `VRCAnimatorPlayAudio`     | Password_Success, WarningBeep | 播放音效   |
 | `VRCAvatarParameterDriver` | Password_Success, TimeUp      | 设置参数   |
-| `VRCAnimatorLayerControl`  | Locked, Unlocked              | 控制层权重 |
+| `VRCAnimatorLayerControl`  | Lock/PasswordInput/Countdown/Audio 终态 | 将对应 FX 子层权重设为 0，释放已完成的临时层 |
+
+`VRCAnimatorLayerControl.playable` 固定为 `FX`，`layer` 不使用固定数字，而是在层追加到
+Controller 后按该层 `StateMachine` 反查真实 `AnimatorController.layers` 索引（包含 Base Layer）。
+Defense 层不在 Active 终态自禁用，因为它需要持续保持防御输出。
 
 ---
 
@@ -610,7 +609,7 @@ ASS_Defense Layer
 
 #### Q: 其他玩家会看到防御效果吗？
 
-不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其他玩家看到的是身体隐藏但无遮罩（Concealed 状态），不会看到全屏白色遮罩。
+不会。防御通过 `IsLocal` 参数隔离，仅穿戴者受影响。其它玩家不会看到本地 PasswordInput Overlay；默认防御模式的 Overlay 也仅由本地 Defense 状态启用。
 
 ### 使用
 

@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
-using System.Linq;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
 using VRC.SDK3.Avatars.Components;
 namespace UnityBox.AvatarSecuritySystem.Editor
@@ -12,36 +11,39 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSConfigData config;
-        private readonly VRCAvatarDescriptor descriptor;
         public Lock(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, VRCAvatarDescriptor descriptor)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
-            this.descriptor = descriptor;
         }
         public void Generate()
         {
+            if (config == null || !config.disableRootChildren)
+            {
+                Debug.Log("[ASS] Avatar lock disabled, skipping ASS_Lock layer generation");
+                return;
+            }
+
             // 确保 Blend Tree 和过渡条件依赖的参数存在
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
 
             var layer = Utils.CreateLayer(LAYER_LOCK, 1f);
-            bool useWdOn = ResolveWriteDefaults();
             var remoteState = layer.stateMachine.AddState(
                 Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
             // Remote 只关闭 ASS 自身遮罩，不应通过 WD 重置用户对象的 active/scale。
             remoteState.writeDefaultValues = false;
-            var remoteClip = CreateRemoteClip(useWdOn);
+            var remoteClip = CreateRemoteClip();
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
 
             var lockedState = layer.stateMachine.AddState(
                 Obfuscator.State("LockedA"),
                 new Vector3(200, 100, 0));
-            lockedState.writeDefaultValues = useWdOn;
-            var lockClip = CreateLockClip(useWdOn);
+            lockedState.writeDefaultValues = false;
+            var lockClip = CreateLockClip();
             Utils.AddSubAsset(controller, lockClip);
             lockedState.motion = lockClip;
             AnimatorState preLockState = null;
@@ -66,7 +68,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var shadow = layer.stateMachine.AddState(
                         Obfuscator.State($"Shd_{s + 1}"),
                         new Vector3(xBase + s * 100, 100 + ((s & 1) * 50), 0));
-                    shadow.writeDefaultValues = useWdOn;
+                    shadow.writeDefaultValues = false;
                     shadow.motion = lockClip;
                     extraShadows.Add(shadow);
                 }
@@ -87,18 +89,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 250, 0));
             // Restore clip 只采样一次恢复缩放，完成后立即进入上面的释放状态。
             unlockRestoreState.writeDefaultValues = false;
-            // LockedLocal：仅本地，在 Locked 基础上叠加遮罩和音频
-            var lockedLocalState = layer.stateMachine.AddState(
-                Obfuscator.State("LockedLocal"),
-                new Vector3(200, 150, 0));
-            lockedLocalState.writeDefaultValues = useWdOn;
             layer.stateMachine.defaultState = remoteState;
-            var lockLocalClip = CreateLockLocalClip(useWdOn);
-            var unlockClip = CreateUnlockClip(useWdOn);
+            var unlockClip = CreateUnlockClip();
             Utils.AddSubAsset(controller, unlockClip);
             unlockRestoreState.motion = unlockClip;
-            lockedLocalState.motion = lockLocalClip;
-            Utils.AddSubAsset(controller, lockLocalClip);
             if (Obfuscator.DecoyStatesEnabled && extraShadows != null)
             {
                 uint rng = decoySeed ^ 0xBEEF;
@@ -152,14 +146,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 0.01f);
                 preLockToLocked.duration = 0f;
             }
-            // Locked → LockedLocal（仅本地，叠加遮罩）
-            var toLockedLocal = Utils.CreateTransition(lockedState, lockedLocalState);
-            Utils.AddIsLocalCondition(toLockedLocal, controller, isTrue: true);
-            toLockedLocal.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-            // LockedLocal → UnlockRestore（本地解锁）
-            var lockedLocalToUnlockRestore = Utils.CreateTransition(lockedLocalState, unlockRestoreState);
-            lockedLocalToUnlockRestore.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
-            // Locked → UnlockRestore（远端解锁，如果参数过渡有效）
+            // Locked → UnlockRestore（解锁）
             var lockedToUnlockRestore = Utils.CreateTransition(lockedState, unlockRestoreState);
             lockedToUnlockRestore.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             // 恢复 clip 播放一个采样周期后，进入不写用户对象属性的稳定解锁状态。
@@ -171,16 +158,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log("[ASS] Initial lock layer created");
-            controller.AddLayer(layer);
+            int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
+            Utils.AddDisableSelfLayerControl(unlockedState, layerIndex, "ASS_Lock/Unlocked");
         }
         #region Private Methods
-        private AnimationClip CreateLockClip(bool useWdOn)
+        private AnimationClip CreateLockClip()
         {
             var clip = new AnimationClip { name = CLIP_LOCK };
-            var disableCurve = AnimationCurve.Constant(0f, 1f / 60f, 0f);
             var zeroScale = Vector3.zero;
-            Debug.Log($"[ASS] Lock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
-            // Lock clip 只隐藏身体，不激活遮罩（遮罩由 LockedLocal 状态处理，仅本地）
+            Debug.Log("[ASS] Lock animation created (WD Off, explicit scale bindings only)");
+            // Lock clip 只隐藏身体；Overlay/音频由 PasswordInput 和 Audio 层管理。
             // defense 由 Defense 层独立管理，Lock 层不碰
             if (config.disableRootChildren)
             {
@@ -189,155 +176,42 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     if (IsASSObject(child)) continue;
                     string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                    // WD Off 兼容：避免对 m_IsActive 施加动画，防止覆盖服装/道具系统（如 lilycalinventory）
-                    // 在运行时计算出的对象开关结果。
-                    if (useWdOn)
-                        clip.SetCurve(childPath, typeof(GameObject), "m_IsActive", disableCurve);
+                    // Lock 层固定使用 WD Off，仅通过根子对象缩放隐藏 Avatar。
+                    // 不动画化 m_IsActive，避免覆盖衣柜/道具系统运行时计算的对象开关。
                     SetTransformScaleInClip(clip, childPath, zeroScale);
                     hiddenCount++;
                 }
-                if (useWdOn)
-                    Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (IsActive=0 + Scale=0)");
-                else
-                    Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (Scale=0 only, WD Off compatibility mode)");
+                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (Scale=0 only, WD Off mode)");
             }
             return clip;
         }
-        private AnimationClip CreateLockLocalClip(bool useWdOn)
-        {
-            var clip = new AnimationClip { name = CLIP_LOCK_LOCAL };
-            var enableCurve = AnimationCurve.Constant(0f, 1f / 60f, 1f);
-            // 仅本地：在 Lock clip 基础上叠加遮罩和音频激活
-            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
-                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", enableCurve);
-            if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
-                clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", enableCurve);
-            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
-                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", enableCurve);
-            return clip;
-        }
-        private AnimationClip CreateRemoteClip(bool useWdOn)
+        private AnimationClip CreateRemoteClip()
         {
             var clip = new AnimationClip { name = CLIP_REMOTE };
-            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
-                SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
-            // defense 由 Defense 层独立管理，Lock 层不碰
-            if (!useWdOn && config.disableRootChildren)
-                WriteRestoreValues(clip);
-            Debug.Log($"[ASS] Remote state animation created (WD {(useWdOn ? "On" : "Off")}): hide overlay");
+            // Overlay 与音频对象由 PasswordInput / Audio 层管理，Lock 层不写入。
+            Debug.Log("[ASS] Remote state animation created (WD Off, no user-object feedback bindings)");
             return clip;
         }
-        private AnimationClip CreateUnlockClip(bool useWdOn)
+        private AnimationClip CreateUnlockClip()
         {
             var clip = new AnimationClip { name = CLIP_UNLOCK };
-            Debug.Log($"[ASS] Unlock animation created (WD {(useWdOn ? "On" : "Off")} mode)");
-            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
-                SetGameObjectActiveInClip(clip, GO_OVERLAY, false);
+            Debug.Log("[ASS] Unlock animation created (one-shot scale restore, WD Off mode)");
             if (config.disableRootChildren)
-                WriteRestoreValues(clip, restoreActiveState: useWdOn);
+                WriteRestoreValues(clip);
             return clip;
         }
-        private void WriteRestoreValues(AnimationClip clip, bool restoreActiveState = false)
+        private void WriteRestoreValues(AnimationClip clip)
         {
             int restoredCount = 0;
             foreach (Transform child in avatarRoot.transform)
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                // 仅在一次性的 UnlockRestore 状态恢复 m_IsActive；稳定 Unlocked 状态为空 clip，
-                // 因此外部插件只会在恢复采样后接管对象开关和缩放，不会被固定值持续覆盖。
-                if (restoreActiveState)
-                {
-                    float activeValue = child.gameObject.activeSelf ? 1f : 0f;
-                    clip.SetCurve(childPath, typeof(GameObject), "m_IsActive",
-                        AnimationCurve.Constant(0f, 1f / 60f, activeValue));
-                }
+                // 只恢复 ASS 写入的缩放；active/scale 的后续控制权交还给外部动画层。
                 SetTransformScaleInClip(clip, childPath, child.localScale);
                 restoredCount++;
             }
-            Debug.Log($"[ASS] {(restoreActiveState ? "UnlockRestore" : "WD Off")} restore: " +
-                $"{restoredCount} root child objects " +
-                $"({(restoreActiveState ? "IsActive + " : string.Empty)}Scale)");
-        }
-        private bool ResolveWriteDefaults()
-        {
-            // 当前产品策略：需要强制隐藏的 Locked 状态使用 WD On；Remote、UnlockRestore
-            // 和稳定 Unlocked 状态在 Generate() 中显式使用 WD Off，避免与外部切换系统
-            // （如衣柜/菜单）的 active/scale 动画发生持续冲突。
-            //
-            // 注意：历史 WD 自动检测与外部工具探测能力仍然保留在本类中（见 TryResolveFromExternalTools /
-            // HasWdOffState 等方法），后续若需要回退为可配置策略，可在此处恢复分支而无需重写整套逻辑。
-            Debug.Log("[ASS] WD mode: On for lock states, Off for release states (legacy WD resolver retained)");
-            return true;
-        }
-        private bool? TryResolveFromExternalTools()
-        {
-            foreach (var mb in avatarRoot.GetComponentsInChildren<MonoBehaviour>(true))
-            {
-                if (mb == null) continue;
-                if (mb.GetType().FullName != "VF.Model.VRCFury") continue;
-                var content = mb.GetType().GetField("content")?.GetValue(mb);
-                if (content == null || content.GetType().Name != "FixWriteDefaults") continue;
-                var modeName = content.GetType().GetField("mode")?.GetValue(content)?.ToString();
-                switch (modeName)
-                {
-                    case "ForceOn":
-                        Debug.Log("[ASS] WD Auto → On (VRCFury FixWriteDefaults = ForceOn)");
-                        return true;
-                    case "ForceOff":
-                        Debug.Log("[ASS] WD Auto → Off (VRCFury FixWriteDefaults = ForceOff)");
-                        return false;
-                    case "Auto":
-                        Debug.Log("[ASS] 检测到 VRCFury FixWriteDefaults = Auto，VRCFury 已统一 controller WD，扫描确认");
-                        return null;
-                    case "Disabled":
-                        Debug.Log("[ASS] VRCFury FixWriteDefaults = Disabled，回退到 ASS 自动检测");
-                        return null;
-                }
-            }
-            return null;
-        }
-        private static bool IsWriteDefaultsRequiredLayer(AnimatorControllerLayer layer)
-        {
-            if (layer.blendingMode == AnimatorLayerBlendingMode.Additive) return true;
-            var sm = layer.stateMachine;
-            if (sm == null) return false;
-            if (sm.stateMachines.Length != 0) return false;
-            if (sm.states.Length != 1) return false;
-            if (sm.anyStateTransitions.Length != 0) return false;
-            var defaultState = sm.defaultState;
-            if (defaultState == null) return false;
-            if (defaultState.transitions.Length != 0) return false;
-            if (!(defaultState.motion is BlendTree bt)) return false;
-            return HasDirectBlendTree(bt);
-        }
-        private static bool HasDirectBlendTree(BlendTree bt)
-        {
-            if (bt.blendType == BlendTreeType.Direct) return true;
-            foreach (var child in bt.children)
-            {
-                if (child.motion is BlendTree childBt && HasDirectBlendTree(childBt))
-                    return true;
-            }
-            return false;
-        }
-        private static bool HasWdOffState(AnimatorStateMachine sm)
-        {
-            foreach (var childState in sm.states)
-            {
-                var state = childState.state;
-                if (state.motion == null) continue;
-                if (state.motion is BlendTree bt && bt.blendType == BlendTreeType.Direct)
-                    continue;
-                if (!state.writeDefaultValues)
-                    return true;
-            }
-            foreach (var childSm in sm.stateMachines)
-            {
-                if (HasWdOffState(childSm.stateMachine))
-                    return true;
-            }
-            return false;
+            Debug.Log($"[ASS] UnlockRestore restore: {restoredCount} root child objects (Scale only, WD Off)");
         }
         private bool IsASSObject(Transform obj)
         {
@@ -358,11 +232,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
         private HashSet<string> _assObjectNames;
-        private static void SetGameObjectActiveInClip(AnimationClip clip, string objectPath, bool isActive)
-        {
-            var curve = AnimationCurve.Constant(0f, 1f / 60f, isActive ? 1f : 0f);
-            clip.SetCurve(objectPath, typeof(GameObject), "m_IsActive", curve);
-        }
         private static void SetTransformScaleInClip(AnimationClip clip, string objectPath, Vector3 scale)
         {
             var curveX = AnimationCurve.Constant(0f, 1f / 60f, scale.x);

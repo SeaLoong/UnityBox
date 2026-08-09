@@ -449,15 +449,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.disable_objects"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Conceal Avatar" },
-                    { SystemLanguage.ChineseSimplified, "隐藏Avatar本体" },
-                    { SystemLanguage.Japanese, "アバター本体を隠す" }
+                    { SystemLanguage.English, "Enable Avatar Lock" },
+                    { SystemLanguage.ChineseSimplified, "启用Avatar锁定" },
+                    { SystemLanguage.Japanese, "アバターロックを有効化" }
                 },
                 ["advanced.disable_objects_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Hide all root-level child objects (the avatar itself) when locked.\nLeave enabled to completely conceal the avatar from the thief." },
-                    { SystemLanguage.ChineseSimplified, "锁定时隐藏所有根级子对象（Avatar 本身）。\n建议保持开启，让盗模者完全看不到模型。" },
-                    { SystemLanguage.Japanese, "ロック時にすべてのルートレベル子オブジェクト（アバター本体）を非表示にします。\n有効にしておくと、盗んだ側からモデルが見えなくなります。" }
+                    { SystemLanguage.English, "Generate the ASS_Lock layer and hide all root-level child objects (the avatar itself) while locked.\nWhen disabled, no lock layer is generated; PasswordInput/Audio feedback still works." },
+                    { SystemLanguage.ChineseSimplified, "生成 ASS_Lock 层，并在锁定时隐藏所有根级子对象（Avatar 本身）。\n关闭后不会生成锁定层，但 PasswordInput/Audio 反馈仍会正常工作。" },
+                    { SystemLanguage.Japanese, "ASS_Lock レイヤーを生成し、ロック中にルートレベル子オブジェクト（アバター本体）を非表示にします。\n無効時はロックレイヤーを生成せず、PasswordInput/Audio のフィードバックは引き続き動作します。" }
                 },
                 ["advanced.wd_mode"] = new Dictionary<SystemLanguage, string>
                 {
@@ -467,9 +467,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.wd_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Animation Write Defaults mode for ASS-generated animations:\n• Auto = Auto-detect from existing FX layers (recommended)\n• On  = Auto-restore with Write Defaults\n• Off = Explicit restore without Write Defaults" },
-                    { SystemLanguage.ChineseSimplified, "ASS 生成动画的 Write Defaults 模式：\n• Auto = 从已有 FX 层自动检测（推荐）\n• On  = 使用 Write Defaults 自动恢复\n• Off = 不使用 Write Defaults，显式恢复" },
-                    { SystemLanguage.Japanese, "ASS生成アニメーションの Write Defaults モード：\n• Auto = 既存FXレイヤーから自動検出（推奨）\n• On  = Write Defaults で自動復元\n• Off = Write Defaults なしで明示的復元" }
+                    { SystemLanguage.English, "Compatibility field retained for older configurations. ASS feedback and lock layers now use explicit WD Off bindings to avoid resetting properties owned by other plugins." },
+                    { SystemLanguage.ChineseSimplified, "兼容旧配置的隐藏字段。ASS 反馈层和锁定层现在统一使用显式 WD Off 绑定，避免重置其它插件控制的属性。" },
+                    { SystemLanguage.Japanese, "旧設定互換用の非表示フィールドです。ASS のフィードバック/ロックレイヤーは他プラグインのプロパティをリセットしないよう、明示的な WD Off バインディングを使用します。" }
                 },
                 ["advanced.wd_mode_auto"] = new Dictionary<SystemLanguage, string>
                 {

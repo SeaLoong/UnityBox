@@ -10,8 +10,8 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 - **倒计时机制**：限时密码输入，超时自动触发防御
 - **GPU 防御**：以共享 `UB_Defense` 材质的粒子系统为主，结合最少系统数策略制造负载；轻量模式下不主动新增光源 / 粒子碰撞 / 拖尾，但若 Avatar 本来就在使用这些功能，则直接继承
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
-- **本地/远端分离**：防御(Countdown+Defense)仅本地触发；Lock层:远端保持在Remote状态（身体可见）,仅穿戴者本地执行隐藏→遮罩→解锁流程
-- **Write Defaults 兼容**：支持 Auto / WD On / WD Off 三种模式
+- **本地/远端分离**：防御(Countdown+Defense)仅本地触发；Lock层可选，远端保持在Remote状态（身体可见），仅穿戴者本地执行隐藏→恢复流程
+- **Write Defaults 兼容**：反馈、锁定和伪装状态统一使用 WD Off + 显式绑定，避免重置其它插件属性
 - **国际化**：支持中文简体、英语、日语
 
 ### 1.2 设计原则
@@ -179,8 +179,9 @@ Processor (入口, IVRCSDKPreprocessAvatarCallback)
       │   创建全屏覆盖根对象 (ASS_Overlay) + Shader 覆盖 Mesh（含 Logo）+ 音频对象
       │   若 muteWarningSound 则跳过警告音频对象创建
       │
-      ├─ [必选] Lock.Generate()
-      │   创建锁定层 (ASS_Lock)
+      ├─ [可选] Lock.Generate()
+      │   仅 disableRootChildren=true 时创建锁定层 (ASS_Lock)
+      │   锁定关闭时由 PasswordInput/Audio 层独立管理反馈
       │
       ├─ [标准模式] GesturePassword.Generate()
       │   创建密码验证层 (ASS_PasswordInput)
@@ -216,7 +217,7 @@ Avatar 加载
 ├─ [远端玩家] Remote（身体可见）
 │   远端观众始终看到角色身体，不会进入隐藏状态
 │   ┌─────────────────────────────┐
-│   │ 当 PasswordCorrect = true  │──→ Unlocked（仍无变化）
+│   │ 当 PasswordCorrect = true  │──→ UnlockRestore → Unlocked
 │   └─────────────────────────────┘
 │
 ├─ [本地玩家 + PasswordCorrect = true]（跨世界保持解锁）
@@ -228,20 +229,16 @@ Avatar 加载
 │
 ├─ [标准模式：本地玩家 + PasswordCorrect = false]
 │   │
-│   ├─ Remote → Locked（IsLocal 限定：身体隐藏，无遮罩）
-│   │   └─ Locked → LockedLocal（IsLocal 限定：叠加全屏遮罩）
-│   │
-│   ├─ LockedLocal 状态
-│   │   全屏 Shader 覆盖（白色背景 + Logo + 红色进度条）
-│   │   Avatar 对象被禁用/隐藏
+│   ├─ Remote → Locked（启用锁定且 IsLocal：身体缩放隐藏）
+│   │   └─ Password 层 InputWaiting/手势状态显示全屏 Shader 覆盖
 │   │
 │   │   同时：
 │   │   ├─ Countdown 层开始计时
-│   │   ├─ Password 层等待手势输入
+│   │   ├─ Password 层等待手势输入并显示 Overlay
 │   │   └─ Audio 层等待警告时间
 │   │
 │   ├─ 手势输入正确 → PasswordCorrect = true
-│   │   ├─ Lock 层：Locked/LockedLocal → UnlockRestore → Unlocked（恢复后释放控制权）
+│   │   ├─ Lock 层（启用时）：Locked → UnlockRestore → Unlocked（恢复后释放控制权）
 │   │   ├─ Countdown 层：停止倒计时
 │   │   ├─ Audio 层：停止警告
 │   │   └─ Defense 层：保持 Inactive
@@ -253,8 +250,8 @@ Avatar 加载
 │
 └─ [默认防御模式：本地玩家 + PasswordCorrect = false]
     │
-    ├─ Lock 层：Remote → Concealed → Locked（全屏遮罩）
-    ├─ Defense 层：Inactive → Active（防御立即激活）
+  ├─ Lock 层（启用时）：Remote → Locked（身体缩放隐藏）
+  ├─ Defense 层：Inactive → Active（防御立即激活并显示 Overlay）
     ├─ 无倒计时、无密码输入
     └─ PasswordCorrect 始终 false → 防御持久激活，无法解除
 ```
@@ -273,21 +270,13 @@ Avatar 加载
 
 ```
                          ┌────────────┐
-            IsLocal ────→│   Locked   │──PasswordCorrect──→┐
-        !PasswordCorrect │ (身体隐藏)  │                    │
-                         └────────────┘                    │
-                              │                            │
-                         IsLocal                           │
-                     !PasswordCorrect                      │
-                              ↓                            │
-                         ┌────────────┐                    │
-                         │LockedLocal │──PasswordCorrect──→┤
-                         │ (遮罩+音频) │                    │
+                  IsLocal ────→│   Locked   │──PasswordCorrect──→┐
+                !PasswordCorrect │ (Scale=0)  │                    │
                          └────────────┘                    ↓
-┌──────────┐                                       ┌──────────┐
-│  Remote  │──PasswordCorrect──→│UnlockRestore│──→│ Unlocked │
-│(默认状态) │←────!PasswordCorrect────────────────│(释放控制)│
-└──────────┘                                       └──────────┘
+            ┌──────────┐      PasswordCorrect       ┌───────────────┐  ┌──────────┐
+            │  Remote  │──────────────────────────→│ UnlockRestore │─→│ Unlocked │
+            │(默认状态)│←────!PasswordCorrect──────│ (一次性恢复)  │  │(释放控制)│
+            └──────────┘                            └───────────────┘  └──────────┘
 ```
 
 #### 转换条件
@@ -296,62 +285,28 @@ Avatar 加载
 |--------|---------|------|------|
 | Remote | Locked | `IsLocal && !PasswordCorrect` | 仅本地，身体隐藏 |
 | Remote | UnlockRestore | `PasswordCorrect` | 初始已解锁，先恢复一次属性 |
-| Locked | LockedLocal | `IsLocal && !PasswordCorrect` | 仅本地，叠加遮罩 |
 | Locked | UnlockRestore | `PasswordCorrect` | 进入一次性恢复状态 |
-| LockedLocal | UnlockRestore | `PasswordCorrect` | 本地进入一次性恢复状态 |
 | UnlockRestore | Unlocked | `exitTime = 1.0` | 恢复采样完成后释放用户属性控制权 |
 | Unlocked | Remote | `!PasswordCorrect` | 密码失效时回退 |
 
 > Locked 状态无自循环。状态 clip 播完后最后一帧的值持续保留，无需自循环维持。
 
 #### Lock 动画 (CreateLockClip)
-- **禁用**: `GO_DEFENSE_ROOT`
-- **隐藏 Avatar**: 当 `disableRootChildren = true` 时，禁用所有非 ASS 根子对象 (`m_IsActive = 0` + `localScale = 0` 双重保护)
-- **不激活遮罩**（遮罩由 LockedLocal 处理）
-
-#### LockedLocal 动画 (CreateLockLocalClip)
-- **启用**: `GO_OVERLAY`、`GO_AUDIO_WARNING`、`GO_AUDIO_SUCCESS`
-- 仅本地通过 Locked→LockedLocal 进入
+- **隐藏 Avatar**: 当 `disableRootChildren = true` 时，将所有非 ASS 根子对象的 `localScale` 写为 0
+- Lock 层固定 WD Off，不写入 `m_IsActive`，不触碰 Overlay 或音频对象
 
 #### 解锁动画 (CreateUnlockClip / UnlockRestore)
-- **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
-- **启用**: `GO_AUDIO_WARNING`、`GO_AUDIO_Success`（用于解锁音效播放）
-- **恢复 Avatar**:
-  - `UnlockRestore` 仅采样一个周期：WD On 时恢复根子对象构建时的 `m_IsActive` 与 `localScale`，WD Off 只恢复 `localScale`
-  - 随后进入空的 `Unlocked` 状态（WD Off），不再写用户对象属性，将 active/scale 控制权交还给衣柜、部件和其它外部动画层
+- `UnlockRestore` 仅采样一个周期，显式恢复 ASS 写入的根子对象 `localScale`
+- 随后进入空的 `Unlocked` 状态（WD Off），不再写用户对象属性，将 active/scale 控制权交还给衣柜、部件和其它外部动画层
 
 #### Remote 动画 (CreateRemoteClip)
-- **禁用**: `GO_OVERLAY`、`GO_DEFENSE_ROOT`
-- **WD Off**: 显式恢复根子对象的 `localScale`，不覆盖用户对象的 `m_IsActive`
+- 空 clip，WD Off；Overlay/音频由 PasswordInput/Audio 层管理
 - 远端玩家始终停留在此状态
 
-#### 4.1.5 Write Defaults 自动检测 (ResolveWriteDefaults)
+#### 4.1.5 Write Defaults 策略
 
-Auto 模式下的检测流程分为两个阶段：
-
-**阶段 1 — VRCFury 检查** (`TryResolveFromExternalTools`)：
-
-通过反射检查 Avatar 上的 VRCFury `FixWriteDefaults` 组件（internal 类型，需反射访问）：
-
-- 遍历 `VF.Model.VRCFury` 组件的 `content` 字段
-  - `ForceOn` → 直接返回 WD On
-  - `ForceOff` → 直接返回 WD Off
-  - `Auto` → VRCFury 已在 `-10000` 阶段统一 controller WD，记录日志后进入阶段 2
-  - `Disabled` → VRCFury 不修复非自己管理的层，进入阶段 2
-
-**阶段 2 — Controller 扫描**（回退方案）：
-
-扫描所有 Playable Layer 的 AnimatorController，跳过规则：
-
-1. `isDefault` 的 Playable Layer（未自定义）
-2. `animatorController` 为 null 的层
-3. VRChat 内置控制器（名称以 `vrc_` 开头）
-4. ASS 自己生成的层（`ASS_` 前缀）
-5. Additive 层（必须始终 WD On）
-6. Direct BlendTree 单状态层（必须始终 WD On，参考 Modular Avatar）
-7. 无 Motion 的空状态
-
-**判断逻辑**: 只要存在任何 WD Off 状态就使用 WD Off；全部为 WD On（或无有效状态）才使用 WD On
+`ASS_Lock` 仅在启用锁定选项时生成，并固定使用 WD Off。锁定和恢复状态只写入
+ASS 自己需要的 `localScale` 曲线；Remote/Unlocked 使用空 clip，不写入用户对象属性。
 
 ---
 
@@ -402,11 +357,12 @@ ErrorTolerance (clip = ErrorTolerance)
 | 状态                    | Motion                           | 功能                                                  |
 | ----------------------- | -------------------------------- | ----------------------------------------------------- |
 | `Wait_Input`            | SharedEmptyClip                  | 初始状态，等待第一位密码输入                          |
+| `InputWaiting`          | ASS_InputWaiting                 | 本地未解锁时显示 Overlay，等待第一位密码手势           |
 | `Step_N_Holding`        | ASS_Hold_N (MaxHoldTime 秒)      | 总超时预算。达到 MinHold/MaxHold 比例即确认，不匹配则重置 |
 | `Step_N_Confirmed`      | ASS_Confirmed_N (MaxHoldTime 秒) | 等待下一手势。clip 播完(Greater+Less对应下一手势)超时重置 |
 | `Step_N_ErrorTolerance` | ASS_Tolerance_N (ErrorTolerance) | 容错缓冲，在容错时间内纠正到下一手势可继续            |
-| `Password_Success`      | SharedEmptyClip                  | 密码正确，设置 `PasswordCorrect = true`，播放成功音效 |
-| `Password_Completed`    | SharedEmptyClip                  | 终点状态，密码已验证完成（success→completed）         |
+| `Password_Success`      | ASS_PasswordSuccess              | 密码正确，设置 `PasswordCorrect = true`，启用并播放成功音效 |
+| `Password_Completed`    | ASS_PasswordCompleted            | 终点状态，关闭 Overlay/音频对象（success→completed）  |
 | `TimeUp_Failed`         | SharedEmptyClip                  | 倒计时结束，禁止继续输入（Any State → 此状态）        |
 
 #### 4.2.3 转换规则
@@ -445,7 +401,7 @@ Remote ──(PasswordCorrect)────────────────�
                                        Unlocked ←──────────────────────┘
 ```
 
-- **Remote 状态**: SharedEmptyClip，`writeDefaultValues = true`
+- **Remote 状态**: SharedEmptyClip，`writeDefaultValues = false`
 - **Remote → Unlocked**: `PasswordCorrect = true`（已保存的解锁状态，跳过倒计时）
 - **Remote → Countdown**: `IsLocal = true` 且 `PasswordCorrect = false`（仅本地且未解锁时）
 - **Countdown 状态**: 播放 `countdownDuration` 秒的进度条动画
@@ -490,7 +446,7 @@ Remote ──(PasswordCorrect)────────────────�
   - 通过在相机前方 `d=5` 单位处构建视图空间坐标再投影，确保在近/远裁剪面内且渲染在 VRChat 表情镜摄像机后方
   - **不需要** 世界空间定位
 - **位置**: 作为 Avatar 根对象的直接子对象
-- **默认状态**: `SetActive(false)`，仅 Locked 状态时由动画启用
+- **默认状态**: `SetActive(false)`；标准模式由 PasswordInput 层在输入期间启用，默认防御模式由 Defense 激活状态启用
 - **Mesh**: 简单 Quad（4 顶点），顶点位置无关紧要（由 Shader 重新映射）
   - 三角形绕序：`{0, 1, 2, 0, 2, 3}`（统一逆时针，Unity 标准正面定义）
   - 调用 `RecalculateNormals()` 和 `RecalculateTangents()` 确保法线/切线正确
@@ -520,8 +476,8 @@ Remote ──(PasswordCorrect)────────────────�
 
 | 对象名              | 父对象      | 配置                                                     |
 | ------------------- | ----------- | -------------------------------------------------------- |
-| `ASS_Audio_Warning` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
-| `ASS_Audio_Success` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 无自动播放 |
+| `ASS_Audio_Warning` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 默认关闭，由 Audio 层按需启用 |
+| `ASS_Audio_Success` | Avatar Root | `spatialBlend=0`, `volume=0.5`, `priority=0`, 默认关闭，由 PasswordInput 层按需启用 |
 
 ---
 
@@ -689,8 +645,8 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 
 | 参数                  | 类型              | 默认值 | 说明                                                                                |
 | --------------------- | ----------------- | ------ | ----------------------------------------------------------------------------------- |
-| `disableRootChildren` | bool              | true   | 锁定时禁用 Avatar 根子对象                                                          |
-| `writeDefaultsMode`   | WriteDefaultsMode | Auto   | Auto = 自动检测（优先复用 VRCFury 设置） / On = 依赖自动恢复 / Off = 显式写入恢复值 |
+| `disableRootChildren` | bool              | true   | 启用 `ASS_Lock` 层，并在锁定时隐藏 Avatar 根子对象；关闭则不生成锁定层             |
+| `writeDefaultsMode`   | WriteDefaultsMode | On     | 兼容字段；`ASS_Lock` 现在固定 WD Off，仅写入显式缩放曲线                             |
 
 #### 高级选项
 
@@ -838,8 +794,8 @@ Avatar Root
 │  [ ] 禁用防御                                │
 │  [✓] 启用溢出                                │
 ├─ 锁定选项 ──────────────────────────────────┤
-│  [✓] 隐藏对象                                │
-│  WD模式: [Auto ▼]                          │
+│  [✓] 启用 Avatar 锁定                        │
+│  WD策略: 固定 Off（显式绑定）                │
 ├─ 高级设置 ──────────────────────────────────┤
 │  [ ] 播放模式中启用                          │
 │  [ ] 关闭覆盖界面                                 │
@@ -872,14 +828,21 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 
 这确保了即使 Avatar 本身已有大量粒子或光源，ASS 也会优先走“复用已有 / 最少系统数 / 不主动补灯（轻量模式）”的策略，避免无意义地继续堆对象。
 
-### 10.2 Write Defaults 模式
+### 10.2 Write Defaults 策略
 
-- **Auto（推荐）**：优先复用 VRCFury `FixWriteDefaults` (ForceOn/ForceOff) 的用户设置；若为 Auto/Disabled 或不存在，则扫描 Controller 确认
-- **WD On**：动画结束后参数自动恢复默认值，更简洁
-- **WD Off**：每个状态需要显式写入所有受控属性的恢复值
-- 系统自动根据配置选择对应的动画生成策略
+- ASS 生成的反馈、倒计时、防御、锁定和伪装状态统一使用 **WD Off**。
+- WD Off 的代价是需要为 ASS 自己控制的属性显式写曲线；当前实现只写 Overlay、音频对象、Defense 根和锁定根对象的 `localScale`，不写未声明的用户属性。
+- 不使用 WD On 的原因是 WD On 会对当前状态未绑定的属性写默认值，容易覆盖 ACC、衣柜、音效和其它插件的动画结果。
+- `writeDefaultsMode` 保留为旧配置兼容字段，不再作为运行时选择项。
 
-### 10.3 参数同步
+### 10.3 终态层释放与索引
+
+PasswordInput、Countdown、Audio 和解锁后的 Lock 层会在终态添加
+`VRCAnimatorLayerControl`，将对应 FX 子层的权重设为 0。索引在层真正追加到
+Controller 后，通过 `StateMachine` 身份反查 `AnimatorController.layers` 得到，包含
+Unity 的 Base Layer，不使用固定索引。Defense 的 Active 状态不自禁用，因为防御输出需要持续存在。
+
+### 10.4 参数同步
 
 - `ASS_PasswordCorrect`：`networkSynced = true`，`saved = true`
   - 同步确保远端玩家也能看到解锁效果
@@ -887,7 +850,7 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 - `ASS_TimeUp`：`networkSynced = false`，`saved = false`
   - 仅本地使用，无需同步
 
-### 10.4 构建流程兼容性
+### 10.5 构建流程兼容性
 
 是否存在 NDMF 由编译期常量 `NDMF_AVAILABLE` 决定（`Editor/NDMF` 子程序集通过 `defineConstraints` 声明，仅安装了 NDMF 包时才参与编译），而非运行期反射：
 
@@ -926,7 +889,7 @@ VRCFury 会在 blend tree 中以 Float 方式使用 `IsLocal` 参数（如 SPS/H
 受影响的代码位置（共 5 处）：
 
 - `Defense.cs`: 防御激活转换
-- `Lock.cs`: Concealed → Locked 转换
+- `Lock.cs`: Remote → Locked 转换（仅启用锁定时）
 - `GesturePassword.cs`: Wait → Holding 入口转换
 - `Countdown.cs`: Remote → Countdown 转换、Remote → Waiting 转换
 

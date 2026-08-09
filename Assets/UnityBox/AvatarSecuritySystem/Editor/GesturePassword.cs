@@ -43,11 +43,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Wait_Input"),
                 new Vector3(50, 50, 0));
             waitState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            waitState.writeDefaultValues = false;
             layer.stateMachine.defaultState = waitState;
+            var inputWaitingState = layer.stateMachine.AddState(
+                Obfuscator.State("InputWaiting"),
+                new Vector3(50, 100, 0));
+            var inputWaitingClip = CreateInputWaitingClip();
+            inputWaitingState.motion = inputWaitingClip;
+            inputWaitingState.writeDefaultValues = false;
+            Utils.AddSubAsset(controller, inputWaitingClip);
+            var waitToInputWaiting = Utils.CreateTransition(waitState, inputWaitingState);
+            Utils.AddIsLocalCondition(waitToInputWaiting, controller, isTrue: true);
+            waitToInputWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var timeUpFailedState = layer.stateMachine.AddState(
                 Obfuscator.State("TimeUp_Failed"),
                 new Vector3(50, -50, 0));
             timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            timeUpFailedState.writeDefaultValues = false;
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
             var successState = layer.stateMachine.AddState(
@@ -55,6 +67,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             var successClip = CreateSuccessClip();
             successState.motion = successClip;
+            successState.writeDefaultValues = false;
             Utils.AddSubAsset(controller, successClip);
             // Completed 状态：密码已正确输入的稳定终点
             var completedState = layer.stateMachine.AddState(
@@ -62,11 +75,26 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 2) * 350, 150, 0));
             var completedClip = CreateCompletedClip();
             completedState.motion = completedClip;
+            completedState.writeDefaultValues = false;
             Utils.AddSubAsset(controller, completedClip);
+            var releaseState = layer.stateMachine.AddState(
+                Obfuscator.State("Release", "Password_Release"),
+                new Vector3(50 + (password.Count + 3) * 350, 150, 0));
+            releaseState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            releaseState.writeDefaultValues = false;
+            // 本地 Avatar 若带有已保存的解锁参数，也走 Completed→Release，
+            // 让“加载即解锁”和“输入密码后解锁”的最终层状态一致；
+            // 该过渡只从 Wait_Input 出发，不会打断正在播放的 Success 音效。
+            var savedLocalToCompleted = Utils.CreateTransition(waitState, completedState);
+            Utils.AddIsLocalCondition(savedLocalToCompleted, controller, isTrue: true);
+            savedLocalToCompleted.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
             // successState → Completed（Success 保持 1 秒后再进入终点状态）
             var toCompleted = Utils.CreateTransition(successState, completedState,
                 hasExitTime: true, exitTime: 1f);
             toCompleted.duration = 0f;
+            var completedToRelease = Utils.CreateTransition(completedState, releaseState,
+                hasExitTime: true, exitTime: 1f);
+            completedToRelease.duration = 0f;
             // AnyState → Completed：远端看到密码已正确时直接跳转到终点
             var anyToCompleted = Utils.CreateAnyStateTransition(layer.stateMachine, completedState);
             Utils.AddIsLocalCondition(anyToCompleted, controller, isTrue: false);
@@ -80,6 +108,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdingState = layer.stateMachine.AddState(
                     Obfuscator.State($"Hold_{i + 1}", $"Step_{i + 1}_Holding"),
                     new Vector3(50 + (i + 1) * 350, 50, 0));
+                holdingState.writeDefaultValues = false;
                 var holdClip = CreateHoldClip(
                     Obfuscator.Clip($"Hold_{i + 1}", $"ASS_Hold_{i + 1}"), gestureMaxHoldTime);
                 holdingState.motion = holdClip;
@@ -94,6 +123,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedState = layer.stateMachine.AddState(
                     Obfuscator.State($"Confirm_{i + 1}", $"Step_{i + 1}_Confirmed"),
                     new Vector3(50 + (i + 1) * 350, 150, 0));
+                confirmedState.writeDefaultValues = false;
                 // Confirmed: clip = gestureMaxHoldTime, 超时回到 Wait
                 var confirmedClip = CreateHoldClip(
                     Obfuscator.Clip($"Confirm_{i + 1}", $"ASS_Confirmed_{i + 1}"), gestureMaxHoldTime);
@@ -103,6 +133,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var errorToleranceState = layer.stateMachine.AddState(
                     Obfuscator.State($"Tolerance_{i + 1}", $"Step_{i + 1}_ErrorTolerance"),
                     new Vector3(50 + (i + 1) * 350, 250, 0));
+                errorToleranceState.writeDefaultValues = false;
                 var toleranceClip = CreateHoldClip(
                     Obfuscator.Clip($"Tolerance_{i + 1}", $"ASS_Tolerance_{i + 1}"), gestureErrorTolerance);
                 errorToleranceState.motion = toleranceClip;
@@ -126,12 +157,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 holdToConfirm.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
                 holdToConfirm.duration = 0f;
 
-                var holdTimeout = Utils.CreateTransition(holdingState, waitState,
+                var holdTimeout = Utils.CreateTransition(holdingState, inputWaitingState,
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
 
                 // Holding → Wait（手势不匹配时超时重置，与确认同时触发防抖动）
-                var holdingError = holdingState.AddTransition(waitState);
+                var holdingError = holdingState.AddTransition(inputWaitingState);
                 holdingError.hasExitTime = true;
                 holdingError.exitTime = holdExitTime;
                 holdingError.duration = 0f;
@@ -141,7 +172,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 if (i == 0)
                 {
-                    var firstTransition = Utils.CreateTransition(waitState, holdingState);
+                    var firstTransition = Utils.CreateTransition(inputWaitingState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
                     firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
@@ -152,7 +183,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
                 // Confirmed → Wait（超时：gestureMaxHoldTime clip 播完则重置）
-                var confirmedTimeout = Utils.CreateTransition(confirmedState, waitState,
+                var confirmedTimeout = Utils.CreateTransition(confirmedState, inputWaitingState,
                     hasExitTime: true, exitTime: 1.0f);
                 confirmedTimeout.duration = 0f;
 
@@ -174,7 +205,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
                 ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
 
-                var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, waitState,
+                var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, inputWaitingState,
                     hasExitTime: true, exitTime: 1.0f);
                 toleranceTimeoutToWait.duration = 0f;
             }
@@ -196,7 +227,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var decoyState = layer.stateMachine.AddState(decoyName,
                         new Vector3(-200 + d * 30, 200 + d * 80, 0));
                     decoyState.motion = emptyClip;
-                    decoyState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
+                    decoyState.writeDefaultValues = false;
                     decoyHolds.Add(decoyState);
                     var usedGestures = new HashSet<int>(password);
                     var unusedGestures = new List<int>();
@@ -251,11 +282,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Gesture password layer created with stability check: " +
                      $"password length={password.Count}, min hold={gestureHoldTime}s, max hold={gestureMaxHoldTime}s, error tolerance={gestureErrorTolerance}s");
-            controller.AddLayer(layer);
+            int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
+            Utils.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_PasswordInput/Release");
         }
-        private static AnimationClip CreateSuccessClip()
+        private AnimationClip CreateInputWaitingClip()
         {
-            return CreateHoldClip(CLIP_PASSWORD_SUCCESS, 1f);
+            return CreateHoldClip(Obfuscator.Clip("InputWaiting", "ASS_InputWaiting"), 1f);
+        }
+        private AnimationClip CreateSuccessClip()
+        {
+            float successDuration = config.successSound != null
+                ? Mathf.Max(1f / 60f, config.successSound.length)
+                : 1f;
+            var clip = CreateHoldClip(CLIP_PASSWORD_SUCCESS, successDuration);
+            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
+            {
+                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive",
+                    AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            }
+            return clip;
         }
         private AnimationClip CreateCompletedClip()
         {
@@ -269,13 +314,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             var disableCurve = AnimationCurve.Constant(0f, 1f, 0f);
             clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", disableCurve);
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
+                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive", disableCurve);
             if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
                 clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive", disableCurve);
             if (avatarRoot.transform.Find(GO_AUDIO_WARNING) != null)
                 clip.SetCurve(GO_AUDIO_WARNING, typeof(GameObject), "m_IsActive", disableCurve);
             return clip;
         }
-        private static AnimationClip CreateHoldClip(string name, float duration)
+        private AnimationClip CreateHoldClip(string name, float duration)
         {
             var clip = new AnimationClip { name = name, legacy = false };
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
@@ -283,6 +330,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             AnimationCurve dummyCurve = AnimationCurve.Constant(0f, duration, 0f);
             clip.SetCurve(Obfuscator.DummyPath(), typeof(GameObject), "m_IsActive", dummyCurve);
+            if (avatarRoot.transform.Find(GO_OVERLAY) != null)
+            {
+                clip.SetCurve(GO_OVERLAY, typeof(GameObject), "m_IsActive",
+                    AnimationCurve.Constant(0f, duration, 1f));
+            }
+            if (avatarRoot.transform.Find(GO_AUDIO_SUCCESS) != null)
+            {
+                // 预先在输入状态启用成功音效对象，确保进入 Success 时
+                // VRCAnimatorPlayAudio 不会遇到尚未激活的 AudioSource。
+                clip.SetCurve(GO_AUDIO_SUCCESS, typeof(GameObject), "m_IsActive",
+                    AnimationCurve.Constant(0f, duration, 1f));
+            }
             return clip;
         }
         private void ConfigureGestureTransition(AnimatorStateTransition transition,

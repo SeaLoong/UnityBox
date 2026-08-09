@@ -4,6 +4,7 @@ using UnityEditor.Animations;
 using System.Collections.Generic;
 using System.Linq;
 using VRC.SDK3.Avatars.Components;
+using VRC.SDKBase;
 using VRC.SDKBase.Editor.BuildPipeline;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
 namespace UnityBox.AvatarSecuritySystem.Editor
@@ -262,7 +263,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             LoadAudioResources(assConfig);
             new Feedback(avatarGameObject, assConfig).Generate();
             var isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-            new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
+            if (assConfig.disableRootChildren)
+            {
+                new Lock(fxController, avatarGameObject, assConfig, descriptor).Generate();
+            }
+            else
+            {
+                Debug.Log("[ASS] Avatar lock disabled, skipping ASS_Lock layer; password feedback remains in PasswordInput/Audio layers");
+            }
             if (!assConfig.defaultEnableDefense)
             {
                 new GesturePassword(fxController, avatarGameObject, assConfig).Generate();
@@ -495,6 +503,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (descriptor == null)
                 return true;
 
+            // VRCAnimatorLayerControl.layer 指向 FX Controller 子层索引。
+            // 先校正一次，即使当前没有启用 Playable 混淆，也不能让旧索引失效。
+            RefreshASSLayerControlIndices(descriptor);
+
             var assConfig = GetCapturedConfig(avatarGameObject)
                 ?? ASSConfigData.FromAvatar(avatarGameObject);
             if (assConfig == null)
@@ -507,7 +519,70 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
 
             Obfuscator.ObfuscatePlayableControllers(descriptor, hasNDMF);
+            // 混淆/复制完成后再校正一次，覆盖可能发生的层重排或 Controller 替换。
+            RefreshASSLayerControlIndices(descriptor);
             return true;
+        }
+
+        private static void RefreshASSLayerControlIndices(VRCAvatarDescriptor descriptor)
+        {
+            if (descriptor == null) return;
+
+            foreach (var playableLayer in descriptor.baseAnimationLayers)
+            {
+                if (playableLayer.type != VRCAvatarDescriptor.AnimLayerType.FX)
+                    continue;
+                if (!(playableLayer.animatorController is AnimatorController controller))
+                    continue;
+
+                int changedCount = 0;
+                var layers = controller.layers;
+                for (int i = 0; i < layers.Length; i++)
+                {
+                    RefreshASSLayerControlIndices(layers[i].stateMachine, i, ref changedCount);
+                }
+
+                if (changedCount > 0)
+                {
+                    EditorUtility.SetDirty(controller);
+                    Debug.Log($"[ASS] Refreshed {changedCount} final FX layer-control index(es)");
+                }
+            }
+        }
+
+        private static void RefreshASSLayerControlIndices(
+            AnimatorStateMachine stateMachine, int layerIndex, ref int changedCount)
+        {
+            if (stateMachine == null) return;
+
+            foreach (var childState in stateMachine.states)
+            {
+                var state = childState.state;
+                if (state == null) continue;
+                foreach (var behaviour in state.behaviours)
+                {
+                    if (!(behaviour is VRCAnimatorLayerControl control) ||
+                        string.IsNullOrEmpty(control.debugString) ||
+                        !control.debugString.StartsWith("ASS_", System.StringComparison.Ordinal))
+                        continue;
+
+                    if (control.playable != VRC_AnimatorLayerControl.BlendableLayer.FX)
+                    {
+                        control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
+                        changedCount++;
+                    }
+                    if (control.layer != layerIndex)
+                    {
+                        control.layer = layerIndex;
+                        changedCount++;
+                    }
+                }
+            }
+
+            foreach (var childMachine in stateMachine.stateMachines)
+            {
+                RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, ref changedCount);
+            }
         }
 
         private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSConfigData assConfig)
@@ -692,6 +767,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (behaviour is VRCAnimatorPlayAudio playAudio && IsASSObjectPath(playAudio.SourcePath))
                     return true;
 
+                if (behaviour is VRCAnimatorLayerControl layerControl &&
+                    !string.IsNullOrEmpty(layerControl.debugString) &&
+                    layerControl.debugString.StartsWith("ASS_", System.StringComparison.Ordinal))
+                    return true;
+
                 if (behaviour is VRCAvatarParameterDriver parameterDriver)
                 {
                     foreach (var parameter in parameterDriver.parameters)
@@ -865,7 +945,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
-            defaultState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
+            // 诱饵层不应通过 WD 重置真实 Avatar 属性。
+            defaultState.writeDefaultValues = false;
             sm.defaultState = defaultState;
 
             var fakeStates = new List<AnimatorState>();
@@ -894,7 +975,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                fakeState.writeDefaultValues = Obfuscator.RngInt(ref rng, 0, 1) == 0;
+                // 诱饵状态只模拟拓扑，不写入未绑定的真实属性。
+                fakeState.writeDefaultValues = false;
                 fakeStates.Add(fakeState);
             }
 

@@ -37,6 +37,45 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         stateMachine = stateMachine
       };
     }
+    /// <summary>
+    /// 将层追加到 Controller 后按 StateMachine 身份反查真实 FX 子层索引。
+    /// AnimatorController.layers 包含 Base Layer，不能用 ASS 生成顺序或固定值猜索引。
+    /// </summary>
+    public static int AddLayerAndGetIndex(AnimatorController controller,
+      AnimatorControllerLayer layer)
+    {
+      if (controller == null || layer.stateMachine == null)
+        return -1;
+
+      controller.AddLayer(layer);
+      var layers = controller.layers;
+      for (int i = 0; i < layers.Length; i++)
+      {
+        if (layers[i].stateMachine != layer.stateMachine) continue;
+        return i;
+      }
+
+      Debug.LogWarning($"[ASS] Unable to resolve generated FX layer index for '{layer.name}'");
+      return -1;
+    }
+    /// <summary>
+    /// 在终态把当前 ASS FX 子层权重设为 0。VRCAnimatorLayerControl.layer
+    /// 是 Playable Layer 内部子层的真实索引，必须传入 AddLayerAndGetIndex 的结果。
+    /// </summary>
+    public static void AddDisableSelfLayerControl(AnimatorState finalState,
+      int fxLayerIndex, string debugString)
+    {
+      if (finalState == null || fxLayerIndex < 0)
+        return;
+
+      var control = finalState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
+      control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
+      control.layer = fxLayerIndex;
+      control.goalWeight = 0f;
+      control.blendDuration = 0f;
+      control.debugString = debugString;
+      Debug.Log($"[ASS] Final state '{finalState.name}' disables FX sub-layer index {fxLayerIndex}");
+    }
     public static void AddParameterIfNotExists(AnimatorController controller, string name,
       AnimatorControllerParameterType type, bool defaultBool = false, int defaultInt = 0,
       float defaultFloat = 0f)

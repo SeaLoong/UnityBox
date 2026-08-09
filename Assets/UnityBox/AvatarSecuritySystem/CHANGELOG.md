@@ -2,12 +2,22 @@
 
 ## [Unreleased]
 
+## [0.7.21] - 2026-08-10
+
+### Fixed
+
+- 未启用 Avatar 锁定时不再生成 `ASS_Lock` 层；密码输入、Overlay 和音频反馈仍由各自功能层生成
+- Lock 层移除 Overlay/音频绑定并固定 WD Off，仅在锁定/恢复阶段写入显式缩放，减少对其它插件动画属性的影响
+- 成功音效和警告音效对象默认关闭；PasswordInput/Audio 层按需启用，成功音效播放完成后进入 Completed 状态关闭对象
+- 混淆伪状态和诱饵层统一使用 WD Off，避免伪装状态通过未绑定属性写入默认值
+- PasswordInput/Countdown/Audio/Lock 的完成状态增加 `VRCAnimatorLayerControl` 自释放；FX 子层索引在追加后按 StateMachine 反查，Defense Active 层保持运行
+
 ## [0.7.20] - 2026-08-08
 
 ### Fixed
 
 - 修复 0.7.19 中解锁动画持续写入根子对象 `m_IsActive`，导致 ACC、衣柜或部件切换功能被固定值覆盖的问题
-- 解锁流程拆分为一次性的恢复状态和空的 WD Off 稳定状态：只在恢复采样中写入 `m_IsActive` / `localScale`，随后将控制权交还给外部动画层
+- 解锁流程拆分为一次性的缩放恢复状态和空的 WD Off 稳定状态：只在恢复采样中写入 `localScale`，随后将控制权交还给外部动画层
 
 ## [0.7.19] - 2026-08-08
 

@@ -27,13 +27,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 RemoveExistingOverlayMeshes();
                 CreateOverlayMesh();
             }
-            CreateAudioObject(Constants.GO_AUDIO_SUCCESS);
-            if (!config.disableWarningSound)
+            if (!config.defaultEnableDefense)
             {
-                CreateAudioObject(Constants.GO_AUDIO_WARNING);
+                CreateAudioObject(Constants.GO_AUDIO_SUCCESS);
+                if (!config.disableWarningSound)
+                {
+                    CreateAudioObject(Constants.GO_AUDIO_WARNING);
+                }
+                else
+                {
+                    RemoveExistingWarningAudio();
+                }
             }
             else
             {
+                // Default Defense 不生成 PasswordInput/Countdown 层，清理无所属层的音频对象。
+                RemoveExistingSuccessAudio();
                 RemoveExistingWarningAudio();
             }
         }
@@ -170,6 +179,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.Log($"[ASS] disableWarningSound enabled, removed {removedCount} existing warning audio object(s)");
             }
         }
+        private void RemoveExistingSuccessAudio()
+        {
+            int removedCount = 0;
+            for (int i = avatarGameObject.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = avatarGameObject.transform.GetChild(i);
+                if (child.name != Constants.GO_AUDIO_SUCCESS) continue;
+                Object.DestroyImmediate(child.gameObject);
+                removedCount++;
+            }
+            if (removedCount > 0)
+            {
+                Debug.Log($"[ASS] Default Defense enabled, removed {removedCount} success audio object(s)");
+            }
+        }
         private const float AUDIO_SOURCE_VOLUME = 0.5f;
         private const int AUDIO_SOURCE_PRIORITY = 0;
         private GameObject CreateAudioObject(string objectName)
@@ -209,6 +233,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             audioSource.spatialBlend = 0f;
             audioSource.volume = AUDIO_SOURCE_VOLUME;
             audioSource.priority = AUDIO_SOURCE_PRIORITY;
+            // 音频对象由 PasswordInput / Audio 层按需启用；默认保持关闭，
+            // 保证加载时已解锁与输入密码后的最终状态一致。
+            obj.SetActive(false);
             Debug.Log($"[ASS] AudioSource {(existing == null ? "created" : "reused")}: {objectName}");
             return obj;
         }
