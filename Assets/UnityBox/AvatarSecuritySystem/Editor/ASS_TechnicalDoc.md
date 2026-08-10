@@ -11,7 +11,7 @@ Avatar Security System (ASS) 是一个 VRChat Avatar 防盗保护系统。它在
 - **GPU 防御**：以共享 `UB_Defense` 材质的粒子系统为主，结合最少系统数策略制造负载；轻量模式下不主动新增光源 / 粒子碰撞 / 拖尾，但若 Avatar 本来就在使用这些功能，则直接继承
 - **视觉反馈**：全屏 Shader 覆盖（遮挡背景 + Logo + 倒计时进度条）+ 音频警告
 - **本地/远端分离**：防御(Countdown+Defense)仅本地触发；Lock层可选，远端保持在Remote状态（身体可见），仅穿戴者本地执行隐藏→恢复流程
-- **Write Defaults 兼容**：反馈、锁定和伪装状态统一使用 WD Off + 显式绑定，避免重置其它插件属性
+- **Write Defaults 兼容**：ASS 全部生成状态统一使用 WD On，与 VRCFury/SPS 的最终 Avatar 构建策略保持一致
 - **国际化**：支持中文简体、英语、日语
 
 ### 1.2 设计原则
@@ -293,20 +293,21 @@ Avatar 加载
 
 #### Lock 动画 (CreateLockClip)
 - **隐藏 Avatar**: 当 `disableRootChildren = true` 时，将所有非 ASS 根子对象的 `localScale` 写为 0
-- Lock 层固定 WD Off，不写入 `m_IsActive`，不触碰 Overlay 或音频对象
+- Lock 层统一 WD On，不写入 `m_IsActive`，不触碰 Overlay 或音频对象
+- 含 VRC Contact Sender/Receiver 的根级分支及其 `rootTransform` 引用分支不缩放为 0，仅关闭 Renderer，保留 Contact 碰撞场景注册
 
 #### 解锁动画 (CreateUnlockClip / UnlockRestore)
 - `UnlockRestore` 仅采样一个周期，显式恢复 ASS 写入的根子对象 `localScale`
-- 随后进入空的 `Unlocked` 状态（WD Off），不再写用户对象属性，将 active/scale 控制权交还给衣柜、部件和其它外部动画层
+- 随后进入空的 `Unlocked` 状态（WD On），不再写用户对象属性，将 active/scale 控制权交还给衣柜、部件和其它外部动画层
 
 #### Remote 动画 (CreateRemoteClip)
-- 空 clip，WD Off；Overlay/音频由 PasswordInput/Audio 层管理
+- 空 clip，WD On；Overlay/音频由 PasswordInput/Audio 层管理
 - 远端玩家始终停留在此状态
 
 #### 4.1.5 Write Defaults 策略
 
-`ASS_Lock` 仅在启用锁定选项时生成，并固定使用 WD Off。锁定和恢复状态只写入
-ASS 自己需要的 `localScale` 曲线；Remote/Unlocked 使用空 clip，不写入用户对象属性。
+`ASS_Lock` 仅在启用锁定选项时生成，并统一使用 WD On。锁定和恢复状态只写入
+ASS 自己需要的 `localScale`/Renderer 曲线；Remote/Unlocked 使用空 clip，不写入用户对象属性。
 
 ---
 
@@ -401,7 +402,7 @@ Remote ──(PasswordCorrect)────────────────�
                                        Unlocked ←──────────────────────┘
 ```
 
-- **Remote 状态**: SharedEmptyClip，`writeDefaultValues = false`
+- **Remote 状态**: SharedEmptyClip，`writeDefaultValues = true`
 - **Remote → Unlocked**: `PasswordCorrect = true`（已保存的解锁状态，跳过倒计时）
 - **Remote → Countdown**: `IsLocal = true` 且 `PasswordCorrect = false`（仅本地且未解锁时）
 - **Countdown 状态**: 播放 `countdownDuration` 秒的进度条动画
@@ -646,7 +647,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 | 参数                  | 类型              | 默认值 | 说明                                                                                |
 | --------------------- | ----------------- | ------ | ----------------------------------------------------------------------------------- |
 | `disableRootChildren` | bool              | true   | 启用 `ASS_Lock` 层，并在锁定时隐藏 Avatar 根子对象；关闭则不生成锁定层             |
-| `writeDefaultsMode`   | WriteDefaultsMode | On     | 兼容字段；`ASS_Lock` 现在固定 WD Off，仅写入显式缩放曲线                             |
+| `writeDefaultsMode`   | WriteDefaultsMode | On     | 兼容字段；ASS 所有生成状态固定使用 WD On                             |
 
 #### 高级选项
 
@@ -830,17 +831,16 @@ int lightBudget = Mathf.Max(0, Constants.LIGHT_MAX_COUNT - existingLights);
 
 ### 10.2 Write Defaults 策略
 
-- ASS 生成的反馈、倒计时、防御、锁定和伪装状态统一使用 **WD Off**。
-- WD Off 的代价是需要为 ASS 自己控制的属性显式写曲线；当前实现只写 Overlay、音频对象、Defense 根和锁定根对象的 `localScale`，不写未声明的用户属性。
-- 不使用 WD On 的原因是 WD On 会对当前状态未绑定的属性写默认值，容易覆盖 ACC、衣柜、音效和其它插件的动画结果。
+- ASS 生成的反馈、倒计时、防御、锁定和伪装状态统一使用 **WD On**。
+- 这是与 VRCFury/SPS 的最终构建策略保持一致的兼容要求；Himaku 的 SPS A/B 测试确认 WD Off 混用会导致 Contact 功能异常。
 - `writeDefaultsMode` 保留为旧配置兼容字段，不再作为运行时选择项。
 
-### 10.3 终态层释放与索引
+### 10.3 终态状态与第三方层安全
 
-PasswordInput、Countdown、Audio 和解锁后的 Lock 层会在终态添加
-`VRCAnimatorLayerControl`，将对应 FX 子层的权重设为 0。索引在层真正追加到
-Controller 后，通过 `StateMachine` 身份反查 `AnimatorController.layers` 得到，包含
-Unity 的 Base Layer，不使用固定索引。Defense 的 Active 状态不自禁用，因为防御输出需要持续存在。
+PasswordInput、Countdown、Audio 和 Lock 的完成状态使用空 clip 或显式反馈清理曲线，
+并通过 `VRCAnimatorLayerControl` 禁用自己的 FX 子层。索引先按追加后的 StateMachine
+反查，后置构建阶段再刷新；检测到 VRC Contact 时跳过 ASS Playable 混淆，避免第三方
+Contact/SPS 图被重排或误关。
 
 ### 10.4 参数同步
 

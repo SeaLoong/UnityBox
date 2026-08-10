@@ -34,7 +34,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Remote"),
                 new Vector3(200, 0, 0));
             // Remote 只关闭 ASS 自身遮罩，不应通过 WD 重置用户对象的 active/scale。
-            remoteState.writeDefaultValues = false;
+            remoteState.writeDefaultValues = true;
             var remoteClip = CreateRemoteClip();
             remoteState.motion = remoteClip;
             Utils.AddSubAsset(controller, remoteClip);
@@ -42,7 +42,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var lockedState = layer.stateMachine.AddState(
                 Obfuscator.State("LockedA"),
                 new Vector3(200, 100, 0));
-            lockedState.writeDefaultValues = false;
+            lockedState.writeDefaultValues = true;
             var lockClip = CreateLockClip();
             Utils.AddSubAsset(controller, lockClip);
             lockedState.motion = lockClip;
@@ -68,7 +68,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var shadow = layer.stateMachine.AddState(
                         Obfuscator.State($"Shd_{s + 1}"),
                         new Vector3(xBase + s * 100, 100 + ((s & 1) * 50), 0));
-                    shadow.writeDefaultValues = false;
+                    shadow.writeDefaultValues = true;
                     shadow.motion = lockClip;
                     extraShadows.Add(shadow);
                 }
@@ -76,19 +76,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 preLockState = layer.stateMachine.AddState(
                     Obfuscator.State("PreLock"),
                     new Vector3(200, 0, 0));
-                preLockState.writeDefaultValues = false;
+                preLockState.writeDefaultValues = true;
             }
             var unlockedState = layer.stateMachine.AddState(
                 Obfuscator.State("Unlocked"),
                 new Vector3(200, 200, 0));
             // 稳定解锁状态不应继续写用户对象属性，避免抢占外部插件的 active/scale 控制权。
-            unlockedState.writeDefaultValues = false;
+            unlockedState.writeDefaultValues = true;
             unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             var unlockRestoreState = layer.stateMachine.AddState(
                 Obfuscator.State("UnlockRestore"),
                 new Vector3(200, 250, 0));
             // Restore clip 只采样一次恢复缩放，完成后立即进入上面的释放状态。
-            unlockRestoreState.writeDefaultValues = false;
+            unlockRestoreState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
             var unlockClip = CreateUnlockClip();
             Utils.AddSubAsset(controller, unlockClip);
@@ -166,7 +166,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = CLIP_LOCK };
             var zeroScale = Vector3.zero;
-            Debug.Log("[ASS] Lock animation created (WD Off, explicit scale bindings only)");
+            Debug.Log("[ASS] Lock animation created (WD On, explicit scale/renderer bindings)");
             // Lock clip 只隐藏身体；Overlay/音频由 PasswordInput 和 Audio 层管理。
             // defense 由 Defense 层独立管理，Lock 层不碰
             if (config.disableRootChildren)
@@ -176,12 +176,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     if (IsASSObject(child)) continue;
                     string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                    // Lock 层固定使用 WD Off，仅通过根子对象缩放隐藏 Avatar。
-                    // 不动画化 m_IsActive，避免覆盖衣柜/道具系统运行时计算的对象开关。
-                    SetTransformScaleInClip(clip, childPath, zeroScale);
+                    if (ContainsVRCContact(child, avatarRoot.transform))
+                    {
+                        // Contact 依赖父级 Transform 参与碰撞计算，不能把包含 Contact
+                        // Sender/Receiver 的整棵分支缩放为 0；只关闭视觉 Renderer，保留 Contact。
+                        int rendererCount = SetRendererEnabledInClip(clip, child, avatarRoot.transform, false);
+                        Debug.Log($"[ASS] Lock animation: preserved Contact branch '{child.name}', " +
+                            $"hidden {rendererCount} renderer(s) without scaling its Transform");
+                    }
+                    else
+                    {
+                        // Lock 层使用 WD On，并通过根子对象缩放隐藏 Avatar。
+                        // 不动画化 m_IsActive，避免覆盖衣柜/道具系统运行时计算的对象开关。
+                        SetTransformScaleInClip(clip, childPath, zeroScale);
+                    }
                     hiddenCount++;
                 }
-                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (Scale=0 only, WD Off mode)");
+                Debug.Log($"[ASS] Lock animation: hidden {hiddenCount} root child objects (Scale/Renderer bindings, WD On mode)");
             }
             return clip;
         }
@@ -189,13 +200,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clip = new AnimationClip { name = CLIP_REMOTE };
             // Overlay 与音频对象由 PasswordInput / Audio 层管理，Lock 层不写入。
-            Debug.Log("[ASS] Remote state animation created (WD Off, no user-object feedback bindings)");
+            Debug.Log("[ASS] Remote state animation created (WD On, no user-object feedback bindings)");
             return clip;
         }
         private AnimationClip CreateUnlockClip()
         {
             var clip = new AnimationClip { name = CLIP_UNLOCK };
-            Debug.Log("[ASS] Unlock animation created (one-shot scale restore, WD Off mode)");
+            Debug.Log("[ASS] Unlock animation created (one-shot scale restore, WD On mode)");
             if (config.disableRootChildren)
                 WriteRestoreValues(clip);
             return clip;
@@ -207,11 +218,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                // 只恢复 ASS 写入的缩放；active/scale 的后续控制权交还给外部动画层。
-                SetTransformScaleInClip(clip, childPath, child.localScale);
+                if (ContainsVRCContact(child, avatarRoot.transform))
+                {
+                    // Contact 分支没有被 ASS 缩放，恢复其中 Renderer 的构建时启用状态。
+                    SetRendererEnabledInClip(clip, child, avatarRoot.transform, restoreEnabled: true);
+                }
+                else
+                {
+                    // 只恢复 ASS 写入的缩放；active/scale 的后续控制权交还给外部动画层。
+                    SetTransformScaleInClip(clip, childPath, child.localScale);
+                }
                 restoredCount++;
             }
-            Debug.Log($"[ASS] UnlockRestore restore: {restoredCount} root child objects (Scale only, WD Off)");
+            Debug.Log($"[ASS] UnlockRestore restore: {restoredCount} root child objects (Scale/Renderer bindings, WD On)");
         }
         private bool IsASSObject(Transform obj)
         {
@@ -232,6 +251,66 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
         private HashSet<string> _assObjectNames;
+        private static bool ContainsVRCContact(Transform branch, Transform avatarRoot)
+        {
+            if (branch == null || avatarRoot == null) return false;
+
+            // 同时保护 Contact 自身所在分支和 ContactBase.rootTransform 所指向的骨骼分支。
+            // 某些插件把 Contact 挂在独立节点，但把 rootTransform 指向 Avatar 骨骼。
+            foreach (var component in avatarRoot.GetComponentsInChildren<Component>(true))
+            {
+                if (component == null) continue;
+                var type = component.GetType();
+                bool isContact = false;
+                while (type != null)
+                {
+                    string fullName = type.FullName;
+                    if (fullName == "VRC.SDK3.Dynamics.Contact.Components.VRCContactSender"
+                        || fullName == "VRC.SDK3.Dynamics.Contact.Components.VRCContactReceiver"
+                        || fullName == "VRC.Dynamics.ContactSender"
+                        || fullName == "VRC.Dynamics.ContactReceiver")
+                    {
+                        isContact = true;
+                        break;
+                    }
+                    type = type.BaseType;
+                }
+                if (!isContact) continue;
+
+                if (IsInBranch(component.transform, branch))
+                    return true;
+
+                var rootTransform = component.GetType().GetField("rootTransform")?.GetValue(component) as Transform;
+                if (IsInBranch(rootTransform, branch))
+                    return true;
+            }
+
+            return false;
+        }
+        private static bool IsInBranch(Transform transform, Transform branch)
+        {
+            return transform != null && branch != null &&
+                (transform == branch || transform.IsChildOf(branch));
+        }
+        private static int SetRendererEnabledInClip(
+            AnimationClip clip, Transform branch, Transform animationRoot,
+            bool enabled = false, bool restoreEnabled = false)
+        {
+            if (clip == null || branch == null || animationRoot == null) return 0;
+
+            int count = 0;
+            foreach (var renderer in branch.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == null) continue;
+                string path = AnimationUtility.CalculateTransformPath(renderer.transform, animationRoot);
+                bool value = restoreEnabled ? renderer.enabled : enabled;
+                var curve = AnimationCurve.Constant(0f, 1f / 60f, value ? 1f : 0f);
+                clip.SetCurve(path, renderer.GetType(), "m_Enabled", curve);
+                count++;
+            }
+
+            return count;
+        }
         private static void SetTransformScaleInClip(AnimationClip clip, string objectPath, Vector3 scale)
         {
             var curveX = AnimationCurve.Constant(0f, 1f / 60f, scale.x);

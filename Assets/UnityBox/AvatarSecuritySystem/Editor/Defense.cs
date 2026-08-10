@@ -53,12 +53,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
-            inactiveState.writeDefaultValues = false;
+            inactiveState.writeDefaultValues = true;
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
-            activeState.writeDefaultValues = false;
+            activeState.writeDefaultValues = true;
             var activateClip = new AnimationClip
             {
                 name = CLIP_DEFENSE_ACTIVATE
@@ -94,12 +94,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Inactive"),
                 new Vector3(100, 50, 0));
             inactiveState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
-            inactiveState.writeDefaultValues = false;
+            inactiveState.writeDefaultValues = true;
             layer.stateMachine.defaultState = inactiveState;
             var activeState = layer.stateMachine.AddState(
                 Obfuscator.State("Active"),
                 new Vector3(100, 150, 0));
-            activeState.writeDefaultValues = false;
+            activeState.writeDefaultValues = true;
             var activateClip = new AnimationClip
             {
                 name = CLIP_DEFENSE_ACTIVE_DEFAULT

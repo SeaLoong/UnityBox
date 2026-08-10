@@ -44,7 +44,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     public static int AddLayerAndGetIndex(AnimatorController controller,
       AnimatorControllerLayer layer)
     {
-      if (controller == null || layer.stateMachine == null)
+      if (controller == null || layer == null || layer.stateMachine == null)
         return -1;
 
       controller.AddLayer(layer);
@@ -59,8 +59,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       return -1;
     }
     /// <summary>
-    /// 在终态把当前 ASS FX 子层权重设为 0。VRCAnimatorLayerControl.layer
-    /// 是 Playable Layer 内部子层的真实索引，必须传入 AddLayerAndGetIndex 的结果。
+    /// 在终态把当前 ASS FX 子层权重设为 0。
     /// </summary>
     public static void AddDisableSelfLayerControl(AnimatorState finalState,
       int fxLayerIndex, string debugString)

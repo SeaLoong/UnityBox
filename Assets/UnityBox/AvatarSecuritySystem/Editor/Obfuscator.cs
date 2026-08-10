@@ -70,6 +70,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!_enabled) return cleanName ?? internalKey;
             return FormatHashName(LayerPool, internalKey, cleanName);
         }
+        /// <summary>
+        /// 计算用于清理历史生成层的混淆名称，不改变当前混淆器状态。
+        /// 当用户关闭混淆后，Constants 只会解析出清洁名；没有这个兼容计算时，
+        /// 上一次生成的混淆 ASS 层可能残留并继续采样旧动画。
+        /// </summary>
+        public static string GetObfuscatedLayerNameForCleanup(
+            string internalKey, string cleanName, string avatarName)
+        {
+            EnsureInitialized();
+            if (string.IsNullOrEmpty(avatarName))
+                return cleanName ?? internalKey;
+
+            uint previousSeed = _seed;
+            try
+            {
+                _seed = HashString(avatarName);
+                return FormatHashName(LayerPool, internalKey, cleanName);
+            }
+            finally
+            {
+                _seed = previousSeed;
+            }
+        }
         public static string GameObject(string internalKey, string cleanName = null)
         {
             EnsureInitialized();
@@ -1024,9 +1047,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                // 伪状态只用于结构混淆；WD On 会对未绑定的真实 Avatar 属性写默认值，
-                // 可能干扰衣柜、音效或其它插件，因此统一使用 WD Off。
-                fakeState.writeDefaultValues = false;
+                // 伪状态与 ASS 其它状态统一使用 WD On；动画只包含伪装路径，
+                // 不绑定 Contact、衣柜或其它第三方对象。
+                fakeState.writeDefaultValues = true;
                 fakeStates.Add(fakeState);
             }
 

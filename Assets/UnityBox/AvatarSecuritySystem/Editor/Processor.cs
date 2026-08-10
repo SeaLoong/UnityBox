@@ -205,6 +205,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.Log($"[ASS] Using AvatarSecuritySystem component from child object '{assConfig.sourceObjectName}'");
             }
+            Debug.Log("[ASS] Write Defaults: all generated ASS states use WD On");
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
                 enableDecoyLayers: assConfig.enableDecoyLayers,
@@ -256,7 +257,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Obfuscator.RegisterGeneratedAsset(fxController);
             }
-            CleanupASSGeneratedLayers(fxController);
+            CleanupASSGeneratedLayers(fxController, avatarGameObject.name);
             Utils.EnsureBuiltInVRCParameters(fxController,
                 ensureIsLocal: true,
                 ensureGestureParameters: true);
@@ -503,8 +504,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (descriptor == null)
                 return true;
 
-            // VRCAnimatorLayerControl.layer 指向 FX Controller 子层索引。
-            // 先校正一次，即使当前没有启用 Playable 混淆，也不能让旧索引失效。
+            // 先校正一次历史 ASS 控制行为，即使当前 Avatar 跳过 Playable 混淆，
+            // 也不能让旧版本写入的层索引在构建链重排后失效。
             RefreshASSLayerControlIndices(descriptor);
 
             var assConfig = GetCapturedConfig(avatarGameObject)
@@ -517,6 +518,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (!Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation)
                 return true;
+
+            if (HasVRCContactComponents(avatarGameObject))
+            {
+                // VRCFury HapticContacts/WorldScaleDetector 会为 ContactReceiver
+                // 生成隐藏的 FX/AAP AllReceiversOff 图。ASS 不应改名或重排这套第三方图，
+                // 否则其 ScaleFactor/counter 恢复链可能一直停留在 Contact disabled 状态。
+                Debug.LogWarning("[ASS] VRC Contact components detected; skipping ASS playable-layer obfuscation to preserve third-party Contact/FX graphs");
+                return true;
+            }
 
             Obfuscator.ObfuscatePlayableControllers(descriptor, hasNDMF);
             // 混淆/复制完成后再校正一次，覆盖可能发生的层重排或 Controller 替换。
@@ -583,6 +593,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, ref changedCount);
             }
+        }
+
+        private static bool HasVRCContactComponents(GameObject avatarRoot)
+        {
+            if (avatarRoot == null) return false;
+
+            foreach (var component in avatarRoot.GetComponentsInChildren<Component>(true))
+            {
+                if (component == null) continue;
+                var type = component.GetType();
+                while (type != null)
+                {
+                    string fullName = type.FullName;
+                    if (fullName == "VRC.SDK3.Dynamics.Contact.Components.VRCContactSender"
+                        || fullName == "VRC.SDK3.Dynamics.Contact.Components.VRCContactReceiver"
+                        || fullName == "VRC.Dynamics.ContactSender"
+                        || fullName == "VRC.Dynamics.ContactReceiver")
+                        return true;
+                    type = type.BaseType;
+                }
+            }
+
+            return false;
         }
 
         private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSConfigData assConfig)
@@ -696,7 +729,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             EnsureAudioLoadInBackground(config.successSound);
             EnsureAudioLoadInBackground(config.warningBeep);
         }
-        private static void CleanupASSGeneratedLayers(AnimatorController controller)
+        private static void CleanupASSGeneratedLayers(AnimatorController controller, string avatarName)
         {
             if (controller == null) return;
 
@@ -720,7 +753,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int removedCount = 0;
             foreach (var layer in controller.layers)
             {
-                if (IsASSGeneratedLayer(layer))
+                if (IsASSGeneratedLayer(layer, avatarName))
                 {
                     removedCount++;
                     continue;
@@ -734,10 +767,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             EditorUtility.SetDirty(controller);
             Debug.Log($"[ASS] Removed {removedCount} previously generated ASS layer(s) before regeneration");
         }
-        private static bool IsASSGeneratedLayer(AnimatorControllerLayer layer)
+        private static bool IsASSGeneratedLayer(AnimatorControllerLayer layer, string avatarName)
         {
             if (Constants.IsASSManagedLayerName(layer.name))
                 return true;
+
+            // Constants 当前可能已经切换到清洁名；补查按当前 Avatar 名生成的历史混淆层名。
+            string[] internalKeys =
+            {
+                "LAYER_LOCK", "LAYER_PASSWORD_INPUT", "LAYER_COUNTDOWN",
+                "LAYER_AUDIO", "LAYER_DEFENSE"
+            };
+            string[] cleanNames =
+            {
+                "ASS_Lock", "ASS_PasswordInput", "ASS_Countdown",
+                "ASS_Audio", "ASS_Defense"
+            };
+            for (int i = 0; i < internalKeys.Length; i++)
+            {
+                if (layer.name == Obfuscator.GetObfuscatedLayerNameForCleanup(
+                    internalKeys[i], cleanNames[i], avatarName))
+                    return true;
+            }
+
             if (layer.stateMachine == null)
                 return false;
             return StateMachineContainsASSArtifacts(layer.stateMachine);
@@ -945,8 +997,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
-            // 诱饵层不应通过 WD 重置真实 Avatar 属性。
-            defaultState.writeDefaultValues = false;
+            // 诱饵层与 ASS 其它状态统一使用 WD On；其动画只包含伪装路径。
+            defaultState.writeDefaultValues = true;
             sm.defaultState = defaultState;
 
             var fakeStates = new List<AnimatorState>();
@@ -976,7 +1028,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     fakeState.motion = emptyClip;
                 }
                 // 诱饵状态只模拟拓扑，不写入未绑定的真实属性。
-                fakeState.writeDefaultValues = false;
+                fakeState.writeDefaultValues = true;
                 fakeStates.Add(fakeState);
             }
 

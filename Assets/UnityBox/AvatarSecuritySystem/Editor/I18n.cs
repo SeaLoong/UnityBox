@@ -467,9 +467,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["advanced.wd_mode_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Compatibility field retained for older configurations. ASS feedback and lock layers now use explicit WD Off bindings to avoid resetting properties owned by other plugins." },
-                    { SystemLanguage.ChineseSimplified, "兼容旧配置的隐藏字段。ASS 反馈层和锁定层现在统一使用显式 WD Off 绑定，避免重置其它插件控制的属性。" },
-                    { SystemLanguage.Japanese, "旧設定互換用の非表示フィールドです。ASS のフィードバック/ロックレイヤーは他プラグインのプロパティをリセットしないよう、明示的な WD Off バインディングを使用します。" }
+                    { SystemLanguage.English, "Compatibility field retained for older configurations. ASS always generates states with Write Defaults On for compatibility with VRCFury/SPS." },
+                    { SystemLanguage.ChineseSimplified, "兼容旧配置的隐藏字段。ASS 现在始终使用 Write Defaults On 生成状态，以兼容 VRCFury/SPS。" },
+                    { SystemLanguage.Japanese, "旧設定互換用の非表示フィールドです。ASS は VRCFury/SPS との互換性のため、常に Write Defaults On でステートを生成します。" }
                 },
                 ["advanced.wd_mode_auto"] = new Dictionary<SystemLanguage, string>
                 {

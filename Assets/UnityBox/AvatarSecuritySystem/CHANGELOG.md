@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.7.23] - 2026-08-11
+
+### Fixed
+
+- 正式恢复 ASS 全部生成状态使用 WD On；WD On 与 VRCFury SPS 的兼容性已通过 Himaku A/B 验证
+- 恢复 PasswordInput、Countdown、Audio、Lock 终态的自禁用，并在层追加后按 StateMachine 反查索引、后置构建阶段再次刷新索引
+- 保留包含 VRC Contact 的 Avatar 跳过 ASS Playable 混淆，以及 Lock 对 Contact 分支的 Transform 保护
+
 ## [0.7.21] - 2026-08-10
 
 ### Fixed
@@ -10,7 +18,9 @@
 - Lock 层移除 Overlay/音频绑定并固定 WD Off，仅在锁定/恢复阶段写入显式缩放，减少对其它插件动画属性的影响
 - 成功音效和警告音效对象默认关闭；PasswordInput/Audio 层按需启用，成功音效播放完成后进入 Completed 状态关闭对象
 - 混淆伪状态和诱饵层统一使用 WD Off，避免伪装状态通过未绑定属性写入默认值
-- PasswordInput/Countdown/Audio/Lock 的完成状态增加 `VRCAnimatorLayerControl` 自释放；FX 子层索引在追加后按 StateMachine 反查，Defense Active 层保持运行
+- 移除 PasswordInput/Countdown/Audio/Lock 完成状态的 `VRCAnimatorLayerControl` 自释放，避免构建链重排时误关 Contact/衣柜等第三方 FX 层；完成状态改为仅清理自身反馈曲线
+- 锁定时保护包含 VRC Contact Sender/Receiver 或其 `rootTransform` 骨骼引用的分支：仅关闭 Renderer，不把 Contact Transform 缩放为 0，避免接触驱动插件失效
+- 检测到 VRC Contact 时跳过 ASS Playable Layer 混淆，避免破坏 VRCFury 为 HapticContacts/WorldScaleDetector 生成的 `AllReceiversOff` 恢复图
 
 ## [0.7.20] - 2026-08-08
 

@@ -143,7 +143,7 @@ Avatar 启动
 - **Mute Warning Sound**: 不生成倒计时警告音效（仍保留视觉反馈）
 - **Default Enable Defense**: ⚠️ 默认启用防御模式，不生成密码系统，利用已保存的参数状态工作
 - **Enable Avatar Lock**: 生成 `ASS_Lock` 层，并在锁定时隐藏所有根级子对象；关闭后不生成锁定层，但密码输入与音频反馈仍然保留
-- **Write Defaults Mode**: 兼容旧配置的隐藏字段；ASS 当前统一使用 WD Off + 显式属性绑定
+- **Write Defaults Mode**: 兼容旧配置的隐藏字段；ASS 正式统一使用 WD On，以兼容 VRCFury/SPS
 
 ### 步骤 7：构建上传
 
@@ -281,6 +281,8 @@ Unity 2022.3
 #### 功能
 
 - 启用锁定时生成 `ASS_Lock` 层，并在锁定状态将 Avatar 根级子对象缩放为 0
+- 包含 VRC Contact Sender/Receiver 的分支不会整体缩放为 0；锁定时仅隐藏其中的 Renderer，保留 Contact 碰撞 Transform 和 `rootTransform` 引用
+- 检测到 VRC Contact 时会跳过 ASS 的 Playable Layer 混淆，以保护 VRCFury Contact 的内部 FX/AAP 恢复逻辑
 - 解锁恢复只执行一次，稳定解锁状态不再写用户对象属性
 - 未启用锁定时不生成 `ASS_Lock` 层；Overlay、密码成功音效和警告音效分别由 PasswordInput/Audio 层管理
 - Remote 玩家不进入本地锁定状态
@@ -291,11 +293,11 @@ Unity 2022.3
 ASS_Lock Layer
 ├─ Remote (默认) — 所有玩家的初始状态（不写用户对象属性）
 ├─ Locked — 仅本地玩家（IsLocal && !PasswordCorrect）
-│   └─ 隐藏 Avatar 根级子对象（localScale=0，WD Off）
+│   └─ 隐藏 Avatar 根级子对象（localScale=0，WD On）
 ├─ UnlockRestore — 一次性恢复状态（PasswordCorrect=true）
 │   ├─ 恢复根子对象的 `localScale`
 │   └─ 播放一个采样周期后进入 Unlocked
-└─ Unlocked — 稳定解锁状态（PasswordCorrect=true，WD Off）
+└─ Unlocked — 稳定解锁状态（PasswordCorrect=true，WD On）
     └─ 空 clip，不再写用户对象属性，释放给外部切换系统
 ```
 
@@ -310,9 +312,9 @@ ASS_Lock Layer
 
 - 全屏遮罩使用自定义 Shader（`UnityBox/UB_Overlay`），顶点着色器直接映射到裁剪空间全屏
 - 进度条通过动画驱动 Shader 材质属性控制
-- 锁定隐藏使用 `localScale=0`，Lock 层固定 WD Off，不重置其它插件属性
+- 锁定隐藏使用 `localScale=0`，Lock 层统一 WD On；Contact 分支不缩放 Transform，仅关闭 Renderer
 - ASS 对象（Overlay、Audio、Defense）不参与隐藏
-- 解锁先通过一次性的 `UnlockRestore` 恢复 ASS 写入的根子对象 `localScale`，再进入空的 WD Off 状态；稳定解锁后不再写用户对象属性，将 active/scale 控制权交还给外部衣柜/部件动画系统
+- 解锁先通过一次性的 `UnlockRestore` 恢复 ASS 写入的根子对象 `localScale`，再进入空的 WD On 状态；稳定解锁后不再写用户对象属性，将 active/scale 控制权交还给外部衣柜/部件动画系统
 
 ---
 
@@ -548,7 +550,7 @@ ASS_Defense Layer
 | 属性                  | 类型                | 默认值 | 说明                                              |
 | --------------------- | ------------------- | ------ | ------------------------------------------------- |
 | `disableRootChildren` | `bool`              | `true` | 启用 `ASS_Lock` 层，并在锁定时隐藏 Avatar 根级子对象；关闭则不生成锁定层 |
-| `writeDefaultsMode`   | `WriteDefaultsMode` | `On`   | 兼容字段；锁定层现在固定使用 WD Off，避免影响外部插件属性 |
+| `writeDefaultsMode`   | `WriteDefaultsMode` | `On`   | 兼容字段；ASS 所有生成状态固定使用 WD On，以兼容 VRCFury/SPS |
 
 #### 高级选项
 
@@ -591,11 +593,10 @@ ASS_Defense Layer
 | -------------------------- | ----------------------------- | ---------- |
 | `VRCAnimatorPlayAudio`     | Password_Success, WarningBeep | 播放音效   |
 | `VRCAvatarParameterDriver` | Password_Success, TimeUp      | 设置参数   |
-| `VRCAnimatorLayerControl`  | Lock/PasswordInput/Countdown/Audio 终态 | 将对应 FX 子层权重设为 0，释放已完成的临时层 |
+| `VRCAnimatorLayerControl`  | PasswordInput/Countdown/Audio/Lock 终态 | 将对应 ASS FX 子层权重设为 0；索引在层追加后反查，并在后置构建阶段刷新 |
 
-`VRCAnimatorLayerControl.playable` 固定为 `FX`，`layer` 不使用固定数字，而是在层追加到
-Controller 后按该层 `StateMachine` 反查真实 `AnimatorController.layers` 索引（包含 Base Layer）。
-Defense 层不在 Active 终态自禁用，因为它需要持续保持防御输出。
+ASS 只通过追加后的真实 StateMachine 索引禁用自己的 FX 子层，并在后置阶段重新校正索引；
+检测到 VRC Contact 时跳过 ASS Playable 混淆，避免第三方 Contact/SPS 图被重排。
 
 ---
 
