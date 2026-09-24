@@ -145,9 +145,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             root.transform.localScale = Vector3.one;
             root.SetActive(false);
             var parameters = ComputeDefenseParams();
-            bool useOverflow = config.enableOverflow && !isDebugMode;
             var existingParticleStats = GetExistingParticleStats();
-            var particlePlan = BuildParticleGenerationPlan(useOverflow, existingParticleStats);
+            var particlePlan = BuildParticleGenerationPlan(existingParticleStats);
             bool enableCollision = !IsLightweightDefense || existingParticleStats.HasCollisionEnabled;
             bool enableTrails = !IsLightweightDefense || existingParticleStats.HasTrailsEnabled;
             Material sharedDefenseMaterial = particlePlan.SystemCount > 0
@@ -160,7 +159,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (particlePlan.SystemCount > 0 && particlePlan.ParticleTarget > 0 && particlePlan.MeshPolyTarget > 0)
                     CreateParticleComponents(root, particlePlan.SystemCount, particlePlan.ParticleTarget, particlePlan.MeshPolyTarget,
-                        defenseLights, useOverflow, sharedDefenseMaterial, IsLightweightDefense, enableCollision, enableTrails);
+                        defenseLights, sharedDefenseMaterial, IsLightweightDefense, enableCollision, enableTrails);
             }
             if (parameters.PhysXRigidbodyCount > 0 || parameters.ClothComponentCount > 0)
             {
@@ -173,7 +172,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int generatedParticleSystemCount = root.GetComponentsInChildren<ParticleSystem>(true).Length;
             if (parameters.ParticleCount > 0 && generatedParticleSystemCount == 0)
             {
-                Debug.LogWarning("[ASS] Defense root was created, but no defense ParticleSystem was generated. Check particle budget / overflow / existing avatar particle usage.");
+                Debug.LogWarning("[ASS] Defense root was created, but no defense ParticleSystem was generated. Check particle budget / existing avatar particle usage.");
             }
             Debug.Log($"[ASS] Defense root generated: root={root.name}, particleSystems={generatedParticleSystemCount}, activeSelf={root.activeSelf}");
             Debug.Log("[ASS] Defense optimization: Dedicated ShaderDefense meshes skipped; heavy shader contribution now comes from particle renderers sharing the defense material");
@@ -217,8 +216,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 HasCollisionEnabled = hasCollisionEnabled;
                 HasTrailsEnabled = hasTrailsEnabled;
             }
-
-            public bool HasExternalParticles => SystemCount > 0 && ParticleCount > 0;
         }
 
         private readonly struct ParticleGenerationPlan
@@ -252,32 +249,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             );
         }
 
-        private ParticleGenerationPlan BuildParticleGenerationPlan(bool useOverflow, ExistingParticleStats existing)
+        private ParticleGenerationPlan BuildParticleGenerationPlan(ExistingParticleStats existing)
         {
             if (isDebugMode)
                 return new ParticleGenerationPlan(1, 1, 1);
 
-            long meshPolyTarget = useOverflow
-                ? (long)Constants.MESH_PARTICLE_MAX_POLYGONS + 1L
-                : System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
-
+            long meshPolyTarget = System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
             if (meshPolyTarget <= 0)
             {
                 Debug.Log("[ASS] Particle plan: no remaining mesh polygon budget, skipping generated defense particles");
                 return new ParticleGenerationPlan(0, 0, 0);
             }
 
-            if (useOverflow)
-            {
-                int generatedSystems = existing.HasExternalParticles ? 1 : 2;
-                long particleTarget = (long)Constants.PARTICLE_MAX_COUNT * generatedSystems;
-                Debug.Log($"[ASS] Particle plan (overflow): existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, generatedSystems={generatedSystems}, generatedParticleTarget={particleTarget}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
-                return new ParticleGenerationPlan(generatedSystems, particleTarget, meshPolyTarget);
-            }
-
             long remainingParticles = System.Math.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
             int systemCount = remainingParticles > 0 ? 1 : 0;
-            Debug.Log($"[ASS] Particle plan (capped): existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, remainingParticleBudget={remainingParticles}, generatedSystems={systemCount}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
+            Debug.Log($"[ASS] Particle plan: existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, remainingParticleBudget={remainingParticles}, generatedSystems={systemCount}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
             return new ParticleGenerationPlan(systemCount, remainingParticles, meshPolyTarget);
         }
 
@@ -470,7 +456,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
 
         private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
-            long meshPolyBudget, Light[] lights, bool enableOverflow, Material sharedRendererMaterial,
+            long meshPolyBudget, Light[] lights, Material sharedRendererMaterial,
             bool lightweightDefense, bool enableCollision, bool enableTrails)
         {
             if (meshPolyBudget <= 0)
@@ -504,7 +490,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
             }
 
-            if (!enableOverflow && meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
+            if (meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
             {
                 long clampedTarget = meshPolyBudget / meshTriangles;
                 Debug.Log($"[ASS] Particle cap plan adjusted by mesh budget: requestedParticles={particleTarget}, trisPerParticle={meshTriangles}, clampedParticles={clampedTarget}");
@@ -750,7 +736,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     lightsModule.alphaAffectsIntensity = true;
                     lightsModule.rangeMultiplier = 10000000f;
                     lightsModule.intensityMultiplier = 10000000f;
-                    lightsModule.maxLights = enableOverflow ? int.MaxValue : particlesForThis;
+                    lightsModule.maxLights = particlesForThis;
                 }
                 var customData = ps.customData;
                 customData.enabled = true;
@@ -988,7 +974,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subLightsModule.alphaAffectsIntensity = true;
                     subLightsModule.rangeMultiplier = 10000000f;
                     subLightsModule.intensityMultiplier = 10000000f;
-                    subLightsModule.maxLights = enableOverflow ? int.MaxValue : subParticles;
+                    subLightsModule.maxLights = subParticles;
                 }
                 var subCustomData = subPs.customData;
                 subCustomData.enabled = true;

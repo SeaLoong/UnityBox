@@ -399,18 +399,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     { SystemLanguage.ChineseSimplified, "危险：启用后不会生成密码系统。\n\n正确流程：\n1. 先上传带密码保护的版本\n2. 在 VRChat 中解锁\n3. 再上传启用此选项的版本\n\n跳过第 2 步会导致防御对所有人生效\n（包括你自己）！" },
                     { SystemLanguage.Japanese, "危険：パスワードシステムは生成されません。\n\nワークフロー：\n1. パスワード保護版をアップロード\n2. VRChatでロック解除\n3. このオプションを有効にして再アップロード\n\n手順2をスキップすると自分を含む\n全ユーザーに防御が作動します！" }
                 },
-                ["defense.enable_overflow"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Overflow Mode" },
-                    { SystemLanguage.ChineseSimplified, "溢出模式" },
-                    { SystemLanguage.Japanese, "オーバーフローモード" }
-                },
-                ["defense.enable_overflow_tooltip"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Overflow mode.\n\nDuring Build & Publish, particle / mesh counts target int.MaxValue+1 and intentionally overflow VRChat stats to -2147483648.\n\nRecommended: enable this together with Lightweight Mode so particle-related stats are more likely to stay green. In Lightweight Mode, lights / Collision / Trails are only inherited when the avatar already uses them.\n\nPlay Mode always uses minimal defense regardless of this setting." },
-                    { SystemLanguage.ChineseSimplified, "溢出模式。\n\n构建 / 上传时，粒子数与 Mesh 面数会以 int.MaxValue+1 为目标，故意让 VRChat 统计溢出到 -2147483648。\n\n建议与「轻量模式」一起开启，这样更容易让粒子相关参数保持绿色。轻量模式下，光源 / 粒子碰撞 / 拖尾只有在 Avatar 本来就在用时才会被继承。\n\nPlay Mode 始终使用最小防御，不受此选项影响。" },
-                    { SystemLanguage.Japanese, "オーバーフローモード。\n\nビルド / アップロード時、パーティクル数とメッシュポリゴン数を int.MaxValue+1 目標で生成し、VRChat の統計を -2147483648 へ意図的にオーバーフローさせます。\n\n推奨：軽量モードと併用すると、粒子関連ステータスをグリーン表示に保ちやすくなります。軽量モードでは、Light / Collision / Trails はアバターが既に使っている場合にのみ継承されます。\n\nPlay Mode では常に最小防御となり、この設定は無視されます。" }
-                },
                 ["defense.lightweight_defense"] = new Dictionary<SystemLanguage, string>
                 {
                     { SystemLanguage.English, "Lightweight Mode" },
@@ -419,21 +407,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 },
                 ["defense.lightweight_defense_tooltip"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Green-oriented mode.\n\n• Minimizes newly generated particle systems\n• Does not proactively introduce new lights / Collision / Trails\n• If the avatar already uses these features, ASS-generated particles inherit them instead of forcing them off\n• Overflow ON: if the avatar already has particles, add 1 full particle system; otherwise add 2 full systems to preserve overflow\n\nRecommended: enable Overflow Mode together so particle-related stats are more likely to stay green via overflow." },
-                    { SystemLanguage.ChineseSimplified, "偏向绿模的模式。\n\n• 尽量减少新生成的粒子系统\n• 不会主动新增光源 / 粒子碰撞 / 拖尾\n• 如果 Avatar 本来就在使用这些功能，ASS 生成的粒子会继承对应特性，而不是强行关闭\n• 开启溢出时：如果 Avatar 已经有粒子，则只补 1 个顶满上限的粒子系统；否则生成 2 个顶满上限的粒子系统以保持溢出\n\n建议与「溢出模式」同时开启，以通过数值溢出让粒子相关参数更容易保持绿色。" },
-                    { SystemLanguage.Japanese, "できるだけグリーン評価を維持するモードです。\n\n• 新規生成する ParticleSystem を最小限に抑える\n• 新しい Light / Collision / Trails は追加しない\n• アバターが既にこれらを使っている場合は、ASS 生成の粒子も対応機能を継承する\n• Overflow ON：既存粒子がある場合は上限まで埋めた 1 システム、ない場合は Overflow 維持のため 2 システムを生成\n\n推奨：Overflow Mode も同時に有効化すると、オーバーフローにより粒子関連ステータスをグリーン表示に保ちやすくなります。" }
+                    { SystemLanguage.English, "Green-oriented mode.\n\n• Minimizes newly generated particle systems\n• Does not proactively introduce new lights / Collision / Trails\n• If the avatar already uses these features, ASS-generated particles inherit them instead of forcing them off" },
+                    { SystemLanguage.ChineseSimplified, "偏向绿模的模式。\n\n• 尽量减少新生成的粒子系统\n• 不会主动新增光源 / 粒子碰撞 / 拖尾\n• 如果 Avatar 本来就在使用这些功能，ASS 生成的粒子会继承对应特性，而不是强行关闭" },
+                    { SystemLanguage.Japanese, "できるだけグリーン評価を維持するモードです。\n\n• 新規生成する ParticleSystem を最小限に抑える\n• 新しい Light / Collision / Trails は追加しない\n• アバターが既にこれらを使っている場合は、ASS 生成の粒子も対応機能を継承する" }
                 },
                 ["defense.lightweight_defense_note"] = new Dictionary<SystemLanguage, string>
                 {
-                    { SystemLanguage.English, "Lightweight Mode summary:\n• Goal: stay as close to green as possible while keeping defense active\n• New lights / Collision / Trails are not introduced proactively\n• If the avatar already uses these rank-sensitive features, ASS-generated particles inherit them\n• Overflow ON: add 1 full system if the avatar already has particles, otherwise add 2 full systems\n• Overflow OFF: use 1 system and fill the remaining particle / mesh budget as tightly as possible without exceeding the cap" },
-                    { SystemLanguage.ChineseSimplified, "轻量模式摘要：\n• 目标是在保留防御效果的前提下，尽量贴近绿模\n• 不会主动新增光源 / 粒子碰撞 / 拖尾\n• 如果 Avatar 本来就在使用这些性能敏感特性，ASS 生成的粒子会继承它们\n• 溢出开启：如果 Avatar 已有粒子，则补 1 个顶满系统；否则补 2 个顶满系统\n• 溢出关闭：只用 1 个系统，尽量把剩余粒子 / 面数预算补满，但不主动超限" },
-                    { SystemLanguage.Japanese, "軽量モード概要：\n• 防御を維持しつつ、できるだけグリーン評価に近づけることが目的\n• 新しい Light / Collision / Trails は積極的に追加しない\n• アバターが既にこれらの性能影響機能を使っている場合は、ASS 生成の粒子も継承する\n• Overflow ON：既存粒子がある場合は 1 つ、ない場合は 2 つのフルシステムを追加\n• Overflow OFF：1 システムのみで残りの粒子数 / ポリゴン予算を、上限を超えない範囲で可能な限り埋めます" }
-                },
-                ["defense.lightweight_defense_overflow_recommendation"] = new Dictionary<SystemLanguage, string>
-                {
-                    { SystemLanguage.English, "Recommendation: enable Overflow Mode together with Lightweight Mode. Lightweight Mode mainly avoids introducing new rank-sensitive features; if the avatar already uses lights / Collision / Trails, ASS will inherit them. Without Overflow, system count still stays minimal, but the stats continue to accumulate against the normal cap." },
-                    { SystemLanguage.ChineseSimplified, "建议：将「溢出模式」与「轻量模式」一起开启。轻量模式的核心是避免主动新增新的性能敏感特性；如果 Avatar 本来就有光源 / 粒子碰撞 / 拖尾，ASS 会直接继承。若不启用溢出，即使系统数量保持最少，相关参数仍会继续按正常上限累计。" },
-                    { SystemLanguage.Japanese, "推奨：「軽量モード」と一緒に「Overflow Mode」も有効化してください。軽量モードの本質は、新しい性能影響機能を追加しないことです。アバターが既に Light / Collision / Trails を使っている場合、ASS はそれらを継承します。Overflow を無効のままにすると、システム数が最小でも、ステータスは通常上限に対して加算され続けます。" }
+                    { SystemLanguage.English, "Lightweight Mode summary:\n• Goal: stay as close to green as possible while keeping defense active\n• New lights / Collision / Trails are not introduced proactively\n• If the avatar already uses these rank-sensitive features, ASS-generated particles inherit them\n• Uses 1 particle system and fills the remaining particle / mesh budget as tightly as possible without exceeding the cap" },
+                    { SystemLanguage.ChineseSimplified, "轻量模式摘要：\n• 目标是在保留防御效果的前提下，尽量贴近绿模\n• 不会主动新增光源 / 粒子碰撞 / 拖尾\n• 如果 Avatar 本来就在使用这些性能敏感特性，ASS 生成的粒子会继承它们\n• 使用 1 个粒子系统，尽量把剩余粒子 / 面数预算补满，但不超限" },
+                    { SystemLanguage.Japanese, "軽量モード概要：\n• 防御を維持しつつ、できるだけグリーン評価に近づけることが目的\n• 新しい Light / Collision / Trails は積極的に追加しない\n• アバターが既にこれらの性能影響機能を使っている場合は、ASS 生成の粒子も継承する\n• 1 システムのみで残りの粒子数 / ポリゴン予算を、上限を超えない範囲で可能な限り埋めます" }
                 },
                 ["advanced.options"] = new Dictionary<SystemLanguage, string>
                 {

@@ -271,17 +271,11 @@ namespace UnityBox.AvatarSecuritySystem
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
                     new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
             }
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableOverflow"),
-                new GUIContent(T("defense.enable_overflow"), T("defense.enable_overflow_tooltip")));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("lightweightDefense"),
                 new GUIContent(T("defense.lightweight_defense"), T("defense.lightweight_defense_tooltip")));
             if (_target.lightweightDefense)
             {
                 EditorGUILayout.HelpBox(T("defense.lightweight_defense_note"), MessageType.Info);
-                if (!_target.enableOverflow)
-                {
-                    EditorGUILayout.HelpBox(T("defense.lightweight_defense_overflow_recommendation"), MessageType.Warning);
-                }
             }
         }
         private void DrawAdvancedOptionsSection()

@@ -27,7 +27,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public bool disableOverlay;
         public bool disableWarningSound;
         public bool defaultEnableDefense;
-        public bool enableOverflow;
         public bool lightweightDefense;
         public bool disableObfuscation;
         public bool enablePlayableLayerObfuscation;
@@ -69,7 +68,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 disableOverlay = source.disableOverlay,
                 disableWarningSound = source.disableWarningSound,
                 defaultEnableDefense = source.defaultEnableDefense,
-                enableOverflow = source.enableOverflow,
                 lightweightDefense = source.lightweightDefense,
                 disableObfuscation = source.disableObfuscation,
                 enablePlayableLayerObfuscation = source.enablePlayableLayerObfuscation,

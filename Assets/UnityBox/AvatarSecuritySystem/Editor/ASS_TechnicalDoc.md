@@ -514,7 +514,7 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 | PhysXColliderCount  | 0（当前默认不生成）         | 0        |
 | ClothComponentCount | 0（当前默认不生成）         | 0        |
 | ParticleCount       | `MAX_INT` 目标              | 1        |
-| ParticleSystemCount | 非溢出：通常 1；溢出：1 或 2 | 1        |
+| ParticleSystemCount | 通常 1                      | 1        |
 | LightCount          | 普通模式：复用 1 / fallback 1；轻量模式：仅复用已有 | 1（轻量模式下仅复用已有） |
 | SharedShaderMaterialCount | 1 份共享材质         | 1        |
 
@@ -536,12 +536,9 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 
 **粒子防御** (`CreateParticleComponents`)
 
-- **最少系统数策略**：
-  - 非溢出模式：通常只生成 1 个粒子系统，尽量把剩余粒子 / Mesh 预算补满但不超限
-  - 溢出模式：若 Avatar 已有粒子，则补 1 个顶满系统；否则补 2 个顶满系统以保持溢出
+- **最少系统数策略**：通常只生成 1 个粒子系统，尽量把剩余粒子 / Mesh 预算补满但不超限
 - **共享材质策略**：所有粒子渲染器共享 1 份 `UB_Defense` 材质；若重 Shader 不可用，才回退到 Avatar 现有材质或单份 fallback 材质
 - 粒子 Mesh 复杂度从 `MESH_PARTICLE_MAX_POLYGONS` 预算动态计算
-- **溢出模式**（`enableOverflow`）：粒子总数和 Mesh 面数目标以 `int.MaxValue+1` 为参考，允许总量对 VRChat 统计发生溢出；轻量模式建议与此选项搭配使用，以更容易保持绿色参数显示
 - `GenerateSphereMesh` 生成的 Mesh `bounds = Vector3.one * 1f`（覆盖视球，防止裁剪）
 - **光源策略**：
   - 普通模式：优先复用 1 个外部 Light；若没有可复用光源，则只创建 1 个 fallback Light
@@ -639,7 +636,6 @@ Inactive ──(IsLocal && !PasswordCorrect)──→ Active
 | 参数             | 类型 | 默认值 | 说明                                                                      |
 | ---------------- | ---- | ------ | ------------------------------------------------------------------------- |
 | `disableDefense` | bool | false  | 禁用防御组件（仅保留密码系统，用于测试）                                  |
-| `enableOverflow` | bool | true   | 启用溢出模式：通过粒子数 / Mesh 面数的数值溢出更容易保持绿色参数显示，建议与轻量模式一起使用 |
 | `lightweightDefense` | bool | false | 轻量模式：不主动新增新的光源 / 粒子碰撞 / 拖尾；若 Avatar 已经在使用这些功能，则允许直接继承。并使用最少粒子系统策略尽量贴近绿模 |
 
 #### 锁定选项
@@ -793,7 +789,6 @@ Avatar Root
 │  倒计时时间: [30━━━━━━━━━120]                │
 ├─ 防御选项 ──────────────────────────────────┤
 │  [ ] 禁用防御                                │
-│  [✓] 启用溢出                                │
 ├─ 锁定选项 ──────────────────────────────────┤
 │  [✓] 启用 Avatar 锁定                        │
 │  WD策略: 固定 Off（显式绑定）                │
@@ -1009,7 +1004,6 @@ Defense:  Idle→Active                     ← 开关触发器模式
 异常特征更多来自：
 
 - `MAX_INT` 级别的粒子数
-- 粒子 / Mesh 统计的溢出行为
 - 共享 `UB_Defense` 材质带来的重 Shader 负载
 
 → **无法完全消除**：这些仍然是防御机制的核心。
