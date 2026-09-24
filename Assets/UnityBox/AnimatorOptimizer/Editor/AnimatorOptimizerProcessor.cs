@@ -23,15 +23,24 @@ namespace UnityBox.AnimatorOptimizer
         public bool UpgradeBoolParametersToFloat;
         public bool UpgradeIntParametersToFloat;
         public bool AllowFloatConditionApproximation;
+        public AnimatorOptimizerComponent.WriteDefaultsPolicy WriteDefaultsPolicy =
+            AnimatorOptimizerComponent.WriteDefaultsPolicy.AllowCoveredStates;
+        public bool IgnoreTransitionTimingForStaticMotions;
+        public AnimatorOptimizerComponent.HeuristicFlags Heuristics;
+        public int ShortAnimationMaxFrames = 5;
+        public float ShortAnimationMaxSeconds = 0.1f;
+        public int MotionTimeSampleCount = 9;
         public bool StrictCurveConflicts;
         public bool MergeLayersWithEquivalentMasks;
         public bool ResolveOverridePriorityWithStaticComposite;
+        public bool MergeSynchronizedStateMachines = true;
         public bool EnableAapStateRegisterOptimization;
         public bool RemoveEffectivelyEmptyLayers;
         public bool NormalizeAlwaysOneParameters;
         public bool ExecuteLateOptimization;
         public bool PreserveMmdCompatibility;
         public int MaxPriorityCombinations;
+        public int MaxAapDecisionNodes = 4096;
         public bool VerboseLogging;
         public string GeneratedLayerName;
         public string WeightParameterPrefix;
@@ -48,9 +57,10 @@ namespace UnityBox.AnimatorOptimizer
 
         public static AnimatorOptimizerConfigData FromComponent(
             AnimatorOptimizerComponent component,
-            GameObject avatarRoot = null)
+            GameObject avatarRoot = null,
+            bool requireEnabled = true)
         {
-            if (component == null || !component.enabled)
+            if (component == null || requireEnabled && !component.enabled)
                 return null;
 
             avatarRoot ??= component.gameObject;
@@ -75,20 +85,34 @@ namespace UnityBox.AnimatorOptimizer
                 UpgradeBoolParametersToFloat = component.upgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = component.upgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = component.allowFloatConditionApproximation,
+                WriteDefaultsPolicy = component.writeDefaultsPolicy,
+                IgnoreTransitionTimingForStaticMotions = component.ignoreTransitionTimingForStaticMotions,
+                Heuristics = component.heuristics,
+                ShortAnimationMaxFrames = component.shortAnimationMaxFrames,
+                ShortAnimationMaxSeconds = component.shortAnimationMaxSeconds,
+                MotionTimeSampleCount = component.motionTimeSampleCount,
                 StrictCurveConflicts = component.strictCurveConflicts,
                 MergeLayersWithEquivalentMasks = component.mergeLayersWithEquivalentMasks,
                 ResolveOverridePriorityWithStaticComposite = component.resolveOverridePriorityWithStaticComposite,
+                MergeSynchronizedStateMachines = component.mergeSynchronizedStateMachines,
                 EnableAapStateRegisterOptimization = component.enableAapStateRegisterOptimization,
                 RemoveEffectivelyEmptyLayers = component.removeEffectivelyEmptyLayers,
                 NormalizeAlwaysOneParameters = component.normalizeAlwaysOneParameters,
                 ExecuteLateOptimization = component.executeLateOptimization,
                 PreserveMmdCompatibility = component.preserveMmdCompatibility,
                 MaxPriorityCombinations = component.maxPriorityCombinations,
+                MaxAapDecisionNodes = component.maxAapDecisionNodes,
                 VerboseLogging = component.verboseLogging,
                 GeneratedLayerName = component.generatedLayerName,
                 WeightParameterPrefix = component.weightParameterPrefix,
                 SourceObjectName = component.gameObject != null ? component.gameObject.name : string.Empty,
             };
+        }
+
+        /// <summary>Editor-side configuration snapshot; build processors additionally enforce the selection scope.</summary>
+        public static AnimatorOptimizerOptions CreateOptions(AnimatorOptimizerComponent component)
+        {
+            return FromComponent(component, null, requireEnabled: false)?.CreateOptions() ?? new AnimatorOptimizerOptions();
         }
 
         public AnimatorOptimizerOptions CreateOptions()
@@ -106,8 +130,15 @@ namespace UnityBox.AnimatorOptimizer
                 UpgradeBoolParametersToFloat = UpgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = UpgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = AllowFloatConditionApproximation,
+                WriteDefaultsPolicy = WriteDefaultsPolicy,
+                IgnoreTransitionTimingForStaticMotions = IgnoreTransitionTimingForStaticMotions,
+                Heuristics = Heuristics,
+                ShortAnimationMaxFrames = ShortAnimationMaxFrames,
+                ShortAnimationMaxSeconds = ShortAnimationMaxSeconds,
+                MotionTimeSampleCount = MotionTimeSampleCount,
                 MergeLayersWithEquivalentMasks = MergeLayersWithEquivalentMasks,
                 ResolveOverridePriorityWithStaticComposite = ResolveOverridePriorityWithStaticComposite,
+                MergeSynchronizedStateMachines = MergeSynchronizedStateMachines,
                 EnableAapStateRegisterOptimization = EnableAapStateRegisterOptimization,
                 RemoveEffectivelyEmptyLayers = RemoveEffectivelyEmptyLayers,
                 NormalizeAlwaysOneParameters = NormalizeAlwaysOneParameters,
@@ -116,6 +147,7 @@ namespace UnityBox.AnimatorOptimizer
                 HasKnownPlayableLayer = TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer,
                 TargetPlayableLayer = PlayableLayer,
                 MaxPriorityCombinations = MaxPriorityCombinations,
+                MaxAapDecisionNodes = MaxAapDecisionNodes,
                 VerboseLogging = VerboseLogging,
             };
         }
@@ -275,13 +307,13 @@ namespace UnityBox.AnimatorOptimizer
                 Debug.Log("[AnimatorOptimizer] Late optimization requested; early VRCSDK callback deferred.");
                 return true;
             }
-#if NDMF_AVAILABLE
+            // This state belongs to the core Editor assembly. Checking it needs
+            // no NDMF reference or matching version define in a second assembly.
             if (AnimatorOptimizerBuildState.WasNdmfProcessed(avatarGameObject))
             {
                 Debug.Log("[AnimatorOptimizer] NDMF processed this Avatar; VRCSDK fallback skipped.");
                 return true;
             }
-#endif
             try
             {
                 var config = AnimatorOptimizerBuildState.Get(avatarGameObject) ??
@@ -309,10 +341,8 @@ namespace UnityBox.AnimatorOptimizer
             var config = AnimatorOptimizerBuildState.Get(avatarGameObject);
             if (config == null || !config.ExecuteLateOptimization)
                 return true;
-#if NDMF_AVAILABLE
             if (AnimatorOptimizerBuildState.WasNdmfProcessed(avatarGameObject))
                 return true;
-#endif
             try
             {
                 return AnimatorOptimizerProcessor.ProcessAvatar(avatarGameObject, config);
@@ -363,72 +393,36 @@ namespace UnityBox.AnimatorOptimizer
                 return true;
             }
 
-            var report = AnimatorOptimizerAnalyzer.Analyze(source, config.CreateOptions());
-            var selected = config.GetRequestedLayerIndices(source).ToList();
+            var options = config.CreateOptions();
+            options.MergeSynchronizedStateMachines &= config.OptimizeAllConvertibleLayers;
+            var report = AnimatorOptimizerAnalyzer.Analyze(source, options);
+            if (!report.GraphIsValid)
+            {
+                Debug.LogWarning($"[AnimatorOptimizer] Preserved '{source.name}': invalid controller graph.");
+                return true;
+            }
+            var selected = config.OptimizeAllConvertibleLayers
+                ? AnimatorOptimizerConverter.GetRecommendedSelection(report, options).ToList()
+                : (config.LayerIndices ?? new List<int>()).Distinct().OrderBy(index => index).ToList();
             if (config.PreserveMmdCompatibility)
                 selected = selected.Where(index => index != 0).ToList();
-            var aapSelected = selected.Where(index => index >= 0 && index < report.Layers.Count &&
-                    report.Layers[index].ConversionKind == AnimatorOptimizerConversionKind.AapStateRegister)
-                .ToList();
-            var regularSelected = selected.Except(aapSelected).ToList();
-            var isAapStateRegisterRequest = selected.Count == 1 && aapSelected.Count == 1;
+            var aapCount = selected.Count(index => index >= 0 && index < report.Layers.Count &&
+                report.Layers[index].ConversionKind == AnimatorOptimizerConversionKind.AapStateRegister);
             var cleanupOnlyRequest = config.RemoveEffectivelyEmptyLayers ||
+                                     config.MergeSynchronizedStateMachines ||
                                      config.NormalizeAlwaysOneParameters ||
                                      config.PreserveMmdCompatibility;
-            if (selected.Count < 2 && !isAapStateRegisterRequest && !cleanupOnlyRequest)
+            if (selected.Count < 2 && aapCount == 0 && !cleanupOnlyRequest)
             {
                 if (config.VerboseLogging)
                     Debug.Log($"[AnimatorOptimizer] '{source.name}' has fewer than two convertible Layers, skipping.");
                 return true;
             }
 
-            var options = config.CreateOptions();
-            IReadOnlyList<string> issues;
-            if (aapSelected.Count > 0)
-            {
-                var safetyOptions = options.Clone();
-                safetyOptions.RequireAtLeastTwoLayers = false;
-                var safetySelection = regularSelected.Count > 0 ? regularSelected : aapSelected;
-                issues = AnimatorOptimizerConverter.GetSelectionIssues(report, safetySelection, safetyOptions);
-                if (aapSelected.Count > 1)
-                    issues = issues.Concat(new[] { "一次构建最多处理一个 AAP StateRegister Layer。" }).ToList();
-            }
-            else if (regularSelected.Count >= 2)
-            {
-                issues = AnimatorOptimizerConverter.GetSelectionIssues(report, selected, options);
-            }
-            else if (regularSelected.Count > 0)
-            {
-                var safetyOptions = options.Clone();
-                safetyOptions.RequireAtLeastTwoLayers = false;
-                issues = AnimatorOptimizerConverter.GetSelectionIssues(report, regularSelected, safetyOptions);
-            }
-            else
-            {
-                issues = Array.Empty<string>();
-            }
-            if (aapSelected.Count > 0 && regularSelected.Count > 0)
-            {
-                issues = issues.Concat(AnimatorOptimizerConverter.GetParameterSafetyIssues(report, aapSelected)).ToList();
-                var aapReports = aapSelected.Select(index => report.Layers[index]).ToList();
-                var regularReports = regularSelected.Select(index => report.Layers[index]).ToList();
-                if (aapReports.SelectMany(layer => layer.Bindings)
-                    .Intersect(regularReports.SelectMany(layer => layer.Bindings)).Any())
-                {
-                    issues = issues.Concat(new[]
-                    {
-                        "AAP StateRegister Layer 与普通合并 Layer 存在动画绑定重叠；分两阶段替换会改变原始 Layer 顺序，因此构建已阻止。",
-                    }).ToList();
-                }
-                if (aapSelected.Select(index => report.Layers[index].Name).Distinct(StringComparer.Ordinal).Count() !=
-                    aapSelected.Count)
-                {
-                    issues = issues.Concat(new[]
-                    {
-                        "多个 AAP StateRegister 源 Layer 名称重复，无法在普通 Layer 合并后可靠定位；请重命名后再构建。",
-                    }).ToList();
-                }
-            }
+            var safetyOptions = options.Clone();
+            if (selected.Count < 2 && aapCount == 0) safetyOptions.RequireAtLeastTwoLayers = false;
+            var issues = selected.Count == 0 ? Array.Empty<string>() :
+                AnimatorOptimizerConverter.GetSelectionIssues(report, selected, safetyOptions);
             if (issues.Count > 0)
             {
                 Debug.LogWarning(
@@ -442,8 +436,8 @@ namespace UnityBox.AnimatorOptimizer
                 // Cleanup options are deliberately independent from Layer conversion.
                 // If the requested conversion is unsafe, still run the proven cleanup
                 // pass on a copy instead of leaving empty resources behind.
-                aapSelected.Clear();
-                regularSelected.Clear();
+                selected.Clear();
+                aapCount = 0;
             }
 
             var descriptorSnapshot = descriptor != null || targetAnimator != null
@@ -457,8 +451,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 copyPath = GetGeneratedControllerPath(avatarRoot, source);
                 EnsureFolder(Path.GetDirectoryName(copyPath)?.Replace('\\', '/'));
-                if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(copyPath) != null)
-                    AssetDatabase.DeleteAsset(copyPath);
+                copyPath = AssetDatabase.GenerateUniqueAssetPath(copyPath);
                 var sourcePath = AssetDatabase.GetAssetPath(source);
                 if (string.IsNullOrWhiteSpace(sourcePath) || !AssetDatabase.CopyAsset(sourcePath, copyPath))
                     throw new InvalidOperationException("无法复制源 AnimatorController 到 Generated: " + sourcePath);
@@ -469,30 +462,12 @@ namespace UnityBox.AnimatorOptimizer
                 if (generated == null)
                     throw new InvalidOperationException("复制后无法读取 Generated AnimatorController: " + copyPath);
 
-                var aapMarkers = new Dictionary<int, string>();
-                foreach (var aapIndex in aapSelected)
-                {
-                    if (aapIndex < 0 || aapIndex >= (generated.layers ?? Array.Empty<AnimatorControllerLayer>()).Length)
-                        throw new InvalidOperationException("复制后的 Controller 缺少 AAP StateRegister 源 Layer: " + aapIndex);
-                    var marker = "__AO_AAP_SOURCE_" + aapIndex + "_" + Guid.NewGuid().ToString("N");
-                    generated.layers[aapIndex].name = marker;
-                    aapMarkers[aapIndex] = marker;
-                }
-
-                if (regularSelected.Count >= 2)
-                    AnimatorOptimizerConverter.ConvertInPlace(generated, regularSelected, options);
-
-                foreach (var aapIndex in aapSelected)
-                {
-                    var sourceLayerName = aapMarkers[aapIndex];
-                    var currentIndex = Array.FindIndex(generated.layers ?? Array.Empty<AnimatorControllerLayer>(),
-                        layer => layer != null && string.Equals(layer.name, sourceLayerName, StringComparison.Ordinal));
-                    if (currentIndex < 0)
-                        throw new InvalidOperationException("普通 Layer 合并后找不到待转换的 AAP StateRegister Layer: " + sourceLayerName);
-                    AnimatorOptimizerConverter.ConvertAapStateRegisterInPlace(generated, currentIndex, options);
-                }
+                // A single batch preserves the pre-upgrade input types and original
+                // layer identities even with several AAP layers or duplicate names.
+                if (selected.Count >= 2 || aapCount > 0)
+                    AnimatorOptimizerConverter.ConvertInPlace(generated, selected, options);
                 var bindingRoot = targetAnimator != null ? targetAnimator.transform : avatarRoot.transform;
-                if (regularSelected.Count < 2 && aapSelected.Count == 0)
+                if (selected.Count < 2 && aapCount == 0)
                     options.RequireAtLeastTwoLayers = false;
                 var cleanupMessages = AnimatorOptimizerConverter.CleanupControllerInPlace(
                     generated, bindingRoot, options);
@@ -519,8 +494,8 @@ namespace UnityBox.AnimatorOptimizer
 
         public static void RestoreAndCleanup()
         {
-            foreach (var snapshot in Snapshots)
-                RestoreSnapshot(snapshot);
+            for (var index = Snapshots.Count - 1; index >= 0; index--)
+                RestoreSnapshot(Snapshots[index]);
             Snapshots.Clear();
 
             foreach (var path in GeneratedControllerPaths.ToList())
@@ -621,7 +596,7 @@ namespace UnityBox.AnimatorOptimizer
             if (layers == null)
                 return null;
             var layer = layers.FirstOrDefault(candidate => candidate.type == ToVrcLayerType(playableLayer));
-            return layer.animatorController as AnimatorController;
+            return layer.isDefault ? null : layer.animatorController as AnimatorController;
         }
 
         private static VRCAvatarDescriptor.CustomAnimLayer[] GetPlayableLayers(
