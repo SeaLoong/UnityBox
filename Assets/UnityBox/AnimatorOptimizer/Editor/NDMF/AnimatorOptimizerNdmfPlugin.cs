@@ -3,12 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using nadena.dev.ndmf;
 using nadena.dev.ndmf.animator;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
+using VRC.SDKBase;
 
 [assembly: ExportsPlugin(typeof(UnityBox.AnimatorOptimizer.AnimatorOptimizerNdmfPlugin))]
 
@@ -45,12 +47,17 @@ namespace UnityBox.AnimatorOptimizer
         }
     }
 
-    internal static class AnimatorOptimizerNdmfProcessor
+    internal static partial class AnimatorOptimizerNdmfProcessor
     {
         private const string GeneratedLayerName = AnimatorOptimizerConverter.GeneratedLayerName;
         private const string GeneratedAssetPrefix = AnimatorOptimizerConverter.GeneratedAssetPrefix;
         private const string WeightParameterPrefix = "AO/LayerWeight";
         private static int virtualPriorityCounter;
+        private static readonly PropertyInfo VirtualOriginalObjectProperty = typeof(VirtualNode).GetProperty(
+            "OriginalObjectExposed",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo VirtualMaskObjectField = typeof(VirtualAvatarMask).GetField(
+            "_mask", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private sealed class VirtualMotionRef
         {
@@ -58,6 +65,7 @@ namespace UnityBox.AnimatorOptimizer
             public float Speed = 1f;
             public float CycleOffset;
             public bool Mirror;
+            public AnimatorOptimizerClipBake Bake;
         }
 
         private sealed class PriorityDimension
@@ -71,6 +79,7 @@ namespace UnityBox.AnimatorOptimizer
             public string Parameter;
             public AnimatorControllerParameterType Type;
             public List<float> Values;
+            public bool IsApproximate;
         }
 
         private sealed class VirtualCondition
@@ -89,19 +98,22 @@ namespace UnityBox.AnimatorOptimizer
                 if (IsBool)
                 {
                     var actual = value >= 0.5f;
-                    if (Mode == AnimatorConditionMode.If ||
-                        (Mode == AnimatorConditionMode.Equals && Mathf.Approximately(Threshold, 1f)) ||
-                        (Mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(Threshold, 0f)))
-                        return actual;
-                    return !actual;
+                    return Mode switch
+                    {
+                        AnimatorConditionMode.If => actual,
+                        AnimatorConditionMode.IfNot => !actual,
+                        AnimatorConditionMode.Equals => (actual ? 1f : 0f) == Threshold,
+                        AnimatorConditionMode.NotEqual => (actual ? 1f : 0f) != Threshold,
+                        _ => false,
+                    };
                 }
 
                 switch (Mode)
                 {
                     case AnimatorConditionMode.Equals:
-                        return Mathf.Approximately(value, Threshold);
+                        return value == Threshold;
                     case AnimatorConditionMode.NotEqual:
-                        return !Mathf.Approximately(value, Threshold);
+                        return value != Threshold;
                     case AnimatorConditionMode.Greater:
                         return value > Threshold;
                     case AnimatorConditionMode.Less:
@@ -125,6 +137,8 @@ namespace UnityBox.AnimatorOptimizer
             public VirtualState Destination;
             public List<VirtualCondition> Conditions;
             public int Order;
+            // Only meaningful for Any State transitions (Source == null).
+            public bool CanTransitionToSelf = true;
         }
 
         private sealed class VirtualPlan
@@ -137,9 +151,13 @@ namespace UnityBox.AnimatorOptimizer
             public string SelectorParameter;
             public AnimatorControllerParameterType SelectorParameterType;
             public List<(float Value, VirtualMotionRef Motion)> SelectorSamples;
+            public bool SelectorIsApproximate;
             public List<VirtualDecisionDimension> DecisionDimensions;
             public Dictionary<int, VirtualMotionRef> DecisionTable;
             public HashSet<string> ReferencedParameters = new HashSet<string>(StringComparer.Ordinal);
+            public string StateTag;
+            public List<string> Assumptions = new List<string>();
+            public HashSet<string> AssumedBinaryParameters = new HashSet<string>(StringComparer.Ordinal);
         }
 
         private sealed class VirtualCandidate
@@ -157,8 +175,10 @@ namespace UnityBox.AnimatorOptimizer
             public AnimatorLayerBlendingMode BlendingMode;
             public string MaskKey;
             public VirtualAvatarMask Mask;
+            public string StateTag;
             public List<VirtualCandidate> Candidates;
-            public int FirstIndex => Candidates.Min(candidate => candidate.Index);
+            public List<VirtualCandidate> OriginalCandidates;
+            public int FirstIndex => OriginalCandidates.Min(candidate => candidate.Index);
         }
 
         private readonly struct BindingKey : IEquatable<BindingKey>
@@ -166,21 +186,28 @@ namespace UnityBox.AnimatorOptimizer
             public BindingKey(EditorCurveBinding binding)
             {
                 Path = binding.path ?? string.Empty;
-                TypeName = binding.type == null ? string.Empty : binding.type.FullName ?? binding.type.Name;
+                BindingType = binding.type;
                 PropertyName = binding.propertyName ?? string.Empty;
                 IsPPtr = binding.isPPtrCurve;
             }
 
             private string Path { get; }
-            private string TypeName { get; }
+            private Type BindingType { get; }
             private string PropertyName { get; }
             public bool IsPPtr { get; }
+
+            public bool IsSafeAdditiveFloatBinding => !IsPPtr &&
+                ((BindingType == typeof(Transform) &&
+                    (string.Equals(PropertyName, "m_LocalPosition.x", StringComparison.Ordinal) ||
+                     string.Equals(PropertyName, "m_LocalPosition.y", StringComparison.Ordinal) ||
+                     string.Equals(PropertyName, "m_LocalPosition.z", StringComparison.Ordinal))) ||
+                 (BindingType == typeof(SkinnedMeshRenderer) && PropertyName.StartsWith("blendShape.", StringComparison.Ordinal)));
 
             public bool Equals(BindingKey other)
             {
                 return IsPPtr == other.IsPPtr &&
                        string.Equals(Path, other.Path, StringComparison.Ordinal) &&
-                       string.Equals(TypeName, other.TypeName, StringComparison.Ordinal) &&
+                       BindingType == other.BindingType &&
                        string.Equals(PropertyName, other.PropertyName, StringComparison.Ordinal);
             }
 
@@ -194,7 +221,7 @@ namespace UnityBox.AnimatorOptimizer
                 unchecked
                 {
                     var hash = StringComparer.Ordinal.GetHashCode(Path);
-                    hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(TypeName);
+                    hash = hash * 397 ^ (BindingType?.GetHashCode() ?? 0);
                     hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(PropertyName);
                     hash = hash * 397 ^ (IsPPtr ? 1 : 0);
                     return hash;
@@ -227,12 +254,15 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             }
 
-            var options = config.CreateOptions();
+            var options = config.CreateOptions().Clone();
+            // Coalescing is a separate whole-controller pass. Explicit index mode
+            // must not silently modify unrequested legacy reactive layers.
+            options.MergeSynchronizedStateMachines &= config.OptimizeAllConvertibleLayers;
             if (options.EnableAapStateRegisterOptimization)
             {
-                // The AAP tree writes real Animator FloatCurves. This virtual processor
-                // cannot safely synthesize those curves, so leave the physical fallback
-                // eligible instead of marking NDMF as processed and silently skipping it.
+                // The symbolic AAP materializer currently targets physical controllers.
+                // VirtualClip can write FloatCurves, but this adapter does not yet
+                // implement the same register/layer contract. Keep fallback eligible.
                 Debug.LogWarning("[AnimatorOptimizer] AAP StateRegister is handled by the physical VRCSDK fallback; NDMF virtual processing is skipped.");
                 return;
             }
@@ -242,12 +272,28 @@ namespace UnityBox.AnimatorOptimizer
             // physical source controller a second time.
             AnimatorOptimizerBuildState.MarkNdmfProcessed(context.AvatarRootObject);
 
-            if (controller.Layers.Any(layer => IsGeneratedLayerName(layer.Name, options.GeneratedLayerName)))
+            if (controller.Layers.Any(layer => layer != null && IsGeneratedLayerName(layer.Name, options.GeneratedLayerName)))
                 return;
 
             var layers = controller.Layers.ToList();
+            if (layers.Any(layer => layer == null || layer.SyncedLayerMotionOverrides == null || layer.SyncedLayerBehaviourOverrides == null ||
+                !IsValidVirtualGraph(layer.StateMachine, new HashSet<VirtualNode>(), new HashSet<VirtualNode>()) ||
+                layer.SyncedLayerMotionOverrides.Values.Any(motion => !IsValidVirtualGraph(motion, new HashSet<VirtualNode>(), new HashSet<VirtualNode>()))))
+            {
+                Debug.LogWarning("[AnimatorOptimizer] Virtual graph contains cyclic or excessively deep references; preserving the controller.");
+                return;
+            }
+            var referenceIssue = FindInvalidVirtualLayerReferenceIssue(layers, options);
+            if (referenceIssue != null)
+            {
+                Debug.LogWarning("[AnimatorOptimizer] Preserving virtual controller: " + referenceIssue);
+                return;
+            }
             if (options.NormalizeAlwaysOneParameters)
+            {
+                Debug.LogWarning("[AnimatorOptimizer] AlwaysOne aliasing assumes named parameters remain one at runtime; external writers cannot be excluded by static analysis.");
                 NormalizeVirtualAlwaysOneParameters(controller);
+            }
             var bindingsByLayer = new Dictionary<VirtualLayer, HashSet<BindingKey>>();
             var completeBindings = new HashSet<VirtualLayer>();
             foreach (var layer in layers)
@@ -260,8 +306,9 @@ namespace UnityBox.AnimatorOptimizer
                 }
             }
 
+            var analysisScope = BeginLayerScope(controller, options);
             var candidates = layers
-                .Select((layer, index) => TryBuildPlan(controller, layer, options, out var plan)
+                .Select((layer, index) => TryBuildPlan(controller, layer, options, out var plan, analysisScope)
                     ? new VirtualCandidate
                     {
                         Layer = layer,
@@ -275,17 +322,15 @@ namespace UnityBox.AnimatorOptimizer
                 .Where(candidate => candidate != null)
                 .ToList();
 
-            var candidateLayerSet = new HashSet<VirtualLayer>(
-                candidates.Where(candidate => completeBindings.Contains(candidate.Layer))
-                    .Select(candidate => candidate.Layer));
+            var syncedTargets = layers.Where(layer => layer != null && layer.SyncedLayerIndex >= 0)
+                .Select(layer => layer.SyncedLayerIndex).ToHashSet();
+            if (options.HasKnownPlayableLayer)
+                syncedTargets.UnionWith(EnumerateVirtualLayerControls(layers)
+                    .Where(control => ToVrcLayerType(control.playable) == ToVrcLayerType(options.TargetPlayableLayer))
+                    .Select(control => control.layer));
             var selected = candidates
                 .Where(candidate => completeBindings.Contains(candidate.Layer))
-                .Where(candidate => !layers.Any(otherLayer =>
-                    otherLayer != candidate.Layer &&
-                    !candidateLayerSet.Contains(otherLayer) &&
-                    ((!completeBindings.Contains(otherLayer) && candidate.Bindings.Count > 0) ||
-                     (bindingsByLayer.TryGetValue(otherLayer, out var otherBindings) &&
-                      candidate.Bindings.Intersect(otherBindings).Any()))))
+                .Where(candidate => !syncedTargets.Contains(candidate.Layer.VirtualLayerIndex))
                 .ToList();
 
             if (!config.OptimizeAllConvertibleLayers)
@@ -295,6 +340,22 @@ namespace UnityBox.AnimatorOptimizer
             }
             if (options.PreserveMmdCompatibility)
                 selected = selected.Where(candidate => candidate.Index != 0).ToList();
+
+            var hasKnownPlayableLayer = config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer;
+            if (hasKnownPlayableLayer || EnumerateVirtualLayerControls(layers).Any())
+            {
+                var layerControlIssue = FindVirtualLayerControlIssue(
+                    layers,
+                    selected.Select(candidate => candidate.Layer).ToHashSet(),
+                    config.PlayableLayer,
+                    hasKnownPlayableLayer);
+                if (layerControlIssue != null)
+                {
+                    Debug.LogWarning("[AnimatorOptimizer] NDMF skipped virtual Layer merge: " + layerControlIssue);
+                    CleanupVirtualController(controller, options);
+                    return;
+                }
+            }
 
             if (!config.MergeLayersWithEquivalentMasks && selected.Any(candidate => candidate.MaskKey != "<none>"))
             {
@@ -308,40 +369,35 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             var groups = selected
-                .GroupBy(candidate => candidate.Layer.BlendingMode + "|" + candidate.MaskKey, StringComparer.Ordinal)
+                .GroupBy(candidate => new
+                {
+                    candidate.Layer.BlendingMode,
+                    candidate.MaskKey,
+                    StateTag = candidate.Plan.StateTag ?? string.Empty,
+                })
                 .Select(group => new VirtualCandidateGroup
                 {
                     BlendingMode = group.First().Layer.BlendingMode,
                     MaskKey = group.First().MaskKey,
                     Mask = group.First().Mask,
+                    StateTag = group.Key.StateTag,
                     Candidates = group.OrderBy(candidate => candidate.Index).ToList(),
+                    OriginalCandidates = group.OrderBy(candidate => candidate.Index).ToList(),
                 })
                 .OrderBy(group => group.FirstIndex)
                 .ToList();
-            foreach (var group in groups)
-            {
-                if (group.Candidates.Count > 1 && !CanPreserveVirtualLayerBehaviours(group.Candidates))
-                {
-                    Debug.LogWarning($"[AnimatorOptimizer] NDMF skipped {group.BlendingMode}/{group.MaskKey}: StateMachine Behaviour semantics differ.");
-                    CleanupVirtualController(controller, options);
-                    return;
-                }
-                if (group.Candidates.Count > 1 && !CanMergeVirtualMotionSet(group.Candidates))
-                {
-                    Debug.LogWarning($"[AnimatorOptimizer] NDMF skipped {group.BlendingMode}/{group.MaskKey}: dynamic Motion timing cannot be proven synchronized.");
-                    CleanupVirtualController(controller, options);
-                    return;
-                }
-            }
-            if (HasInterleavedConflictingGroups(groups))
-            {
-                Debug.LogWarning("[AnimatorOptimizer] NDMF skipped interleaved BlendMode/Mask groups with shared bindings.");
-                CleanupVirtualController(controller, options);
-                return;
-            }
+            groups = groups.SelectMany(group => SplitVirtualCandidateGroup(group, layers, bindingsByLayer,
+                completeBindings, options)).ToList();
             var safeGroups = new List<VirtualCandidateGroup>();
             foreach (var group in groups)
             {
+                if (HasVirtualParameterOrderConflict(group, layers) ||
+                    !CanPreserveVirtualLayerBehaviours(group.Candidates) || !CanMergeVirtualMotionSet(group.Candidates) ||
+                    HasInterleavedConflictingGroups(safeGroups.Concat(new[] { group }).ToList()))
+                {
+                    Debug.LogWarning($"[AnimatorOptimizer] NDMF preserved {group.BlendingMode}/{group.MaskKey}: incompatible timing, behaviours or interleaved bindings.");
+                    continue;
+                }
                 var hasCurveOverlap = group.Candidates.Any(left => group.Candidates.Any(right =>
                     left != right && left.Bindings.Intersect(right.Bindings).Any()));
                 var canResolveOverlap = !hasCurveOverlap || CanResolveVirtualPriority(group.Candidates, options);
@@ -353,8 +409,27 @@ namespace UnityBox.AnimatorOptimizer
                 safeGroups.Add(group);
             }
 
+            // Removing one group turns it into retained layers for the remaining groups.
+            if (options.StrictCurveConflicts)
+            {
+                bool removed;
+                do
+                {
+                    var merging = safeGroups.SelectMany(group => group.OriginalCandidates)
+                        .Select(candidate => candidate.Layer).ToHashSet();
+                    removed = safeGroups.RemoveAll(group => layers.Select((layer, index) => (layer, index)).Any(item =>
+                        !merging.Contains(item.layer) && group.Candidates.Any(candidate => candidate.Bindings.Count > 0) &&
+                        (!completeBindings.Contains(item.layer) ||
+                         item.index > group.FirstIndex && item.index < group.OriginalCandidates.Max(candidate => candidate.Index) &&
+                         group.Candidates.SelectMany(candidate => candidate.Bindings).Intersect(bindingsByLayer[item.layer]).Any()))) > 0;
+                } while (removed);
+            }
+
+            foreach (var group in safeGroups)
+                group.Candidates = DeduplicateVirtualCandidates(group.Candidates, group.BlendingMode);
+
             selected = safeGroups.SelectMany(group => group.Candidates).ToList();
-            if (selected.Count < 2)
+            if (safeGroups.Sum(group => group.OriginalCandidates.Count) < 2)
             {
                 CleanupVirtualController(controller, options);
                 return;
@@ -367,10 +442,12 @@ namespace UnityBox.AnimatorOptimizer
                 CleanupVirtualController(controller, options);
                 return;
             }
-            if (options.AllowFloatConditionApproximation &&
-                selected.SelectMany(candidate => EnumerateVirtualPlanConditions(candidate.Plan))
-                    .Any(condition => condition.IsFloat))
-                Debug.LogWarning("[AnimatorOptimizer] NDMF virtual conversion uses Float Transition approximation; threshold boundaries may differ from Animator step semantics.");
+            if (options.AllowFloatConditionApproximation)
+                Debug.LogWarning("[AnimatorOptimizer] Float approximation fallback is enabled; exact representable boundaries are preferred, but unsupported edges may use interpolation.");
+            foreach (var candidate in safeGroups.SelectMany(group => group.OriginalCandidates))
+                foreach (var assumption in candidate.Plan.Assumptions)
+                    Debug.LogWarning($"[AnimatorOptimizer] 启发式 [{candidate.Index}] {candidate.Layer.Name}: {assumption}");
+            MaterializeVirtualBakedMotions(selected);
             var emptyClip = VirtualClip.Create(GeneratedAssetPrefix + "Empty");
             var weightParameter = AddWeightParameter(controller, options);
             var generatedLayerName = string.IsNullOrWhiteSpace(options.GeneratedLayerName)
@@ -385,6 +462,7 @@ namespace UnityBox.AnimatorOptimizer
                 rootTree.BlendType = BlendTreeType.Direct;
                 rootTree.BlendParameter = weightParameter;
                 rootTree.UseAutomaticThresholds = false;
+                rootTree.NormalizedBlendValues = false;
                 var hasCurveOverlap = group.Candidates.Any(left => group.Candidates.Any(right =>
                     left != right && left.Bindings.Intersect(right.Bindings).Any()));
                 var canResolveOverlap = !hasCurveOverlap || CanResolveVirtualPriority(group.Candidates, options);
@@ -412,10 +490,20 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 else
                 {
+                    if (hasCurveOverlap && options.StrictCurveConflicts)
+                        throw new InvalidOperationException("NDMF generation cannot preserve the analyzed property priority; refusing a Direct blend fallback.");
                     rootTree.Children = group.Candidates.Select(candidate => new VirtualBlendTree.VirtualChildMotion
                     {
                         Motion = BuildPlanMotion(controller, candidate.Plan, emptyClip),
                         DirectBlendParameter = weightParameter,
+                        TimeScale = candidate.Plan.IsConstant && candidate.Plan.ConstantMotion != null
+                            ? candidate.Plan.ConstantMotion.Speed
+                            : 1f,
+                        CycleOffset = candidate.Plan.IsConstant && candidate.Plan.ConstantMotion != null
+                            ? candidate.Plan.ConstantMotion.CycleOffset
+                            : 0f,
+                        Mirror = candidate.Plan.IsConstant && candidate.Plan.ConstantMotion != null &&
+                                 candidate.Plan.ConstantMotion.Mirror,
                     }).ToImmutableList();
                 }
 
@@ -433,6 +521,7 @@ namespace UnityBox.AnimatorOptimizer
                     GeneratedAssetPrefix + "Root (WD On) " + groupNumber,
                     rootTree,
                     new Vector3(320f, 80f, 0f));
+                state.Tag = group.StateTag ?? string.Empty;
                 state.WriteDefaultValues = true;
                 generatedLayer.StateMachine.DefaultState = state;
                 generatedLayers.Add(generatedLayer);
@@ -445,7 +534,9 @@ namespace UnityBox.AnimatorOptimizer
                 groupNumber++;
             }
 
-            var selectedSet = new HashSet<VirtualLayer>(selected.Select(candidate => candidate.Layer));
+            var selectedSet = new HashSet<VirtualLayer>(safeGroups
+                .SelectMany(group => group.OriginalCandidates)
+                .Select(candidate => candidate.Layer));
             var outputLayers = new List<VirtualLayer>(layers.Count - selected.Count + generatedLayers.Count);
             for (var index = 0; index < layers.Count; index++)
             {
@@ -454,6 +545,19 @@ namespace UnityBox.AnimatorOptimizer
                 if (!selectedSet.Contains(layers[index]))
                     outputLayers.Add(layers[index]);
             }
+            var layerControlRewriteIssue = RewriteVirtualLayerIndexReferences(
+                layers,
+                outputLayers,
+                config.PlayableLayer,
+                hasKnownPlayableLayer);
+            if (layerControlRewriteIssue != null)
+            {
+                Debug.LogWarning("[AnimatorOptimizer] NDMF skipped virtual Layer merge: " + layerControlRewriteIssue);
+                controller.Layers = layers;
+                CleanupVirtualController(controller, options);
+                return;
+            }
+            RewriteVirtualSyncedLayerReferences(layers, outputLayers);
             controller.Layers = outputLayers;
             CleanupVirtualController(controller, options);
             controller.NormalizeFirstLayerWeights();
@@ -470,12 +574,28 @@ namespace UnityBox.AnimatorOptimizer
                 return;
 
             var layers = controller.Layers.ToList();
+            var referenceIssue = FindInvalidVirtualLayerReferenceIssue(layers, options);
+            if (referenceIssue != null)
+            {
+                Debug.LogWarning("[AnimatorOptimizer] Skipped cleanup: " + referenceIssue);
+                return;
+            }
             var originalLayers = layers.ToList();
-            if (options.RemoveEffectivelyEmptyLayers)
+            var controls = EnumerateVirtualLayerControls(layers).ToList();
+            var unknownControlContext = !options.HasKnownPlayableLayer && controls.Count > 0;
+            var protectedIndices = layers.Where(layer => layer != null && layer.SyncedLayerIndex >= 0)
+                .Select(layer => layer.SyncedLayerIndex).ToHashSet();
+            foreach (var control in controls)
+                if (!options.HasKnownPlayableLayer || ToVrcLayerType(control.playable) == ToVrcLayerType(options.TargetPlayableLayer))
+                    protectedIndices.Add(control.layer);
+            if (options.MergeSynchronizedStateMachines && !unknownControlContext)
+                MergeSynchronizedVirtualLayers(controller, layers, protectedIndices, options);
+            if (options.RemoveEffectivelyEmptyLayers && !unknownControlContext)
             {
                 layers = layers
                     .Select((layer, index) => new { layer, index })
                     .Where(item => item.index == 0 ||
+                        item.layer != null && protectedIndices.Contains(item.layer.VirtualLayerIndex) ||
                         item.layer != null &&
                         (string.Equals(item.layer.Name, "MMD Dummy Layer 1", StringComparison.Ordinal) ||
                          string.Equals(item.layer.Name, "MMD Dummy Layer 2", StringComparison.Ordinal)) ||
@@ -486,7 +606,7 @@ namespace UnityBox.AnimatorOptimizer
                     .ToList();
             }
 
-            if (options.PreserveMmdCompatibility)
+            if (options.PreserveMmdCompatibility && !unknownControlContext)
             {
                 EnsureVirtualMmdCompatibilityLayers(controller, layers);
                 return;
@@ -498,35 +618,35 @@ namespace UnityBox.AnimatorOptimizer
         private static bool IsEffectivelyEmptyVirtualLayer(VirtualLayer layer)
         {
             if (layer == null || layer.IKPass || layer.SyncedLayerIndex >= 0 ||
-                layer.SyncedLayerAffectsTiming || layer.StateMachine == null)
+                layer.StateMachine == null)
                 return false;
             var stateMachine = layer.StateMachine;
-            if (stateMachine.Behaviours.Count > 0 || stateMachine.EntryTransitions.Count > 0 ||
-                stateMachine.AnyStateTransitions.Count > 0 || stateMachine.StateMachines.Count > 0)
+            if (stateMachine.Behaviours.Count > 0 || GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count > 0 ||
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Count > 0 || stateMachine.StateMachines.Count > 0)
                 return false;
-            return stateMachine.States.All(child => child.State == null ||
+            return stateMachine.States.All(child => child.State != null &&
                 child.State.Behaviours.Count == 0 &&
-                (child.State.Transitions == null || child.State.Transitions.Count == 0) &&
-                !child.State.WriteDefaultValues && !child.State.IKOnFeet && !child.State.Mirror &&
-                Mathf.Approximately(child.State.Speed, 1f) &&
-                Mathf.Approximately(child.State.CycleOffset, 0f) &&
-                child.State.SpeedParameter == null && child.State.CycleOffsetParameter == null &&
-                child.State.MirrorParameter == null && child.State.TimeParameter == null &&
-                IsEffectivelyEmptyVirtualMotion(child.State.Motion, new HashSet<int>()));
+                GetEffectiveVirtualTransitions(child.State.Transitions).Count == 0 &&
+                !child.State.WriteDefaultValues && !child.State.IKOnFeet &&
+                IsFinite(child.State.Speed) && IsFinite(child.State.CycleOffset) &&
+                (!(child.State.Mirror || child.State.MirrorParameter != null) || IsPropertyOnlyVirtualMotion(child.State.Motion)) &&
+                IsEffectivelyEmptyVirtualMotion(child.State.Motion, new HashSet<VirtualMotion>()));
         }
 
         private static bool IsEffectivelyEmptyVirtualMotion(
             VirtualMotion motion,
-            HashSet<int> visited)
+            HashSet<VirtualMotion> visited)
         {
             if (motion == null)
-                return true;
+                return false; // WD Off null Motion is not equivalent to an empty clip.
             if (motion is VirtualClip clip)
-                return !clip.IsMarkerClip && !IsPotentialProxyVirtualClip(clip) && !clip.GetFloatCurveBindings().Any() &&
+                  return IsOrdinaryVirtualClip(clip) && !clip.Settings.hasAdditiveReferencePose &&
+                      clip.Settings.additiveReferencePoseClip == null && clip.AdditiveReferencePoseClip == null &&
+                       !HasVirtualAnimationEvents(clip) && !clip.GetFloatCurveBindings().Any() &&
                        !clip.GetObjectCurveBindings().Any();
-            if (!(motion is VirtualBlendTree tree) || !visited.Add(motion.GetHashCode()))
+            if (!(motion is VirtualBlendTree tree) || !visited.Add(motion))
                 return false;
-            return tree.Children.All(child => IsEffectivelyEmptyVirtualMotion(child.Motion, visited));
+            return tree.Children.All(child => IsEffectivelyEmptyVirtualMotion(child.Motion, new HashSet<VirtualMotion>(visited)));
         }
 
         private static bool IsPotentialProxyVirtualClip(VirtualClip clip)
@@ -535,18 +655,48 @@ namespace UnityBox.AnimatorOptimizer
                    clip.Name.StartsWith("proxy_", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static List<T> GetEffectiveVirtualTransitions<T>(IEnumerable<T> transitions)
+            where T : VirtualTransitionBase
+        {
+            var active = (transitions ?? Enumerable.Empty<T>())
+                .Where(transition => transition != null && !transition.Mute)
+                .ToList();
+            if (active.Any(transition => transition.Solo))
+                active = active.Where(transition => transition.Solo).ToList();
+            active = active.Where(transition => transition is not VirtualStateTransition stateTransition ||
+                stateTransition.ExitTime.HasValue || stateTransition.Conditions.Count > 0).ToList();
+            // Solo/mute selection precedes satisfiability: an impossible solo edge
+            // must not accidentally reactivate non-solo edges.
+            var controller = currentLayerScope?.Controller;
+            if (controller != null)
+                active = active.Where(transition => AnimatorOptimizerSemanticUtility.ConditionsMayBeReachable(
+                    transition.Conditions, name =>
+                        controller.Parameters.TryGetValue(name, out var declaration) ? declaration.type :
+                        TryGetVirtualGlobalParameterType(name, out var global) ? global.type :
+                        (AnimatorControllerParameterType?)null)).ToList();
+            return active;
+        }
+
+        private static bool HasVirtualAnimationEvents(VirtualClip clip)
+        {
+            if (!TryGetVirtualOriginalObject(clip, out AnimationClip original))
+            {
+                Debug.LogWarning("[AnimatorOptimizer] NDMF could not inspect VirtualClip origin; preserving the Layer to avoid dropping AnimationEvent semantics.");
+                return true;
+            }
+            return original != null && original.events != null && original.events.Length > 0;
+        }
+
         private static void EnsureVirtualMmdCompatibilityLayers(
             VirtualAnimatorController controller,
             List<VirtualLayer> layers)
         {
-            var originalLayers = layers.ToList();
-            var dummy1 = layers.FirstOrDefault(layer => layer != null &&
+            var dummy1 = layers.Skip(1).FirstOrDefault(layer => IsReusableVirtualMmdDummyLayer(layer) &&
                 string.Equals(layer.Name, "MMD Dummy Layer 1", StringComparison.Ordinal));
-            var dummy2 = layers.FirstOrDefault(layer => layer != null &&
+            var dummy2 = layers.Skip(1).FirstOrDefault(layer => IsReusableVirtualMmdDummyLayer(layer) &&
                 string.Equals(layer.Name, "MMD Dummy Layer 2", StringComparison.Ordinal));
-            layers.RemoveAll(layer => layer != null &&
-                (string.Equals(layer.Name, "MMD Dummy Layer 1", StringComparison.Ordinal) ||
-                 string.Equals(layer.Name, "MMD Dummy Layer 2", StringComparison.Ordinal)));
+            if (dummy1 != null) layers.Remove(dummy1);
+            if (dummy2 != null) layers.Remove(dummy2);
             if (layers.Count == 0)
             {
                 var baseLayer = controller.AddLayer(new LayerPriority(0), "Base Layer");
@@ -559,30 +709,238 @@ namespace UnityBox.AnimatorOptimizer
             dummy2.DefaultWeight = 0f;
             layers.Insert(Math.Min(1, layers.Count), dummy1);
             layers.Insert(Math.Min(2, layers.Count), dummy2);
+            // Only insert/move layers; virtual identities and override references
+            // remain unchanged. NDMF performs physical remapping at commit.
+            controller.Layers = layers;
+        }
 
-            foreach (var layer in layers.ToList())
+        private static bool IsReusableVirtualMmdDummyLayer(VirtualLayer layer) => layer?.StateMachine != null &&
+            layer.OriginalPhysicalLayerIndex != 0 && layer.DefaultWeight == 0f && layer.AvatarMask == null &&
+            layer.BlendingMode == AnimatorLayerBlendingMode.Override && layer.SyncedLayerIndex < 0 && !layer.IKPass &&
+            layer.StateMachine.Behaviours.Count == 0 && layer.StateMachine.States.Count == 0 &&
+            layer.StateMachine.StateMachines.Count == 0 && layer.StateMachine.EntryTransitions.Count == 0 &&
+            layer.StateMachine.AnyStateTransitions.Count == 0;
+
+        private static string FindVirtualLayerControlIssue(
+            IReadOnlyList<VirtualLayer> layers,
+            ISet<VirtualLayer> selected,
+            AnimatorOptimizerComponent.PlayableLayer targetPlayableLayer,
+            bool hasKnownPlayableLayer)
+        {
+            if (!hasKnownPlayableLayer && EnumerateVirtualLayerControls(layers).Any())
+                return "LayerControl target Playable context is unknown; preserving virtual layers.";
+            var targetType = ToVrcLayerType(targetPlayableLayer);
+            foreach (var owner in layers)
             {
-                var oldLayer = originalLayers.FirstOrDefault(candidate => candidate == layer);
-                if (oldLayer == null || oldLayer.SyncedLayerIndex < 0)
-                    continue;
-                var oldTarget = originalLayers.FirstOrDefault(candidate =>
-                    candidate != null && candidate.VirtualLayerIndex == oldLayer.SyncedLayerIndex);
-                if (oldTarget == null || !layers.Contains(oldTarget))
+                foreach (var control in EnumerateVirtualLayerControls(owner))
                 {
-                    layer.SyncedLayerIndex = -1;
-                    layer.SyncedLayerAffectsTiming = false;
+                    if (hasKnownPlayableLayer && ToVrcLayerType(control.playable) != targetType)
+                        continue;
+                    var target = layers.FirstOrDefault(layer =>
+                        layer != null && layer.VirtualLayerIndex == control.layer);
+                    if (target == null)
+                        return $"LayerControl from '{owner?.Name}' references unknown virtual index {control.layer}.";
+                    if (target != null && selected.Contains(target))
+                    {
+                        return $"VRCAnimatorLayerControl from '{owner?.Name}' targets selected Layer '{target.Name}' (index {control.layer}).";
+                    }
                 }
             }
-            controller.Layers = layers;
+            return null;
+        }
+
+        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateVirtualLayerControls(
+            IEnumerable<VirtualLayer> layers)
+        {
+            foreach (var layer in layers ?? Enumerable.Empty<VirtualLayer>())
+                foreach (var control in EnumerateVirtualLayerControls(layer)) yield return control;
+        }
+
+        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateVirtualLayerControls(VirtualLayer layer)
+        {
+            foreach (var control in EnumerateVirtualLayerControls(layer?.StateMachine)) yield return control;
+            if (layer != null)
+                foreach (var control in layer.SyncedLayerBehaviourOverrides.Values.SelectMany(behaviours => behaviours)
+                    .OfType<VRC_AnimatorLayerControl>()) yield return control;
+        }
+
+        private static string FindInvalidVirtualLayerReferenceIssue(IReadOnlyList<VirtualLayer> layers, AnimatorOptimizerOptions options)
+        {
+            if (layers.Any(layer => layer == null) || layers.Select(layer => layer.VirtualLayerIndex).Distinct().Count() != layers.Count)
+                return "Missing layer or duplicate virtual identity.";
+            if (layers.Any(layer => layer.SyncedLayerMotionOverrides == null || layer.SyncedLayerBehaviourOverrides == null ||
+                layer.SyncedLayerBehaviourOverrides.Values.Any(behaviours => behaviours == null)))
+                return "Synced Layer override collections are missing.";
+            var byId = layers.ToDictionary(layer => layer.VirtualLayerIndex);
+            foreach (var layer in layers)
+            {
+                var chain = new HashSet<int> { layer.VirtualLayerIndex };
+                var index = layer.SyncedLayerIndex;
+                var sourceStates = new HashSet<VirtualState>();
+                var hasOverrides = layer.SyncedLayerMotionOverrides.Count > 0 || layer.SyncedLayerBehaviourOverrides.Count > 0;
+                while (index >= 0)
+                {
+                    if (!byId.TryGetValue(index, out var target) || !chain.Add(index))
+                        return $"Synced Layer '{layer.Name}' has a missing or cyclic target ({index}).";
+                    if (hasOverrides && target.StateMachine != null)
+                        sourceStates.UnionWith(target.StateMachine.AllStates());
+                    index = target.SyncedLayerIndex;
+                }
+                if (index != -1) return $"Synced Layer '{layer.Name}' has an invalid negative target ({index}).";
+                if (layer.SyncedLayerIndex >= 0 && layer.SyncedLayerMotionOverrides.Keys
+                    .Concat(layer.SyncedLayerBehaviourOverrides.Keys).Any(state => state == null || !sourceStates.Contains(state)))
+                    return $"Synced Layer '{layer.Name}' contains an override for a state outside its source graph.";
+            }
+            if (options.HasKnownPlayableLayer)
+                foreach (var control in EnumerateVirtualLayerControls(layers))
+                    if (ToVrcLayerType(control.playable) == ToVrcLayerType(options.TargetPlayableLayer) && !byId.ContainsKey(control.layer))
+                        return $"LayerControl references a missing virtual target ({control.layer}).";
+            return null;
+        }
+
+        private static string RewriteVirtualLayerIndexReferences(
+            IReadOnlyList<VirtualLayer> oldLayers,
+            IReadOnlyList<VirtualLayer> newLayers,
+            AnimatorOptimizerComponent.PlayableLayer targetPlayableLayer,
+            bool hasKnownPlayableLayer)
+        {
+            if (oldLayers == null || newLayers == null)
+                return null;
+
+            // NDMF commits virtual indices to physical indices; never rewrite them here.
+            var retained = new HashSet<VirtualLayer>(newLayers);
+            var targetType = ToVrcLayerType(targetPlayableLayer);
+            foreach (var owner in newLayers)
+            {
+                foreach (var control in EnumerateVirtualLayerControls(owner))
+                {
+                    if (hasKnownPlayableLayer && ToVrcLayerType(control.playable) != targetType)
+                        continue;
+                    var oldTarget = oldLayers.FirstOrDefault(layer =>
+                        layer != null && layer.VirtualLayerIndex == control.layer);
+                    if (oldTarget == null || !retained.Contains(oldTarget))
+                    {
+                        return $"VRCAnimatorLayerControl from '{owner?.Name}' has invalid or removed target index {control.layer}.";
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static void RewriteVirtualSyncedLayerReferences(
+            IReadOnlyList<VirtualLayer> oldLayers,
+            IReadOnlyList<VirtualLayer> newLayers)
+        {
+            if (oldLayers == null || newLayers == null)
+                return;
+            var retained = new HashSet<VirtualLayer>(newLayers);
+            foreach (var layer in newLayers)
+            {
+                if (layer == null || layer.SyncedLayerIndex < 0)
+                    continue;
+                var target = oldLayers.FirstOrDefault(candidate =>
+                    candidate != null && candidate.VirtualLayerIndex == layer.SyncedLayerIndex);
+                if (target == null || !retained.Contains(target))
+                    throw new InvalidOperationException("Synced Layer target was removed; refusing to disable synchronization implicitly.");
+            }
+        }
+
+        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateVirtualLayerControls(
+            VirtualStateMachine stateMachine)
+        {
+            if (stateMachine == null)
+                yield break;
+            foreach (var behaviour in stateMachine.Behaviours)
+            {
+                if (behaviour is VRC_AnimatorLayerControl control)
+                    yield return control;
+            }
+            foreach (var child in stateMachine.States)
+            {
+                if (child.State == null)
+                    continue;
+                foreach (var behaviour in child.State.Behaviours)
+                {
+                    if (behaviour is VRC_AnimatorLayerControl control)
+                        yield return control;
+                }
+            }
+            foreach (var child in stateMachine.StateMachines)
+            {
+                foreach (var control in EnumerateVirtualLayerControls(child.StateMachine))
+                    yield return control;
+            }
+        }
+
+        private static VRCAvatarDescriptor.AnimLayerType ToVrcLayerType(
+            VRC_AnimatorLayerControl.BlendableLayer playable)
+        {
+            switch (playable)
+            {
+                case VRC_AnimatorLayerControl.BlendableLayer.Action:
+                    return VRCAvatarDescriptor.AnimLayerType.Action;
+                case VRC_AnimatorLayerControl.BlendableLayer.Additive:
+                    return VRCAvatarDescriptor.AnimLayerType.Additive;
+                case VRC_AnimatorLayerControl.BlendableLayer.Gesture:
+                    return VRCAvatarDescriptor.AnimLayerType.Gesture;
+                case VRC_AnimatorLayerControl.BlendableLayer.FX:
+                    return VRCAvatarDescriptor.AnimLayerType.FX;
+                default:
+                    return VRCAvatarDescriptor.AnimLayerType.FX;
+            }
         }
 
         private static string GetMaskKey(VirtualAvatarMask mask)
         {
             if (mask == null)
                 return "<none>";
-            return string.Join(";", mask.Elements
-                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => pair.Key + "=" + pair.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture)));
+            try
+            {
+                // NDMF commits this private clone, not OriginalObject (which may
+                // have changed since cloning). Unknown versions fall back to identity.
+                var concreteMask = VirtualMaskObjectField?.GetValue(mask) as AvatarMask;
+                if (concreteMask != null && mask.Elements != null && mask.Elements.All(pair => IsFinite(pair.Value)))
+                {
+                    var humanoidParts = Enumerable.Range(0, (int)AvatarMaskBodyPart.LastBodyPart)
+                        .Select(part => "human:" + part + "=" + concreteMask.GetHumanoidBodyPartActive((AvatarMaskBodyPart)part));
+                    return string.Join(";", humanoidParts.Concat(mask.Elements
+                        .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                        .Select(pair => "transform:" + pair.Key.Length + ":" + pair.Key + "=" +
+                            pair.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))));
+                }
+            }
+            catch
+            {
+                // Missing metadata is not proof that all humanoid mask bits are false.
+            }
+            return "unknown-mask:" + AnimatorOptimizerSemanticUtility.ReferenceKey(mask);
+        }
+
+        private static T GetVirtualOriginalObject<T>(VirtualNode node)
+            where T : UnityEngine.Object
+        {
+            return TryGetVirtualOriginalObject(node, out T value) ? value : null;
+        }
+
+        private static bool TryGetVirtualOriginalObject<T>(
+            VirtualNode node,
+            out T original)
+            where T : UnityEngine.Object
+        {
+            original = null;
+            if (node == null)
+                return true;
+            if (VirtualOriginalObjectProperty == null)
+                return false;
+            try
+            {
+                original = VirtualOriginalObjectProperty.GetValue(node) as T;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool IsGeneratedLayerName(string name, string configuredName)
@@ -639,16 +997,34 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyList<VirtualCandidate> candidates,
             AnimatorOptimizerOptions options)
         {
+            if (!options.ResolveOverridePriorityWithStaticComposite)
+                return false;
+            var lowerBindings = new HashSet<BindingKey>();
+            foreach (var candidate in candidates.OrderBy(item => item.Index))
+            {
+                var overlap = lowerBindings.Intersect(candidate.Bindings).ToList();
+                foreach (var motion in EnumerateVirtualPlanMotions(candidate.Plan))
+                {
+                    var guaranteed = new HashSet<BindingKey>();
+                    if (motion != null && motion.Mirror ||
+                        !TryCollectVirtualGuaranteedBindings(motion?.Motion, guaranteed) ||
+                        overlap.Any(binding => !guaranteed.Contains(binding)))
+                        return false;
+                }
+                lowerBindings.UnionWith(candidate.Bindings);
+            }
             if (!TryBuildVirtualPriorityDimensions(candidates, options, out var dimensions, out _))
                 return false;
             if (candidates.Any(candidate => candidate.Layer.BlendingMode == AnimatorLayerBlendingMode.Additive))
             {
+                if (candidates.SelectMany(candidate => candidate.Bindings).Any(binding => binding.IsPPtr))
+                    return false;
                 for (var leftIndex = 0; leftIndex < candidates.Count; leftIndex++)
                 {
                     for (var rightIndex = leftIndex + 1; rightIndex < candidates.Count; rightIndex++)
                     {
                         if (candidates[leftIndex].Bindings.Intersect(candidates[rightIndex].Bindings)
-                            .Any(binding => binding.IsPPtr))
+                            .Any(binding => binding.IsPPtr || !binding.IsSafeAdditiveFloatBinding))
                             return false;
                     }
                 }
@@ -660,12 +1036,28 @@ namespace UnityBox.AnimatorOptimizer
             {
                 foreach (var motion in EnumerateVirtualPlanMotions(candidate.Plan))
                 {
+                    if (motion?.Bake != null)
+                    {
+                        if (motion.Bake.Parameter != null || motion.Bake.Frames.Length != 1) return false;
+                        continue;
+                    }
                     if (motion?.Motion != null &&
                         (!(motion.Motion is VirtualClip clip) || clip.IsMarkerClip ||
                          IsPotentialProxyVirtualClip(clip) || !IsStaticVirtualClip(clip)))
                         return false;
                 }
             }
+            var references = candidates.SelectMany(candidate => EnumerateVirtualPlanMotions(candidate.Plan)).ToList();
+            if (references.Any(motion => motion?.Bake != null))
+                return AreSampledVirtualMotionsCompatible(references);
+            var staticClips = references
+                .Select(motion => motion?.Motion)
+                .OfType<VirtualClip>()
+                .ToList();
+            if (staticClips.Select(clip => clip.Legacy).Distinct().Count() > 1)
+                return false;
+            if (staticClips.Skip(1).Any(clip => !AreCompatibleVirtualClipMetadata(staticClips[0], clip)))
+                return false;
             return true;
         }
 
@@ -674,7 +1066,8 @@ namespace UnityBox.AnimatorOptimizer
             AnimatorLayerBlendingMode blendingMode)
         {
             if (candidates == null || candidates.Count < 2 ||
-                candidates.Any(candidate => candidate.Plan == null || !candidate.Plan.IsConstant))
+                candidates.Any(candidate => candidate.Plan == null || !candidate.Plan.IsConstant ||
+                    candidate.Plan.ConstantMotion == null || candidate.Plan.ConstantMotion.Mirror))
                 return false;
 
             var clips = candidates.Select(candidate => candidate.Plan.ConstantMotion?.Motion).ToList();
@@ -682,15 +1075,24 @@ namespace UnityBox.AnimatorOptimizer
                 clips.Cast<VirtualClip>().Any(clip => clip.IsMarkerClip || IsPotentialProxyVirtualClip(clip) ||
                     !IsStaticVirtualClip(clip)))
                 return false;
+            if (clips.Cast<VirtualClip>().Select(clip => clip.Legacy).Distinct().Count() > 1)
+                return false;
+            if (clips.Cast<VirtualClip>().Skip(1).Any(clip => !AreCompatibleVirtualClipMetadata(
+                    clips.Cast<VirtualClip>().First(), clip)))
+                return false;
 
             if (blendingMode == AnimatorLayerBlendingMode.Additive)
             {
+                if (candidates.SelectMany(candidate => candidate.Bindings).Any(binding => binding.IsPPtr) ||
+                    !AreStaticVirtualAdditiveValuesFinite(candidates.OrderBy(candidate => candidate.Index)
+                        .Select(candidate => candidate.Plan.ConstantMotion)))
+                    return false;
                 for (var leftIndex = 0; leftIndex < candidates.Count; leftIndex++)
                 {
                     for (var rightIndex = leftIndex + 1; rightIndex < candidates.Count; rightIndex++)
                     {
                         if (candidates[leftIndex].Bindings.Intersect(candidates[rightIndex].Bindings)
-                            .Any(binding => binding.IsPPtr))
+                            .Any(binding => binding.IsPPtr || !binding.IsSafeAdditiveFloatBinding))
                             return false;
                     }
                 }
@@ -702,17 +1104,286 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (candidates == null || candidates.Count < 2)
                 return true;
+            if (candidates.Any(candidate => candidate.Plan == null ||
+                candidate.Layer.BlendingMode == AnimatorLayerBlendingMode.Additive && candidate.Bindings.Any(binding => binding.IsPPtr)))
+                return false;
+            if (candidates[0].Layer.BlendingMode == AnimatorLayerBlendingMode.Additive &&
+                candidates.All(candidate => candidate.Plan.IsConstant &&
+                    (candidate.Plan.ConstantMotion?.Bake != null
+                        ? candidate.Plan.ConstantMotion.Bake.Parameter == null && candidate.Plan.ConstantMotion.Bake.Frames.Length == 1
+                        : candidate.Plan.ConstantMotion?.Motion is VirtualClip clip && IsStaticVirtualClip(clip))) &&
+                !AreStaticVirtualAdditiveValuesFinite(candidates.OrderBy(candidate => candidate.Index)
+                    .Select(candidate => candidate.Plan.ConstantMotion)))
+                return false;
+            if (!HasVirtualBindingOverlap(candidates) && candidates.All(CanRetainVirtualPlanAsDirectChild) &&
+                candidates.All(candidate => EnumerateVirtualPlanMotions(candidate.Plan).All(motion =>
+                    IsTimeIndependentVirtualRef(motion))))
+                return true;
+            if (candidates.All(candidate => EnumerateVirtualPlanMotions(candidate.Plan).All(motion =>
+                motion != null && motion.Motion != null && IsTimeIndependentVirtualRef(motion))))
+                return true;
             if (candidates.All(candidate => candidate.Plan != null && candidate.Plan.IsConstant))
-                return TryBuildVirtualLayerComposite(candidates, candidates[0].Layer.BlendingMode, out _, out _);
-            return candidates.All(candidate => EnumerateVirtualPlanMotions(candidate.Plan).All(motion =>
-                motion != null && motion.Motion != null && IsTimeIndependentMotion(motion.Motion)));
+                return CanMergeStaticVirtualCandidates(candidates, candidates[0].Layer.BlendingMode) ||
+                    TryBuildVirtualLayerComposite(candidates, candidates[0].Layer.BlendingMode, out _, out _, validateOnly: true);
+            return false;
+        }
+
+        private static bool HasVirtualBindingOverlap(IReadOnlyList<VirtualCandidate> candidates)
+        {
+            for (var leftIndex = 0; leftIndex < candidates.Count; leftIndex++)
+            {
+                for (var rightIndex = leftIndex + 1; rightIndex < candidates.Count; rightIndex++)
+                {
+                    if (candidates[leftIndex].Bindings.Intersect(candidates[rightIndex].Bindings).Any())
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool CanRetainVirtualPlanAsDirectChild(VirtualCandidate candidate)
+        {
+            return candidate?.Plan != null && EnumerateVirtualPlanMotions(candidate.Plan).All(motion =>
+                motion?.Motion == null ||
+                !ContainsVirtualAnimationEvents(motion.Motion, new HashSet<VirtualMotion>()) &&
+                !ContainsVirtualAdditiveReferencePose(motion.Motion, new HashSet<VirtualMotion>()));
+        }
+
+        private static bool ContainsVirtualAdditiveReferencePose(
+            VirtualMotion motion,
+            ISet<VirtualMotion> visited)
+        {
+            if (motion == null || !visited.Add(motion))
+                return false;
+            if (motion is VirtualClip clip)
+            {
+                var settings = clip.Settings;
+                return settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null ||
+                       clip.AdditiveReferencePoseClip != null;
+            }
+            return motion is VirtualBlendTree tree && tree.Children.Any(child =>
+                ContainsVirtualAdditiveReferencePose(child.Motion, visited));
+        }
+
+        private static List<VirtualCandidate> DeduplicateVirtualCandidates(
+            IReadOnlyList<VirtualCandidate> candidates,
+            AnimatorLayerBlendingMode blendingMode)
+        {
+            if (candidates == null || candidates.Count < 2 ||
+                blendingMode == AnimatorLayerBlendingMode.Additive)
+                return (candidates ?? Array.Empty<VirtualCandidate>()).ToList();
+
+            var unique = new List<VirtualCandidate>();
+            var allKeys = candidates.Select(candidate => BuildVirtualPlanEquivalenceKey(candidate.Plan)).ToList();
+            if (allKeys.All(key => key != null && key == allKeys[0]))
+                return new List<VirtualCandidate> { candidates.OrderBy(candidate => candidate.Index).First() };
+            if (HasVirtualBindingOverlap(candidates))
+                return candidates.ToList();
+            var keys = new Dictionary<VirtualCandidate, string>();
+            foreach (var candidate in candidates.OrderBy(item => item.Index))
+            {
+                var key = BuildVirtualPlanEquivalenceKey(candidate.Plan);
+                if (key == null || unique.Any(existing =>
+                        keys.TryGetValue(existing, out var existingKey) &&
+                        string.Equals(existingKey, key, StringComparison.Ordinal)))
+                {
+                    if (key == null)
+                        unique.Add(candidate);
+                    continue;
+                }
+
+                keys[candidate] = key;
+                unique.Add(candidate);
+            }
+            return unique;
+        }
+
+        private static string BuildVirtualPlanEquivalenceKey(VirtualPlan plan)
+        {
+            if (plan == null)
+                return null;
+
+            if (plan.IsConstant)
+            {
+                var constantKey = BuildVirtualMotionRefEquivalenceKey(plan.ConstantMotion);
+                return constantKey == null ? null : "constant:" + constantKey;
+            }
+
+            if (plan.BooleanParameters != null && plan.TruthTable != null)
+            {
+                var tableKeys = plan.TruthTable.OrderBy(pair => pair.Key)
+                    .Select(pair => BuildVirtualMotionRefEquivalenceKey(pair.Value))
+                    .ToList();
+                if (tableKeys.Any(key => key == null))
+                    return null;
+                return "bool:" + string.Concat(plan.BooleanParameters.Select(AnimatorOptimizerSynchronizedGraph.Atom)) + ":" +
+                       string.Join("|", plan.TruthTable.OrderBy(pair => pair.Key)
+                           .Zip(tableKeys, (pair, key) => pair.Key + "=" + AnimatorOptimizerSynchronizedGraph.Atom(key)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(plan.SelectorParameter) && plan.SelectorSamples != null)
+            {
+                var sampleKeys = plan.SelectorSamples
+                    .Select(sample => BuildVirtualMotionRefEquivalenceKey(sample.Motion))
+                    .ToList();
+                if (sampleKeys.Any(key => key == null))
+                    return null;
+                  return "selector:" + AnimatorOptimizerSynchronizedGraph.Atom(plan.SelectorParameter) + ":" +
+                      plan.SelectorParameterType + ":" + plan.SelectorIsApproximate + ":" +
+                       string.Join("|", plan.SelectorSamples.Zip(sampleKeys, (sample, key) =>
+                           sample.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "=" +
+                           AnimatorOptimizerSynchronizedGraph.Atom(key)));
+            }
+
+            if (plan.DecisionDimensions != null && plan.DecisionTable != null)
+            {
+                var decisionKeys = plan.DecisionTable.OrderBy(pair => pair.Key)
+                    .Select(pair => BuildVirtualMotionRefEquivalenceKey(pair.Value))
+                    .ToList();
+                if (decisionKeys.Any(key => key == null))
+                    return null;
+                return "finite:" + string.Concat(plan.DecisionDimensions.Select(dimension =>
+                           AnimatorOptimizerSynchronizedGraph.Atom(AnimatorOptimizerSynchronizedGraph.Atom(dimension.Parameter) +
+                               dimension.Type + ":" + dimension.IsApproximate + ":" + string.Join(",", dimension.Values.Select(value =>
+                                   value.ToString("R", System.Globalization.CultureInfo.InvariantCulture)))))) + ":" +
+                       string.Join("|", plan.DecisionTable.OrderBy(pair => pair.Key)
+                           .Zip(decisionKeys, (pair, key) => pair.Key + "=" + AnimatorOptimizerSynchronizedGraph.Atom(key)));
+            }
+
+            return null;
+        }
+
+        private static string BuildVirtualMotionRefEquivalenceKey(VirtualMotionRef motion)
+        {
+            if (motion == null)
+                return "null";
+            if (motion.Bake != null) return motion.Bake.Key;
+            var motionKey = BuildVirtualMotionEquivalenceKey(motion.Motion, new HashSet<VirtualMotion>());
+            return motionKey == null
+                ? null
+                : AnimatorOptimizerSynchronizedGraph.Atom(motionKey) + ":" + motion.Speed.ToString("R", System.Globalization.CultureInfo.InvariantCulture) +
+                  ":" + motion.CycleOffset.ToString("R", System.Globalization.CultureInfo.InvariantCulture) +
+                  ":" + motion.Mirror;
+        }
+
+        private static string BuildVirtualMotionEquivalenceKey(
+            VirtualMotion motion,
+            ISet<VirtualMotion> active)
+        {
+            if (motion == null)
+                return "null";
+            if (!active.Add(motion))
+                return null;
+
+            if (motion is VirtualClip clip)
+            {
+                if (!IsOrdinaryVirtualClip(clip) || HasVirtualAnimationEvents(clip))
+                    return null;
+                var floatCurves = clip.GetFloatCurveBindings()
+                    .OrderBy(binding => BuildVirtualBindingKey(binding), StringComparer.Ordinal)
+                    .Select(binding => "f:" + BuildVirtualBindingKey(binding) + ":" +
+                        BuildVirtualCurveKey(clip.GetFloatCurve(binding)));
+                var objectCurves = clip.GetObjectCurveBindings()
+                    .OrderBy(binding => BuildVirtualBindingKey(binding), StringComparer.Ordinal)
+                    .Select(binding => "o:" + BuildVirtualBindingKey(binding) + ":" +
+                        BuildVirtualObjectCurveKey(clip.GetObjectCurve(binding)));
+                var settings = clip.Settings;
+                if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null ||
+                    clip.AdditiveReferencePoseClip != null)
+                {
+                    active.Remove(motion);
+                    return null;
+                }
+                var bounds = clip.LocalBounds;
+                var key = "clip:" + clip.Legacy + ":" +
+                       clip.FrameRate.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       clip.WrapMode + ":hq:" + clip.UseHighQualityCurves + ":" +
+                       settings.loopTime + ":" + settings.loopBlend + ":" +
+                       settings.loopBlendOrientation + ":" +
+                       settings.loopBlendPositionY + ":" +
+                       settings.loopBlendPositionXZ + ":" + settings.keepOriginalOrientation + ":" +
+                       settings.keepOriginalPositionY + ":" + settings.keepOriginalPositionXZ + ":" +
+                       settings.heightFromFeet + ":" +
+                       settings.startTime.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       settings.stopTime.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       settings.orientationOffsetY.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       settings.level.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       settings.cycleOffset.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":bounds:" +
+                       bounds.center.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                       bounds.center.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                       bounds.center.z.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                       bounds.extents.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                       bounds.extents.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                       bounds.extents.z.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       string.Concat(floatCurves.Concat(objectCurves).Select(AnimatorOptimizerSynchronizedGraph.Atom));
+                active.Remove(motion);
+                return key;
+            }
+
+            if (motion is VirtualBlendTree tree)
+            {
+                var children = new List<string>();
+                foreach (var child in tree.Children)
+                {
+                    var childKey = BuildVirtualMotionEquivalenceKey(child.Motion, active);
+                    if (childKey == null)
+                        return null;
+                    children.Add(string.Concat(new[]
+                    {
+                        childKey,
+                        child.Threshold.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        child.Position.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        child.Position.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        child.TimeScale.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        child.CycleOffset.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        child.Mirror.ToString(),
+                        child.DirectBlendParameter ?? string.Empty,
+                    }.Select(AnimatorOptimizerSynchronizedGraph.Atom)));
+                }
+                active.Remove(motion);
+                  return "tree:" + tree.BlendType + ":" + AnimatorOptimizerSynchronizedGraph.Atom(tree.BlendParameter) +
+                      AnimatorOptimizerSynchronizedGraph.Atom(tree.BlendParameterY) + ":" +
+                       tree.MinThreshold.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       tree.MaxThreshold.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                       tree.UseAutomaticThresholds + ":" + tree.NormalizedBlendValues + ":" +
+                       string.Concat(children.Select(AnimatorOptimizerSynchronizedGraph.Atom));
+            }
+
+            active.Remove(motion);
+            return null;
+        }
+
+        private static string BuildVirtualCurveKey(AnimationCurve curve)
+        {
+            if (curve == null)
+                return "null";
+            return curve.preWrapMode + ":" + curve.postWrapMode + ":" + string.Join(";", curve.keys.Select(key =>
+                string.Join(",", new[]
+                {
+                    key.time.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.value.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.inTangent.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.outTangent.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.inWeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.outWeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                    key.weightedMode.ToString(),
+                })));
+        }
+
+        private static string BuildVirtualObjectCurveKey(ObjectReferenceKeyframe[] curve)
+        {
+            if (curve == null)
+                return "null";
+            return string.Join(";", curve.Select(key => key.time.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                (key.value == null ? "0" : key.value.GetInstanceID().ToString())));
         }
 
         private static bool TryBuildVirtualLayerComposite(
             IReadOnlyList<VirtualCandidate> candidates,
             AnimatorLayerBlendingMode blendingMode,
             out VirtualClip composite,
-            out VirtualMotionRef compositeSettings)
+            out VirtualMotionRef compositeSettings,
+            bool validateOnly = false)
         {
             composite = null;
             compositeSettings = null;
@@ -725,27 +1396,49 @@ namespace UnityBox.AnimatorOptimizer
                 .OrderBy(candidate => candidate.Index)
                 .Select(candidate => (VirtualClip)candidate.Plan.ConstantMotion.Motion)
                 .ToList();
-            if (clips.Any(clip => clip.IsMarkerClip || IsPotentialProxyVirtualClip(clip) ||
+            if (candidates.Any(candidate => candidate.Plan.ConstantMotion.Mirror))
+                return false;
+                if (clips.Any(clip => !IsOrdinaryVirtualClip(clip) || HasVirtualAnimationEvents(clip) ||
                     clip.Settings.hasAdditiveReferencePose ||
-                    clip.AdditiveReferencePoseClip != null))
+                    clip.Settings.additiveReferencePoseClip != null || clip.AdditiveReferencePoseClip != null))
                 return false;
             var first = clips[0];
             var firstSettings = first.Settings;
+            var firstObservedLength = GetVirtualObservedLength(first);
+            var firstMotionSettings = candidates
+                .OrderBy(candidate => candidate.Index)
+                .First()
+                .Plan
+                .ConstantMotion;
             foreach (var clip in clips.Skip(1))
             {
                 if (clip.FrameRate != first.FrameRate || clip.WrapMode != first.WrapMode ||
+                    clip.Legacy != first.Legacy ||
+                    clip.UseHighQualityCurves != first.UseHighQualityCurves ||
+                    !AreVirtualObservedLengthsCompatible(firstObservedLength, GetVirtualObservedLength(clip)) ||
                     !AreCompatibleVirtualClipSettings(firstSettings, clip.Settings))
+                    return false;
+            }
+            foreach (var candidate in candidates.OrderBy(candidate => candidate.Index).Skip(1))
+            {
+                var motionSettings = candidate.Plan.ConstantMotion;
+                if (motionSettings == null || firstMotionSettings == null ||
+                    motionSettings.Speed != firstMotionSettings.Speed ||
+                    motionSettings.CycleOffset != firstMotionSettings.CycleOffset ||
+                    motionSettings.Mirror != firstMotionSettings.Mirror)
                     return false;
             }
 
             if (blendingMode == AnimatorLayerBlendingMode.Additive)
             {
+                if (candidates.SelectMany(candidate => candidate.Bindings).Any(binding => binding.IsPPtr))
+                    return false;
                 for (var leftIndex = 0; leftIndex < candidates.Count; leftIndex++)
                 {
                     for (var rightIndex = leftIndex + 1; rightIndex < candidates.Count; rightIndex++)
                     {
                         if (candidates[leftIndex].Bindings.Intersect(candidates[rightIndex].Bindings)
-                            .Any(binding => binding.IsPPtr))
+                            .Any(binding => binding.IsPPtr || !binding.IsSafeAdditiveFloatBinding))
                             return false;
                     }
                 }
@@ -787,9 +1480,13 @@ namespace UnityBox.AnimatorOptimizer
                 }
             }
 
+            if (validateOnly) return true;
             composite = VirtualClip.Create(GeneratedAssetPrefix + "TimedComposite_" + virtualPriorityCounter++);
+            composite.Legacy = first.Legacy;
+            composite.UseHighQualityCurves = first.UseHighQualityCurves;
             composite.FrameRate = first.FrameRate;
             composite.WrapMode = first.WrapMode;
+            composite.LocalBounds = GetCombinedVirtualLocalBounds(clips);
             composite.Settings = firstSettings;
             foreach (var curve in floatCurves.Values)
                 composite.SetFloatCurve(curve.Binding, curve.Curve);
@@ -797,6 +1494,47 @@ namespace UnityBox.AnimatorOptimizer
                 composite.SetObjectCurve(curve.Binding, curve.Curve);
             compositeSettings = candidates[0].Plan.ConstantMotion;
             return true;
+        }
+
+        private static bool AreCompatibleVirtualClipMetadata(VirtualClip left, VirtualClip right)
+        {
+            if (left == null || right == null || left.Legacy != right.Legacy ||
+                left.FrameRate != right.FrameRate || left.WrapMode != right.WrapMode ||
+                left.UseHighQualityCurves != right.UseHighQualityCurves)
+                return false;
+            return AreCompatibleVirtualClipSettings(left.Settings, right.Settings);
+        }
+
+        private static Bounds GetCombinedVirtualLocalBounds(IEnumerable<VirtualClip> clips)
+        {
+            var sourceClips = clips?.Where(clip => clip != null).ToList() ?? new List<VirtualClip>();
+            if (sourceClips.Count == 0)
+                return default(Bounds);
+            var bounds = sourceClips[0].LocalBounds;
+            for (var index = 1; index < sourceClips.Count; index++)
+                bounds.Encapsulate(sourceClips[index].LocalBounds);
+            return bounds;
+        }
+
+        private static float? GetVirtualObservedLength(VirtualClip clip)
+        {
+            if (clip == null)
+                return null;
+            var times = clip.GetFloatCurveBindings()
+                .SelectMany(binding => clip.GetFloatCurve(binding)?.keys ?? Array.Empty<Keyframe>())
+                .Select(key => key.time)
+                .Concat(clip.GetObjectCurveBindings()
+                    .SelectMany(binding => clip.GetObjectCurve(binding) ?? Array.Empty<ObjectReferenceKeyframe>())
+                    .Select(key => key.time))
+                .ToList();
+            return times.Count == 0 ? (float?)null : times.Max();
+        }
+
+        private static bool AreVirtualObservedLengthsCompatible(float? left, float? right)
+        {
+            if (left.HasValue != right.HasValue)
+                return false;
+            return !left.HasValue || left.Value == right.Value;
         }
 
         private static bool AreCompatibleVirtualClipSettings(
@@ -812,11 +1550,14 @@ namespace UnityBox.AnimatorOptimizer
                    left.keepOriginalPositionY == right.keepOriginalPositionY &&
                    left.keepOriginalPositionXZ == right.keepOriginalPositionXZ &&
                    left.heightFromFeet == right.heightFromFeet &&
-                   Mathf.Approximately(left.startTime, right.startTime) &&
-                   Mathf.Approximately(left.stopTime, right.stopTime) &&
-                   Mathf.Approximately(left.orientationOffsetY, right.orientationOffsetY) &&
-                   Mathf.Approximately(left.level, right.level) &&
-                   Mathf.Approximately(left.cycleOffset, right.cycleOffset);
+                   left.hasAdditiveReferencePose == right.hasAdditiveReferencePose &&
+                   left.additiveReferencePoseClip == right.additiveReferencePoseClip &&
+                   left.additiveReferencePoseTime == right.additiveReferencePoseTime &&
+                   left.startTime == right.startTime &&
+                   left.stopTime == right.stopTime &&
+                   left.orientationOffsetY == right.orientationOffsetY &&
+                   left.level == right.level &&
+                   left.cycleOffset == right.cycleOffset;
         }
 
         private static bool TryAddVirtualCompatibleCurves(
@@ -833,15 +1574,29 @@ namespace UnityBox.AnimatorOptimizer
             var keys = new Keyframe[leftKeys.Length];
             for (var index = 0; index < keys.Length; index++)
             {
-                if (!Mathf.Approximately(leftKeys[index].time, rightKeys[index].time) ||
+                if (leftKeys[index].time != rightKeys[index].time ||
                     leftKeys[index].weightedMode != rightKeys[index].weightedMode ||
-                    !Mathf.Approximately(leftKeys[index].inWeight, rightKeys[index].inWeight) ||
-                    !Mathf.Approximately(leftKeys[index].outWeight, rightKeys[index].outWeight))
+                    leftKeys[index].inWeight != rightKeys[index].inWeight ||
+                    leftKeys[index].outWeight != rightKeys[index].outWeight ||
+                    float.IsNaN(leftKeys[index].time) || float.IsNaN(rightKeys[index].time) ||
+                    float.IsInfinity(leftKeys[index].time) || float.IsInfinity(rightKeys[index].time) ||
+                    float.IsNaN(leftKeys[index].value) || float.IsNaN(rightKeys[index].value) ||
+                    float.IsInfinity(leftKeys[index].value) || float.IsInfinity(rightKeys[index].value) ||
+                    float.IsNaN(leftKeys[index].inWeight) || float.IsNaN(rightKeys[index].inWeight) ||
+                    float.IsNaN(leftKeys[index].outWeight) || float.IsNaN(rightKeys[index].outWeight) ||
+                    float.IsInfinity(leftKeys[index].inWeight) || float.IsInfinity(rightKeys[index].inWeight) ||
+                    float.IsInfinity(leftKeys[index].outWeight) || float.IsInfinity(rightKeys[index].outWeight) ||
+                    float.IsNaN(leftKeys[index].inTangent) || float.IsNaN(rightKeys[index].inTangent) ||
+                    float.IsNaN(leftKeys[index].outTangent) || float.IsNaN(rightKeys[index].outTangent) ||
+                    float.IsInfinity(leftKeys[index].inTangent) || float.IsInfinity(rightKeys[index].inTangent) ||
+                    float.IsInfinity(leftKeys[index].outTangent) || float.IsInfinity(rightKeys[index].outTangent))
                     return false;
                 var key = leftKeys[index];
                 key.value += rightKeys[index].value;
                 key.inTangent += rightKeys[index].inTangent;
                 key.outTangent += rightKeys[index].outTangent;
+                if (!IsFinite(key.value) || !IsFinite(key.inTangent) || !IsFinite(key.outTangent))
+                    return false;
                 keys[index] = key;
             }
             result = new AnimationCurve(keys)
@@ -860,12 +1615,11 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (depth >= dimensions.Count)
             {
-                foreach (var candidate in candidates)
-                {
-                    if (EvaluateVirtualPlan(candidate.Plan, values) == null && !candidate.Plan.IsConstant)
-                        return false;
-                }
-                return true;
+                var motions = candidates.OrderBy(candidate => candidate.Index)
+                    .Select(candidate => EvaluateVirtualPlan(candidate.Plan, values)).ToList();
+                return motions.All(motion => motion != null) &&
+                    (candidates.Count == 0 || candidates[0].Layer.BlendingMode != AnimatorLayerBlendingMode.Additive ||
+                     AreStaticVirtualAdditiveValuesFinite(motions));
             }
 
             var dimension = dimensions[depth];
@@ -876,6 +1630,40 @@ namespace UnityBox.AnimatorOptimizer
                     return false;
             }
             values.Remove(dimension.Parameter);
+            return true;
+        }
+
+        private static bool AreStaticVirtualAdditiveValuesFinite(IEnumerable<VirtualMotionRef> motions)
+        {
+            var sums = new Dictionary<BindingKey, float>();
+            foreach (var motion in motions)
+            {
+                if (motion?.Motion == null) continue;
+                if (motion.Bake != null)
+                {
+                    if (motion.Bake.Parameter != null || motion.Bake.Frames.Length != 1) return false;
+                    for (var index = 0; index < motion.Bake.FloatBindings.Length; index++)
+                    {
+                        var key = new BindingKey(motion.Bake.FloatBindings[index]);
+                        sums.TryGetValue(key, out var previous);
+                        var sum = previous + motion.Bake.Frames[0].Floats[index];
+                        if (!IsFinite(sum)) return false;
+                        sums[key] = sum;
+                    }
+                    continue;
+                }
+                if (motion.Motion is not VirtualClip clip || !IsStaticVirtualClip(clip)) return false;
+                foreach (var binding in clip.GetFloatCurveBindings())
+                {
+                    var curve = clip.GetFloatCurve(binding);
+                    if (curve == null || curve.length == 0) continue;
+                    var key = new BindingKey(binding);
+                    sums.TryGetValue(key, out var previous);
+                    var sum = previous + curve.keys[0].value;
+                    if (!IsFinite(sum)) return false;
+                    sums[key] = sum;
+                }
+            }
             return true;
         }
 
@@ -920,6 +1708,12 @@ namespace UnityBox.AnimatorOptimizer
             out long combinations)
         {
             var valuesByParameter = new Dictionary<string, SortedSet<float>>(StringComparer.Ordinal);
+            var binary = candidates.SelectMany(candidate => candidate.Plan?.AssumedBinaryParameters ?? new HashSet<string>()).ToHashSet();
+            if (candidates.Any(candidate => candidate.Plan != null &&
+                (!string.IsNullOrWhiteSpace(candidate.Plan.SelectorParameter) && binary.Contains(candidate.Plan.SelectorParameter) ||
+                 (candidate.Plan.DecisionDimensions ?? new List<VirtualDecisionDimension>()).Any(axis =>
+                    binary.Contains(axis.Parameter) && axis.Type != AnimatorControllerParameterType.Bool))))
+                return FailVirtualDimensions(out dimensions, out combinations);
             foreach (var candidate in candidates)
             {
                 var plan = candidate.Plan;
@@ -932,16 +1726,22 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 else if (!string.IsNullOrWhiteSpace(plan.SelectorParameter))
                 {
-                    if (plan.SelectorParameterType != AnimatorControllerParameterType.Int)
+                    if (plan.SelectorIsApproximate ||
+                        plan.SelectorParameterType != AnimatorControllerParameterType.Int &&
+                        plan.SelectorParameterType != AnimatorControllerParameterType.Float)
                         return FailVirtualDimensions(out dimensions, out combinations);
                     foreach (var sample in plan.SelectorSamples ?? Enumerable.Empty<(float Value, VirtualMotionRef Motion)>())
                         AddVirtualPriorityValue(valuesByParameter, plan.SelectorParameter, sample.Value);
                 }
-                    else if (plan.DecisionDimensions != null)
+                else if (plan.DecisionDimensions != null)
+                {
+                    foreach (var dimension in plan.DecisionDimensions)
                     {
-                        foreach (var dimension in plan.DecisionDimensions)
+                        if (dimension.IsApproximate)
+                            return FailVirtualDimensions(out dimensions, out combinations);
                         AddVirtualPriorityValue(valuesByParameter, dimension.Parameter, dimension.Values.ToArray());
                     }
+                }
                 else if (!plan.IsConstant)
                 {
                     return FailVirtualDimensions(out dimensions, out combinations);
@@ -959,7 +1759,9 @@ namespace UnityBox.AnimatorOptimizer
             combinations = 1;
             foreach (var dimension in dimensions)
             {
-                if (dimension.Values.Count == 0 || combinations > long.MaxValue / dimension.Values.Count)
+                if (!AnimatorOptimizerSemanticUtility.IsFiniteOrderedAxis(dimension.Values) ||
+                    dimension.Values.Count > options.MaxNumericSelectorSamples ||
+                    combinations > long.MaxValue / dimension.Values.Count)
                     return false;
                 combinations *= dimension.Values.Count;
             }
@@ -999,7 +1801,8 @@ namespace UnityBox.AnimatorOptimizer
             if (!TryBuildVirtualPriorityDimensions(candidates, options, out var dimensions, out _))
                 throw new InvalidOperationException("NDMF virtual Override priority cannot be represented with the configured finite domain.");
             return BuildVirtualPriorityNode(controller, candidates, dimensions, 0,
-                new Dictionary<string, float>(StringComparer.Ordinal), emptyClip, additive);
+                new Dictionary<string, float>(StringComparer.Ordinal), emptyClip, additive,
+                new Dictionary<string, VirtualMotion>(StringComparer.Ordinal));
         }
 
         private static VirtualMotion BuildVirtualPriorityNode(
@@ -1009,28 +1812,41 @@ namespace UnityBox.AnimatorOptimizer
             int depth,
             Dictionary<string, float> values,
             VirtualClip emptyClip,
-            bool additive)
+            bool additive,
+            IDictionary<string, VirtualMotion> memo)
         {
             if (depth >= dimensions.Count)
-                return CreateVirtualPriorityClip(candidates, values, emptyClip, additive);
+                return CreateVirtualPriorityClip(candidates, values, emptyClip, additive, memo);
 
             var dimension = dimensions[depth];
-            var tree = VirtualBlendTree.Create(GeneratedAssetPrefix + "PriorityTree_" + virtualPriorityCounter++);
-            tree.BlendType = BlendTreeType.Simple1D;
-            tree.BlendParameter = dimension.Parameter;
-            tree.UseAutomaticThresholds = false;
             var children = new List<VirtualBlendTree.VirtualChildMotion>();
             foreach (var value in dimension.Values)
             {
                 values[dimension.Parameter] = value;
                 children.Add(new VirtualBlendTree.VirtualChildMotion
                 {
-                    Motion = BuildVirtualPriorityNode(controller, candidates, dimensions, depth + 1, values, emptyClip, additive),
+                    Motion = BuildVirtualPriorityNode(controller, candidates, dimensions, depth + 1, values, emptyClip, additive, memo),
                     Threshold = value,
                 });
             }
             values.Remove(dimension.Parameter);
-            tree.Children = children.ToImmutableList();
+
+            var signatures = children.Select(child => BuildVirtualMotionSignature(new VirtualMotionRef { Motion = child.Motion })).ToList();
+            if (signatures.Count > 0 && signatures.All(signature =>
+                    string.Equals(signature, signatures[0], StringComparison.Ordinal)))
+                return children[0].Motion;
+
+            var retained = AnimatorOptimizerSemanticUtility.RetainRunEndpoints(signatures);
+            var memoKey = AnimatorOptimizerSemanticUtility.DecisionNodeKey(dimension.Parameter,
+                retained.Select(index => dimension.Values[index]), retained.Select(index => signatures[index]));
+            if (memo.TryGetValue(memoKey, out var cached))
+                return cached;
+            var tree = VirtualBlendTree.Create(GeneratedAssetPrefix + "PriorityTree_" + virtualPriorityCounter++);
+            tree.BlendType = BlendTreeType.Simple1D;
+            tree.BlendParameter = dimension.Parameter;
+            tree.UseAutomaticThresholds = false;
+            tree.Children = retained.Select(index => children[index]).ToImmutableList();
+            memo[memoKey] = tree;
             return tree;
         }
 
@@ -1044,6 +1860,8 @@ namespace UnityBox.AnimatorOptimizer
                 return plan.ConstantMotion;
             if (plan.BooleanParameters != null)
             {
+                if (plan.BooleanParameters.Count > 30)
+                    return null;
                 var mask = 0;
                 for (var index = 0; index < plan.BooleanParameters.Count; index++)
                 {
@@ -1052,42 +1870,44 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 return plan.TruthTable.TryGetValue(mask, out var motion) ? motion : null;
             }
-            if (values.TryGetValue(plan.SelectorParameter, out var selectorValue))
+            if (!string.IsNullOrWhiteSpace(plan.SelectorParameter) && values.TryGetValue(plan.SelectorParameter, out var selectorValue))
             {
-                var branch = plan.Branches?.OrderBy(item => item.Order)
-                    .FirstOrDefault(item => item.Conditions.All(condition => condition.Matches(selectorValue)));
-                if (branch != null)
-                    return branch.Motion;
-                return plan.SelectorSamples?.OrderBy(sample => Mathf.Abs(sample.Value - selectorValue))
-                    .FirstOrDefault().Motion;
+                if (plan.SelectorIsApproximate || plan.SelectorSamples == null) return null;
+                return AnimatorOptimizerSemanticUtility.TryEvaluateConstantTable(
+                    new IReadOnlyList<float>[] { plan.SelectorSamples.Select(sample => sample.Value).ToArray() },
+                    new[] { selectorValue }, plan.SelectorSamples.Select((sample, index) => (sample, index))
+                        .ToDictionary(item => item.index, item => item.sample.Motion),
+                    AreVirtualPriorityMotionsEquivalent, out var selectorMotion) ? selectorMotion : null;
             }
             if (plan.DecisionDimensions != null)
             {
-                var key = 0;
-                var stride = 1;
+                var inputs = new List<float>();
                 foreach (var dimension in plan.DecisionDimensions)
                 {
-                    if (!values.TryGetValue(dimension.Parameter, out var value))
-                        return null;
-                    var index = dimension.Values.FindIndex(candidate => Mathf.Approximately(candidate, value));
-                    if (index < 0)
-                        return null;
-                    key += index * stride;
-                    stride *= dimension.Values.Count;
+                    if (dimension.IsApproximate || !values.TryGetValue(dimension.Parameter, out var value)) return null;
+                    inputs.Add(value);
                 }
-                return plan.DecisionTable.TryGetValue(key, out var decisionMotion) ? decisionMotion : null;
+                return AnimatorOptimizerSemanticUtility.TryEvaluateConstantTable(
+                    plan.DecisionDimensions.Select(dimension => (IReadOnlyList<float>)dimension.Values).ToArray(),
+                    inputs, plan.DecisionTable, AreVirtualPriorityMotionsEquivalent, out var decisionMotion) ? decisionMotion : null;
             }
             return null;
         }
+
+        private static bool AreVirtualPriorityMotionsEquivalent(VirtualMotionRef left, VirtualMotionRef right) =>
+            left != null && right != null && string.Equals(BuildVirtualMotionSignature(left), BuildVirtualMotionSignature(right), StringComparison.Ordinal);
 
         private static VirtualClip CreateVirtualPriorityClip(
             IReadOnlyList<VirtualCandidate> candidates,
             IReadOnlyDictionary<string, float> values,
             VirtualClip emptyClip,
-            bool additive)
+            bool additive,
+            IDictionary<string, VirtualMotion> memo = null)
         {
             var floatCurves = new Dictionary<BindingKey, (EditorCurveBinding Binding, AnimationCurve Curve)>();
             var objectCurves = new Dictionary<BindingKey, (EditorCurveBinding Binding, ObjectReferenceKeyframe[] Curve)>();
+            VirtualClip legacySource = null;
+            var sourceClips = new List<VirtualClip>();
             foreach (var candidate in candidates.OrderBy(item => item.Index))
             {
                 var motion = EvaluateVirtualPlan(candidate.Plan, values);
@@ -1095,6 +1915,8 @@ namespace UnityBox.AnimatorOptimizer
                     continue;
                 if (!(motion.Motion is VirtualClip clip) || clip.IsMarkerClip)
                     throw new InvalidOperationException("NDMF virtual priority composite requires editable VirtualClip leaves.");
+                legacySource ??= clip;
+                sourceClips.Add(clip);
                 foreach (var binding in clip.GetFloatCurveBindings())
                 {
                     var curve = clip.GetFloatCurve(binding);
@@ -1115,11 +1937,35 @@ namespace UnityBox.AnimatorOptimizer
             if (floatCurves.Count == 0 && objectCurves.Count == 0)
                 return emptyClip;
 
+            var outputKey = "output:" + string.Concat(floatCurves.Values.Select(item =>
+                AnimatorOptimizerSynchronizedGraph.BindingKey(item.Binding) +
+                AnimatorOptimizerSynchronizedGraph.Atom(item.Curve.length == 0 ? "empty" :
+                    item.Curve.keys[0].value.ToString("R", System.Globalization.CultureInfo.InvariantCulture)))
+                .Concat(objectCurves.Values.Select(item => AnimatorOptimizerSynchronizedGraph.BindingKey(item.Binding) +
+                    AnimatorOptimizerSynchronizedGraph.Atom(item.Curve.Length == 0 ? "empty" :
+                        item.Curve[0].value == null ? "null" : item.Curve[0].value.GetInstanceID().ToString())))
+                .OrderBy(key => key, StringComparer.Ordinal).Select(AnimatorOptimizerSynchronizedGraph.Atom));
+            var bounds = GetCombinedVirtualLocalBounds(sourceClips);
+            outputKey += AnimatorOptimizerSynchronizedGraph.Atom(string.Join(",", new[] {
+                bounds.center.x, bounds.center.y, bounds.center.z, bounds.extents.x, bounds.extents.y, bounds.extents.z
+            }.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))));
+            if (memo != null && memo.TryGetValue(outputKey, out var cachedOutput)) return (VirtualClip)cachedOutput;
+
             var result = VirtualClip.Create(GeneratedAssetPrefix + "PriorityClip_" + virtualPriorityCounter++);
+            if (legacySource != null)
+            {
+                result.Legacy = legacySource.Legacy;
+                result.FrameRate = legacySource.FrameRate;
+                result.WrapMode = legacySource.WrapMode;
+                result.UseHighQualityCurves = legacySource.UseHighQualityCurves;
+                result.LocalBounds = GetCombinedVirtualLocalBounds(sourceClips);
+                result.Settings = legacySource.Settings;
+            }
             foreach (var curve in floatCurves.Values)
                 result.SetFloatCurve(curve.Binding, curve.Curve);
             foreach (var curve in objectCurves.Values)
                 result.SetObjectCurve(curve.Binding, curve.Curve);
+            if (memo != null) memo[outputKey] = result;
             return result;
         }
 
@@ -1138,46 +1984,114 @@ namespace UnityBox.AnimatorOptimizer
         {
             var leftValue = left == null || left.keys.Length == 0 ? 0f : left.keys[0].value;
             var rightValue = right == null || right.keys.Length == 0 ? 0f : right.keys[0].value;
-            return AnimationCurve.Constant(0f, 1f / 60f, leftValue + rightValue);
+            var sum = leftValue + rightValue;
+            if (!IsFinite(sum))
+                throw new InvalidOperationException("Static additive curves overflow; refusing non-finite animation output.");
+            return AnimationCurve.Constant(0f, 1f / 60f, sum);
         }
 
         private static bool IsStaticVirtualClip(VirtualClip clip)
         {
-            if (clip == null || IsPotentialProxyVirtualClip(clip))
+            if (!IsOrdinaryVirtualClip(clip))
                 return false;
             var settings = clip.Settings;
-            if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null)
+            if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null ||
+                clip.AdditiveReferencePoseClip != null)
                 return false;
             foreach (var binding in clip.GetFloatCurveBindings())
             {
                 var curve = clip.GetFloatCurve(binding);
-                if (!IsConstantVirtualCurve(curve))
+                if (binding.type == typeof(Animator) || !IsConstantVirtualCurve(curve))
                     return false;
             }
             foreach (var binding in clip.GetObjectCurveBindings())
             {
                 var curve = clip.GetObjectCurve(binding);
-                if (curve == null || curve.Length == 0)
-                    continue;
-                var firstValue = curve[0].value;
-                if (curve.Any(key => key.value != firstValue))
+                if (binding.type == typeof(Animator) || !IsConstantVirtualObjectCurve(curve))
                     return false;
             }
             return true;
+        }
+
+        private static bool IsConstantVirtualObjectCurve(ObjectReferenceKeyframe[] curve)
+        {
+            return AnimatorOptimizerSemanticUtility.IsConstantObjectCurve(curve);
         }
 
         private static bool TryBuildPlan(
             VirtualAnimatorController controller,
             VirtualLayer layer,
             AnimatorOptimizerOptions options,
-            out VirtualPlan plan)
+            out VirtualPlan plan,
+            VirtualLayerScope scope = null)
         {
             plan = null;
-            if (!TryBuildPlanCore(controller, layer, options, out var builtPlan))
+            var previousScope = currentLayerScope;
+            currentLayerScope = scope ?? BeginLayerScope(controller, options);
+            var previousExitTime = currentLayerScope.HasExitTime;
+            currentLayerScope.HasExitTime = HasEffectiveVirtualExitTime(layer?.StateMachine);
+            try
+            {
+                var built = TryBuildPlanCore(controller, layer, options, out var builtPlan);
+                bool HasTimedOutput() => built && EnumerateVirtualPlanMotions(builtPlan)
+                    .Any(motion => motion?.Bake == null && !IsTimeIndependentMotion(motion?.Motion));
+                void TryFinitePlan(bool allowHeuristics)
+                {
+                    if (!TryBuildFiniteVirtualGraphPlan(controller, layer, options, allowHeuristics, out var candidate) ||
+                        built && !HasTimedOutput() && VirtualPlanEntryCount(candidate) >= VirtualPlanEntryCount(builtPlan)) return;
+                    builtPlan = candidate;
+                    built = true;
+                }
+                if (!built || !HasTimedOutput() && VirtualPlanEntryCount(builtPlan) > 1) TryFinitePlan(false);
+                if (options.Heuristics != AnimatorOptimizerComponent.HeuristicFlags.None &&
+                    (!built || HasTimedOutput() || options.Heuristics.HasFlag(AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles) &&
+                     VirtualPlanEntryCount(builtPlan) > 1)) TryFinitePlan(true);
+                if (!built) return false;
+                // Bindings can be fully known while their AAP evaluation order must
+                // remain untouched (notably MA ActiveSelf proxies and RC v2 trees).
+                if (EnumerateVirtualPlanMotions(builtPlan).Any(motion =>
+                    ContainsVirtualAnimatorCurves(motion?.Motion, new HashSet<VirtualMotion>()) ||
+                    ContainsUnsupportedVirtualCurveData(motion?.Motion, new HashSet<VirtualMotion>())))
+                    return false;
+                if (!ValidateVirtualPlanParameters(controller, builtPlan, options))
+                    return false;
+                if (!TryGetUniformVirtualStateTag(layer?.StateMachine, out var stateTag))
+                    return false;
+                builtPlan.StateTag = stateTag;
+                plan = builtPlan;
+                if (options.VerboseLogging)
+                {
+                    foreach (var state in layer.StateMachine.AllStates().Where(state => state != null &&
+                        (state.SpeedParameter != null || state.CycleOffsetParameter != null || state.TimeParameter != null) &&
+                        IsTimeIndependentMotion(state.Motion)))
+                        Debug.Log($"[AnimatorOptimizer] NDMF '{layer.Name}/{state.Name}': time-independent output; playback parameters need not be copied into the generated tree. Transition timing is checked separately.");
+                }
+                return true;
+            }
+            finally
+            {
+                currentLayerScope.HasExitTime = previousExitTime;
+                currentLayerScope = previousScope;
+            }
+        }
+
+        private static bool TryGetUniformVirtualStateTag(
+            VirtualStateMachine stateMachine,
+            out string tag)
+        {
+            tag = string.Empty;
+            if (stateMachine == null)
                 return false;
-            if (!ValidateVirtualPlanParameters(controller, builtPlan, options))
+            var tagStates = stateMachine.StateMachines.Count == 0
+                ? GetPotentiallyReachableVirtualStates(stateMachine)
+                : stateMachine.AllStates().ToList();
+            var tags = tagStates
+                .Select(state => state?.Tag ?? string.Empty)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (tags.Count > 1)
                 return false;
-            plan = builtPlan;
+            tag = tags.FirstOrDefault() ?? string.Empty;
             return true;
         }
 
@@ -1193,17 +2107,19 @@ namespace UnityBox.AnimatorOptimizer
                 layer.StateMachine == null ||
                 (layer.BlendingMode != AnimatorLayerBlendingMode.Override &&
                  layer.BlendingMode != AnimatorLayerBlendingMode.Additive) || layer.IKPass ||
-                layer.SyncedLayerIndex >= 0 || layer.SyncedLayerAffectsTiming ||
-                !Mathf.Approximately(layer.DefaultWeight, 1f))
+                layer.SyncedLayerIndex >= 0 ||
+                controller.Layers.FirstOrDefault() != layer && layer.OriginalPhysicalLayerIndex != 0 && layer.DefaultWeight != 1f)
                 return false;
 
             var stateMachine = layer.StateMachine;
-            if (stateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) ||
+            if (!AnimatorOptimizerSynchronizedGraph.TryBuildMarkerKey(stateMachine.Behaviours, out _) ||
                 stateMachine.DefaultState == null && stateMachine.StateMachines.Count == 0)
                 return false;
 
             if (stateMachine.StateMachines.Count > 0)
             {
+                if (TryBuildVirtualNestedWrapperPlan(controller, layer, stateMachine, options, out plan))
+                    return true;
                 if (TryBuildVirtualNestedEffectEquivalentPlan(stateMachine, out plan))
                     return true;
                 if (!TryResolveVirtualNestedStaticDefault(stateMachine, out var nestedDefault) ||
@@ -1217,17 +2133,18 @@ namespace UnityBox.AnimatorOptimizer
                 return true;
             }
 
-            if (stateMachine.States.Any(child => child.State == null))
+            if (stateMachine.States.Any(child => child.State == null) ||
+                stateMachine.States.GroupBy(child => child.State).Any(group => group.Count() > 1))
                 return false;
 
-            var states = stateMachine.States.Select(child => child.State).ToList();
+            var states = GetPotentiallyReachableVirtualStates(stateMachine);
             if (TryBuildVirtualEntryDrivenPlan(controller, stateMachine, states, options, out plan))
                 return true;
             if (TryBuildVirtualEffectEquivalentPlan(stateMachine, states, out plan))
                 return true;
-            var allStatic = states.All(state => state.Transitions.Count == 0) &&
-                            stateMachine.AnyStateTransitions.Count == 0 &&
-                            stateMachine.EntryTransitions.Count == 0;
+            var allStatic = states.All(state => GetEffectiveVirtualTransitions(state.Transitions).Count == 0) &&
+                            GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Count == 0 &&
+                            GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count == 0;
             if (allStatic)
             {
                 if (!ValidateState(states.FirstOrDefault(state => state == stateMachine.DefaultState)))
@@ -1240,15 +2157,20 @@ namespace UnityBox.AnimatorOptimizer
                 return true;
             }
 
-            if (stateMachine.AnyStateTransitions.Count > 0 && states.Any(state => state.Transitions.Count > 0))
+            var effectiveAnyTransitions = GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions);
+            var hasStateTransitions = states.Any(state => GetEffectiveVirtualTransitions(state.Transitions).Count > 0);
+            if (TryBuildVirtualStateIndependentOutputPlan(controller, stateMachine, states, options, out plan))
+                return true;
+            if (hasStateTransitions || effectiveAnyTransitions.Any(transition => !transition.CanTransitionToSelf))
                 return false;
 
-            var transitions = stateMachine.AnyStateTransitions.ToList();
+            var transitions = effectiveAnyTransitions.ToList();
             if (transitions.Count == 0)
             {
-                if (states.Count != 2 || states.Any(state => state.Transitions.Count != 1))
+                if (states.Count == 2 && states.All(state => GetEffectiveVirtualTransitions(state.Transitions).Count == 1))
+                    transitions = states.Select(state => GetEffectiveVirtualTransitions(state.Transitions)[0]).ToList();
+                else if (!TryExtractVirtualStateIndependentTransitions(states, options.IgnoreTransitionTimingForStaticMotions, out transitions))
                     return false;
-                transitions = states.Select(state => state.Transitions[0]).ToList();
             }
 
             var branches = new List<VirtualBranch>();
@@ -1256,9 +2178,8 @@ namespace UnityBox.AnimatorOptimizer
             {
                 var transition = transitions[order];
                 if (transition == null || transition.DestinationState == null || transition.DestinationStateMachine != null ||
-                    transition.IsExit || transition.CanTransitionToSelf || transition.Mute || transition.Solo ||
-                    transition.ExitTime.HasValue || !Mathf.Approximately(transition.Duration, 0f) ||
-                    !Mathf.Approximately(transition.Offset, 0f) || transition.Conditions.Count == 0)
+                    transition.IsExit || transition.Mute ||
+                    HasBlockingVirtualTransitionTiming(transition) || transition.Conditions.Count == 0)
                     return false;
 
                 var conditions = new List<VirtualCondition>();
@@ -1291,6 +2212,265 @@ namespace UnityBox.AnimatorOptimizer
             return false;
         }
 
+        private static bool TryBuildVirtualNestedWrapperPlan(
+            VirtualAnimatorController controller,
+            VirtualLayer layer,
+            VirtualStateMachine rootStateMachine,
+            AnimatorOptimizerOptions options,
+            out VirtualPlan plan)
+        {
+            plan = null;
+            if (rootStateMachine == null || rootStateMachine.StateMachines.Count != 1 ||
+                rootStateMachine.States.Count != 0 || rootStateMachine.Behaviours.Count != 0 ||
+                GetEffectiveVirtualTransitions(rootStateMachine.AnyStateTransitions).Count != 0)
+                return false;
+
+            var childMachine = rootStateMachine.StateMachines[0].StateMachine;
+            if (childMachine == null || childMachine.Behaviours.Count != 0 ||
+                childMachine.States.Any(child => child.State != null &&
+                    GetEffectiveVirtualTransitions(child.State.Transitions).Any(transition => transition.IsExit)) ||
+                GetEffectiveVirtualTransitions(childMachine.AnyStateTransitions).Any(transition => transition.IsExit) ||
+                rootStateMachine.StateMachineTransitions.TryGetValue(childMachine, out var crossTransitions) &&
+                GetEffectiveVirtualTransitions(crossTransitions).Count != 0)
+                return false;
+
+            var entries = GetEffectiveVirtualTransitions(rootStateMachine.EntryTransitions);
+            if (entries.Count != 1)
+                return false;
+            var entry = entries[0];
+            if (entry.DestinationStateMachine != childMachine || entry.DestinationState != null ||
+                entry.IsExit || entry.Conditions.Count != 0)
+                return false;
+
+            var originalStateMachine = layer.StateMachine;
+            try
+            {
+                layer.StateMachine = childMachine;
+                return TryBuildPlanCore(controller, layer, options, out plan);
+            }
+            finally
+            {
+                layer.StateMachine = originalStateMachine;
+            }
+        }
+
+        private static List<VirtualState> GetPotentiallyReachableVirtualStates(VirtualStateMachine machine)
+        {
+            var states = machine.States.Select(child => child.State).Where(state => state != null).ToList();
+            var available = states.ToHashSet();
+            var reached = new HashSet<VirtualState>();
+            var pending = new Queue<VirtualState>();
+            void Add(VirtualState state)
+            {
+                if (state != null && available.Contains(state) && reached.Add(state)) pending.Enqueue(state);
+            }
+            Add(machine.DefaultState);
+            foreach (var transition in GetEffectiveVirtualTransitions(machine.EntryTransitions))
+                Add(transition.DestinationState);
+            if (pending.Count > 0)
+                foreach (var transition in GetEffectiveVirtualTransitions(machine.AnyStateTransitions))
+                    Add(transition.DestinationState);
+            while (pending.Count > 0)
+            {
+                var state = pending.Dequeue();
+                foreach (var transition in GetEffectiveVirtualTransitions(state.Transitions)) Add(transition.DestinationState);
+            }
+            return states.Where(reached.Contains).ToList();
+        }
+
+        private static bool TryExtractVirtualStateIndependentTransitions(
+            IReadOnlyList<VirtualState> states,
+            bool ignoreTiming,
+            out List<VirtualStateTransition> transitions)
+        {
+            transitions = null;
+            if (states == null || states.Count == 0 || states.Any(state => state == null))
+                return false;
+            var first = GetEffectiveVirtualTransitions(states[0].Transitions);
+            if (first.Count == 0)
+                return false;
+            foreach (var state in states.Skip(1))
+            {
+                var current = GetEffectiveVirtualTransitions(state.Transitions);
+                if (current.Count != first.Count)
+                    return false;
+                for (var index = 0; index < first.Count; index++)
+                {
+                    if (!AreEquivalentVirtualTransitions(first[index], current[index], ignoreTiming))
+                        return false;
+                }
+            }
+            transitions = first.ToList();
+            return true;
+        }
+
+        private static bool AreEquivalentVirtualTransitions(
+            VirtualStateTransition left,
+            VirtualStateTransition right,
+            bool ignoreTiming)
+        {
+            if (left == null || right == null)
+                return left == right;
+            if (left.DestinationState != right.DestinationState ||
+                left.DestinationStateMachine != right.DestinationStateMachine ||
+                left.IsExit != right.IsExit || left.Mute != right.Mute || left.Solo != right.Solo ||
+                left.CanTransitionToSelf != right.CanTransitionToSelf ||
+                left.InterruptionSource != right.InterruptionSource || left.OrderedInterruption != right.OrderedInterruption)
+                return false;
+            if (!ignoreTiming &&
+                (left.ExitTime.HasValue != right.ExitTime.HasValue ||
+                 left.ExitTime.HasValue && left.ExitTime.Value != right.ExitTime.Value ||
+                 left.Duration != right.Duration || left.Offset != right.Offset ||
+                 left.HasFixedDuration != right.HasFixedDuration))
+                return false;
+            if (left.Conditions.Count != right.Conditions.Count)
+                return false;
+            for (var index = 0; index < left.Conditions.Count; index++)
+            {
+                if (!string.Equals(left.Conditions[index].parameter, right.Conditions[index].parameter, StringComparison.Ordinal) ||
+                    left.Conditions[index].mode != right.Conditions[index].mode ||
+                    left.Conditions[index].threshold != right.Conditions[index].threshold)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Virtual mirror of the physical state-independent output proof: a graph whose
+        /// one-step result under every finite input is the same Motion regardless of the
+        /// current State has no observable history and can become a decision tree.
+        /// </summary>
+        private static bool TryBuildVirtualStateIndependentOutputPlan(
+            VirtualAnimatorController controller,
+            VirtualStateMachine stateMachine,
+            IReadOnlyList<VirtualState> states,
+            AnimatorOptimizerOptions options,
+            out VirtualPlan plan)
+        {
+            plan = null;
+            if (controller == null || stateMachine == null || states == null || states.Count < 2 ||
+                states.Any(state => state == null) ||
+                GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count > 0)
+                return false;
+
+            var stateSet = new HashSet<VirtualState>(states);
+            var anyTransitions = new List<VirtualNormalizedTransition>();
+            var effectiveAny = GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions);
+            for (var order = 0; order < effectiveAny.Count; order++)
+            {
+                var transition = effectiveAny[order];
+                if (transition == null || transition.DestinationState == null ||
+                    !stateSet.Contains(transition.DestinationState) || transition.DestinationStateMachine != null ||
+                    transition.IsExit ||
+                    HasBlockingVirtualTransitionTiming(transition) ||
+                    !TryNormalizeVirtualConditions(controller, transition.Conditions, options, out var conditions))
+                    return false;
+                anyTransitions.Add(new VirtualNormalizedTransition
+                {
+                    Destination = transition.DestinationState,
+                    Conditions = conditions,
+                    Order = order,
+                    CanTransitionToSelf = transition.CanTransitionToSelf,
+                });
+            }
+
+            var transitions = new List<VirtualNormalizedTransition>();
+            foreach (var state in states)
+            {
+                if (!ValidateState(state, allowTransitions: true) || !IsTimeIndependentMotion(state.Motion))
+                    return false;
+                var sourceTransitions = GetEffectiveVirtualTransitions(state.Transitions);
+                for (var order = 0; order < sourceTransitions.Count; order++)
+                {
+                    var transition = sourceTransitions[order];
+                    if (transition == null || transition.DestinationState == null ||
+                        !stateSet.Contains(transition.DestinationState) || transition.DestinationStateMachine != null ||
+                        transition.IsExit ||
+                        HasBlockingVirtualTransitionTiming(transition) ||
+                        !TryNormalizeVirtualConditions(controller, transition.Conditions, options, out var conditions))
+                        return false;
+                    transitions.Add(new VirtualNormalizedTransition
+                    {
+                        Source = state,
+                        Destination = transition.DestinationState,
+                        Conditions = conditions,
+                        Order = order,
+                    });
+                }
+            }
+            if (transitions.Count == 0 && anyTransitions.Count == 0)
+                return false;
+
+            var allTransitions = anyTransitions.Concat(transitions).ToList();
+            var allConditions = allTransitions.SelectMany(transition => transition.Conditions).ToList();
+            if (!TryBuildVirtualDecisionDimensions(allConditions, options, out var dimensions, out var combinations))
+                return false;
+
+            if (combinations > 65536L / states.Count)
+                return false;
+            var outputs = states.ToDictionary(state => state, ToMotionRef);
+            var outputKeys = outputs.ToDictionary(pair => pair.Key, pair =>
+                !pair.Value.Mirror && TryBuildVirtualStaticObservableMotionSignature(pair.Value.Motion, out var signature)
+                    ? signature : BuildVirtualMotionRefEquivalenceKey(pair.Value));
+            var table = new Dictionary<int, VirtualMotionRef>();
+            var indices = new int[dimensions.Count];
+            for (var combination = 0; combination < (int)combinations; combination++)
+            {
+                var values = BuildVirtualDecisionValues(dimensions, indices);
+                if (!TryResolveVirtualStateIndependentMotion(states, anyTransitions, transitions, values, outputs, outputKeys, out var motion))
+                    return false;
+                table[BuildVirtualDecisionKey(dimensions, indices)] = motion;
+                IncrementVirtualDecisionIndices(dimensions, indices);
+            }
+
+            plan = BuildVirtualDecisionPlanFromTable(dimensions, table);
+            return plan != null;
+        }
+
+        private static bool TryResolveVirtualStateIndependentMotion(
+            IReadOnlyList<VirtualState> states,
+            IReadOnlyList<VirtualNormalizedTransition> anyTransitions,
+            IReadOnlyList<VirtualNormalizedTransition> transitions,
+            IReadOnlyDictionary<string, float> values,
+            IReadOnlyDictionary<VirtualState, VirtualMotionRef> outputs,
+            IReadOnlyDictionary<VirtualState, string> outputKeys,
+            out VirtualMotionRef motion)
+        {
+            motion = null;
+            string motionKey = null;
+            foreach (var state in states)
+            {
+                var transition = anyTransitions
+                    .OrderBy(candidate => candidate.Order)
+                    .Where(candidate => candidate.Destination != state || candidate.CanTransitionToSelf)
+                    .FirstOrDefault(candidate => candidate.Conditions.All(condition =>
+                        values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
+                if (transition == null)
+                {
+                    transition = transitions
+                        .Where(candidate => candidate.Source == state)
+                        .OrderBy(candidate => candidate.Order)
+                        .FirstOrDefault(candidate => candidate.Conditions.All(condition =>
+                            values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
+                }
+                var destination = transition?.Destination ?? state;
+                var output = outputs[destination];
+                var key = outputKeys[destination];
+                if (key == null)
+                    return false;
+                if (motion == null)
+                {
+                    motion = output;
+                    motionKey = key;
+                }
+                else if (!string.Equals(motionKey, key, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            return motion != null;
+        }
+
         private static bool ValidateVirtualPlanParameters(
             VirtualAnimatorController controller,
             VirtualPlan plan,
@@ -1301,12 +2481,19 @@ namespace UnityBox.AnimatorOptimizer
             var parameters = new HashSet<string>(StringComparer.Ordinal);
             foreach (var motion in EnumerateVirtualPlanMotions(plan))
                 CollectVirtualMotionParameters(motion?.Motion, parameters, new HashSet<VirtualMotion>());
+            foreach (var motion in EnumerateVirtualPlanMotions(plan))
+                if (!string.IsNullOrWhiteSpace(motion?.Bake?.Parameter)) parameters.Add(motion.Bake.Parameter);
             plan.ReferencedParameters = parameters;
             foreach (var parameterName in parameters)
             {
                 if (IsVrcGlobalParameter(parameterName))
                     continue;
                 if (!controller.Parameters.TryGetValue(parameterName, out var parameter))
+                    return false;
+                if (parameter.type == AnimatorControllerParameterType.Float && !IsFinite(parameter.defaultFloat))
+                    return false;
+                if (parameter.type == AnimatorControllerParameterType.Bool && !options.UpgradeBoolParametersToFloat ||
+                    parameter.type == AnimatorControllerParameterType.Int && !options.UpgradeIntParametersToFloat)
                     return false;
                 if (parameter.type == AnimatorControllerParameterType.Bool ||
                     parameter.type == AnimatorControllerParameterType.Int ||
@@ -1332,7 +2519,7 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     if (!string.IsNullOrWhiteSpace(tree.BlendParameter))
                         parameters.Add(tree.BlendParameter);
-                    if (!string.IsNullOrWhiteSpace(tree.BlendParameterY))
+                    if (tree.BlendType != BlendTreeType.Simple1D && !string.IsNullOrWhiteSpace(tree.BlendParameterY))
                         parameters.Add(tree.BlendParameterY);
                 }
                 foreach (var child in tree.Children)
@@ -1394,18 +2581,20 @@ namespace UnityBox.AnimatorOptimizer
         {
             plan = null;
             if (controller == null || stateMachine == null || states == null || states.Count == 0 ||
-                stateMachine.EntryTransitions.Count == 0 || stateMachine.AnyStateTransitions.Count > 0 ||
+                GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count == 0 ||
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Count > 0 ||
                 stateMachine.DefaultState == null || !states.Contains(stateMachine.DefaultState))
                 return false;
 
             var stateSet = new HashSet<VirtualState>(states);
             var entries = new List<VirtualNormalizedTransition>();
-            for (var order = 0; order < stateMachine.EntryTransitions.Count; order++)
+            var effectiveEntries = GetEffectiveVirtualTransitions(stateMachine.EntryTransitions);
+            for (var order = 0; order < effectiveEntries.Count; order++)
             {
-                var transition = stateMachine.EntryTransitions[order];
+                var transition = effectiveEntries[order];
                 if (transition == null || transition.DestinationState == null ||
                     transition.DestinationStateMachine != null || transition.IsExit ||
-                    transition.Mute || transition.Solo || !stateSet.Contains(transition.DestinationState))
+                    !stateSet.Contains(transition.DestinationState))
                     return false;
                 if (!TryNormalizeVirtualConditions(controller, transition.Conditions, options, out var conditions))
                     return false;
@@ -1418,8 +2607,8 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             if (entries.Count == 1 && entries[0].Conditions.Count == 0 &&
-                stateMachine.AnyStateTransitions.Count == 0 &&
-                states.All(state => state.Transitions.Count == 0))
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Count == 0 &&
+                states.All(state => GetEffectiveVirtualTransitions(state.Transitions).Count == 0))
             {
                 if (!ValidateState(entries[0].Destination))
                     return false;
@@ -1438,13 +2627,11 @@ namespace UnityBox.AnimatorOptimizer
                 if (!ValidateState(state, allowTransitions: true) || !IsTimeIndependentMotion(state.Motion))
                     return false;
                 var stateExits = new List<VirtualNormalizedTransition>();
-                foreach (var transition in state.Transitions)
+                foreach (var transition in GetEffectiveVirtualTransitions(state.Transitions))
                 {
                     if (transition == null || !transition.IsExit || transition.DestinationState != null ||
-                        transition.DestinationStateMachine != null || transition.CanTransitionToSelf ||
-                        transition.Mute || transition.Solo || transition.ExitTime.HasValue ||
-                        !Mathf.Approximately(transition.Duration, 0f) ||
-                        !Mathf.Approximately(transition.Offset, 0f))
+                        transition.DestinationStateMachine != null ||
+                        HasBlockingVirtualTransitionTiming(transition))
                         return false;
                     if (!TryNormalizeVirtualConditions(controller, transition.Conditions, options, out var conditions))
                         return false;
@@ -1462,8 +2649,13 @@ namespace UnityBox.AnimatorOptimizer
             if (!TryBuildVirtualDecisionDimensions(allConditions, options, out var dimensions, out var combinations))
                 return false;
 
+            if (combinations > 65536L / states.Count)
+                return false;
             var table = new Dictionary<int, VirtualMotionRef>();
             var indices = new int[dimensions.Count];
+            var outputKeys = states.ToDictionary(state => state, state =>
+                TryBuildVirtualStaticObservableMotionSignature(state.Motion, out var signature)
+                    ? signature : BuildVirtualMotionRefEquivalenceKey(ToMotionRef(state)));
             for (var combination = 0; combination < (int)combinations; combination++)
             {
                 var values = BuildVirtualDecisionValues(dimensions, indices);
@@ -1475,7 +2667,7 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     var exitsNow = exits[state].Any(item => item.Conditions.All(condition =>
                         values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                    if (exitsNow != (desired != state))
+                    if (outputKeys[desired] == null || outputKeys[exitsNow ? desired : state] != outputKeys[desired])
                         return false;
                 }
                 table[BuildVirtualDecisionKey(dimensions, indices)] = ToMotionRef(desired);
@@ -1516,7 +2708,9 @@ namespace UnityBox.AnimatorOptimizer
             {
                 var list = group.ToList();
                 var type = list[0].Type;
+                if (list.Any(condition => condition.Type != type)) return false;
                 var values = new SortedSet<float>();
+                var approximate = false;
                 if (type == AnimatorControllerParameterType.Bool)
                 {
                     values.Add(0f);
@@ -1532,20 +2726,22 @@ namespace UnityBox.AnimatorOptimizer
                         values.Add(threshold + 1);
                     }
                 }
-                else if (type == AnimatorControllerParameterType.Float && options.AllowFloatConditionApproximation)
+                else if (type == AnimatorControllerParameterType.Float)
                 {
-                    var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
                     foreach (var condition in list)
                     {
-                        values.Add(condition.Threshold - epsilon);
-                        values.Add(condition.Threshold);
-                        values.Add(condition.Threshold + epsilon);
+                        if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(condition.Threshold,
+                            options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                            return false;
+                        approximate |= isApproximate;
                     }
                 }
                 else
                 {
                     return false;
                 }
+                if (values.Count > options.MaxNumericSelectorSamples && type != AnimatorControllerParameterType.Bool)
+                    return false;
                 if (values.Count == 0 || combinations > long.MaxValue / values.Count)
                     return false;
                 combinations *= values.Count;
@@ -1554,12 +2750,13 @@ namespace UnityBox.AnimatorOptimizer
                     Parameter = group.Key,
                     Type = type,
                     Values = values.ToList(),
+                    IsApproximate = approximate,
                 });
             }
             var allBoolean = dimensions.All(dimension => dimension.Type == AnimatorControllerParameterType.Bool);
             var limit = allBoolean ? Math.Max(2, options.MaxBooleanTruthTableEntries) :
                 Math.Max(2, options.MaxPriorityCombinations);
-            return dimensions.Count > 0 && combinations <= limit;
+            return combinations <= limit;
         }
 
         private static Dictionary<string, float> BuildVirtualDecisionValues(
@@ -1602,8 +2799,10 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyList<VirtualDecisionDimension> dimensions,
             IReadOnlyDictionary<int, VirtualMotionRef> table)
         {
-            if (dimensions == null || dimensions.Count == 0 || table == null)
+            if (dimensions == null || table == null)
                 return null;
+            if (dimensions.Count == 0)
+                return new VirtualPlan { IsConstant = true, ConstantMotion = table[0] };
             if (dimensions.All(dimension => dimension.Type == AnimatorControllerParameterType.Bool))
             {
                 return new VirtualPlan
@@ -1621,6 +2820,7 @@ namespace UnityBox.AnimatorOptimizer
                     Branches = new List<VirtualBranch>(),
                     SelectorParameter = dimension.Parameter,
                     SelectorParameterType = dimension.Type,
+                    SelectorIsApproximate = dimension.IsApproximate,
                     SelectorSamples = dimension.Values.Select((value, index) =>
                         (value, table[index])).ToList(),
                 };
@@ -1642,15 +2842,14 @@ namespace UnityBox.AnimatorOptimizer
             var stateMachines = new HashSet<VirtualStateMachine>();
             CollectVirtualNestedStateGraph(rootStateMachine, states, stateMachines);
             if (states.Count == 0 || rootStateMachine == null ||
-                rootStateMachine.DefaultState == null && rootStateMachine.EntryTransitions.Count == 0)
+                rootStateMachine.DefaultState == null &&
+                GetEffectiveVirtualTransitions(rootStateMachine.EntryTransitions).Count == 0)
                 return false;
 
             var signatures = new List<string>();
             foreach (var state in states)
             {
-                if (state.Behaviours.Count > 0 || !state.WriteDefaultValues || state.IKOnFeet ||
-                    state.Mirror || state.SpeedParameter != null || state.CycleOffsetParameter != null ||
-                    state.MirrorParameter != null || state.TimeParameter != null ||
+                if (!ValidateState(state, allowTransitions: true) || ToMotionRef(state).Mirror ||
                     !TryBuildVirtualStaticObservableMotionSignature(state.Motion, out var signature))
                     return false;
                 signatures.Add(signature);
@@ -1660,7 +2859,10 @@ namespace UnityBox.AnimatorOptimizer
 
             foreach (var stateMachine in stateMachines)
             {
-                if (stateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) ||
+                if (stateMachine != rootStateMachine && stateMachine.Behaviours.Count > 0 ||
+                    stateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) ||
+                    !HasOnlyReadOnlyVirtualTransitionConditions(stateMachine,
+                        stateMachine.States.Where(child => child.State != null).Select(child => child.State)) ||
                     !AllVirtualNestedTransitionsAreLocal(stateMachine, states, stateMachines))
                     return false;
             }
@@ -1697,20 +2899,19 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyCollection<VirtualState> states,
             ISet<VirtualStateMachine> stateMachines)
         {
-            foreach (var transition in stateMachine.EntryTransitions)
+            foreach (var transition in GetEffectiveVirtualTransitions(stateMachine.EntryTransitions))
             {
                 if (!IsLocalVirtualNestedTransition(transition, states, stateMachines))
                     return false;
             }
-            foreach (var transition in stateMachine.AnyStateTransitions)
+            foreach (var transition in GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions))
             {
                 if (!IsLocalVirtualNestedTransition(transition, states, stateMachines))
                     return false;
             }
             foreach (var child in stateMachine.States)
             {
-                foreach (var transition in child.State?.Transitions ??
-                         ImmutableList<VirtualStateTransition>.Empty)
+                foreach (var transition in GetEffectiveVirtualTransitions(child.State?.Transitions))
                 {
                     if (!IsLocalVirtualNestedTransition(transition, states, stateMachines))
                         return false;
@@ -1720,7 +2921,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (!stateMachine.StateMachineTransitions.TryGetValue(child.StateMachine, out var transitions))
                     continue;
-                foreach (var transition in transitions)
+                foreach (var transition in GetEffectiveVirtualTransitions(transitions))
                 {
                     if (!IsLocalVirtualNestedTransition(transition, states, stateMachines))
                         return false;
@@ -1750,32 +2951,32 @@ namespace UnityBox.AnimatorOptimizer
         {
             plan = null;
             if (stateMachine == null || states == null || states.Count == 0 ||
-                stateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) || stateMachine.EntryTransitions.Count > 0 &&
-                stateMachine.EntryTransitions.Any(transition =>
+                !HasOnlyReadOnlyVirtualTransitionConditions(stateMachine, states) ||
+                stateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) ||
+                GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count > 0 &&
+                GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Any(transition =>
                     transition == null || transition.DestinationState == null ||
                     transition.DestinationStateMachine != null) ||
-                stateMachine.AnyStateTransitions.Any(transition =>
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Any(transition =>
                     transition == null || transition.IsExit || transition.DestinationState == null ||
                     transition.DestinationStateMachine != null))
                 return false;
 
             var stateSet = new HashSet<VirtualState>(states);
-            if (stateMachine.EntryTransitions.Any(transition =>
+            if (GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Any(transition =>
                     !stateSet.Contains(transition.DestinationState)) ||
-                stateMachine.AnyStateTransitions.Any(transition =>
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Any(transition =>
                     !stateSet.Contains(transition.DestinationState)))
                 return false;
             var signatures = new List<string>();
             foreach (var state in states)
             {
                 if (!TryBuildVirtualStaticObservableMotionSignature(state.Motion, out var signature) ||
-                    state.Behaviours.Count > 0 || !state.WriteDefaultValues || state.IKOnFeet ||
-                    state.Mirror || state.SpeedParameter != null || state.CycleOffsetParameter != null ||
-                    state.MirrorParameter != null || state.TimeParameter != null ||
+                    !ValidateState(state, allowTransitions: true) || ToMotionRef(state).Mirror ||
                     !stateSet.Contains(state))
                     return false;
                 signatures.Add(signature);
-                if (state.Transitions.Any(transition =>
+                if (GetEffectiveVirtualTransitions(state.Transitions).Any(transition =>
                         transition == null || transition.IsExit || transition.DestinationState == null ||
                         transition.DestinationStateMachine != null || !stateSet.Contains(transition.DestinationState)))
                     return false;
@@ -1793,18 +2994,32 @@ namespace UnityBox.AnimatorOptimizer
             return true;
         }
 
+        private static bool HasOnlyReadOnlyVirtualTransitionConditions(VirtualStateMachine machine,
+            IEnumerable<VirtualState> states)
+        {
+            var controller = currentLayerScope?.Controller;
+            if (controller == null) return false;
+            var edges = GetEffectiveVirtualTransitions(machine.EntryTransitions).Cast<VirtualTransitionBase>()
+                .Concat(GetEffectiveVirtualTransitions(machine.AnyStateTransitions))
+                .Concat(states.Where(state => state != null).SelectMany(state => GetEffectiveVirtualTransitions(state.Transitions)))
+                .Concat(machine.StateMachineTransitions.Values.SelectMany(transitions => GetEffectiveVirtualTransitions(transitions)));
+            return edges.All(edge => AnimatorOptimizerSemanticUtility.AreReadOnlyConditions(edge.Conditions, name =>
+                controller.Parameters.TryGetValue(name, out var parameter) ? parameter?.type :
+                    TryGetVirtualGlobalParameterType(name, out var global) ? global.type : (AnimatorControllerParameterType?)null));
+        }
+
         private static bool TryBuildVirtualStaticObservableMotionSignature(
             VirtualMotion motion,
             out string signature)
         {
             signature = null;
+            motion = NormalizeVirtualSingleton(motion);
             if (motion == null)
             {
                 signature = "static-empty";
                 return true;
             }
-            if (!(motion is VirtualClip clip) || clip.IsMarkerClip || IsPotentialProxyVirtualClip(clip) ||
-                clip.Settings.hasAdditiveReferencePose || clip.AdditiveReferencePoseClip != null)
+            if (!(motion is VirtualClip clip) || !IsStaticVirtualClip(clip))
                 return false;
 
             var floatParts = new List<string>();
@@ -1827,28 +3042,20 @@ namespace UnityBox.AnimatorOptimizer
                 var curve = clip.GetObjectCurve(binding);
                 if (curve == null || curve.Length == 0)
                     continue;
-                if (curve.Any(key => key.value != curve[0].value))
+                if (!IsConstantVirtualObjectCurve(curve))
                     return false;
                 objectParts.Add("o:" + BuildVirtualBindingKey(binding) + ":" +
-                    string.Join(";", curve.Select(key =>
-                        key.time.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "," +
-                        (key.value == null ? "0" : key.value.GetInstanceID().ToString()))));
+                    (curve[0].value == null ? "0" : curve[0].value.GetInstanceID().ToString()));
             }
             floatParts.Sort(StringComparer.Ordinal);
             objectParts.Sort(StringComparer.Ordinal);
-            signature = "static:" + string.Join(";", floatParts.Concat(objectParts));
+            signature = "static:" + string.Concat(floatParts.Concat(objectParts).Select(AnimatorOptimizerSynchronizedGraph.Atom));
             return true;
         }
 
         private static string BuildVirtualBindingKey(EditorCurveBinding binding)
         {
-            return string.Join("/", new[]
-            {
-                binding.path ?? string.Empty,
-                binding.type == null ? string.Empty : binding.type.FullName ?? binding.type.Name,
-                binding.propertyName ?? string.Empty,
-                binding.isPPtrCurve.ToString(),
-            });
+            return AnimatorOptimizerSynchronizedGraph.BindingKey(binding);
         }
 
         private static bool TryBuildVirtualFiniteParameterTable(
@@ -1862,7 +3069,7 @@ namespace UnityBox.AnimatorOptimizer
                 branches.Any(branch => branch.Conditions == null || branch.Conditions.Count == 0) ||
                 branches.SelectMany(branch => branch.Conditions).Any(condition =>
                     !condition.IsBool && !condition.IsInt &&
-                    !(condition.IsFloat && options.AllowFloatConditionApproximation)))
+                    !condition.IsFloat))
                 return false;
 
             var names = branches.SelectMany(branch => branch.Conditions)
@@ -1880,6 +3087,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (conditions.Any(condition => condition.Type != type))
                     return false;
                 var values = new SortedSet<float>();
+                var approximate = false;
                 if (type == AnimatorControllerParameterType.Bool)
                 {
                     values.Add(0f);
@@ -1895,14 +3103,14 @@ namespace UnityBox.AnimatorOptimizer
                         values.Add(threshold + 1);
                     }
                 }
-                else if (type == AnimatorControllerParameterType.Float && options.AllowFloatConditionApproximation)
+                else if (type == AnimatorControllerParameterType.Float)
                 {
-                    var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
                     foreach (var condition in conditions)
                     {
-                        values.Add(condition.Threshold - epsilon);
-                        values.Add(condition.Threshold);
-                        values.Add(condition.Threshold + epsilon);
+                        if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(condition.Threshold,
+                            options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                            return false;
+                        approximate |= isApproximate;
                     }
                 }
                 else
@@ -1914,13 +3122,15 @@ namespace UnityBox.AnimatorOptimizer
                     Parameter = name,
                     Type = type,
                     Values = values.ToList(),
+                    IsApproximate = approximate,
                 });
             }
 
             long combinations = 1;
             foreach (var dimension in dimensions)
             {
-                if (dimension.Values.Count == 0 || combinations > long.MaxValue / dimension.Values.Count)
+                if (dimension.Values.Count == 0 || dimension.Values.Count > options.MaxNumericSelectorSamples ||
+                    combinations > long.MaxValue / dimension.Values.Count)
                     return false;
                 combinations *= dimension.Values.Count;
             }
@@ -1967,56 +3177,55 @@ namespace UnityBox.AnimatorOptimizer
         private static bool IsTimeIndependentMotion(VirtualMotion motion)
         {
             if (motion == null)
-                return false;
-            if (motion is VirtualClip clip)
-            {
-                if (clip.IsMarkerClip || IsPotentialProxyVirtualClip(clip))
-                    return false;
-                var settings = clip.Settings;
-                if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null)
-                    return false;
-                foreach (var binding in clip.GetFloatCurveBindings())
-                {
-                    var curve = clip.GetFloatCurve(binding);
-                    if (!IsConstantVirtualCurve(curve))
-                        return false;
-                }
-                foreach (var binding in clip.GetObjectCurveBindings())
-                {
-                    var curve = clip.GetObjectCurve(binding);
-                    if (curve != null && curve.Length > 1)
-                    {
-                        var first = curve[0].value;
-                        if (curve.Any(key => key.value != first))
-                            return false;
-                    }
-
-                }
                 return true;
-            }
+            if (motion is VirtualClip clip)
+                return IsStaticVirtualClip(clip);
             if (motion is VirtualBlendTree tree)
                 return tree.Children.All(child => IsTimeIndependentMotion(child.Motion));
             return false;
         }
 
+        private static bool IsOrdinaryVirtualClip(VirtualClip clip)
+        {
+            return clip != null && !clip.IsMarkerClip && !clip.Legacy && !IsPotentialProxyVirtualClip(clip) &&
+                TryGetVirtualOriginalObject(clip, out AnimationClip original) &&
+                AnimatorOptimizerSemanticUtility.IsOrdinaryClip(original);
+        }
+
+        private static bool HasInspectableVirtualBindings(VirtualClip clip) => clip != null && !clip.IsMarkerClip &&
+            !IsPotentialProxyVirtualClip(clip) && TryGetVirtualOriginalObject(clip, out AnimationClip original) &&
+            AnimatorOptimizerSemanticUtility.HasInspectableBindings(original);
+
+        private static bool IsPropertyOnlyVirtualMotion(VirtualMotion motion)
+        {
+            if (motion == null) return true;
+            if (motion is VirtualClip clip)
+                return IsOrdinaryVirtualClip(clip) && !clip.Settings.hasAdditiveReferencePose &&
+                    clip.Settings.additiveReferencePoseClip == null && clip.AdditiveReferencePoseClip == null &&
+                    !clip.GetFloatCurveBindings().Concat(clip.GetObjectCurveBindings())
+                        .Any(binding => binding.type == typeof(Animator) || binding.type == typeof(Transform));
+            return motion is VirtualBlendTree tree && tree.Children.All(child => IsPropertyOnlyVirtualMotion(child.Motion));
+        }
+
+        private static VirtualMotion NormalizeVirtualSingleton(VirtualMotion motion)
+        {
+            var visited = new HashSet<VirtualMotion>();
+            while (motion is VirtualBlendTree tree && tree.BlendType == BlendTreeType.Simple1D &&
+                tree.Children.Count == 1 && visited.Add(motion))
+            {
+                var child = tree.Children[0];
+                if (child.Motion == null ||
+                    (child.TimeScale != 1f || child.CycleOffset != 0f) && !IsTimeIndependentMotion(child.Motion) ||
+                    child.Mirror && !IsPropertyOnlyVirtualMotion(child.Motion))
+                    break;
+                motion = child.Motion;
+            }
+            return motion;
+        }
+
         private static bool IsConstantVirtualCurve(AnimationCurve curve)
         {
-            if (curve == null || curve.keys.Length == 0)
-                return true;
-            var keys = curve.keys;
-            var value = keys[0].value;
-            for (var index = 0; index < keys.Length; index++)
-            {
-                var key = keys[index];
-                if (!Mathf.Approximately(key.value, value) ||
-                    !Mathf.Approximately(key.inTangent, 0f) ||
-                    !Mathf.Approximately(key.outTangent, 0f))
-                    return false;
-                if (index > 0 && !Mathf.Approximately(
-                        curve.Evaluate((keys[index - 1].time + key.time) * 0.5f), value))
-                    return false;
-            }
-            return true;
+            return AnimatorOptimizerSemanticUtility.IsConstantCurve(curve);
         }
 
         private static bool TryResolveVirtualNestedStaticDefault(
@@ -2025,23 +3234,47 @@ namespace UnityBox.AnimatorOptimizer
         {
             state = null;
             if (stateMachine == null || stateMachine.Behaviours.Count > 0 ||
-                stateMachine.EntryTransitions.Count > 0 || stateMachine.AnyStateTransitions.Count > 0)
+                GetEffectiveVirtualTransitions(stateMachine.EntryTransitions).Count > 0 ||
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions).Count > 0)
                 return false;
 
             if (stateMachine.DefaultState != null)
             {
-                if (stateMachine.StateMachines.Count > 0)
+                if (stateMachine.StateMachines.Any(child =>
+                        child.StateMachine != null &&
+                        HasEffectiveTransitionToVirtualStateMachine(stateMachine, child.StateMachine)))
                     return false;
                 state = stateMachine.DefaultState;
-                return state.Transitions.Count == 0;
+                return GetEffectiveVirtualTransitions(state.Transitions).Count == 0;
             }
 
             if (stateMachine.States.Count != 0 || stateMachine.StateMachines.Count != 1)
                 return false;
             var child = stateMachine.StateMachines[0];
-            if (stateMachine.StateMachineTransitions.TryGetValue(child.StateMachine, out var transitions) && transitions.Count != 0)
+            if (stateMachine.StateMachineTransitions.TryGetValue(child.StateMachine, out var transitions) &&
+                GetEffectiveVirtualTransitions(transitions).Count != 0)
                 return false;
             return TryResolveVirtualNestedStaticDefault(child.StateMachine, out state);
+        }
+
+        private static bool HasEffectiveTransitionToVirtualStateMachine(
+            VirtualStateMachine stateMachine,
+            VirtualStateMachine target)
+        {
+            if (stateMachine == null || target == null)
+                return false;
+            if (GetEffectiveVirtualTransitions(stateMachine.EntryTransitions)
+                .Any(transition => transition.DestinationStateMachine == target) ||
+                GetEffectiveVirtualTransitions(stateMachine.AnyStateTransitions)
+                .Any(transition => transition.DestinationStateMachine == target) ||
+                stateMachine.States
+                .Where(child => child.State != null)
+                .SelectMany(child => GetEffectiveVirtualTransitions(child.State.Transitions))
+                .Any(transition => transition.DestinationStateMachine == target) ||
+                stateMachine.StateMachineTransitions.TryGetValue(target, out var transitions) &&
+                GetEffectiveVirtualTransitions(transitions).Count > 0)
+                return true;
+            return false;
         }
 
         private static bool TryNormalizeCondition(
@@ -2051,8 +3284,12 @@ namespace UnityBox.AnimatorOptimizer
             out VirtualCondition condition)
         {
             condition = null;
+            if (string.IsNullOrWhiteSpace(source.parameter) || float.IsNaN(source.threshold) || float.IsInfinity(source.threshold))
+                return false;
             var hasDeclaredParameter = controller.Parameters.TryGetValue(source.parameter, out var parameter);
             if (!hasDeclaredParameter && !TryGetVirtualGlobalParameterType(source.parameter, out parameter))
+                return false;
+            if (parameter.type == AnimatorControllerParameterType.Float && !IsFinite(parameter.defaultFloat))
                 return false;
             if (parameter.type == AnimatorControllerParameterType.Bool)
             {
@@ -2061,20 +3298,23 @@ namespace UnityBox.AnimatorOptimizer
                      source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual))
                     return false;
                 if ((source.mode == AnimatorConditionMode.Equals || source.mode == AnimatorConditionMode.NotEqual) &&
-                    !Mathf.Approximately(source.threshold, 0f) && !Mathf.Approximately(source.threshold, 1f))
+                    source.threshold != 0f && source.threshold != 1f)
                     return false;
             }
             else if (parameter.type == AnimatorControllerParameterType.Int)
             {
+                if (Math.Abs((double)source.threshold) > 16777214d)
+                    return false;
                 if (hasDeclaredParameter && !options.UpgradeIntParametersToFloat ||
                     (source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual &&
                      source.mode != AnimatorConditionMode.Greater && source.mode != AnimatorConditionMode.Less) ||
-                    !Mathf.Approximately(source.threshold, Mathf.Round(source.threshold)))
+                    source.threshold != Mathf.Round(source.threshold))
                     return false;
             }
             else if (parameter.type == AnimatorControllerParameterType.Float)
             {
-                if (!options.AllowFloatConditionApproximation ||
+                if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(source.threshold,
+                        options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, new HashSet<float>(), out _) ||
                     (source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual &&
                      source.mode != AnimatorConditionMode.Greater && source.mode != AnimatorConditionMode.Less))
                     return false;
@@ -2156,7 +3396,8 @@ namespace UnityBox.AnimatorOptimizer
             var parameters = branches.SelectMany(branch => branch.Conditions)
                 .Select(condition => condition.Parameter).Distinct(StringComparer.Ordinal)
                 .OrderBy(name => name, StringComparer.Ordinal).ToList();
-            if (parameters.Count == 0 || (1L << parameters.Count) > Math.Max(2, options.MaxBooleanTruthTableEntries))
+            if (parameters.Count == 0 || parameters.Count > 30 ||
+                (1L << parameters.Count) > Math.Max(2, options.MaxBooleanTruthTableEntries))
                 return false;
 
             var table = new Dictionary<int, VirtualMotionRef>();
@@ -2196,8 +3437,9 @@ namespace UnityBox.AnimatorOptimizer
                 return false;
 
             var prototype = branches[0].Conditions[0];
+            if (branches.Any(branch => branch.Conditions[0].Type != prototype.Type)) return false;
             var values = new SortedSet<float>();
-            var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
+            var approximate = false;
             foreach (var branch in branches)
             {
                 var threshold = branch.Conditions[0].Threshold;
@@ -2210,9 +3452,10 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 else
                 {
-                    values.Add(threshold - epsilon);
-                    values.Add(threshold);
-                    values.Add(threshold + epsilon);
+                    if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(threshold,
+                        options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                        return false;
+                    approximate |= isApproximate;
                 }
             }
             if (values.Count > Math.Max(3, options.MaxNumericSelectorSamples))
@@ -2225,6 +3468,7 @@ namespace UnityBox.AnimatorOptimizer
                     .FirstOrDefault(item => item.Conditions[0].Matches(value));
                 if (branch == null && !prototype.IsInt && options.AllowFloatConditionApproximation)
                 {
+                    approximate = true;
                     branch = branches
                         .OrderBy(item => Mathf.Abs(item.Conditions[0].Threshold - value))
                         .ThenBy(item => item.Order)
@@ -2241,6 +3485,7 @@ namespace UnityBox.AnimatorOptimizer
                 SelectorParameter = prototype.Parameter,
                 SelectorParameterType = prototype.Type,
                 SelectorSamples = samples,
+                SelectorIsApproximate = approximate,
             };
             return true;
         }
@@ -2254,11 +3499,18 @@ namespace UnityBox.AnimatorOptimizer
                 return plan.ConstantMotion.Motion ?? emptyClip;
             if (!string.IsNullOrWhiteSpace(plan.SelectorParameter))
             {
+                var signatures = plan.SelectorSamples.Select(sample => BuildVirtualMotionSignature(sample.Motion)).ToList();
+                if (signatures.Count > 0 && signatures.All(signature => signature == signatures[0]))
+                    return PreserveTruthNodeSettings(new VirtualTruthNode {
+                        Motion = plan.SelectorSamples[0].Motion.Motion ?? emptyClip,
+                        LeafSettings = plan.SelectorSamples[0].Motion,
+                    }, plan.SelectorParameter);
+                var retained = AnimatorOptimizerSemanticUtility.RetainRunEndpoints(signatures);
                 var tree = VirtualBlendTree.Create(GeneratedAssetPrefix + "NumericSelector_" + plan.SelectorParameter);
                 tree.BlendType = BlendTreeType.Simple1D;
                 tree.BlendParameter = plan.SelectorParameter;
                 tree.UseAutomaticThresholds = false;
-                tree.Children = plan.SelectorSamples.Select(sample => new VirtualBlendTree.VirtualChildMotion
+                tree.Children = retained.Select(index => plan.SelectorSamples[index]).Select(sample => new VirtualBlendTree.VirtualChildMotion
                 {
                     Motion = sample.Motion.Motion ?? emptyClip,
                     Threshold = sample.Value,
@@ -2271,8 +3523,10 @@ namespace UnityBox.AnimatorOptimizer
             if (plan.DecisionDimensions != null)
                 return BuildVirtualFiniteDecisionTree(controller, plan, emptyClip, 0, 0, 1,
                     new Dictionary<string, VirtualTruthNode>(StringComparer.Ordinal));
-            return BuildTruthTree(controller, plan, emptyClip, 0, 0,
-                new Dictionary<string, VirtualTruthNode>(StringComparer.Ordinal)).Motion;
+            if (plan.BooleanParameters == null || plan.BooleanParameters.Count > 30)
+                throw new InvalidOperationException("Bool 决策树参数超过 30 位，拒绝生成可能溢出的虚拟真值树。");
+            return PreserveTruthNodeSettings(BuildTruthTree(controller, plan, emptyClip, 0, 0,
+                new Dictionary<string, VirtualTruthNode>(StringComparer.Ordinal)), plan.BooleanParameters.FirstOrDefault());
         }
 
         private static VirtualMotion BuildVirtualFiniteDecisionTree(
@@ -2284,7 +3538,21 @@ namespace UnityBox.AnimatorOptimizer
             int stride,
             IDictionary<string, VirtualTruthNode> memo)
         {
-            return BuildVirtualFiniteDecisionNode(controller, plan, emptyClip, depth, key, stride, memo).Motion;
+            return PreserveTruthNodeSettings(BuildVirtualFiniteDecisionNode(controller, plan, emptyClip, depth, key, stride, memo),
+                plan.DecisionDimensions.FirstOrDefault()?.Parameter);
+        }
+
+        private static VirtualMotion PreserveTruthNodeSettings(VirtualTruthNode node, string parameter)
+        {
+            if (node.LeafSettings == null || node.LeafSettings.Speed == 1f &&
+                node.LeafSettings.CycleOffset == 0f && !node.LeafSettings.Mirror)
+                return node.Motion;
+            var wrapper = VirtualBlendTree.Create(GeneratedAssetPrefix + "LeafSettings");
+            wrapper.BlendType = BlendTreeType.Simple1D;
+            wrapper.BlendParameter = parameter;
+            wrapper.UseAutomaticThresholds = false;
+            wrapper.Children = ImmutableList.Create(ToVirtualTruthChild(0f, node));
+            return wrapper;
         }
 
         private static VirtualTruthNode BuildVirtualFiniteDecisionNode(
@@ -2315,10 +3583,9 @@ namespace UnityBox.AnimatorOptimizer
             if (childNodes.All(node => string.Equals(node.Signature, childNodes[0].Signature, StringComparison.Ordinal)))
                 return childNodes[0];
 
-            var signature = string.Join("|", childNodes.Select(node => node.Signature));
-            var memoKey = depth + ":" + dimension.Parameter + ":" +
-                string.Join(",", dimension.Values.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) +
-                ":" + signature;
+            var retained = AnimatorOptimizerSemanticUtility.RetainRunEndpoints(childNodes.Select(node => node.Signature).ToList());
+            var memoKey = AnimatorOptimizerSemanticUtility.DecisionNodeKey(dimension.Parameter,
+                retained.Select(index => dimension.Values[index]), retained.Select(index => childNodes[index].Signature));
             if (memo.TryGetValue(memoKey, out var cached))
                 return cached;
 
@@ -2326,10 +3593,10 @@ namespace UnityBox.AnimatorOptimizer
             tree.BlendType = BlendTreeType.Simple1D;
             tree.BlendParameter = dimension.Parameter;
             tree.UseAutomaticThresholds = false;
-            tree.Children = dimension.Values.Select((value, index) => new VirtualBlendTree.VirtualChildMotion
+            tree.Children = retained.Select(index => new VirtualBlendTree.VirtualChildMotion
             {
                 Motion = childNodes[index].Motion,
-                Threshold = value,
+                Threshold = dimension.Values[index],
                 TimeScale = childNodes[index].LeafSettings == null ? 1f : childNodes[index].LeafSettings.Speed,
                 CycleOffset = childNodes[index].LeafSettings == null ? 0f : childNodes[index].LeafSettings.CycleOffset,
                 Mirror = childNodes[index].LeafSettings != null && childNodes[index].LeafSettings.Mirror,
@@ -2337,7 +3604,7 @@ namespace UnityBox.AnimatorOptimizer
             var result = new VirtualTruthNode
             {
                 Motion = tree,
-                Signature = signature,
+                Signature = memoKey,
             };
             memo[memoKey] = result;
             return result;
@@ -2358,6 +3625,12 @@ namespace UnityBox.AnimatorOptimizer
             int mask,
             IDictionary<string, VirtualTruthNode> memo)
         {
+            if (depth >= plan.BooleanParameters.Count)
+            {
+                plan.TruthTable.TryGetValue(mask, out var value);
+                return new VirtualTruthNode { Motion = value?.Motion ?? emptyClip,
+                    LeafSettings = value, Signature = BuildVirtualMotionSignature(value) };
+            }
             if (depth + 1 == plan.BooleanParameters.Count)
             {
                 plan.TruthTable.TryGetValue(mask, out var falseMotion);
@@ -2373,8 +3646,9 @@ namespace UnityBox.AnimatorOptimizer
                         Signature = falseSignature,
                     };
                 }
-                var leafSignature = falseSignature + "|" + trueSignature;
-                var leafMemoKey = depth + ":" + plan.BooleanParameters[depth] + ":" + leafSignature;
+                var leafParameter = plan.BooleanParameters[depth];
+                var leafMemoKey = "bool:" + leafParameter.Length + ":" + leafParameter + ":" +
+                    falseSignature.Length + ":" + falseSignature + ":" + trueSignature;
                 if (memo.TryGetValue(leafMemoKey, out var leafCached))
                     return leafCached;
                 var leafTree = VirtualBlendTree.Create(GeneratedAssetPrefix + "BoolTree_" + depth + "_" + mask);
@@ -2387,7 +3661,7 @@ namespace UnityBox.AnimatorOptimizer
                 var leafResult = new VirtualTruthNode
                 {
                     Motion = leafTree,
-                    Signature = leafSignature,
+                    Signature = leafMemoKey,
                 };
                 memo[leafMemoKey] = leafResult;
                 return leafResult;
@@ -2398,8 +3672,9 @@ namespace UnityBox.AnimatorOptimizer
             if (string.Equals(falseTree.Signature, trueTree.Signature, StringComparison.Ordinal))
                 return falseTree;
 
-            var signature = falseTree.Signature + "|" + trueTree.Signature;
-            var memoKey = depth + ":" + plan.BooleanParameters[depth] + ":" + signature;
+            var parameter = plan.BooleanParameters[depth];
+            var memoKey = "bool:" + parameter.Length + ":" + parameter + ":" +
+                falseTree.Signature.Length + ":" + falseTree.Signature + ":" + trueTree.Signature;
             if (memo.TryGetValue(memoKey, out var cached))
                 return cached;
 
@@ -2414,7 +3689,7 @@ namespace UnityBox.AnimatorOptimizer
             var result = new VirtualTruthNode
             {
                 Motion = tree,
-                Signature = signature,
+                Signature = memoKey,
             };
             memo[memoKey] = result;
             return result;
@@ -2424,7 +3699,12 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (motion == null)
                 return "null";
-            return (motion.Motion == null ? "null" : motion.Motion.GetHashCode().ToString()) + ":" +
+            if (motion.Bake != null) return motion.Bake.Key;
+            if (motion.Speed == 1f && motion.CycleOffset == 0f && !motion.Mirror &&
+                IsPropertyOnlyVirtualMotion(motion.Motion) &&
+                TryBuildVirtualStaticObservableMotionSignature(motion.Motion, out var staticKey))
+                return staticKey;
+            return AnimatorOptimizerSemanticUtility.ReferenceKey(motion.Motion) + ":" +
                    motion.Speed.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
                    motion.CycleOffset.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
                    motion.Mirror;
@@ -2461,15 +3741,225 @@ namespace UnityBox.AnimatorOptimizer
 
         private static bool ValidateState(VirtualState state, bool allowTransitions = false)
         {
-            if (state == null || state.Motion == null ||
-                ContainsPotentialProxyVirtualMotion(state.Motion, new HashSet<VirtualMotion>()) ||
-                state.Behaviours.Count > 0 || !state.WriteDefaultValues ||
-                state.IKOnFeet || state.SpeedParameter != null || state.CycleOffsetParameter != null ||
-                state.MirrorParameter != null || state.TimeParameter != null)
+            if (state == null ||
+                !IsFinite(state.Speed) || !IsFinite(state.CycleOffset) ||
+                state.Motion != null && ContainsPotentialProxyVirtualMotion(state.Motion, new HashSet<VirtualMotion>()) ||
+                state.Motion != null && ContainsVirtualAnimationEvents(state.Motion, new HashSet<VirtualMotion>()) ||
+                state.Behaviours.Count > 0 || !IsWriteDefaultsAcceptable(state) ||
+                state.IKOnFeet ||
+                (state.SpeedParameter != null || state.CycleOffsetParameter != null || state.TimeParameter != null) &&
+                    !IsTimeIndependentMotion(state.Motion) ||
+                state.MirrorParameter != null && !IsPropertyOnlyVirtualMotion(state.Motion))
                 return false;
-            if (!allowTransitions && state.Transitions.Count > 0)
+            if (!allowTransitions && GetEffectiveVirtualTransitions(state.Transitions).Count > 0)
                 return false;
-            return state.Motion is VirtualClip || state.Motion is VirtualBlendTree;
+            return state.Motion == null || state.Motion is VirtualClip || state.Motion is VirtualBlendTree;
+        }
+
+        // The scope is restored after each candidate, including failed analysis.
+        private sealed class VirtualLayerScope
+        {
+            public AnimatorOptimizerOptions Options;
+            public VirtualAnimatorController Controller;
+            public HashSet<BindingKey> LayerBindings;
+            public bool LayerBindingsComplete;
+            public bool HasExitTime;
+            public readonly Dictionary<VirtualState, bool> WriteDefaultsDecisions = new Dictionary<VirtualState, bool>();
+        }
+
+        [ThreadStatic]
+        private static VirtualLayerScope currentLayerScope;
+
+        private static VirtualLayerScope BeginLayerScope(VirtualAnimatorController controller, AnimatorOptimizerOptions options)
+        {
+            var scope = new VirtualLayerScope
+            {
+                Options = options,
+                Controller = controller,
+                LayerBindings = new HashSet<BindingKey>(),
+            };
+            scope.LayerBindingsComplete = true;
+            var visited = new HashSet<VirtualStateMachine>();
+            foreach (var layer in controller.Layers)
+            {
+                if (layer != null && layer.SyncedLayerIndex >= 0)
+                    scope.LayerBindingsComplete = false;
+                scope.LayerBindingsComplete &= TryCollectStateMachineMotionBindings(
+                    layer?.StateMachine, scope.LayerBindings, visited);
+            }
+            return scope;
+        }
+
+        private static bool TryCollectStateMachineMotionBindings(
+            VirtualStateMachine stateMachine,
+            HashSet<BindingKey> bindings,
+            ISet<VirtualStateMachine> visited)
+        {
+            if (stateMachine == null || !visited.Add(stateMachine))
+                return true;
+            var complete = true;
+            foreach (var child in stateMachine.States)
+            {
+                if (child.State != null)
+                    complete &= TryCollectMotionBindingKeys(child.State.Motion, bindings);
+            }
+            foreach (var child in stateMachine.StateMachines)
+                complete &= TryCollectStateMachineMotionBindings(child.StateMachine, bindings, visited);
+            return complete;
+        }
+
+        // WD coverage includes controller-local parameter bindings.
+        private static bool TryCollectMotionBindingKeys(VirtualMotion motion, HashSet<BindingKey> bindings)
+        {
+            if (motion == null)
+                return true;
+            if (motion is VirtualClip clip)
+            {
+                if (!HasInspectableVirtualBindings(clip))
+                    return false;
+                foreach (var binding in clip.GetFloatCurveBindings())
+                    bindings.Add(new BindingKey(binding));
+                foreach (var binding in clip.GetObjectCurveBindings())
+                    bindings.Add(new BindingKey(binding));
+                return true;
+            }
+            if (motion is VirtualBlendTree tree)
+                return tree.Children.All(child => TryCollectMotionBindingKeys(child.Motion, bindings));
+            return false;
+        }
+
+        private static bool IsWriteDefaultsAcceptable(VirtualState state)
+        {
+            if (state == null || state.WriteDefaultValues)
+                return true;
+            var scope = currentLayerScope;
+            var policy = scope?.Options?.WriteDefaultsPolicy ??
+                         AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict;
+            if (policy == AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict || scope == null)
+                return false;
+            if (scope.WriteDefaultsDecisions.TryGetValue(state, out var cached))
+                return cached;
+
+            var accepted = false;
+            if (scope.LayerBindingsComplete)
+            {
+                var stateBindings = new HashSet<BindingKey>();
+                if (TryCollectVirtualGuaranteedBindings(state.Motion, stateBindings))
+                {
+                    var covered = scope.LayerBindings.All(stateBindings.Contains);
+                    accepted = covered ||
+                               policy == AnimatorOptimizerComponent.WriteDefaultsPolicy.TreatAsWriteDefaultsOn;
+                    if (accepted && !covered && scope.Options.VerboseLogging)
+                    {
+                        Debug.Log($"[AnimatorOptimizer] NDMF treats WD Off state '{state.Name}' as WD On; " +
+                                  $"{scope.LayerBindings.Count(binding => !stateBindings.Contains(binding))} controller binding(s) are not guaranteed covered; default-write effects may change.");
+                    }
+                }
+            }
+            scope.WriteDefaultsDecisions[state] = accepted;
+            return accepted;
+        }
+
+        private static bool TryCollectVirtualGuaranteedBindings(VirtualMotion motion, HashSet<BindingKey> bindings)
+        {
+            if (motion == null)
+                return true;
+            if (motion is VirtualClip)
+                return TryCollectMotionBindingKeys(motion, bindings);
+            if (!(motion is VirtualBlendTree tree))
+                return false;
+            if (tree.BlendType != BlendTreeType.Simple1D)
+                return true;
+            HashSet<BindingKey> common = null;
+            foreach (var child in tree.Children)
+            {
+                var childBindings = new HashSet<BindingKey>();
+                if (!TryCollectVirtualGuaranteedBindings(child.Motion, childBindings))
+                    return false;
+                if (common == null)
+                    common = childBindings;
+                else
+                    common.IntersectWith(childBindings);
+            }
+            if (common != null)
+                bindings.UnionWith(common);
+            return true;
+        }
+
+        private static bool IsValidVirtualGraph(VirtualNode node, ISet<VirtualNode> active, ISet<VirtualNode> done)
+        {
+            if (node == null || done.Contains(node))
+                return true;
+            if (active.Count >= 128 || !active.Add(node))
+                return false;
+            if (node is VirtualStateMachine machine)
+            {
+                foreach (var child in machine.States)
+                    if (child.State != null &&
+                        (!IsFinite(child.State.Speed) || !IsFinite(child.State.CycleOffset)) ||
+                        !IsValidVirtualGraph(child.State?.Motion, active, done))
+                        return false;
+                foreach (var child in machine.StateMachines)
+                    if (!IsValidVirtualGraph(child.StateMachine, active, done))
+                        return false;
+            }
+            else if (node is VirtualBlendTree tree)
+            {
+                foreach (var child in tree.Children)
+                    if (!IsFinite(child.TimeScale) || !IsFinite(child.CycleOffset) ||
+                        !IsFinite(child.Threshold) || !IsFinite(child.Position.x) || !IsFinite(child.Position.y) ||
+                        !IsValidVirtualGraph(child.Motion, active, done))
+                        return false;
+            }
+            active.Remove(node);
+            done.Add(node);
+            return true;
+        }
+
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        private static bool IsFloatNeighborhoodRepresentable(float threshold, float epsilon)
+        {
+            var lower = threshold - epsilon;
+            var upper = threshold + epsilon;
+            return IsFinite(lower) && IsFinite(upper) && lower < threshold && upper > threshold;
+        }
+
+        private static bool HasBlockingVirtualTransitionTiming(VirtualStateTransition transition)
+        {
+            if (transition == null)
+                return false;
+            if (!IsFinite(transition.Duration) || !IsFinite(transition.Offset) ||
+                transition.ExitTime.HasValue && !IsFinite(transition.ExitTime.Value))
+                return true;
+            var irrelevantOffset = currentLayerScope != null && !currentLayerScope.HasExitTime &&
+                transition.DestinationState != null && IsTimeIndependentMotion(transition.DestinationState.Motion);
+            var timed = transition.ExitTime.HasValue ||
+                        transition.Duration != 0f || transition.Offset != 0f && !irrelevantOffset;
+            if (!timed)
+                return false;
+            return !(currentLayerScope?.Options?.IgnoreTransitionTimingForStaticMotions ?? false);
+        }
+
+        private static bool HasEffectiveVirtualExitTime(VirtualStateMachine machine)
+        {
+            return machine != null &&
+                (GetEffectiveVirtualTransitions(machine.AnyStateTransitions).Any(transition => transition.ExitTime.HasValue) ||
+                 machine.States.Any(child => child.State != null &&
+                    GetEffectiveVirtualTransitions(child.State.Transitions).Any(transition => transition.ExitTime.HasValue)) ||
+                 machine.StateMachines.Any(child => HasEffectiveVirtualExitTime(child.StateMachine)));
+        }
+
+        private static bool ContainsVirtualAnimationEvents(
+            VirtualMotion motion,
+            ISet<VirtualMotion> visited)
+        {
+            if (motion == null || !visited.Add(motion))
+                return false;
+            if (motion is VirtualClip clip)
+                return HasVirtualAnimationEvents(clip);
+            return motion is VirtualBlendTree tree && tree.Children.Any(child =>
+                ContainsVirtualAnimationEvents(child.Motion, visited));
         }
 
         private static bool ContainsPotentialProxyVirtualMotion(
@@ -2479,49 +3969,49 @@ namespace UnityBox.AnimatorOptimizer
             if (motion == null || !visited.Add(motion))
                 return false;
             if (motion is VirtualClip clip)
-                return IsPotentialProxyVirtualClip(clip);
+                return clip.IsMarkerClip || IsPotentialProxyVirtualClip(clip);
             return motion is VirtualBlendTree tree && tree.Children.Any(child =>
                 ContainsPotentialProxyVirtualMotion(child.Motion, visited));
         }
 
         private static VirtualMotionRef ToMotionRef(VirtualState state)
         {
+            var independent = IsTimeIndependentMotion(state?.Motion);
             return new VirtualMotionRef
             {
-                Motion = state?.Motion,
-                Speed = state == null ? 1f : state.Speed,
-                CycleOffset = state == null ? 0f : state.CycleOffset,
-                Mirror = state != null && state.Mirror,
+                Motion = NormalizeVirtualSingleton(state?.Motion),
+                Speed = state == null || independent ? 1f : state.Speed,
+                CycleOffset = state == null || independent ? 0f : state.CycleOffset,
+                Mirror = state != null && state.Mirror && !IsPropertyOnlyVirtualMotion(state.Motion),
             };
         }
 
         private static bool TryCollectLayerBindings(VirtualLayer layer, HashSet<BindingKey> bindings)
         {
-            if (layer == null || layer.StateMachine == null ||
+            if (layer == null || layer.StateMachine == null || layer.SyncedLayerIndex >= 0 ||
                 layer.StateMachine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)))
                 return false;
 
-            if (layer.StateMachine.StateMachines.Count > 0)
-            {
-                if (!TryResolveVirtualNestedStaticDefault(layer.StateMachine, out var nestedDefault) ||
-                    nestedDefault == null || nestedDefault.Behaviours.Count > 0)
-                    return false;
-                return TryCollectMotionBindings(nestedDefault.Motion, bindings);
-            }
+            return TryCollectVirtualMachineBindings(layer.StateMachine, bindings);
+        }
 
-            foreach (var child in layer.StateMachine.States)
+        private static bool TryCollectVirtualMachineBindings(VirtualStateMachine machine, HashSet<BindingKey> bindings)
+        {
+            if (machine == null || machine.Behaviours.Any(behaviour => !IsPreservableLayerBehaviour(behaviour)))
+                return false;
+            foreach (var child in machine.States)
             {
                 if (child.State == null || child.State.Behaviours.Count > 0 ||
                     !TryCollectMotionBindings(child.State.Motion, bindings))
                     return false;
             }
-            return true;
+            return machine.StateMachines.All(child => TryCollectVirtualMachineBindings(child.StateMachine, bindings));
         }
 
         private static bool IsPreservableLayerBehaviour(StateMachineBehaviour behaviour)
         {
             return behaviour != null && string.Equals(
-                behaviour.GetType().Name, "ModularAvatarMMDLayerControl", StringComparison.Ordinal);
+                behaviour.GetType().FullName, "nadena.dev.modular_avatar.core.ModularAvatarMMDLayerControl", StringComparison.Ordinal);
         }
 
         private static bool CanPreserveVirtualLayerBehaviours(
@@ -2530,33 +4020,18 @@ namespace UnityBox.AnimatorOptimizer
             if (candidates == null || candidates.Count == 0)
                 return true;
             var keys = candidates.Select(candidate =>
-                    candidate.Layer.StateMachine.Behaviours
-                        .Select(BuildVirtualBehaviourKey)
-                        .ToList())
+                    AnimatorOptimizerSynchronizedGraph.TryBuildMarkerKey(candidate.Layer.StateMachine.Behaviours, out var key) ? key : null)
                 .ToList();
-            return keys.All(list => list.Count == 0) ||
-                   keys.Skip(1).All(list => list.SequenceEqual(keys[0], StringComparer.Ordinal));
-        }
-
-        private static string BuildVirtualBehaviourKey(StateMachineBehaviour behaviour)
-        {
-            if (!IsPreservableLayerBehaviour(behaviour))
-                return "unsupported:" + (behaviour == null ? "null" : behaviour.GetType().FullName);
-            try
-            {
-                return behaviour.GetType().FullName + "|" + EditorJsonUtility.ToJson(behaviour);
-            }
-            catch
-            {
-                return behaviour.GetType().FullName + "|unreadable";
-            }
+            return keys.All(key => key != null && string.Equals(key, keys[0], StringComparison.Ordinal));
         }
 
         private static ImmutableList<StateMachineBehaviour> CloneVirtualLayerBehaviours(
             IReadOnlyList<VirtualCandidate> candidates)
         {
-            if (candidates == null || candidates.Count == 0 || !CanPreserveVirtualLayerBehaviours(candidates))
+            if (candidates == null || candidates.Count == 0)
                 return ImmutableList<StateMachineBehaviour>.Empty;
+            if (!CanPreserveVirtualLayerBehaviours(candidates))
+                throw new InvalidOperationException("Cannot copy source layer markers without losing Behaviour data.");
             var source = candidates[0].Layer.StateMachine.Behaviours;
             var result = ImmutableList<StateMachineBehaviour>.Empty;
             foreach (var behaviour in source)
@@ -2575,16 +4050,13 @@ namespace UnityBox.AnimatorOptimizer
                 return true;
             if (motion is VirtualClip clip)
             {
+                if (!HasInspectableVirtualBindings(clip)) return false;
                 foreach (var binding in clip.GetFloatCurveBindings())
                 {
-                    if (binding.type == typeof(Animator))
-                        return false;
                     bindings.Add(new BindingKey(binding));
                 }
                 foreach (var binding in clip.GetObjectCurveBindings())
                 {
-                    if (binding.type == typeof(Animator))
-                        return false;
                     bindings.Add(new BindingKey(binding));
                 }
                 return true;
@@ -2592,6 +4064,27 @@ namespace UnityBox.AnimatorOptimizer
             if (motion is VirtualBlendTree tree)
                 return tree.Children.All(child => TryCollectMotionBindings(child.Motion, bindings));
             return false;
+        }
+
+        private static bool ContainsVirtualAnimatorCurves(VirtualMotion motion, ISet<VirtualMotion> visited)
+        {
+            if (motion == null || !visited.Add(motion)) return false;
+            if (motion is VirtualClip clip)
+                return clip.GetFloatCurveBindings().Concat(clip.GetObjectCurveBindings())
+                    .Any(binding => binding.type == typeof(Animator));
+            return motion is VirtualBlendTree tree && tree.Children.Any(child =>
+                ContainsVirtualAnimatorCurves(child.Motion, visited));
+        }
+
+        private static bool ContainsUnsupportedVirtualCurveData(VirtualMotion motion, ISet<VirtualMotion> visited)
+        {
+            if (motion == null || !visited.Add(motion)) return false;
+            if (motion is VirtualClip clip)
+                return clip.GetFloatCurveBindings().Any(binding => AnimatorOptimizerSemanticUtility.IsRotationBinding(binding) ||
+                    !AnimatorOptimizerSemanticUtility.IsFiniteCurveData(clip.GetFloatCurve(binding))) ||
+                    clip.GetObjectCurveBindings().Any(binding => clip.GetObjectCurve(binding) == null ||
+                        clip.GetObjectCurve(binding).Any(key => !IsFinite(key.time)));
+            return motion is VirtualBlendTree tree && tree.Children.Any(child => ContainsUnsupportedVirtualCurveData(child.Motion, visited));
         }
 
         private static List<string> UpgradeParameters(
@@ -2664,7 +4157,9 @@ namespace UnityBox.AnimatorOptimizer
             if (controller == null || string.IsNullOrWhiteSpace(parameterName))
                 return false;
             return controller.Layers.Any(layer =>
-                VirtualStateMachineHasPotentialBehaviourReference(layer.StateMachine, parameterName));
+                VirtualStateMachineHasPotentialBehaviourReference(layer.StateMachine, parameterName) ||
+                layer.SyncedLayerBehaviourOverrides.Values.SelectMany(list => list)
+                    .Any(behaviour => BehaviourMayReferenceVirtualParameter(behaviour, parameterName)));
         }
 
         private static bool VirtualStateMachineHasPotentialBehaviourReference(
@@ -2691,15 +4186,13 @@ namespace UnityBox.AnimatorOptimizer
             string parameterName)
         {
             if (behaviour == null)
-                return false;
+                return true;
             try
             {
                 var serializedObject = new SerializedObject(behaviour);
                 var iterator = serializedObject.GetIterator();
-                var enterChildren = true;
-                while (iterator.NextVisible(enterChildren))
+                while (iterator.Next(true))
                 {
-                    enterChildren = false;
                     if (iterator.propertyType == SerializedPropertyType.String &&
                         string.Equals(iterator.stringValue, parameterName, StringComparison.Ordinal))
                         return true;
@@ -2774,10 +4267,9 @@ namespace UnityBox.AnimatorOptimizer
             if (options != null && options.NormalizeAlwaysOneParameters &&
                 TryFindVirtualAlwaysOne(controller, out var existingAlwaysOne))
                 return existingAlwaysOne;
-            var name = WeightParameterPrefix;
-            var suffix = 1;
-            while (controller.Parameters.ContainsKey(name))
-                name = WeightParameterPrefix + "_" + suffix++;
+            var prefix = string.IsNullOrWhiteSpace(options?.WeightParameterPrefix)
+                ? WeightParameterPrefix : options.WeightParameterPrefix.Trim();
+            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectVirtualReservedParameterNames(controller));
             controller.SetParameter(name, new AnimatorControllerParameter
             {
                 name = name,
@@ -2785,6 +4277,39 @@ namespace UnityBox.AnimatorOptimizer
                 defaultFloat = 1f,
             });
             return name;
+        }
+
+        private static HashSet<string> CollectVirtualReservedParameterNames(VirtualAnimatorController controller)
+        {
+            var names = new HashSet<string>(controller.Parameters.Keys, StringComparer.Ordinal);
+            void Add(string name) { if (!string.IsNullOrWhiteSpace(name)) names.Add(name); }
+            foreach (var node in controller.AllReachableNodes())
+            {
+                if (node is VirtualBlendTree tree)
+                {
+                    Add(tree.BlendParameter);
+                    Add(tree.BlendParameterY);
+                    foreach (var child in tree.Children) Add(child.DirectBlendParameter);
+                }
+                else if (node is VirtualClip clip)
+                {
+                    foreach (var binding in clip.GetFloatCurveBindings().Concat(clip.GetObjectCurveBindings()))
+                        if (binding.type == typeof(Animator)) Add(binding.propertyName);
+                }
+                else if (node is VirtualState state)
+                {
+                    Add(state.SpeedParameter); Add(state.CycleOffsetParameter); Add(state.TimeParameter); Add(state.MirrorParameter);
+                    foreach (var behaviour in state.Behaviours) AnimatorOptimizerSemanticUtility.CollectSerializedStrings(behaviour, names);
+                }
+                else if (node is VirtualTransitionBase transition)
+                    foreach (var condition in transition.Conditions) Add(condition.parameter);
+                else if (node is VirtualStateMachine machine)
+                    foreach (var behaviour in machine.Behaviours) AnimatorOptimizerSemanticUtility.CollectSerializedStrings(behaviour, names);
+                else if (node is VirtualLayer layer)
+                    foreach (var behaviour in layer.SyncedLayerBehaviourOverrides.Values.SelectMany(list => list))
+                        AnimatorOptimizerSemanticUtility.CollectSerializedStrings(behaviour, names);
+            }
+            return names;
         }
 
         private static bool TryFindVirtualAlwaysOne(
@@ -2817,9 +4342,26 @@ namespace UnityBox.AnimatorOptimizer
             var names = new HashSet<string>(StringComparer.Ordinal);
             if (controller == null)
                 return names;
-            foreach (var layer in controller.Layers)
-                CollectVirtualAnimatedAnimatorParameterNames(layer.StateMachine, names, new HashSet<VirtualMotion>());
+            var layers = controller.Layers.ToList();
+            var visited = new HashSet<VirtualMotion>();
+            for (var index = 0; index < layers.Count; index++)
+                CollectVirtualAnimatedAnimatorParameterNames(layers, index, names, visited);
             return names;
+        }
+
+        private static void CollectVirtualAnimatedAnimatorParameterNames(IReadOnlyList<VirtualLayer> layers, int index,
+            ISet<string> names, ISet<VirtualMotion> visited)
+        {
+            var layer = layers[index];
+            var chain = new HashSet<VirtualLayer>();
+            while (layer != null && chain.Add(layer))
+            {
+                CollectVirtualAnimatedAnimatorParameterNames(layer.StateMachine, names, visited);
+                foreach (var motion in layer.SyncedLayerMotionOverrides.Values)
+                    CollectVirtualAnimatedAnimatorParameterNames(motion, names, visited);
+                layer = layer.SyncedLayerIndex < 0 ? null : layers.FirstOrDefault(candidate =>
+                    candidate?.VirtualLayerIndex == layer.SyncedLayerIndex);
+            }
         }
 
         private static void CollectVirtualAnimatedAnimatorParameterNames(
@@ -2847,7 +4389,7 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             if (motion is VirtualClip clip)
             {
-                foreach (var binding in clip.GetFloatCurveBindings())
+                foreach (var binding in clip.GetFloatCurveBindings().Concat(clip.GetObjectCurveBindings()))
                 {
                     if (binding.type == typeof(Animator))
                         names.Add(binding.propertyName);
@@ -2868,7 +4410,9 @@ namespace UnityBox.AnimatorOptimizer
             if (controller == null || string.IsNullOrWhiteSpace(parameterName))
                 return false;
             return controller.Layers.Any(layer =>
-                VirtualStateMachineHasParameterDriver(layer.StateMachine, parameterName));
+                VirtualStateMachineHasParameterDriver(layer.StateMachine, parameterName) ||
+                layer.SyncedLayerBehaviourOverrides.Values.SelectMany(list => list)
+                    .Any(behaviour => VirtualBehaviourReferencesParameter(behaviour, parameterName)));
         }
 
         private static bool VirtualStateMachineHasParameterDriver(

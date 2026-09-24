@@ -29,17 +29,36 @@ namespace UnityBox.AnimatorOptimizer
         public bool UpgradeIntParametersToFloat = true;
         public bool AllowFloatConditionApproximation = false;
         public float FloatConditionEpsilon = 0.001f;
+        public AnimatorOptimizerComponent.WriteDefaultsPolicy WriteDefaultsPolicy =
+            AnimatorOptimizerComponent.WriteDefaultsPolicy.AllowCoveredStates;
+        // Only affects transitions between time-independent motions; dynamic clips still
+        // require exact timing because the BlendTree cannot restart them.
+        public bool IgnoreTransitionTimingForStaticMotions = false;
+        public AnimatorOptimizerComponent.HeuristicFlags Heuristics;
+        public int ShortAnimationMaxFrames = 5;
+        public float ShortAnimationMaxSeconds = 0.1f;
+        public int MotionTimeSampleCount = 9;
+        public const AnimatorOptimizerComponent.HeuristicFlags PracticalHeuristics =
+            AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles |
+            AnimatorOptimizerComponent.HeuristicFlags.ShortAnimationEndpoints;
+        public const AnimatorOptimizerComponent.HeuristicFlags AggressiveHeuristics = PracticalHeuristics |
+            AnimatorOptimizerComponent.HeuristicFlags.SampleMotionTime |
+            AnimatorOptimizerComponent.HeuristicFlags.ComplementaryToggle |
+            AnimatorOptimizerComponent.HeuristicFlags.StableInputConvergence;
         // These are resource safeguards, not semantic eligibility checks. Exact
         // decision plans are still preferred whenever the configured finite domain
         // can be enumerated; generated trees use structural sharing to reduce cost.
         public int MaxBooleanTruthTableEntries = 4096;
         public int MaxNumericSelectorSamples = 256;
         public int MaxPriorityCombinations = 4096;
+        public int MaxAapDecisionNodes = 4096;
         public bool MergeLayersWithEquivalentMasks = true;
         public bool ResolveOverridePriorityWithStaticComposite = true;
+        public bool MergeSynchronizedStateMachines = true;
         public bool EnableAapStateRegisterOptimization = false;
         public bool RemoveEffectivelyEmptyLayers = true;
-        public bool NormalizeAlwaysOneParameters = true;
+        // A name and an initial value cannot prove absence of external writers.
+        public bool NormalizeAlwaysOneParameters = false;
         public bool ExecuteLateOptimization = false;
         public bool PreserveMmdCompatibility = false;
         public bool HasKnownPlayableLayer = false;
@@ -57,12 +76,23 @@ namespace UnityBox.AnimatorOptimizer
                 UpgradeBoolParametersToFloat = UpgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = UpgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = AllowFloatConditionApproximation,
-                FloatConditionEpsilon = FloatConditionEpsilon,
-                MaxBooleanTruthTableEntries = MaxBooleanTruthTableEntries,
-                MaxNumericSelectorSamples = MaxNumericSelectorSamples,
-                MaxPriorityCombinations = MaxPriorityCombinations,
+                FloatConditionEpsilon = float.IsNaN(FloatConditionEpsilon) || float.IsInfinity(FloatConditionEpsilon)
+                    ? 0.001f : Mathf.Max(0.000001f, FloatConditionEpsilon),
+                WriteDefaultsPolicy = Enum.IsDefined(typeof(AnimatorOptimizerComponent.WriteDefaultsPolicy), WriteDefaultsPolicy)
+                    ? WriteDefaultsPolicy : AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict,
+                IgnoreTransitionTimingForStaticMotions = IgnoreTransitionTimingForStaticMotions,
+                Heuristics = Heuristics & AggressiveHeuristics,
+                ShortAnimationMaxFrames = Mathf.Clamp(ShortAnimationMaxFrames, 1, 10),
+                ShortAnimationMaxSeconds = float.IsNaN(ShortAnimationMaxSeconds) || float.IsInfinity(ShortAnimationMaxSeconds)
+                    ? 0.1f : Mathf.Clamp(ShortAnimationMaxSeconds, 0.01f, 0.25f),
+                MotionTimeSampleCount = Mathf.Clamp(MotionTimeSampleCount, 2, 33),
+                MaxBooleanTruthTableEntries = Mathf.Clamp(MaxBooleanTruthTableEntries, 2, 4096),
+                MaxNumericSelectorSamples = Mathf.Clamp(MaxNumericSelectorSamples, 2, 256),
+                MaxPriorityCombinations = Mathf.Clamp(MaxPriorityCombinations, 2, 4096),
+                MaxAapDecisionNodes = Mathf.Clamp(MaxAapDecisionNodes, 64, 16384),
                 MergeLayersWithEquivalentMasks = MergeLayersWithEquivalentMasks,
                 ResolveOverridePriorityWithStaticComposite = ResolveOverridePriorityWithStaticComposite,
+                MergeSynchronizedStateMachines = MergeSynchronizedStateMachines,
                 EnableAapStateRegisterOptimization = EnableAapStateRegisterOptimization,
                 RemoveEffectivelyEmptyLayers = RemoveEffectivelyEmptyLayers,
                 NormalizeAlwaysOneParameters = NormalizeAlwaysOneParameters,
@@ -81,13 +111,16 @@ namespace UnityBox.AnimatorOptimizer
 
         internal AnimatorOptimizerReport(
             AnimatorController controller,
-            IEnumerable<AnimatorOptimizerLayerReport> layers)
+            IEnumerable<AnimatorOptimizerLayerReport> layers,
+            bool graphIsValid = true)
         {
             Controller = controller;
+            GraphIsValid = graphIsValid;
             _layers = new List<AnimatorOptimizerLayerReport>(layers ?? Enumerable.Empty<AnimatorOptimizerLayerReport>());
         }
 
         public AnimatorController Controller { get; }
+        internal bool GraphIsValid { get; }
         public IReadOnlyList<AnimatorOptimizerLayerReport> Layers => _layers;
         public int ConvertibleLayerCount => _layers.Count(layer => layer.CanConvert);
         public IEnumerable<AnimatorOptimizerLayerReport> ConvertibleLayers => _layers.Where(layer => layer.CanConvert);
@@ -97,6 +130,8 @@ namespace UnityBox.AnimatorOptimizer
     {
         private readonly List<string> _reasons = new List<string>();
         private readonly List<string> _warnings = new List<string>();
+        private readonly List<string> _optimizations = new List<string>();
+        private readonly List<string> _suggestions = new List<string>();
 
         internal AnimatorOptimizerLayerReport(int index, AnimatorControllerLayer layer)
         {
@@ -125,6 +160,10 @@ namespace UnityBox.AnimatorOptimizer
         public int AnimatedBindingCount => Bindings.Count;
         public IReadOnlyList<string> Reasons => _reasons;
         public IReadOnlyList<string> Warnings => _warnings;
+        public IReadOnlyList<string> Optimizations => _optimizations;
+        public IReadOnlyList<string> Suggestions => _suggestions;
+        public IReadOnlyList<string> HeuristicAssumptions => Plan?.Assumptions ?? (IReadOnlyList<string>)Array.Empty<string>();
+        public bool UsesHeuristics => HeuristicAssumptions.Count > 0;
         public IReadOnlyCollection<string> RequiredFloatParameters => Plan == null
             ? (IReadOnlyCollection<string>)Array.Empty<string>()
             : Plan.RequiredFloatParameters;
@@ -133,6 +172,16 @@ namespace UnityBox.AnimatorOptimizer
         internal HashSet<AnimatorOptimizerBindingKey> Bindings { get; }
         internal bool BindingsAreComplete { get; set; }
         internal AnimatorOptimizerMotionPlan Plan { get; set; }
+        internal AnimatorOptimizerOptions Options { get; set; }
+        // Conservative controller-wide default-write scope, shared by analysis attempts.
+        internal HashSet<AnimatorOptimizerBindingKey> LayerMotionBindings { get; set; }
+        internal bool LayerMotionBindingsAreComplete { get; set; }
+        internal HashSet<int> WriteDefaultsOffStates { get; } = new HashSet<int>();
+        internal HashSet<string> AttemptReasons { get; } = new HashSet<string>(StringComparer.Ordinal);
+        internal HashSet<string> AttemptSuggestions { get; } = new HashSet<string>(StringComparer.Ordinal);
+        internal bool HasExitTime { get; set; }
+        public int WriteDefaultsOffStateCount => WriteDefaultsOffStates.Count;
+        public int RelaxedTransitionCount { get; internal set; }
 
         internal void AddReason(string reason)
         {
@@ -146,6 +195,18 @@ namespace UnityBox.AnimatorOptimizer
                 _warnings.Add(warning);
         }
 
+        internal void AddOptimization(string message)
+        {
+            if (!string.IsNullOrWhiteSpace(message) && !_optimizations.Contains(message))
+                _optimizations.Add(message);
+        }
+
+        internal void AddSuggestion(string message)
+        {
+            if (!string.IsNullOrWhiteSpace(message) && !_suggestions.Contains(message))
+                _suggestions.Add(message);
+        }
+
         private static string BuildMaskKey(AvatarMask mask)
         {
             if (mask == null)
@@ -153,39 +214,27 @@ namespace UnityBox.AnimatorOptimizer
 
             try
             {
-                var serializedObject = new SerializedObject(mask);
-                var iterator = serializedObject.GetIterator();
                 var key = new System.Text.StringBuilder();
-                var enterChildren = true;
-                while (iterator.Next(enterChildren))
+                for (var part = 0; part < (int)AvatarMaskBodyPart.LastBodyPart; part++)
+                    key.Append(mask.GetHumanoidBodyPartActive((AvatarMaskBodyPart)part) ? '1' : '0');
+                using var serialized = new SerializedObject(mask);
+                var elements = serialized.FindProperty("m_Elements");
+                if (elements == null || !elements.isArray || elements.arraySize != mask.transformCount)
+                    return "instance:" + mask.GetInstanceID();
+                key.Append('|').Append(elements.arraySize).Append('|');
+                for (var index = 0; index < elements.arraySize; index++)
                 {
-                    enterChildren = false;
-                    if (iterator.propertyPath == "m_Name" || iterator.propertyPath == "m_ObjectHideFlags" ||
-                        iterator.propertyPath == "m_Script" || iterator.propertyPath == "m_EditorClassIdentifier")
-                        continue;
-                    key.Append(iterator.propertyPath).Append(':').Append(iterator.propertyType).Append('=');
-                    switch (iterator.propertyType)
-                    {
-                        case SerializedPropertyType.Boolean:
-                            key.Append(iterator.boolValue);
-                            break;
-                        case SerializedPropertyType.Integer:
-                        case SerializedPropertyType.Enum:
-                            key.Append(iterator.intValue);
-                            break;
-                        case SerializedPropertyType.Float:
-                            key.Append(iterator.floatValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
-                            break;
-                        case SerializedPropertyType.String:
-                            key.Append(iterator.stringValue);
-                            break;
-                        case SerializedPropertyType.ObjectReference:
-                            key.Append(iterator.objectReferenceValue == null
-                                ? 0
-                                : iterator.objectReferenceValue.GetInstanceID());
-                            break;
-                    }
-                    key.Append(';');
+                    var element = elements.GetArrayElementAtIndex(index);
+                    var pathProperty = element.FindPropertyRelative("m_Path");
+                    var weightProperty = element.FindPropertyRelative("m_Weight");
+                    if (pathProperty == null || weightProperty == null ||
+                        !AnimatorOptimizerAnalyzer.IsFinite(weightProperty.floatValue))
+                        return "instance:" + mask.GetInstanceID();
+                    var path = pathProperty.stringValue ?? string.Empty;
+                    // GetTransformActive only returns weight > 0.5, losing fractional
+                    // values written by other tools. Compare the actual serialized weight.
+                    key.Append(path.Length).Append(':').Append(path).Append('=')
+                        .Append(weightProperty.floatValue.ToString("R", CultureInfo.InvariantCulture)).Append(';');
                 }
                 return key.ToString();
             }
@@ -208,15 +257,15 @@ namespace UnityBox.AnimatorOptimizer
         public string SelectorParameter;
         public AnimatorControllerParameterType SelectorParameterType;
         public List<AnimatorOptimizerSelectorSample> SelectorSamples;
+        public bool SelectorIsApproximate;
         public HashSet<string> RequiredFloatParameters = new HashSet<string>(StringComparer.Ordinal);
         public HashSet<string> ReferencedParameters = new HashSet<string>(StringComparer.Ordinal);
         public string StructuralKey;
+        public AnimatorOptimizerAapProgram StateRegisterProgram;
         public List<AnimatorState> StateRegisterStates;
-        public List<string> StateRegisterBooleanParameters;
-        public List<AnimatorOptimizerDecisionDimension> StateRegisterDecisionDimensions;
-        public Dictionary<int, Dictionary<int, int>> StateRegisterNextStates;
-        public Dictionary<int, int> StateRegisterEntryStates;
-        public int StateRegisterDefaultState;
+        public string StateTag;
+        public List<string> Assumptions = new List<string>();
+        public HashSet<string> AssumedBinaryParameters = new HashSet<string>(StringComparer.Ordinal);
     }
 
     internal sealed class AnimatorOptimizerBranch
@@ -232,6 +281,8 @@ namespace UnityBox.AnimatorOptimizer
         public float Speed = 1f;
         public float CycleOffset;
         public bool Mirror;
+        // Read-only sampled data. No temporary Unity assets are created during analysis.
+        public AnimatorOptimizerClipBake Bake;
 
         public AnimatorOptimizerMotionRef Clone()
         {
@@ -241,6 +292,7 @@ namespace UnityBox.AnimatorOptimizer
                 Speed = Speed,
                 CycleOffset = CycleOffset,
                 Mirror = Mirror,
+                Bake = Bake,
             };
         }
     }
@@ -261,21 +313,22 @@ namespace UnityBox.AnimatorOptimizer
             if (IsBoolean)
             {
                 var boolValue = value >= 0.5f;
-                var expected = Mode == AnimatorConditionMode.If ||
-                              (Mode == AnimatorConditionMode.Equals && Mathf.Approximately(Threshold, 1f)) ||
-                              (Mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(Threshold, 0f));
-                return Mode == AnimatorConditionMode.IfNot ||
-                       (Mode == AnimatorConditionMode.Equals && Mathf.Approximately(Threshold, 0f))
-                    ? !boolValue
-                    : expected == boolValue;
+                return Mode switch
+                {
+                    AnimatorConditionMode.If => boolValue,
+                    AnimatorConditionMode.IfNot => !boolValue,
+                    AnimatorConditionMode.Equals => (boolValue ? 1f : 0f) == Threshold,
+                    AnimatorConditionMode.NotEqual => (boolValue ? 1f : 0f) != Threshold,
+                    _ => false,
+                };
             }
 
             switch (Mode)
             {
                 case AnimatorConditionMode.Equals:
-                    return Mathf.Approximately(value, Threshold);
+                    return value == Threshold;
                 case AnimatorConditionMode.NotEqual:
-                    return !Mathf.Approximately(value, Threshold);
+                    return value != Threshold;
                 case AnimatorConditionMode.Greater:
                     return value > Threshold;
                 case AnimatorConditionMode.Less:
@@ -309,13 +362,13 @@ namespace UnityBox.AnimatorOptimizer
         public AnimatorOptimizerBindingKey(string path, Type type, string propertyName, bool objectReference)
         {
             Path = path ?? string.Empty;
-            TypeName = type == null ? string.Empty : type.FullName ?? type.Name;
+            BindingType = type;
             PropertyName = propertyName ?? string.Empty;
             ObjectReference = objectReference;
         }
 
         private string Path { get; }
-        private string TypeName { get; }
+        private Type BindingType { get; }
         private string PropertyName { get; }
         private bool ObjectReference { get; }
 
@@ -323,7 +376,7 @@ namespace UnityBox.AnimatorOptimizer
         {
             return ObjectReference == other.ObjectReference &&
                    string.Equals(Path, other.Path, StringComparison.Ordinal) &&
-                   string.Equals(TypeName, other.TypeName, StringComparison.Ordinal) &&
+                   BindingType == other.BindingType &&
                    string.Equals(PropertyName, other.PropertyName, StringComparison.Ordinal);
         }
 
@@ -337,7 +390,7 @@ namespace UnityBox.AnimatorOptimizer
             unchecked
             {
                 var hash = StringComparer.Ordinal.GetHashCode(Path);
-                hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(TypeName);
+                hash = hash * 397 ^ (BindingType?.GetHashCode() ?? 0);
                 hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(PropertyName);
                 hash = hash * 397 ^ (ObjectReference ? 1 : 0);
                 return hash;
@@ -346,13 +399,20 @@ namespace UnityBox.AnimatorOptimizer
 
         public override string ToString()
         {
-            return (ObjectReference ? "PPtr:" : "Curve:") + Path + ":" + TypeName + ":" + PropertyName;
+            return (ObjectReference ? "PPtr:" : "Curve:") + Path + ":" + BindingType?.FullName + ":" + PropertyName;
         }
 
         public bool IsObjectReference => ObjectReference;
+
+        public bool IsSafeAdditiveFloatBinding => !ObjectReference &&
+            ((BindingType == typeof(Transform) &&
+                (string.Equals(PropertyName, "m_LocalPosition.x", StringComparison.Ordinal) ||
+                 string.Equals(PropertyName, "m_LocalPosition.y", StringComparison.Ordinal) ||
+                 string.Equals(PropertyName, "m_LocalPosition.z", StringComparison.Ordinal))) ||
+             (BindingType == typeof(SkinnedMeshRenderer) && PropertyName.StartsWith("blendShape.", StringComparison.Ordinal)));
     }
 
-    public static class AnimatorOptimizerAnalyzer
+    public static partial class AnimatorOptimizerAnalyzer
     {
         public static AnimatorOptimizerReport Analyze(
             AnimatorController controller,
@@ -364,8 +424,27 @@ namespace UnityBox.AnimatorOptimizer
             options = options?.Clone() ?? new AnimatorOptimizerOptions();
             var layers = controller.layers ?? Array.Empty<AnimatorControllerLayer>();
             var reports = new List<AnimatorOptimizerLayerReport>(layers.Length);
+            if (!IsValidControllerGraph(controller))
+            {
+                for (var index = 0; index < layers.Length; index++)
+                {
+                    var invalid = new AnimatorOptimizerLayerReport(index, layers[index]) { BindingsAreComplete = false };
+                    invalid.AddReason("Controller 存在循环引用或过深的状态机/Motion；保留原图。");
+                    reports.Add(invalid);
+                }
+                return new AnimatorOptimizerReport(controller, reports, false);
+            }
+            var controllerBindings = new HashSet<AnimatorOptimizerBindingKey>();
+            var bindingsComplete = true;
+            var visitedMachines = new HashSet<int>();
+            foreach (var layer in layers)
+            {
+                if (layer != null && layer.syncedLayerIndex >= 0)
+                    bindingsComplete = false;
+                bindingsComplete &= TryCollectStateMachineMotionBindings(layer?.stateMachine, controllerBindings, visitedMachines);
+            }
             for (var index = 0; index < layers.Length; index++)
-                reports.Add(AnalyzeLayer(controller, index, layers[index], options));
+                reports.Add(AnalyzeLayer(controller, index, layers[index], options, controllerBindings, bindingsComplete));
 
             return new AnimatorOptimizerReport(controller, reports);
         }
@@ -374,7 +453,9 @@ namespace UnityBox.AnimatorOptimizer
             AnimatorController controller,
             int index,
             AnimatorControllerLayer layer,
-            AnimatorOptimizerOptions options)
+            AnimatorOptimizerOptions options,
+            HashSet<AnimatorOptimizerBindingKey> controllerBindings,
+            bool bindingsComplete)
         {
             var report = new AnimatorOptimizerLayerReport(index, layer);
             if (layer == null)
@@ -402,12 +483,22 @@ namespace UnityBox.AnimatorOptimizer
             if (layer.blendingMode != AnimatorLayerBlendingMode.Override &&
                 layer.blendingMode != AnimatorLayerBlendingMode.Additive)
                 report.AddReason("当前 Layer 混合模式不是 Override/Additive，无法由 BlendTree 表达。");
-            if (layer.syncedLayerIndex >= 0 || layer.syncedLayerAffectsTiming)
+            if (layer.syncedLayerIndex >= 0)
+            {
+                report.BindingsAreComplete = false; // Synced override motions are not represented by the local graph.
                 report.AddReason("Synced Layer/Synced Timing 依赖其它 Layer 的状态结构或时间，暂不转换。");
+            }
+            else if (layer.syncedLayerAffectsTiming)
+                report.AddOptimization("未设置 Synced Layer 目标，残留的 Synced Timing 标记不参与求值。");
             if (layer.iKPass)
+            {
                 report.AddReason("Layer 开启了 IK Pass；合并后无法保留独立 IK Pass 边界。");
-            if (!Mathf.Approximately(layer.defaultWeight, 1f))
+                report.AddSuggestion("确认本层不需要 IK 求解或 OnAnimatorIK 回调后，再在源 Layer 关闭 IK Pass；不会仅凭静态 Clip 自动关闭。");
+            }
+            if (index != 0 && layer.defaultWeight != 1f)
                 report.AddReason("Layer 默认权重不是 1；运行时 Animator.SetLayerWeight 无法映射为静态 Direct 权重。");
+            else if (index == 0 && layer.defaultWeight != 1f)
+                report.AddOptimization("首层实际权重恒为 1，忽略其未生效的 Default Weight 数值。");
             var unsupportedStateMachineBehaviours = (layer.stateMachine.behaviours ?? Array.Empty<StateMachineBehaviour>())
                 .Where(behaviour => !IsPreservableLayerBehaviour(behaviour))
                 .ToArray();
@@ -418,10 +509,19 @@ namespace UnityBox.AnimatorOptimizer
             }
             else if (layer.stateMachine.behaviours != null && layer.stateMachine.behaviours.Length > 0)
             {
-                report.AddWarning("StateMachine 只包含可复制的 MMD LayerControl；合并时会复制到生成 Layer。");
+                if (!AnimatorOptimizerSynchronizedGraph.TryBuildMarkerKey(layer.stateMachine.behaviours, out _))
+                    report.AddReason("无法完整读取 StateMachine 的 MMD 标记配置，保留源层而不猜测或丢弃标记。");
+                else
+                    report.AddWarning("StateMachine 只包含可复制的 MMD LayerControl；合并时会复制到生成 Layer。");
             }
             var states = layer.stateMachine.states ?? Array.Empty<ChildAnimatorState>();
             var nestedStateMachines = layer.stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>();
+            if (states.Where(child => child.state != null).GroupBy(child => child.state).Any(group => group.Count() > 1))
+            {
+                report.AddReason("State 列表包含重复引用，保留源图而不猜测状态槽位。");
+                CollectAllBindings(layer.stateMachine, report);
+                return report;
+            }
             if (states.Length == 0 && nestedStateMachines.Length == 0)
             {
                 report.AddReason("StateMachine 没有 State，无法生成 Motion。");
@@ -429,32 +529,131 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             var analyzableStates = GetPotentiallyReachableStates(controller, layer.stateMachine, states);
-
-            if (!TryBuildPlan(controller, layer.stateMachine, analyzableStates, options, report, out var plan))
+            report.Options = options;
+            report.LayerMotionBindings = controllerBindings;
+            report.LayerMotionBindingsAreComplete = bindingsComplete;
+            report.HasExitTime = HasEffectiveExitTime(layer.stateMachine, controller);
+            if (nestedStateMachines.Length == 0 && analyzableStates.Count < states.Length)
+                report.AddOptimization($"忽略 {states.Length - analyzableStates.Count} 个从 Default / Entry / 有效 Transition 不可达的 State（不支持外部 Animator.Play 按名称跳转）。");
+            if (nestedStateMachines.Length == 0)
             {
-                if (layer.stateMachine.entryTransitions != null && layer.stateMachine.entryTransitions.Length > 0)
+                var impossibleTransitions = GetEffectiveAnimatorTransitions(layer.stateMachine.entryTransitions)
+                    .Cast<AnimatorTransitionBase>().Concat(GetEffectiveTransitions(layer.stateMachine.anyStateTransitions))
+                    .Concat(analyzableStates.SelectMany(child => GetEffectiveTransitions(child.state?.transitions)))
+                    .Count(transition => !TransitionMayBeReachable(controller, transition.conditions));
+                if (impossibleTransitions > 0)
+                    report.AddOptimization($"检测到 {impossibleTransitions} 条条件矛盾的有效 Transition；不会把它们作为可达输出或输入维度。");
+            }
+
+            var planningReport = CreateTrialReport(report);
+            var built = TryAlternative(planningReport, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildPlan(controller, layer.stateMachine, analyzableStates, options, trial, out candidate), out var plan);
+            bool HasTimedOutput() => built && EnumeratePlanMotions(plan)
+                .Any(motion => motion?.Bake == null && !AnimatorOptimizerMotionUtility.IsTimeIndependent(motion?.Motion));
+            void TryFinitePlan(bool allowHeuristics)
+            {
+                var trial = CreateTrialReport(report);
+                if (TryBuildFiniteGraphPlan(controller, layer.stateMachine, analyzableStates, options, trial,
+                    allowHeuristics, out var candidate) &&
+                    (!built || HasTimedOutput() || PlanEntryCount(candidate) < PlanEntryCount(plan)))
+                {
+                    // Keep diagnostics from the chosen plan only, not a discarded
+                    // AAP plan or an unused heuristic trial.
+                    planningReport = trial;
+                    plan = candidate;
+                    built = true;
+                }
+                else
+                {
+                    planningReport.AttemptReasons.UnionWith(trial.Reasons);
+                    planningReport.AttemptSuggestions.UnionWith(trial.Suggestions);
+                }
+            }
+            if (!built || !HasTimedOutput() && PlanEntryCount(plan) > 1) TryFinitePlan(false);
+            if (options.Heuristics != AnimatorOptimizerComponent.HeuristicFlags.None &&
+                (!built || HasTimedOutput() || plan.Kind == AnimatorOptimizerConversionKind.AapStateRegister ||
+                 options.Heuristics.HasFlag(AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles) && PlanEntryCount(plan) > 1))
+                TryFinitePlan(true);
+            if (!built)
+            {
+                report.AttemptReasons.UnionWith(planningReport.AttemptReasons);
+                report.AttemptReasons.UnionWith(planningReport.Reasons);
+                report.AttemptSuggestions.UnionWith(planningReport.AttemptSuggestions);
+                report.AttemptSuggestions.UnionWith(planningReport.Suggestions);
+                foreach (var reason in report.AttemptReasons)
+                    report.AddReason(reason);
+                foreach (var suggestion in report.AttemptSuggestions)
+                    report.AddSuggestion(suggestion);
+                if (report.Reasons.Count == 0)
+                    report.AddReason("无法证明该状态机与无历史 BlendTree 等价。");
+                if (GetEffectiveAnimatorTransitions(layer.stateMachine.entryTransitions).Count > 0)
                     report.AddReason("包含 Entry Transition，且无法证明入口目标与其它 State 的可观测效果等价。");
                 CollectAllBindings(layer.stateMachine, report);
                 return report;
             }
 
+            MergeTrialReport(report, planningReport);
             CollectPlanBindings(plan, report);
             if (!ValidatePlanParameters(controller, plan, options, report))
             {
                 CollectAllBindings(layer.stateMachine, report);
                 return report;
             }
+            var relevantTagStates = nestedStateMachines.Length == 0
+                ? new HashSet<AnimatorState>(analyzableStates
+                    .Where(child => child.state != null)
+                    .Select(child => child.state))
+                : null;
+            if (!TryGetUniformStateTag(layer.stateMachine, relevantTagStates, out var stateTag))
+            {
+                report.AddReason("可转换 State 使用了不同的 Tag；生成的单一 Root State 无法同时保留 AnimatorStateInfo.IsTag 语义。");
+                return report;
+            }
+            plan.StateTag = stateTag;
             report.Plan = plan;
             plan.StructuralKey = BuildStructuralKey(plan);
             report.ConversionKind = plan.Kind;
-            report.AddWarning(BuildPlanWarning(plan));
+            report.AddOptimization(BuildPlanWarning(plan));
             return report;
+        }
+
+        private static bool TryGetUniformStateTag(
+            AnimatorStateMachine stateMachine,
+            ISet<AnimatorState> relevantStates,
+            out string tag)
+        {
+            tag = string.Empty;
+            if (stateMachine == null)
+                return false;
+            var tags = new HashSet<string>(StringComparer.Ordinal);
+            CollectStateTags(stateMachine, tags, new HashSet<int>(), relevantStates);
+            if (tags.Count > 1)
+                return false;
+            tag = tags.FirstOrDefault() ?? string.Empty;
+            return true;
+        }
+
+        private static void CollectStateTags(
+            AnimatorStateMachine stateMachine,
+            ISet<string> tags,
+            ISet<int> visited,
+            ISet<AnimatorState> relevantStates)
+        {
+            if (stateMachine == null || !visited.Add(stateMachine.GetInstanceID()))
+                return;
+            foreach (var child in stateMachine.states ?? Array.Empty<ChildAnimatorState>())
+            {
+                if (child.state != null && (relevantStates == null || relevantStates.Contains(child.state)))
+                    tags.Add(child.state.tag ?? string.Empty);
+            }
+            foreach (var child in stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
+                CollectStateTags(child.stateMachine, tags, visited, relevantStates);
         }
 
         internal static bool IsPreservableLayerBehaviour(StateMachineBehaviour behaviour)
         {
             return behaviour != null && string.Equals(
-                behaviour.GetType().Name, "ModularAvatarMMDLayerControl", StringComparison.Ordinal);
+                behaviour.GetType().FullName, "nadena.dev.modular_avatar.core.ModularAvatarMMDLayerControl", StringComparison.Ordinal);
         }
 
         internal static bool IsVrcGlobalParameter(string parameterName)
@@ -529,6 +728,8 @@ namespace UnityBox.AnimatorOptimizer
             }
             foreach (var motion in EnumeratePlanMotions(plan).Skip(plan.ConstantMotion == null ? 0 : 1))
                 CollectMotionParameters(motion?.Motion, parameters, new HashSet<int>());
+            foreach (var motion in EnumeratePlanMotions(plan))
+                if (!string.IsNullOrWhiteSpace(motion?.Bake?.Parameter)) parameters.Add(motion.Bake.Parameter);
 
             plan.ReferencedParameters = parameters;
             foreach (var parameterName in parameters)
@@ -562,6 +763,8 @@ namespace UnityBox.AnimatorOptimizer
                             plan.RequiredFloatParameters.Add(parameterName);
                         break;
                     case AnimatorControllerParameterType.Float:
+                        if (!IsFinite(parameter.defaultFloat))
+                            report.AddReason($"Float 参数 '{parameterName}' 的默认值不是有限数；保留源图。");
                         plan.RequiredFloatParameters.Add(parameterName);
                         break;
                     default:
@@ -618,7 +821,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (!string.IsNullOrWhiteSpace(tree.blendParameter))
                     parameters.Add(tree.blendParameter);
-                if (!string.IsNullOrWhiteSpace(tree.blendParameterY))
+                if (tree.blendType != BlendTreeType.Simple1D && !string.IsNullOrWhiteSpace(tree.blendParameterY))
                     parameters.Add(tree.blendParameterY);
             }
             foreach (var child in tree.children ?? Array.Empty<ChildMotion>())
@@ -651,22 +854,22 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             Add(stateMachine.defaultState);
-            foreach (var transition in stateMachine.entryTransitions ?? Array.Empty<AnimatorTransition>())
+            foreach (var transition in GetEffectiveAnimatorTransitions(stateMachine.entryTransitions))
             {
                 if (transition == null || !TransitionMayBeReachable(controller, transition.conditions))
                     continue;
                 Add(transition.destinationState);
             }
 
-            var anyTransitions = GetEffectiveTransitions(stateMachine.anyStateTransitions);
+            // Root AnyState destinations do not depend on which reachable state
+            // is visited. Inspect each edge once instead of states × AnyState edges.
+            if (pending.Count > 0)
+                foreach (var transition in GetEffectiveTransitions(stateMachine.anyStateTransitions))
+                    if (TransitionMayBeReachable(controller, transition.conditions))
+                        Add(transition.destinationState);
             while (pending.Count > 0)
             {
                 var current = pending.Dequeue();
-                foreach (var transition in anyTransitions)
-                {
-                    if (TransitionMayBeReachable(controller, transition.conditions))
-                        Add(transition.destinationState);
-                }
                 foreach (var transition in GetEffectiveTransitions(current.transitions))
                 {
                     if (TransitionMayBeReachable(controller, transition.conditions))
@@ -684,7 +887,20 @@ namespace UnityBox.AnimatorOptimizer
                 .Where(transition => transition != null && !transition.mute)
                 .ToList();
             if (active.Any(transition => transition.solo))
-                return active.Where(transition => transition.solo).ToList();
+                active = active.Where(transition => transition.solo).ToList();
+            // Unity ignores State/AnyState transitions with neither conditions nor
+            // Exit Time. Entry transitions are a different type and stay eligible.
+            return active.Where(transition => transition.hasExitTime || transition.conditions.Length > 0).ToList();
+        }
+
+        private static List<AnimatorTransition> GetEffectiveAnimatorTransitions(
+            IEnumerable<AnimatorTransition> transitions)
+        {
+            var active = (transitions ?? Enumerable.Empty<AnimatorTransition>())
+                .Where(transition => transition != null && !transition.mute)
+                .ToList();
+            if (active.Any(transition => transition.solo))
+                active = active.Where(transition => transition.solo).ToList();
             return active;
         }
 
@@ -692,37 +908,17 @@ namespace UnityBox.AnimatorOptimizer
             AnimatorController controller,
             IReadOnlyList<AnimatorCondition> conditions)
         {
-            // Unknown parameters, Triggers, time conditions and complicated numeric
-            // intersections remain possible. Only reject a condition set when a Bool
-            // contradiction can be proven locally.
-            var boolRequirements = new Dictionary<string, bool>(StringComparer.Ordinal);
-            foreach (var condition in conditions ?? Array.Empty<AnimatorCondition>())
+            if (controller == null) return true;
+            var declarations = controller.parameters ?? Array.Empty<AnimatorControllerParameter>();
+            return AnimatorOptimizerSemanticUtility.ConditionsMayBeReachable(conditions, name =>
             {
-                var parameter = (controller.parameters ?? Array.Empty<AnimatorControllerParameter>())
-                    .FirstOrDefault(candidate => string.Equals(candidate.name, condition.parameter, StringComparison.Ordinal));
-                if (parameter == null || parameter.type != AnimatorControllerParameterType.Bool)
-                    continue;
-                if (condition.mode != AnimatorConditionMode.If && condition.mode != AnimatorConditionMode.IfNot &&
-                    condition.mode != AnimatorConditionMode.Equals && condition.mode != AnimatorConditionMode.NotEqual)
-                    continue;
-                var isBoolLike = condition.mode == AnimatorConditionMode.If ||
-                                 condition.mode == AnimatorConditionMode.IfNot ||
-                                 Mathf.Approximately(condition.threshold, 0f) ||
-                                 Mathf.Approximately(condition.threshold, 1f);
-                if (!isBoolLike)
-                    continue;
-                var expected = condition.mode == AnimatorConditionMode.If ||
-                               condition.mode == AnimatorConditionMode.Equals && Mathf.Approximately(condition.threshold, 1f) ||
-                               condition.mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(condition.threshold, 0f);
-                if (condition.mode == AnimatorConditionMode.IfNot ||
-                    condition.mode == AnimatorConditionMode.Equals && Mathf.Approximately(condition.threshold, 0f) ||
-                    condition.mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(condition.threshold, 1f))
-                    expected = false;
-                if (boolRequirements.TryGetValue(condition.parameter, out var previous) && previous != expected)
-                    return false;
-                boolRequirements[condition.parameter] = expected;
-            }
-            return true;
+                // A duplicate declaration is not a well-defined proof domain.
+                var matches = declarations.Where(candidate => candidate != null &&
+                    string.Equals(candidate.name, name, StringComparison.Ordinal)).Take(2).ToArray();
+                if (matches.Length > 1) return null;
+                return matches.Length == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, out var type)
+                    ? type : (AnimatorControllerParameterType?)null;
+            });
         }
 
         private static bool IsGeneratedLayerName(string name, string configuredName)
@@ -748,7 +944,11 @@ namespace UnityBox.AnimatorOptimizer
             plan = null;
             if (stateMachine.stateMachines != null && stateMachine.stateMachines.Length > 0)
             {
-                if (TryBuildNestedEffectEquivalentPlan(stateMachine, report, out plan))
+                if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                    TryBuildNestedWrapperPlan(controller, stateMachine, options, trial, out candidate), out plan))
+                    return true;
+                if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                    TryBuildNestedEffectEquivalentPlan(controller, stateMachine, trial, out candidate), out plan))
                     return true;
                 if (!TryResolveNestedStaticDefault(stateMachine, out var nestedDefault))
                 {
@@ -771,23 +971,29 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             var allStatesAreStatic = childStates.All(child =>
-                child.state != null && GetEffectiveAapTransitions(child.state.transitions).Count == 0);
-            var effectiveAnyTransitions = GetEffectiveAapTransitions(stateMachine.anyStateTransitions);
+                child.state != null && !GetEffectiveAapTransitions(child.state.transitions)
+                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions)));
+            var effectiveAnyTransitions = GetEffectiveAapTransitions(stateMachine.anyStateTransitions)
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
+            var effectiveEntryTransitions = GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
             var noAnyTransitions = effectiveAnyTransitions.Count == 0;
-            if (TryBuildEffectEquivalentPlan(controller, stateMachine, childStates, report, out plan))
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildEffectEquivalentPlan(controller, stateMachine, childStates, trial, out candidate), out plan))
             {
-                report.AddWarning("State/Transition 可能包含 Exit、Duration 或 Entry 逻辑，但所有可达 Motion 的可观测效果完全相同，已折叠为单一 Motion。");
+                report.AddOptimization("State/Transition 可能包含 Exit、Duration 或 Entry 逻辑，但所有可达 Motion 的可观测效果完全相同，已折叠为单一 Motion。");
                 return true;
             }
 
-            if (TryBuildEntryDrivenPlan(controller, stateMachine, childStates, options, report, out plan))
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildEntryDrivenPlan(controller, stateMachine, childStates, options, trial, out candidate), out plan))
             {
-                report.AddWarning("Entry 条件与 State Exit 条件在有限参数域内组成无历史函数，已编译为决策 BlendTree。");
+                report.AddOptimization("Entry 条件与 State Exit 条件在有限参数域内组成无历史函数，已编译为决策 BlendTree。");
                 return true;
             }
 
             if (allStatesAreStatic && noAnyTransitions &&
-                (stateMachine.entryTransitions == null || stateMachine.entryTransitions.Length == 0))
+                effectiveEntryTransitions.Count == 0)
             {
                 if (!ValidateState(controller, defaultState, report))
                     return false;
@@ -799,20 +1005,22 @@ namespace UnityBox.AnimatorOptimizer
             // A state-dependent graph can still be a pure function when every possible
             // source state produces the same output for each finite parameter value.
             // Prove that convergence before falling back to the more restrictive branch
-            // extraction rules below.
-            if (noAnyTransitions &&
-                TryBuildStateIndependentOutputPlan(controller, stateMachine, childStates, options, report, out plan))
+            // extraction rules below. Any State transitions participate with their
+            // priority over per-state transitions.
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildStateIndependentOutputPlan(controller, stateMachine, childStates, options, trial, out candidate), out plan))
             {
-                report.AddWarning("状态依赖 Transition 在有限参数域下对所有源 State 收敛到同一 Motion，已消除 State 历史并生成 BlendTree。");
+                report.AddOptimization("已按原始优先级分析条件分支及无条件回退；所有源 State 对每组有限输入收敛到相同输出，已消除状态历史。");
                 return true;
             }
 
             if (options.EnableAapStateRegisterOptimization &&
-                childStates.Any(child => child.state != null &&
-                    child.state.transitions != null && child.state.transitions.Length > 0) &&
-                TryBuildAapStateRegisterPlan(controller, stateMachine, childStates, options, report, out plan))
+                (effectiveEntryTransitions.Count > 0 || effectiveAnyTransitions.Count > 0 ||
+                 childStates.Any(child => child.state != null && GetEffectiveTransitions(child.state.transitions).Count > 0)) &&
+                TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                    TryBuildAapStateRegisterPlan(controller, stateMachine, childStates, options, trial, out candidate), out plan))
             {
-                report.AddWarning("已用 AAP StateRegister 保留 Bool Transition 的 State 历史，并把输出 Motion 转为 1D BlendTree。");
+                report.AddWarning("AAP 按每次逻辑求值更新状态寄存器，支持混合条件并保留未命中时的历史；反馈延迟与首帧行为仍需 Unity 验证，不能视为逐帧等价证明。");
                 return true;
             }
 
@@ -826,6 +1034,11 @@ namespace UnityBox.AnimatorOptimizer
             var transitions = new List<AnimatorStateTransition>();
             if (effectiveAnyTransitions.Count > 0)
             {
+                if (effectiveAnyTransitions.Any(transition => !transition.canTransitionToSelf))
+                {
+                    report.AddReason("Any State 禁止自转移，且未通过逐源状态的优先级证明；不能直接用第一命中分支替代。");
+                    return false;
+                }
                 transitions.AddRange(effectiveAnyTransitions);
             }
             else
@@ -835,7 +1048,7 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     transitions.AddRange(childStates.Select(child => GetEffectiveAapTransitions(child.state.transitions)[0]));
                 }
-                else if (!TryExtractStateIndependentTransitions(childStates, out transitions))
+                else if (!TryExtractStateIndependentTransitions(childStates, options.IgnoreTransitionTimingForStaticMotions, out transitions))
                 {
                     report.AddReason("State Transition 图依赖当前 State；只有两态互斥 Toggle 或所有 State 使用同一转移表时才可转换。");
                     return false;
@@ -866,15 +1079,165 @@ namespace UnityBox.AnimatorOptimizer
                 return false;
             }
 
-            if (TryBuildBooleanTruthTable(branches, options, report, out plan))
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildBooleanTruthTable(branches, options, trial, out candidate), out plan))
                 return true;
-            if (TryBuildNumericSelector(branches, options, report, out plan))
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildNumericSelector(branches, options, trial, out candidate), out plan))
                 return true;
-            if (TryBuildFiniteParameterTable(controller, branches, options, report, out plan))
+            if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
+                TryBuildFiniteParameterTable(controller, branches, options, trial, out candidate), out plan))
                 return true;
 
             report.AddReason("状态条件同时涉及多个数值参数，或包含无法精确表达的逻辑组合；当前版本不会生成可能改变语义的近似树。");
             return false;
+        }
+
+        private delegate bool PlanAttempt(AnimatorOptimizerLayerReport report, out AnimatorOptimizerMotionPlan plan);
+
+        private static int PlanEntryCount(AnimatorOptimizerMotionPlan plan) =>
+            plan?.Kind == AnimatorOptimizerConversionKind.AapStateRegister ? int.MaxValue :
+            plan?.TruthTable?.Count ?? plan?.DecisionTable?.Count ?? plan?.SelectorSamples?.Count ?? 1;
+
+        private static AnimatorOptimizerLayerReport CreateTrialReport(AnimatorOptimizerLayerReport report) =>
+            new AnimatorOptimizerLayerReport(report.Index, report.SourceLayer)
+            {
+                Options = report.Options,
+                LayerMotionBindings = report.LayerMotionBindings,
+                LayerMotionBindingsAreComplete = report.LayerMotionBindingsAreComplete,
+                HasExitTime = report.HasExitTime,
+            };
+
+        private static bool TryAlternative(AnimatorOptimizerLayerReport report, PlanAttempt attempt,
+            out AnimatorOptimizerMotionPlan plan)
+        {
+            var trial = CreateTrialReport(report);
+            if (!attempt(trial, out plan))
+            {
+                report.AttemptReasons.UnionWith(trial.Reasons);
+                report.AttemptReasons.UnionWith(trial.AttemptReasons);
+                report.AttemptSuggestions.UnionWith(trial.Suggestions);
+                report.AttemptSuggestions.UnionWith(trial.AttemptSuggestions);
+                plan = null;
+                return false;
+            }
+            MergeTrialReport(report, trial);
+            return true;
+        }
+
+        private static void MergeTrialReport(AnimatorOptimizerLayerReport report, AnimatorOptimizerLayerReport trial)
+        {
+            foreach (var reason in trial.Reasons)
+                report.AddReason(reason);
+            foreach (var warning in trial.Warnings)
+                report.AddWarning(warning);
+            foreach (var optimization in trial.Optimizations)
+                report.AddOptimization(optimization);
+            foreach (var suggestion in trial.Suggestions)
+                report.AddSuggestion(suggestion);
+            report.WriteDefaultsOffStates.UnionWith(trial.WriteDefaultsOffStates);
+            report.RelaxedTransitionCount += trial.RelaxedTransitionCount;
+            report.BindingsAreComplete &= trial.BindingsAreComplete;
+        }
+
+        internal static bool IsValidControllerGraph(AnimatorController controller)
+        {
+            if (controller == null) return false;
+            var layers = controller.layers;
+            var done = new HashSet<int>();
+            if (!layers.All(layer => IsValidStateMachineGraph(layer?.stateMachine, new HashSet<int>(), done)))
+                return false;
+            for (var index = 0; index < layers.Length; index++)
+            {
+                var layer = layers[index];
+                if (layer == null || layer.syncedLayerIndex < 0) continue;
+                foreach (var state in EnumerateLayerSourceStates(layers, index))
+                    if (!AnimatorOptimizerMotionUtility.IsAcyclic(layer.GetOverrideMotion(state))) return false;
+            }
+            return true;
+        }
+
+        // Include all potential source states of a synced chain. This is a union
+        // for conservative reference/writer inspection, not a playback evaluator.
+        internal static IEnumerable<AnimatorState> EnumerateLayerSourceStates(
+            IReadOnlyList<AnimatorControllerLayer> layers, int index)
+        {
+            var visitedLayers = new HashSet<int>();
+            var machines = new HashSet<AnimatorStateMachine>();
+            var states = new HashSet<AnimatorState>();
+            while (index >= 0 && index < layers.Count && visitedLayers.Add(index))
+            {
+                var layer = layers[index];
+                if (layer == null) yield break;
+                var pending = new Stack<AnimatorStateMachine>();
+                if (layer.stateMachine != null) pending.Push(layer.stateMachine);
+                while (pending.Count > 0)
+                {
+                    var machine = pending.Pop();
+                    if (!machines.Add(machine)) continue;
+                    foreach (var child in machine.states)
+                        if (child.state != null && states.Add(child.state)) yield return child.state;
+                    foreach (var child in machine.stateMachines)
+                        if (child.stateMachine != null) pending.Push(child.stateMachine);
+                }
+                index = layer.syncedLayerIndex;
+            }
+        }
+
+        private static bool IsValidStateMachineGraph(AnimatorStateMachine machine, ISet<int> active, ISet<int> done)
+        {
+            if (machine == null || done.Contains(machine.GetInstanceID()))
+                return true;
+            if (active.Count >= 128 || !active.Add(machine.GetInstanceID()))
+                return false;
+            foreach (var child in machine.states ?? Array.Empty<ChildAnimatorState>())
+                if (child.state != null && !AnimatorOptimizerMotionUtility.IsAcyclic(child.state.motion))
+                    return false;
+            foreach (var child in machine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
+                if (!IsValidStateMachineGraph(child.stateMachine, active, done))
+                    return false;
+            active.Remove(machine.GetInstanceID());
+            done.Add(machine.GetInstanceID());
+            return true;
+        }
+
+        private static bool TryBuildNestedWrapperPlan(
+            AnimatorController controller,
+            AnimatorStateMachine rootStateMachine,
+            AnimatorOptimizerOptions options,
+            AnimatorOptimizerLayerReport report,
+            out AnimatorOptimizerMotionPlan plan)
+        {
+            plan = null;
+            var childMachines = rootStateMachine?.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>();
+            if (rootStateMachine == null || childMachines.Length != 1 ||
+                (rootStateMachine.states ?? Array.Empty<ChildAnimatorState>()).Length != 0 ||
+                (rootStateMachine.behaviours ?? Array.Empty<StateMachineBehaviour>()).Length != 0 ||
+                GetEffectiveTransitions(rootStateMachine.anyStateTransitions).Count != 0)
+                return false;
+
+            var childMachine = childMachines[0].stateMachine;
+            if (childMachine == null ||
+                (childMachine.behaviours ?? Array.Empty<StateMachineBehaviour>()).Length != 0 ||
+                childMachine.states.Any(child => child.state != null &&
+                    GetEffectiveTransitions(child.state.transitions).Any(transition => transition.isExit)) ||
+                GetEffectiveTransitions(childMachine.anyStateTransitions).Any(transition => transition.isExit) ||
+                GetEffectiveAnimatorTransitions(rootStateMachine.GetStateMachineTransitions(childMachine)).Count != 0)
+                return false;
+
+            var entries = GetEffectiveAnimatorTransitions(rootStateMachine.entryTransitions);
+            if (entries.Count != 1)
+                return false;
+            var entry = entries[0];
+            if (entry.destinationStateMachine != childMachine || entry.destinationState != null ||
+                entry.isExit || (entry.conditions ?? Array.Empty<AnimatorCondition>()).Length != 0)
+                return false;
+
+            var childStates = GetPotentiallyReachableStates(
+                controller,
+                childMachine,
+                childMachine.states ?? Array.Empty<ChildAnimatorState>());
+            return TryBuildPlan(controller, childMachine, childStates, options, report, out plan);
         }
 
         private static bool TryBuildEntryDrivenPlan(
@@ -887,20 +1250,22 @@ namespace UnityBox.AnimatorOptimizer
         {
             plan = null;
             if (stateMachine == null || childStates.Count == 0 ||
-                stateMachine.entryTransitions == null || stateMachine.entryTransitions.Length == 0 ||
-                stateMachine.anyStateTransitions != null && stateMachine.anyStateTransitions.Length > 0 ||
+                GetEffectiveAnimatorTransitions(stateMachine.entryTransitions).Count == 0 ||
+                GetEffectiveAapTransitions(stateMachine.anyStateTransitions).Count > 0 ||
                 stateMachine.defaultState == null || childStates.All(child => child.state != stateMachine.defaultState))
                 return false;
 
             var states = childStates.Select(child => child.state).Where(state => state != null).ToList();
             var stateSet = new HashSet<AnimatorState>(states);
             var entryTransitions = new List<NormalizedStateTransition>();
-            for (var order = 0; order < stateMachine.entryTransitions.Length; order++)
+            var effectiveEntryTransitions = GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
+            for (var order = 0; order < effectiveEntryTransitions.Count; order++)
             {
-                var transition = stateMachine.entryTransitions[order];
+                var transition = effectiveEntryTransitions[order];
                 if (transition == null || transition.destinationState == null ||
                     transition.destinationStateMachine != null || !stateSet.Contains(transition.destinationState) ||
-                    transition.mute || transition.solo)
+                    transition.isExit)
                     return false;
                 var conditions = new List<AnimatorOptimizerCondition>();
                 foreach (var sourceCondition in transition.conditions ?? Array.Empty<AnimatorCondition>())
@@ -918,8 +1283,8 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             if (entryTransitions.Count == 1 && entryTransitions[0].Conditions.Count == 0 &&
-                stateMachine.anyStateTransitions != null && stateMachine.anyStateTransitions.Length == 0 &&
-                states.All(state => state.transitions == null || state.transitions.Length == 0))
+                GetEffectiveAapTransitions(stateMachine.anyStateTransitions).Count == 0 &&
+                states.All(state => GetEffectiveAapTransitions(state.transitions).Count == 0))
             {
                 var entryState = entryTransitions[0].Destination;
                 if (!ValidateState(controller, entryState, report))
@@ -938,10 +1303,11 @@ namespace UnityBox.AnimatorOptimizer
                 var exits = new List<NormalizedStateTransition>();
                 foreach (var transition in GetEffectiveAapTransitions(state.transitions))
                 {
+                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                        continue;
                     if (transition == null || !transition.isExit || transition.destinationState != null ||
-                        transition.destinationStateMachine != null || transition.canTransitionToSelf ||
-                        transition.hasExitTime || !Mathf.Approximately(transition.duration, 0f) ||
-                        !Mathf.Approximately(transition.offset, 0f))
+                        transition.destinationStateMachine != null ||
+                        HasBlockingTransitionTiming(transition, report))
                         return false;
                     var conditions = new List<AnimatorOptimizerCondition>();
                     foreach (var sourceCondition in transition.conditions ?? Array.Empty<AnimatorCondition>())
@@ -964,11 +1330,17 @@ namespace UnityBox.AnimatorOptimizer
             if (!TryBuildDecisionDimensionsFromConditions(allConditions, options, report,
                     out var dimensions, out var combinationCount))
                 return false;
+            if (combinationCount > 65536L / states.Count)
+            {
+                report.AddReason("Entry/Exit 证明的状态数 × 输入组合数超过 65536，保留源图。");
+                return false;
+            }
             if (dimensions.Any(dimension => dimension.IsApproximate))
                 report.AddWarning("Entry/Exit 决策包含 Float 条件；AAP/BlendTree 只在阈值邻域采样，边界处属于近似语义。");
 
             var table = new Dictionary<int, AnimatorOptimizerMotionRef>();
             var indices = new int[dimensions.Count];
+            var outputKeys = states.ToDictionary(state => state, state => BuildMotionKey(ToMotionRef(state)));
             for (var combination = 0; combination < (int)combinationCount; combination++)
             {
                 var values = BuildDecisionDimensionValues(dimensions, indices);
@@ -981,8 +1353,14 @@ namespace UnityBox.AnimatorOptimizer
                     var exits = exitTransitions[state];
                     var exitsNow = exits.Any(transition => transition.Conditions.All(condition =>
                         values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                    if (exitsNow != (desired != state))
+                    if (!string.Equals(outputKeys[exitsNow ? desired : state], outputKeys[desired], StringComparison.Ordinal))
+                    {
+                        report.AddReason($"Entry/Exit 不构成无历史函数：State '{state.name}' 在输入 " +
+                            string.Join(", ", values.Select(pair => pair.Key + "=" + pair.Value.ToString("R", CultureInfo.InvariantCulture))) +
+                            " 下会保持旧状态或重复重入，不能直接替换为入口选择树。");
+                        report.AddSuggestion("旧 MA 响应式层的 Greater/Less 等值边界可能保留历史；同步状态机合并可保留原 Entry/Exit 逻辑，不需强制 Float 近似或 WD On。");
                         return false;
+                    }
                 }
                 table[BuildDecisionDimensionKey(dimensions, indices)] = ToMotionRef(desired);
                 IncrementDecisionDimensionIndices(dimensions, indices);
@@ -1026,19 +1404,23 @@ namespace UnityBox.AnimatorOptimizer
                         values.Add(threshold + 1);
                     }
                 }
-                else if (type == AnimatorControllerParameterType.Float && options.AllowFloatConditionApproximation)
+                else if (type == AnimatorControllerParameterType.Float)
                 {
-                    approximate = true;
-                    var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
                     foreach (var condition in list)
                     {
-                        values.Add(condition.Threshold - epsilon);
-                        values.Add(condition.Threshold);
-                        values.Add(condition.Threshold + epsilon);
+                        if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(condition.Threshold,
+                            options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                            return false;
+                        approximate |= isApproximate;
                     }
                 }
                 else
                 {
+                    return false;
+                }
+                if (values.Count > options.MaxNumericSelectorSamples && type != AnimatorControllerParameterType.Bool)
+                {
+                    report.AddReason($"参数 '{group.Key}' 需要 {values.Count} 个条件分区端点，超过单轴上限 {options.MaxNumericSelectorSamples}。");
                     return false;
                 }
                 if (values.Count == 0 || combinationCount > long.MaxValue / values.Count)
@@ -1060,7 +1442,7 @@ namespace UnityBox.AnimatorOptimizer
                 report.AddReason($"Entry/Exit 条件需要 {combinationCount} 个有限输入组合，超过上限 {limit}。");
                 return false;
             }
-            return dimensions.Count > 0;
+            return true;
         }
 
         private static AnimatorOptimizerMotionPlan BuildDecisionPlanFromTable(
@@ -1069,6 +1451,12 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyDictionary<int, AnimatorOptimizerMotionRef> table,
             AnimatorController controller)
         {
+            if (dimensions.Count == 0)
+                return new AnimatorOptimizerMotionPlan
+                {
+                    Kind = AnimatorOptimizerConversionKind.ConstantMotion,
+                    ConstantMotion = table[0].Clone(),
+                };
             var required = new HashSet<string>(dimensions.Select(dimension => dimension.Parameter), StringComparer.Ordinal);
             if (dimensions.All(dimension => dimension.ParameterType == AnimatorControllerParameterType.Bool))
             {
@@ -1088,6 +1476,7 @@ namespace UnityBox.AnimatorOptimizer
                     Kind = AnimatorOptimizerConversionKind.NumericSelector,
                     SelectorParameter = dimension.Parameter,
                     SelectorParameterType = dimension.ParameterType,
+                    SelectorIsApproximate = dimension.IsApproximate,
                     SelectorSamples = dimension.Values.Select((value, index) => new AnimatorOptimizerSelectorSample
                     {
                         Value = value,
@@ -1106,6 +1495,7 @@ namespace UnityBox.AnimatorOptimizer
         }
 
         private static bool TryBuildNestedEffectEquivalentPlan(
+            AnimatorController controller,
             AnimatorStateMachine rootStateMachine,
             AnimatorOptimizerLayerReport report,
             out AnimatorOptimizerMotionPlan plan)
@@ -1116,7 +1506,7 @@ namespace UnityBox.AnimatorOptimizer
             CollectNestedStateGraph(rootStateMachine, states, stateMachines);
             if (states.Count == 0 || rootStateMachine == null ||
                 rootStateMachine.defaultState == null &&
-                (rootStateMachine.entryTransitions == null || rootStateMachine.entryTransitions.Length == 0))
+                GetEffectiveAnimatorTransitions(rootStateMachine.entryTransitions).Count == 0)
                 return false;
 
             var signatures = new List<string>();
@@ -1132,7 +1522,14 @@ namespace UnityBox.AnimatorOptimizer
 
             foreach (var stateMachine in stateMachines)
             {
-                if ((stateMachine.behaviours ?? Array.Empty<StateMachineBehaviour>())
+                if (!HasOnlyReadOnlyTransitionConditions(controller, stateMachine,
+                    stateMachine.states.Where(child => child.state != null).Select(child => child.state)))
+                {
+                    report.AddReason("Transition 可能消费 Trigger 或参数类型未知；输出相同也不能删除条件副作用。");
+                    return false;
+                }
+                if (stateMachine != rootStateMachine && stateMachine.behaviours.Length > 0 ||
+                    (stateMachine.behaviours ?? Array.Empty<StateMachineBehaviour>())
                         .Any(behaviour => !IsPreservableLayerBehaviour(behaviour)) ||
                     !AllNestedTransitionsAreLocal(stateMachine, states, stateMachines))
                     return false;
@@ -1163,19 +1560,19 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyCollection<AnimatorState> states,
             ISet<AnimatorStateMachine> stateMachines)
         {
-            foreach (var transition in stateMachine.entryTransitions ?? Array.Empty<AnimatorTransition>())
+            foreach (var transition in GetEffectiveAnimatorTransitions(stateMachine.entryTransitions))
             {
                 if (!IsLocalNestedTransition(transition, states, stateMachines))
                     return false;
             }
-            foreach (var transition in stateMachine.anyStateTransitions ?? Array.Empty<AnimatorStateTransition>())
+            foreach (var transition in GetEffectiveTransitions(stateMachine.anyStateTransitions))
             {
                 if (!IsLocalNestedTransition(transition, states, stateMachines))
                     return false;
             }
             foreach (var child in stateMachine.states ?? Array.Empty<ChildAnimatorState>())
             {
-                foreach (var transition in child.state?.transitions ?? Array.Empty<AnimatorStateTransition>())
+                foreach (var transition in GetEffectiveTransitions(child.state?.transitions))
                 {
                     if (!IsLocalNestedTransition(transition, states, stateMachines))
                         return false;
@@ -1183,8 +1580,8 @@ namespace UnityBox.AnimatorOptimizer
             }
             foreach (var child in stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
             {
-                foreach (var transition in stateMachine.GetStateMachineTransitions(child.stateMachine) ??
-                         Array.Empty<AnimatorTransition>())
+                foreach (var transition in GetEffectiveAnimatorTransitions(
+                             stateMachine.GetStateMachineTransitions(child.stateMachine)))
                 {
                     if (!IsLocalNestedTransition(transition, states, stateMachines))
                         return false;
@@ -1219,7 +1616,7 @@ namespace UnityBox.AnimatorOptimizer
                 branches.Any(branch => branch.Conditions == null || branch.Conditions.Count == 0) ||
                 branches.SelectMany(branch => branch.Conditions).Any(condition =>
                     !condition.IsBoolean && !condition.IsInteger &&
-                    !(condition.IsFloat && options.AllowFloatConditionApproximation)))
+                    !condition.IsFloat))
                 return false;
 
             var parameterNames = branches.SelectMany(branch => branch.Conditions)
@@ -1257,15 +1654,14 @@ namespace UnityBox.AnimatorOptimizer
                         values.Add(threshold + 1);
                     }
                 }
-                else if (type == AnimatorControllerParameterType.Float && options.AllowFloatConditionApproximation)
+                else if (type == AnimatorControllerParameterType.Float)
                 {
-                    approximate = true;
-                    var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
                     foreach (var condition in conditions)
                     {
-                        values.Add(condition.Threshold - epsilon);
-                        values.Add(condition.Threshold);
-                        values.Add(condition.Threshold + epsilon);
+                        if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(condition.Threshold,
+                            options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                            return false;
+                        approximate |= isApproximate;
                     }
                 }
                 else
@@ -1285,7 +1681,8 @@ namespace UnityBox.AnimatorOptimizer
             long combinationCount = 1;
             foreach (var dimension in dimensions)
             {
-                if (dimension.Values.Count == 0 || combinationCount > long.MaxValue / dimension.Values.Count)
+                if (dimension.Values.Count == 0 || dimension.Values.Count > options.MaxNumericSelectorSamples ||
+                    combinationCount > long.MaxValue / dimension.Values.Count)
                     return false;
                 combinationCount *= dimension.Values.Count;
             }
@@ -1355,54 +1752,44 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (plan == null)
                 return "null";
+
+            string Sequence(IEnumerable<string> fields) => string.Concat(fields.Select(AnimatorOptimizerSynchronizedGraph.Atom));
+            string Pack(params string[] fields) => Sequence(fields);
+            string Dimensions(IEnumerable<AnimatorOptimizerDecisionDimension> dimensions) => Sequence(
+                (dimensions ?? Enumerable.Empty<AnimatorOptimizerDecisionDimension>()).Select(dimension => Pack(
+                    dimension.Parameter, dimension.ParameterType.ToString(), dimension.IsApproximate.ToString(),
+                    Sequence(dimension.Values.Select(value => value.ToString("R", CultureInfo.InvariantCulture))))));
+            string Table(IReadOnlyDictionary<int, AnimatorOptimizerMotionRef> table) => Sequence(
+                (table ?? new Dictionary<int, AnimatorOptimizerMotionRef>()).OrderBy(pair => pair.Key)
+                    .Select(pair => Pack(pair.Key.ToString(CultureInfo.InvariantCulture), BuildMotionKey(pair.Value))));
+            var prefix = "plan:" + AnimatorOptimizerSynchronizedGraph.Atom(plan.StateTag);
             if (plan.Kind == AnimatorOptimizerConversionKind.ConstantMotion)
-                return "constant:" + BuildMotionKey(plan.ConstantMotion);
+                return prefix + Pack("constant", BuildMotionKey(plan.ConstantMotion));
             if (plan.Kind == AnimatorOptimizerConversionKind.BooleanTruthTable)
-            {
-                return "bool:" + string.Join(",", plan.BooleanParameters ?? new List<string>()) + ":" +
-                       string.Join("|", (plan.TruthTable ?? new Dictionary<int, AnimatorOptimizerMotionRef>())
-                           .OrderBy(pair => pair.Key)
-                           .Select(pair => pair.Key + "=" + BuildMotionKey(pair.Value)));
-            }
+                return prefix + Pack("bool", Sequence(plan.BooleanParameters ?? new List<string>()), Table(plan.TruthTable));
             if (plan.Kind == AnimatorOptimizerConversionKind.NumericSelector)
-            {
-                return "numeric:" + plan.SelectorParameter + ":" + plan.SelectorParameterType + ":" +
-                       string.Join("|", (plan.SelectorSamples ?? new List<AnimatorOptimizerSelectorSample>())
-                           .Select(sample => sample.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) +
-                                             "=" + BuildMotionKey(sample.Motion)));
-            }
+                return prefix + Pack("numeric", plan.SelectorParameter, plan.SelectorParameterType.ToString(),
+                    plan.SelectorIsApproximate.ToString(), Sequence((plan.SelectorSamples ?? new List<AnimatorOptimizerSelectorSample>())
+                        .Select(sample => Pack(sample.Value.ToString("R", CultureInfo.InvariantCulture), BuildMotionKey(sample.Motion)))));
             if (plan.Kind == AnimatorOptimizerConversionKind.FiniteParameterTable)
-            {
-                return "finite:" + string.Join("|", plan.DecisionDimensions.Select(dimension =>
-                           dimension.Parameter + "=" + string.Join(",", dimension.Values.Select(value =>
-                               value.ToString("R", CultureInfo.InvariantCulture))))) + ":" +
-                       string.Join("|", plan.DecisionTable.OrderBy(pair => pair.Key)
-                           .Select(pair => pair.Key + "=" + BuildMotionKey(pair.Value)));
-            }
+                return prefix + Pack("finite", Dimensions(plan.DecisionDimensions), Table(plan.DecisionTable));
             if (plan.Kind == AnimatorOptimizerConversionKind.AapStateRegister)
             {
-                var dimensions = plan.StateRegisterDecisionDimensions == null
-                    ? string.Join(",", plan.StateRegisterBooleanParameters ?? new List<string>())
-                    : string.Join("|", plan.StateRegisterDecisionDimensions.Select(dimension =>
-                        dimension.Parameter + "=" + string.Join(",", dimension.Values.Select(value =>
-                            value.ToString("R", CultureInfo.InvariantCulture)))));
-                return "aap-state:" + dimensions + ":" +
-                       "entry=" + string.Join(",", (plan.StateRegisterEntryStates ?? new Dictionary<int, int>())
-                           .OrderBy(pair => pair.Key)
-                           .Select(pair => pair.Key + ">" + pair.Value)) + ":" +
-                       string.Join("|", (plan.StateRegisterNextStates ?? new Dictionary<int, Dictionary<int, int>>())
-                           .OrderBy(pair => pair.Key)
-                           .Select(pair => pair.Key + "=" + string.Join(",", pair.Value.OrderBy(item => item.Key)
-                               .Select(item => item.Key + ">" + item.Value))));
+                return prefix + Pack("aap-symbolic", plan.StateRegisterProgram.StructuralKey,
+                    Sequence(plan.StateRegisterStates.Select(state => BuildMotionKey(ToMotionRef(state)))));
             }
-            return plan.Kind.ToString();
+            return prefix + Pack("unknown", AnimatorOptimizerSemanticUtility.ReferenceKey(plan));
         }
 
         private static string BuildMotionKey(AnimatorOptimizerMotionRef motion)
         {
             if (motion == null)
                 return "null";
-            return AnimatorOptimizerMotionUtility.BuildStructuralKey(motion.Motion) + ":" +
+            if (motion.Bake != null) return motion.Bake.Key;
+            // Static output equivalence is independent of redundant key times/duration.
+            if (!motion.Mirror && TryBuildStaticObservableMotionSignature(motion.Motion, out var staticKey))
+                return staticKey;
+            return AnimatorOptimizerSynchronizedGraph.Atom(AnimatorOptimizerMotionUtility.BuildStructuralKey(motion.Motion)) + ":" +
                    motion.Speed.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
                    motion.CycleOffset.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ":" +
                    motion.Mirror;
@@ -1410,24 +1797,25 @@ namespace UnityBox.AnimatorOptimizer
 
         private static bool TryExtractStateIndependentTransitions(
             IReadOnlyList<ChildAnimatorState> childStates,
+            bool ignoreTiming,
             out List<AnimatorStateTransition> transitions)
         {
             transitions = null;
             if (childStates.Count == 0 || childStates.Any(child => child.state == null))
                 return false;
 
-            var first = childStates[0].state.transitions ?? Array.Empty<AnimatorStateTransition>();
+            var first = GetEffectiveTransitions(childStates[0].state.transitions).ToArray();
             if (first.Length == 0)
                 return false;
 
             foreach (var child in childStates.Skip(1))
             {
-                var current = child.state.transitions ?? Array.Empty<AnimatorStateTransition>();
+                var current = GetEffectiveTransitions(child.state.transitions).ToArray();
                 if (current.Length != first.Length)
                     return false;
                 for (var index = 0; index < first.Length; index++)
                 {
-                    if (!AreEquivalentTransition(first[index], current[index]))
+                    if (!AreEquivalentTransition(first[index], current[index], ignoreTiming))
                         return false;
                 }
             }
@@ -1442,6 +1830,8 @@ namespace UnityBox.AnimatorOptimizer
             public AnimatorState Destination;
             public List<AnimatorOptimizerCondition> Conditions;
             public int Order;
+            // Only meaningful for Any State transitions (Source == null).
+            public bool CanTransitionToSelf = true;
         }
 
         private static bool TryBuildStateIndependentOutputPlan(
@@ -1455,33 +1845,61 @@ namespace UnityBox.AnimatorOptimizer
             plan = null;
             if (stateMachine == null || childStates.Count < 2 ||
                 childStates.Any(child => child.state == null) ||
-                stateMachine.entryTransitions != null && stateMachine.entryTransitions.Length > 0)
+                GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
+                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions)))
                 return false;
 
             var states = childStates.Select(child => child.state).ToList();
             var stateSet = new HashSet<AnimatorState>(states);
             var transitions = new List<NormalizedStateTransition>();
+            var anyTransitions = new List<NormalizedStateTransition>();
+            var effectiveAnyTransitions = GetEffectiveTransitions(stateMachine.anyStateTransitions);
+            for (var order = 0; order < effectiveAnyTransitions.Count; order++)
+            {
+                var transition = effectiveAnyTransitions[order];
+                if (!TransitionMayBeReachable(controller, transition.conditions))
+                    continue;
+                if (transition == null || transition.destinationState == null ||
+                    !stateSet.Contains(transition.destinationState) ||
+                    transition.destinationStateMachine != null || transition.isExit ||
+                    HasBlockingTransitionTiming(transition, report))
+                    return false;
+                var sourceConditions = transition.conditions ?? Array.Empty<AnimatorCondition>();
+                var conditions = new List<AnimatorOptimizerCondition>();
+                foreach (var sourceCondition in sourceConditions)
+                {
+                    if (!TryNormalizeCondition(controller, sourceCondition, options, report, out var condition))
+                        return false;
+                    conditions.Add(condition);
+                }
+                anyTransitions.Add(new NormalizedStateTransition
+                {
+                    Source = null,
+                    Destination = transition.destinationState,
+                    Conditions = conditions,
+                    Order = order,
+                    CanTransitionToSelf = transition.canTransitionToSelf,
+                });
+            }
             foreach (var state in states)
             {
                 if (!ValidateState(controller, state, report, allowTransitions: true) ||
                     !IsTimeIndependentMotion(state.motion))
                     return false;
 
-                var sourceTransitions = state.transitions ?? Array.Empty<AnimatorStateTransition>();
-                for (var order = 0; order < sourceTransitions.Length; order++)
+                var sourceTransitions = GetEffectiveTransitions(state.transitions);
+                for (var order = 0; order < sourceTransitions.Count; order++)
                 {
                     var transition = sourceTransitions[order];
+                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                        continue;
                     if (transition == null || transition.destinationState == null ||
                         !stateSet.Contains(transition.destinationState) ||
                         transition.destinationStateMachine != null || transition.isExit ||
-                        transition.canTransitionToSelf || transition.mute || transition.solo ||
-                        transition.hasExitTime || !Mathf.Approximately(transition.duration, 0f) ||
-                        !Mathf.Approximately(transition.offset, 0f))
+                        HasBlockingTransitionTiming(transition, report))
                         return false;
 
                     var sourceConditions = transition.conditions ?? Array.Empty<AnimatorCondition>();
-                    if (sourceConditions.Length == 0)
-                        return false;
                     var conditions = new List<AnimatorOptimizerCondition>();
                     foreach (var sourceCondition in sourceConditions)
                     {
@@ -1499,84 +1917,34 @@ namespace UnityBox.AnimatorOptimizer
                 }
             }
 
-            if (transitions.Count == 0)
+            if (transitions.Count == 0 && anyTransitions.Count == 0)
                 return false;
-            var parameters = transitions.SelectMany(transition => transition.Conditions)
-                .Select(condition => condition.Parameter)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(name => name, StringComparer.Ordinal)
-                .ToList();
-            if (!TryBuildFiniteStateSamples(transitions, parameters, options, report, out var samples))
+            var allTransitions = anyTransitions.Concat(transitions).ToList();
+            if (!TryBuildDecisionDimensionsFromConditions(
+                allTransitions.SelectMany(transition => transition.Conditions).ToList(), options, report,
+                out var dimensions, out var combinations))
                 return false;
 
-            if (parameters.All(parameter => IsBooleanParameter(controller, parameter)))
+            if (combinations > 65536L / states.Count)
             {
-                var table = new Dictionary<int, AnimatorOptimizerMotionRef>();
-                var entryCount = 1 << parameters.Count;
-                if (entryCount > Math.Max(2, options.MaxBooleanTruthTableEntries))
+                report.AddReason("无历史状态证明的状态数 × 输入组合数超过 65536，保留源图以避免分析阻塞。");
+                return false;
+            }
+            var outputs = states.ToDictionary(state => state, ToMotionRef);
+            var outputKeys = outputs.ToDictionary(pair => pair.Key, pair => BuildMotionKey(pair.Value));
+            var table = new Dictionary<int, AnimatorOptimizerMotionRef>();
+            var indices = new int[dimensions.Count];
+            for (var combination = 0; combination < (int)combinations; combination++)
+            {
+                var values = BuildDecisionDimensionValues(dimensions, indices);
+                if (!TryResolveStateIndependentMotion(states, anyTransitions, transitions, values, outputs, outputKeys, out var motion))
                     return false;
-                for (var mask = 0; mask < entryCount; mask++)
-                {
-                    var values = parameters.ToDictionary(
-                        parameter => parameter,
-                        parameter => (mask & (1 << parameters.IndexOf(parameter))) != 0 ? 1f : 0f,
-                        StringComparer.Ordinal);
-                    if (!TryResolveStateIndependentMotion(states, transitions, values, out var motion))
-                        return false;
-                    table[mask] = motion;
-                }
-
-                plan = new AnimatorOptimizerMotionPlan
-                {
-                    Kind = AnimatorOptimizerConversionKind.BooleanTruthTable,
-                    Branches = transitions.Select(transition => new AnimatorOptimizerBranch
-                    {
-                        Motion = ToMotionRef(transition.Destination),
-                        Conditions = transition.Conditions,
-                        Order = transition.Order,
-                    }).ToList(),
-                    BooleanParameters = parameters,
-                    TruthTable = table,
-                    RequiredFloatParameters = new HashSet<string>(parameters, StringComparer.Ordinal),
-                };
-                return true;
+                table[BuildDecisionDimensionKey(dimensions, indices)] = motion;
+                IncrementDecisionDimensionIndices(dimensions, indices);
             }
 
-            if (parameters.Count != 1)
-                return false;
-            var samplesByValue = new List<AnimatorOptimizerSelectorSample>();
-            foreach (var value in samples)
-            {
-                var values = new Dictionary<string, float>(StringComparer.Ordinal)
-                {
-                    [parameters[0]] = value,
-                };
-                if (!TryResolveStateIndependentMotion(states, transitions, values, out var motion))
-                    return false;
-                samplesByValue.Add(new AnimatorOptimizerSelectorSample
-                {
-                    Value = value,
-                    Motion = motion,
-                });
-            }
-
-            var parameterType = (controller.parameters ?? Array.Empty<AnimatorControllerParameter>())
-                .First(parameter => string.Equals(parameter.name, parameters[0], StringComparison.Ordinal)).type;
-            plan = new AnimatorOptimizerMotionPlan
-            {
-                Kind = AnimatorOptimizerConversionKind.NumericSelector,
-                Branches = transitions.Select(transition => new AnimatorOptimizerBranch
-                {
-                    Motion = ToMotionRef(transition.Destination),
-                    Conditions = transition.Conditions,
-                    Order = transition.Order,
-                }).ToList(),
-                SelectorParameter = parameters[0],
-                SelectorParameterType = parameterType,
-                SelectorSamples = samplesByValue,
-                RequiredFloatParameters = new HashSet<string>(parameters, StringComparer.Ordinal),
-            };
-            return true;
+            plan = BuildDecisionPlanFromTable(allTransitions, dimensions, table, controller);
+            return plan != null;
         }
 
         private static bool TryBuildAapStateRegisterPlan(
@@ -1592,12 +1960,26 @@ namespace UnityBox.AnimatorOptimizer
                 childStates.Count == 0 || childStates.Any(child => child.state == null))
                 return false;
 
+            // VRChat derives Gesture/FX playable masks from controller.layers[0].
+            // Update has no mask, so moving a masked source into Output would
+            // also change the controller's platform-level mask contract.
+            if (report.Index == 0 && report.Mask != null)
+            {
+                report.AddReason("首层 Mask 可能兼作 VRChat Playable Mask；为避免 AAP 拆分改变遮罩作用范围，保留原层。");
+                return false;
+            }
+            if (report.Index == 0 && report.BlendingMode == AnimatorLayerBlendingMode.Additive)
+            {
+                report.AddReason("首层采用 Additive；移到 AAP Output 次层后的叠加基准尚未证明一致，保留原层。");
+                return false;
+            }
+
             var states = childStates.Select(child => child.state).ToList();
+            if (states.Distinct().Count() != states.Count || states.Count > 4096)
+                return false;
             var stateIndices = states
                 .Select((state, index) => new { state, index })
                 .ToDictionary(item => item.state, item => item.index);
-            if (states.Count > Math.Max(1, options.MaxBooleanTruthTableEntries))
-                return false;
             var defaultStateIndex = states.IndexOf(stateMachine.defaultState);
             if (defaultStateIndex < 0)
                 return false;
@@ -1609,224 +1991,78 @@ namespace UnityBox.AnimatorOptimizer
                     return false;
             }
 
-            var anyTransitions = new List<NormalizedStateTransition>();
-            var entryTransitions = new List<NormalizedStateTransition>();
-            var sourceTransitions = new Dictionary<AnimatorState, List<NormalizedStateTransition>>();
-            foreach (var state in states)
-                sourceTransitions[state] = new List<NormalizedStateTransition>();
-
-            var rawEntryTransitions = stateMachine.entryTransitions ?? Array.Empty<AnimatorTransition>();
-            for (var order = 0; order < rawEntryTransitions.Length; order++)
-            {
-                var transition = rawEntryTransitions[order];
-                if (transition == null || transition.destinationState == null ||
-                    !stateIndices.ContainsKey(transition.destinationState) ||
-                    transition.destinationStateMachine != null || transition.isExit ||
-                    transition.mute || transition.solo)
-                    return false;
-                var conditions = new List<AnimatorOptimizerCondition>();
-                foreach (var sourceCondition in transition.conditions ?? Array.Empty<AnimatorCondition>())
+            var declarations = new Dictionary<string, AnimatorControllerParameter>(StringComparer.Ordinal);
+            foreach (var parameter in controller.parameters)
+                if (parameter == null || string.IsNullOrWhiteSpace(parameter.name) || !declarations.TryAdd(parameter.name, parameter))
                 {
-                    if (!TryNormalizeAapCondition(controller, sourceCondition, options, report, out var condition))
-                        return false;
-                    conditions.Add(condition);
+                    report.AddReason("AAP Controller 参数声明为空或重名，无法建立唯一输入契约。");
+                    return false;
                 }
-                entryTransitions.Add(new NormalizedStateTransition
+
+            List<AnimatorOptimizerFiniteGraph.Edge> ConvertEdges(IEnumerable<AnimatorTransitionBase> source, bool allowExit)
+            {
+                var result = new List<AnimatorOptimizerFiniteGraph.Edge>();
+                foreach (var transition in source)
                 {
-                    Destination = transition.destinationState,
-                    Conditions = conditions,
-                    Order = order,
-                });
-            }
-
-            var unconditionalEntries = entryTransitions
-                .Where(transition => transition.Conditions.Count == 0)
-                .OrderBy(transition => transition.Order)
-                .ToList();
-            if (unconditionalEntries.Count > 0)
-            {
-                if (unconditionalEntries.Count != 1 || entryTransitions.Any(transition =>
-                        transition != unconditionalEntries[0] && transition.Order < unconditionalEntries[0].Order))
-                    return false;
-                defaultStateIndex = stateIndices[unconditionalEntries[0].Destination];
-                entryTransitions.Clear();
-            }
-
-            var rawAnyTransitions = GetEffectiveAapTransitions(stateMachine.anyStateTransitions);
-            for (var order = 0; order < rawAnyTransitions.Count; order++)
-            {
-                if (!TryNormalizeAapStateTransition(controller, rawAnyTransitions[order], stateIndices,
-                        null, order, options, report, out var normalized))
-                    return false;
-                anyTransitions.Add(normalized);
-            }
-
-            foreach (var state in states)
-            {
-                var rawTransitions = GetEffectiveAapTransitions(state.transitions);
-                for (var order = 0; order < rawTransitions.Count; order++)
-                {
-                    if (!TryNormalizeAapStateTransition(controller, rawTransitions[order], stateIndices,
-                            state, order, options, report, out var normalized))
-                        return false;
-                    sourceTransitions[state].Add(normalized);
-                }
-            }
-
-            var allTransitions = entryTransitions
-                .Concat(anyTransitions)
-                .Concat(sourceTransitions.Values.SelectMany(list => list))
-                .ToList();
-            var parameters = allTransitions
-                .SelectMany(transition => transition.Conditions)
-                .Select(condition => condition.Parameter)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(parameter => parameter, StringComparer.Ordinal)
-                .ToList();
-            if (parameters.Count == 0 ||
-                !TryBuildAapDecisionDimensions(controller, allTransitions, options, report,
-                    out var dimensions, out var entryCount))
-                return false;
-
-            var nextStates = new Dictionary<int, Dictionary<int, int>>();
-            var entryStates = new Dictionary<int, int>();
-            var entryIndices = new int[dimensions.Count];
-            for (var combination = 0; combination < (int)entryCount; combination++)
-            {
-                var values = BuildDecisionDimensionValues(dimensions, entryIndices);
-                var transition = entryTransitions.OrderBy(item => item.Order)
-                    .FirstOrDefault(item => item.Conditions.All(condition =>
-                        values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                entryStates[BuildDecisionDimensionKey(dimensions, entryIndices)] = transition == null
-                    ? defaultStateIndex
-                    : stateIndices[transition.Destination];
-                IncrementDecisionDimensionIndices(dimensions, entryIndices);
-            }
-            for (var stateIndex = 0; stateIndex < states.Count; stateIndex++)
-            {
-                var table = new Dictionary<int, int>();
-                var indices = new int[dimensions.Count];
-                for (var combination = 0; combination < (int)entryCount; combination++)
-                {
-                    var values = BuildDecisionDimensionValues(dimensions, indices);
-                    var transition = anyTransitions.OrderBy(item => item.Order)
-                        .FirstOrDefault(item => item.Conditions.All(condition =>
-                            values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                    if (transition == null)
+                    // The shared contradiction proof validates all condition types
+                    // before pruning, including conditions on other parameters.
+                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                        continue;
+                    if (transition.destinationStateMachine != null ||
+                        transition.isExit && (!allowExit || transition.destinationState != null) ||
+                        !transition.isExit && (transition.destinationState == null || !stateIndices.ContainsKey(transition.destinationState)))
+                        return null;
+                    if (transition is AnimatorStateTransition timed && HasBlockingTransitionTiming(timed, report))
+                        return null;
+                    result.Add(new AnimatorOptimizerFiniteGraph.Edge
                     {
-                        transition = sourceTransitions[states[stateIndex]].OrderBy(item => item.Order)
-                            .FirstOrDefault(item => item.Conditions.All(condition =>
-                                values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                    }
-                    var key = BuildDecisionDimensionKey(dimensions, indices);
-                    table[key] = transition == null
-                        ? stateIndex
-                        : stateIndices[transition.Destination];
-                    IncrementDecisionDimensionIndices(dimensions, indices);
+                        Destination = transition.isExit ? -1 : stateIndices[transition.destinationState],
+                        CanTransitionToSelf = transition is not AnimatorStateTransition edge || edge.canTransitionToSelf,
+                        Conditions = transition.conditions ?? Array.Empty<AnimatorCondition>(),
+                    });
                 }
-                nextStates[stateIndex] = table;
+                return result;
+            }
+            var graph = new AnimatorOptimizerFiniteGraph
+            {
+                DefaultState = defaultStateIndex,
+                Entries = ConvertEdges(GetEffectiveAnimatorTransitions(stateMachine.entryTransitions), false),
+                AnyState = ConvertEdges(GetEffectiveTransitions(stateMachine.anyStateTransitions), false),
+                States = states.Select(state => ConvertEdges(GetEffectiveTransitions(state.transitions), true)).ToList(),
+            };
+            if (graph.Entries == null || graph.AnyState == null || graph.States.Any(edges => edges == null))
+            {
+                report.AddReason("AAP 只接受本层 State 和根 Exit 路由；嵌套出口、时间过渡仍保留原状态机。");
+                return false;
+            }
+            if (!AnimatorOptimizerAapProgram.TryCompile(graph, declarations, options, out var program, out var reason))
+            {
+                report.AddReason(reason);
+                return false;
             }
 
             plan = new AnimatorOptimizerMotionPlan
             {
                 Kind = AnimatorOptimizerConversionKind.AapStateRegister,
+                StateRegisterProgram = program,
                 StateRegisterStates = states,
-                StateRegisterBooleanParameters = dimensions.All(dimension => dimension.ParameterType == AnimatorControllerParameterType.Bool)
-                    ? dimensions.Select(dimension => dimension.Parameter).ToList()
-                    : null,
-                StateRegisterDecisionDimensions = dimensions,
-                StateRegisterNextStates = nextStates,
-                StateRegisterEntryStates = entryTransitions.Count > 0 ? entryStates : null,
-                StateRegisterDefaultState = defaultStateIndex,
-                RequiredFloatParameters = new HashSet<string>(parameters, StringComparer.Ordinal),
+                RequiredFloatParameters = new HashSet<string>(program.Axes.Select(axis => axis.Parameter), StringComparer.Ordinal),
             };
-            return true;
-        }
-
-        private static bool TryBuildAapDecisionDimensions(
-            AnimatorController controller,
-            IReadOnlyList<NormalizedStateTransition> transitions,
-            AnimatorOptimizerOptions options,
-            AnimatorOptimizerLayerReport report,
-            out List<AnimatorOptimizerDecisionDimension> dimensions,
-            out long combinationCount)
-        {
-            dimensions = new List<AnimatorOptimizerDecisionDimension>();
-            combinationCount = 1;
-            var parameterNames = transitions.SelectMany(transition => transition.Conditions)
-                .Select(condition => condition.Parameter)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(parameter => parameter, StringComparer.Ordinal)
-                .ToList();
-            foreach (var parameterName in parameterNames)
+            foreach (var axis in program.AssumptionAxes)
             {
-                var conditions = transitions.SelectMany(transition => transition.Conditions)
-                    .Where(condition => string.Equals(condition.Parameter, parameterName, StringComparison.Ordinal))
-                    .ToList();
-                if (conditions.Count == 0)
-                    return false;
-                var type = conditions[0].ParameterType;
-                if (conditions.Any(condition => condition.ParameterType != type))
-                    return false;
-
-                var values = new SortedSet<float>();
-                var approximate = false;
-                if (type == AnimatorControllerParameterType.Bool)
+                if (axis.AssumesBinaryFloat)
                 {
-                    values.Add(0f);
-                    values.Add(1f);
+                    plan.AssumedBinaryParameters.Add(axis.Parameter);
+                    plan.Assumptions.Add($"AAP Float '{axis.Parameter}' 按 0/1 开关处理；连续输入不在此约定内。");
                 }
-                else if (type == AnimatorControllerParameterType.Int)
-                {
-                    foreach (var condition in conditions)
-                    {
-                        var threshold = Mathf.RoundToInt(condition.Threshold);
-                        values.Add(threshold - 1);
-                        values.Add(threshold);
-                        values.Add(threshold + 1);
-                    }
-                }
-                else if (type == AnimatorControllerParameterType.Float && options.AllowFloatConditionApproximation)
-                {
-                    approximate = true;
-                    var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
-                    foreach (var condition in conditions)
-                    {
-                        values.Add(condition.Threshold - epsilon);
-                        values.Add(condition.Threshold);
-                        values.Add(condition.Threshold + epsilon);
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-
-                if (values.Count == 0)
-                    return false;
-                if (combinationCount > long.MaxValue / values.Count)
-                    return false;
-                combinationCount *= values.Count;
-                dimensions.Add(new AnimatorOptimizerDecisionDimension
-                {
-                    Parameter = parameterName,
-                    ParameterType = type,
-                    Values = values.ToList(),
-                    IsApproximate = approximate,
-                });
+                if (axis.IsApproximate)
+                    report.AddWarning($"AAP Float '{axis.Parameter}' 使用已允许的阈值邻域插值，不是精确阶跃。");
             }
-
-            var allBoolean = dimensions.All(dimension => dimension.ParameterType == AnimatorControllerParameterType.Bool);
-            var limit = allBoolean
-                ? Math.Max(2, options.MaxBooleanTruthTableEntries)
-                : Math.Max(2, options.MaxPriorityCombinations);
-            if (combinationCount > limit)
-            {
-                report.AddReason($"AAP StateRegister 需要 {combinationCount} 个有限输入组合，超过上限 {limit}。");
-                return false;
-            }
-            if (dimensions.Any(dimension => dimension.IsApproximate))
-                report.AddWarning("AAP StateRegister 包含 Float 条件；输入阈值使用有限采样，边界附近属于近似语义。");
+            foreach (var assumption in plan.Assumptions) report.AddWarning("启发式：" + assumption);
+            if (program.UsesRootExit)
+                report.AddWarning("AAP 根 Exit 在一次逻辑更新中重新计算有序 Entry；不保留 Exit→Entry 的潜在额外帧延迟，仅属于实验性转换契约。");
+            report.AddOptimization($"AAP 符号图：{states.Count} 个状态、{program.Axes.Count} 个有效输入、" +
+                $"{program.DecisionNodeCount} 个共享条件节点、{program.ValueClipCount} 个赋值 Clip；不枚举全部输入组合。");
             return true;
         }
 
@@ -1883,31 +2119,25 @@ namespace UnityBox.AnimatorOptimizer
             var defaultState = stateMachine.defaultState ?? states[0];
             if (!states.Contains(defaultState))
                 return false;
+            if (!HasOnlyReadOnlyTransitionConditions(controller, stateMachine, states))
+            {
+                report.AddReason("Transition 可能消费 Trigger 或参数类型未知；输出相同也不能删除条件副作用。");
+                return false;
+            }
 
             var staticSignatures = new List<string>();
-            var allMotionsHaveStaticObservableOutput = true;
             foreach (var state in states)
             {
                 if (!TryBuildStaticObservableMotionSignature(state.motion, out var staticSignature))
-                {
-                    allMotionsHaveStaticObservableOutput = false;
-                    break;
-                }
+                    return false;
                 staticSignatures.Add(staticSignature);
             }
             var signatures = new List<string>();
             foreach (var state in states)
             {
-                if (allMotionsHaveStaticObservableOutput)
-                {
-                    if (!ValidateEffectEquivalentStaticState(state, report))
-                        return false;
-                }
-                else if (!ValidateState(controller, state, report, allowTransitions: true))
+                if (!ValidateEffectEquivalentStaticState(state, report))
                     return false;
-                signatures.Add(allMotionsHaveStaticObservableOutput
-                    ? staticSignatures[signatures.Count]
-                    : BuildMotionKey(ToMotionRef(state)));
+                signatures.Add(staticSignatures[signatures.Count]);
             }
             if (signatures.Distinct(StringComparer.Ordinal).Count() != 1)
                 return false;
@@ -1916,14 +2146,14 @@ namespace UnityBox.AnimatorOptimizer
             // but they must remain inside this concrete State set. An Exit destination can
             // leave the current machine and therefore has no local observable output that
             // this proof can model.
-            foreach (var transition in stateMachine.entryTransitions ?? Array.Empty<AnimatorTransition>())
+            foreach (var transition in GetEffectiveAnimatorTransitions(stateMachine.entryTransitions))
             {
                 if (transition == null || transition.destinationState == null ||
                     transition.destinationStateMachine != null ||
                     !states.Contains(transition.destinationState))
                     return false;
             }
-            foreach (var transition in stateMachine.anyStateTransitions ?? Array.Empty<AnimatorStateTransition>())
+            foreach (var transition in GetEffectiveTransitions(stateMachine.anyStateTransitions))
             {
                 if (transition != null &&
                     (transition.destinationState == null || transition.isExit ||
@@ -1933,7 +2163,7 @@ namespace UnityBox.AnimatorOptimizer
             }
             foreach (var state in states)
             {
-                foreach (var transition in state.transitions ?? Array.Empty<AnimatorStateTransition>())
+                foreach (var transition in GetEffectiveAapTransitions(state.transitions))
                 {
                     if (transition != null &&
                         (transition.destinationState == null || transition.isExit ||
@@ -1947,7 +2177,26 @@ namespace UnityBox.AnimatorOptimizer
             return true;
         }
 
-        private static bool TryBuildStaticObservableMotionSignature(
+        private static bool HasOnlyReadOnlyTransitionConditions(AnimatorController controller,
+            AnimatorStateMachine machine, IEnumerable<AnimatorState> states)
+        {
+            var declarations = controller.parameters;
+            var edges = GetEffectiveAnimatorTransitions(machine.entryTransitions).Cast<AnimatorTransitionBase>()
+                .Concat(GetEffectiveTransitions(machine.anyStateTransitions))
+                .Concat(states.SelectMany(state => GetEffectiveTransitions(state.transitions)))
+                .Concat(machine.stateMachines.Where(child => child.stateMachine != null).SelectMany(child =>
+                    GetEffectiveAnimatorTransitions(machine.GetStateMachineTransitions(child.stateMachine))));
+            return edges.Where(edge => TransitionMayBeReachable(controller, edge.conditions)).All(edge =>
+                AnimatorOptimizerSemanticUtility.AreReadOnlyConditions(edge.conditions, name =>
+                {
+                    var matches = declarations.Where(parameter => parameter != null && parameter.name == name).Take(2).ToList();
+                    if (matches.Count > 1) return null;
+                    return matches.Count == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, out var type)
+                        ? type : (AnimatorControllerParameterType?)null;
+                }));
+        }
+
+        internal static bool TryBuildStaticObservableMotionSignature(
             Motion motion,
             out string signature)
         {
@@ -1959,7 +2208,7 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             while (motion is BlendTree singletonTree &&
-                   AnimatorOptimizerMotionUtility.TryGetSafeSingletonChild(singletonTree, out var singleton))
+                   AnimatorOptimizerMotionUtility.TryGetSafeSingletonChild(singletonTree, out var singleton, allowStaticSettings: true))
                 motion = singleton.motion;
 
             if (!(motion is AnimationClip clip) || !AnimatorOptimizerMotionUtility.IsStaticClip(clip))
@@ -1975,8 +2224,7 @@ namespace UnityBox.AnimatorOptimizer
                 var curve = AnimationUtility.GetEditorCurve(clip, binding);
                 if (curve == null || curve.keys.Length == 0)
                     continue;
-                floatParts.Add("f:" + new AnimatorOptimizerBindingKey(
-                    binding.path, binding.type, binding.propertyName, false) + ":" +
+                floatParts.Add("f:" + AnimatorOptimizerSynchronizedGraph.BindingKey(binding) + ":" +
                     curve.keys[0].value.ToString("R", CultureInfo.InvariantCulture));
             }
 
@@ -1988,18 +2236,13 @@ namespace UnityBox.AnimatorOptimizer
                     continue;
                 if (curve.Any(key => key.value != curve[0].value))
                     return false;
-                objectParts.Add("o:" + new AnimatorOptimizerBindingKey(
-                    binding.path, binding.type, binding.propertyName, true) + ":" +
-                    string.Join(";", curve.Select(key => string.Join(",", new[]
-                    {
-                        key.time.ToString("R", CultureInfo.InvariantCulture),
-                        key.value == null ? "0" : key.value.GetInstanceID().ToString(CultureInfo.InvariantCulture),
-                    }))));
+                objectParts.Add("o:" + AnimatorOptimizerSynchronizedGraph.BindingKey(binding) + ":" +
+                    (curve[0].value == null ? "0" : curve[0].value.GetInstanceID().ToString(CultureInfo.InvariantCulture)));
             }
 
             floatParts.Sort(StringComparer.Ordinal);
             objectParts.Sort(StringComparer.Ordinal);
-            signature = "static:" + string.Join(";", floatParts.Concat(objectParts));
+            signature = "static:" + string.Concat(floatParts.Concat(objectParts).Select(AnimatorOptimizerSynchronizedGraph.Atom));
             return true;
         }
 
@@ -2014,214 +2257,61 @@ namespace UnityBox.AnimatorOptimizer
             }
             if ((state.behaviours ?? Array.Empty<StateMachineBehaviour>()).Length > 0)
                 report.AddReason("State 包含 StateMachineBehaviour，不能证明空 Motion 没有回调副作用。");
-            if (!state.writeDefaultValues)
-                report.AddReason("源 State 的 Write Defaults 必须为 On，才能证明空 Motion 的可观测输出一致。");
-            if (state.iKOnFeet)
-                report.AddReason("State 开启了 IK On Feet；即使静态 Motion 相同也可能改变可观测姿态。");
-            if (state.mirror || state.speedParameterActive || state.cycleOffsetParameterActive ||
-                state.mirrorParameterActive || state.timeParameterActive)
-                report.AddReason("State 使用 Mirror 或动态播放参数，不能把静态 Motion 的 State 设置差异折叠。");
+            ValidateWriteDefaults(state, report);
+            ValidatePlaybackSettings(state, report);
+            if (ToMotionRef(state).Mirror)
+                report.AddReason($"State '{state.name}' 的 Mirror 影响姿态，不能仅按 Clip 曲线证明输出等价。");
             if (!TryBuildStaticObservableMotionSignature(state.motion, out _))
                 report.AddReason("State Motion 不是可证明为静态且可观测等价的 Clip。");
             return report.Reasons.Count == 0;
         }
 
-        private static bool TryNormalizeAapStateTransition(
-            AnimatorController controller,
-            AnimatorStateTransition transition,
-            IReadOnlyDictionary<AnimatorState, int> stateIndices,
-            AnimatorState source,
-            int order,
-            AnimatorOptimizerOptions options,
-            AnimatorOptimizerLayerReport report,
-            out NormalizedStateTransition normalized)
-        {
-            normalized = null;
-            if (transition == null || transition.destinationState == null ||
-                !stateIndices.ContainsKey(transition.destinationState) ||
-                transition.destinationStateMachine != null || transition.isExit ||
-                transition.hasExitTime || !Mathf.Approximately(transition.duration, 0f) ||
-                !Mathf.Approximately(transition.offset, 0f))
-                return false;
-
-            var conditions = transition.conditions ?? Array.Empty<AnimatorCondition>();
-            if (conditions.Length == 0)
-                return false;
-            var normalizedConditions = new List<AnimatorOptimizerCondition>();
-            foreach (var condition in conditions)
-            {
-                if (!TryNormalizeAapCondition(controller, condition, options, report, out var normalizedCondition))
-                    return false;
-                normalizedConditions.Add(normalizedCondition);
-            }
-            normalized = new NormalizedStateTransition
-            {
-                Source = source,
-                Destination = transition.destinationState,
-                Conditions = normalizedConditions,
-                Order = order,
-            };
-            return true;
-        }
-
         private static List<AnimatorStateTransition> GetEffectiveAapTransitions(
             IEnumerable<AnimatorStateTransition> transitions)
         {
-            var active = (transitions ?? Enumerable.Empty<AnimatorStateTransition>())
-                .Where(transition => transition != null && !transition.mute)
-                .ToList();
-            if (active.Any(transition => transition.solo))
-                active = active.Where(transition => transition.solo).ToList();
-            return active;
-        }
-
-        private static bool TryNormalizeAapCondition(
-            AnimatorController controller,
-            AnimatorCondition source,
-            AnimatorOptimizerOptions options,
-            AnimatorOptimizerLayerReport report,
-            out AnimatorOptimizerCondition normalized)
-        {
-            normalized = null;
-            var parameter = (controller.parameters ?? Array.Empty<AnimatorControllerParameter>())
-                .FirstOrDefault(candidate => string.Equals(candidate.name, source.parameter, StringComparison.Ordinal));
-            if (parameter == null)
-            {
-                if (!TryGetVrcGlobalParameterType(source.parameter, out var globalType))
-                    return false;
-                return TryNormalizeConditionForType(source, globalType, options, report, out normalized);
-            }
-
-            if (parameter.type == AnimatorControllerParameterType.Bool)
-                return TryNormalizeCondition(controller, source, options, report, out normalized) && normalized.IsBoolean;
-
-            // A regular Layer conversion may already have upgraded the original Bool
-            // parameter and rewritten If/IfNot to Greater/Less 0.5. Accept exactly that
-            // canonical form so the build pipeline can process regular and AAP layers in
-            // two passes without losing the Boolean state machine plan.
-            var isTrue = source.mode == AnimatorConditionMode.Greater && Mathf.Approximately(source.threshold, 0.5f) ||
-                         source.mode == AnimatorConditionMode.Equals && Mathf.Approximately(source.threshold, 1f) ||
-                         source.mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(source.threshold, 0f);
-            var isFalse = source.mode == AnimatorConditionMode.Less && Mathf.Approximately(source.threshold, 0.5f) ||
-                          source.mode == AnimatorConditionMode.Equals && Mathf.Approximately(source.threshold, 0f) ||
-                          source.mode == AnimatorConditionMode.NotEqual && Mathf.Approximately(source.threshold, 1f);
-            if (parameter.type == AnimatorControllerParameterType.Float && (isTrue || isFalse))
-            {
-                normalized = new AnimatorOptimizerCondition
-                {
-                    Parameter = source.parameter,
-                    ParameterType = AnimatorControllerParameterType.Bool,
-                    Mode = isTrue ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot,
-                    Threshold = 0f,
-                };
-                return true;
-            }
-            return TryNormalizeCondition(controller, source, options, report, out normalized);
-        }
-
-        private static bool TryBuildFiniteStateSamples(
-            IReadOnlyList<NormalizedStateTransition> transitions,
-            IReadOnlyList<string> parameters,
-            AnimatorOptimizerOptions options,
-            AnimatorOptimizerLayerReport report,
-            out List<float> samples)
-        {
-            samples = new List<float>();
-            if (parameters.Count == 0)
-                return false;
-            if (parameters.Count > 1)
-            {
-                var booleanConditions = transitions.SelectMany(transition => transition.Conditions)
-                    .All(condition => condition.IsBoolean);
-                var booleanEntryCount = 1L << parameters.Count;
-                if (!booleanConditions || booleanEntryCount > Math.Max(2, options.MaxBooleanTruthTableEntries))
-                    return false;
-                samples.AddRange(Enumerable.Range(0, (int)booleanEntryCount).Select(value => (float)value));
-                return true;
-            }
-
-            var parameter = parameters[0];
-            var conditions = transitions.SelectMany(transition => transition.Conditions)
-                .Where(condition => string.Equals(condition.Parameter, parameter, StringComparison.Ordinal))
-                .ToList();
-            if (conditions.Count == 0)
-                return false;
-
-            if (conditions.All(condition => condition.IsBoolean))
-            {
-                samples.Add(0f);
-                samples.Add(1f);
-                return true;
-            }
-
-            if (conditions.Any(condition => condition.IsBoolean))
-                return false;
-            var prototype = conditions[0];
-            if (conditions.Any(condition => condition.ParameterType != prototype.ParameterType))
-                return false;
-            if (!prototype.IsInteger && !prototype.IsFloat)
-                return false;
-
-            var values = new SortedSet<float>();
-            var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
-            foreach (var condition in conditions)
-            {
-                if (prototype.IsInteger)
-                {
-                    var threshold = Mathf.RoundToInt(condition.Threshold);
-                    values.Add(threshold - 1);
-                    values.Add(threshold);
-                    values.Add(threshold + 1);
-                }
-                else
-                {
-                    if (!options.AllowFloatConditionApproximation)
-                        return false;
-                    values.Add(condition.Threshold - epsilon);
-                    values.Add(condition.Threshold);
-                    values.Add(condition.Threshold + epsilon);
-                }
-            }
-            if (values.Count > Math.Max(3, options.MaxNumericSelectorSamples))
-            {
-                report.AddReason($"状态依赖图需要 {values.Count} 个有限参数采样点，超过上限 {options.MaxNumericSelectorSamples}。");
-                return false;
-            }
-            samples.AddRange(values);
-            return true;
+            return GetEffectiveTransitions(transitions);
         }
 
         private static bool TryResolveStateIndependentMotion(
             IReadOnlyList<AnimatorState> states,
+            IReadOnlyList<NormalizedStateTransition> anyTransitions,
             IReadOnlyList<NormalizedStateTransition> transitions,
             IReadOnlyDictionary<string, float> values,
+            IReadOnlyDictionary<AnimatorState, AnimatorOptimizerMotionRef> outputs,
+            IReadOnlyDictionary<AnimatorState, string> outputKeys,
             out AnimatorOptimizerMotionRef motion)
         {
             motion = null;
+            string selectedKey = null;
             foreach (var state in states)
             {
-                var output = ToMotionRef(state);
-                var transition = transitions
-                    .Where(candidate => candidate.Source == state)
+                // Any State transitions win over the source state's own transitions; an Any
+                // State transition back to the current state is skipped unless it may self-transition.
+                var transition = anyTransitions
                     .OrderBy(candidate => candidate.Order)
+                    .Where(candidate => candidate.Destination != state || candidate.CanTransitionToSelf)
                     .FirstOrDefault(candidate => candidate.Conditions.All(condition =>
                         values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
-                if (transition != null)
-                    output = ToMotionRef(transition.Destination);
-
+                if (transition == null)
+                {
+                    transition = transitions
+                        .Where(candidate => candidate.Source == state)
+                        .OrderBy(candidate => candidate.Order)
+                        .FirstOrDefault(candidate => candidate.Conditions.All(condition =>
+                            values.TryGetValue(condition.Parameter, out var value) && condition.Matches(value)));
+                }
+                var destination = transition?.Destination ?? state;
+                var output = outputs[destination];
+                var key = outputKeys[destination];
                 if (motion == null)
+                {
                     motion = output;
-                else if (!string.Equals(BuildMotionKey(motion), BuildMotionKey(output), StringComparison.Ordinal))
+                    selectedKey = key;
+                }
+                else if (!string.Equals(selectedKey, key, StringComparison.Ordinal))
                     return false;
             }
             return motion != null;
-        }
-
-        private static bool IsBooleanParameter(AnimatorController controller, string parameterName)
-        {
-            var parameter = (controller.parameters ?? Array.Empty<AnimatorControllerParameter>())
-                .FirstOrDefault(candidate => string.Equals(candidate.name, parameterName, StringComparison.Ordinal));
-            return parameter != null && parameter.type == AnimatorControllerParameterType.Bool;
         }
 
         private static bool TryResolveNestedStaticDefault(
@@ -2231,24 +2321,47 @@ namespace UnityBox.AnimatorOptimizer
             state = null;
             if (stateMachine == null ||
                 (stateMachine.behaviours != null && stateMachine.behaviours.Length > 0) ||
-                (stateMachine.entryTransitions != null && stateMachine.entryTransitions.Length > 0) ||
-                (stateMachine.anyStateTransitions != null && stateMachine.anyStateTransitions.Length > 0))
+                GetEffectiveAnimatorTransitions(stateMachine.entryTransitions).Count > 0 ||
+                GetEffectiveTransitions(stateMachine.anyStateTransitions).Count > 0)
                 return false;
 
             if (stateMachine.defaultState != null)
             {
-                if ((stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>()).Length > 0)
+                if ((stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
+                    .Any(child => child.stateMachine != null &&
+                        HasEffectiveTransitionToStateMachine(stateMachine, child.stateMachine)))
                     return false;
                 state = stateMachine.defaultState;
-                return state.transitions == null || state.transitions.Length == 0;
+                return GetEffectiveTransitions(state.transitions).Count == 0;
             }
 
             var childMachines = stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>();
             if ((stateMachine.states ?? Array.Empty<ChildAnimatorState>()).Length != 0 || childMachines.Length != 1)
                 return false;
-            if (stateMachine.GetStateMachineTransitions(childMachines[0].stateMachine).Length != 0)
+            if (GetEffectiveAnimatorTransitions(
+                    stateMachine.GetStateMachineTransitions(childMachines[0].stateMachine)).Count != 0)
                 return false;
             return TryResolveNestedStaticDefault(childMachines[0].stateMachine, out state);
+        }
+
+        private static bool HasEffectiveTransitionToStateMachine(
+            AnimatorStateMachine stateMachine,
+            AnimatorStateMachine target)
+        {
+            if (stateMachine == null || target == null)
+                return false;
+            if (GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
+                .Any(transition => transition.destinationStateMachine == target) ||
+                GetEffectiveTransitions(stateMachine.anyStateTransitions)
+                .Any(transition => transition.destinationStateMachine == target) ||
+                (stateMachine.states ?? Array.Empty<ChildAnimatorState>())
+                .Where(child => child.state != null)
+                .SelectMany(child => GetEffectiveTransitions(child.state.transitions))
+                .Any(transition => transition.destinationStateMachine == target) ||
+                GetEffectiveAnimatorTransitions(stateMachine.GetStateMachineTransitions(target))
+                .Count > 0)
+                return true;
+            return false;
         }
 
         private static bool TransitionGroupsCanOverlap(
@@ -2273,17 +2386,22 @@ namespace UnityBox.AnimatorOptimizer
 
             if (parameters.All(parameter => parameter.type == AnimatorControllerParameterType.Bool))
             {
-                var count = 1 << parameterNames.Count;
-                for (var mask = 0; mask < count; mask++)
+                foreach (var name in parameterNames)
                 {
-                    var values = parameterNames.ToDictionary(
-                        name => name,
-                        name => (mask & (1 << parameterNames.IndexOf(name))) != 0 ? 1f : 0f,
-                        StringComparer.Ordinal);
-                    if (ConditionsMatch(leftConditions, values) && ConditionsMatch(rightConditions, values))
+                    var conditions = leftConditions.Concat(rightConditions)
+                        .Where(condition => condition.parameter == name).ToArray();
+                    if (conditions.Any(condition => condition.mode != AnimatorConditionMode.If &&
+                        condition.mode != AnimatorConditionMode.IfNot && condition.mode != AnimatorConditionMode.Equals &&
+                        condition.mode != AnimatorConditionMode.NotEqual))
                         return true;
+                    var values = new Dictionary<string, float>(StringComparer.Ordinal) { [name] = 0f };
+                    if (ConditionsMatch(conditions, values))
+                        continue;
+                    values[name] = 1f;
+                    if (!ConditionsMatch(conditions, values))
+                        return false;
                 }
-                return false;
+                return true;
             }
 
             if (parameterNames.Count != 1)
@@ -2293,6 +2411,9 @@ namespace UnityBox.AnimatorOptimizer
             if (parameter.type != AnimatorControllerParameterType.Int &&
                 parameter.type != AnimatorControllerParameterType.Float)
                 return true;
+
+            if (parameter.type == AnimatorControllerParameterType.Float)
+                return NumericConditionGroupsCanOverlap(leftConditions, rightConditions);
 
             var thresholds = leftConditions.Concat(rightConditions).Select(condition => condition.threshold).ToList();
             var valuesToTry = new HashSet<float>();
@@ -2326,6 +2447,90 @@ namespace UnityBox.AnimatorOptimizer
             return false;
         }
 
+        private static bool NumericConditionGroupsCanOverlap(
+            IEnumerable<AnimatorCondition> left,
+            IEnumerable<AnimatorCondition> right)
+        {
+            var conditions = (left ?? Enumerable.Empty<AnimatorCondition>())
+                .Concat(right ?? Enumerable.Empty<AnimatorCondition>())
+                .ToList();
+            var excluded = new HashSet<float>();
+            var hasEquality = false;
+            var equality = 0f;
+            var hasLower = false;
+            var lower = 0f;
+            var lowerInclusive = true;
+            var hasUpper = false;
+            var upper = 0f;
+            var upperInclusive = true;
+
+            foreach (var condition in conditions)
+            {
+                switch (condition.mode)
+                {
+                    case AnimatorConditionMode.Equals:
+                        if (hasEquality && equality != condition.threshold)
+                            return false;
+                        hasEquality = true;
+                        equality = condition.threshold;
+                        break;
+                    case AnimatorConditionMode.NotEqual:
+                        excluded.Add(condition.threshold);
+                        break;
+                    case AnimatorConditionMode.Greater:
+                        if (!hasLower || condition.threshold > lower)
+                        {
+                            hasLower = true;
+                            lower = condition.threshold;
+                            lowerInclusive = false;
+                        }
+                        else if (condition.threshold == lower)
+                        {
+                            lowerInclusive = false;
+                        }
+                        break;
+                    case AnimatorConditionMode.Less:
+                        if (!hasUpper || condition.threshold < upper)
+                        {
+                            hasUpper = true;
+                            upper = condition.threshold;
+                            upperInclusive = false;
+                        }
+                        else if (condition.threshold == upper)
+                        {
+                            upperInclusive = false;
+                        }
+                        break;
+                    default:
+                        // The normalizer rejects these for Float, but an unknown
+                        // condition must never be treated as proven disjoint.
+                        return true;
+                }
+            }
+
+            if (hasEquality)
+            {
+                if (hasLower && (equality < lower || equality == lower && !lowerInclusive) ||
+                    hasUpper && (equality > upper || equality == upper && !upperInclusive) ||
+                    excluded.Contains(equality))
+                    return false;
+                return true;
+            }
+
+            if (hasLower && hasUpper)
+            {
+                if (lower < upper)
+                    return true;
+                if (lower > upper || !lowerInclusive || !upperInclusive)
+                    return false;
+                return !excluded.Contains(lower);
+            }
+
+            // A half-infinite interval cannot be removed by a finite set of
+            // NotEqual constraints, so it always has a witness.
+            return true;
+        }
+
         private static bool ConditionsMatch(
             IEnumerable<AnimatorCondition> conditions,
             IReadOnlyDictionary<string, float> values)
@@ -2338,8 +2543,8 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     AnimatorConditionMode.If => value >= 0.5f,
                     AnimatorConditionMode.IfNot => value < 0.5f,
-                    AnimatorConditionMode.Equals => Mathf.Approximately(value, condition.threshold),
-                    AnimatorConditionMode.NotEqual => !Mathf.Approximately(value, condition.threshold),
+                    AnimatorConditionMode.Equals => value == condition.threshold,
+                    AnimatorConditionMode.NotEqual => value != condition.threshold,
                     AnimatorConditionMode.Greater => value > condition.threshold,
                     AnimatorConditionMode.Less => value < condition.threshold,
                     _ => false,
@@ -2350,23 +2555,27 @@ namespace UnityBox.AnimatorOptimizer
             return true;
         }
 
-        private static bool AreEquivalentTransition(AnimatorStateTransition left, AnimatorStateTransition right)
+        private static bool AreEquivalentTransition(
+            AnimatorStateTransition left,
+            AnimatorStateTransition right,
+            bool ignoreTiming)
         {
             if (left == null || right == null)
                 return left == right;
-            if (left.destinationState == null || right.destinationState == null)
-                return left.destinationState == right.destinationState &&
-                       left.destinationStateMachine == right.destinationStateMachine &&
-                       AreEquivalentConditions(left.conditions, right.conditions);
-            return left.destinationState.name == right.destinationState.name &&
-                   left.destinationState.motion == right.destinationState.motion &&
-                   left.hasExitTime == right.hasExitTime &&
-                   Mathf.Approximately(left.exitTime, right.exitTime) &&
-                   Mathf.Approximately(left.duration, right.duration) &&
-                   Mathf.Approximately(left.offset, right.offset) &&
+            var sameTiming = ignoreTiming ||
+                             left.hasExitTime == right.hasExitTime &&
+                             (!left.hasExitTime || left.exitTime == right.exitTime) &&
+                             left.duration == right.duration && left.offset == right.offset &&
+                             left.hasFixedDuration == right.hasFixedDuration;
+            return left.destinationState == right.destinationState &&
+                   left.destinationStateMachine == right.destinationStateMachine &&
+                   left.isExit == right.isExit &&
+                   left.canTransitionToSelf == right.canTransitionToSelf &&
+                   left.interruptionSource == right.interruptionSource &&
+                   left.orderedInterruption == right.orderedInterruption &&
+                   sameTiming &&
                    left.mute == right.mute &&
                    left.solo == right.solo &&
-                   left.canTransitionToSelf == right.canTransitionToSelf &&
                    AreEquivalentConditions(left.conditions, right.conditions);
         }
 
@@ -2382,7 +2591,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (!string.Equals(left[index].parameter, right[index].parameter, StringComparison.Ordinal) ||
                     left[index].mode != right[index].mode ||
-                    !Mathf.Approximately(left[index].threshold, right[index].threshold))
+                    left[index].threshold != right[index].threshold)
                     return false;
             }
             return true;
@@ -2401,18 +2610,24 @@ namespace UnityBox.AnimatorOptimizer
             for (var order = 0; order < transitions.Count; order++)
             {
                 var transition = transitions[order];
+                if (transition != null && !TransitionMayBeReachable(controller, transition.conditions))
+                    continue;
                 if (transition == null || transition.destinationState == null ||
                     !stateSet.Contains(transition.destinationState) || transition.destinationStateMachine != null ||
-                    transition.isExit || transition.canTransitionToSelf)
+                    transition.isExit)
                 {
-                    report.AddReason("Transition 必须指向本层的另一个 State，不能指向 Exit/StateMachine/自身。");
+                    report.AddReason("Transition 必须指向本层的另一个 State，不能指向 Exit/StateMachine。");
                     return false;
                 }
 
-                if (transition.mute || transition.solo || transition.hasExitTime ||
-                    !Mathf.Approximately(transition.duration, 0f) || !Mathf.Approximately(transition.offset, 0f))
+                if (transition.mute)
                 {
-                    report.AddReason("Transition 含有 Mute/Solo、Exit Time、Duration 或 Offset，存在时间/优先级语义，暂不转换。");
+                    report.AddReason("Transition 已 Mute，不应参与分支提取。");
+                    return false;
+                }
+                if (HasBlockingTransitionTiming(transition, report))
+                {
+                    report.AddReason("Transition 含有 Exit Time、Duration 或 Offset，存在时间语义；可开启“忽略静态 Motion 的过渡时间”后再试。");
                     return false;
                 }
 
@@ -2478,6 +2693,12 @@ namespace UnityBox.AnimatorOptimizer
                 return TryNormalizeConditionForType(source, globalType, options, report, out normalized);
             }
 
+            if (!IsUsableConditionThreshold(source, parameter.type) ||
+                parameter.type == AnimatorControllerParameterType.Float && !IsFinite(parameter.defaultFloat))
+            {
+                report.AddReason("条件阈值/Float 默认值非有限数，或超过 Float 可精确表示的整数邻域: " + source.parameter);
+                return false;
+            }
             if (parameter.type == AnimatorControllerParameterType.Bool)
             {
                 if (source.mode != AnimatorConditionMode.If && source.mode != AnimatorConditionMode.IfNot &&
@@ -2487,7 +2708,7 @@ namespace UnityBox.AnimatorOptimizer
                     return false;
                 }
                 if ((source.mode == AnimatorConditionMode.Equals || source.mode == AnimatorConditionMode.NotEqual) &&
-                    !Mathf.Approximately(source.threshold, 0f) && !Mathf.Approximately(source.threshold, 1f))
+                    source.threshold != 0f && source.threshold != 1f)
                 {
                     report.AddReason("Bool Equals/NotEqual 阈值必须为 0 或 1。");
                     return false;
@@ -2495,6 +2716,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (!options.UpgradeBoolParametersToFloat)
                 {
                     report.AddReason($"条件使用 Bool 参数 '{source.parameter}'；需要勾选 Bool → Float 才能作为 BlendTree 参数。");
+                    report.AddSuggestion("在“参数与合并（高级）”启用 Bool → Float；参数写入者与 Behaviour 引用仍会独立检查。");
                     return false;
                 }
 
@@ -2516,7 +2738,7 @@ namespace UnityBox.AnimatorOptimizer
                     report.AddReason("Int 条件只支持 Equals、NotEqual、Greater、Less。");
                     return false;
                 }
-                if (!Mathf.Approximately(source.threshold, Mathf.Round(source.threshold)))
+                if (source.threshold != Mathf.Round(source.threshold))
                 {
                     report.AddReason("Int 条件阈值必须是整数。");
                     return false;
@@ -2524,6 +2746,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (!options.UpgradeIntParametersToFloat)
                 {
                     report.AddReason($"条件使用 Int 参数 '{source.parameter}'；需要勾选 Int → Float 才能作为 BlendTree 参数。");
+                    report.AddSuggestion("在“参数与合并（高级）”启用 Int → Float；保留整数输入约定，避免连续值插值改变选择结果。");
                     return false;
                 }
 
@@ -2548,11 +2771,16 @@ namespace UnityBox.AnimatorOptimizer
                 report.AddReason("Float 条件只支持 Equals、NotEqual、Greater、Less。");
                 return false;
             }
-            if (!options.AllowFloatConditionApproximation)
+            if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(source.threshold,
+                options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, new HashSet<float>(), out var approximate))
             {
-                report.AddReason($"Float 参数 '{source.parameter}' 的 Transition 是阶跃条件；请勾选 Float 条件近似后再转换。");
+                report.AddReason($"Float 参数 '{source.parameter}' 的阈值位于零、非正规数或溢出边缘，不能保证跨平台精确阶跃。");
                 return false;
             }
+            if (approximate)
+                report.AddWarning($"Float 参数 '{source.parameter}' 使用显式允许的阈值邻域近似。");
+            else
+                report.AddOptimization($"Float 参数 '{source.parameter}' 使用相邻可表示值构造精确阶跃（有限 Float 输入）；等于阈值的情况单独证明，不假定 0/1 值域。");
 
             normalized = new AnimatorOptimizerCondition
             {
@@ -2562,6 +2790,16 @@ namespace UnityBox.AnimatorOptimizer
                 Threshold = source.threshold,
             };
             return true;
+        }
+
+        internal static bool IsUsableConditionThreshold(AnimatorCondition condition, AnimatorControllerParameterType type)
+        {
+            if (string.IsNullOrWhiteSpace(condition.parameter))
+                return false;
+            if (type == AnimatorControllerParameterType.Bool)
+                return true;
+            return !float.IsNaN(condition.threshold) && !float.IsInfinity(condition.threshold) &&
+                (type != AnimatorControllerParameterType.Int || Math.Abs((double)condition.threshold) <= 16777214d);
         }
 
         private static bool TryBuildBooleanTruthTable(
@@ -2582,6 +2820,11 @@ namespace UnityBox.AnimatorOptimizer
                 .ToList();
             if (parameters.Count == 0)
                 return false;
+            if (parameters.Count > 30)
+            {
+                report.AddReason("Bool 条件参数超过 30 个，已在位移计算前安全拒绝，避免真值表整数溢出。");
+                return false;
+            }
 
             var entryCount = 1L << parameters.Count;
             if (entryCount > Math.Max(2, options.MaxBooleanTruthTableEntries))
@@ -2651,7 +2894,7 @@ namespace UnityBox.AnimatorOptimizer
             if (branches.Any(branch => branch.Conditions[0].ParameterType != parameter.ParameterType))
                 return false;
 
-            var samples = BuildSelectorSamples(branches, parameter, options, report);
+            var samples = BuildSelectorSamples(branches, parameter, options, report, out var approximate);
             if (samples == null || samples.Count == 0)
                 return false;
 
@@ -2662,6 +2905,7 @@ namespace UnityBox.AnimatorOptimizer
                 SelectorParameter = parameter.Parameter,
                 SelectorParameterType = parameter.ParameterType,
                 SelectorSamples = samples,
+                SelectorIsApproximate = approximate,
                 RequiredFloatParameters = new HashSet<string>(new[] { parameter.Parameter }, StringComparer.Ordinal),
                 StructuralKey = "numeric:" + parameter.Parameter + ":" +
                                 string.Join("|", samples.Select(sample => sample.Value.ToString("R") + ":" +
@@ -2674,8 +2918,10 @@ namespace UnityBox.AnimatorOptimizer
             IReadOnlyList<AnimatorOptimizerBranch> branches,
             AnimatorOptimizerCondition conditionPrototype,
             AnimatorOptimizerOptions options,
-            AnimatorOptimizerLayerReport report)
+            AnimatorOptimizerLayerReport report,
+            out bool approximate)
         {
+            approximate = false;
             var values = new SortedSet<float>();
             var thresholds = branches.Select(branch => branch.Conditions[0].Threshold).ToList();
             if (conditionPrototype.IsInteger)
@@ -2690,12 +2936,12 @@ namespace UnityBox.AnimatorOptimizer
             }
             else
             {
-                var epsilon = Mathf.Max(0.000001f, options.FloatConditionEpsilon);
                 foreach (var threshold in thresholds)
                 {
-                    values.Add(threshold - epsilon);
-                    values.Add(threshold);
-                    values.Add(threshold + epsilon);
+                    if (!AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(threshold,
+                        options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, values, out var isApproximate))
+                        return null;
+                    approximate |= isApproximate;
                 }
             }
 
@@ -2715,6 +2961,7 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     if (conditionPrototype.IsFloat && options.AllowFloatConditionApproximation)
                     {
+                        approximate = true;
                         matched = branches
                             .OrderBy(branch => Mathf.Abs(branch.Conditions[0].Threshold - value))
                             .ThenBy(branch => branch.Order)
@@ -2748,29 +2995,250 @@ namespace UnityBox.AnimatorOptimizer
                 report.AddReason("State 引用为空。");
                 return false;
             }
-            if (state.motion == null)
-                report.AddReason("State 没有 Motion。");
             if (state.motion != null && ContainsPotentialProxyMotion(state.motion, new HashSet<int>()))
                 report.AddReason("State Motion 包含 VRChat/VRCFury proxy Clip，必须保留平台特殊 Motion。");
-            if (!allowTransitions && state.transitions != null && state.transitions.Length > 0)
+            if (!allowTransitions && GetEffectiveTransitions(state.transitions)
+                .Any(transition => TransitionMayBeReachable(controller, transition.conditions)))
                 report.AddReason("State 包含 Transition，不能按 Constant Motion 处理。");
             if (state.behaviours != null && state.behaviours.Length > 0)
             {
                 report.BindingsAreComplete = false;
                 report.AddReason("State 包含 StateMachineBehaviour，BlendTree 不会执行这些回调。");
             }
-            if (!state.writeDefaultValues)
-                report.AddReason("源 State 的 Write Defaults 必须为 On，才能放进生成的 WD On Direct BlendTree。");
-            if (state.iKOnFeet)
-                report.AddReason("State 开启了 IK On Feet；ChildMotion 无法保留 State 级别的 IK 设置。");
-            if (state.speedParameterActive || state.cycleOffsetParameterActive || state.mirrorParameterActive ||
-                state.timeParameterActive)
-            {
-                report.AddReason("State 使用动态 Speed/Cycle Offset/Mirror/Time 参数，暂不能等价降级为 ChildMotion。");
-            }
+            ValidateWriteDefaults(state, report);
+            ValidatePlaybackSettings(state, report);
             if (state.motion != null && state.motion is not AnimationClip && state.motion is not BlendTree)
                 report.AddReason("State Motion 不是 AnimationClip 或 BlendTree。");
             return report.Reasons.Count == 0;
+        }
+
+        // Coverage must hold on every selectable branch, not merely their union.
+        private static bool ValidateWriteDefaults(
+            AnimatorState state,
+            AnimatorOptimizerLayerReport report)
+        {
+            if (state == null || state.writeDefaultValues)
+                return true;
+
+            report.WriteDefaultsOffStates.Add(state.GetInstanceID());
+            var policy = report.Options?.WriteDefaultsPolicy ??
+                         AnimatorOptimizerComponent.WriteDefaultsPolicy.AllowCoveredStates;
+            var stateName = string.IsNullOrEmpty(state.name) ? "<unnamed>" : state.name;
+            if (policy == AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict)
+            {
+                report.AddReason($"State '{stateName}' 的 Write Defaults 为 Off；当前策略为 Strict，只接受 WD On 的源 State。");
+                return false;
+            }
+
+            if (report.LayerMotionBindings == null || !report.LayerMotionBindingsAreComplete)
+            {
+                report.AddReason($"State '{stateName}' 的 Write Defaults 为 Off，且 Controller 绑定无法完整分析。");
+                return false;
+            }
+
+            var stateBindings = new HashSet<AnimatorOptimizerBindingKey>();
+            if (!TryCollectGuaranteedBindings(state.motion, stateBindings))
+            {
+                report.AddReason($"State '{stateName}' 的 Write Defaults 为 Off，且其 Motion 绑定无法完整分析。");
+                return false;
+            }
+
+            var missing = report.LayerMotionBindings.Where(binding => !stateBindings.Contains(binding)).ToList();
+            if (missing.Count == 0)
+            {
+                report.AddOptimization(report.LayerMotionBindings.Count == 0
+                    ? $"State '{stateName}' 为 WD Off，但 Controller 没有动画绑定。"
+                    : $"State '{stateName}' 为 WD Off，所有分支均覆盖 Controller 的 {report.LayerMotionBindings.Count} 个绑定，已自动放行。");
+                return true;
+            }
+
+            var example = missing.Count > 3
+                ? string.Join(", ", missing.Take(3)) + " …"
+                : string.Join(", ", missing);
+            if (policy == AnimatorOptimizerComponent.WriteDefaultsPolicy.TreatAsWriteDefaultsOn)
+            {
+                report.AddWarning(
+                    $"State '{stateName}' 已按 WD On 处理；{missing.Count} 个绑定未被保证覆盖（{example}），可能改变默认值回写与属性保持效果。");
+                return true;
+            }
+
+            report.AddReason(
+                $"State '{stateName}' 为 WD Off，未保证覆盖 Controller 全部绑定（缺 {missing.Count} 个: {example}）；" +
+                "若不依赖属性保持，可显式选择“视为 WD On”（可能改变效果）。");
+            report.AddSuggestion("WD Off：优先补齐各分支应写入的属性；仅在接受默认值回写变化时选择“视为 WD On”。");
+            return false;
+        }
+
+        private static void ValidatePlaybackSettings(AnimatorState state, AnimatorOptimizerLayerReport report)
+        {
+            if (state.iKOnFeet)
+            {
+                report.AddReason($"State '{state.name}' 开启 IK On Feet；无法证明求解器对继承姿态没有影响。");
+                report.AddSuggestion("IK On Feet / IK Pass 仍保留安全检查；确认不需要 IK 后在源状态或源层关闭，不能仅根据 Clip 是静态就忽略。");
+            }
+            if (!IsFinite(state.speed) || !IsFinite(state.cycleOffset))
+                report.AddReason($"State '{state.name}' 的 Speed / Cycle Offset 不是有限数，请修正源数据。");
+
+            var timing = new List<string>();
+            if (state.speedParameterActive) timing.Add($"Speed 参数 '{state.speedParameter}'");
+            if (state.cycleOffsetParameterActive) timing.Add($"Cycle Offset 参数 '{state.cycleOffsetParameter}'");
+            if (state.timeParameterActive) timing.Add($"Time 参数 '{state.timeParameter}'");
+            var timeIndependent = AnimatorOptimizerMotionUtility.IsTimeIndependent(state.motion);
+            if (timeIndependent)
+            {
+                if (state.speed != 1f) timing.Add("Speed 数值");
+                if (state.cycleOffset != 0f) timing.Add("Cycle Offset 数值");
+                if (timing.Count > 0)
+                    report.AddOptimization($"State '{state.name}'：{string.Join("、", timing)} 不影响其时间无关 Motion，生成时统一为 Speed=1 / Offset=0；Transition 时序仍单独检查。");
+            }
+            else if (timing.Count > 0)
+            {
+                report.AddReason($"State '{state.name}' 使用 {string.Join("、", timing)}；Motion 存在时间变化、事件、根运动或特殊动画语义，不能移除这些参数。");
+                report.AddSuggestion("播放参数：静态普通 Motion 会自动放行。动态动画若是误勾选，请在源 State 关闭对应参数；参数默认值不代表运行时常量。");
+            }
+            if (state.mirror || state.mirrorParameterActive)
+            {
+                if (AnimatorOptimizerMotionUtility.IsPropertyOnly(state.motion))
+                    report.AddOptimization($"State '{state.name}'：Motion 仅写普通非骨骼属性，Mirror / Mirror 参数不参与这些属性的求值，已规范化。");
+                else if (state.mirrorParameterActive)
+                    report.AddReason($"State '{state.name}' 的 Mirror 参数可能改变姿态，无法降级为固定 ChildMotion Mirror。");
+            }
+        }
+
+        internal static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        internal static bool IsFloatNeighborhoodRepresentable(float threshold, float epsilon)
+        {
+            var lower = threshold - epsilon;
+            var upper = threshold + epsilon;
+            return IsFinite(lower) && IsFinite(upper) && lower < threshold && upper > threshold;
+        }
+
+        internal static bool TryCollectGuaranteedBindings(Motion motion, HashSet<AnimatorOptimizerBindingKey> bindings)
+        {
+            if (motion == null)
+                return true;
+            if (motion is AnimationClip)
+                return TryCollectMotionBindingKeys(motion, bindings, new HashSet<int>());
+            if (!(motion is BlendTree tree))
+                return false;
+            if (tree.blendType != BlendTreeType.Simple1D)
+                return true;
+            HashSet<AnimatorOptimizerBindingKey> common = null;
+            foreach (var child in tree.children)
+            {
+                var childBindings = new HashSet<AnimatorOptimizerBindingKey>();
+                if (!TryCollectGuaranteedBindings(child.motion, childBindings))
+                    return false;
+                if (common == null)
+                    common = childBindings;
+                else
+                    common.IntersectWith(childBindings);
+            }
+            if (common != null)
+                bindings.UnionWith(common);
+            return true;
+        }
+
+        // Callers still require time-independent motions when opting into instant transitions.
+        private static bool HasBlockingTransitionTiming(
+            AnimatorStateTransition transition,
+            AnimatorOptimizerLayerReport report)
+        {
+            if (transition == null)
+                return false;
+            if (!IsFinite(transition.duration) || !IsFinite(transition.offset) ||
+                transition.hasExitTime && !IsFinite(transition.exitTime))
+            {
+                report?.AddReason("Transition 含非有限 Duration / Offset / Exit Time，请修正源数据。");
+                return true;
+            }
+            var irrelevantOffset = transition.offset != 0f && report != null && !report.HasExitTime &&
+                transition.destinationState != null &&
+                AnimatorOptimizerMotionUtility.IsTimeIndependent(transition.destinationState.motion);
+            if (irrelevantOffset)
+                report.AddOptimization($"指向 '{transition.destinationState.name}' 的 Transition Offset 不影响静态输出，且本层无有效 Exit Time 依赖，已忽略偏移。");
+            var timed = transition.hasExitTime ||
+                        transition.duration != 0f ||
+                        transition.offset != 0f && !irrelevantOffset;
+            if (!timed)
+                return false;
+            if (report?.Options == null || !report.Options.IgnoreTransitionTimingForStaticMotions)
+            {
+                report?.AddReason("Transition 的 Exit Time / Duration 或有时间依赖的 Offset 无法由瞬时 BlendTree 切换保留。");
+                report?.AddSuggestion("过渡时间：若接受静态状态间取消等待和淡入淡出，可启用“忽略静态过渡时间”；真正动态 Motion 不会因此放行。");
+                return true;
+            }
+            report.RelaxedTransitionCount++;
+            report.AddWarning("已忽略 Transition 的 Exit Time / Duration / Offset；静态 Motion 之间的切换会变为瞬时，不再有过渡淡入淡出。");
+            return false;
+        }
+
+        private static bool HasEffectiveExitTime(AnimatorStateMachine machine, AnimatorController controller)
+        {
+            if (machine == null)
+                return false;
+            bool IsTimed(AnimatorStateTransition transition) => transition.hasExitTime &&
+                TransitionMayBeReachable(controller, transition.conditions);
+            return GetEffectiveTransitions(machine.anyStateTransitions).Any(IsTimed) ||
+                machine.states.Any(child => child.state != null &&
+                    GetEffectiveTransitions(child.state.transitions).Any(IsTimed)) ||
+                machine.stateMachines.Any(child => HasEffectiveExitTime(child.stateMachine, controller));
+        }
+
+        private static bool TryCollectStateMachineMotionBindings(
+            AnimatorStateMachine stateMachine,
+            ISet<AnimatorOptimizerBindingKey> bindings,
+            ISet<int> visitedMachines)
+        {
+            if (stateMachine == null || !visitedMachines.Add(stateMachine.GetInstanceID()))
+                return true;
+            var complete = true;
+            foreach (var child in stateMachine.states ?? Array.Empty<ChildAnimatorState>())
+            {
+                if (child.state == null)
+                    continue;
+                complete &= TryCollectMotionBindingKeys(child.state.motion, bindings, new HashSet<int>());
+            }
+            foreach (var child in stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
+                complete &= TryCollectStateMachineMotionBindings(child.stateMachine, bindings, visitedMachines);
+            return complete;
+        }
+
+        internal static bool TryCollectMotionBindingKeys(
+            Motion motion,
+            ISet<AnimatorOptimizerBindingKey> bindings,
+            ISet<int> visited)
+        {
+            if (motion == null)
+                return true;
+            if (!visited.Add(motion.GetInstanceID()))
+                return true;
+            if (motion is AnimationClip clip)
+            {
+                if (!AnimatorOptimizerSemanticUtility.HasInspectableBindings(clip))
+                    return false;
+                try
+                {
+                    foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+                        bindings.Add(new AnimatorOptimizerBindingKey(binding.path, binding.type, binding.propertyName, false));
+                    foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
+                        bindings.Add(new AnimatorOptimizerBindingKey(binding.path, binding.type, binding.propertyName, true));
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            if (motion is BlendTree tree)
+            {
+                var complete = true;
+                foreach (var child in tree.children ?? Array.Empty<ChildMotion>())
+                    complete &= TryCollectMotionBindingKeys(child.motion, bindings, visited);
+                return complete;
+            }
+            return false;
         }
 
         private static bool ContainsPotentialProxyMotion(
@@ -2794,13 +3262,15 @@ namespace UnityBox.AnimatorOptimizer
             out AnimatorOptimizerCondition normalized)
         {
             normalized = null;
+            if (!IsUsableConditionThreshold(source, parameterType))
+                return false;
             if (parameterType == AnimatorControllerParameterType.Bool)
             {
                 if (source.mode != AnimatorConditionMode.If && source.mode != AnimatorConditionMode.IfNot &&
                     source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual)
                     return false;
                 if ((source.mode == AnimatorConditionMode.Equals || source.mode == AnimatorConditionMode.NotEqual) &&
-                    !Mathf.Approximately(source.threshold, 0f) && !Mathf.Approximately(source.threshold, 1f))
+                    source.threshold != 0f && source.threshold != 1f)
                     return false;
                 normalized = new AnimatorOptimizerCondition
                 {
@@ -2815,7 +3285,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual &&
                     source.mode != AnimatorConditionMode.Greater && source.mode != AnimatorConditionMode.Less ||
-                    !Mathf.Approximately(source.threshold, Mathf.Round(source.threshold)))
+                    source.threshold != Mathf.Round(source.threshold))
                     return false;
                 normalized = new AnimatorOptimizerCondition
                 {
@@ -2826,10 +3296,14 @@ namespace UnityBox.AnimatorOptimizer
                 };
                 return true;
             }
-            if (!options.AllowFloatConditionApproximation ||
+            if (parameterType != AnimatorControllerParameterType.Float ||
+                !AnimatorOptimizerSemanticUtility.TryAddFloatConditionSamples(source.threshold,
+                    options.AllowFloatConditionApproximation, options.FloatConditionEpsilon, new HashSet<float>(), out var approximate) ||
                 source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual &&
                 source.mode != AnimatorConditionMode.Greater && source.mode != AnimatorConditionMode.Less)
                 return false;
+            if (approximate)
+                report.AddWarning($"Float 全局参数 '{source.parameter}' 使用显式允许的阈值邻域近似。");
             normalized = new AnimatorOptimizerCondition
             {
                 Parameter = source.parameter,
@@ -2840,14 +3314,16 @@ namespace UnityBox.AnimatorOptimizer
             return true;
         }
 
-        private static AnimatorOptimizerMotionRef ToMotionRef(AnimatorState state)
+        internal static AnimatorOptimizerMotionRef ToMotionRef(AnimatorState state)
         {
+            var independent = AnimatorOptimizerMotionUtility.IsTimeIndependent(state?.motion);
+            AnimatorOptimizerMotionUtility.TryNormalizeSingletonTree(state?.motion, out var motion);
             return new AnimatorOptimizerMotionRef
             {
-                Motion = state?.motion,
-                Speed = state == null ? 1f : state.speed,
-                CycleOffset = state == null ? 0f : state.cycleOffset,
-                Mirror = state != null && state.mirror,
+                Motion = motion,
+                Speed = state == null || independent ? 1f : state.speed,
+                CycleOffset = state == null || independent ? 0f : state.cycleOffset,
+                Mirror = state != null && state.mirror && !AnimatorOptimizerMotionUtility.IsPropertyOnly(state.motion),
             };
         }
 
@@ -2860,13 +3336,13 @@ namespace UnityBox.AnimatorOptimizer
                 case AnimatorOptimizerConversionKind.BooleanTruthTable:
                     return $"已枚举 {plan.TruthTable.Count} 个 Bool 参数组合，生成嵌套 1D BlendTree；Bool 逻辑保持离散。";
                 case AnimatorOptimizerConversionKind.NumericSelector:
-                    return "已按数值条件生成 1D BlendTree；Int 取值为整数时精确，Float 条件使用阈值附近近似。";
+                    return "已按数值条件生成 1D BlendTree；Int 保留整数输入约定，Float 优先使用相邻可表示值保持阶跃，近似回退另列警告。";
                 case AnimatorOptimizerConversionKind.FiniteParameterTable:
-                    return $"已枚举 {plan.DecisionTable.Count} 个 Bool/Int 参数组合，生成多维嵌套 1D BlendTree。";
+                    return $"已枚举 {plan.DecisionTable.Count} 个 Bool/Int/Float 条件分区组合，生成多维嵌套 1D BlendTree。";
                 case AnimatorOptimizerConversionKind.AapStateRegister:
-                    return plan.StateRegisterEntryStates == null
-                        ? "已生成 AAP StateRegister 更新树和 State 输出 1D BlendTree；支持有限 Bool/Int 以及可选 Float 条件。"
-                        : "已生成带首帧 Entry 初始化反馈的 AAP StateRegister，并用 State 输出 1D BlendTree 保留状态历史。";
+                    return plan.StateRegisterProgram?.RequiresInitialization == true
+                        ? "计划生成带一次性 Entry 初始化的 AAP 更新树与状态输出树；每条更新分支持续写初始化标记。"
+                        : "计划生成 AAP 状态更新树与输出树；条件未命中时保持原状态，不把阈值空档当作补集。";
                 default:
                     return string.Empty;
             }
@@ -2926,7 +3402,7 @@ namespace UnityBox.AnimatorOptimizer
             if (stateMachine == null)
                 return;
             if (stateMachine.behaviours != null && stateMachine.behaviours.Length > 0)
-                report.BindingsAreComplete = false;
+                report.BindingsAreComplete &= stateMachine.behaviours.All(IsPreservableLayerBehaviour);
             foreach (var child in stateMachine.states ?? Array.Empty<ChildAnimatorState>())
             {
                 if (child.state == null)
@@ -2956,13 +3432,18 @@ namespace UnityBox.AnimatorOptimizer
                     report.BindingsAreComplete = false;
                     report.AddReason("Motion 是 VRChat/VRCFury proxy Clip；平台特殊 Motion 必须保持原始 Layer 和资源。");
                 }
+                if (!AnimatorOptimizerSemanticUtility.HasInspectableBindings(clip))
+                    report.BindingsAreComplete = false;
                 try
                 {
                     foreach (var binding in AnimationUtility.GetCurveBindings(clip))
                     {
+                        if (AnimatorOptimizerSemanticUtility.IsRotationBinding(binding))
+                            report.AddReason("动画包含 Transform 旋转曲线；进入 BlendTree 的旋转混合语义尚未证明等价，保留源层。");
+                        if (!AnimatorOptimizerSemanticUtility.IsFiniteCurveData(AnimationUtility.GetEditorCurve(clip, binding)))
+                            report.AddReason("动画包含非有限或无效曲线数据（如 NaN 隐藏网格）；不重写其特殊求值语义。");
                         if (binding.type == typeof(Animator))
                         {
-                            report.BindingsAreComplete = false;
                             report.AddReason("动画包含 AAP/Animator 参数曲线；参数保存顺序暂不自动重写。");
                         }
                         report.Bindings.Add(new AnimatorOptimizerBindingKey(
@@ -2970,9 +3451,11 @@ namespace UnityBox.AnimatorOptimizer
                     }
                     foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
                     {
+                        var objectCurve = AnimationUtility.GetObjectReferenceCurve(clip, binding);
+                        if (objectCurve == null || objectCurve.Any(key => !IsFinite(key.time)))
+                            report.AddReason("对象引用动画曲线不可读或含非有限关键帧时间，保留源层。");
                         if (binding.type == typeof(Animator))
                         {
-                            report.BindingsAreComplete = false;
                             report.AddReason("动画包含 Animator 参数对象曲线；AAP 参数写入语义暂不自动重写。");
                         }
                         report.Bindings.Add(new AnimatorOptimizerBindingKey(
@@ -2994,6 +3477,340 @@ namespace UnityBox.AnimatorOptimizer
             }
             report.BindingsAreComplete = false;
             report.AddReason("发现无法分析的 Motion 类型: " + motion.GetType().Name);
+        }
+    }
+
+    /// <summary>Shared physical/virtual proof primitives; these never sample or mutate source assets.</summary>
+    public static class AnimatorOptimizerSemanticUtility
+    {
+        private sealed class ReferenceIdentity
+        {
+            public readonly long Value = System.Threading.Interlocked.Increment(ref nextReferenceIdentity);
+        }
+
+        private static long nextReferenceIdentity;
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, ReferenceIdentity>
+            referenceIdentities = new();
+
+        // Hash codes are not object identities. Weak keys do not retain virtual graphs
+        // between builds, and distinct live nodes can never alias in a memoization key.
+        public static string ReferenceKey(object value) => value == null ? "null" :
+            referenceIdentities.GetValue(value, _ => new ReferenceIdentity()).Value.ToString(CultureInfo.InvariantCulture);
+
+        public static void CollectSerializedStrings(UnityEngine.Object source, ISet<string> names)
+        {
+            if (source == null) return;
+            using var serialized = new SerializedObject(source);
+            var property = serialized.GetIterator();
+            while (property.Next(true))
+                if (property.propertyType == SerializedPropertyType.String && !string.IsNullOrWhiteSpace(property.stringValue))
+                    names.Add(property.stringValue);
+        }
+
+        public static string AllocateParameterName(string prefix, ISet<string> reserved)
+        {
+            var name = prefix;
+            var suffix = 1;
+            while (reserved.Contains(name) || AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(name))
+                name = prefix + "_" + suffix++;
+            reserved.Add(name);
+            return name;
+        }
+
+        public static bool IsFiniteOrderedAxis(IReadOnlyList<float> axis)
+        {
+            if (axis == null || axis.Count == 0 || axis.Count > 4096)
+                return false;
+            for (var index = 0; index < axis.Count; index++)
+                if (!AnimatorOptimizerAnalyzer.IsFinite(axis[index]) || index > 0 && axis[index] <= axis[index - 1])
+                    return false;
+            return AnimatorOptimizerAnalyzer.IsFinite(axis[axis.Count - 1] - axis[0]);
+        }
+
+        // Evaluate a generated finite table, not the original transitions. Another
+        // layer may add a sample inside one of its intervals. Such an interval is
+        // constant only if every bracketing corner has the same observable output.
+        // Nearest-neighbour lookup alone would silently turn interpolation into a step.
+        public static bool TryEvaluateConstantTable<T>(IReadOnlyList<IReadOnlyList<float>> axes,
+            IReadOnlyList<float> inputs, IReadOnlyDictionary<int, T> table, Func<T, T, bool> equivalent,
+            out T result) where T : class
+        {
+            result = null;
+            if (axes == null || inputs == null || table == null || equivalent == null || axes.Count != inputs.Count)
+                return false;
+            var keys = new List<int> { 0 };
+            var stride = 1;
+            for (var dimension = 0; dimension < axes.Count; dimension++)
+            {
+                var axis = axes[dimension];
+                var value = inputs[dimension];
+                if (!IsFiniteOrderedAxis(axis) || !AnimatorOptimizerAnalyzer.IsFinite(value) || stride > 4096 / axis.Count)
+                    return false;
+                var low = 0;
+                var high = axis.Count - 1;
+                if (value <= axis[low]) high = low;
+                else if (value >= axis[high]) low = high;
+                else
+                {
+                    while (high - low > 1)
+                    {
+                        var middle = low + (high - low) / 2;
+                        if (axis[middle] <= value) low = middle;
+                        else high = middle;
+                    }
+                    if (axis[low] == value) high = low;
+                }
+                var count = keys.Count;
+                for (var index = 0; index < count; index++)
+                {
+                    var key = keys[index];
+                    keys[index] = key + low * stride;
+                    if (high != low) keys.Add(key + high * stride);
+                }
+                stride *= axis.Count;
+            }
+            foreach (var key in keys)
+            {
+                if (!table.TryGetValue(key, out var candidate) || candidate == null)
+                    return false;
+                if (result == null) result = candidate;
+                else if (!equivalent(result, candidate)) return false;
+            }
+            return result != null;
+        }
+
+        // Keep both ends of each constant run. In particular never remove either
+        // endpoint of a strict Float step (threshold and its immediate neighbour).
+        public static List<int> RetainRunEndpoints(IReadOnlyList<string> signatures)
+        {
+            var retained = new List<int>();
+            for (var index = 0; index < signatures.Count; index++)
+                if (index == 0 || index == signatures.Count - 1 || signatures[index] == null ||
+                    signatures[index - 1] != signatures[index] || signatures[index] != signatures[index + 1])
+                    retained.Add(index);
+            return retained;
+        }
+
+        public static string DecisionNodeKey(string parameter, IEnumerable<float> values, IEnumerable<string> children) =>
+            "decision:" + AnimatorOptimizerSynchronizedGraph.Atom(parameter) +
+            AnimatorOptimizerSynchronizedGraph.Atom(string.Join(",", values.Select(value => value.ToString("R", CultureInfo.InvariantCulture)))) +
+            string.Concat(children.Select(AnimatorOptimizerSynchronizedGraph.Atom));
+
+        // No IEEE-754 single lies between a number and its immediate neighbour.
+        // Keep equality separately: >t and <t are not complements. Denormal and
+        // overflow edges are excluded to avoid platform flush-to-zero differences.
+        // This proves finite Float inputs, not arbitrary NaN parameter values.
+        public static bool TryAddFloatConditionSamples(float threshold, bool allowApproximation,
+            float epsilon, ISet<float> samples, out bool approximate)
+        {
+            approximate = false;
+            if (!AnimatorOptimizerAnalyzer.IsFinite(threshold)) return false;
+            var bits = BitConverter.SingleToInt32Bits(threshold);
+            var lower = threshold == 0f ? 0f : BitConverter.Int32BitsToSingle(unchecked(bits + (threshold > 0f ? -1 : 1)));
+            var upper = threshold == 0f ? 0f : BitConverter.Int32BitsToSingle(unchecked(bits + (threshold > 0f ? 1 : -1)));
+            const float minNormal = 1.17549435E-38f;
+            if (threshold != 0f && AnimatorOptimizerAnalyzer.IsFinite(lower) &&
+                AnimatorOptimizerAnalyzer.IsFinite(upper) && lower < threshold && upper > threshold &&
+                Math.Abs(lower) >= minNormal && Math.Abs(upper) >= minNormal &&
+                threshold - lower >= minNormal && upper - threshold >= minNormal)
+            {
+                samples.Add(lower);
+                samples.Add(threshold);
+                samples.Add(upper);
+                // Unity interpolation subtracts neighbouring thresholds as floats;
+                // a span that overflows could produce NaN even with equal outputs.
+                return samples.Count <= 4096 && AnimatorOptimizerAnalyzer.IsFinite(samples.Max() - samples.Min());
+            }
+            if (!allowApproximation ||
+                !AnimatorOptimizerAnalyzer.IsFloatNeighborhoodRepresentable(threshold, epsilon)) return false;
+            approximate = true;
+            samples.Add(threshold - epsilon);
+            samples.Add(threshold);
+            samples.Add(threshold + epsilon);
+            return samples.Count <= 4096 && AnimatorOptimizerAnalyzer.IsFinite(samples.Max() - samples.Min());
+        }
+
+        // Prove local contradictions only. Unknown declarations, Trigger semantics and
+        // malformed thresholds never become evidence for deleting a transition.
+        public static bool ConditionsMayBeReachable(
+            IEnumerable<AnimatorCondition> conditions,
+            Func<string, AnimatorControllerParameterType?> parameterType)
+        {
+            if (conditions == null || parameterType == null) return true;
+            var source = conditions.Take(65).ToArray();
+            if (source.Length > 64) return true;
+            var types = new Dictionary<string, AnimatorControllerParameterType>(StringComparer.Ordinal);
+            // Validate the ENTIRE conjunction first: a contradiction on X must
+            // not erase a Trigger/unknown condition on Y later in the list.
+            foreach (var condition in source)
+            {
+                if (string.IsNullOrWhiteSpace(condition.parameter)) return true;
+                if (!types.TryGetValue(condition.parameter, out var type))
+                {
+                    var resolved = parameterType(condition.parameter);
+                    if (!resolved.HasValue) return true;
+                    type = resolved.Value;
+                    types.Add(condition.parameter, type);
+                }
+                if (!AnimatorOptimizerFiniteGraph.IsUsable(condition, type)) return true;
+            }
+            foreach (var group in source.GroupBy(condition => condition.parameter, StringComparer.Ordinal))
+            {
+                var type = types[group.Key];
+                var list = group.ToList();
+                if (type == AnimatorControllerParameterType.Bool)
+                {
+                    if (!list.All(condition => AnimatorOptimizerFiniteGraph.Matches(condition, 0f)) &&
+                        !list.All(condition => AnimatorOptimizerFiniteGraph.Matches(condition, 1f))) return false;
+                    continue;
+                }
+                if (type != AnimatorControllerParameterType.Int && type != AnimatorControllerParameterType.Float)
+                    continue;
+                if (list.Any(condition => !AnimatorOptimizerAnalyzer.IsFinite(condition.threshold) ||
+                    condition.mode != AnimatorConditionMode.Greater && condition.mode != AnimatorConditionMode.Less &&
+                    condition.mode != AnimatorConditionMode.Equals && condition.mode != AnimatorConditionMode.NotEqual))
+                    continue;
+                var integer = type == AnimatorControllerParameterType.Int;
+                if (integer && list.Any(condition => condition.threshold != Mathf.Round(condition.threshold) ||
+                    Math.Abs((double)condition.threshold) > 16777214d))
+                    continue;
+                var lower = integer ? (double)int.MinValue : double.NegativeInfinity;
+                var upper = integer ? (double)int.MaxValue : double.PositiveInfinity;
+                double? equal = null;
+                var excluded = new HashSet<double>();
+                foreach (var condition in list)
+                {
+                    var value = (double)condition.threshold;
+                    switch (condition.mode)
+                    {
+                        case AnimatorConditionMode.Equals:
+                            if (equal.HasValue && equal.Value != value) return false;
+                            equal = value;
+                            break;
+                        case AnimatorConditionMode.NotEqual: excluded.Add(value); break;
+                        case AnimatorConditionMode.Greater: lower = Math.Max(lower, value + (integer ? 1d : 0d)); break;
+                        case AnimatorConditionMode.Less: upper = Math.Min(upper, value - (integer ? 1d : 0d)); break;
+                    }
+                }
+                if (integer ? lower > upper : lower >= upper) return false;
+                if (equal.HasValue)
+                {
+                    var value = equal.Value;
+                    if (excluded.Contains(value) || (integer ? value < lower || value > upper : value <= lower || value >= upper))
+                        return false;
+                }
+                else if (integer && upper - lower + 1 <= excluded.Count &&
+                    excluded.Count(value => value >= lower && value <= upper) == upper - lower + 1)
+                    return false;
+            }
+            return true;
+        }
+
+        // Trigger conditions consume/reset parameter state when a transition fires.
+        // Equality of output curves cannot prove that deleting that transition is safe.
+        public static bool AreReadOnlyConditions(IEnumerable<AnimatorCondition> conditions,
+            Func<string, AnimatorControllerParameterType?> resolveType)
+        {
+            if (conditions == null || resolveType == null) return false;
+            return conditions.All(condition =>
+            {
+                if (string.IsNullOrWhiteSpace(condition.parameter)) return false;
+                var type = resolveType(condition.parameter);
+                return type == AnimatorControllerParameterType.Bool || type == AnimatorControllerParameterType.Int ||
+                    type == AnimatorControllerParameterType.Float;
+            });
+        }
+
+        public static bool HasInspectableBindings(AnimationClip clip) => clip != null &&
+            !clip.humanMotion && !clip.hasRootCurves && !clip.hasMotionCurves && !clip.hasGenericRootTransform &&
+            !AnimatorOptimizerMotionUtility.IsPotentialProxyClip(clip);
+
+        public static bool IsOrdinaryClip(AnimationClip clip)
+        {
+            return HasInspectableBindings(clip) && !clip.legacy && clip.events.Length == 0;
+        }
+
+        public static bool IsRotationBinding(EditorCurveBinding binding) => binding.type == typeof(Transform) &&
+            (binding.propertyName?.StartsWith("m_LocalRotation.", StringComparison.Ordinal) == true ||
+             binding.propertyName?.StartsWith("localEulerAngles", StringComparison.Ordinal) == true ||
+             binding.propertyName?.StartsWith("m_LocalEulerAngles", StringComparison.Ordinal) == true);
+
+        public static bool IsFiniteCurveData(AnimationCurve curve)
+        {
+            if (curve == null) return false;
+            var keys = curve.keys;
+            for (var index = 0; index < keys.Length; index++)
+            {
+                var key = keys[index];
+                if (!AnimatorOptimizerAnalyzer.IsFinite(key.time) || !AnimatorOptimizerAnalyzer.IsFinite(key.value) ||
+                    float.IsNaN(key.inTangent) || float.IsNaN(key.outTangent) ||
+                    index > 0 && keys[index - 1].time >= key.time ||
+                    (key.weightedMode & WeightedMode.In) != 0 &&
+                        (!AnimatorOptimizerAnalyzer.IsFinite(key.inWeight) || key.inWeight < 0f || key.inWeight > 1f) ||
+                    (key.weightedMode & WeightedMode.Out) != 0 &&
+                        (!AnimatorOptimizerAnalyzer.IsFinite(key.outWeight) || key.outWeight < 0f || key.outWeight > 1f)) return false;
+            }
+            return keys.Length < 2 || AnimatorOptimizerAnalyzer.IsFinite(keys[keys.Length - 1].time - keys[0].time);
+        }
+
+        public static bool TryGetHighQualityCurves(AnimationClip clip, out bool value)
+        {
+            value = false;
+            if (clip == null) return false;
+            try
+            {
+                using var serialized = new SerializedObject(clip);
+                var property = serialized.FindProperty("m_UseHighQualityCurve");
+                if (property == null) return false;
+                value = property.boolValue;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        public static bool IsConstantCurve(AnimationCurve curve)
+        {
+            if (curve == null || curve.length == 0)
+                return true;
+            var keys = curve.keys;
+            var value = keys[0].value;
+            for (var index = 0; index < keys.Length; index++)
+            {
+                var key = keys[index];
+                if (!AnimatorOptimizerAnalyzer.IsFinite(key.time) || !AnimatorOptimizerAnalyzer.IsFinite(key.value) ||
+                    key.value != value)
+                    return false;
+                if (index == 0)
+                    continue; // A single-key curve is constant; unused outer tangents are irrelevant.
+                var previous = keys[index - 1];
+                if (previous.time >= key.time || float.IsNaN(previous.outTangent) || float.IsNaN(key.inTangent))
+                    return false;
+                // Unity's constant/stepped segments use infinite tangents. Equal endpoints
+                // stay constant; otherwise prove a flat Hermite/Bezier segment analytically.
+                if (float.IsInfinity(previous.outTangent) || float.IsInfinity(key.inTangent))
+                    continue;
+                if (previous.outTangent != 0f || key.inTangent != 0f)
+                    return false;
+                if ((previous.weightedMode & WeightedMode.Out) != 0 &&
+                    (!AnimatorOptimizerAnalyzer.IsFinite(previous.outWeight) || previous.outWeight < 0f || previous.outWeight > 1f) ||
+                    (key.weightedMode & WeightedMode.In) != 0 &&
+                    (!AnimatorOptimizerAnalyzer.IsFinite(key.inWeight) || key.inWeight < 0f || key.inWeight > 1f))
+                    return false;
+            }
+            return true;
+        }
+
+        public static bool IsConstantObjectCurve(ObjectReferenceKeyframe[] curve)
+        {
+            if (curve == null || curve.Length == 0)
+                return true;
+            if (curve[0].time != 0f)
+                return false;
+            for (var index = 0; index < curve.Length; index++)
+                if (!AnimatorOptimizerAnalyzer.IsFinite(curve[index].time) || curve[index].value != curve[0].value ||
+                    index > 0 && curve[index].time <= curve[index - 1].time)
+                    return false;
+            return true;
         }
     }
 
@@ -3025,6 +3842,33 @@ namespace UnityBox.AnimatorOptimizer
     /// </summary>
     internal static class AnimatorOptimizerMotionUtility
     {
+        public static bool IsAcyclic(Motion motion)
+        {
+            return IsAcyclic(motion, new HashSet<int>(), new HashSet<int>());
+        }
+
+        private static bool IsAcyclic(Motion motion, ISet<int> active, ISet<int> done)
+        {
+            if (motion == null || done.Contains(motion.GetInstanceID()))
+                return true;
+            if (active.Count >= 128 || !active.Add(motion.GetInstanceID()))
+                return false;
+            if (motion is BlendTree tree)
+            {
+                foreach (var child in tree.children)
+                    if (!AnimatorOptimizerAnalyzer.IsFinite(child.timeScale) || !AnimatorOptimizerAnalyzer.IsFinite(child.cycleOffset) ||
+                        !AnimatorOptimizerAnalyzer.IsFinite(child.threshold) ||
+                        !AnimatorOptimizerAnalyzer.IsFinite(child.position.x) || !AnimatorOptimizerAnalyzer.IsFinite(child.position.y) ||
+                        !IsAcyclic(child.motion, active, done))
+                        return false;
+            }
+            else if (!(motion is AnimationClip))
+                return false;
+            active.Remove(motion.GetInstanceID());
+            done.Add(motion.GetInstanceID());
+            return true;
+        }
+
         public static bool IsPotentialProxyClip(AnimationClip clip)
         {
             return clip != null && clip.name != null &&
@@ -3033,6 +3877,8 @@ namespace UnityBox.AnimatorOptimizer
 
         public static AnimatorOptimizerMotionInfo Analyze(Motion motion)
         {
+            if (!IsAcyclic(motion))
+                return new AnimatorOptimizerMotionInfo { Motion = motion, Shape = AnimatorOptimizerMotionShape.Unsupported };
             var info = new AnimatorOptimizerMotionInfo
             {
                 Motion = motion,
@@ -3054,21 +3900,55 @@ namespace UnityBox.AnimatorOptimizer
 
         public static bool IsTimeIndependent(Motion motion)
         {
-            if (motion == null)
+            return IsAcyclic(motion) && IsTimeIndependentCore(motion);
+        }
+
+        // Restrict mirror elimination to property-only clips. Bone/Animator bindings,
+        // imported humanoid/root motion and unknown motions are deliberately excluded.
+        public static bool IsPropertyOnly(Motion motion)
+        {
+            if (!IsAcyclic(motion))
                 return false;
+            var pending = new Stack<Motion>();
+            var visited = new HashSet<Motion>();
+            if (motion != null) pending.Push(motion);
+            while (pending.Count > 0)
+            {
+                var current = pending.Pop();
+                if (!visited.Add(current)) continue;
+                if (current is AnimationClip clip)
+                {
+                    if (!AnimatorOptimizerSemanticUtility.IsOrdinaryClip(clip) ||
+                        AnimationUtility.GetAnimationClipSettings(clip).hasAdditiveReferencePose ||
+                        AnimationUtility.GetAnimationClipSettings(clip).additiveReferencePoseClip != null ||
+                        AnimationUtility.GetCurveBindings(clip).Concat(AnimationUtility.GetObjectReferenceCurveBindings(clip))
+                            .Any(binding => binding.type == typeof(Animator) || binding.type == typeof(Transform)))
+                        return false;
+                }
+                else if (current is BlendTree tree)
+                    foreach (var child in tree.children)
+                        if (child.motion != null) pending.Push(child.motion);
+            }
+            return true;
+        }
+
+        private static bool IsTimeIndependentCore(Motion motion)
+        {
+            if (motion == null)
+                return true;
             if (motion is AnimationClip clip)
                 return IsTimeIndependentClip(clip);
             if (motion is BlendTree tree)
             {
                 return (tree.children ?? Array.Empty<ChildMotion>()).All(child =>
-                    child.motion != null && IsTimeIndependent(child.motion));
+                    child.motion != null && IsTimeIndependentCore(child.motion));
             }
             return false;
         }
 
         public static bool IsStaticClip(AnimationClip clip)
         {
-            if (clip == null || IsPotentialProxyClip(clip) || (clip.events != null && clip.events.Length > 0))
+            if (!AnimatorOptimizerSemanticUtility.IsOrdinaryClip(clip))
                 return false;
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null)
@@ -3077,26 +3957,30 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var binding in AnimationUtility.GetCurveBindings(clip))
             {
                 var curve = AnimationUtility.GetEditorCurve(clip, binding);
-                if (!IsConstantCurve(curve))
+                if (binding.type == typeof(Animator) || !IsConstantCurve(curve))
                     return false;
             }
             foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
             {
                 var curve = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-                if (curve == null || curve.Length == 0)
-                    continue;
-                var firstValue = curve[0].value;
-                if (curve.Any(key => key.value != firstValue))
+                if (binding.type == typeof(Animator) || !IsConstantObjectReferenceCurve(curve))
                     return false;
             }
             return true;
         }
 
+        private static bool IsConstantObjectReferenceCurve(ObjectReferenceKeyframe[] curve)
+        {
+            return AnimatorOptimizerSemanticUtility.IsConstantObjectCurve(curve);
+        }
+
         public static bool TryNormalizeSingletonTree(Motion motion, out Motion normalized)
         {
             normalized = motion;
+            if (!IsAcyclic(motion))
+                return false;
             var changed = false;
-            while (normalized is BlendTree tree && TryGetSafeSingletonChild(tree, out var child))
+            while (normalized is BlendTree tree && TryGetSafeSingletonChild(tree, out var child, allowStaticSettings: true))
             {
                 normalized = child.motion;
                 changed = true;
@@ -3104,55 +3988,44 @@ namespace UnityBox.AnimatorOptimizer
             return changed;
         }
 
-        public static bool TryGetSafeSingletonChild(BlendTree tree, out ChildMotion child)
+        public static bool TryGetSafeSingletonChild(BlendTree tree, out ChildMotion child, bool allowStaticSettings = false)
         {
             child = default;
             if (tree == null || tree.children == null || tree.children.Length != 1)
                 return false;
             child = tree.children[0];
-            if (child.motion == null || !Mathf.Approximately(child.timeScale, 1f) ||
-                !Mathf.Approximately(child.cycleOffset, 0f) || child.mirror)
+            if (child.motion == null ||
+                (child.timeScale != 1f || child.cycleOffset != 0f) &&
+                    (!allowStaticSettings || !IsTimeIndependent(child.motion)) ||
+                child.mirror && (!allowStaticSettings || !IsPropertyOnly(child.motion)))
                 return false;
-            // An explicit Direct weight is variable and cannot be discarded.
-            if (tree.blendType == BlendTreeType.Direct &&
-                !string.IsNullOrWhiteSpace(child.directBlendParameter))
+            // Missing Direct weight parameters do not imply a weight of one.
+            if (tree.blendType != BlendTreeType.Simple1D)
                 return false;
             return true;
         }
 
         public static int CountNodes(Motion motion)
         {
-            if (motion == null)
-                return 0;
-            if (motion is BlendTree tree)
-                return 1 + (tree.children ?? Array.Empty<ChildMotion>()).Sum(child => CountNodes(child.motion));
-            return 1;
+            var visited = new HashSet<Motion>();
+            var pending = new Stack<Motion>();
+            if (motion != null)
+                pending.Push(motion);
+            while (pending.Count > 0)
+            {
+                var current = pending.Pop();
+                if (!visited.Add(current) || current is not BlendTree tree)
+                    continue;
+                foreach (var child in tree.children)
+                    if (child.motion != null)
+                        pending.Push(child.motion);
+            }
+            return visited.Count;
         }
 
         private static bool IsTimeIndependentClip(AnimationClip clip)
         {
-            if (clip == null || IsPotentialProxyClip(clip) || (clip.events != null && clip.events.Length > 0))
-                return false;
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            if (settings.hasAdditiveReferencePose || settings.additiveReferencePoseClip != null)
-                return false;
-            foreach (var binding in AnimationUtility.GetCurveBindings(clip))
-            {
-                var curve = AnimationUtility.GetEditorCurve(clip, binding);
-                if (!IsConstantCurve(curve))
-                    return false;
-            }
-            foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
-            {
-                var curve = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-                if (curve != null && curve.Length > 1)
-                {
-                    var first = curve[0].value;
-                    if (curve.Any(key => key.value != first))
-                        return false;
-                }
-            }
-            return true;
+            return IsStaticClip(clip);
         }
 
         private static void AnalyzeInto(
@@ -3193,12 +4066,13 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             info.Shape = AnimatorOptimizerMotionShape.BlendTree;
-            if (!string.IsNullOrWhiteSpace(tree.blendParameter))
+            if (tree.blendType != BlendTreeType.Direct && !string.IsNullOrWhiteSpace(tree.blendParameter))
             {
                 info.HasParameterDrivenBlend = true;
                 info.BlendParameters.Add(tree.blendParameter);
             }
-            if (!string.IsNullOrWhiteSpace(tree.blendParameterY))
+            if (tree.blendType != BlendTreeType.Direct && tree.blendType != BlendTreeType.Simple1D &&
+                !string.IsNullOrWhiteSpace(tree.blendParameterY))
             {
                 info.HasParameterDrivenBlend = true;
                 info.BlendParameters.Add(tree.blendParameterY);
@@ -3209,6 +4083,11 @@ namespace UnityBox.AnimatorOptimizer
             info.IsStatic = children.Length > 0;
             foreach (var child in children)
             {
+                if (tree.blendType == BlendTreeType.Direct && !string.IsNullOrWhiteSpace(child.directBlendParameter))
+                {
+                    info.HasParameterDrivenBlend = true;
+                    info.BlendParameters.Add(child.directBlendParameter);
+                }
                 var childInfo = Analyze(child.motion);
                 info.IsTimeIndependent &= childInfo.IsTimeIndependent;
                 info.IsStatic &= childInfo.IsStatic;
@@ -3231,25 +4110,7 @@ namespace UnityBox.AnimatorOptimizer
 
         private static bool IsConstantCurve(AnimationCurve curve)
         {
-            if (curve == null || curve.keys.Length == 0)
-                return true;
-            var keys = curve.keys;
-            var value = keys[0].value;
-            for (var index = 0; index < keys.Length; index++)
-            {
-                var key = keys[index];
-                if (!Mathf.Approximately(key.value, value) ||
-                    !Mathf.Approximately(key.inTangent, 0f) ||
-                    !Mathf.Approximately(key.outTangent, 0f))
-                    return false;
-                if (index > 0)
-                {
-                    var midpoint = (keys[index - 1].time + key.time) * 0.5f;
-                    if (!Mathf.Approximately(curve.Evaluate(midpoint), value))
-                        return false;
-                }
-            }
-            return true;
+            return AnimatorOptimizerSemanticUtility.IsConstantCurve(curve);
         }
 
         private static string BuildStructuralKey(Motion motion, HashSet<int> active)
@@ -3257,7 +4118,7 @@ namespace UnityBox.AnimatorOptimizer
             if (motion == null)
                 return "null";
             var instanceId = motion.GetInstanceID();
-            if (!active.Add(instanceId))
+            if (active.Count >= 128 || !active.Add(instanceId))
                 return "cycle:" + instanceId.ToString(CultureInfo.InvariantCulture);
             if (motion is AnimationClip clip)
             {
@@ -3267,7 +4128,7 @@ namespace UnityBox.AnimatorOptimizer
             if (!(motion is BlendTree tree))
             {
                 active.Remove(instanceId);
-                return "unsupported:" + motion.GetType().FullName;
+                return "unsupported:" + instanceId.ToString(CultureInfo.InvariantCulture);
             }
             if (TryGetSafeSingletonChild(tree, out var singleton))
             {
@@ -3276,7 +4137,7 @@ namespace UnityBox.AnimatorOptimizer
                 return singletonKey;
             }
 
-            var key = string.Join("|", new[]
+            var key = string.Concat(new[]
             {
                 "tree",
                 tree.blendType.ToString(),
@@ -3286,8 +4147,8 @@ namespace UnityBox.AnimatorOptimizer
                 tree.maxThreshold.ToString("R", CultureInfo.InvariantCulture),
                 tree.useAutomaticThresholds.ToString(),
                 GetNormalizedBlendValuesKey(tree),
-                string.Join(";", (tree.children ?? Array.Empty<ChildMotion>()).Select(child =>
-                    string.Join(",", new[]
+                string.Concat((tree.children ?? Array.Empty<ChildMotion>()).Select(child =>
+                    string.Concat(new[]
                     {
                         BuildStructuralKey(child.motion, active),
                         child.threshold.ToString("R", CultureInfo.InvariantCulture),
@@ -3297,8 +4158,8 @@ namespace UnityBox.AnimatorOptimizer
                         child.directBlendParameter ?? string.Empty,
                         child.position.x.ToString("R", CultureInfo.InvariantCulture),
                         child.position.y.ToString("R", CultureInfo.InvariantCulture),
-                    })))
-            });
+                        }.Select(AnimatorOptimizerSynchronizedGraph.Atom))))
+                    }.Select(AnimatorOptimizerSynchronizedGraph.Atom));
             active.Remove(instanceId);
             return key;
         }
@@ -3311,11 +4172,11 @@ namespace UnityBox.AnimatorOptimizer
             {
                 var serializedObject = new SerializedObject(tree);
                 var property = serializedObject.FindProperty("m_NormalizedBlendValues");
-                return "normalized:" + (property == null || property.boolValue);
+                return property == null ? "normalized:unknown:" + tree.GetInstanceID() : "normalized:" + property.boolValue;
             }
             catch
             {
-                return "normalized:unknown";
+                return "normalized:unknown:" + tree.GetInstanceID();
             }
         }
 
@@ -3323,18 +4184,20 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (clip == null)
                 return "clip:null";
+            // Imported humanoid/root data is not fully represented by editor curves.
+            // Equality of those curves cannot prove equality of the imported clip.
+            if (!AnimatorOptimizerSemanticUtility.IsOrdinaryClip(clip))
+                return "clip:opaque:" + clip.GetInstanceID().ToString(CultureInfo.InvariantCulture);
 
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            if (!AnimatorOptimizerSemanticUtility.TryGetHighQualityCurves(clip, out var highQualityCurves))
+                return "clip:opaque:" + clip.GetInstanceID().ToString(CultureInfo.InvariantCulture);
             var floatCurves = AnimationUtility.GetCurveBindings(clip)
-                .OrderBy(binding => binding.path, StringComparer.Ordinal)
-                .ThenBy(binding => binding.type == null ? string.Empty : binding.type.FullName, StringComparer.Ordinal)
-                .ThenBy(binding => binding.propertyName, StringComparer.Ordinal)
+                .OrderBy(BindingKeyText, StringComparer.Ordinal)
                 .Select(binding => "f:" + BindingKeyText(binding) + ":" +
                     CurveKeyText(AnimationUtility.GetEditorCurve(clip, binding)));
             var objectCurves = AnimationUtility.GetObjectReferenceCurveBindings(clip)
-                .OrderBy(binding => binding.path, StringComparer.Ordinal)
-                .ThenBy(binding => binding.type == null ? string.Empty : binding.type.FullName, StringComparer.Ordinal)
-                .ThenBy(binding => binding.propertyName, StringComparer.Ordinal)
+                .OrderBy(BindingKeyText, StringComparer.Ordinal)
                 .Select(binding => "o:" + BindingKeyText(binding) + ":" +
                     ObjectCurveKeyText(AnimationUtility.GetObjectReferenceCurve(clip, binding)));
             var events = (clip.events ?? Array.Empty<AnimationEvent>())
@@ -3350,8 +4213,13 @@ namespace UnityBox.AnimatorOptimizer
                         : animationEvent.objectReferenceParameter.GetInstanceID().ToString(CultureInfo.InvariantCulture),
                 }));
 
-            return "clip|" + clip.legacy + "|" + clip.frameRate.ToString("R", CultureInfo.InvariantCulture) +
+                 return "clip|" + clip.legacy + "|hq:" + highQualityCurves + "|" +
+                     clip.frameRate.ToString("R", CultureInfo.InvariantCulture) +
                    "|" + clip.wrapMode + "|" + settings.loopTime + "|" + settings.loopBlend +
+                     "|" + settings.loopBlendOrientation + "|" + settings.loopBlendPositionY +
+                     "|" + settings.loopBlendPositionXZ + "|" + settings.keepOriginalOrientation +
+                     "|" + settings.keepOriginalPositionY + "|" + settings.keepOriginalPositionXZ +
+                     "|" + settings.heightFromFeet +
                    "|" + settings.hasAdditiveReferencePose +
                    "|" + settings.additiveReferencePoseTime.ToString("R", CultureInfo.InvariantCulture) +
                    "|" + (settings.additiveReferencePoseClip == null
@@ -3359,19 +4227,22 @@ namespace UnityBox.AnimatorOptimizer
                        : settings.additiveReferencePoseClip.GetInstanceID().ToString(CultureInfo.InvariantCulture)) +
                    "|" + settings.startTime.ToString("R", CultureInfo.InvariantCulture) +
                    "|" + settings.stopTime.ToString("R", CultureInfo.InvariantCulture) +
-                   "|" + string.Join(";", floatCurves.Concat(objectCurves)) +
+                   "|" + settings.orientationOffsetY.ToString("R", CultureInfo.InvariantCulture) +
+                   "|" + settings.level.ToString("R", CultureInfo.InvariantCulture) +
+                   "|" + settings.cycleOffset.ToString("R", CultureInfo.InvariantCulture) +
+                   "|bounds:" + clip.localBounds.center.x.ToString("R", CultureInfo.InvariantCulture) +
+                   "," + clip.localBounds.center.y.ToString("R", CultureInfo.InvariantCulture) +
+                   "," + clip.localBounds.center.z.ToString("R", CultureInfo.InvariantCulture) +
+                   "," + clip.localBounds.extents.x.ToString("R", CultureInfo.InvariantCulture) +
+                   "," + clip.localBounds.extents.y.ToString("R", CultureInfo.InvariantCulture) +
+                   "," + clip.localBounds.extents.z.ToString("R", CultureInfo.InvariantCulture) +
+                   "|" + string.Concat(floatCurves.Concat(objectCurves).Select(AnimatorOptimizerSynchronizedGraph.Atom)) +
                    "|events:" + string.Join(";", events);
         }
 
         private static string BindingKeyText(EditorCurveBinding binding)
         {
-            return string.Join("/", new[]
-            {
-                binding.path ?? string.Empty,
-                binding.type == null ? string.Empty : binding.type.FullName ?? binding.type.Name,
-                binding.propertyName ?? string.Empty,
-                binding.isPPtrCurve.ToString(),
-            });
+            return AnimatorOptimizerSynchronizedGraph.BindingKey(binding);
         }
 
         private static string CurveKeyText(AnimationCurve curve)

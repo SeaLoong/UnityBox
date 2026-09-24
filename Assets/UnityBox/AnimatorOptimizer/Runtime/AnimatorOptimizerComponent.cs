@@ -30,6 +30,32 @@ namespace UnityBox.AnimatorOptimizer
             IKPose,
         }
 
+        public enum WriteDefaultsPolicy
+        {
+            [InspectorName("严格：仅 WD On")]
+            Strict,
+            [InspectorName("自动：保证覆盖的 WD Off")]
+            AllowCoveredStates,
+            [InspectorName("放宽：视为 WD On（可能改变效果）")]
+            TreatAsWriteDefaultsOn,
+        }
+
+        [Flags]
+        public enum HeuristicFlags
+        {
+            None = 0,
+            [InspectorName("Float 开关假定为 0/1")]
+            BinaryFloatToggles = 1,
+            [InspectorName("短动画取播放端点")]
+            ShortAnimationEndpoints = 2,
+            [InspectorName("Motion Time 采样树")]
+            SampleMotionTime = 4,
+            [InspectorName("双态返回条件按补集补齐")]
+            ComplementaryToggle = 8,
+            [InspectorName("稳定输入下消除中间状态")]
+            StableInputConvergence = 16,
+        }
+
         [Tooltip("要优化 Avatar 的哪个 Animator Controller。默认处理 Avatar Descriptor 的 FX 层。")]
         public TargetMode targetMode = TargetMode.AvatarPlayableLayer;
 
@@ -54,8 +80,28 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("把本地 Animator Int 参数改为 Float。VRChat Int Expression 参数会以整数值映射到本地 Float。")]
         public bool upgradeIntParametersToFloat = true;
 
-        [Tooltip("允许用 BlendTree 近似 Float Transition 的阶跃条件。关闭时，Float 条件会保留原 Layer。")]
+        [Tooltip("Float 条件默认优先用相邻可表示值构造精确阶跃；此选项仅允许不支持的零/极端阈值回退到近似。存在状态历史的图仍需单独证明。")]
         public bool allowFloatConditionApproximation = false;
+
+        [Tooltip("默认只在每个分支保证覆盖 Controller 动画绑定时接受 WD Off。显式选择“视为 WD On”允许默认值回写变化，但不会绕过 Behaviour/AAP 等检查。")]
+        public WriteDefaultsPolicy writeDefaultsPolicy = WriteDefaultsPolicy.AllowCoveredStates;
+
+        [Tooltip("忽略静态 Motion 之间 Transition 的 Exit Time / Duration / Offset。开启后这些切换会变为瞬时，不再有过渡淡入淡出。")]
+        public bool ignoreTransitionTimingForStaticMotions = false;
+
+        [Tooltip("可选启发式，不是完整等价证明。实用预设适合常见 0/1 开关和短动画；激进预设还允许 Motion Time 采样、补齐双态返回条件及提前收敛。实际采用的假设会逐层报告。")]
+        public HeuristicFlags heuristics = HeuristicFlags.None;
+
+        [Range(1, 10)]
+        [Tooltip("短动画端点化同时要求帧数和实际播放秒数不超过限制；循环、骨骼、AAP、事件动画不参与。")]
+        public int shortAnimationMaxFrames = 5;
+
+        [Range(0.01f, 0.25f)]
+        public float shortAnimationMaxSeconds = 0.1f;
+
+        [Range(2, 33)]
+        [Tooltip("Motion Time 使用这些均匀采样点，并补入原曲线关键时间（总计最多 65 点）。采样点之间为线性近似，不保证保留原缓动。")]
+        public int motionTimeSampleCount = 9;
 
         [Tooltip("严格阻止源 Layer 之间或与未合并 Layer 之间存在重复动画绑定。关闭可能改变原 Layer 覆盖优先级。")]
         public bool strictCurveConflicts = true;
@@ -66,14 +112,21 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("当 Layer 有重复曲线时，若输出是静态 Clip 且参数域有限，枚举输入并按原 Layer 顺序生成复合 Clip 来模拟 Override 优先级。")]
         public bool resolveOverridePriorityWithStaticComposite = true;
 
-        [Tooltip("实验性：用 AAP StateRegister 保留无时间 Bool 状态机的 State 历史，再用 1D BlendTree 输出 Motion。会为一个源 Layer 生成 AAP 更新层和输出层。")]
+        [Tooltip("合并相同 Entry/Exit/Transition 结构、互不重叠的静态属性层，保留原状态历史和 WD，不强制变成无状态树。可用于旧版 MA 的重复 Shape/Material 响应式层；AAP、NaN、骨骼和回调层保留。")]
+        public bool mergeSynchronizedStateMachines = true;
+
+        [Tooltip("实验性：用共享 AAP 决策图计算混合 Bool/Int/Float 条件、有序 Entry/AnyState 和状态保持。支持批量处理，每个源层生成更新/输出两层；反馈时序尚未进行 Unity 验证。")]
         public bool enableAapStateRegisterOptimization = false;
+
+        [Range(64, 16384)]
+        [Tooltip("AAP 共享条件节点上限，不是输入组合数上限；还有独立的运算与内存保护。仅影响实验性 AAP 转换。")]
+        public int maxAapDecisionNodes = 4096;
 
         [Tooltip("删除能证明没有可见动画输出的空 Layer；默认只删除非首层，并保留含 AAP/Behaviour 的 Layer。")]
         public bool removeEffectivelyEmptyLayers = true;
 
-        [Tooltip("把不同插件生成的、默认值为 1 且名称含 AlwaysOne 的安全常量参数统一用于 Direct BlendTree 权重。")]
-        public bool normalizeAlwaysOneParameters = true;
+        [Tooltip("显式假定名称含 AlwaysOne 且默认值为 1 的参数运行时恒为 1。名称和默认值无法排除外部写入；仅在确认此约定后开启，否则可能改变权重。")]
+        public bool normalizeAlwaysOneParameters = false;
 
         [Tooltip("尽量晚执行优化：NDMF 使用 PlatformFinish；无 NDMF 时在 VRCSDK/ASS 等高优先级 preprocess 之后执行。")]
         public bool executeLateOptimization = false;
@@ -103,12 +156,20 @@ namespace UnityBox.AnimatorOptimizer
             upgradeBoolParametersToFloat = true;
             upgradeIntParametersToFloat = true;
             allowFloatConditionApproximation = false;
+            writeDefaultsPolicy = WriteDefaultsPolicy.AllowCoveredStates;
+            ignoreTransitionTimingForStaticMotions = false;
+            heuristics = HeuristicFlags.None;
+            shortAnimationMaxFrames = 5;
+            shortAnimationMaxSeconds = 0.1f;
+            motionTimeSampleCount = 9;
             strictCurveConflicts = true;
             mergeLayersWithEquivalentMasks = true;
             resolveOverridePriorityWithStaticComposite = true;
+            mergeSynchronizedStateMachines = true;
             enableAapStateRegisterOptimization = false;
+            maxAapDecisionNodes = 4096;
             removeEffectivelyEmptyLayers = true;
-            normalizeAlwaysOneParameters = true;
+            normalizeAlwaysOneParameters = false;
             executeLateOptimization = false;
             preserveMmdCompatibility = false;
             maxPriorityCombinations = 4096;
@@ -131,10 +192,19 @@ namespace UnityBox.AnimatorOptimizer
                 layerIndices = new List<int>();
 
             maxPriorityCombinations = Mathf.Clamp(maxPriorityCombinations, 16, 4096);
+            maxAapDecisionNodes = Mathf.Clamp(maxAapDecisionNodes, 64, 16384);
+            heuristics &= (HeuristicFlags)31;
+            shortAnimationMaxFrames = Mathf.Clamp(shortAnimationMaxFrames, 1, 10);
+            shortAnimationMaxSeconds = float.IsNaN(shortAnimationMaxSeconds) || float.IsInfinity(shortAnimationMaxSeconds)
+                ? 0.1f : Mathf.Clamp(shortAnimationMaxSeconds, 0.01f, 0.25f);
+            motionTimeSampleCount = Mathf.Clamp(motionTimeSampleCount, 2, 33);
+            if (!Enum.IsDefined(typeof(WriteDefaultsPolicy), writeDefaultsPolicy))
+                writeDefaultsPolicy = WriteDefaultsPolicy.Strict;
 
+            var seen = new HashSet<int>();
             for (var index = layerIndices.Count - 1; index >= 0; index--)
             {
-                if (layerIndices[index] < 0)
+                if (layerIndices[index] < 0 || !seen.Add(layerIndices[index]))
                     layerIndices.RemoveAt(index);
             }
         }
