@@ -81,7 +81,10 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>服装对应的 Armature。存在时，生成会确保其具有 MA Merge Armature。</summary>
     public GameObject ArmatureObject { get; set; }
 
-    /// <summary>服装根对象（有变体时为更上层的组节点，无变体时等于 BaseObject）</summary>
+    /// <summary>
+    /// 服装组根对象（有变体时通常为更上层组节点，无变体时等于 BaseObject）。
+    /// 多个独立服装共用同一父容器时，扫描器会分别回退到各自 BaseObject。
+    /// </summary>
     public GameObject OutfitObject { get; set; }
 
     /// <summary>变体列表（同级的其他服装对象）</summary>

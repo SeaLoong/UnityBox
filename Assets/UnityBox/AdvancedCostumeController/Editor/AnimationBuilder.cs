@@ -315,7 +315,7 @@ namespace UnityBox.AdvancedCostumeController
         config.UseIndependentMixerPartParameters ? defaultChoice : null);
       if (!config.UseIndependentMixerPartParameters)
       {
-        foreach (var outfit in outfits.GroupBy(item => item.OutfitObject)
+        foreach (var outfit in outfits.GroupBy(item => item.BaseObject)
           .Select(group => group.First()))
         {
           var choices = outfit.GetAllObjects();
@@ -342,11 +342,11 @@ namespace UnityBox.AdvancedCostumeController
       bool hasNormalParts = outfits.Any(o => o.GetPartControls().Count > 0);
       bool hasIndependentMixerParts = config.EnableCustomMixer &&
         config.UseIndependentMixerPartParameters && outfits
-        .GroupBy(outfit => outfit.OutfitObject)
+        .GroupBy(outfit => outfit.BaseObject)
         .Any(group => group.First().GetMixerPartSlots().Count > 0);
       bool hasSharedMixerVariants = config.EnableCustomMixer &&
         !config.UseIndependentMixerPartParameters && outfits
-        .GroupBy(outfit => outfit.OutfitObject)
+        .GroupBy(outfit => outfit.BaseObject)
         .Any(group => group.First().GetAllObjects().Count > 1);
       if (!hasNormalParts && !hasIndependentMixerParts && !hasSharedMixerVariants) return;
 
@@ -453,10 +453,10 @@ namespace UnityBox.AdvancedCostumeController
         });
       }
 
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject) ||
+        if (!processedOutfitBases.Add(outfit.BaseObject) ||
             outfit.GetAllObjects().Count <= 1)
           continue;
 
@@ -623,10 +623,10 @@ namespace UnityBox.AdvancedCostumeController
       AssetDatabase.AddObjectToAsset(blendTree, controller);
 
       var children = new List<ChildMotion>();
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
         var slots = outfit.GetMixerPartSlots();
         if (slots.Count == 0) continue;
         var activationClip = CreateMixerOutfitActivationClip(outfit,
@@ -814,10 +814,10 @@ namespace UnityBox.AdvancedCostumeController
       if (!config.UseIndependentMixerPartParameters) return;
 
       // CustomMixer 各部件的独立参数
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
         foreach (var slot in outfit.GetMixerPartSlots())
         {
           string slotParamName = Mixer.BuildMixerSlotParamName(config, outfit, slot);
@@ -842,10 +842,10 @@ namespace UnityBox.AdvancedCostumeController
     {
       if (config.UseIndependentMixerPartParameters) return;
 
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
 
         var choices = outfit.GetAllObjects();
         if (choices.Count <= 1) continue;

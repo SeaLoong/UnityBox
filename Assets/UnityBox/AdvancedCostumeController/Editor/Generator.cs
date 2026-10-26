@@ -249,9 +249,19 @@ namespace UnityBox.AdvancedCostumeController
 
       var costumesRoot = config.CostumesRoot;
 
+      // 先占用所有 OutfitObject 的祖先路径，避免某个服装先生成的组菜单
+      // 被后续服装路径误当成目录复用（例如 Outfit B 与 Outfit C 的路径有前缀关系）。
       foreach (var outfit in outfits)
       {
-        var outfitPathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
+        var pathSegments = GetOutfitMenuPathSegments(costumesRoot, outfit, outfits);
+        Utils.EnsureSubmenuPathSegments(menuContentRoot,
+          pathSegments.Take(Math.Max(0, pathSegments.Count - 1)),
+          menuPresentation, Utils.OutfitPathSemanticKeyPrefix);
+      }
+
+      foreach (var outfit in outfits)
+      {
+        var outfitPathSegments = GetOutfitMenuPathSegments(costumesRoot, outfit, outfits);
         // 创建父级菜单路径
         GameObject parentMenu = Utils.EnsureSubmenuPathSegments(menuContentRoot,
           outfitPathSegments.Take(Math.Max(0, outfitPathSegments.Count - 1)),
@@ -271,7 +281,9 @@ namespace UnityBox.AdvancedCostumeController
         // 只有单个可选对象且没有部件控制时，才使用扁平菜单。
         if (hasControllableParts || hasMultipleChoices)
         {
-          var outfitSubmenu = Utils.FindOrCreateChild(parentMenu, outfitName);
+          // 该名称可能已被前面的预扫描保留为路径目录。服装组节点必须与目录节点
+          // 分开，不能把后续服装放进另一个服装的选择菜单。
+          var outfitSubmenu = Utils.FindOrCreateUniqueChild(parentMenu, outfitName);
           Utils.EnsureSubmenuOnNode(outfitSubmenu, presentation: menuPresentation);
 
           // 本体和变体开关
@@ -299,6 +311,40 @@ namespace UnityBox.AdvancedCostumeController
             outfitIndexMap, mainLayout, menuPresentation, costumesRoot);
         }
       }
+    }
+
+    /// <summary>
+    /// 创建不跨越其他服装组的菜单路径。
+    /// Scanner 在存在变体时通常将 OutfitObject 设为变体容器；多个 OutfitData
+    /// 共享该容器，或某个 OutfitObject 又是另一套服装的祖先时，直接按场景路径
+    /// 建菜单会把后者放进前者的服装菜单。此时以 BaseObject 作为路径起点，并
+    /// 从路径中剔除其他服装组节点，保持各服装菜单相互独立。
+    /// </summary>
+    internal static List<string> GetOutfitMenuPathSegments(
+      GameObject costumesRoot,
+      OutfitData outfit,
+      IEnumerable<OutfitData> allOutfits)
+    {
+      var otherOutfitRoots = new HashSet<Transform>((allOutfits ?? Enumerable.Empty<OutfitData>())
+        .Where(other => other != null && other != outfit && other.OutfitObject != null)
+        .Select(other => other.OutfitObject.transform));
+
+      var pathObject = outfit.OutfitObject;
+      if (pathObject == null || otherOutfitRoots.Contains(pathObject.transform))
+        pathObject = outfit.BaseObject;
+      if (pathObject == null || costumesRoot == null) return new List<string>();
+
+      var segments = new List<string>();
+      for (var current = pathObject.transform;
+           current != null && current != costumesRoot.transform;
+           current = current.parent)
+      {
+        if (current != pathObject.transform && otherOutfitRoots.Contains(current))
+          continue;
+        segments.Add(current.name);
+      }
+      segments.Reverse();
+      return segments;
     }
 
     private void BuildFlatOutfitChoiceMenu(
@@ -492,7 +538,7 @@ namespace UnityBox.AdvancedCostumeController
       MixerPartSlot slot)
     {
       if (defaultOutfit == null || outfit == null || slot == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
+          outfit.BaseObject != defaultOutfit.BaseObject)
         return 0;
 
       var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
@@ -520,7 +566,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData outfit)
     {
       if (outfit == null || defaultOutfit == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
+          outfit.BaseObject != defaultOutfit.BaseObject)
         return 0;
 
       var choices = outfit.GetAllObjects();
@@ -955,10 +1001,10 @@ namespace UnityBox.AdvancedCostumeController
     private static IEnumerable<OutfitData> GetUniqueMixerOutfits(
       IEnumerable<OutfitData> outfits)
     {
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (outfit == null || !processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (outfit == null || !processedOutfitBases.Add(outfit.BaseObject)) continue;
         yield return outfit;
       }
     }

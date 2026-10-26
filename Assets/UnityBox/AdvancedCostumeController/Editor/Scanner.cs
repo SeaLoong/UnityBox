@@ -182,7 +182,32 @@ namespace UnityBox.AdvancedCostumeController
         });
       }
 
+      NormalizeSharedOutfitObjects(costumesRoot, outfitDataList);
       return outfitDataList;
+    }
+
+    /// <summary>
+    /// 多个独立服装 Base 共用同一父容器时，不能把父容器作为它们共同的
+    /// OutfitObject；否则菜单路径、动画激活根和参数相对路径都会发生冲突。
+    /// 仅在确实有多个扫描结果共享该对象时，分别回退到各自 BaseObject。
+    /// </summary>
+    private static void NormalizeSharedOutfitObjects(
+      GameObject costumesRoot,
+      List<OutfitData> outfits)
+    {
+      foreach (var sharedGroup in outfits
+        .Where(outfit => outfit != null && outfit.OutfitObject != null)
+        .GroupBy(outfit => outfit.OutfitObject)
+        .Where(group => group.Count() > 1))
+      {
+        foreach (var outfit in sharedGroup)
+        {
+          if (outfit.BaseObject == null) continue;
+          outfit.OutfitObject = outfit.BaseObject;
+          outfit.Name = outfit.BaseObject.name;
+          outfit.RelativePath = Utils.GetRelativePath(costumesRoot, outfit.BaseObject);
+        }
+      }
     }
 
     /// <summary>
