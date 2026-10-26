@@ -111,7 +111,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (mode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
                     Field(nameof(AnimatorOptimizerComponent.playableLayer), "Playable Layer");
                 else
-                    Field(nameof(AnimatorOptimizerComponent.animator), "Animator", "留空时自动寻找根对象及子对象中的 Animator。");
+                    Field(nameof(AnimatorOptimizerComponent.animator), "Animator", "留空优先根 Animator，否则仅接受唯一子 Animator；多个候选时必须指定。");
                 if (mode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
                     Field(nameof(AnimatorOptimizerComponent.controller), "Controller");
 
@@ -357,11 +357,14 @@ namespace UnityBox.AnimatorOptimizer
                 return component.controller as AnimatorController;
             if (component.targetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent)
             {
-                var animator = component.animator != null ? component.animator : component.GetComponentInChildren<Animator>(true);
+                var descriptorRoot = component.GetComponentInParent<VRCAvatarDescriptor>();
+                var avatarRoot = descriptorRoot != null ? descriptorRoot.gameObject : component.gameObject;
+                var config = AnimatorOptimizerConfigData.FromComponent(component, avatarRoot, requireEnabled: false);
+                var animator = config.ResolveAnimator(avatarRoot);
                 return animator != null ? animator.runtimeAnimatorController as AnimatorController : null;
             }
             var descriptor = component.GetComponent<VRCAvatarDescriptor>() ?? component.GetComponentInParent<VRCAvatarDescriptor>();
-            if (descriptor == null)
+            if (descriptor == null || !descriptor.customizeAnimationLayers)
                 return null;
             var layerType = ToVrcLayerType(component.playableLayer);
             var layers = component.playableLayer <= AnimatorOptimizerComponent.PlayableLayer.FX

@@ -17,6 +17,7 @@ namespace UnityBox.AnimatorOptimizer
         public Animator Animator;
         public RuntimeAnimatorController Controller;
         public string AnimatorPath;
+        public List<string> AnimatorPathSegments;
         public int AnimatorComponentIndex;
         public bool OptimizeAllConvertibleLayers;
         public List<int> LayerIndices = new List<int>();
@@ -50,8 +51,8 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (avatarRoot == null)
                 return null;
-            var component = avatarRoot.GetComponent<AnimatorOptimizerComponent>() ??
-                            avatarRoot.GetComponentInChildren<AnimatorOptimizerComponent>(true);
+            var component = avatarRoot.GetComponentsInChildren<AnimatorOptimizerComponent>(true)
+                .FirstOrDefault(candidate => candidate.enabled);
             return FromComponent(component, avatarRoot);
         }
 
@@ -63,10 +64,10 @@ namespace UnityBox.AnimatorOptimizer
             if (component == null || requireEnabled && !component.enabled)
                 return null;
 
-            avatarRoot ??= component.gameObject;
+            avatarRoot ??= component.GetComponentInParent<VRCAvatarDescriptor>()?.gameObject ?? component.gameObject;
             var animator = component.animator;
             if (component.targetMode != AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer && animator == null)
-                animator = avatarRoot.GetComponentInChildren<Animator>(true);
+                animator = FindDefaultAnimator(avatarRoot);
 
             return new AnimatorOptimizerConfigData
             {
@@ -77,6 +78,7 @@ namespace UnityBox.AnimatorOptimizer
                     ? component.controller
                     : animator != null ? animator.runtimeAnimatorController : null,
                 AnimatorPath = GetRelativePath(avatarRoot, animator != null ? animator.gameObject : null),
+                AnimatorPathSegments = GetPathSegments(avatarRoot, animator != null ? animator.gameObject : null),
                 AnimatorComponentIndex = GetComponentIndex(animator),
                 OptimizeAllConvertibleLayers = component.optimizeAllConvertibleLayers,
                 LayerIndices = component.layerIndices != null
@@ -168,23 +170,50 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (avatarRoot == null)
                 return Animator;
-            if (string.IsNullOrEmpty(AnimatorPath))
-                return Animator != null && Animator.transform.IsChildOf(avatarRoot.transform) ?
-                    FindAnimatorByIndex(Animator.gameObject, AnimatorComponentIndex) :
-                    avatarRoot.GetComponentInChildren<Animator>(true);
+            // A valid live reference survives renames/reparenting and is safer than a name lookup.
+            if (Animator != null && Animator.transform.IsChildOf(avatarRoot.transform))
+                return Animator;
+            if (AnimatorPathSegments == null)
+                return null;
 
-            var target = avatarRoot.transform.Find(AnimatorPath);
-            return target == null ? null : FindAnimatorByIndex(target.gameObject, AnimatorComponentIndex);
+            var target = avatarRoot.transform;
+            foreach (var segment in AnimatorPathSegments)
+            {
+                Transform match = null;
+                for (var i = 0; i < target.childCount; i++)
+                {
+                    var child = target.GetChild(i);
+                    if (child.name != segment) continue;
+                    // Ambiguous clone paths must not silently optimize a different object.
+                    if (match != null) return null;
+                    match = child;
+                }
+                if (match == null) return null;
+                target = match;
+            }
+            var animators = target.GetComponents<Animator>();
+            return AnimatorComponentIndex >= 0 && AnimatorComponentIndex < animators.Length
+                ? animators[AnimatorComponentIndex] : null;
         }
 
-        private static Animator FindAnimatorByIndex(GameObject gameObject, int componentIndex)
+        internal static Animator FindDefaultAnimator(GameObject avatarRoot)
         {
-            if (gameObject == null)
+            if (avatarRoot == null) return null;
+            var rootAnimator = avatarRoot.GetComponent<Animator>();
+            if (rootAnimator != null) return rootAnimator;
+            var candidates = avatarRoot.GetComponentsInChildren<Animator>(true);
+            return candidates.Length == 1 ? candidates[0] : null;
+        }
+
+        private static List<string> GetPathSegments(GameObject root, GameObject target)
+        {
+            if (root == null || target == null || !target.transform.IsChildOf(root.transform))
                 return null;
-            var animators = gameObject.GetComponents<Animator>();
-            return componentIndex >= 0 && componentIndex < animators.Length
-                ? animators[componentIndex]
-                : animators.FirstOrDefault();
+            var segments = new List<string>();
+            for (var current = target.transform; current != root.transform; current = current.parent)
+                segments.Add(current.name);
+            segments.Reverse();
+            return segments;
         }
 
         private static int GetComponentIndex(Animator animator)
@@ -229,7 +258,12 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             var config = AnimatorOptimizerConfigData.FromAvatar(avatarRoot);
             if (config == null)
+            {
+                // Preserve a snapshot after EditorOnly stripping, but honor an explicitly disabled component.
+                if (avatarRoot.GetComponentsInChildren<AnimatorOptimizerComponent>(true).Length > 0)
+                    Release(avatarRoot);
                 return;
+            }
             Configs[avatarRoot.GetInstanceID()] = config;
             if (config.VerboseLogging)
                 Debug.Log($"[AnimatorOptimizer] Captured config at {stage} from '{config.SourceObjectName}'.");
@@ -288,6 +322,7 @@ namespace UnityBox.AnimatorOptimizer
 
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
+            AnimatorOptimizerBuildState.Release(avatarGameObject);
             AnimatorOptimizerBuildState.Capture(avatarGameObject, "early VRCSDK preprocess");
             return true;
         }
@@ -375,6 +410,7 @@ namespace UnityBox.AnimatorOptimizer
         private sealed class BuildAssignmentSnapshot
         {
             public VRCAvatarDescriptor Descriptor;
+            public bool CustomizeAnimationLayers;
             public VRCAvatarDescriptor.CustomAnimLayer[] BaseLayers;
             public VRCAvatarDescriptor.CustomAnimLayer[] SpecialLayers;
             public List<(Animator Animator, RuntimeAnimatorController Controller)> Animators =
@@ -387,6 +423,11 @@ namespace UnityBox.AnimatorOptimizer
                 return true;
 
             var source = ResolveSourceController(avatarRoot, config, out var descriptor, out var targetAnimator);
+            if (config.TargetMode != AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer && targetAnimator == null)
+            {
+                Debug.LogError("[AnimatorOptimizer] No unambiguous target Animator exists inside this Avatar. Assign the intended Animator explicitly.");
+                return false;
+            }
             if (source == null)
             {
                 Debug.LogWarning($"[AnimatorOptimizer] No AnimatorController found for '{avatarRoot.name}', skipping.");
@@ -452,15 +493,8 @@ namespace UnityBox.AnimatorOptimizer
                 copyPath = GetGeneratedControllerPath(avatarRoot, source);
                 EnsureFolder(Path.GetDirectoryName(copyPath)?.Replace('\\', '/'));
                 copyPath = AssetDatabase.GenerateUniqueAssetPath(copyPath);
-                var sourcePath = AssetDatabase.GetAssetPath(source);
-                if (string.IsNullOrWhiteSpace(sourcePath) || !AssetDatabase.CopyAsset(sourcePath, copyPath))
-                    throw new InvalidOperationException("无法复制源 AnimatorController 到 Generated: " + sourcePath);
+                var generated = CreateBuildCopy(source, copyPath);
                 GeneratedControllerPaths.Add(copyPath);
-
-                AssetDatabase.ImportAsset(copyPath, ImportAssetOptions.ForceSynchronousImport);
-                var generated = AssetDatabase.LoadAssetAtPath<AnimatorController>(copyPath);
-                if (generated == null)
-                    throw new InvalidOperationException("复制后无法读取 Generated AnimatorController: " + copyPath);
 
                 // A single batch preserves the pre-upgrade input types and original
                 // layer identities even with several AAP layers or duplicate names.
@@ -482,6 +516,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 Debug.LogError($"[AnimatorOptimizer] Failed to optimize '{source.name}': {exception.Message}\n{exception.StackTrace}");
                 RestoreSnapshot(descriptorSnapshot);
+                Snapshots.Remove(descriptorSnapshot);
                 if (!string.IsNullOrWhiteSpace(copyPath) &&
                     AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(copyPath) != null)
                 {
@@ -490,6 +525,55 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 return false;
             }
+        }
+
+        private static AnimatorController CreateBuildCopy(AnimatorController source, string path)
+        {
+            var sourcePath = AssetDatabase.GetAssetPath(source);
+            if (!string.IsNullOrEmpty(sourcePath) && AssetDatabase.IsMainAsset(source) &&
+                sourcePath.EndsWith(".controller", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!AssetDatabase.CopyAsset(sourcePath, path))
+                    throw new InvalidOperationException("Unable to copy AnimatorController: " + sourcePath);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                var loaded = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+                if (loaded == null) throw new InvalidOperationException("Unable to load copied AnimatorController: " + path);
+                return loaded;
+            }
+
+            // NDMF and other preprocessors can provide an unsaved controller. Reuse
+            // the converter's graph isolation rather than editing that shared graph.
+            var copy = new AnimatorController();
+            EditorUtility.CopySerialized(source, copy);
+            copy.name = source.name;
+            AssetDatabase.CreateAsset(copy, path);
+            AnimatorOptimizerConverter.EnsureOwnedMutableGraph(copy);
+            var transientAssets = new Dictionary<UnityEngine.Object, UnityEngine.Object>();
+            foreach (var owned in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                using (var serialized = new SerializedObject(owned))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var reference = property.objectReferenceValue;
+                        if (reference is not AnimationClip && reference is not AvatarMask) continue;
+                        if (!string.IsNullOrEmpty(AssetDatabase.GetAssetPath(reference))) continue;
+                        if (!transientAssets.TryGetValue(reference, out var clone))
+                        {
+                            clone = UnityEngine.Object.Instantiate(reference);
+                            clone.name = reference.name;
+                            AssetDatabase.AddObjectToAsset(clone, copy);
+                            transientAssets.Add(reference, clone);
+                        }
+                        property.objectReferenceValue = clone;
+                    }
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+            AssetDatabase.SaveAssets();
+            return copy;
         }
 
         public static void RestoreAndCleanup()
@@ -514,7 +598,8 @@ namespace UnityBox.AnimatorOptimizer
             out Animator targetAnimator)
         {
             descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            targetAnimator = config.ResolveAnimator(avatarRoot);
+            targetAnimator = config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer
+                ? null : config.ResolveAnimator(avatarRoot);
             if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
                 return config.Controller as AnimatorController;
             if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent)
@@ -531,17 +616,18 @@ namespace UnityBox.AnimatorOptimizer
             if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent ||
                 config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
             {
-                if (targetAnimator != null)
-                    targetAnimator.runtimeAnimatorController = controller;
+                if (targetAnimator == null)
+                    throw new InvalidOperationException("Target Animator was removed before assignment.");
+                targetAnimator.runtimeAnimatorController = controller;
                 return;
             }
 
             var layers = GetPlayableLayers(descriptor, config.PlayableLayer, out var isBase);
             if (layers == null)
-                return;
+                throw new InvalidOperationException("Target Playable Layer array is missing.");
             var layerIndex = Array.FindIndex(layers, layer => layer.type == ToVrcLayerType(config.PlayableLayer));
             if (layerIndex < 0)
-                return;
+                throw new InvalidOperationException("Target Playable Layer is missing.");
             layers[layerIndex].animatorController = controller;
             layers[layerIndex].isDefault = false;
             if (isBase)
@@ -557,6 +643,7 @@ namespace UnityBox.AnimatorOptimizer
             var snapshot = new BuildAssignmentSnapshot
             {
                 Descriptor = descriptor,
+                CustomizeAnimationLayers = descriptor != null && descriptor.customizeAnimationLayers,
                 BaseLayers = descriptor == null || descriptor.baseAnimationLayers == null
                     ? null
                     : (VRCAvatarDescriptor.CustomAnimLayer[])descriptor.baseAnimationLayers.Clone(),
@@ -575,6 +662,7 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             if (snapshot.Descriptor != null)
             {
+                snapshot.Descriptor.customizeAnimationLayers = snapshot.CustomizeAnimationLayers;
                 snapshot.Descriptor.baseAnimationLayers = snapshot.BaseLayers;
                 snapshot.Descriptor.specialAnimationLayers = snapshot.SpecialLayers;
                 EditorUtility.SetDirty(snapshot.Descriptor);
@@ -590,7 +678,7 @@ namespace UnityBox.AnimatorOptimizer
             VRCAvatarDescriptor descriptor,
             AnimatorOptimizerComponent.PlayableLayer playableLayer)
         {
-            if (descriptor == null)
+            if (descriptor == null || !descriptor.customizeAnimationLayers)
                 return null;
             var layers = GetPlayableLayers(descriptor, playableLayer, out _);
             if (layers == null)
@@ -639,13 +727,14 @@ namespace UnityBox.AnimatorOptimizer
             return $"{GeneratedRoot}/{avatarName}/{controllerName}_AnimatorOptimizer.controller";
         }
 
-        private static string SanitizeAssetName(string value)
+        internal static string SanitizeAssetName(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return "Avatar";
-            var invalid = Path.GetInvalidFileNameChars();
-            var chars = value.Select(character => invalid.Contains(character) ? '_' : character).ToArray();
-            return new string(chars);
+            if (string.IsNullOrWhiteSpace(value)) return "Avatar";
+            // A single portable path segment: no dot segments or platform-dependent separators.
+            var sanitized = new string(value.Select(character =>
+                char.IsLetterOrDigit(character) || character == '-' || character == '_' ? character : '_')
+                .Take(80).ToArray());
+            return string.IsNullOrWhiteSpace(sanitized) ? "Avatar" : sanitized;
         }
 
         private static void EnsureFolder(string folderPath)

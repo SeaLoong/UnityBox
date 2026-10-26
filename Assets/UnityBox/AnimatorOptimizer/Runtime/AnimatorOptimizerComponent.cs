@@ -62,10 +62,10 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("Target Mode 为 Avatar Playable Layer 时使用的层。")]
         public PlayableLayer playableLayer = PlayableLayer.FX;
 
-        [Tooltip("Target Mode 为 Animator Component 时指定 Animator；留空会在 Avatar 根及子对象中自动寻找。")]
+        [Tooltip("指定 Avatar 内的 Animator；留空优先根 Animator，否则仅接受唯一子 Animator。多个候选时必须指定。")]
         public Animator animator;
 
-        [Tooltip("Target Mode 为 Explicit Controller 时指定 Controller；若同时指定 Animator，构建结果会挂回该 Animator。")]
+        [Tooltip("Target Mode 为 Explicit Controller 时指定 Controller；构建必须有可唯一定位的 Avatar 内 Animator 接收结果。离线优化可用工具窗口。")]
         public RuntimeAnimatorController controller;
 
         [Tooltip("关闭后只处理 layerIndices 中的 Layer；开启后自动处理所有通过安全分析的 Layer。")]

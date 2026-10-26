@@ -104,6 +104,8 @@ namespace UnityBox.AnimatorOptimizer
         {
             RequireController(controller);
             RequireFloatParameter(controller, stateRegisterParameter);
+            if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(stateRegisterParameter))
+                throw new ArgumentException("AAP 状态寄存器不能使用 VRChat 内置参数名。", nameof(stateRegisterParameter));
             if (stateCount < 1 || defaultState < 0 || defaultState >= stateCount)
                 throw new ArgumentOutOfRangeException(nameof(stateCount), "State Register 的状态数量或默认状态无效。");
             if (stateCount > 4096)
@@ -112,6 +114,8 @@ namespace UnityBox.AnimatorOptimizer
             if (register.defaultFloat != defaultState)
                 throw new ArgumentException("State Register 参数默认值必须与 defaultState 一致，不能仅校验编号后忽略初始状态。", nameof(defaultState));
             var inputs = ValidateInputParameters(controller, inputParameters);
+            if (inputs.Contains(stateRegisterParameter))
+                throw new ArgumentException("AAP 输入参数不能同时用作状态寄存器。", nameof(inputParameters));
             var entryCount = 1 << inputs.Count;
             if (entryCount > 4096)
                 throw new ArgumentException("AAP StateRegister 最多生成 4096 个 Bool 组合。", nameof(inputParameters));
@@ -307,6 +311,9 @@ namespace UnityBox.AnimatorOptimizer
             if (stateMotions == null || stateMotions.Count == 0 || stateMotions.Count > 4096 ||
                 stateMotions.Any(motion => motion == null || !AnimatorOptimizerMotionUtility.IsAcyclic(motion)))
                 throw new ArgumentException("State Output Tree 需要 1 到 4096 个有效、无循环的 Motion。", nameof(stateMotions));
+            var defaultState = controller.parameters.First(parameter => parameter.name == stateRegisterParameter).defaultFloat;
+            if (defaultState < 0f || defaultState >= stateMotions.Count || defaultState != Mathf.Floor(defaultState))
+                throw new ArgumentException("State Output 寄存器默认值必须是有效的整数状态编号。", nameof(stateRegisterParameter));
 
             var tree = new BlendTree
             {

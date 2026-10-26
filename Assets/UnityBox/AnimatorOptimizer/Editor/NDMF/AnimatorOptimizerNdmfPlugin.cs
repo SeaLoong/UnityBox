@@ -28,8 +28,15 @@ namespace UnityBox.AnimatorOptimizer
             InPhase(BuildPhase.Resolving)
                 .Run("AnimatorOptimizer/CaptureConfig", context =>
                 {
+                    // A new NDMF invocation must not inherit processed flags from a previous
+                    // (possibly failed) build. Preserve an early SDK snapshot only when the
+                    // configuration components have already been stripped in this build.
+                    if (context.AvatarRootObject != null && context.AvatarRootObject
+                        .GetComponentsInChildren<AnimatorOptimizerComponent>(true).Length > 0)
+                        AnimatorOptimizerBuildState.Release(context.AvatarRootObject);
                     AnimatorOptimizerBuildState.Capture(context.AvatarRootObject, "NDMF before RemoveEditorOnly");
                     AnimatorOptimizerBuildState.MarkNdmfCaptured(context.AvatarRootObject);
+                    AnimatorOptimizerNdmfProcessor.CaptureSourceLayerSelection(context);
                 })
                 .BeforePass("nadena.dev.ndmf.system.RemoveEditorOnly");
 
@@ -229,6 +236,79 @@ namespace UnityBox.AnimatorOptimizer
             }
         }
 
+        private sealed class SourceLayerSelection
+        {
+            public bool IsValid;
+            public List<AnimatorStateMachine> StateMachines = new List<AnimatorStateMachine>();
+            public SourceLayerSelection() { }
+        }
+
+        internal static void CaptureSourceLayerSelection(BuildContext context)
+        {
+            var selection = context.GetState<SourceLayerSelection>();
+            selection.IsValid = false;
+            selection.StateMachines.Clear();
+            var config = AnimatorOptimizerBuildState.Get(context.AvatarRootObject);
+            if (config == null || config.OptimizeAllConvertibleLayers) return;
+            AnimatorController source;
+            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
+            {
+                var descriptor = context.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
+                var type = ToVrcLayerType(config.PlayableLayer);
+                source = descriptor == null ? null :
+                    (descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
+                    .Concat(descriptor.specialAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
+                    .Where(layer => layer.type == type && !layer.isDefault)
+                    .Select(layer => layer.animatorController as AnimatorController).FirstOrDefault();
+            }
+            else
+            {
+                var target = config.ResolveAnimator(context.AvatarRootObject);
+                source = config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController
+                    ? config.Controller as AnimatorController
+                    : target != null ? target.runtimeAnimatorController as AnimatorController : null;
+            }
+            if (source == null) return;
+            var layers = source.layers;
+            foreach (var index in (config.LayerIndices ?? new List<int>()).Distinct())
+            {
+                if (index < 0 || index >= layers.Length || layers[index].stateMachine == null) return;
+                selection.StateMachines.Add(layers[index].stateMachine);
+            }
+            selection.IsValid = true;
+        }
+
+        private static object ResolveVirtualControllerKey(AnimatorOptimizerConfigData config, GameObject root)
+        {
+            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
+                return ToVrcLayerType(config.PlayableLayer);
+            var target = config.ResolveAnimator(root);
+            // An explicit source different from the assigned controller is materialized
+            // by the SDK fallback; optimizing the assigned virtual controller would edit
+            // the wrong source. NDMF keys Animator controllers by component, not asset.
+            if (target == null || config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController &&
+                target.runtimeAnimatorController != config.Controller)
+                return null;
+            return target;
+        }
+
+        private static bool TryResolveRequestedVirtualLayers(
+            IEnumerable<VirtualLayer> layers,
+            IReadOnlyList<AnimatorStateMachine> sourceStateMachines,
+            out HashSet<VirtualLayer> requested)
+        {
+            requested = new HashSet<VirtualLayer>();
+            var bySource = layers.Where(layer => layer != null && layer.StateMachine != null)
+                .Select(layer => (Layer: layer, Source: GetVirtualOriginalObject<AnimatorStateMachine>(layer.StateMachine)))
+                .Where(item => item.Source != null).ToLookup(item => item.Source, item => item.Layer);
+            foreach (var stateMachine in sourceStateMachines)
+            {
+                var matches = bySource[stateMachine].ToList();
+                if (matches.Count != 1 || !requested.Add(matches[0])) return false;
+            }
+            return true;
+        }
+
         public static void Process(BuildContext context, bool latePhase)
         {
             if (context == null || context.AvatarRootObject == null)
@@ -243,14 +323,19 @@ namespace UnityBox.AnimatorOptimizer
             if (animatorServices == null)
                 return;
 
-            object controllerKey = config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer
-                ? (object)ToVrcLayerType(config.PlayableLayer)
-                : config.Controller;
+            var controllerKey = ResolveVirtualControllerKey(config, context.AvatarRootObject);
             if (controllerKey == null ||
                 !animatorServices.ControllerContext.Controllers.TryGetValue(controllerKey, out var controller) ||
                 controller == null)
             {
-                Debug.LogWarning("[AnimatorOptimizer] NDMF could not find the configured virtual AnimatorController.");
+                // A manual selection on an assigned/playable controller refers to the
+                // pre-NDMF source. Without a virtual identity mapping the SDK fallback
+                // must not reinterpret those indices on an already transformed graph.
+                // ExplicitController keeps its original asset as the physical source.
+                if (!config.OptimizeAllConvertibleLayers &&
+                    config.TargetMode != AnimatorOptimizerComponent.TargetMode.ExplicitController)
+                    AnimatorOptimizerBuildState.MarkNdmfProcessed(context.AvatarRootObject);
+                Debug.LogWarning("[AnimatorOptimizer] NDMF could not find the configured virtual AnimatorController; manual selections on assigned/playable controllers will be preserved.");
                 return;
             }
 
@@ -260,6 +345,13 @@ namespace UnityBox.AnimatorOptimizer
             options.MergeSynchronizedStateMachines &= config.OptimizeAllConvertibleLayers;
             if (options.EnableAapStateRegisterOptimization)
             {
+                if (!config.OptimizeAllConvertibleLayers)
+                {
+                    // SDK fallback cannot map source indices across NDMF layer reordering.
+                    AnimatorOptimizerBuildState.MarkNdmfProcessed(context.AvatarRootObject);
+                    Debug.LogWarning("[AnimatorOptimizer] AAP with manual Layer indices is skipped during NDMF builds because source Layer identity cannot be preserved through the physical fallback.");
+                    return;
+                }
                 // The symbolic AAP materializer currently targets physical controllers.
                 // VirtualClip can write FloatCurves, but this adapter does not yet
                 // implement the same register/layer contract. Keep fallback eligible.
@@ -288,6 +380,19 @@ namespace UnityBox.AnimatorOptimizer
             {
                 Debug.LogWarning("[AnimatorOptimizer] Preserving virtual controller: " + referenceIssue);
                 return;
+            }
+            // Resolve source selections before any normalization or cleanup mutates the
+            // graph, so an unmappable request really leaves the controller untouched.
+            HashSet<VirtualLayer> requestedLayers = null;
+            if (!config.OptimizeAllConvertibleLayers)
+            {
+                var sourceSelection = context.GetState<SourceLayerSelection>();
+                if (!sourceSelection.IsValid || !TryResolveRequestedVirtualLayers(
+                        layers, sourceSelection.StateMachines, out requestedLayers))
+                {
+                    Debug.LogWarning("[AnimatorOptimizer] Manual Layer selection cannot be mapped unambiguously after NDMF transformations; preserving the virtual controller.");
+                    return;
+                }
             }
             if (options.NormalizeAlwaysOneParameters)
             {
@@ -333,11 +438,8 @@ namespace UnityBox.AnimatorOptimizer
                 .Where(candidate => !syncedTargets.Contains(candidate.Layer.VirtualLayerIndex))
                 .ToList();
 
-            if (!config.OptimizeAllConvertibleLayers)
-            {
-                var requested = new HashSet<int>(config.LayerIndices ?? new List<int>());
-                selected = selected.Where(candidate => requested.Contains(candidate.Index)).ToList();
-            }
+            if (requestedLayers != null)
+                selected = selected.Where(candidate => requestedLayers.Contains(candidate.Layer)).ToList();
             if (options.PreserveMmdCompatibility)
                 selected = selected.Where(candidate => candidate.Index != 0).ToList();
 
@@ -435,10 +537,12 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             }
 
-            var upgraded = UpgradeParameters(controller, selected.Select(candidate => candidate.Plan), options);
+            var removedLayers = safeGroups.SelectMany(group => group.OriginalCandidates)
+                .Select(candidate => candidate.Layer).ToHashSet();
+            var upgraded = UpgradeParameters(controller, selected.Select(candidate => candidate.Plan), options, removedLayers);
             if (upgraded == null)
             {
-                Debug.LogWarning("[AnimatorOptimizer] NDMF skipped virtual conversion because a Bool/Int parameter has an unknown writer or Animator curve.");
+                Debug.LogWarning("[AnimatorOptimizer] NDMF skipped virtual conversion because a Bool/Int parameter has an unknown writer, Animator curve, or retained condition that cannot safely become Float.");
                 CleanupVirtualController(controller, options);
                 return;
             }
@@ -4090,7 +4194,8 @@ namespace UnityBox.AnimatorOptimizer
         private static List<string> UpgradeParameters(
             VirtualAnimatorController controller,
             IEnumerable<VirtualPlan> plans,
-            AnimatorOptimizerOptions options)
+            AnimatorOptimizerOptions options,
+            ISet<VirtualLayer> removedLayers)
         {
             var names = plans.SelectMany(plan => plan.BooleanParameters ?? Enumerable.Empty<string>())
                 .Concat(plans.Where(plan => !string.IsNullOrWhiteSpace(plan.SelectorParameter))
@@ -4104,6 +4209,13 @@ namespace UnityBox.AnimatorOptimizer
             if (names.Any(name => VirtualParameterNeedsUpgrade(controller, name, options) &&
                 (animated.Contains(name) || HasPotentialVirtualBehaviourReference(controller, name))))
                 return null;
+            var retainedConditions = controller.Layers.Where(layer => !removedLayers.Contains(layer))
+                .SelectMany(layer => EnumerateVirtualTransitionConditions(layer.StateMachine, new HashSet<VirtualStateMachine>()))
+                .ToLookup(condition => condition.parameter, StringComparer.Ordinal);
+            if (names.Any(name => VirtualParameterNeedsUpgrade(controller, name, options) &&
+                retainedConditions[name].Any(condition =>
+                    !CanPreserveVirtualConditionAfterFloatUpgrade(condition, controller.Parameters[name].type))))
+                return null;
             var upgraded = new List<string>();
             var bools = new HashSet<string>(StringComparer.Ordinal);
             foreach (var name in names)
@@ -4114,7 +4226,7 @@ namespace UnityBox.AnimatorOptimizer
                     continue;
                 if (parameter.type == AnimatorControllerParameterType.Bool && options.UpgradeBoolParametersToFloat)
                 {
-                    controller.SetParameter(name, new AnimatorControllerParameter
+                    controller.Parameters = controller.Parameters.SetItem(name, new AnimatorControllerParameter
                     {
                         name = name,
                         type = AnimatorControllerParameterType.Float,
@@ -4125,7 +4237,7 @@ namespace UnityBox.AnimatorOptimizer
                 }
                 else if (parameter.type == AnimatorControllerParameterType.Int && options.UpgradeIntParametersToFloat)
                 {
-                    controller.SetParameter(name, new AnimatorControllerParameter
+                    controller.Parameters = controller.Parameters.SetItem(name, new AnimatorControllerParameter
                     {
                         name = name,
                         type = AnimatorControllerParameterType.Float,
@@ -4137,6 +4249,41 @@ namespace UnityBox.AnimatorOptimizer
             if (bools.Count > 0)
                 RewriteVirtualConditions(controller, bools);
             return upgraded;
+        }
+
+        private static bool CanPreserveVirtualConditionAfterFloatUpgrade(
+            AnimatorCondition condition, AnimatorControllerParameterType type)
+        {
+            if (type == AnimatorControllerParameterType.Bool)
+                return condition.mode == AnimatorConditionMode.If || condition.mode == AnimatorConditionMode.IfNot ||
+                    (condition.mode == AnimatorConditionMode.Equals || condition.mode == AnimatorConditionMode.NotEqual) &&
+                        (condition.threshold == 0f || condition.threshold == 1f);
+            if (type == AnimatorControllerParameterType.Int)
+                return (condition.mode == AnimatorConditionMode.Greater || condition.mode == AnimatorConditionMode.Less) &&
+                    IsFinite(condition.threshold) && Math.Abs((double)condition.threshold) <= 16777214d &&
+                    condition.threshold == Mathf.Round(condition.threshold);
+            return false;
+        }
+
+        private static IEnumerable<AnimatorCondition> EnumerateVirtualTransitionConditions(
+            VirtualStateMachine stateMachine, ISet<VirtualStateMachine> visited)
+        {
+            if (stateMachine == null || !visited.Add(stateMachine)) yield break;
+            var transitions = stateMachine.AnyStateTransitions.Cast<VirtualTransitionBase>()
+                .Concat(stateMachine.EntryTransitions)
+                .Concat(stateMachine.States.Where(child => child.State != null)
+                    .SelectMany(child => child.State.Transitions));
+            foreach (var child in stateMachine.StateMachines)
+            {
+                if (child.StateMachine == null) continue;
+                if (stateMachine.StateMachineTransitions.TryGetValue(child.StateMachine, out var outgoing))
+                    transitions = transitions.Concat(outgoing);
+                foreach (var condition in EnumerateVirtualTransitionConditions(child.StateMachine, visited))
+                    yield return condition;
+            }
+            foreach (var transition in transitions.Where(transition => transition != null))
+                foreach (var condition in transition.Conditions)
+                    yield return condition;
         }
 
         private static bool VirtualParameterNeedsUpgrade(
@@ -4245,12 +4392,16 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (bools.Contains(condition.parameter))
                 {
-                    if (condition.mode == AnimatorConditionMode.If)
+                    if (condition.mode == AnimatorConditionMode.If ||
+                        condition.mode == AnimatorConditionMode.Equals && condition.threshold == 1f ||
+                        condition.mode == AnimatorConditionMode.NotEqual && condition.threshold == 0f)
                     {
                         condition.mode = AnimatorConditionMode.Greater;
                         condition.threshold = 0.5f;
                     }
-                    else if (condition.mode == AnimatorConditionMode.IfNot)
+                    else if (condition.mode == AnimatorConditionMode.IfNot ||
+                             condition.mode == AnimatorConditionMode.Equals && condition.threshold == 0f ||
+                             condition.mode == AnimatorConditionMode.NotEqual && condition.threshold == 1f)
                     {
                         condition.mode = AnimatorConditionMode.Less;
                         condition.threshold = 0.5f;
@@ -4270,7 +4421,7 @@ namespace UnityBox.AnimatorOptimizer
             var prefix = string.IsNullOrWhiteSpace(options?.WeightParameterPrefix)
                 ? WeightParameterPrefix : options.WeightParameterPrefix.Trim();
             var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectVirtualReservedParameterNames(controller));
-            controller.SetParameter(name, new AnimatorControllerParameter
+            controller.Parameters = controller.Parameters.SetItem(name, new AnimatorControllerParameter
             {
                 name = name,
                 type = AnimatorControllerParameterType.Float,

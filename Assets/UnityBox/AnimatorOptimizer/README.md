@@ -1,12 +1,19 @@
 # Animator Optimizer
 
-`Animator Optimizer` 是 UnityBox 的 VRChat Animator 优化插件。它把**可证明为参数函数、没有不可表达的时间/历史语义的 Animator 状态机**转换为 BlendTree，并在 Avatar 构建时处理组件配置。
+`Animator Optimizer` 是 UnityBox 的 VRChat Animator 优化插件。它尝试把通过静态约束检查的参数驱动状态机转换为 BlendTree，并在 Avatar 构建时处理组件配置。没有可表达等价形式的时间/历史语义会保留；静态检查不等于运行时等价性已经验证。
+
+## 依赖与当前状态
+
+- Unity 2022.3、VRChat Avatars ≥3.7、NDMF ≥1.9。`PlatformFinish` 需要 1.8，虚拟 BlendTree 的归一化属性需要 1.9；旧的 ≥1.5 声明无法编译这些路径。
+- 分支是 `feat/animator-optimizer`，已 rebase `master`；这不是外部的 Avatar Optimizer 插件。
+- 本插件已有分析器、普通转换器、NDMF、离线窗口和 AAP 后端。**AAP StateRegister 的逐帧反馈尚未做 Unity 等价性验证，默认关闭。**Float 近似、启发式和 AlwaysOne 假设也需要显式选择。
+- 本轮仅通过源码/装配和包构建检查；Unity 编译、EditMode 用例及实际上传尚未执行。详见 [测试指南](../../../Docs/Testing.md) 和 [审查记录](../../../Docs/AnimatorOptimizerAudit.md)。
 
 ## 使用方式
 
 1. 将 `Animator Optimizer` 添加到 Avatar 根对象。
-2. 默认目标是 Avatar Descriptor 的 FX Playable Layer。
-3. 需要时可改为指定 `Animator` 或显式 `RuntimeAnimatorController`。
+2. 默认目标是 Avatar Descriptor 的 FX Playable Layer。使用当前有效的自定义层；Descriptor 关闭 Customize 时不会启用残留 Controller。
+3. 需要时可改为指定 Avatar 内的 `Animator`，或指定 Controller 与接收它的 Animator。目标不存在、来自其他 Avatar 或路径有歧义时会失败，不会自动换成其他对象；AnimatorOverrideController 不支持。
 4. 选择参数升级和严格曲线冲突检查选项。
 5. 构建/上传 Avatar。
 
@@ -41,7 +48,7 @@
 - Layer 会按 `(BlendMode, Mask 内容)` 分组，并按每组第一次出现的原始索引插回 Controller。Override 与 Additive 组不会被强行混成一个 Layer。
 - 多个 Override Layer 写同一条曲线时，如果输出都是静态 `AnimationClip`、输入域只包含 Bool/Int 且组合数在上限内，会枚举输入组合生成复合 Clip，按原 Layer 顺序执行后层覆盖前层。
 - 多个 Additive Layer 在相同 Mask 组内且只包含静态浮点曲线时，会对同一绑定求和；不同组之间保持原始 Layer 顺序。
-- 同组普通 Layer 会按绑定合成单一 Clip：Override 使用后层覆盖，Additive 对浮点曲线求和；静态 Clip 总是可合并，动态 Clip 只有在帧率、长度、循环、State Speed/CycleOffset/Mirror 和关键点时间轴全部一致时才合并，否则不会把它们直接塞进 Direct Tree。
+- 同组普通 Layer 会按绑定合成单一 Clip：Override 使用后层覆盖，Additive 对浮点曲线求和；静态 Clip 仍需通过绑定冲突、Mask、层权重、WD 和预算检查，动态 Clip 只有在帧率、长度、循环、State Speed/CycleOffset/Mirror 和关键点时间轴全部一致时才合并，否则不会把它们直接塞进 Direct Tree。
 - 清理阶段会识别“空资源”而不只看资源名称：没有曲线/事件的 Clip、只绑定到确定不存在对象或组件的 Clip，以及只由这些 Motion 构成且没有可观察 Transition/Behaviour 的 Layer，可以被折叠或删除。首 Layer 始终保留。
 - 1 帧和 2 帧的空 Clip 不能无条件互换：如果 Exit Time、Transition Duration/Offset、状态时间参数或其它时间观察者可能读取 Clip 长度，会保留原始 Clip；只有没有时间观察者时才共用规范空 Clip。AAP 的 `Animator` 曲线、Animation Event 和实际存在的对象/组件绑定不会被判为空。
 
@@ -69,13 +76,13 @@
 
 ### Bool → Float
 
-勾选后，使用于被转换逻辑的本地 Animator Bool 参数会改为 Float，并把 `If/IfNot` 条件重写为 `Greater/Less 0.5`。VRChat 表达式 Bool 到本地 Float 的映射是 `false → 0`、`true → 1`，所以 Toggle 仍然是离散的，同时可以作为 BlendTree 参数。
+勾选后，使用于被转换逻辑的本地 Animator Bool 参数会改为 Float，并把保留图中的 `If/IfNot` 以及可表示的 Bool 等值条件重写为 `Greater/Less 0.5`。VRChat 表达式 Bool 到本地 Float 的映射是 `false → 0`、`true → 1`，所以 Toggle 仍然是离散的，同时可以作为 BlendTree 参数。
 
 如果该参数被无法检查的 Parameter Driver、其它 StateMachineBehaviour 或 Controller 内的 AAP `Animator` FloatCurve 使用，相关转换会被跳过；参数升级按整个目标 Controller 检查，而不是只看被选中的 Layer，避免把参数计算的层顺序错误地当成普通属性曲线。
 
 ### Int → Float
 
-勾选后，使用于被转换逻辑的本地 Animator Int 参数会改为 Float，保留原有整数阈值。VRChat 表达式 Int 到本地 Float 是数值转换，不是 0~1 归一化；Float 在 Unity Animator 中也不是只能取 0~1。因此 ACC 一类“VRC Int + 本地 Float + 整数阈值”的结构是可行的。
+勾选后，使用于被转换逻辑的本地 Animator Int 参数可改为 Float，保留整数输入域。若保留图仍用该参数做 `Equals/NotEqual`，则拒绝升级，避免把无效的等值条件留在 Float 参数上。VRChat 表达式 Int 到本地 Float 是数值转换，不是 0~1 归一化；Float 在 Unity Animator 中也不是只能取 0~1。因此 ACC 一类“VRC Int + 本地 Float + 整数阈值”的结构是可行的。
 
 ### Float 条件近似
 
@@ -102,12 +109,15 @@ Animator Transition 的 Float 条件是阶跃判断，而 1D BlendTree 在阈值
 - `BuildMultiplication` 使用嵌套 1D BlendTree 的权重相乘；它在声明的输入范围内精确，超出范围会按 BlendTree 端点钳制。
 - `BuildOnePlusDivision` 使用 Normalize Blend Values 和一个无曲线 Dummy Motion 实现 $A/(1+B)$；要求分母输入非负。一般 $A/B$ 可先把分母变换为 $B-1$，但要自行保证归一化条件成立。
 
+运算 API 会检查输入是否有限、范围是否合法以及除法输入的非负约束；超出声明范围的输入仍需调用方处理。
+
 AAP 运算图必须放在同一个 Animator Controller 内，生成状态必须使用 Write Defaults On；AAP 不跨 Playable Layer Controller 传播，也不能由 `VRCAvatarParameterDriver` 设置或读取。该生成器目前是显式 API，不会默认把 AAP 计算层插入普通 Layer 合并流程。
 
 开启组件中的 `AAP StateRegister Optimization` 后，满足限制的有状态图会使用两个生成层：第一层用 AAP FloatCurve 每帧写入下一 State 编号，第二层用该编号的 1D BlendTree 选择原 State Motion。除了 Bool，还支持有限 Int 分区以及显式允许的 Float 阈值近似；带有限 Entry 条件的图会额外生成初始化标记，首帧先按 Entry 表写入初始 State，之后再进入普通 StateRegister 反馈。它仍不支持 ExitTime、Transition Duration、Offset、Behaviour、Trigger、动态 Motion 或嵌套状态机。AAP StateRegister 的 Int/Float 输入会按阈值邻域生成多维 1D 决策树，Int 的整数输入在代表域内精确。
 
 ## 构建时机
 
+- NDMF 手动选层会把原状态机身份映射到虚拟层，避免 MA 等插件插层后旧索引指向另一层。身份缺失或不唯一时跳过并阻止 SDK 重试；手动选层的 AAP 构建路径暂不支持，会跳过并提示。自动选层的 AAP 仍可使用物理 fallback。
 - 有 NDMF：在 `Resolving` 的 `RemoveEditorOnly` 之前快照组件配置，在 `Optimizing` 阶段处理虚拟 Avatar Playable/Animator Controller；源 Controller 不会被修改。
 - NDMF 虚拟路径与普通路径同样要求动态 Motion 的时间轴可证明一致；VirtualClip 会比较帧率、循环/起止时间和关键点结构后再合并，不满足时保留原组。
 - NDMF 虚拟路径即使没有足够的可合并 Layer，也会执行启用的空 Layer/AlwaysOne/MMD 收尾；AlwaysOne 归一会排除虚拟 Controller 中的 AAP `Animator` 曲线、ParameterDriver 和其它可序列化 Behaviour 引用。有限表升级也会扫描整个虚拟 Controller；AAP StateRegister 需要写入真实 Animator FloatCurve，因此仍由物理 VRCSDK fallback 处理。
@@ -117,7 +127,15 @@ AAP 运算图必须放在同一个 Animator Controller 内，生成状态必须�
 
 ## 后续方向
 
-- 对动态 Clip 做“同时间基准 + 属性级”合并；只有在确认多个 Layer 的播放时间完全同步时才会放开。
+- 进一步验证现有同时间基准的动态 Clip 合并；不同时间基准仍不支持，不能把静态分析通过等同于已在运行时验证。
 - 继续扩展 AAP Transition 后端：当前有限 Bool/Int/Float StateRegister、Entry 初始化和 MA Reactive Entry/Exit 已经可以生成决策树；后续可继续加入更多可证明的参数 Driver 代数（Copy/Add/Set）和分段数学运算，并记录精度与归一化前提。
 - 对带局部参数谓词的嵌套 StateMachine 做受限扁平化分析；目前仅支持纯组织层级的静态嵌套图。
 - 增加上传前 Controller 快照、逐状态差异报告和运行时等价性采样。
+
+## 资产与目标边界
+
+- SDK fallback 对源资产或内存 Controller 建立独立副本；成功后只替换目标 Avatar 的引用，构建结束恢复并清理临时资产。
+- 离线窗口的“原地修改”会修改所选 Controller；用副本验证结果，查看诊断后再决定是否原地应用。转换会记录被修改的子资产以支持 Undo；生成子资产的完整撤销回收仍需验证，建议优先保存副本。
+- 多个独立 Animator 的选择不能依赖“场景里第一个”；优先显式目标。构建副本中仅接受可唯一解析的相对路径。
+- 老分支未提交完整 `.meta`，已有场景的组件 GUID 需从原开发项目恢复，不能用新 GUID 代替。
+- 暂不支持任意嵌套状态机、Trigger/副作用 Behaviour、任意时间历史或 AnimatorOverrideController 的等价转换；拒绝这些形态是保留语义的边界，不应通过忽略报错强行优化。

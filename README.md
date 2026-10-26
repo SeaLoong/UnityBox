@@ -1,5 +1,7 @@
 # UnityBox
 
+> 当前为 `feat/animator-optimizer`：已 rebase 到 `master`，重点是 Animator Optimizer。其余 7 个插件的完整修复与最新手册在独立的 `refactor` 分支；本分支未合并那些生产逻辑变更。
+
 此仓库用于存放开发中或可直接复用的 Unity 工具脚本，便于在多个项目间共享。
 
 ## 通过 VCC / ALCOM 安装
@@ -20,8 +22,17 @@
 | Blendshape Controller Generator | Blendshape 动画控制器生成器                                 |
 | Avatar Collider Monitor         | VRChat 模型碰撞体监视器                                     |
 | Build Pipeline Logger           | 构建管线日志记录器                                          |
+| Animator Optimizer             | 参数驱动 Animator 图分析与受限 BlendTree 转换 |
+| Prefab Diff Patcher             | Prefab 差异比较与选择合并 |
 | Avatar Security System          | VRChat Avatar 手势密码防盗保护系统                          |
 | Viseme Blendshape Override      | 用内建 `Viseme` / `Voice` 参数驱动可限幅、可独立响应区间的口型替代层 |
+
+## Animator Optimizer
+
+- [功能、限制与使用方法](Assets/UnityBox/AnimatorOptimizer/README.md)
+- [审查与修复记录](Docs/AnimatorOptimizerAudit.md)
+- [测试指南](Docs/Testing.md)
+- 依赖 Unity 2022.3、VRChat Avatars ≥3.7、NDMF ≥1.9。AAP 状态寄存器仍是默认关闭的实验功能。
 
 ## 目录结构
 
@@ -29,6 +40,7 @@
 
 ```
 Assets/UnityBox/
+├── AnimatorOptimizer/              # top.sealoong.unitybox.animator-optimizer
 ├── AdvancedCostumeController/        # top.sealoong.unitybox.advanced-costume-controller
 ├── BlendshapeControllerGenerator/    # top.sealoong.unitybox.blendshape-controller-generator
 ├── AvatarColliderMonitor/            # top.sealoong.unitybox.avatar-collider-monitor

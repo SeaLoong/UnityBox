@@ -454,6 +454,9 @@ namespace UnityBox.AnimatorOptimizer
                 selected.SelectMany(index => report.Layers[index].RequiredFloatParameters),
                 StringComparer.Ordinal);
             var animatedParameters = CollectAnimatedAnimatorParameterNames(report.Controller);
+            var retainedConditions = report.Layers.Where(layer => !selected.Contains(layer.Index))
+                .SelectMany(layer => EnumerateTransitionConditions(layer.SourceLayer?.stateMachine,
+                    new HashSet<AnimatorStateMachine>())).ToLookup(condition => condition.parameter, StringComparer.Ordinal);
             var issues = new List<string>();
             foreach (var parameter in requiredParameters)
             {
@@ -476,8 +479,49 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     issues.Add($"参数 '{parameter}' 被其它 StateMachineBehaviour 引用，无法证明升级为 Float 不改变语义。");
                 }
+                if (declaration != null && retainedConditions[parameter].Any(condition =>
+                        !CanPreserveConditionAfterFloatUpgrade(condition, declaration.type)))
+                {
+                    issues.Add($"参数 '{parameter}' 仍被保留层的条件使用，无法安全升级为 Float；" +
+                        "Int Equals/NotEqual 或无效条件不能原样保留，请同时转换使用这些条件的层。");
+                }
             }
             return DistinctIssues(issues);
+        }
+
+        private static bool CanPreserveConditionAfterFloatUpgrade(
+            AnimatorCondition condition, AnimatorControllerParameterType type)
+        {
+            if (type == AnimatorControllerParameterType.Bool)
+                return condition.mode == AnimatorConditionMode.If || condition.mode == AnimatorConditionMode.IfNot ||
+                    (condition.mode == AnimatorConditionMode.Equals || condition.mode == AnimatorConditionMode.NotEqual) &&
+                        (condition.threshold == 0f || condition.threshold == 1f);
+            if (type == AnimatorControllerParameterType.Int)
+                return (condition.mode == AnimatorConditionMode.Greater || condition.mode == AnimatorConditionMode.Less) &&
+                    AnimatorOptimizerAnalyzer.IsUsableConditionThreshold(condition, type) &&
+                    condition.threshold == Mathf.Round(condition.threshold);
+            return false;
+        }
+
+        private static IEnumerable<AnimatorCondition> EnumerateTransitionConditions(
+            AnimatorStateMachine stateMachine, ISet<AnimatorStateMachine> visited)
+        {
+            if (stateMachine == null || !visited.Add(stateMachine))
+                yield break;
+            var transitions = (stateMachine.anyStateTransitions ?? Array.Empty<AnimatorStateTransition>())
+                .Cast<AnimatorTransitionBase>().Concat(stateMachine.entryTransitions ?? Array.Empty<AnimatorTransition>())
+                .Concat((stateMachine.states ?? Array.Empty<ChildAnimatorState>())
+                    .Where(child => child.state != null).SelectMany(child => child.state.transitions ?? Array.Empty<AnimatorStateTransition>()));
+            foreach (var child in stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
+            {
+                if (child.stateMachine == null) continue;
+                transitions = transitions.Concat(stateMachine.GetStateMachineTransitions(child.stateMachine) ?? Array.Empty<AnimatorTransition>());
+                foreach (var condition in EnumerateTransitionConditions(child.stateMachine, visited))
+                    yield return condition;
+            }
+            foreach (var transition in transitions.Where(transition => transition != null))
+                foreach (var condition in transition.conditions ?? Array.Empty<AnimatorCondition>())
+                    yield return condition;
         }
 
         public static AnimatorOptimizerConversionResult ConvertInPlace(
@@ -500,6 +544,7 @@ namespace UnityBox.AnimatorOptimizer
             var controllerPath = AssetDatabase.GetAssetPath(controller);
             if (string.IsNullOrWhiteSpace(controllerPath) || !controllerPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("AnimatorController 必须是 Assets/ 下已保存的资源。");
+            Undo.RegisterCompleteObjectUndo(controller, "Animator Optimizer");
             if (EnsureOwnedMutableGraph(controller))
             {
                 report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
@@ -519,7 +564,6 @@ namespace UnityBox.AnimatorOptimizer
                 throw new InvalidOperationException("Controller 已包含 AnimatorOptimizer 生成层，请先恢复源资源。");
             }
 
-            Undo.RegisterCompleteObjectUndo(controller, "Animator Optimizer");
             var alwaysOneWarnings = new List<string>();
             if (options.NormalizeAlwaysOneParameters)
                 NormalizeAlwaysOneParameters(controller, alwaysOneWarnings);
@@ -780,18 +824,20 @@ namespace UnityBox.AnimatorOptimizer
                 throw new ArgumentNullException(nameof(controller));
             options = options?.Clone() ?? new AnimatorOptimizerOptions();
             var messages = new List<string>();
-            EnsureOwnedMutableGraph(controller);
-            var oldLayersForReferences = (controller.layers ?? Array.Empty<AnimatorControllerLayer>()).ToArray();
-            var invalidReferences = GetMalformedLayerReferenceIssues(oldLayersForReferences, options);
+            var sourceLayers = controller.layers ?? Array.Empty<AnimatorControllerLayer>();
+            var invalidReferences = GetMalformedLayerReferenceIssues(sourceLayers, options);
             if (invalidReferences.Count > 0)
                 return invalidReferences.Select(issue => "未执行清理：" + issue).ToArray();
+            var hasUnknownLayerControls = !options.HasKnownPlayableLayer &&
+                EnumerateLayerControlsFromLayers(sourceLayers).Any();
+            if (hasUnknownLayerControls && options.PreserveMmdCompatibility)
+                throw new InvalidOperationException("启用 MMD 兼容时必须知道目标 Playable Layer，才能安全重排 VRCAnimatorLayerControl。");
+            Undo.RegisterCompleteObjectUndo(controller, "Animator Optimizer Cleanup");
+            EnsureOwnedMutableGraph(controller);
+            var oldLayersForReferences = (controller.layers ?? Array.Empty<AnimatorControllerLayer>()).ToArray();
             // Keep these wrappers until the final assignment. controller.layers
             // reconstructs wrappers, and stateMachine is not a unique layer identity.
             var workingLayers = oldLayersForReferences.ToList();
-            var hasUnknownLayerControls = !options.HasKnownPlayableLayer &&
-                EnumerateLayerControlsFromLayers(oldLayersForReferences).Any();
-            if (hasUnknownLayerControls && options.PreserveMmdCompatibility)
-                throw new InvalidOperationException("启用 MMD 兼容时必须知道目标 Playable Layer，才能安全重排 VRCAnimatorLayerControl。");
             var protectedLayerIndices = GetProtectedLayerIndices(oldLayersForReferences, options);
             var protectedMachines = protectedLayerIndices.Where(index => index >= 0 && index < oldLayersForReferences.Length)
                 .Select(index => oldLayersForReferences[index]?.stateMachine).ToHashSet();
@@ -913,6 +959,8 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var update in syncedUpdates) update.Layer.syncedLayerIndex = update.Index;
             foreach (var update in controlUpdates)
             {
+                if (update.Control.layer == update.Index) continue;
+                Undo.RecordObject(update.Control, "Animator Optimizer Layer References");
                 update.Control.layer = update.Index;
                 EditorUtility.SetDirty(update.Control);
             }
@@ -1053,7 +1101,9 @@ namespace UnityBox.AnimatorOptimizer
                     canonical ??= CreateCanonicalEmptyClip(controller);
                     if (!ReferenceEquals(state.motion, canonical))
                     {
+                        Undo.RecordObject(state, "Animator Optimizer Empty Motion");
                         state.motion = canonical;
+                        EditorUtility.SetDirty(state);
                         changed = true;
                     }
                 }
@@ -1061,7 +1111,9 @@ namespace UnityBox.AnimatorOptimizer
                          IsEffectivelyEmptyMotion(tree, bindingRoot, new HashSet<int>()))
                 {
                     canonical ??= CreateCanonicalEmptyClip(controller);
+                    Undo.RecordObject(state, "Animator Optimizer Empty Motion");
                     state.motion = canonical;
+                    EditorUtility.SetDirty(state);
                     changed = true;
                 }
             }
@@ -1340,6 +1392,7 @@ namespace UnityBox.AnimatorOptimizer
             if (!(motion is BlendTree tree))
                 return;
             var canonical = string.Empty;
+            var changed = false;
             var children = tree.children ?? Array.Empty<ChildMotion>();
             for (var index = 0; index < children.Length; index++)
             {
@@ -1347,11 +1400,19 @@ namespace UnityBox.AnimatorOptimizer
                 if (tree.blendType == BlendTreeType.Direct &&
                     !string.IsNullOrWhiteSpace(child.directBlendParameter) &&
                     aliases.TryGetValue(child.directBlendParameter, out canonical))
+                {
                     child.directBlendParameter = canonical;
+                    changed = true;
+                }
                 children[index] = child;
                 RewriteAlwaysOneMotion(child.motion, aliases);
             }
-            tree.children = children;
+            if (changed)
+            {
+                Undo.RecordObject(tree, "Animator Optimizer AlwaysOne");
+                tree.children = children;
+                EditorUtility.SetDirty(tree);
+            }
         }
 
         private static bool IsAlwaysOneName(string name)
@@ -1536,6 +1597,7 @@ namespace UnityBox.AnimatorOptimizer
             while (pending.Count > 0)
             {
                 var destination = pending.Dequeue();
+                Undo.RecordObject(destination, "Animator Optimizer Own Graph");
                 using (var serialized = new SerializedObject(destination))
                 {
                     var property = serialized.GetIterator();
@@ -3090,9 +3152,12 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (transition == null)
                     continue;
-                transition.conditions = transition.conditions
-                    .Select(condition => RewriteCondition(condition, boolParameters))
-                    .ToArray();
+                var conditions = transition.conditions;
+                if (!conditions.Any(condition => boolParameters.Contains(condition.parameter)))
+                    continue;
+                Undo.RecordObject(transition, "Animator Optimizer Bool Conditions");
+                transition.conditions = conditions.Select(condition => RewriteCondition(condition, boolParameters)).ToArray();
+                EditorUtility.SetDirty(transition);
             }
             return transitions;
         }
@@ -3103,12 +3168,16 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (!boolParameters.Contains(condition.parameter))
                 return condition;
-            if (condition.mode == AnimatorConditionMode.If)
+            if (condition.mode == AnimatorConditionMode.If ||
+                condition.mode == AnimatorConditionMode.Equals && condition.threshold == 1f ||
+                condition.mode == AnimatorConditionMode.NotEqual && condition.threshold == 0f)
             {
                 condition.mode = AnimatorConditionMode.Greater;
                 condition.threshold = 0.5f;
             }
-            else if (condition.mode == AnimatorConditionMode.IfNot)
+            else if (condition.mode == AnimatorConditionMode.IfNot ||
+                     condition.mode == AnimatorConditionMode.Equals && condition.threshold == 0f ||
+                     condition.mode == AnimatorConditionMode.NotEqual && condition.threshold == 1f)
             {
                 condition.mode = AnimatorConditionMode.Less;
                 condition.threshold = 0.5f;

@@ -82,8 +82,7 @@ namespace UnityBox.AnimatorOptimizer
             operationError = null;
             if (controller != null)
             {
-                var name = string.Concat(controller.name.Select(character =>
-                    Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
+                var name = AnimatorOptimizerProcessor.SanitizeAssetName(controller.name);
                 outputPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{name}_Optimized.controller");
             }
             QueueAnalysis(true);
