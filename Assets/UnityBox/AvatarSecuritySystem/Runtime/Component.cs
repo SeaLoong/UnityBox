@@ -33,7 +33,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enabledInPlaymode = false;
         [Tooltip("#{defense.disable_defense_tooltip}")]
-        public bool disableDefense = false;
+        public bool disableDefense = true;
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
         [FormerlySerializedAs("hideUI")]
@@ -106,7 +106,7 @@ namespace UnityBox.AvatarSecuritySystem
         public string GetPasswordStrength()
         {
             if (!IsPasswordValid()) return "Invalid";
-            if (gesturePassword.Count == 0) return "Weak";
+            if (gesturePassword == null || gesturePassword.Count == 0) return "Weak";
             int passwordLength = gesturePassword.Count;
             int uniqueGestureCount = new HashSet<int>(gesturePassword).Count;
             if (passwordLength >= 6 && uniqueGestureCount >= 4) return "Strong";
@@ -171,6 +171,7 @@ namespace UnityBox.AvatarSecuritySystem
             disableWarningSound = false;
             disableOverlay = false;
             defaultEnableDefense = false;
+            disableDefense = true;
             lightweightDefense = false;
             enablePlayableLayerObfuscation = true;
             writeDefaultsMode = WriteDefaultsMode.On;

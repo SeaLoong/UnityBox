@@ -103,6 +103,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public VRCAvatarDescriptor Descriptor;
             public VRCAvatarDescriptor.CustomAnimLayer[] BaseLayers;
             public VRCAvatarDescriptor.CustomAnimLayer[] SpecialLayers;
+            public VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters ExpressionParameters;
+            public bool CustomExpressions;
+            public bool CustomizeAnimationLayers;
         }
 
         private static readonly List<PlayableLayerSnapshot> PlayableLayerSnapshots = new List<PlayableLayerSnapshot>();
@@ -243,10 +246,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             //     ASS 自己复制所有控制器到 Generated
             if (!hasNDMF)
             {
-                if (Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation)
-                {
-                    Obfuscator.PreparePlayableControllerCopies(descriptor);
-                }
+                // FX generation modifies its controller regardless of the naming options.
+                Obfuscator.PreparePlayableControllerCopies(descriptor,
+                    fxOnly: !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation);
             }
 
             Debug.Log("[ASS] Starting to generate security system...");
@@ -295,7 +297,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     new Defense(fxController, avatarGameObject, assConfig, isDebugMode: isPlayMode).Generate();
                     if (isPlayMode)
                     {
-                        Debug.Log("[ASS] Play mode: Added simplified defense layer");
+                        Debug.Log("[ASS] Play mode: Active-load defense skipped; password/lock/feedback preview only");
                     }
                 }
                 catch (System.Exception ex)
@@ -347,7 +349,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (avatarGameObject == null) return;
 
             var config = ASSConfigData.FromAvatar(avatarGameObject);
-            if (config == null) return;
+            if (config == null)
+            {
+                ConfigSnapshots.Remove(avatarGameObject.GetInstanceID());
+                return;
+            }
 
             ConfigSnapshots[avatarGameObject.GetInstanceID()] = config;
             Debug.Log($"[ASS] Captured AvatarSecuritySystem configuration at {stage} from '{config.sourceObjectName}'");
@@ -377,7 +383,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Descriptor = descriptor,
                 BaseLayers = CloneAndSanitizePlayableLayers(descriptor.baseAnimationLayers),
-                SpecialLayers = CloneAndSanitizePlayableLayers(descriptor.specialAnimationLayers)
+                SpecialLayers = CloneAndSanitizePlayableLayers(descriptor.specialAnimationLayers),
+                ExpressionParameters = descriptor.expressionParameters,
+                CustomExpressions = descriptor.customExpressions,
+                CustomizeAnimationLayers = descriptor.customizeAnimationLayers
             });
         }
 
@@ -408,6 +417,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 snapshot.Descriptor.baseAnimationLayers = snapshot.BaseLayers;
                 snapshot.Descriptor.specialAnimationLayers = snapshot.SpecialLayers;
+                snapshot.Descriptor.expressionParameters = snapshot.ExpressionParameters;
+                snapshot.Descriptor.customExpressions = snapshot.CustomExpressions;
+                snapshot.Descriptor.customizeAnimationLayers = snapshot.CustomizeAnimationLayers;
                 EditorUtility.SetDirty(snapshot.Descriptor);
                 restoredCount++;
             }
@@ -461,7 +473,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (controller == null) return false;
 
             string path = AssetDatabase.GetAssetPath(controller)?.Replace('\\', '/');
-            if (string.IsNullOrEmpty(path)) return true;
+            if (string.IsNullOrEmpty(path)) return false;
 
             string generatedPath = ASSET_FOLDER.Replace('\\', '/').TrimEnd('/');
             return path.StartsWith(generatedPath + "/", System.StringComparison.OrdinalIgnoreCase)
@@ -511,10 +523,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (assConfig == null)
                 return true;
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !assConfig.enabledInPlaymode)
+            if (!ShouldProcessAvatar(assConfig))
                 return true;
 
-            if (!Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation)
+            if (assConfig.disableObfuscation || !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation)
                 return true;
 
             if (HasVRCContactComponents(avatarGameObject))
@@ -616,15 +628,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
 
-        private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSConfigData assConfig)
+        private static void RegisterASSParameters(VRCAvatarDescriptor descriptor, ASSConfigData assConfig, string assetFolder = null)
         {
-            var expressionParameters = descriptor.expressionParameters;
-            if (expressionParameters == null)
-            {
-                Debug.LogWarning("[ASS] VRCExpressionParameters not found, cannot register parameters");
-                return;
-            }
-            var existingParams = expressionParameters.parameters?.ToList()
+            // Register on a build-local copy. The descriptor can still reference the user's
+            // project asset even when its animator controllers were cloned by another tool.
+            var sourceParameters = descriptor.expressionParameters;
+            var expressionParameters = sourceParameters != null
+                ? Object.Instantiate(sourceParameters)
+                : ScriptableObject.CreateInstance<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters>();
+            expressionParameters.name = "ASS_BuildParameters";
+            descriptor.expressionParameters = expressionParameters;
+            descriptor.customExpressions = true;
+            var existingParams = expressionParameters.parameters?.Where(p => p != null).ToList()
                 ?? new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>();
             existingParams.RemoveAll(p => p.name == PARAM_PASSWORD_CORRECT);
             var assParams = new List<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter>
@@ -684,7 +699,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             assParams.AddRange(existingParams);
             expressionParameters.parameters = assParams.ToArray();
-            EditorUtility.SetDirty(expressionParameters);
+            assetFolder = assetFolder ?? ASSET_FOLDER;
+            System.IO.Directory.CreateDirectory(assetFolder);
+            AssetDatabase.Refresh();
+            AssetDatabase.CreateAsset(expressionParameters,
+                AssetDatabase.GenerateUniqueAssetPath(assetFolder + "/_Parameters.asset"));
+            EditorUtility.SetDirty(descriptor);
             Debug.Log($"[ASS] Registered ASS parameters: " +
                      $"{PARAM_PASSWORD_CORRECT}(synced)" +
                      (needTimeUp ? $", {PARAM_TIME_UP}(local)" : " (no TimeUp)") +
@@ -692,10 +712,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private static AnimatorController GetFXController(VRCAvatarDescriptor descriptor)
         {
+            descriptor.customizeAnimationLayers = true;
             var fxLayer = descriptor.baseAnimationLayers
                 .FirstOrDefault(l => l.type == VRCAvatarDescriptor.AnimLayerType.FX);
+            if (!fxLayer.isDefault && fxLayer.animatorController != null &&
+                !(fxLayer.animatorController is AnimatorController))
+                throw new System.InvalidOperationException(
+                    "[ASS] FX must be an AnimatorController. Resolve the override controller before generating ASS.");
             AnimatorController controller = null;
-            if (fxLayer.animatorController != null && fxLayer.animatorController is AnimatorController)
+            if (!fxLayer.isDefault && fxLayer.animatorController is AnimatorController)
             {
                 controller = fxLayer.animatorController as AnimatorController;
                 Debug.Log($"[ASS] Using existing FX Controller: {controller.name}");
@@ -722,10 +747,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
         private static void LoadAudioResources(ASSConfigData config)
         {
-            config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
-            config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
-            EnsureAudioLoadInBackground(config.successSound);
-            EnsureAudioLoadInBackground(config.warningBeep);
+            if (config.successSound == null)
+                config.successSound = Resources.Load<AudioClip>(AUDIO_PASSWORD_SUCCESS);
+            if (config.warningBeep == null)
+                config.warningBeep = Resources.Load<AudioClip>(AUDIO_COUNTDOWN_WARNING);
         }
         private static void CleanupASSGeneratedLayers(AnimatorController controller, string avatarName)
         {
@@ -913,19 +938,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             if (injectedCount > 0)
                 Debug.Log($"[ASS] Obfuscator: Injected fake states into {injectedCount} real layers");
-        }
-        private static void EnsureAudioLoadInBackground(AudioClip clip)
-        {
-            if (clip == null) return;
-            string path = AssetDatabase.GetAssetPath(clip);
-            if (string.IsNullOrEmpty(path)) return;
-            var importer = AssetImporter.GetAtPath(path) as AudioImporter;
-            if (importer == null) return;
-            bool changed = false;
-            if (!importer.loadInBackground) { importer.loadInBackground = true; changed = true; }
-            var settings = importer.defaultSampleSettings;
-            if (settings.quality > 0.01f) { settings.quality = 0.01f; importer.defaultSampleSettings = settings; changed = true; }
-            if (changed) importer.SaveAndReimport();
         }
         private static List<AnimationClip> GenerateInstructionalClips(AnimatorController controller)
         {

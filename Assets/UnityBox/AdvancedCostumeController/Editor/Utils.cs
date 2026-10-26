@@ -325,13 +325,44 @@ public static class Utils
       if (string.IsNullOrEmpty(part)) continue;
 
       segments.Add(part);
-      current = FindOrCreateChild(current, part);
+      current = FindOrCreateSubmenuChild(current, part);
       string semanticKey = string.IsNullOrEmpty(semanticKeyPrefix)
         ? null
         : semanticKeyPrefix + GetStablePathFromSegments(segments);
       EnsureSubmenuOnNode(current, presentation: presentation, semanticKey: semanticKey);
     }
     return current;
+  }
+
+  /// <summary>
+  /// 查找或创建路径中的菜单目录节点。
+  ///
+  /// 服装菜单可能先生成一个扁平 Toggle（例如没有部件且只有一个可选对象的
+  /// 服装），而另一个服装的 OutfitObject 路径随后又把同名节点当作父目录。
+  /// 不能把前者原地改成 SubMenu，否则后者会看起来被放进前一个服装菜单中。
+  /// 遇到非目录菜单项时创建同级唯一目录，保留原菜单项的语义。
+  /// </summary>
+  private static GameObject FindOrCreateSubmenuChild(GameObject parent, string name)
+  {
+    var existing = FindDirectChild(parent.transform, name);
+    if (existing == null) return FindOrCreateChild(parent, name);
+
+    var menuItem = existing.GetComponent<ModularAvatarMenuItem>();
+    if (menuItem == null || menuItem.PortableControl.Type == PortableControlType.SubMenu)
+      return existing.gameObject;
+
+    for (int suffix = 2; ; suffix++)
+    {
+      string candidateName = name + " (" + suffix + ")";
+      var candidate = FindDirectChild(parent.transform, candidateName);
+      if (candidate == null)
+        return FindOrCreateChild(parent, candidateName);
+
+      var candidateMenuItem = candidate.GetComponent<ModularAvatarMenuItem>();
+      if (candidateMenuItem == null ||
+          candidateMenuItem.PortableControl.Type == PortableControlType.SubMenu)
+        return candidate.gameObject;
+    }
   }
 
   /// <summary>用于跨语言恢复 Parts 子菜单展示属性的稳定语义键。</summary>
@@ -398,6 +429,28 @@ public static class Utils
     return new string(arr);
   }
 
+  /// <summary>保留可读前缀，并区分被文件名清理折叠的空格、标点和路径分隔符。</summary>
+  public static string GetStableAssetName(string value)
+  {
+    value = value ?? "";
+    string sanitized = SanitizeForFileName(value);
+    const int maximumPrefixLength = 80;
+    if (sanitized == value && sanitized.Length <= maximumPrefixLength)
+      return sanitized;
+    if (sanitized.Length > maximumPrefixLength)
+      sanitized = sanitized.Substring(0, maximumPrefixLength);
+    return sanitized + "_" + StableIdentifierHash(value);
+  }
+
+  private static string StableIdentifierHash(string value)
+  {
+    using (var algorithm = System.Security.Cryptography.SHA256.Create())
+    {
+      var bytes = algorithm.ComputeHash(System.Text.Encoding.UTF8.GetBytes(value));
+      return string.Concat(bytes.Take(8).Select(valueByte => valueByte.ToString("x2")));
+    }
+  }
+
   /// <summary>检查命名空间能否产生至少包含一个字母或数字的稳定资产名。</summary>
   public static bool HasUsableGenerationNamespace(string value)
   {
@@ -437,9 +490,13 @@ public static class Utils
   /// </summary>
   public static string BuildParamName(string paramPrefix, string relPath)
   {
+    relPath = relPath ?? "";
+    string path = Sanitize(relPath);
+    if (path != relPath)
+      path += "_" + StableIdentifierHash(relPath);
     if (string.IsNullOrEmpty(paramPrefix))
-      return Sanitize(relPath);
-    return paramPrefix + "/" + Sanitize(relPath);
+      return path;
+    return paramPrefix + "/" + path;
   }
 
   /// <summary>

@@ -71,7 +71,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return false;
 
             var config = avatarRoot.GetComponent<VisemeBlendshapeOverrideComponent>();
-            if (config == null)
+            if (config == null || !config.enabled)
                 return false;
 
             config.EnsureBindings();
@@ -220,10 +220,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                     }
                 }
 
-                voiceMin = Mathf.Clamp01(voiceMin);
-                voiceMax = Mathf.Clamp01(voiceMax);
-                if (voiceMax <= voiceMin)
-                    voiceMax = Mathf.Min(1f, voiceMin + 0.001f);
+                VisemeBlendshapeOverrideUtils.NormalizeVoiceRange(ref voiceMin, ref voiceMax);
 
                 resolved.Add(new ResolvedBinding
                 {
@@ -296,7 +293,10 @@ namespace UnityBox.VisemeBlendshapeOverride
 
                 state.motion = motion;
 
+                VisemeBlendshapeOverrideUtils.AddSubAsset(controller, state);
                 var transition = layer.stateMachine.AddAnyStateTransition(state);
+                transition.name = VisemeBlendshapeOverrideUtils.GeneratedAssetPrefix + viseme + "_Transition";
+                VisemeBlendshapeOverrideUtils.AddSubAsset(controller, transition);
                 transition.hasExitTime = false;
                 transition.duration = 0f;
                 transition.hasFixedDuration = true;

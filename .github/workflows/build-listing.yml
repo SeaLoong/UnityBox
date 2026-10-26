@@ -29,7 +29,8 @@ jobs:
 
       - name: Build VPM Listing
         run: |
-          set -e
+          set -euo pipefail
+          python3 .github/scripts/test_package_vpm.py
 
           # GitHub Pages URL 全部小写
           OWNER_LOWER=$(echo "${GITHUB_OWNER}" | tr '[:upper:]' '[:lower:]')
@@ -79,7 +80,7 @@ jobs:
 
             # 创建 zip 包
             ZIP_NAME="${PKG_NAME}-${PKG_VERSION}.zip"
-            (cd "${pkg_dir}" && zip -r "../../../_site/${ZIP_NAME}" . -x "*.meta" -x "*/Generated/*")
+            python3 .github/scripts/package_vpm.py "${pkg_dir}" "_site/${ZIP_NAME}"
 
             ZIP_URL="${REPO_URL}/${ZIP_NAME}"
             ZIP_SHA256=$(sha256sum "_site/${ZIP_NAME}" | cut -d' ' -f1)

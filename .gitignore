@@ -108,6 +108,10 @@ InitTestScene*.unity*
 /ProjectSettings
 *.meta
 
+# Plugin metadata must keep stable GUIDs across checkout, installation and updates.
+!/[Aa]ssets/UnityBox.meta
+!/[Aa]ssets/UnityBox/**/*.meta
+
 /Pumkin
 /Thry
 
@@ -117,3 +121,4 @@ InitTestScene*.unity*
 **/Generated/
 
 _build/
+__pycache__/

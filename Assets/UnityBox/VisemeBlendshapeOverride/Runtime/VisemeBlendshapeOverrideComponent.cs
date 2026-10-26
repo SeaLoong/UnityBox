@@ -242,21 +242,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (descriptor != null && targetRenderer == null)
                 targetRenderer = ResolveDefaultRenderer(descriptor);
 
-            if (descriptor == null)
-                return;
-
-            foreach (var binding in bindings)
-            {
-                if (binding == null)
-                    continue;
-
-                if (!string.IsNullOrWhiteSpace(binding.blendshapeName))
-                    continue;
-
-                var descriptorBlendshape = GetDescriptorBlendshapeName(descriptor, binding.viseme);
-                if (!string.IsNullOrWhiteSpace(descriptorBlendshape))
-                    binding.blendshapeName = descriptorBlendshape;
-            }
+            // Empty bindings intentionally follow the Descriptor, including later mapping edits.
         }
 
         private SkinnedMeshRenderer ResolveDefaultRenderer(VRCAvatarDescriptor descriptor)
@@ -265,15 +251,16 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (renderers == null || renderers.Length == 0)
                 return null;
 
+            if (descriptor != null && descriptor.VisemeSkinnedMesh != null &&
+                descriptor.VisemeSkinnedMesh.transform.IsChildOf(transform))
+                return descriptor.VisemeSkinnedMesh;
+
             var bodyRenderer = renderers.FirstOrDefault(renderer =>
                 string.Equals(renderer.name, "Body", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(renderer.gameObject.name, "Body", StringComparison.OrdinalIgnoreCase));
 
             if (bodyRenderer != null)
                 return bodyRenderer;
-
-            if (descriptor != null && descriptor.VisemeSkinnedMesh != null)
-                return descriptor.VisemeSkinnedMesh;
 
             return renderers.FirstOrDefault();
         }

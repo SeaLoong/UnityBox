@@ -1,6 +1,25 @@
 # Changelog
 
-## [0.7.24] - 2026-09-25
+以下历史版本条目保留发布时的描述；当前行为、默认值与限制以 Editor/README.md 和技术参考为准。历史验证不代表当前修订已重新执行测试。
+
+## [Unreleased]
+
+### Fixed
+
+- 独立构建始终隔离需要编辑的 FX 和 ExpressionParameters，恢复 Descriptor 原引用和开关；复制失败不再退回修改源资产。
+- 保留第三方内存 Controller，同源多 Playable 槽位的 Controller/Motion 副本分别隔离。
+- 修复 Holding 错误条件的不可达逻辑、成功/超时竞争、空密码 UI 和过期配置快照。
+- 保留显式音频引用，构建不再修改源音频/Logo 导入设置。
+
+### Changed
+
+- 新建/Reset 组件默认关闭主动负载；Play Mode 跳过负载生成，旧序列化配置不自动迁移。
+- 用户文档和技术参考按当前源码重写，删除固定第三方顺序、尾部密码匹配、通用防盗/兼容性等未经支持的承诺。
+- FX AnimatorOverrideController 明确报错；默认防御模式关闭 Lock 的组合仍不支持。
+
+### Tests
+
+- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。当前云端仅执行静态检查，未运行 Unity 编译或测试。
 
 ### Removed
 

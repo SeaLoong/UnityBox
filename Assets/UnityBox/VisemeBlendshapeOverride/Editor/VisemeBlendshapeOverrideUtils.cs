@@ -135,41 +135,54 @@ namespace UnityBox.VisemeBlendshapeOverride
                    path.Replace('\\', '/').StartsWith(FallbackGeneratedFolderRoot + "/", StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static AnimatorController GetOrCreateFallbackFxController(VRCAvatarDescriptor descriptor, GameObject avatarRoot)
+        /// <summary>Ensure a destination exists for the NDMF commit as well as the SDK fallback.</summary>
+        public static int EnsureFxLayer(VRCAvatarDescriptor descriptor)
         {
-            if (descriptor == null || descriptor.baseAnimationLayers == null)
-                return null;
-
-            var layers = descriptor.baseAnimationLayers;
+            if (descriptor == null) throw new ArgumentNullException(nameof(descriptor));
+            var layers = descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
             var fxIndex = Array.FindIndex(layers, layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX);
             if (fxIndex < 0)
-                return null;
-
-            var controllerPath = GetFallbackGeneratedControllerPath(avatarRoot);
-            EnsureFolder(Path.GetDirectoryName(controllerPath)?.Replace('\\', '/'));
-
-            var existingController = layers[fxIndex].animatorController as AnimatorController;
-            if (existingController != null)
             {
-                var path = AssetDatabase.GetAssetPath(existingController);
-                if (!string.Equals(path, controllerPath, StringComparison.OrdinalIgnoreCase))
+                fxIndex = layers.Length;
+                Array.Resize(ref layers, layers.Length + 1);
+                layers[fxIndex] = new VRCAvatarDescriptor.CustomAnimLayer
                 {
-                    existingController = CloneControllerToPath(existingController, controllerPath);
-                    layers[fxIndex].animatorController = existingController;
-                    layers[fxIndex].isDefault = false;
-                    descriptor.baseAnimationLayers = layers;
-                }
-
-                return existingController;
+                    type = VRCAvatarDescriptor.AnimLayerType.FX,
+                    isDefault = true,
+                };
             }
 
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-            if (controller == null)
-                controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            descriptor.baseAnimationLayers = layers;
+            if (descriptor.specialAnimationLayers == null)
+                descriptor.specialAnimationLayers = Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
+            return fxIndex;
+        }
+
+        internal static AnimatorController GetOrCreateFallbackFxController(VRCAvatarDescriptor descriptor, GameObject avatarRoot)
+        {
+            if (descriptor == null)
+                return null;
+
+            var fxIndex = EnsureFxLayer(descriptor);
+            var layers = descriptor.baseAnimationLayers;
+
+            var source = layers[fxIndex].isDefault ? null : layers[fxIndex].animatorController;
+            if (source != null && !(source is AnimatorController))
+                throw new InvalidOperationException("The fallback path requires an AnimatorController FX layer. " +
+                    "Use NDMF 1.7 or newer for AnimatorOverrideController support.");
+
+            // Each build gets its own asset; avatars with the same name must never overwrite each other.
+            var controllerPath = GetFallbackGeneratedControllerPath(avatarRoot);
+            EnsureFolder(Path.GetDirectoryName(controllerPath)?.Replace('\\', '/'));
+            controllerPath = AssetDatabase.GenerateUniqueAssetPath(controllerPath);
+            var controller = source is AnimatorController existingController
+                ? CloneControllerToPath(existingController, controllerPath)
+                : AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
             layers[fxIndex].animatorController = controller;
             layers[fxIndex].isDefault = false;
             descriptor.baseAnimationLayers = layers;
+            descriptor.customizeAnimationLayers = true;
             return controller;
         }
 
@@ -265,10 +278,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             float voiceMin,
             float voiceMax)
         {
-            var clampedMin = Mathf.Clamp01(voiceMin);
-            var clampedMax = Mathf.Clamp01(voiceMax);
-            if (clampedMax <= clampedMin)
-                clampedMax = Mathf.Min(1f, clampedMin + 0.001f);
+            var clampedMin = voiceMin;
+            var clampedMax = voiceMax;
+            NormalizeVoiceRange(ref clampedMin, ref clampedMax);
 
             var tree = new BlendTree
             {
@@ -282,6 +294,17 @@ namespace UnityBox.VisemeBlendshapeOverride
             tree.AddChild(zeroMotion, clampedMin);
             tree.AddChild(activeMotion, clampedMax);
             return tree;
+        }
+
+        public static void NormalizeVoiceRange(ref float min, ref float max)
+        {
+            min = float.IsNaN(min) ? 0f : Mathf.Clamp01(min);
+            max = float.IsNaN(max) ? 1f : Mathf.Clamp01(max);
+            if (max <= min)
+            {
+                max = Mathf.Min(1f, min + 0.001f);
+                min = Mathf.Max(0f, max - 0.001f);
+            }
         }
 
         public static bool ResolveWriteDefaults(
@@ -300,7 +323,8 @@ namespace UnityBox.VisemeBlendshapeOverride
             var controllers = new HashSet<AnimatorController>();
             if (descriptor != null)
             {
-                foreach (var layer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
+                foreach (var layer in (descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
+                    .Concat(descriptor.specialAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>()))
                 {
                     if (layer.isDefault)
                         continue;
@@ -313,7 +337,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 }
             }
 
-            controllers.Add(controller);
+            if (controller != null) controllers.Add(controller);
 
             foreach (var currentController in controllers)
             {
@@ -426,9 +450,11 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static string SanitizeAssetName(string rawName)
         {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = new string(rawName
-                .Select(character => invalidChars.Contains(character) ? '_' : character)
+            // Use the same single-segment name on every editor platform. In particular,
+            // neither dot segments nor backslashes may become paths during folder creation.
+            var sanitized = new string((rawName ?? string.Empty)
+                .Select(character => char.IsLetterOrDigit(character) || character == '_' || character == '-'
+                    ? character : '_')
                 .ToArray());
             return string.IsNullOrWhiteSpace(sanitized) ? "Avatar" : sanitized;
         }

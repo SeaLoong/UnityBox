@@ -27,7 +27,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 if (avatarRoot == null) return;
 
                 var config = ASSConfigData.FromAvatar(avatarRoot);
-                if (config == null) return;
+                if (config == null)
+                {
+                    Snapshots.Remove(avatarRoot.GetInstanceID());
+                    return;
+                }
 
                 Snapshots[avatarRoot.GetInstanceID()] = config;
                 Debug.Log($"[ASS] NDMF captured ASS configuration from '{config.sourceObjectName}'");

@@ -1,0 +1,22 @@
+{
+  "name": "UnityBox.BuildPipelineLogger.NDMF",
+  "rootNamespace": "UnityBox.BuildPipelineLogger",
+  "references": [
+    "UnityBox.BuildPipelineLogger",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "NDMF_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "",
+      "define": "NDMF_AVAILABLE"
+    }
+  ]
+}

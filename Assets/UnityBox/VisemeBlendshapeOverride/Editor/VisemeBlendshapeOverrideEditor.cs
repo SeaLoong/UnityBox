@@ -34,10 +34,9 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
-
             var component = (VisemeBlendshapeOverrideComponent)target;
             component.EnsureEditorDefaults();
+            serializedObject.Update();
 
             var descriptor = component.GetComponent<VRCAvatarDescriptor>();
             var resolvedRenderer = component.ResolveTargetRenderer(descriptor);
@@ -142,11 +141,11 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static void ClampVoiceRange(SerializedProperty minProperty, SerializedProperty maxProperty)
         {
-            minProperty.floatValue = Mathf.Clamp01(minProperty.floatValue);
-            maxProperty.floatValue = Mathf.Clamp01(maxProperty.floatValue);
-
-            if (maxProperty.floatValue <= minProperty.floatValue)
-                maxProperty.floatValue = Mathf.Min(1f, minProperty.floatValue + 0.001f);
+            var min = minProperty.floatValue;
+            var max = maxProperty.floatValue;
+            VisemeBlendshapeOverrideUtils.NormalizeVoiceRange(ref min, ref max);
+            minProperty.floatValue = min;
+            maxProperty.floatValue = max;
         }
 
         private static string BuildBindingHeader(
@@ -171,43 +170,31 @@ namespace UnityBox.VisemeBlendshapeOverride
             IReadOnlyList<string> blendshapeOptions,
             SerializedProperty blendshapeNameProperty)
         {
-            var currentName = ResolveCurrentBlendshapeName(descriptor, viseme, blendshapeNameProperty);
-            var options = new List<string> { "- None -" };
-            var currentIndex = 0;
-
-            if (!string.IsNullOrWhiteSpace(currentName) && !Contains(blendshapeOptions, currentName))
+            var storedName = blendshapeNameProperty.stringValue ?? string.Empty;
+            var options = new List<string> { "- Avatar Descriptor -", "- None -" };
+            int currentIndex = string.IsNullOrWhiteSpace(storedName) ? 0 : 1;
+            bool explicitName = !string.IsNullOrWhiteSpace(storedName) &&
+                storedName != VisemeBlendshapeOverrideComponent.NoneBlendshapeValue;
+            bool missing = explicitName && !Contains(blendshapeOptions, storedName);
+            if (missing)
             {
-                options.Add($"<Missing> {currentName}");
-                currentIndex = 1;
+                options.Add($"<Missing> {storedName}");
+                currentIndex = 2;
             }
+            int optionOffset = options.Count;
+            foreach (var option in blendshapeOptions) options.Add(option);
+            if (explicitName && !missing)
+                currentIndex = optionOffset + FindIndex(blendshapeOptions, storedName);
 
-            foreach (var option in blendshapeOptions)
-                options.Add(option);
-
-            if (!string.IsNullOrWhiteSpace(currentName))
-            {
-                var foundIndex = FindIndex(blendshapeOptions, currentName);
-                if (foundIndex >= 0)
-                    currentIndex = options.Count - blendshapeOptions.Count + foundIndex;
-            }
-
-            var nextIndex = EditorGUILayout.Popup("Blendshape", currentIndex, options.ToArray());
+            EditorGUI.BeginChangeCheck();
+            int nextIndex = EditorGUILayout.Popup("Blendshape", currentIndex, options.ToArray());
+            if (!EditorGUI.EndChangeCheck()) return;
             if (nextIndex == 0)
-            {
+                blendshapeNameProperty.stringValue = string.Empty;
+            else if (nextIndex == 1)
                 blendshapeNameProperty.stringValue = VisemeBlendshapeOverrideComponent.NoneBlendshapeValue;
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(currentName) && !Contains(blendshapeOptions, currentName) && nextIndex == 1)
-            {
-                blendshapeNameProperty.stringValue = currentName;
-                return;
-            }
-
-            var optionOffset = options.Count - blendshapeOptions.Count;
-            var selectedIndex = nextIndex - optionOffset;
-            if (selectedIndex >= 0 && selectedIndex < blendshapeOptions.Count)
-                blendshapeNameProperty.stringValue = blendshapeOptions[selectedIndex];
+            else if (nextIndex >= optionOffset)
+                blendshapeNameProperty.stringValue = blendshapeOptions[nextIndex - optionOffset];
         }
 
         private static string ResolveCurrentBlendshapeName(

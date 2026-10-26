@@ -1,0 +1,24 @@
+{
+  "name": "UnityBox.AvatarColliderMonitor.NDMF",
+  "rootNamespace": "UnityBox.AvatarColliderMonitor",
+  "references": [
+    "UnityBox.AvatarColliderMonitor",
+    "nadena.dev.ndmf",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "NDMF_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "",
+      "define": "NDMF_AVAILABLE"
+    }
+  ]
+}

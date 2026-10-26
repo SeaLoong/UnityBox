@@ -165,7 +165,7 @@ namespace UnityBox.AdvancedCostumeController
     {
       string animFolder = EnsureAnimFolder();
       string sanitizedName = activeObject != null
-        ? Utils.SanitizeForFileName(activeObject.name)
+        ? Utils.GetStableAssetName(activeObject.name)
         : "None";
       string animPath = Utils.CombineAssetPath(animFolder, $"Outfit_{index:D3}_{sanitizedName}.anim");
 
@@ -179,6 +179,7 @@ namespace UnityBox.AdvancedCostumeController
         .Concat(outfits.Select(outfit => outfit.OutfitObject))
         .Where(obj => obj != null)
         .Distinct();
+      var activeObjects = new List<GameObject>();
 
       foreach (var obj in objectsToAnimate)
       {
@@ -204,8 +205,10 @@ namespace UnityBox.AdvancedCostumeController
         var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
         string path = Utils.GetRelativePath(costumesRoot, obj);
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
+        if (active) activeObjects.Add(obj);
       }
 
+      ActivateAncestors(clip, activeObjects);
       WriteMaterialVariantCurves(clip, outfits, activeObject);
 
       AssetDatabase.CreateAsset(clip, animPath);
@@ -248,6 +251,7 @@ namespace UnityBox.AdvancedCostumeController
       // 混搭入口在独立参数模式下关闭非默认服装组，同时保留默认服装组与其默认
       // 选择对象。共享普通部件参数模式则打开所有基础服装组，由普通部件参数
       // 决定每个服装组的部件是否显示。
+      var activeObjects = new List<GameObject>();
       foreach (var obj in objectsToAnimate)
       {
         bool active;
@@ -273,7 +277,9 @@ namespace UnityBox.AdvancedCostumeController
         var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
         string path = Utils.GetRelativePath(costumesRoot, obj);
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
+        if (active) activeObjects.Add(obj);
       }
+      ActivateAncestors(clip, activeObjects);
 
       if (!config.UseIndependentMixerPartParameters)
       {
@@ -315,7 +321,7 @@ namespace UnityBox.AdvancedCostumeController
         config.UseIndependentMixerPartParameters ? defaultChoice : null);
       if (!config.UseIndependentMixerPartParameters)
       {
-        foreach (var outfit in outfits.GroupBy(item => item.OutfitObject)
+        foreach (var outfit in outfits.GroupBy(item => item.BaseObject)
           .Select(group => group.First()))
         {
           var choices = outfit.GetAllObjects();
@@ -342,11 +348,11 @@ namespace UnityBox.AdvancedCostumeController
       bool hasNormalParts = outfits.Any(o => o.GetPartControls().Count > 0);
       bool hasIndependentMixerParts = config.EnableCustomMixer &&
         config.UseIndependentMixerPartParameters && outfits
-        .GroupBy(outfit => outfit.OutfitObject)
+        .GroupBy(outfit => outfit.BaseObject)
         .Any(group => group.First().GetMixerPartSlots().Count > 0);
       bool hasSharedMixerVariants = config.EnableCustomMixer &&
         !config.UseIndependentMixerPartParameters && outfits
-        .GroupBy(outfit => outfit.OutfitObject)
+        .GroupBy(outfit => outfit.BaseObject)
         .Any(group => group.First().GetAllObjects().Count > 1);
       if (!hasNormalParts && !hasIndependentMixerParts && !hasSharedMixerVariants) return;
 
@@ -453,10 +459,10 @@ namespace UnityBox.AdvancedCostumeController
         });
       }
 
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject) ||
+        if (!processedOutfitBases.Add(outfit.BaseObject) ||
             outfit.GetAllObjects().Count <= 1)
           continue;
 
@@ -512,8 +518,8 @@ namespace UnityBox.AdvancedCostumeController
       int index)
     {
       string animFolder = EnsureAnimFolder("Mixer");
-      string safeGroup = Utils.SanitizeForFileName(outfit.RelativePath);
-      string safeChoice = Utils.SanitizeForFileName(activeObject?.name ?? "None");
+      string safeGroup = Utils.GetStableAssetName(outfit.RelativePath);
+      string safeChoice = Utils.GetStableAssetName(activeObject?.name ?? "None");
       string animPath = Utils.CombineAssetPath(animFolder,
         $"MixerVariant_{safeGroup}_{index:D3}_{safeChoice}.anim");
       var clip = CreateBaseClip();
@@ -529,6 +535,7 @@ namespace UnityBox.AdvancedCostumeController
         .Where(obj => obj != null)
         .Distinct();
 
+      var activeObjects = new List<GameObject>();
       foreach (var obj in objects)
       {
         bool active = obj == outfit.OutfitObject;
@@ -543,8 +550,10 @@ namespace UnityBox.AdvancedCostumeController
         var curve = AnimationCurve.Constant(0, 1f / 60f, active ? 1f : 0f);
         string path = Utils.GetRelativePath(costumesRoot, obj);
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", curve);
+        if (active) activeObjects.Add(obj);
       }
 
+      ActivateAncestors(clip, activeObjects);
       WriteMaterialVariantCurves(clip, new[] { outfit }, activeObject);
       AssetDatabase.CreateAsset(clip, animPath);
       return clip;
@@ -623,10 +632,10 @@ namespace UnityBox.AdvancedCostumeController
       AssetDatabase.AddObjectToAsset(blendTree, controller);
 
       var children = new List<ChildMotion>();
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
         var slots = outfit.GetMixerPartSlots();
         if (slots.Count == 0) continue;
         var activationClip = CreateMixerOutfitActivationClip(outfit,
@@ -703,7 +712,7 @@ namespace UnityBox.AdvancedCostumeController
     private AnimationClip CreateEmptyMixerActivationClip(string label)
     {
       string animFolder = EnsureAnimFolder("Mixer");
-      string safeName = Utils.SanitizeForFileName(label);
+      string safeName = Utils.GetStableAssetName(label);
       string animPath = Utils.CombineAssetPath(animFolder, $"MixerOutfit_{safeName}_Inactive.anim");
       var clip = CreateBaseClip();
       AssetDatabase.CreateAsset(clip, animPath);
@@ -713,7 +722,7 @@ namespace UnityBox.AdvancedCostumeController
     private AnimationClip CreatePartToggleClip(IEnumerable<GameObject> parts, bool active, string paramName)
     {
       string animFolder = EnsureAnimFolder("Parts");
-      string sanitized = Utils.SanitizeForFileName(paramName);
+      string sanitized = Utils.GetStableAssetName(paramName);
       string animPath = Utils.CombineAssetPath(animFolder, $"{sanitized}_{(active ? "ON" : "OFF")}.anim");
 
       var clip = CreateBaseClip();
@@ -814,10 +823,10 @@ namespace UnityBox.AdvancedCostumeController
       if (!config.UseIndependentMixerPartParameters) return;
 
       // CustomMixer 各部件的独立参数
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
         foreach (var slot in outfit.GetMixerPartSlots())
         {
           string slotParamName = Mixer.BuildMixerSlotParamName(config, outfit, slot);
@@ -842,10 +851,10 @@ namespace UnityBox.AdvancedCostumeController
     {
       if (config.UseIndependentMixerPartParameters) return;
 
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
 
         var choices = outfit.GetAllObjects();
         if (choices.Count <= 1) continue;
@@ -866,7 +875,7 @@ namespace UnityBox.AdvancedCostumeController
     private AnimationClip CreateMixerOutfitActivationClip(OutfitData outfit, string label)
     {
       string animFolder = EnsureAnimFolder("Mixer");
-      string safeName = Utils.SanitizeForFileName(label);
+      string safeName = Utils.GetStableAssetName(label);
       string animPath = Utils.CombineAssetPath(animFolder, $"MixerOutfit_{safeName}.anim");
       var clip = CreateBaseClip();
       var objects = new[] { outfit.OutfitObject }
@@ -892,6 +901,7 @@ namespace UnityBox.AdvancedCostumeController
         string path = Utils.GetRelativePath(costumesRoot, obj);
         clip.SetCurve(path, typeof(GameObject), "m_IsActive", activeCurve);
       }
+      ActivateAncestors(clip, objects);
       foreach (var part in allParts)
       {
         // Mixer 槽位候选完全由对应的 Simple1D 子树负责；这里不再写入 0，
@@ -902,6 +912,29 @@ namespace UnityBox.AdvancedCostumeController
       }
       AssetDatabase.CreateAsset(clip, animPath);
       return clip;
+    }
+
+    /// <summary>
+    /// 共享组织容器不属于任一服装的开关，但选中其后代时必须显式启用它。
+    /// 在直接对象曲线之后写入，避免把选中对象的祖先保留为关闭状态。
+    /// 不控制 CostumesRoot 或 Avatar 根本身。
+    /// </summary>
+    private void ActivateAncestors(AnimationClip clip, IEnumerable<GameObject> activeObjects)
+    {
+      var ancestors = new HashSet<Transform>();
+      foreach (var obj in activeObjects)
+      {
+        if (obj == null || obj == costumesRoot ||
+            !obj.transform.IsChildOf(costumesRoot.transform)) continue;
+        for (var parent = obj.transform.parent;
+             parent != null && parent != costumesRoot.transform;
+             parent = parent.parent)
+          ancestors.Add(parent);
+      }
+
+      foreach (var ancestor in ancestors)
+        clip.SetCurve(Utils.GetRelativePath(costumesRoot, ancestor.gameObject),
+          typeof(GameObject), "m_IsActive", AnimationCurve.Constant(0, 1f / 60f, 1f));
     }
 
     private BlendTree CreateMixerSlotBlendTree(
@@ -963,7 +996,7 @@ namespace UnityBox.AdvancedCostumeController
       string label)
     {
       string animFolder = EnsureAnimFolder("Mixer");
-      string safeName = Utils.SanitizeForFileName(label);
+      string safeName = Utils.GetStableAssetName(label);
       string animPath = Utils.CombineAssetPath(animFolder, $"MixerVariant_{safeName}.anim");
 
       var clip = CreateBaseClip();
@@ -1283,7 +1316,7 @@ namespace UnityBox.AdvancedCostumeController
 
     private AnimatorControllerLayer CreateLayer(string name, AnimatorController controller)
     {
-      string namespaceLabel = Utils.SanitizeForFileName(config.GetGenerationNamespace());
+      string namespaceLabel = Utils.GetStableAssetName(config.GetGenerationNamespace());
       string layerName = string.IsNullOrEmpty(namespaceLabel)
         ? name : namespaceLabel + "/" + name;
 

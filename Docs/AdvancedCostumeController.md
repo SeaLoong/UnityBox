@@ -11,9 +11,9 @@ ACC 不仅可用于完整服装，也可用于头发、眼睛、饰品等 Avatar
 
 ## 前置条件
 
-- Unity `2022.3` 或兼容版本；
-- VRChat SDK Avatars；
-- Modular Avatar `1.10.0` 或更高版本；
+- Unity `2022.3`；其他版本尚未验证；
+- VRChat SDK Avatars `3.7.0` 或更高版本；
+- Modular Avatar `1.18.0` 或更高版本；
 - 已有 `ACCOutfitMarker`、`MA Outfit Root` 或 `MA Merge Armature` 的服装会被优先识别，其中 ACC 自己的标记优先级最高；
 - 自动识别时：目标区域中至少有一个 `SkinnedMeshRenderer`，且正确指定了 `rootBone`；
 - 无独立骨架或网格时：将 `ACCOutfitMarker` 挂到服装根对象；
@@ -56,8 +56,8 @@ Avatar
 |---|---|
 | **Costumes Root** | 本次 ACC 扫描与动画绑定的根节点；生成动画路径都相对它计算。 |
 | **Outfit Base** | 被识别为一套服装本体的对象；它拥有 `MA Outfit Root`、`MA Merge Armature` 骨架分支、可推导的独立骨架，或带有 `ACCOutfitMarker` 显式标记。 |
-| **Outfit Object** | 菜单中代表一套服装的对象；有变体时是共同父对象，无变体时等于 Outfit Base。 |
-| **Part / 部件** | Outfit Base 的直接子对象，含网格且不属于骨架分支。 |
+| **Outfit Object** | 服装组的控制与菜单根；独占的变体/共享骨架容器可作为组根。容器还包含其他独立服装时回退到各自 Base；不会把 Costumes Root 当成服装组根。 |
+| **Part / 部件** | 自动部件是本体直接子层级中的网格容器；显式 `ACCPartGroupMarker` 还可声明更深层对象或无网格容器。 |
 | **Variant / 变体** | 与 Outfit Base 同级的替换对象，或材质变体标记对象。 |
 | **Parameter Prefix** | ACC 的唯一命名空间，同时也是主服装选择参数；两值选择域可使用 Bool，多值域使用 Int。 |
 | **Root Menu Name** | VRChat 菜单中根节点的显示名称；留空时与 Parameter Prefix 一致。 |
@@ -66,14 +66,11 @@ Avatar
 
 ### Outfit Base 的识别条件
 
-ACC 不会再以“找到 Mesh 后取其父对象”的方式猜测服装根。若对象拥有 ACC 自己的 `ACCOutfitMarker`，或拥有 `MA Outfit Root`/直接骨架分支中的 `MA Merge Armature`，ACC 会优先将其作为明确的服装信号；否则兼容原有规则，一个对象成为 Outfit Base 需要同时满足：
+扫描优先处理 `ACCOutfitMarker` 及材质变体明确指向的本体，其次是 `MA Outfit Root`。包含这些显式本体的祖先只作为组织容器，扫描器会继续向下查找本体。
 
-1. 后代包含可渲染网格；
-2. 后代包含 `SkinnedMeshRenderer`；
-3. 至少一个 `SkinnedMeshRenderer.rootBone` 位于该对象的后代；
-4. 从 root bone 向上到 Outfit Base 的顶层骨架分支本身不含 Mesh。
+没有显式服装声明时，扫描器会尝试从所属的 `MA Merge Armature` 或 `SkinnedMeshRenderer.rootBone` 推导骨架。自动命中要求当前节点拥有直接骨架分支并且后代有网格；最低共同祖先关系用于避免把包含多套服装的上层目录当成一套服装。骨架分支内包含 Mesh 并非一律被排除，识别以实际归属关系为准。
 
-因此，识别由真实骨架结构决定，**不依赖对象名称**。`Armature`、`Bone`、`Skeleton` 等名称无需配置忽略列表；ACC 已没有 Ignore Names 选项。
+识别不依赖 `Armature`、`Bone` 等对象名称，也没有 Ignore Names 配置。复杂层级无法自动判断时，优先用显式标记表达归属。
 
 对于由旧规则识别出的独立骨架，若尚未存在 `MA Merge Armature`，ACC 会在用户确认 **Generate** 后直接调用 Modular Avatar 的 **Setup Outfit**。因此 Armature 目标、锁定模式、骨骼命名修正、Mesh Settings 与未来 MA 版本的修复逻辑均由 MA 自己处理；刷新预览不会改动 Avatar。若 MA 的调用失败或没有实际添加组件，ACC 才会以当前 MA 默认语义（Avatar Armature、`BaseToMerge`、默认名称处理）创建最小兜底，并写入 Warning。
 
@@ -97,7 +94,7 @@ Costumes Root
     └── Shoes Mesh
 ```
 
-Marker 是完全显式的声明：即使对象本身及后代没有网格或骨架，ACC 也会将它识别为服装。带 Marker 的同级对象也可作为无网格变体加入同一变体组。标记命中后，ACC 和自动识别服装一样停止扫描其后代，因此其中嵌套网格会继续按部件规则处理，不会成为另一套服装。
+Marker 是完全显式的声明：即使对象本身及后代没有网格或骨架，ACC 也会将它识别为服装。带 `ACCOutfitMarker` 或 `MA Outfit Root` 的同级对象会保留为独立服装，不会被吞为变体；无网格材质变体使用 `ACCVariantMaterialOverride` 并指向本体。标记命中后，ACC 和自动识别服装一样停止扫描其后代，因此其中嵌套网格会继续按部件规则处理，不会成为另一套服装。
 
 `ACC Outfit Marker` 的 Inspector 同时提供该套服装的部件菜单名称格式化设置；规则会随 Marker 持久保存，不受 ACC 窗口关闭或刷新影响。
 
@@ -117,12 +114,12 @@ Outfit
 
 ### 部件的识别条件
 
-ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
+没有显式部件标记时，ACC 自动收集 Outfit Base 的**直接子对象**。对象需要：
 
 - 自身或后代包含 `SkinnedMeshRenderer`，或 `MeshRenderer + MeshFilter`；
 - 不在任意服装骨架的 `rootBone` 分支内。
 
-菜单、PhysBone 配置、Constraint 容器等不含网格的功能对象不会成为部件，也不会被部件动画直接开关。
+菜单、PhysBone 配置、Constraint 容器等无网格对象不会成为自动部件。`ACCPartGroupMarker` 可显式控制无网格或更深层对象；标记子对象会抑制覆盖它的自动父部件，避免重叠控制。
 
 ## 窗口配置
 
@@ -151,7 +148,7 @@ ACC 仅收集 Outfit Base 的**直接子对象**。对象需要：
 共享 Mixer 变体参数：Hair/Mixer/{OutfitGroupPath}/Variant（仅在该服装组有多个已选对象时生成）
 ```
 
-混搭参数路径统一使用固定前缀 `Mixer`，不受用户自定义的混搭菜单名称影响。
+上述路径是逻辑格式。相对路径中的空格、标点等被替换时会追加原路径的稳定 SHA256 后缀，以区分 `A-B`、`A B`、`A_B`；以窗口显示的实际参数为准。主参数前缀按输入保留。混搭参数路径统一使用固定前缀 `Mixer`，不受用户自定义的混搭菜单名称影响。
 
 同一 Avatar 上每套 ACC 必须使用不同前缀。例如：
 
@@ -191,8 +188,8 @@ Clothes Root Menu
 Clothes Root Menu
 └── Casual Outfit
     ├── Parts
-    │   ├── Hat           → Clothes/Casual_Outfit/Hat
-    │   └── Glasses       → Clothes/Casual_Outfit/Glasses
+    │   ├── Hat           → 对应部件 Bool
+    │   └── Glasses       → 对应部件 Bool
     └── Casual Outfit     → Clothes = 0
 ```
 
@@ -291,7 +288,7 @@ ACC 窗口会始终显示该服装所有扫描到的部件决策，即使尚未�
 
 Inspector 会列出该 Outfit Marker 下所有扫描到的可控制与已排除部件，并显示 `Auto`、`Marker Group`、`Excluded Marker` 决策标签和格式化后的菜单名称。例如，前缀设置为 `Clothes_` 时，`Clothes_Hat` 在预览和菜单中显示为 `Hat`。没有 `ACC Outfit Marker` 的自动识别服装不会应用名称格式化。
 
-格式化只影响自动部件的**菜单显示名称**。参数名、Animator 控制条件和动画绑定路径仍使用原始层级，确保重命名显示文本不会破坏已有参数契约。`ACC Part Group Marker` 的显式 Group Name 不会被格式化。
+不同部件格式化成同一个名称时，菜单节点会追加序号，保留各自控制项；只有显式使用同一分组才共享参数。格式化只影响自动部件的**菜单显示名称**。参数名、Animator 控制条件和动画绑定路径仍使用原始层级，确保重命名显示文本不会破坏已有参数契约。`ACC Part Group Marker` 的显式 Group Name 不会被格式化。
 
 ### 组件 Inspector
 
@@ -334,14 +331,17 @@ Costumes Root
 ```
 
 识别规则：
-- 自动排除自身就是完整服装（拥有骨架）的同级对象；
-- 自动排除挂有 `ACCOutfitMarker` 的同级对象；
+- 未明确声明为本体材质变体的完整服装兄弟会被排除；
+- 挂有 `ACCOutfitMarker` 或 `MA Outfit Root` 的同级对象保留为独立服装；
+- 包裹另一套显式/自动识别服装的同级组织目录也被排除；
 - 如果同级对象带有 `ACCVariantMaterialOverride`，仅当其所指服装为本体时才作为变体；
 - 如果同级对象只有网格但无明确归属，且尚未被其他 Outfit 认领，则作为当前服装的变体。
 
 > 当同层存在多套服装时，建议为变体添加 `ACCVariantMaterialOverride` 组件并正确设置 Outfit Base，以避免归属歧义。
 
-有可控制部件时，ACC 将变体组的共同父对象作为菜单节点，并在其中生成各变体和 Parts 菜单；没有可控制部件且只有一个已选对象时，才会直接放到当前父菜单，不再额外生成“变体/部件”层。如果存在多个已选 Base/Variant，仍保留服装组菜单层并在其中生成对象选择项，但不创建 Parts 菜单。`MA Outfit Root`、`ACCOutfitMarker` 和已配置的 `MA Merge Armature` 会阻止 ACC 继续向下把嵌套服装误识别为当前服装的变体。
+有可控制部件时，ACC 使用扫描得到的服装组根作为菜单节点，并在其中生成各变体和 Parts 菜单；没有可控制部件且只有一个已选对象时，才会直接放到当前父菜单，不再额外生成“变体/部件”层。如果存在多个已选 Base/Variant，仍保留服装组菜单层并在其中生成对象选择项，但不创建 Parts 菜单。`MA Outfit Root`、`ACCOutfitMarker` 和已配置的 `MA Merge Armature` 会阻止 ACC 继续向下把嵌套服装误识别为当前服装的变体。
+
+若 `P` 下同时有 `A + A_variant` 和独立服装 `B`，P 只是组织目录，A、B 各自以 Base 为组根；菜单保留 `P/A`、`P/B` 的完整路径，选中服装时会启用所需父目录。`P/B` 和 `Q/B` 不会合并为同一个 Mixer 菜单。
 
 > 选择任意对象变体时，ACC 会保持 Outfit Base 活动，以承载可能位于本体下的共享部件。若所有同级变体都包含完整 Mesh，请先在 Avatar 中验证 Base 与变体同时 active 时不会产生叠穿。
 
@@ -406,9 +406,9 @@ Inspector 的两个列表默认展开：
 3. 使用 **GameObject > AdvancedCostumeController > 转换成服装变体 (Convert to Outfit Variant)**。
 4. ACC 会按 Outfit Marker、MA Merge Armature/独立骨架和 Renderer 匹配度自动识别同级本体；无法唯一判断时会停止，不会猜测修改。
 5. 在确认窗口核对自动识别的本体和变体来源。
-6. ACC 会添加或更新组件并生成多数全局规则与少数精准例外；可在 Inspector 中继续调整。
+6. ACC 先只读检查是否有匹配材质槽位；没有匹配时停止并保留来源对象。成功转换会添加/更新材质标记，并清除来源的组件和子对象，留下材质规则；需要保留完整来源时先复制一份。可在 Inspector 中继续调整规则。
 
-所有转换、自动分析、刷新和列表编辑都支持 Unity Undo/Redo。重复转换会复用现有组件并重新生成确定性配置。
+转换、自动分析、刷新和列表编辑支持场景 Undo/Redo。已转换对象不再保有完整来源层级，再次分析请使用 Inspector 的外部材质来源；重复点击转换不能恢复已删除的来源。
 
 材质曲线会写入普通 `Outfit Switching` Clip，不会生成独立材质 Layer。每次切换都会先恢复原材质，再应用当前材质变体，避免前一个变体残留。
 
@@ -416,11 +416,11 @@ Inspector 的两个列表默认展开：
 
 Custom Mixer（混搭）是主服装选择中的一个特殊服装状态。它**必须启用 Parts Control**，并提供两种部件参数策略。
 
-默认关闭 **Use Independent Part Parameters / 使用独立部件参数** 时，混搭复用普通部件菜单已经生成的 Bool 参数：进入混搭后激活所有已选基础服装组，由各服装组的普通部件参数控制部件；这种模式不新增混搭槽位参数，适合优先减少同步参数的 Avatar。共享部件菜单带有 Parts 默认图标；服装组存在多个已选对象时，会在服装组菜单内与该菜单同级新增一个整体变体选择域用于选择 Base/Variant，关闭压缩时为同步 Int，开启压缩时按选择域规则编码为同步 Bool 位；只有一个对象时不生成该参数。它不再为每个部件槽位分别生成变体参数。
+默认关闭 **Use Independent Part Parameters / 使用独立部件参数** 时，混搭复用普通部件菜单已经生成的 Bool 参数：进入混搭后激活所有已选基础服装组，由各服装组的普通部件参数控制部件；这种模式不新增混搭槽位参数，适合优先减少同步参数的 Avatar。共享部件菜单带有 Parts 默认图标；服装组存在多个已选对象时，会在服装组菜单内与该菜单同级新增一个整体变体选择域用于选择 Base/Variant，两值时直接为同步 Bool，多值关闭压缩时为同步 Int，开启压缩时编码为同步 Bool 位；只有一个对象时不生成该参数。它不再为每个部件槽位分别生成变体参数。
 
 开启 **Use Independent Part Parameters / 使用独立部件参数** 时，每种部件/分组使用一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件。不同服装组之间可以自由组合；材质变体作为候选时，只对当前部件槽位的 Renderer 应用材质替换，不会因为一个部件开关重染整套服装。
 
-独立参数模式的混搭菜单按“服装组 → 版本 → 部件/分组候选”组织。普通模式的部件控制顺序和分组名称会被复用：
+独立参数模式的混搭菜单按“服装组 → 版本 → 部件/分组候选”组织。普通模式的部件控制顺序和当前预览分组会被复用；本体候选以本次勾选为准，取消的本体/变体不再回到候选中，没有可选候选的槽位不生成：
 
 - 同一服装组、同一部件/分组槽位只能选择一个候选；
 - 同一服装组、不同部件/分组槽位可以同时选择；
@@ -479,41 +479,45 @@ Outfit B：Base + Variant B1，部件 D / E / F
 {ParameterPrefix}/{OutfitPath}/Groups/{GroupName}
 ```
 
-独立部件参数模式下，每个部件/分组槽位使用一个参数；两值槽位为 Bool，多值槽位未压缩时为同步 Int（8 bits），启用压缩后为对应数量的同步 Bool 位。共享模式下，每个有多个已选对象的服装组使用一个整体变体选择域，未压缩时为同步 Int，启用压缩后按选择域编码，部件仍复用普通 Bool 参数。Mixer 主选择值紧随最后一个普通服装对象；VRChat Int 可表达范围限制普通服装对象数量最多为 255。
+独立部件参数模式下，每个部件/分组槽位使用一个参数；两值槽位为 Bool，多值槽位未压缩时为同步 Int（8 bits），启用压缩后为对应数量的同步 Bool 位。共享模式下，每个有多个已选对象的服装组使用一个整体变体选择域，两值时为同步 Bool，多值未压缩时为同步 Int，启用压缩后按选择域编码，部件仍复用普通 Bool 参数。Mixer 主选择值紧随最后一个普通服装对象。启用 Mixer 时最多 255 个普通选择对象；未启用 Mixer 时最多 256 个（索引 0–255）。
 
 ### 混搭菜单示例
 
-独立部件参数模式示例：
+下面假设普通选择共有 `JacketBase`、`JacketRed`、`PantsBase` 三个对象，Mixer 入口值为 **3**，不是固定的 255。名称使用安全字符，示例只展示一个部件槽位。
+
+独立部件参数模式：
 
 ```text
 Clothes Root Menu
 └── Custom Mix
-    ├── Enable                     → Clothes = 255
-    ├── Jacket Base
-    │   ├── Collar                  → Clothes/Mixer/Jacket_Variants/Parts/Collar = 1
-    │   └── Upper                   → Clothes/Mixer/Jacket_Variants/Groups/Upper = 1
-    ├── Jacket Red
-    │   ├── Collar                  → Clothes/Mixer/Jacket_Variants/Parts/Collar = 2
-    │   └── Upper                   → Clothes/Mixer/Jacket_Variants/Groups/Upper = 2
-    └── Pants Base
-        └── Belt                    → Clothes/Mixer/Pants/Parts/Belt = 1
+    ├── Enable Custom Mix          → Clothes = 3
+    ├── Jacket
+    │   ├── JacketBase
+    │   │   └── Collar             → Clothes/Mixer/Jacket/Parts/Collar = 1
+    │   └── JacketRed
+    │       └── Collar             → Clothes/Mixer/Jacket/Parts/Collar = 2
+    └── PantsBase
+        └── PantsBase
+            └── Belt               → 对应槽位值 = 1（0 为 Off）
 ```
 
-共享普通部件参数模式示例：
+共享普通部件参数模式：
 
 ```text
 Clothes Root Menu
 └── Custom Mix
-    ├── Enable                     → Clothes = 255
-    ├── Jacket Base                → Clothes/Mixer/Jacket_Variants/Variant = 0
-    ├── Jacket Red                 → Clothes/Mixer/Jacket_Variants/Variant = 1
-    ├── Shared Parts
-    │   ├── Collar                 → Clothes/Jacket_Variants/Parts/Collar
-    │   └── Upper                  → Clothes/Jacket_Variants/Groups/Upper
-    └── Pants Base
+    ├── Enable Custom Mix          → Clothes = 3
+    ├── Jacket
+    │   ├── JacketBase             → 对应整体变体值 = 0
+    │   ├── JacketRed              → 对应整体变体值 = 1
+    │   └── Shared Parts
+    │       └── Collar             → 普通 Collar Bool
+    └── PantsBase
         └── Shared Parts
-            └── Belt               → Clothes/Pants/Parts/Belt
+            └── Belt               → 普通 Belt Bool
 ```
+
+整体变体域恰好两个值时使用同步 Bool；多于两个值时才使用 Int 或压缩位。
 
 ## 生成结果与多实例隔离
 
@@ -536,7 +540,7 @@ Clothes Root Menu
 {ResolvedGeneratedFolder}/MenuIcons/*.png
 ```
 
-生成过程不会进入 Play Mode、不会修改场景对象，也不依赖 Av3Emulator。材质变体会在克隆 Avatar 的原始 Renderer 上应用全局替换与精准 Renderer 槽位覆盖。自动生成只会清理并替换本次实际拍摄请求的图标；根菜单、Parts 菜单及其它未拍摄节点的已有图标会保留。根菜单缺省使用 `Resources/OutlineClothing2.png`，Parts 文件夹使用 `Resources/OutlineBlank2.png`；开启自动图标时部件子项拍摄自身网格，关闭时不会给部件子项补这张预置图。
+图标拍摄不会进入 Play Mode，不修改原网格/骨骼姿态，也不依赖 Av3Emulator；完整 Generate 仍会修改场景中的菜单、参数和 MA 组件。材质变体会在克隆 Avatar 的原始 Renderer 上应用全局替换与精准 Renderer 槽位覆盖。拍摄器只更新实际请求的菜单项；但开启自动图标时，完整 Generate 会重建整个专属输出目录，其中的旧图标也会删除。位于该目录外的手工图标可通过展示属性恢复；不要把需长期保留的图标放在生成目录。根菜单缺省使用 `Resources/OutlineClothing2.png`，Parts 文件夹使用 `Resources/OutlineBlank2.png`；开启自动图标时部件子项拍摄自身网格，关闭时不会给部件子项补这张预置图。
 
 设计参考：[Narazaka/ParameterIconGenerator](https://github.com/Narazaka/ParameterIconGenerator)（Zlib License）。参考项目在 Play Mode 中通过 Av3Emulator 切换参数；ACC 仅复用通用的 Camera、RenderTexture 与 PNG 输出思路，并根据自身生成数据采用独立的 Preview Scene 实现。
 
@@ -568,17 +572,17 @@ ACC 创建的 `ModularAvatarParameters` 直接挂在 `ACC_Menu` 上（MA 不允�
 实际输出路径：
 
 ```text
-{OutputFolder}/{SceneName}/{AvatarName}/{ParameterPrefix}/
-├── {SanitizedParameterPrefix}.controller
+{OutputFolder}/{StableSceneName}/{StableAvatarName}/{StableParameterPrefix}/
+├── {StableParameterPrefix}.controller
 ├── Animations/
     ├── Outfit_000_*.anim
-    ├── Outfit_XXX_Mixer.anim
+    ├── Outfit_XXX_CustomMixer.anim
     ├── Parts/*.anim
     └── Mixer/*.anim
 └── MenuIcons/*.png
 ```
 
-外层 Scene 和 Avatar 两级用于隔离不同场景中的同名 Avatar，以及同一场景中不同名称的 Avatar。最后一级只使用 **Parameter Prefix**，不再使用 Root Menu Name，因此默认不会出现 `Costumes/Costumes`。
+Scene、Avatar、Parameter Prefix 各段经稳定文件名转换：由字母、数字、下划线组成的短名称保持原样，其余名称清理并追加稳定哈希，过长可读前缀截断。Root Menu Name 不参与目录。隔离依据是这些名称，并非对象实例或场景完整路径：同名场景、同名 Avatar 加同一 Prefix 仍可能共用输出，需使用不同前缀或 Output Folder。
 
 Layer 名也带 Parameter Prefix：
 
@@ -595,18 +599,18 @@ Hair/Parameter Compression（启用压缩时）
 若当前 ACC Controller 已存在，生成摘要会提示继续生成将覆盖。确认后，会清理并重建当前 Scene / Avatar / ACC 专属目录：
 
 ```text
-{OutputFolder}/{SceneName}/{AvatarName}/{ParameterPrefix}/
+{OutputFolder}/{StableSceneName}/{StableAvatarName}/{StableParameterPrefix}/
 ```
 
 因此：
 
-- 可以安全反复 Generate；
+- 重新生成会替换当前命名空间的输出，保留前一版本的需求应先备份；
 - 同名旧 Clip 不会残留；
 - 不会影响其他 Parameter Prefix 对应的 ACC 输出；
 - 开启自动图标时会重建 `MenuIcons`；关闭自动图标时会保留已有 `MenuIcons`，因此仅切换生成开关不会丢失菜单图标。
 - **不要**将需要保留的手工资产放进 ACC 专属输出目录。
 - Output Folder 必须位于 `Assets` 下，且不能包含 `.` 或 `..` 路径段；不满足时 ACC 会拒绝生成。
-- 对象名称可以包含 `/`；ACC 在重生成菜单时会按精确对象名称处理，不会将它误解析为层级路径。
+- 菜单按精确对象名称处理 `/`，但 Unity 动画绑定仍以 `/` 分隔层级。请避免需动画控制的对象名包含 `/`，也避免同父下重复名称；菜单能区分不等于动画能正确绑定。
 
 ## 故障排查
 
@@ -619,7 +623,7 @@ Hair/Parameter Compression（启用压缩时）
 3. 服装是否有 `SkinnedMeshRenderer`；
 4. `SkinnedMeshRenderer.rootBone` 是否已赋值；
 5. rootBone 是否位于预期 Outfit Base 的后代；
-6. 顶层骨架分支是否意外包含 Mesh。
+6. 骨架和网格的归属是否让当前节点被识别为上层组织容器。
 
 如果服装没有独立骨架、只有网格，或希望手动指定某个容器为服装根，请在其 Outfit Base 上添加 `ACCOutfitMarker` 后重新刷新预览。
 
@@ -627,10 +631,10 @@ Hair/Parameter Compression（启用压缩时）
 
 检查对象是否：
 
-1. 是 Outfit Base 的直接子对象；
-2. 自身或后代包含有效网格；
-3. 不在服装骨架的 rootBone 分支内；
-4. 仍在预览中被勾选。
+1. 自动部件是否为 Outfit Base 的直接子对象并有有效网格；
+2. 深层或无网格对象是否添加 `ACCPartGroupMarker`；
+3. 是否位于骨架分支、被 Exclude 或更深层 Marker 覆盖；
+4. 是否启用 Parts Control，并仍在预览中被勾选。
 
 ### Custom Mixer 开关不可选
 
@@ -686,3 +690,21 @@ Assets/UnityBox/AdvancedCostumeController/
 - ACC 使用 Write Defaults 策略；与其他 FX 工具混用时，上传前应使用 Modular Avatar 的构建预览检查最终 Animator。
 - 部件分组优先使用层级父对象；预览中的文本分组默认是临时会话配置，也可以通过“保存预览分组到服装”持久化为 Marker。
 - Parameter Prefix 同时是参数和隔离键。修改它等同于创建新的 ACC 命名空间；旧 Prefix 的输出目录不会被新 Prefix 自动清理。
+
+
+## 审查修正与重新生成
+
+- 最低 Modular Avatar 版本为 **1.18.0**，这是 `ModularAvatarOutfitRoot` 的首个稳定版本；菜单使用的 `PortableControl` 也不支持原先声明的 1.10.0。
+- 独立混搭的本体候选以当前预览中的部件勾选与临时分组为准，避免重新使用扫描时的旧分组或恢复已取消勾选的组成员。
+- 转换材质变体前先检查匹配槽位；没有匹配时保留来源组件和子对象，避免生成空规则后仍删除来源内容。
+- 不同部件经显示名格式化后同名时，菜单节点追加序号，仍保留各自独立参数。
+- 含空格、标点、路径分隔符的生成资产名称使用稳定 SHA256 后缀区分，避免 `A-B`、`A B` 与 `A_B` 覆盖同一资产。参数路径仅在清理改变原文时加后缀；原本安全的路径继续沿用旧名称。
+- 更新后请重新 Generate。含被清理字符的旧参数名或生成目录可能改变，VRChat 已保存的相关菜单选择可能重置；旧输出目录不会自动删除，请核对引用后自行清理。
+
+## 回归验证
+
+包内 `Tests/Editor` 包含 `OutfitContainerRegressionTests` 与 `PartSelectionRegressionTests`，共 19 个 EditMode 用例，检查共享组根、保留真实菜单路径、祖先激活、分组/候选选择、名称碰撞和失败转换保留来源。
+
+在安装依赖和 Unity Test Framework 的 Unity 2022.3 项目中运行 Test Runner → EditMode。若通过 VPM 安装，将 `top.sealoong.unitybox.advanced-costume-controller` 加入项目 manifest 的 `testables`。这些测试不覆盖全部渲染、Undo、VRChat 网络同步或第三方构建组合；仍需用测试 Avatar 验证两种 Mixer、压缩开关、材质变体和重复生成。
+
+当前云端只完成源码/语法与打包检查，尚未执行 Unity 编译、这些 EditMode 用例、图标渲染或游戏内同步测试。

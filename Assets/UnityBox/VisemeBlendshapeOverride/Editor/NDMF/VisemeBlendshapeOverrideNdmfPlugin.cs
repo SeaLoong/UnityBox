@@ -41,10 +41,13 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return;
 
             var animatorServices = context.Extension<AnimatorServicesContext>();
+            // NDMF only commits controllers into Descriptor entries that already exist.
+            VisemeBlendshapeOverrideUtils.EnsureFxLayer(plan.Descriptor);
             if (!animatorServices.ControllerContext.Controllers.TryGetValue(VRCAvatarDescriptor.AnimLayerType.FX, out var fxController) || fxController == null)
             {
-                Debug.LogWarning($"[Viseme Blendshape Override] Failed to access virtual FX controller for '{plan.AvatarRoot.name}'.");
-                return;
+                fxController = VirtualAnimatorController.Create(
+                    animatorServices.ControllerContext.CloneContext, "Viseme Blendshape Override FX");
+                animatorServices.ControllerContext.Controllers[VRCAvatarDescriptor.AnimLayerType.FX] = fxController;
             }
 
             fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
@@ -54,7 +57,9 @@ namespace UnityBox.VisemeBlendshapeOverride
                 EnsureVirtualVoiceParameter(fxController);
 
             var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config);
-            GenerateVirtualLayer(fxController, plan.RelativePath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
+            // The service tracks original virtual paths while other plugins rename/reparent renderers.
+            var virtualPath = animatorServices.ObjectPathRemapper.GetVirtualPathForObject(plan.TargetRenderer.gameObject);
+            GenerateVirtualLayer(fxController, virtualPath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
 
             plan.Descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
             EditorUtility.SetDirty(plan.Config);
@@ -279,10 +284,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             float voiceMin,
             float voiceMax)
         {
-            var clampedMin = Mathf.Clamp01(voiceMin);
-            var clampedMax = Mathf.Clamp01(voiceMax);
-            if (clampedMax <= clampedMin)
-                clampedMax = Mathf.Min(1f, clampedMin + 0.001f);
+            var clampedMin = voiceMin;
+            var clampedMax = voiceMax;
+            VisemeBlendshapeOverrideUtils.NormalizeVoiceRange(ref clampedMin, ref clampedMax);
 
             var tree = VirtualBlendTree.Create(name);
             tree.BlendType = BlendTreeType.Simple1D;

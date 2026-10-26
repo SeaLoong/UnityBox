@@ -2,6 +2,14 @@
 
 ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并生成 Modular Avatar 菜单和 FX Animator Controller。支持服装变体、部件独立控制、持久部件分组、材质变体和混搭模式（Custom Mixer）。
 
+## 前置条件
+
+- Unity 2022.3、VRChat SDK Avatars 3.7.0 或更高版本；
+- Modular Avatar **1.18.0 或更高版本**；
+- 服装根位于要处理的 Avatar 层级内。
+
+完整使用手册与开发说明见 [Docs/AdvancedCostumeController.md](../../../Docs/AdvancedCostumeController.md)。
+
 ## 快速开始
 
 1. 打开 **Tools > UnityBox > Advanced Costume Controller**。
@@ -30,7 +38,7 @@ ACC 首先使用 ACC 自己的 `ACCOutfitMarker` 作为最高优先级服装声�
 - Animator Layer 命名空间；
 - 生成资产和 Controller 文件名。
 
-同一个 Avatar 上的不同 ACC 实例必须使用不同前缀。前缀至少需要包含一个字母或数字。
+同一个 Avatar 上的不同 ACC 实例必须使用不同前缀。前缀至少需要包含一个字母或数字。部件/混搭相对路径经字符清理后改变时，会追加稳定 SHA256 后缀，避免空格、标点被清理成同名参数；以窗口中的实际参数名为准。
 
 ### 部件控制
 
@@ -56,10 +64,10 @@ ACC 首先使用 ACC 自己的 `ACCOutfitMarker` 作为最高优先级服装声�
 - 进入混搭后打开所有已选中的基础服装组；
 - 各服装组的部件由原有普通部件 Bool 参数控制，不新增 `Mixer/...` 槽位参数；
 - 混搭菜单中的“共享部件 / Shared Parts”项目与普通部件菜单使用同一参数，并使用 Parts 默认图标；
-- 服装组有多个已选对象时，在服装组菜单内与 Shared Parts 同级额外生成一个整体变体选择域，统一选择该组的 Base/Variant；关闭压缩时为同步 Int，开启压缩时按选择域规则编码为同步 Bool 位；只有一个已选对象时不生成变体参数；
+- 服装组有多个已选对象时，在服装组菜单内与 Shared Parts 同级额外生成一个整体变体选择域，统一选择该组的 Base/Variant；两值时直接使用同步 Bool，多值关闭压缩时为同步 Int，开启压缩时编码为同步 Bool 位；只有一个已选对象时不生成变体参数；
 - 该模式主要用于减少同步参数，不再为每个部件槽位分别生成变体 Int；部件开关仍使用普通 Bool 参数。
 
-启用**使用独立部件参数**时，使用完整的槽位候选模式：ACC 会为每种部件/分组生成一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件；这样不同服装组的部件可以自由组合，材质变体候选只会对当前部件应用材质替换。此时不再使用共享模式的服装组整体变体参数。
+启用**使用独立部件参数**时，使用完整的槽位候选模式：本体候选沿用当前预览的勾选和临时分组，已取消的本体/变体不会回到候选中，空候选槽位不生成。ACC 会为每种部件/分组生成一个选择参数：`0` 表示关闭，`1..N` 表示某个本体或变体提供的部件；这样不同服装组的部件可以自由组合，材质变体候选只会对当前部件应用材质替换。此时不再使用共享模式的服装组整体变体参数。
 
 进入独立参数混搭时，ACC 会先保留**默认服装**：默认服装组的每个槽位会选择默认服装对应的候选，并严格沿用普通 `Parts` 菜单的初始 `activeSelf` 状态；其它服装组的槽位为 Off。切换到其它服装候选后，动画只打开该候选的部件，不会把同一槽位的其它版本部件一起打开。
 
@@ -87,9 +95,9 @@ ACC 首先使用 ACC 自己的 `ACCOutfitMarker` 作为最高优先级服装声�
 - 材质变体图标会应用全局规则和精准槽位覆盖；
 - 父级子菜单没有独立目标时，会继承第一个有图标的后代图标。
 
-图标保存到当前 ACC 输出目录下的 `MenuIcons/`，重新生成时会更新实际拍摄请求对应的 PNG。开启此选项不会清理根菜单、Parts 菜单或其它未参与拍摄节点的已有图标；实际拍摄请求会更新对应菜单项图标。关闭时不会运行图标生成器，Parts 文件夹仍可使用 `OutlineBlank2`，但不会给部件子项补这张预置图标。
+图标保存到当前 ACC 输出目录下的 `MenuIcons/`，重新生成时会更新实际拍摄请求对应的 PNG。开启此选项时，完整 Generate 会清理整个专属输出目录，包括旧 PNG；实际拍摄请求会更新对应菜单项图标。需长期保留的手工图标应放在生成目录外。关闭时不会运行图标生成器，Parts 文件夹仍可使用 `OutlineBlank2`，但不会给部件子项补这张预置图标。
 
-ACC 输出目录固定按 `{SceneName}/{AvatarName}/{ParameterPrefix}` 隔离，不再使用 Root Menu Name 作为目录。不同场景的同名 Avatar、同一场景中不同名称的 Avatar 均不会互相覆盖，也不会再出现默认的 `Costumes/Costumes`。
+ACC 输出目录按场景名、Avatar 名和 Parameter Prefix 的稳定文件名隔离；名称清理或截断后追加原文哈希。Root Menu Name 不参与目录。相同场景名、相同 Avatar 名及相同 Prefix 仍可能共用输出，因此不同实例应使用不同 Prefix 或 Output Folder。
 
 实现参考了 [ParameterIconGenerator](https://github.com/Narazaka/ParameterIconGenerator) 的“原始 Renderer + 专用 Layer + Camera.cullingMask + Camera.Render”方案，以及 Unity `PreviewRenderUtility` 的预览场景做法。参考项目通过 Play Mode 与 Av3Emulator 驱动参数，而 ACC 因为已知每个生成菜单项的目标对象，采用无外部依赖的 Preview Scene 离线渲染；不再调用 `SkinnedMeshRenderer.BakeMesh`，避免导入服装的补偿性 Transform 导致网格坐标被重复解释。
 
@@ -183,22 +191,22 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 如果当前变体已被转换并清空层级，可在 Inspector 的**外部材质来源**中拖入另一份完整变体重新分析。结果写入当前组件，来源只读；没有匹配槽位时不会清空已有规则。
 
-如果服装作者提供了两套完整预制件，只需选中要转换的变体并使用 **GameObject > AdvancedCostumeController > 转换成服装变体**。ACC 会从同级对象中自动识别唯一/最佳匹配的 Outfit Base，确认后添加或更新组件并生成最优规则。重复触发会重算同一套配置，不会重复添加组件。转换后的完整变体预制件只作为材质对照来源，运行时不会与本体网格同时激活。
+如果服装作者提供了两套完整预制件，只需选中要转换的变体并使用 **GameObject > AdvancedCostumeController > 转换成服装变体**。ACC 会从同级对象中自动识别唯一/最佳匹配的 Outfit Base，确认后添加或更新组件并生成最优规则。转换前先检查匹配材质槽位；匹配失败时保留来源对象。转换成功后会清除来源的组件和子对象，只留下材质规则；需要保留完整对照预制件时先复制。场景转换支持 Undo。
 
 生成时材质曲线会合并到服装/变体切换动画中，不会额外生成材质 Layer。
 
 ## 扫描与菜单规则
 
 - ACC 会跳过已被识别为嵌套服装的层级，避免重复控制。
-- 同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
-- 主服装切换和混搭槽位候选使用 `Simple1D BlendTree` 根据离散值选择动画，避免为每个候选创建独立状态转移；两值域使用 Bool，多值域使用 Float Animator 参数，所有树显式保留手工阈值，不使用 Unity 自动阈值。
+- 同级 `ACCOutfitMarker`/`MA Outfit Root` 对象保留为独立服装；无明确独立归属的同级网格对象可被识别为服装变体；`ACCVariantMaterialOverride` 可显式声明材质变体归属。
+- 主服装切换和混搭槽位候选使用 `Simple1D BlendTree`，Animator 中使用 Float 数值参数读取离散选择；表达式参数两值域用 Bool，多值域用 Int 或压缩位，所有树保留手工阈值。
 - 有可控制部件时，服装选择会进入一层子菜单，其中包含服装对象和 Parts 菜单；没有可控制部件且只有一个已选对象时不会额外创建“变体/部件”层；如果存在多个已选 Base/Variant，仍保留服装组这一层并在其中放置对象选择项，但不创建 Parts 菜单。服装控件名称使用本地化的“启用 + 对象名”，普通一级服装菜单仍直接使用对象名。
 - 主服装与混搭启用项使用 Toggle 持久写入离散 Int 值；Button 是松开后恢复的瞬时控件，不适合服装状态。独立部件参数模式的混搭槽位候选同样使用 Toggle，使再次点击当前候选可回到合法的 Off 值 0；共享模式的混搭部件项目复用普通 Parts 的 Bool Toggle。
 - 普通部件和所有混搭槽位共用一个 `Parts Control` Layer 与 `Parts` State；独立参数模式由外层 `Simple1D` 选择 Normal/Mixer，再用 `DirectBlendTree` 和嵌套 `Simple1D BlendTree` 处理 Off/On 与候选选择，共享模式直接复用普通部件树。
 - 混搭服装组激活 Clip 只负责根对象、变体和非槽位部件；槽位候选部件只由对应槽位子树负责，避免合并后同一属性被重复加权。
 - 所有参数压缩选择域共用一个事件分发状态机 Layer；每个域仍有自己的状态、Driver 与 AnyState 条件，因此域间不会共享参数写入。
 - 可视控制状态使用 Write Defaults On；纯参数压缩 Layer 使用 Write Defaults Off，避免 Driver 状态重置动画绑定。所有 AnyState Transition 都禁止过渡到当前状态自身；压缩 Encode/Decode 状态执行一次后回到无 Driver 的 Idle，若位仍未同步则从 Idle 重新检查，避免在当前状态内反复执行 Driver。Idle 不需要空白 AnimationClip。
-- 菜单节点按服装相对路径创建，名称中的 `/` 会按普通对象名称处理，不会被误解释为路径。
+- 共享容器中含其他独立服装时，每套服装回退到各自 Base 作为组根，菜单保留真实目录，选中服装时恢复必要祖先。菜单名称中的 `/` 按字面处理，但 Unity 动画绑定仍有路径分隔符限制；需动画控制的对象应避免 `/` 和同级重名。
 - 重新生成会复用 `ACC_Menu` 根节点的展示属性，例如图标；因此可在首次生成后直接为 `ACC_Menu` 设置图标，后续生成不会丢失。旧子菜单控件会被清理，ACC 控制节点会直接在 `ACC_Menu` 下重建，参数声明位于同一 `ACC_Menu` 的 `ModularAvatarParameters` 中；旧菜单项的 `Parameter`、`Value`、子参数和菜单来源绝不会复用。
 
 
@@ -225,3 +233,10 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 - 混搭必须同时启用部件控制；
 - 服装对象数量必须在 VRChat `Int` 可表达范围内；
 - 生成前的确认窗口会显示即将覆盖的 Controller、参数预算和压缩结构。
+
+
+## 升级与验证
+
+含空格、标点等字符的旧参数名及输出目录可能改变。更新后重新 Generate，并检查原有自定义参数引用；VRChat 保存的相关菜单选择可能重置。旧目录不会自动迁移或删除，确认无引用后再清理。
+
+`Tests/Editor` 提供 19 个 EditMode 用例。需安装 Unity Test Framework；VPM 安装时将本包名加入项目 manifest 的 `testables`，再从 Test Runner 的 EditMode 运行。当前云端未执行 Unity 编译、这些用例、图标渲染或 VRChat 同步验证；详见完整手册的回归验证章节。

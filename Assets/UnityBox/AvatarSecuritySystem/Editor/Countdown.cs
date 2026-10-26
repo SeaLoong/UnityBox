@@ -59,6 +59,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var toTimeUp = Utils.CreateTransition(countdownState, timeUpState,
                 hasExitTime: true, exitTime: 1.0f);
             toTimeUp.duration = 0f;
+            toTimeUp.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             // TimeUp 的 ParameterDriver 在进入状态时执行，随后进入同一释放终态。
             var timeUpToRelease = Utils.CreateTransition(timeUpState, releaseState);
             timeUpToRelease.duration = 0f;

@@ -1,3 +1,10 @@
+历史外部资料摘录（保留原文，不作为当前 ASS 行为规范）
+来源主题：VRChat Creator Docs — Playable Layers
+当前文档入口：https://creators.vrchat.com/avatars/playable-layers/
+原始摘录日期及对应 SDK 版本未记录；其中示例路径、推荐和平台行为可能已改变。
+ASS 当前实现/限制见 Editor/README.md 和 Editor/ASS_TechnicalDoc.md。
+以下原文没有在本次审查中重新向官方逐句验证。
+
 AvatarsPlayable Layers
 Playable Layers
 When you create animations for your VRChat avatar, you'll utilize VRChat's 'Playable Layers.' They allow you to cleanly separate some things you might want to do with your avatar into their own animations - such as running, jumping, giving a thumbs-up, smiling, wagging your tail, and combinations of these.

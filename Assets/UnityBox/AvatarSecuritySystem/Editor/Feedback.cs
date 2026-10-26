@@ -118,7 +118,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var logoTex = Resources.Load<Texture2D>(LOGO_RESOURCE_NAME);
             if (logoTex != null)
             {
-                EnsureTextureOptimized(logoTex);
                 material.SetTexture("_G4D9", logoTex);
             }
             meshRenderer.sharedMaterial = material;
@@ -238,19 +237,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             obj.SetActive(false);
             Debug.Log($"[ASS] AudioSource {(existing == null ? "created" : "reused")}: {objectName}");
             return obj;
-        }
-        private static void EnsureTextureOptimized(Texture2D tex)
-        {
-            string path = AssetDatabase.GetAssetPath(tex);
-            if (string.IsNullOrEmpty(path)) return;
-            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer == null) return;
-            bool changed = false;
-            if (importer.maxTextureSize > 512) { importer.maxTextureSize = 512; changed = true; }
-            if (importer.mipmapEnabled) { importer.mipmapEnabled = false; changed = true; }
-            if (!importer.crunchedCompression) { importer.crunchedCompression = true; changed = true; }
-            if (importer.anisoLevel > 0) { importer.anisoLevel = 0; changed = true; }
-            if (changed) importer.SaveAndReimport();
         }
     }
 }

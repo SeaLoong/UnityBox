@@ -249,6 +249,16 @@ namespace UnityBox.AdvancedCostumeController
 
       var costumesRoot = config.CostumesRoot;
 
+      // 先占用所有 OutfitObject 的祖先路径，避免某个服装先生成的组菜单
+      // 被后续服装路径误当成目录复用（例如 Outfit B 与 Outfit C 的路径有前缀关系）。
+      foreach (var outfit in outfits)
+      {
+        var pathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
+        Utils.EnsureSubmenuPathSegments(menuContentRoot,
+          pathSegments.Take(Math.Max(0, pathSegments.Count - 1)),
+          menuPresentation, Utils.OutfitPathSemanticKeyPrefix);
+      }
+
       foreach (var outfit in outfits)
       {
         var outfitPathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
@@ -271,7 +281,9 @@ namespace UnityBox.AdvancedCostumeController
         // 只有单个可选对象且没有部件控制时，才使用扁平菜单。
         if (hasControllableParts || hasMultipleChoices)
         {
-          var outfitSubmenu = Utils.FindOrCreateChild(parentMenu, outfitName);
+          // 该名称可能已被前面的预扫描保留为路径目录。服装组节点必须与目录节点
+          // 分开，不能把后续服装放进另一个服装的选择菜单。
+          var outfitSubmenu = Utils.FindOrCreateUniqueChild(parentMenu, outfitName);
           Utils.EnsureSubmenuOnNode(outfitSubmenu, presentation: menuPresentation);
 
           // 本体和变体开关
@@ -492,7 +504,7 @@ namespace UnityBox.AdvancedCostumeController
       MixerPartSlot slot)
     {
       if (defaultOutfit == null || outfit == null || slot == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
+          outfit.BaseObject != defaultOutfit.BaseObject)
         return 0;
 
       var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
@@ -520,7 +532,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData outfit)
     {
       if (outfit == null || defaultOutfit == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
+          outfit.BaseObject != defaultOutfit.BaseObject)
         return 0;
 
       var choices = outfit.GetAllObjects();
@@ -547,7 +559,7 @@ namespace UnityBox.AdvancedCostumeController
         string partParamName = animBuilder.GetPartParamName(outfit, control);
         bool partDefaultActive = control.Parts.All(part => part.activeSelf);
 
-        var partNode = Utils.FindOrCreateChild(partsMenu, control.Name);
+        var partNode = Utils.FindOrCreateUniqueChild(partsMenu, control.Name);
         var partItem = Utils.CreateMenuItem(partNode);
 
         Utils.ConfigureAsToggle(partItem);
@@ -955,10 +967,10 @@ namespace UnityBox.AdvancedCostumeController
     private static IEnumerable<OutfitData> GetUniqueMixerOutfits(
       IEnumerable<OutfitData> outfits)
     {
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (outfit == null || !processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (outfit == null || !processedOutfitBases.Add(outfit.BaseObject)) continue;
         yield return outfit;
       }
     }

@@ -63,17 +63,18 @@ namespace UnityBox.AdvancedCostumeController
       if (config.UseIndependentMixerPartParameters)
       {
         // 已处理的服装组
-        var processedOutfitObjects = new HashSet<GameObject>();
+        var processedOutfitBases = new HashSet<GameObject>();
 
         foreach (var outfit in outfits)
         {
-          if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+          if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
 
           var slots = outfit.GetMixerPartSlots();
           if (slots.Count == 0) continue;
 
           // 创建服装组菜单层级
-          var outfitPathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
+          var outfitPathSegments = Utils.GetRelativePathSegments(
+            costumesRoot, outfit.OutfitObject);
           string outfitRelPath = string.Join("/", outfitPathSegments);
           var curMenu = Utils.EnsureSubmenuPathSegments(mixerSubmenu, outfitPathSegments,
             menuPresentation, Utils.MixerPathSemanticKeyPrefix);
@@ -166,17 +167,17 @@ namespace UnityBox.AdvancedCostumeController
       List<MenuIconRequest> menuIconRequests)
     {
       var costumesRoot = config.CostumesRoot;
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (!processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (!processedOutfitBases.Add(outfit.BaseObject)) continue;
 
         var controls = outfit.GetPartControls();
         var choices = outfit.GetAllObjects();
         if (controls.Count == 0 && choices.Count <= 1) continue;
 
-        var outfitPathSegments = Utils.GetRelativePathSegments(costumesRoot,
-          outfit.OutfitObject);
+        var outfitPathSegments = Utils.GetRelativePathSegments(
+          costumesRoot, outfit.OutfitObject);
         string outfitRelPath = string.Join("/", outfitPathSegments);
         var curMenu = Utils.EnsureSubmenuPathSegments(mixerSubmenu, outfitPathSegments,
           menuPresentation, Utils.MixerPathSemanticKeyPrefix);

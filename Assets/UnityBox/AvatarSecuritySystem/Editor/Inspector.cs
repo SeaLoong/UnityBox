@@ -147,7 +147,7 @@ namespace UnityBox.AvatarSecuritySystem
         }
         private void DrawPasswordStatus()
         {
-            if (_target.gesturePassword.Count == 0)
+            if (_target.gesturePassword == null || _target.gesturePassword.Count == 0)
             {
                 DrawPasswordEmptyWarning();
             }

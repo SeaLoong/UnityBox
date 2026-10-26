@@ -182,7 +182,32 @@ namespace UnityBox.AdvancedCostumeController
         });
       }
 
+      NormalizeOutfitObjects(costumesRoot, outfitDataList);
       return outfitDataList;
+    }
+
+    /// <summary>
+    /// 变体容器中还包含其他独立服装时，不能把容器当成当前服装专属的
+    /// OutfitObject，否则切换到另一套服装会关闭其祖先，参数路径也可能重叠。
+    /// 仅包含当前本体及其变体的专属容器仍保留原有分组。
+    /// </summary>
+    private static void NormalizeOutfitObjects(
+      GameObject costumesRoot,
+      List<OutfitData> outfits)
+    {
+      foreach (var outfit in outfits)
+      {
+        if (outfit.BaseObject == null || outfit.OutfitObject == null ||
+            outfit.OutfitObject == outfit.BaseObject) continue;
+
+        var container = outfit.OutfitObject.transform;
+        if (!outfits.Any(other => other != outfit && other.BaseObject != null &&
+            other.BaseObject.transform.IsChildOf(container))) continue;
+
+        outfit.OutfitObject = outfit.BaseObject;
+        outfit.Name = outfit.BaseObject.name;
+        outfit.RelativePath = Utils.GetRelativePath(costumesRoot, outfit.BaseObject);
+      }
     }
 
     /// <summary>

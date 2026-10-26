@@ -7,10 +7,6 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using VRC.SDKBase.Editor.BuildPipeline;
 
-#if NDMF_AVAILABLE
-using nadena.dev.ndmf;
-[assembly: ExportsPlugin(typeof(UnityBox.BuildPipelineLogger.BuildPipelineLoggerPlugin))]
-#endif
 
 namespace UnityBox.BuildPipelineLogger
 {
@@ -63,12 +59,22 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         }
     }
 
-    internal static class BuildPipelineLoggerLog
+    public static class BuildPipelineLoggerLog
     {
         private const string Prefix = "[BPL]";
+        private static readonly HashSet<System.Type> loggedShaderCallbacks = new HashSet<System.Type>();
+
+        public static void BeginBuild() => loggedShaderCallbacks.Clear();
+        public static bool ShouldLogShader(System.Type callbackType) => loggedShaderCallbacks.Add(callbackType);
 
         public static void Log(string pipeline, int order, string message, string tag = null)
         {
+            // Third-party names in these probes are historical order hints; this
+            // callback does not establish that the framework itself ran.
+            if (pipeline == "VRCSDK" &&
+                (message.Contains("VRCFury") || message.Contains("NDMF") ||
+                 message.Contains("RemoveEditorOnly") || message.Contains("RemoveAvatarEditorOnly")))
+                message = "Callback-order sample (framework execution unverified): " + message;
             var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
             var orderColored = $"<color=#00FF00>Order={order}</color>";
             
@@ -215,6 +221,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         public int callbackOrder => int.MinValue;
         public void OnPreprocessBuild(BuildReport report)
         {
+            BuildPipelineLoggerLog.BeginBuild();
             if (BuildPipelineLoggerSettings.BuildPipeline)
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "🚩 PRE");
         }
@@ -516,14 +523,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_MinValue : IPreprocessShaders
     {
         public int callbackOrder => int.MinValue;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "🎨 SHADER");
-                _logged = true;
             }
         }
     }
@@ -531,14 +536,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_N10000 : IPreprocessShaders
     {
         public int callbackOrder => -10000;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ N10000");
-                _logged = true;
             }
         }
     }
@@ -546,14 +549,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Early : IPreprocessShaders
     {
         public int callbackOrder => -100;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◎");
-                _logged = true;
             }
         }
     }
@@ -561,14 +562,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Mid : IPreprocessShaders
     {
         public int callbackOrder => 0;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "○");
-                _logged = true;
             }
         }
     }
@@ -576,14 +575,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Late : IPreprocessShaders
     {
         public int callbackOrder => 100;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◉");
-                _logged = true;
             }
         }
     }
@@ -591,14 +588,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_P10000 : IPreprocessShaders
     {
         public int callbackOrder => 10000;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ P10000");
-                _logged = true;
             }
         }
     }
@@ -606,14 +601,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_MaxValue : IPreprocessShaders
     {
         public int callbackOrder => int.MaxValue;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⛳ END");
-                _logged = true;
             }
         }
     }
@@ -625,14 +618,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_MinValue : IPreprocessComputeShaders
     {
         public int callbackOrder => int.MinValue;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "🎛 COMPUTE");
-                _logged = true;
             }
         }
     }
@@ -640,14 +631,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_N10000 : IPreprocessComputeShaders
     {
         public int callbackOrder => -10000;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ N10000");
-                _logged = true;
             }
         }
     }
@@ -655,14 +644,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Early : IPreprocessComputeShaders
     {
         public int callbackOrder => -100;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◎");
-                _logged = true;
             }
         }
     }
@@ -670,14 +657,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Mid : IPreprocessComputeShaders
     {
         public int callbackOrder => 0;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "○");
-                _logged = true;
             }
         }
     }
@@ -685,14 +670,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Late : IPreprocessComputeShaders
     {
         public int callbackOrder => 100;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◉");
-                _logged = true;
             }
         }
     }
@@ -700,14 +683,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_P10000 : IPreprocessComputeShaders
     {
         public int callbackOrder => 10000;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ P10000");
-                _logged = true;
             }
         }
     }
@@ -715,14 +696,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_MaxValue : IPreprocessComputeShaders
     {
         public int callbackOrder => int.MaxValue;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⛳ END");
-                _logged = true;
             }
         }
     }
@@ -968,6 +947,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         public int callbackOrder => int.MinValue;
         public bool OnPreprocessAvatar(GameObject avatarGameObject)
         {
+            BuildPipelineLoggerLog.BeginBuild();
             if (BuildPipelineLoggerSettings.VRCSDK)
                 BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "🚀 PRE");
             return true;
@@ -1594,48 +1574,5 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     
     #endregion
 
-    #region ==================== NDMF Plugin ====================
-    
-#if NDMF_AVAILABLE
-    /// <summary>
-    /// NDMF 构建流水线验证插件
-    /// 在每个 BuildPhase 的开始和结束处打印日志
-    /// </summary>
-    public class BuildPipelineLoggerPlugin : Plugin<BuildPipelineLoggerPlugin>
-    {
-public override string QualifiedName => "top.sealoong.unitybox.build-pipeline-logger";
-        public override string DisplayName => "Build Pipeline Logger";
 
-        protected override void Configure()
-        {
-            // NDMF BuildPhase: Resolving -> Generating -> Transforming -> Optimizing -> PlatformFinish
-            
-            InPhase(BuildPhase.Resolving).Run("Logger_Resolving_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Generating).Run("Logger_Generating_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Transforming).Run("Logger_Transforming_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Optimizing).Run("Logger_Optimizing_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-        }
-    }
-#endif
-    
-    #endregion
 }

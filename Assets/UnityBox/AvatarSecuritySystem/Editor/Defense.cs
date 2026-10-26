@@ -41,6 +41,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Debug.Log("[ASS] 禁用防御选项已勾选，跳过防御层创建（仅测试密码系统）");
                 return;
             }
+            if (isDebugMode)
+            {
+                Debug.LogWarning("[ASS] Active-load defense is not generated in Play Mode. Only password, lock and feedback can be previewed; this is not a defense effectiveness test.");
+                return;
+            }
             if (config.defaultEnableDefense)
             {
                 GenerateDefaultDefenseLayer();

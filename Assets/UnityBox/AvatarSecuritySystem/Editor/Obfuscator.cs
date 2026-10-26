@@ -447,28 +447,28 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _generatedContentAssetPaths.Add(normalized);
         }
 
-        public static void PreparePlayableControllerCopies(VRCAvatarDescriptor descriptor)
+        public static void PreparePlayableControllerCopies(VRCAvatarDescriptor descriptor, bool fxOnly = false)
         {
             EnsureInitialized();
-            if (!_enabled || descriptor == null) return;
+            if (descriptor == null) return;
 
             var baseLayers = descriptor.baseAnimationLayers;
-            PreparePlayableControllerCopies(baseLayers, "Base");
+            PreparePlayableControllerCopies(baseLayers, "Base", fxOnly);
             descriptor.baseAnimationLayers = baseLayers;
 
             var specialLayers = descriptor.specialAnimationLayers;
-            PreparePlayableControllerCopies(specialLayers, "Special");
+            PreparePlayableControllerCopies(specialLayers, "Special", fxOnly);
             descriptor.specialAnimationLayers = specialLayers;
         }
 
-        private static void PreparePlayableControllerCopies(VRCAvatarDescriptor.CustomAnimLayer[] layers, string scope)
+        private static void PreparePlayableControllerCopies(VRCAvatarDescriptor.CustomAnimLayer[] layers, string scope, bool fxOnly)
         {
             if (layers == null) return;
 
             for (int i = 0; i < layers.Length; i++)
             {
                 var layer = layers[i];
-                if (layer.isDefault) continue;
+                if (layer.isDefault || (fxOnly && layer.type != VRCAvatarDescriptor.AnimLayerType.FX)) continue;
                 if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
 
                 var clonedController = DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
@@ -605,25 +605,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             EnsureFolder(controllerFolder);
 
             string controllerFileBase = SanitizeFileName(Layer($"PlayableControllerCopy_{slotKey}_{sourceGuid}", sourceController.name));
-            string controllerPath = $"{controllerFolder}/{controllerFileBase}_{guidSuffix}.controller";
+            string controllerPath = $"{controllerFolder}/{controllerFileBase}_{slotKey}_{guidSuffix}.controller";
             DeleteAssetIfExists(controllerPath);
 
             if (!AssetDatabase.CopyAsset(sourcePath, controllerPath))
             {
-                Debug.LogWarning($"[ASS] Obfuscator: Failed to copy playable controller '{sourcePath}' to '{controllerPath}'");
-                return sourceController;
+                throw new InvalidOperationException($"[ASS] Cannot safely copy playable controller '{sourcePath}' to '{controllerPath}'. The source will not be modified.");
             }
 
             var clonedController = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
             if (clonedController == null)
             {
-                Debug.LogWarning($"[ASS] Obfuscator: Failed to load copied playable controller '{controllerPath}'");
-                return sourceController;
+                throw new InvalidOperationException($"[ASS] Cannot load copied playable controller '{controllerPath}'. The source will not be modified.");
             }
 
             RegisterGeneratedAssetPath(controllerPath);
 
-            string motionFolder = $"{controllerFolder}/{controllerFileBase}_{guidSuffix}_Motions";
+            string motionFolder = $"{controllerFolder}/{controllerFileBase}_{slotKey}_{guidSuffix}_Motions";
             DeleteAssetIfExists(motionFolder);
             EnsureFolder(motionFolder);
             CloneReferencedMotionsForController(clonedController, motionFolder, slotKey);

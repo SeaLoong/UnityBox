@@ -81,7 +81,10 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>服装对应的 Armature。存在时，生成会确保其具有 MA Merge Armature。</summary>
     public GameObject ArmatureObject { get; set; }
 
-    /// <summary>服装根对象（有变体时为更上层的组节点，无变体时等于 BaseObject）</summary>
+    /// <summary>
+    /// 服装组根对象（有变体时通常为更上层组节点，无变体时等于 BaseObject）。
+    /// 容器包含其他独立服装时，扫描器会回退到当前 BaseObject。
+    /// </summary>
     public GameObject OutfitObject { get; set; }
 
     /// <summary>变体列表（同级的其他服装对象）</summary>
@@ -156,9 +159,16 @@ namespace UnityBox.AdvancedCostumeController
     public List<MixerPartSlot> GetMixerPartSlots()
     {
       var orderedSlots = new List<MixerPartSlot>();
-      var variantDataList = VariantPartData ?? new List<VariantPartData>();
-      var baseData = variantDataList.FirstOrDefault(item => item.VariantObject == BaseObject);
       var baseControls = GetPartControls();
+      // 预览可重新分组或取消本体部件；原始扫描快照不再代表实际生成配置。
+      var baseData = new VariantPartData
+      {
+        VariantObject = BaseObject,
+        PartControls = baseControls
+      };
+      var variantDataList = (VariantPartData ?? new List<VariantPartData>())
+        .Where(item => item != null && item.VariantObject != null &&
+          Variants.Contains(item.VariantObject)).ToList();
       var definitions = new List<(string Key, string Name, bool IsGroup, string PartName)>();
       var definitionKeys = new HashSet<string>();
 
@@ -208,7 +218,7 @@ namespace UnityBox.AdvancedCostumeController
         var slot = new MixerPartSlot { Key = key, Name = definition.Name };
         orderedSlots.Add(slot);
 
-        if (baseData != null && baseData.PartControls != null)
+        if (IsBaseSelected)
         {
           var baseControl = FindMatchingControl(baseData, key,
             new PartControlData { Name = definition.Name, IsGroup = definition.IsGroup },
@@ -254,7 +264,7 @@ namespace UnityBox.AdvancedCostumeController
         }
       }
       // 不按 Parts/Groups 分类排序，也不按字典键排序；严格保持普通模式 PartControls 的顺序。
-      return orderedSlots;
+      return orderedSlots.Where(slot => slot.Candidates.Count > 0).ToList();
     }
 
     private static PartControlData FindMatchingControl(
@@ -353,7 +363,7 @@ namespace UnityBox.AdvancedCostumeController
       if (string.IsNullOrWhiteSpace(sourceName))
         sourceName = DefaultControllerFileName;
 
-      string safeFileName = Utils.SanitizeForFileName(sourceName);
+      string safeFileName = Utils.GetStableAssetName(sourceName);
       if (string.IsNullOrWhiteSpace(safeFileName))
         safeFileName = DefaultControllerFileName;
 
@@ -372,7 +382,7 @@ namespace UnityBox.AdvancedCostumeController
           ? CostumesRoot.scene.name
           : System.IO.Path.GetFileNameWithoutExtension(CostumesRoot.scene.path))
         : "UnsavedScene";
-      string sceneIdentity = Utils.SanitizeForFileName(sceneName);
+      string sceneIdentity = Utils.GetStableAssetName(sceneName);
       if (string.IsNullOrWhiteSpace(sceneIdentity)) sceneIdentity = "UnsavedScene";
 
       var descriptor = CostumesRoot != null
@@ -382,9 +392,9 @@ namespace UnityBox.AdvancedCostumeController
         ? descriptor.gameObject
         : CostumesRoot != null ? CostumesRoot.transform.root.gameObject : null;
       string avatarName = avatarRoot != null ? avatarRoot.name : "Avatar";
-      string avatarIdentity = Utils.SanitizeForFileName(avatarName);
+      string avatarIdentity = Utils.GetStableAssetName(avatarName);
       if (string.IsNullOrWhiteSpace(avatarIdentity)) avatarIdentity = "Avatar";
-      string ns = Utils.SanitizeForFileName(GetGenerationNamespace());
+      string ns = Utils.GetStableAssetName(GetGenerationNamespace());
       if (string.IsNullOrWhiteSpace(ns)) ns = DefaultControllerFileName;
       return folder + "/" + sceneIdentity + "/" + avatarIdentity + "/" + ns;
     }

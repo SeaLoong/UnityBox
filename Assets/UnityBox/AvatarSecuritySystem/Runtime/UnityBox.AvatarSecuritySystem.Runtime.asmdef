@@ -1,7 +1,7 @@
 {
   "name": "UnityBox.AvatarSecuritySystem.Runtime",
   "rootNamespace": "UnityBox.AvatarSecuritySystem",
-  "references": [],
+  "references": ["VRC.SDKBase"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

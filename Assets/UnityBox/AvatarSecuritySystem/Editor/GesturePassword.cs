@@ -62,6 +62,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             timeUpFailedState.writeDefaultValues = true;
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
+            anyToFailed.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var successState = layer.stateMachine.AddState(
                 Obfuscator.State("Success", "Password_Success"),
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
@@ -161,14 +162,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
 
-                // Holding → Wait（手势不匹配时超时重置，与确认同时触发防抖动）
-                var holdingError = holdingState.AddTransition(inputWaitingState);
-                holdingError.hasExitTime = true;
-                holdingError.exitTime = holdExitTime;
-                holdingError.duration = 0f;
-                holdingError.hasFixedDuration = true;
-                holdingError.AddCondition(AnimatorConditionMode.Less, gestureValue, gestureParam);
-                holdingError.AddCondition(AnimatorConditionMode.Greater, gestureValue, gestureParam);
+                // A hold must be continuous. Two separate transitions express OR;
+                // Less AND Greater on one transition can never match any gesture.
+                foreach (var mismatch in new[] { AnimatorConditionMode.Less, AnimatorConditionMode.Greater })
+                {
+                    var holdingError = Utils.CreateTransition(holdingState, inputWaitingState);
+                    holdingError.AddCondition(mismatch, gestureValue, gestureParam);
+                }
 
                 if (i == 0)
                 {
