@@ -4,7 +4,6 @@
   "references": [
     "UnityBox.AnimatorOptimizer",
     "UnityBox.AnimatorOptimizer.Runtime",
-    "UnityEngine.TestRunner",
     "UnityBox.AnimatorOptimizer.VRC",
     "VRC.SDK3A",
     "VRC.SDKBase"

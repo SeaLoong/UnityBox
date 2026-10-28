@@ -1582,7 +1582,7 @@ namespace UnityBox.AnimatorOptimizer
                 var destination = source;
                 if (source != controller && !string.Equals(AssetDatabase.GetAssetPath(source), path, StringComparison.OrdinalIgnoreCase))
                 {
-                    destination = Object.Instantiate(source);
+                    destination = CreateMutableGraphNode(source);
                     EditorUtility.CopySerialized(source, destination);
                     destination.name = source.name;
                     AddSubAsset(controller, destination);
@@ -1619,6 +1619,26 @@ namespace UnityBox.AnimatorOptimizer
                 }
             }
             return changed;
+        }
+
+        private static Object CreateMutableGraphNode(Object source)
+        {
+            // Animator graph objects carry editor-native strong references. Unity's
+            // generic Instantiate path cannot clone them safely (it asserts on
+            // kStrongPPtrMask in 2022.3). Construct their native backing objects first;
+            // CopySerialized and the ownership map then copy/remap the graph.
+            return source switch
+            {
+                AnimatorStateMachine _ => new AnimatorStateMachine(),
+                AnimatorState _ => new AnimatorState(),
+                AnimatorStateTransition _ => new AnimatorStateTransition(),
+                AnimatorTransition _ => new AnimatorTransition(),
+                BlendTree _ => new BlendTree(),
+                // Behaviours are ordinary ScriptableObjects; retain Instantiate's
+                // serialized initialization/OnEnable ordering for custom scripts.
+                StateMachineBehaviour behaviour => Object.Instantiate(behaviour),
+                _ => throw new InvalidOperationException("Unsupported mutable Animator graph object: " + source.GetType().FullName),
+            };
         }
 
         private sealed class BuiltMotion

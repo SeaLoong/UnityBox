@@ -140,7 +140,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             controller = Track(new AnimatorController());
             controller.layers = new[] { new AnimatorControllerLayer
             {
-                name = "Inactive", stateMachine = Track(new AnimatorStateMachine()), defaultWeight = 1f,
+                name = "Inactive", stateMachine = Track(new AnimatorStateMachine()), defaultWeight = 1f, syncedLayerIndex = -1,
             } };
             var descriptor = root.AddComponent<VRCAvatarDescriptor>();
             descriptor.baseAnimationLayers = new[] { new VRCAvatarDescriptor.CustomAnimLayer
@@ -160,7 +160,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var controller = Track(new AnimatorController());
             controller.layers = new[] { new AnimatorControllerLayer
             {
-                name = "Target", stateMachine = Track(new AnimatorStateMachine()), defaultWeight = 1f,
+                name = "Target", stateMachine = Track(new AnimatorStateMachine()), defaultWeight = 1f, syncedLayerIndex = -1,
             } };
             animator.runtimeAnimatorController = controller;
             var component = root.AddComponent<AnimatorOptimizerComponent>();
@@ -222,11 +222,13 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var second = Track(new AnimatorStateMachine { name = "Second" });
             source.layers = new[]
             {
-                new AnimatorControllerLayer { name = "First", stateMachine = first },
-                new AnimatorControllerLayer { name = "Second", stateMachine = second },
+                new AnimatorControllerLayer { name = "First", stateMachine = first, syncedLayerIndex = -1 },
+                new AnimatorControllerLayer { name = "Second", stateMachine = second, syncedLayerIndex = -1 },
             };
+            Assert.That(source.layers[1].stateMachine, Is.SameAs(second), "fixture must preserve the independent source layer");
             var context = new CloneContext(GenericPlatformAnimatorBindings.Instance);
             var controller = context.Clone(source);
+            Assert.That(controller.Layers.All(layer => layer.SyncedLayerIndex < 0), Is.True);
             var expected = controller.Layers.Last();
             controller.AddLayer(new LayerPriority(-1), "InsertedBeforeSource");
             var arguments = new object[] { controller.Layers, new[] { second }, null };
@@ -242,8 +244,8 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var shared = Track(new AnimatorStateMachine());
             source.layers = new[]
             {
-                new AnimatorControllerLayer { name = "First", stateMachine = shared },
-                new AnimatorControllerLayer { name = "Second", stateMachine = shared },
+                new AnimatorControllerLayer { name = "First", stateMachine = shared, syncedLayerIndex = -1 },
+                new AnimatorControllerLayer { name = "Second", stateMachine = shared, syncedLayerIndex = -1 },
             };
             var controller = new CloneContext(GenericPlatformAnimatorBindings.Instance).Clone(source);
             var arguments = new object[] { controller.Layers, new[] { shared }, null };
@@ -355,7 +357,87 @@ namespace UnityBox.AnimatorOptimizer.Tests
             if (!vrchat) Assert.That(controller.Parameters["IsLocal"].defaultFloat, Is.EqualTo(1f));
         }
 
-        private VirtualAnimatorController CreateVirtualIsLocalSelector(bool sameOutput)
+        [Test]
+        public void VirtualClipMetadataPreservesSourceIdentityAndInspectableBindings()
+        {
+            var source = Track(new AnimationClip { name = "Ordinary property animation" });
+            source.SetCurve("Output", typeof(GameObject), "m_IsActive", AnimationCurve.Constant(0f, 1f / 60f, 1f));
+            var clip = new CloneContext(GenericPlatformAnimatorBindings.Instance).Clone(source);
+            var method = Processor.GetMethod("GetVirtualOriginalObject", BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(typeof(AnimationClip));
+
+            Assert.That(method.Invoke(null, new object[] { clip }), Is.SameAs(source));
+            Assert.That(Invoke("IsOrdinaryVirtualClip", clip), Is.True);
+            Assert.That(Invoke("HasInspectableVirtualBindings", clip), Is.True);
+            Assert.That(clip.GetFloatCurveBindings().Single().propertyName, Is.EqualTo("m_IsActive"));
+        }
+
+        [Test]
+        public void VirtualOriginMetadataDistinguishesUnavailableFromGenerated()
+        {
+            var source = Track(new AnimationClip());
+            var clip = new CloneContext(GenericPlatformAnimatorBindings.Instance).Clone(source);
+            var method = Processor.GetMethod("TryReadVirtualOriginalObject", BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(typeof(AnimationClip));
+            foreach (var property in new[]
+            {
+                null, typeof(AnimatorState).GetProperty("motion"), typeof(VirtualNode).GetProperty("Name"),
+            })
+            {
+                var arguments = new object[] { clip, property, source };
+                Assert.That(method.Invoke(null, arguments), Is.False);
+                Assert.That(arguments[2], Is.Null, "missing/incompatible source metadata must not guess the original clip");
+            }
+
+            var context = new CloneContext(GenericPlatformAnimatorBindings.Instance);
+            var sourceMachine = Track(new AnimatorStateMachine());
+            var originalProperty = typeof(VirtualNode).GetProperty("OriginalObject", BindingFlags.Instance | BindingFlags.NonPublic);
+            var wrongTypeArguments = new object[] { context.Clone(sourceMachine), originalProperty, source };
+            Assert.That(method.Invoke(null, wrongTypeArguments), Is.False);
+            Assert.That(wrongTypeArguments[2], Is.Null, "an original state machine cannot be read as a clip");
+
+            var generated = VirtualStateMachine.Create(context, "Generated without a physical source");
+            var generatedReader = Processor.GetMethod("TryGetVirtualOriginalObject", BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(typeof(AnimatorStateMachine));
+            var generatedArguments = new object[] { generated, sourceMachine };
+            Assert.That(generatedReader.Invoke(null, generatedArguments), Is.True);
+            Assert.That(generatedArguments[1], Is.Null, "available Object metadata can legitimately have no physical source");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void UncoveredFloatValuePreservesVirtualStateHistory(bool allowApproximation)
+        {
+            var controller = CreateVirtualSelector("Amount", false,
+                AnimatorConditionMode.Less, AnimatorConditionMode.Greater, 0.5f);
+            controller.Parameters = controller.Parameters.Add("Amount", new AnimatorControllerParameter
+            {
+                name = "Amount", type = AnimatorControllerParameterType.Float,
+            });
+            var layer = controller.Layers.Single();
+            var stateMachine = layer.StateMachine;
+            var transitions = stateMachine.AnyStateTransitions;
+            var options = new AnimatorOptimizerOptions
+            {
+                RequireAtLeastTwoLayers = false,
+                AllowFloatConditionApproximation = allowApproximation,
+            };
+            var arguments = new object[] { controller, layer, options, null, null };
+
+            Assert.That(Invoke("TryBuildPlan", arguments), Is.False,
+                "Amount == 0.5 can retain either state indefinitely; approximation cannot choose its output");
+            Assert.That(arguments[3], Is.Null);
+            Assert.That(layer.StateMachine, Is.SameAs(stateMachine));
+            Assert.That(stateMachine.AnyStateTransitions, Is.SameAs(transitions));
+            Assert.That(controller.Parameters["Amount"].type, Is.EqualTo(AnimatorControllerParameterType.Float));
+        }
+
+        private VirtualAnimatorController CreateVirtualIsLocalSelector(bool sameOutput) =>
+            CreateVirtualSelector("IsLocal", sameOutput, AnimatorConditionMode.IfNot, AnimatorConditionMode.If, 0f);
+
+        private VirtualAnimatorController CreateVirtualSelector(
+            string parameter, bool sameOutput, AnimatorConditionMode offCondition, AnimatorConditionMode onCondition,
+            float threshold)
         {
             var source = Track(new AnimatorController());
             var machine = Track(new AnimatorStateMachine());
@@ -372,15 +454,16 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 transition.duration = 0f;
                 transition.hasExitTime = false;
                 transition.canTransitionToSelf = true;
-                transition.AddCondition(state == off ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If,
-                    0f, "IsLocal");
+                transition.AddCondition(state == off ? offCondition : onCondition, threshold, parameter);
             }
             machine.defaultState = off;
             source.layers = new[]
             {
-                new AnimatorControllerLayer { name = "Selector", stateMachine = machine, defaultWeight = 1f },
+                new AnimatorControllerLayer { name = "Selector", stateMachine = machine, defaultWeight = 1f, syncedLayerIndex = -1 },
             };
-            return new CloneContext(GenericPlatformAnimatorBindings.Instance).Clone(source);
+            var controller = new CloneContext(GenericPlatformAnimatorBindings.Instance).Clone(source);
+            Assert.That(controller.Layers.Single().SyncedLayerIndex, Is.LessThan(0), "fixture layer must be independent");
+            return controller;
         }
 
         private static VirtualAnimatorController CreateVirtualController(

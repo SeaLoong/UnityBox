@@ -2970,18 +2970,8 @@ namespace UnityBox.AnimatorOptimizer
                     .FirstOrDefault(branch => branch.Conditions[0].Matches(value));
                 if (matched == null)
                 {
-                    if (conditionPrototype.IsFloat && options.AllowFloatConditionApproximation)
-                    {
-                        approximate = true;
-                        matched = branches
-                            .OrderBy(branch => Mathf.Abs(branch.Conditions[0].Threshold - value))
-                            .ThenBy(branch => branch.Order)
-                            .FirstOrDefault();
-                        report.AddWarning("Float 条件在某些阈值点没有 Transition 命中；近似模式已选择最近分支，运行结果可能与原状态机在边界帧不同。");
-                    }
-                }
-                if (matched == null)
-                {
+                    // Threshold interpolation cannot replace retained state history:
+                    // the parameter may remain at an uncovered value indefinitely.
                     report.AddReason("数值 Transition 条件没有覆盖完整取值区间；原状态机未命中时依赖历史状态，不能无损转换。");
                     return null;
                 }

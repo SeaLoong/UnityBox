@@ -1,0 +1,439 @@
+{
+  "schema": 1,
+  "branch": "feat/animator-optimizer",
+  "editor": "2022.3.22f1",
+  "platform": "Linux x86_64",
+  "test_platform": "EditMode",
+  "notes": [
+    "Executed using the existing Personal account activation; no credentials or license contents are included.",
+    "Scopes overlap: their counts must not be summed as distinct tests.",
+    "Prepared base revisions precede the native fixes; each imported local assembly source was compared byte-for-byte with the final checkout before committing.",
+    "Assembly SHA256 is over sorted repository-relative source paths and individual file SHA256 values, serialized as compact JSON.",
+    "Prepared package tree hashes include documentation at preparation time; later Markdown-only updates are not runtime source changes.",
+    "Raw XML and logs remain in the workspace. This checked-in summary does not guarantee fresh-task restoration of those external files or activation.",
+    "Results do not establish full Avatar upload, frame-by-frame Animator equivalence, performance, or every supported dependency version.",
+    "Unity2022 reports a nonblocking startup warning for its readonly legacy HOME shortcut-preferences directory; HOME was unchanged."
+  ],
+  "runs": [
+    {
+      "scope": "core",
+      "passed": true,
+      "run_id_utc": "20261028T171358-c5cbfa10",
+      "started_at": "2026-10-28T17:13:58.416827+00:00",
+      "finished_at": "2026-10-28T17:14:21.664588+00:00",
+      "project_id": "cab7bc2a14444202b8b1ea3e810eb440",
+      "prepared_base_revision": "e03fb84530daf35a2144aff20dcc1afae6971016",
+      "source_checkout": "/workspace/UnityBox",
+      "project": "/workspace/unitybox-setup/unity/projects/native-ao-final-core-v2",
+      "profile": "core",
+      "package_versions": {
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.test-framework": "1.1.33",
+        "top.sealoong.unitybox.animator-optimizer": "0.2.0"
+      },
+      "tests": {
+        "total": 127,
+        "passed": 127,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AnimatorOptimizer.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AnimatorOptimizer.Tests": {
+            "total": 127,
+            "passed": 127,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "841ac6bf13af2fba6baef3dc2d1a66da9dc522fdd0349bd6e8ca26ec839134d1",
+      "workspace_report": "/workspace/unitybox-setup/unity/native-ao-final-core-v2-result.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.animator-optimizer": {
+          "version": "0.2.0",
+          "prepared_tree_sha256": "eeeaedc0f2a4be8fc93a0971795bf74aaad02c86131775b0be41694da6865c69"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AnimatorOptimizer.Runtime": {
+          "sha256": "be1204324dbbd29ec0af668f6ee1195f8d99039ebe63eb10bd26e5548896d97b",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer": {
+          "sha256": "5fccfea4af1eca0b89f108dd64aa044566e09fe30172617d06302e68a3fb72c7",
+          "file_count": 13
+        },
+        "UnityBox.AnimatorOptimizer.Tests": {
+          "sha256": "6374a2284fe27c4b6a5c3188aa6254503c55726ee18205c644d20df2475a40fa",
+          "file_count": 7
+        },
+        "UnityBox.AnimatorOptimizer.TestFixtures": {
+          "sha256": "cf26b98a4b1d4e27b8810e9821a5110bcaff988078e77afabe51eb17f93683e9",
+          "file_count": 2
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    },
+    {
+      "scope": "sdk",
+      "passed": true,
+      "run_id_utc": "20261028T171546-8d963795",
+      "started_at": "2026-10-28T17:15:46.722835+00:00",
+      "finished_at": "2026-10-28T17:18:03.625397+00:00",
+      "project_id": "f74d36bedd774b10a8c85009dd311399",
+      "prepared_base_revision": "e03fb84530daf35a2144aff20dcc1afae6971016",
+      "source_checkout": "/workspace/UnityBox",
+      "project": "/workspace/unitybox-setup/unity/projects/native-optimizer-sdk-final",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0",
+        "com.vrchat.avatars": "3.8.2",
+        "com.vrchat.base": "3.8.2",
+        "top.sealoong.unitybox.animator-optimizer": "0.2.0"
+      },
+      "tests": {
+        "total": 139,
+        "passed": 139,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AnimatorOptimizer.Tests",
+          "UnityBox.AnimatorOptimizer.VRC.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AnimatorOptimizer.Tests": {
+            "total": 127,
+            "passed": 127,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.VRC.Tests": {
+            "total": 12,
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "e0ed59422b1ecab3702176c854882d8a2582dd6fbe20637e23e4237a9e0d8b1a",
+      "workspace_report": "/workspace/unitybox-setup/unity/native-optimizer-sdk-final-result.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.animator-optimizer": {
+          "version": "0.2.0",
+          "prepared_tree_sha256": "dcfdddaaec81e6db3725fefcdf5f4679039fc32ece91efab5d0a5834a9de9e16"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AnimatorOptimizer.Runtime": {
+          "sha256": "be1204324dbbd29ec0af668f6ee1195f8d99039ebe63eb10bd26e5548896d97b",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer": {
+          "sha256": "5fccfea4af1eca0b89f108dd64aa044566e09fe30172617d06302e68a3fb72c7",
+          "file_count": 13
+        },
+        "UnityBox.AnimatorOptimizer.Tests": {
+          "sha256": "6374a2284fe27c4b6a5c3188aa6254503c55726ee18205c644d20df2475a40fa",
+          "file_count": 7
+        },
+        "UnityBox.AnimatorOptimizer.TestFixtures": {
+          "sha256": "cf26b98a4b1d4e27b8810e9821a5110bcaff988078e77afabe51eb17f93683e9",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC.Tests": {
+          "sha256": "79dfbe3f07310dd7bbaff47071f1888b5bd628a0077e4d11e631bcf629e3fab6",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC": {
+          "sha256": "c1d2e204e5049612d4c535b58ac548d666a00e0de1d0752531fcbc9dcb230dd3",
+          "file_count": 3
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    },
+    {
+      "scope": "sdk-ndmf",
+      "passed": true,
+      "run_id_utc": "20261028T173227-54647502",
+      "started_at": "2026-10-28T17:32:27.009378+00:00",
+      "finished_at": "2026-10-28T17:35:23.792672+00:00",
+      "project_id": "4c7cc29323df4ec7b0b7567e2d771af8",
+      "prepared_base_revision": "e03fb84530daf35a2144aff20dcc1afae6971016",
+      "source_checkout": "/workspace/UnityBox",
+      "project": "/workspace/unitybox-setup/unity/projects/native-optimizer-ndmf-metadata-final-v2",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0",
+        "com.vrchat.avatars": "3.8.2",
+        "com.vrchat.base": "3.8.2",
+        "nadena.dev.ndmf": "1.11.0",
+        "top.sealoong.unitybox.animator-optimizer": "0.2.0"
+      },
+      "tests": {
+        "total": 172,
+        "passed": 172,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AnimatorOptimizer.NDMF.Tests",
+          "UnityBox.AnimatorOptimizer.Tests",
+          "UnityBox.AnimatorOptimizer.VRC.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AnimatorOptimizer.NDMF.Tests": {
+            "total": 33,
+            "passed": 33,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.Tests": {
+            "total": 127,
+            "passed": 127,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.VRC.Tests": {
+            "total": 12,
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "4eb1edbc9d8b5b95bfd4020be622b9a88b97c8ec2cd1edf0a72e47563b5f4d33",
+      "workspace_report": "/workspace/unitybox-setup/unity/native-optimizer-ndmf-metadata-final-v2-result.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.animator-optimizer": {
+          "version": "0.2.0",
+          "prepared_tree_sha256": "af7491a794e72b2ba0cb73841d54a72c8b34b385469f67e9d6fb5cc938c29820"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AnimatorOptimizer.Runtime": {
+          "sha256": "be1204324dbbd29ec0af668f6ee1195f8d99039ebe63eb10bd26e5548896d97b",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer": {
+          "sha256": "5fccfea4af1eca0b89f108dd64aa044566e09fe30172617d06302e68a3fb72c7",
+          "file_count": 13
+        },
+        "UnityBox.AnimatorOptimizer.Tests": {
+          "sha256": "6374a2284fe27c4b6a5c3188aa6254503c55726ee18205c644d20df2475a40fa",
+          "file_count": 7
+        },
+        "UnityBox.AnimatorOptimizer.TestFixtures": {
+          "sha256": "cf26b98a4b1d4e27b8810e9821a5110bcaff988078e77afabe51eb17f93683e9",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC.Tests": {
+          "sha256": "79dfbe3f07310dd7bbaff47071f1888b5bd628a0077e4d11e631bcf629e3fab6",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.NDMF.Tests": {
+          "sha256": "289cba5307bfb6a6c6c35ae4f67aed0419a77e9d40b6164e79e91466c17e20af",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC": {
+          "sha256": "c1d2e204e5049612d4c535b58ac548d666a00e0de1d0752531fcbc9dcb230dd3",
+          "file_count": 3
+        },
+        "UnityBox.AnimatorOptimizer.NDMF": {
+          "sha256": "9d32d4f35b951e6f88478392e92667dec322475f7139eead549ef175231c061e",
+          "file_count": 4
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    },
+    {
+      "scope": "sdk-ndmf-ma",
+      "passed": true,
+      "run_id_utc": "20261028T173628-b739272a",
+      "started_at": "2026-10-28T17:36:28.281522+00:00",
+      "finished_at": "2026-10-28T17:38:52.014975+00:00",
+      "project_id": "b06cb2b648fa47e5b80789f1f7dbe8de",
+      "prepared_base_revision": "e03fb84530daf35a2144aff20dcc1afae6971016",
+      "source_checkout": "/workspace/UnityBox",
+      "project": "/workspace/unitybox-setup/unity/projects/native-optimizer-full-metadata-final",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0",
+        "com.vrchat.avatars": "3.8.2",
+        "com.vrchat.base": "3.8.2",
+        "nadena.dev.modular-avatar": "1.18.0",
+        "nadena.dev.ndmf": "1.11.0",
+        "top.sealoong.unitybox.animator-optimizer": "0.2.0"
+      },
+      "tests": {
+        "total": 174,
+        "passed": 174,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AnimatorOptimizer.ModularAvatar.Tests",
+          "UnityBox.AnimatorOptimizer.NDMF.Tests",
+          "UnityBox.AnimatorOptimizer.Tests",
+          "UnityBox.AnimatorOptimizer.VRC.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AnimatorOptimizer.ModularAvatar.Tests": {
+            "total": 2,
+            "passed": 2,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.NDMF.Tests": {
+            "total": 33,
+            "passed": 33,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.Tests": {
+            "total": 127,
+            "passed": 127,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AnimatorOptimizer.VRC.Tests": {
+            "total": 12,
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "b80ae46dda85ec1d27c8bfae97895aaed54caf717275608855022a7ba088149b",
+      "workspace_report": "/workspace/unitybox-setup/unity/native-optimizer-full-metadata-final-result.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.animator-optimizer": {
+          "version": "0.2.0",
+          "prepared_tree_sha256": "af7491a794e72b2ba0cb73841d54a72c8b34b385469f67e9d6fb5cc938c29820"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AnimatorOptimizer.Runtime": {
+          "sha256": "be1204324dbbd29ec0af668f6ee1195f8d99039ebe63eb10bd26e5548896d97b",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer": {
+          "sha256": "5fccfea4af1eca0b89f108dd64aa044566e09fe30172617d06302e68a3fb72c7",
+          "file_count": 13
+        },
+        "UnityBox.AnimatorOptimizer.Tests": {
+          "sha256": "6374a2284fe27c4b6a5c3188aa6254503c55726ee18205c644d20df2475a40fa",
+          "file_count": 7
+        },
+        "UnityBox.AnimatorOptimizer.TestFixtures": {
+          "sha256": "cf26b98a4b1d4e27b8810e9821a5110bcaff988078e77afabe51eb17f93683e9",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC.Tests": {
+          "sha256": "79dfbe3f07310dd7bbaff47071f1888b5bd628a0077e4d11e631bcf629e3fab6",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.ModularAvatar.Tests": {
+          "sha256": "bf4b674b870b85e1db07965765ea57dad59b4a2585448f1887b806e5d2a00211",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.NDMF.Tests": {
+          "sha256": "289cba5307bfb6a6c6c35ae4f67aed0419a77e9d40b6164e79e91466c17e20af",
+          "file_count": 2
+        },
+        "UnityBox.AnimatorOptimizer.VRC": {
+          "sha256": "c1d2e204e5049612d4c535b58ac548d666a00e0de1d0752531fcbc9dcb230dd3",
+          "file_count": 3
+        },
+        "UnityBox.AnimatorOptimizer.NDMF": {
+          "sha256": "9d32d4f35b951e6f88478392e92667dec322475f7139eead549ef175231c061e",
+          "file_count": 4
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    }
+  ]
+}

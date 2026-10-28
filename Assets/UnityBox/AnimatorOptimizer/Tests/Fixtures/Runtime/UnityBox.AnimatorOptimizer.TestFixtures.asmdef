@@ -1,0 +1,23 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.TestFixtures",
+  "rootNamespace": "UnityBox.AnimatorOptimizer.Tests",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_EDITOR",
+    "UNITYBOX_TEST_FRAMEWORK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.unity.test-framework",
+      "expression": "1.1.0",
+      "define": "UNITYBOX_TEST_FRAMEWORK"
+    }
+  ],
+  "noEngineReferences": false
+}

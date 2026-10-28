@@ -7,7 +7,7 @@ description: Prepare isolated UnityBox test projects, run real Unity EditMode te
 
 Use this skill when setting up or verifying UnityBox changes in a managed environment.
 Tell the user when you begin applying it. Read [UnityEnvironment.md](../../../Docs/UnityEnvironment.md)
-for the installed Editor, dependency cache, and current license limitation.
+for the installed Editor, dependency cache, activation state, and verification limits.
 
 ## Preserve the user's project
 
@@ -49,11 +49,19 @@ for the installed Editor, dependency cache, and current license limitation.
   For full MA integration use the pinned SDK 3.8.2 fixture, not merely any SDK satisfying >= 3.7.0.
   VRC also embeds the real Editor-bundled UGUI 1.0.0 source package, explicitly declared by SDK 3.8.2.
   Core does not acquire this extra dependency.
+- The VRC preparer explicitly adds the real Editor-bundled Android JNI module because the SDK's
+  Oculus package references Android.Permission while compiling in the Linux Editor. Core omits it.
 - For NDMF, cache the real package and its dependencies, then pass `--dependency nadena.dev.ndmf`.
+  The optimizer's optional adapter now requires NDMF >= 1.11: 1.9/1.10 lack original-node metadata
+  needed for source-layer identity and clip metadata. Earlier API/signature checks missed that runtime
+  requirement. Other packages retain their own declared minimums.
   Add `--dependency nadena.dev.modular-avatar` when checking ACC/BGC's optional MA integration;
   having MA in the cache alone does not add it to a prepared project.
   Honor assembly version constraints. Never generate fake SDK/NDMF types or substitute skipped
   integration tests for coverage.
+- Express an asmdef minimum version as `"3.7.0"`, not `"[3.7.0,)"`. Unity 2022.3 did not
+  enable several native versionDefine symbols for the latter form even though the supplemental
+  Roslyn parser accepted it. Always verify actual discovery of each expected test assembly.
 
 ## Execute and inspect evidence
 
@@ -66,9 +74,13 @@ for the installed Editor, dependency cache, and current license limitation.
 4. If there is no valid Unity license, report the license error and missing XML as a blocked run.
    Continue independent source/packaging or real-DLL compilation checks. Do not report Unity tests
    as passing merely because the Editor installed or C# compiled.
-   The user has confirmed no Unity authorization is currently available; do not repeatedly relaunch
-   license checks or ask again while that condition is unchanged.
-5. Filtered runs may use `--assembly-names 'A;B'` and `--test-filter`; state the limited scope. After
+   The account already has Personal. Cloud Hub login successfully updated this machine's license
+   on 2026-10-29 and genuine tests now execute; do not keep treating the original licensing failure
+   as current. Recheck only when activation/session conditions actually change.
+5. The runner always supplies `-assemblyNames` using the prepared project's own test suites unless
+   explicitly overridden; an empty selection fails before launch. `manifest.testables` alone did not
+   stop the SDK's upstream VTP tests being discovered. Keep third-party test execution separate.
+   Filtered runs may use `--assembly-names 'A;B'` and `--test-filter`; state the limited scope. After
    relevant fixes, perform the full requested scope rather than hiding failures with a narrow filter.
 
 The runner keeps each invocation's command, logs, JSON and actual XML under the isolated project's
@@ -89,5 +101,6 @@ Use `--tests --profile core` or `--tests --profile vrc`, an explicit `--repo`, `
 Unlike the project preparer, the compiler's vrc profile considers every cached dependency package.
 Inspect its `compile-report.json`, source hashes, errors, and omitted upstream optional references.
 It does not reproduce all Unity importer, assembly resolution, platform-symbol, or IL postprocessor
-rules. The current 23-assembly optimizer and 55-assembly seven-plugin integration checks passed,
-but Unity import/build/EditMode execution remains blocked by licensing.
+rules. The historical 23-assembly optimizer and 55-assembly seven-plugin integration checks passed,
+but they remain separate from the genuine Editor results. Read the latest
+Docs/Testing.md before claiming any scope passed.

@@ -61,8 +61,10 @@ namespace UnityBox.AnimatorOptimizer
         private const string GeneratedAssetPrefix = AnimatorOptimizerConverter.GeneratedAssetPrefix;
         private const string WeightParameterPrefix = "AO/LayerWeight";
         private static int virtualPriorityCounter;
+        // NDMF 1.11 retains the source Unity object in this protected property.
+        // Fail closed if a future API removes it; guessing by name/index is unsafe.
         private static readonly PropertyInfo VirtualOriginalObjectProperty = typeof(VirtualNode).GetProperty(
-            "OriginalObjectExposed",
+            "OriginalObject",
             BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly FieldInfo VirtualMaskObjectField = typeof(VirtualAvatarMask).GetField(
             "_mask", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -1103,16 +1105,25 @@ namespace UnityBox.AnimatorOptimizer
         private static bool TryGetVirtualOriginalObject<T>(
             VirtualNode node,
             out T original)
+            where T : UnityEngine.Object => TryReadVirtualOriginalObject(node, VirtualOriginalObjectProperty, out original);
+
+        private static bool TryReadVirtualOriginalObject<T>(
+            VirtualNode node,
+            PropertyInfo originProperty,
+            out T original)
             where T : UnityEngine.Object
         {
             original = null;
             if (node == null)
                 return true;
-            if (VirtualOriginalObjectProperty == null)
+            if (originProperty == null || !typeof(UnityEngine.Object).IsAssignableFrom(originProperty.PropertyType))
                 return false;
             try
             {
-                original = VirtualOriginalObjectProperty.GetValue(node) as T;
+                var value = originProperty.GetValue(node);
+                if (value != null && !(value is T))
+                    return false;
+                original = value as T;
                 return true;
             }
             catch
@@ -3647,14 +3658,8 @@ namespace UnityBox.AnimatorOptimizer
             {
                 var branch = branches.OrderBy(item => item.Order)
                     .FirstOrDefault(item => item.Conditions[0].Matches(value));
-                if (branch == null && !prototype.IsInt && options.AllowFloatConditionApproximation)
-                {
-                    approximate = true;
-                    branch = branches
-                        .OrderBy(item => Mathf.Abs(item.Conditions[0].Threshold - value))
-                        .ThenBy(item => item.Order)
-                        .FirstOrDefault();
-                }
+                // Approximation may interpolate a threshold, but cannot discard
+                // state history when an input value has no matching transition.
                 if (branch == null)
                     return false;
                 samples.Add((value, branch.Motion));

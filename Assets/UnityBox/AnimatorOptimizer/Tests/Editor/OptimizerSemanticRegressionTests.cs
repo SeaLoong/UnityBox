@@ -164,27 +164,31 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void RejectedCleanupDoesNotCloneOrReplaceBorrowedStateMachine()
+        public void RejectedUnsavedCleanupDoesNotCloneOrReplaceBorrowedStateMachine()
         {
             var externalPath = controllerPath.Replace(".controller", "_External.controller");
+            var unsaved = new AnimatorController { name = "Unsaved cleanup target" };
             try
             {
                 var external = AnimatorController.CreateAnimatorControllerAtPath(externalPath);
                 var borrowed = external.layers[0].stateMachine;
-                controller.layers = new[] { new AnimatorControllerLayer
+                unsaved.layers = new[] { new AnimatorControllerLayer
                 {
-                    name = "Invalid synced layer", stateMachine = borrowed, syncedLayerIndex = 0,
+                    name = "Borrowed source", stateMachine = borrowed, syncedLayerIndex = -1,
                 } };
-                var originalAssetCount = AssetDatabase.LoadAllAssetsAtPath(controllerPath).Length;
+                var originalAssetCount = AssetDatabase.LoadAllAssetsAtPath(externalPath).Length;
 
-                var messages = AnimatorOptimizerConverter.CleanupControllerInPlace(controller, null);
+                var error = Assert.Throws<InvalidOperationException>(() =>
+                    AnimatorOptimizerConverter.CleanupControllerInPlace(unsaved, null));
 
-                Assert.That(messages.Any(message => message.StartsWith("未执行清理：", StringComparison.Ordinal)), Is.True);
-                Assert.That(controller.layers[0].stateMachine, Is.SameAs(borrowed));
-                Assert.That(AssetDatabase.LoadAllAssetsAtPath(controllerPath).Length, Is.EqualTo(originalAssetCount));
+                Assert.That(error.Message, Does.Contain("Assets/"));
+                Assert.That(unsaved.layers[0].stateMachine, Is.SameAs(borrowed));
+                Assert.That(AssetDatabase.GetAssetPath(borrowed), Is.EqualTo(externalPath));
+                Assert.That(AssetDatabase.LoadAllAssetsAtPath(externalPath).Length, Is.EqualTo(originalAssetCount));
             }
             finally
             {
+                UnityEngine.Object.DestroyImmediate(unsaved);
                 AssetDatabase.DeleteAsset(externalPath);
             }
         }

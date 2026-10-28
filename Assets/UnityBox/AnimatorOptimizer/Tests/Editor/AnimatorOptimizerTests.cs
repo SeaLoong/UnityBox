@@ -9,15 +9,6 @@ using UnityEngine;
 
 namespace UnityBox.AnimatorOptimizer.Tests
 {
-    public sealed class AnimatorOptimizerTestMarkerBehaviour : StateMachineBehaviour
-    {
-    }
-
-    public sealed class ModularAvatarMMDLayerControl : StateMachineBehaviour
-    {
-        public bool DisableInMMDMode;
-    }
-
     public sealed class AnimatorOptimizerTests
     {
         private const string TestFolder = "Assets/UnityBox/Generated/AnimatorOptimizerTests";
@@ -212,35 +203,99 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void SkipsFloatConditionsUnlessApproximationIsEnabled()
+        public void ConvertsCompleteFloatConditionsExactlyInBothApproximationModes()
         {
             var controller = CreateController();
             controller.AddParameter(new AnimatorControllerParameter
             {
-                name = "Amount",
-                type = AnimatorControllerParameterType.Float,
-                defaultFloat = 0f,
+                name = "Amount", type = AnimatorControllerParameterType.Float,
             });
             AddSingleFloatConditionLayer(controller, "Float Logic", "Amount");
             AddSingleMotionLayer(controller, "Other", "Other", 1f);
             AssetDatabase.SaveAssets();
 
-            var strictReport = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
+            foreach (var allowApproximation in new[] { false, true })
+            {
+                var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
+                {
+                    AllowFloatConditionApproximation = allowApproximation,
+                });
+                var layer = report.Layers[0];
+                Assert.That(layer.CanConvert, Is.True, string.Join(" | ", layer.Reasons));
+                Assert.That(layer.Warnings.Any(warning => warning.Contains("近似")), Is.False);
+                Assert.That(layer.Optimizations.Any(optimization => optimization.Contains("精确")), Is.True);
+            }
+        }
+
+        [Test]
+        public void RejectsFloatEqualityGapEvenWhenApproximationIsAllowed()
+        {
+            var controller = CreateController();
+            controller.AddParameter(new AnimatorControllerParameter
+            {
+                name = "Amount", type = AnimatorControllerParameterType.Float,
+            });
+            AddSingleFloatConditionLayer(controller, "Float Gap", "Amount", leaveEqualityGap: true);
+            var sourceMachine = controller.layers[0].stateMachine;
+            var sourceMotions = sourceMachine.states.Select(child => child.state.motion).ToArray();
+
+            foreach (var allowApproximation in new[] { false, true })
+            {
+                var options = new AnimatorOptimizerOptions
+                {
+                    AllowFloatConditionApproximation = allowApproximation,
+                };
+                var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
+                Assert.That(report.Layers[0].CanConvert, Is.False,
+                    $"AllowApproximation={allowApproximation}, AAP={options.EnableAapStateRegisterOptimization}, " +
+                    $"Heuristics={options.Heuristics}, Kind={report.Layers[0].ConversionKind}: " +
+                    string.Join(" | ", report.Layers[0].Warnings.Concat(report.Layers[0].Optimizations)));
+                Assert.That(report.Layers[0].Reasons.Any(reason => reason.Contains("历史")), Is.True,
+                    string.Join(" | ", report.Layers[0].Reasons));
+                Assert.That(controller.layers[0].stateMachine, Is.SameAs(sourceMachine));
+                Assert.That(sourceMachine.states.Select(child => child.state.motion), Is.EqualTo(sourceMotions));
+            }
+        }
+
+        [Test]
+        public void AllowsExplicitApproximationAtZeroThresholdWithCompleteCoverage()
+        {
+            var controller = CreateController();
+            controller.AddParameter("Amount", AnimatorControllerParameterType.Float);
+            var machine = new AnimatorStateMachine { name = "Zero threshold with fallback" };
+            var off = machine.AddState("Off");
+            off.motion = CreateClip(controller, "Zero Off", "ZeroFloat/Value", 0f);
+            off.writeDefaultValues = true;
+            var on = machine.AddState("On");
+            on.motion = CreateClip(controller, "Zero On", "ZeroFloat/Value", 1f);
+            on.writeDefaultValues = true;
+            machine.defaultState = off;
+            var positive = machine.AddAnyStateTransition(on);
+            positive.hasExitTime = false;
+            positive.duration = 0f;
+            positive.canTransitionToSelf = true;
+            positive.AddCondition(AnimatorConditionMode.Greater, 0f, "Amount");
+            var fallback = machine.AddAnyStateTransition(off);
+            fallback.hasExitTime = false;
+            fallback.duration = 0f;
+            fallback.canTransitionToSelf = true;
+            fallback.AddCondition(AnimatorConditionMode.Less, 1f, "Amount");
+            AddLayer(controller, "Zero threshold", machine);
+
+            var strict = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
             {
                 AllowFloatConditionApproximation = false,
-                UpgradeBoolParametersToFloat = true,
-                UpgradeIntParametersToFloat = true,
             });
-            Assert.That(strictReport.Layers[0].CanConvert, Is.False);
-            Assert.That(strictReport.Layers[0].Reasons.Any(reason => reason.Contains("Float 参数")), Is.True);
+            Assert.That(strict.Layers[0].CanConvert, Is.False);
 
-            var approximateReport = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
+            var approximate = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
             {
                 AllowFloatConditionApproximation = true,
-                UpgradeBoolParametersToFloat = true,
-                UpgradeIntParametersToFloat = true,
             });
-            Assert.That(approximateReport.Layers[0].CanConvert, Is.True);
+            Assert.That(approximate.Layers[0].CanConvert, Is.True,
+                string.Join(" | ", approximate.Layers[0].Reasons));
+            Assert.That(approximate.Layers[0].Warnings.Any(warning => warning.Contains("近似")), Is.True);
+            Assert.That(approximate.Layers[0].Warnings.Any(warning => warning.Contains("最近分支")), Is.False);
         }
 
         [Test]
@@ -329,7 +384,10 @@ namespace UnityBox.AnimatorOptimizer.Tests
             stateMachine.defaultState = state;
             AddLayer(controller, "Empty Motion WD Off", stateMachine);
 
-            var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions());
+            var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
+            {
+                WriteDefaultsPolicy = AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict,
+            });
 
             Assert.That(report.Layers[0].CanConvert, Is.False);
             Assert.That(report.Layers[0].Reasons.Any(reason => reason.Contains("Write Defaults")), Is.True);
@@ -384,7 +442,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(report.Layers[0].CanConvert, Is.True);
             Assert.That(report.Layers[0].ConversionKind,
                 Is.EqualTo(AnimatorOptimizerConversionKind.ConstantMotion));
-            Assert.That(report.Layers[0].Warnings.Any(warning => warning.Contains("可观测效果")), Is.True);
+            Assert.That(report.Layers[0].Optimizations.Any(optimization => optimization.Contains("可观测效果")), Is.True);
         }
 
         [Test]
@@ -540,9 +598,9 @@ namespace UnityBox.AnimatorOptimizer.Tests
         {
             var controller = CreateController();
             var firstClip = CreateClip(controller, "Event First", "EventTarget", 1f);
-            firstClip.events = new[] { new AnimationEvent { time = 0f, functionName = "OnEvent" } };
+            AnimationUtility.SetAnimationEvents(firstClip, new[] { new AnimationEvent { time = 0f, functionName = "OnEvent" } });
             var secondClip = CreateClip(controller, "Event Second", "EventTarget", 1f);
-            secondClip.events = new[] { new AnimationEvent { time = 0f, functionName = "OnEvent" } };
+            AnimationUtility.SetAnimationEvents(secondClip, new[] { new AnimationEvent { time = 0f, functionName = "OnEvent" } });
             AddMotionLayer(controller, "Event First", firstClip);
             AddMotionLayer(controller, "Event Second", secondClip);
 
@@ -712,7 +770,8 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions());
 
             Assert.That(report.Layers[0].CanConvert, Is.True);
-            Assert.That(report.Layers[0].ConversionKind, Is.EqualTo(AnimatorOptimizerConversionKind.BooleanTruthTable));
+            // Both possible input values immediately converge to Target; no decision is needed.
+            Assert.That(report.Layers[0].ConversionKind, Is.EqualTo(AnimatorOptimizerConversionKind.ConstantMotion));
         }
 
         [Test]
@@ -903,7 +962,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void KeepsDisjointDynamicLayersAsIndependentMotionsWhenLengthsDiffer()
+        public void RejectsDisjointDynamicLayersWithDifferentTimeBasesWithoutChangingSource()
         {
             var controller = CreateController();
             var firstClip = CreateTimedClip(controller, "Different Length First", "DifferentLength/First", 0f, 1f);
@@ -922,15 +981,16 @@ namespace UnityBox.AnimatorOptimizer.Tests
 
             var options = new AnimatorOptimizerOptions { StrictCurveConflicts = true };
             var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
-            Assert.That(AnimatorOptimizerConverter.GetSelectionIssues(report, new[] { 0, 1 }, options), Is.Empty);
+            Assert.That(AnimatorOptimizerConverter.GetSelectionIssues(report, new[] { 0, 1 }, options), Is.Not.Empty);
+            var originalMachines = controller.layers.Select(layer => layer.stateMachine).ToArray();
 
-            var result = AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }, options);
-            var root = controller.layers[0].stateMachine.defaultState.motion as BlendTree;
+            var error = Assert.Throws<InvalidOperationException>(() =>
+                AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }, options));
 
-            Assert.That(result.GeneratedLayers, Has.Count.EqualTo(1));
-            Assert.That(root, Is.Not.Null);
-            Assert.That(root.children.Select(child => child.motion), Does.Contain(firstClip));
-            Assert.That(root.children.Select(child => child.motion), Does.Contain(secondClip));
+            Assert.That(error.Message, Does.Contain("时间基准"));
+            Assert.That(controller.layers.Select(layer => layer.stateMachine), Is.EqualTo(originalMachines));
+            Assert.That(controller.layers[0].stateMachine.defaultState.motion, Is.SameAs(firstClip));
+            Assert.That(controller.layers[1].stateMachine.defaultState.motion, Is.SameAs(secondClip));
         }
 
         [Test]
@@ -968,7 +1028,20 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(result.GeneratedLayers, Has.Count.EqualTo(1));
             Assert.That(root, Is.Not.Null);
             Assert.That(root.children, Has.Length.EqualTo(1));
-            Assert.That(root.children[0].motion, Is.SameAs(sharedClip));
+            // Priority folding may materialize an equivalent static clip. Verify the
+            // collapsed output, rather than requiring a particular allocation strategy.
+            var output = root.children[0].motion as AnimationClip;
+            Assert.That(output, Is.Not.Null);
+            var sourceBindings = AnimationUtility.GetCurveBindings(sharedClip);
+            var outputBindings = AnimationUtility.GetCurveBindings(output);
+            Assert.That(outputBindings, Is.EquivalentTo(sourceBindings));
+            foreach (var binding in sourceBindings)
+            {
+                var expected = AnimationUtility.GetEditorCurve(sharedClip, binding);
+                var actual = AnimationUtility.GetEditorCurve(output, binding);
+                foreach (var time in new[] { 0f, 1f / 60f, 1f })
+                    Assert.That(actual.Evaluate(time), Is.EqualTo(expected.Evaluate(time)).Within(0.00001f));
+            }
         }
 
         [Test]
@@ -1201,7 +1274,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var composite = root.children[0].motion as AnimationClip;
             Assert.That(composite, Is.Not.Null);
             var binding = AnimationUtility.GetCurveBindings(composite)
-                .Single(item => item.path == "AdditiveTarget");
+                .Single(item => item.path == "AdditiveTarget" && item.propertyName == "m_LocalPosition.x");
             var curve = AnimationUtility.GetEditorCurve(composite, binding);
             Assert.That(curve.Evaluate(0f), Is.EqualTo(3f).Within(0.001f));
         }
@@ -1226,7 +1299,9 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var issues = AnimatorOptimizerConverter.GetSelectionIssues(report, new[] { 0, 1 }, options);
 
             Assert.That(issues, Is.Not.Empty);
-            Assert.That(issues.Any(issue => issue.Contains("重复动画绑定") || issue.Contains("安全")), Is.True);
+            Assert.That(issues.Concat(report.Layers.SelectMany(layer => layer.Reasons))
+                .Any(issue => issue.Contains("旋转")), Is.True,
+                string.Join(" | ", issues.Concat(report.Layers.SelectMany(layer => layer.Reasons))));
         }
 
         [Test]
@@ -1645,10 +1720,8 @@ namespace UnityBox.AnimatorOptimizer.Tests
             toSecond.hasExitTime = false;
             toSecond.duration = 0f;
             toSecond.AddCondition(AnimatorConditionMode.If, 0f, "Gate");
-            var secondToFirst = second.AddTransition(first);
-            secondToFirst.hasExitTime = false;
-            secondToFirst.duration = 0f;
-            secondToFirst.AddCondition(AnimatorConditionMode.IfNot, 0f, "Gate");
+            // The state remains Second after Gate becomes false. This genuine history
+            // requires a register, unlike a bidirectional pure Gate selector.
             AddLayer(controller, "AAP Entry Source", stateMachine);
 
             var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions
@@ -1667,48 +1740,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(result.GeneratedLayers, Has.Count.EqualTo(2));
             Assert.That(controller.parameters.Any(parameter =>
                 parameter.name.StartsWith("AO/StateRegisterInitialized/")), Is.True);
-        }
-
-        [Test]
-        public void PreservesMmdBehaviourWhenAapStateRegisterConverts()
-        {
-            var controller = CreateController();
-            controller.AddParameter(new AnimatorControllerParameter
-            {
-                name = "AapMmdGate",
-                type = AnimatorControllerParameterType.Bool,
-            });
-            var stateMachine = new AnimatorStateMachine { name = "AAP MMD Source" };
-            var first = stateMachine.AddState("First", new Vector3(300f, 0f));
-            first.motion = CreateClip(controller, "AAP MMD First", "AAPMmd/First", 0f);
-            first.writeDefaultValues = true;
-            var second = stateMachine.AddState("Second", new Vector3(300f, 80f));
-            second.motion = CreateClip(controller, "AAP MMD Second", "AAPMmd/Second", 1f);
-            second.writeDefaultValues = true;
-            stateMachine.defaultState = first;
-            var transition = first.AddTransition(second);
-            transition.hasExitTime = false;
-            transition.duration = 0f;
-            transition.AddCondition(AnimatorConditionMode.If, 0f, "AapMmdGate");
-            var behaviour = stateMachine.AddStateMachineBehaviour<ModularAvatarMMDLayerControl>();
-            behaviour.DisableInMMDMode = false;
-            AddLayer(controller, "AAP MMD Source", stateMachine);
-
-            var options = new AnimatorOptimizerOptions
-            {
-                EnableAapStateRegisterOptimization = true,
-                NormalizeAlwaysOneParameters = false,
-            };
-            var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
-            Assert.That(report.Layers[0].ConversionKind,
-                Is.EqualTo(AnimatorOptimizerConversionKind.AapStateRegister));
-
-            var result = AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0 }, options);
-
-            Assert.That(result.GeneratedLayers, Has.Count.EqualTo(2));
-            Assert.That(controller.layers[1].stateMachine.behaviours, Has.Length.EqualTo(1));
-            Assert.That(controller.layers[1].stateMachine.behaviours[0].GetType().Name,
-                Is.EqualTo("ModularAvatarMMDLayerControl"));
         }
 
         [Test]
@@ -1836,36 +1867,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 child.directBlendParameter == "__ModularAvatarInternal/One" && child.motion is BlendTree), Is.True);
             Assert.That(root.children.Select(child => child.motion).OfType<BlendTree>()
                 .Any(tree => tree.blendType == BlendTreeType.FreeformCartesian2D), Is.True);
-        }
-
-        [Test]
-        public void PreservesEquivalentMaMmdLayerControlWhenMergingResponsiveLayers()
-        {
-            var controller = CreateController();
-            var firstMachine = new AnimatorStateMachine { name = "MA MMD First StateMachine" };
-            var firstState = firstMachine.AddState("First", new Vector3(300f, 0f));
-            firstState.motion = CreateClip(controller, "MA MMD First", "MA/MmdFirst", 1f);
-            firstState.writeDefaultValues = true;
-            firstMachine.defaultState = firstState;
-            firstMachine.AddStateMachineBehaviour<ModularAvatarMMDLayerControl>().DisableInMMDMode = false;
-            AddLayer(controller, "MA Responsive: First", firstMachine);
-
-            var secondMachine = new AnimatorStateMachine { name = "MA MMD Second StateMachine" };
-            var secondState = secondMachine.AddState("Second", new Vector3(300f, 0f));
-            secondState.motion = CreateClip(controller, "MA MMD Second", "MA/MmdSecond", 1f);
-            secondState.writeDefaultValues = true;
-            secondMachine.defaultState = secondState;
-            secondMachine.AddStateMachineBehaviour<ModularAvatarMMDLayerControl>().DisableInMMDMode = false;
-            AddLayer(controller, "MA Responsive: Second", secondMachine);
-            AssetDatabase.SaveAssets();
-
-            var result = AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 });
-
-            Assert.That(result.GeneratedLayers, Has.Count.EqualTo(1));
-            Assert.That(controller.layers[0].stateMachine.behaviours,
-                Has.Length.EqualTo(1));
-            Assert.That(controller.layers[0].stateMachine.behaviours[0].GetType().Name,
-                Is.EqualTo("ModularAvatarMMDLayerControl"));
         }
 
         [Test]
@@ -2672,7 +2673,8 @@ namespace UnityBox.AnimatorOptimizer.Tests
         private static void AddSingleFloatConditionLayer(
             AnimatorController controller,
             string layerName,
-            string parameter)
+            string parameter,
+            bool leaveEqualityGap = false)
         {
             var stateMachine = new AnimatorStateMachine { name = layerName + " StateMachine" };
             var off = stateMachine.AddState("Off", new Vector3(300f, 0f));
@@ -2686,11 +2688,11 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var offTransition = stateMachine.AddAnyStateTransition(off);
             offTransition.hasExitTime = false;
             offTransition.duration = 0f;
-            offTransition.AddCondition(AnimatorConditionMode.Less, 0.5f, parameter);
+            offTransition.AddCondition(AnimatorConditionMode.Less, leaveEqualityGap ? 0.5f : 0.75f, parameter);
             var onTransition = stateMachine.AddAnyStateTransition(on);
             onTransition.hasExitTime = false;
             onTransition.duration = 0f;
-            onTransition.AddCondition(AnimatorConditionMode.Greater, 0.5f, parameter);
+            onTransition.AddCondition(AnimatorConditionMode.Greater, leaveEqualityGap ? 0.5f : 0.25f, parameter);
             AddLayer(controller, layerName, stateMachine);
         }
 
@@ -2932,10 +2934,12 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var stateMachine = new AnimatorStateMachine { name = name + " StateMachine" };
             var state = stateMachine.AddState(name + " State", new Vector3(300f, 0f));
             state.writeDefaultValues = false;
+            state.motion = new AnimationClip { name = name + " Empty Clip" };
+            AssetDatabase.AddObjectToAsset(state.motion, controller);
             stateMachine.defaultState = state;
-            if (addBehaviour)
-                state.AddStateMachineBehaviour<AnimatorOptimizerTestMarkerBehaviour>();
             AddLayer(controller, name, stateMachine);
+            if (addBehaviour)
+                Assert.That(state.AddStateMachineBehaviour<AnimatorOptimizerTestMarkerBehaviour>(), Is.Not.Null);
         }
 
         private static IEnumerable<BlendTree> EnumerateBlendTrees(Motion motion)
@@ -2957,7 +2961,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             AvatarMask avatarMask = null,
             AnimatorLayerBlendingMode blendingMode = AnimatorLayerBlendingMode.Override)
         {
-            AssetDatabase.AddObjectToAsset(stateMachine, controller);
+            PersistGraph(controller, stateMachine);
             if (avatarMask != null && string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(avatarMask)))
                 AssetDatabase.AddObjectToAsset(avatarMask, controller);
             var layers = controller.layers.ToList();
@@ -2970,6 +2974,39 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 stateMachine = stateMachine,
             });
             controller.layers = layers.ToArray();
+        }
+
+        private static void PersistGraph(AnimatorController controller, UnityEngine.Object root)
+        {
+            // AddState/AddTransition cannot attach sub-assets when their parent was
+            // still transient. Persist this fixture's complete graph before saving;
+            // otherwise CopyAsset loses children and cleanup legitimately clones them.
+            var destination = AssetDatabase.GetAssetPath(controller);
+            var pending = new Queue<UnityEngine.Object>();
+            var visited = new HashSet<UnityEngine.Object>();
+            pending.Enqueue(root);
+            while (pending.Count > 0)
+            {
+                var item = pending.Dequeue();
+                if (item == null || !visited.Add(item)) continue;
+                var owner = AssetDatabase.GetAssetPath(item);
+                if (string.IsNullOrEmpty(owner))
+                    AssetDatabase.AddObjectToAsset(item, controller);
+                else if (!string.Equals(owner, destination, StringComparison.OrdinalIgnoreCase))
+                    continue; // An intentional external reference remains external.
+                using (var serialized = new SerializedObject(item))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var child = property.objectReferenceValue;
+                        if (child is AnimatorStateMachine || child is AnimatorState ||
+                            child is AnimatorTransitionBase || child is BlendTree || child is StateMachineBehaviour)
+                            pending.Enqueue(child);
+                    }
+                }
+            }
         }
 
         private static void EnsureFolder(string folder)

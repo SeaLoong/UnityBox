@@ -6,11 +6,11 @@
 
 - 核心仅需 Unity 2022.3；核心 EditMode 测试另需 Unity Test Framework。`package.json` 不会强制安装 VRChat SDK 或 NDMF。
 - VRChat 构建集成可选，要求 `com.vrchat.base`、`com.vrchat.avatars` ≥3.7；缺席时整个 `UnityBox.AnimatorOptimizer.VRC` 程序集不参与编译。
-- NDMF 集成同时要求上述 SDK 和 NDMF ≥1.9；`PlatformFinish` 需要 1.8，虚拟 BlendTree 的归一化属性需要 1.9。缺少 SDK 或 NDMF 时，仅排除该适配程序集和对应集成测试。
+- NDMF 集成同时要求上述 SDK 和 NDMF ≥1.11。该版本才提供手动选层与源语义映射需要的原对象元数据；此前按 PlatformFinish / BlendTree API 得出的 ≥1.9 要求不足以支持完整功能。1.9/1.10 不会启用本插件虚拟适配和对应测试；升级到 1.11 后重新验证构建，或使用独立核心 / 仅 SDK 入口。核心和 SDK 适配最低版本不变。
 - 分支是 `feat/animator-optimizer`，已 rebase `master`；这不是外部的 Avatar Optimizer 插件。
 - 本插件已有分析器、普通转换器、NDMF、离线窗口和 AAP 后端。**AAP StateRegister 的逐帧反馈尚未做 Unity 等价性验证，默认关闭。**Float 近似、启发式和 AlwaysOne 假设也需要显式选择。
-- 无 SDK 的 Runtime、核心 Editor、核心 Tests 已使用 Unity 2022.3.22f1 自带 Roslyn 和真实 Unity/Test Framework 程序集编译通过，没有替身 SDK。Editor 启动因缺少许可失败；Unity 导入/IL 后处理、EditMode 用例执行及实际上传尚未验证。编译测试代码不等于执行测试。详见 [测试指南](../../../Docs/Testing.md) 和 [审查记录](../../../Docs/AnimatorOptimizerAudit.md)。
-- 固定 SDK 3.8.2 + NDMF 1.11 的所需真实依赖闭包已通过 Roslyn 类型检查（23 个程序集，含测试），第三方源码未改动。工具不完整复现 Unity 导入器、程序集解析或 IL 后处理；此结果仍不代表 Editor 导入与测试执行通过。较早 SDK 3.7 的签名检查仅保留为相应版本的历史证据。
+- 2026-10-29（北京时间）现有 Personal 账号已激活云端 Unity 2022.3.22f1。真实 EditMode 核心 **127/127**、仅 SDK **139/139**、SDK + NDMF **172/172**、SDK + NDMF + MA **174/174** 通过，均无失败或跳过，Unity exit 0。详细范围和证据见 [测试指南](../../../Docs/Testing.md)；此前 Roslyn 类型检查仅保留作历史。实际测试范围不包含 Avatar 上传、完整逐帧等价性或性能。
+- MA 不是本插件的运行依赖。另有 2 个 MMD Behaviour 兼容测试使用真实 MA 1.18 / NDMF 1.11 / SDK ≥3.7.3，位于可选 `UnityBox.AnimatorOptimizer.ModularAvatar.Tests`，不会用同名替身混入无 SDK 核心测试。
 
 ## 使用方式
 
@@ -113,6 +113,11 @@ SDK / NDMF 适配入口保留目标的参数语义，不会把普通子 Animator
 
 Animator Transition 的 Float 条件是阶跃判断，而 1D BlendTree 在阈值之间是线性插值。默认尝试用相邻 IEEE-754 可表示值保留阶跃边界，无法证明的零/极端阈值会保留原图。勾选近似后，这些边界才允许使用可配置的近似区间，并在报告中提示。
 
+近似开关不允许丢失状态历史。例如仅有 `Amount < 0.5` 与 `Amount > 0.5` 两条分支时，
+`Amount == 0.5` 没有 Transition 命中，原 Animator 可以一直保持先前状态；不能用“最近分支”
+替代。普通和 NDMF 路径现在都会拒绝这类覆盖空洞并保留原图，即使已允许近似。
+因此部分旧版本曾报告可转换的图会改为跳过。完整覆盖的零/极端数值边界仍可按显式选项近似。
+
 ### AlwaysOne 与空权重
 
 启用 `Normalize AlwaysOne Parameters` 后，插件会在满足安全条件时从默认值为 `1` 且名称含 `AlwaysOne` 的 Float 参数中选择一个 Canonical 参数，让 Direct BlendTree 权重引用统一到它，并在创建生成层权重时优先复用它。别名参数不会被删除，以免破坏 VRChat Expression 参数或其它外部系统的引用；被 AAP `Animator` FloatCurve、ParameterDriver 或无法检查的 Behaviour 使用的参数不会参与归一。
@@ -164,7 +169,7 @@ AAP 运算图必须放在同一个 Animator Controller 内，生成状态必须�
 
 ## 资产与目标边界
 
-- SDK fallback 对源资产或内存 Controller 建立独立副本；成功后只替换目标 Avatar 的引用，构建结束恢复并清理临时资产。
+- SDK fallback 对源资产或内存 Controller 建立独立副本；成功后只替换目标 Avatar 的引用，构建结束恢复并清理临时资产。AnimatorStateMachine / State / Transition / BlendTree 使用实际构造器建立原生对象后复制序列化内容并重映射引用，避免 Unity 2022.3 对这类图对象执行通用 Instantiate 时的原生断言；Behaviour 保留自身 Instantiate 初始化。
 - 离线窗口的“原地修改”会修改所选 Controller；用副本验证结果，查看诊断后再决定是否原地应用。转换会记录被修改的子资产以支持 Undo；生成子资产的完整撤销回收仍需验证，建议优先保存副本。
 - 多个独立 Animator 的选择不能依赖“场景里第一个”；优先显式目标。构建副本中仅接受可唯一解析的相对路径。
 - 老分支未提交完整 `.meta`，已有场景的组件 GUID 需从原开发项目恢复，不能用新 GUID 代替。
@@ -175,5 +180,5 @@ AAP 运算图必须放在同一个 Animator Controller 内，生成状态必须�
 - `UnityBox.AnimatorOptimizer.Runtime` 保留原组件类型、程序集名和序列化字段；无 SDK 时没有 SDK 引用。安装 VRChat Base ≥3.7 时，仅通过版本条件实现真实 `VRC.SDKBase.IEditorOnly`，使用 SDK DLL 的自动引用，保持上传前脚本白名单兼容。没有替身 SDK 类型。
 - `UnityBox.AnimatorOptimizer` 包含分析器、转换器、窗口、配置快照和普通 Animator 目标处理；通过显式平台接口接收可选 Descriptor 目标及 LayerControl 索引操作。
 - `UnityBox.AnimatorOptimizer.VRC` 使用真实 SDK 类型实现 Descriptor 分配/恢复、LayerControl、四个 SDK 构建回调。NDMF 虚拟控制器代码继续放在独立 `UnityBox.AnimatorOptimizer.NDMF` 程序集中。
-- `UnityBox.AnimatorOptimizer.Tests` 不引用 SDK，覆盖核心、通用 Processor、配置剥离、程序集依赖边界和显式平台参数语义；`UnityBox.AnimatorOptimizer.VRC.Tests` 使用真实 ParameterDriver、LayerControl 和 Descriptor；`UnityBox.AnimatorOptimizer.NDMF.Tests` 仅在对应 SDK/NDMF 依赖齐全时编译。
+- `UnityBox.AnimatorOptimizer.Tests` 不引用 SDK，覆盖核心、通用 Processor、配置剥离、程序集依赖边界和显式平台参数语义；`UnityBox.AnimatorOptimizer.VRC.Tests` 使用真实 ParameterDriver、LayerControl 和 Descriptor；`UnityBox.AnimatorOptimizer.NDMF.Tests` 仅在对应 SDK/NDMF 依赖齐全时编译；MA 的 2 项兼容用例单独隔离。通用 Behaviour fixture 位于仅在 Editor+UTF 条件启用的 `UnityBox.AnimatorOptimizer.TestFixtures` 注册程序集，供 Unity 原生 MonoScript 查找，不是一个零用例测试套件，也不参与 Player。
 - 通过 Unity Test Runner 的 EditMode 页面运行已启用的程序集；UPM 安装时在项目 `Packages/manifest.json` 的 `testables` 中加入本包名。包归档和 Roslyn 编译检查不能替代 Unity Test Runner 执行或 Avatar 上传验证。

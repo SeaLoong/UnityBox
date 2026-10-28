@@ -1,0 +1,50 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.ModularAvatar.Tests",
+  "rootNamespace": "UnityBox.AnimatorOptimizer.Tests",
+  "references": [
+    "UnityBox.AnimatorOptimizer",
+    "UnityBox.AnimatorOptimizer.Runtime",
+    "nadena.dev.modular-avatar.core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_MA",
+    "UNITYBOX_NDMF",
+    "UNITYBOX_VRC_BASE",
+    "UNITYBOX_VRC_AVATARS"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "1.18.0",
+      "define": "UNITYBOX_MA"
+    },
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "1.11.0",
+      "define": "UNITYBOX_NDMF"
+    },
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.3",
+      "define": "UNITYBOX_VRC_BASE"
+    },
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.3",
+      "define": "UNITYBOX_VRC_AVATARS"
+    }
+  ],
+  "noEngineReferences": false
+}
