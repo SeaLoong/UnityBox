@@ -72,6 +72,24 @@ class ResultEvidenceTests(unittest.TestCase):
         self.assertEqual(report["tests"]["failures"][0]["message"], "assertion")
 
 
+    def test_benchmark_results_require_tests_and_finite_measurements(self):
+        self.xml('<test-case fullname="Fixture.Measure" result="Passed"/>')
+        self.run["benchmark"] = True
+        self.assertFalse(runner.evaluate_run(self.run, self.directory)["passed"])
+        record = {"plugin": "Fixture", "scenario": "Hierarchy", "size": 100, "samples": 9,
+                  "min_ms": 1, "median_ms": 2, "p95_ms": 3, "max_ms": 4,
+                  "allocated_bytes_per_op": 0, "correctness": "100 nodes"}
+        log = self.directory / "unity.log"
+        log.write_text("UNITYBOX_BENCHMARK " + json.dumps(record) + "\n")
+        self.assertEqual(runner.evaluate_run(self.run, self.directory)["benchmarks"], [record])
+        self.assertTrue(runner.evaluate_run(self.run, self.directory)["passed"])
+        for value in (float("nan"), -1, 100):
+            log.write_text("UNITYBOX_BENCHMARK " + json.dumps({**record, "median_ms": value}) + "\n")
+            self.assertFalse(runner.evaluate_run(self.run, self.directory)["passed"])
+        log.write_text("UNITYBOX_BENCHMARK {malformed}\n")
+        self.assertFalse(runner.evaluate_run(self.run, self.directory)["passed"])
+
+
 class PreparationTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -138,6 +156,18 @@ class PreparationTests(unittest.TestCase):
             "top.sealoong.unitybox.avatar-security-system": {"com.vrchat.avatars": ">=3.7.0"}})
         self.assertNotIn("com.vrchat.avatars", metadata["packages"])
         self.assertFalse((self.project / "Packages/com.vrchat.avatars").exists())
+
+    def test_additional_checkout_package_is_copied_without_merging_repositories(self):
+        additional = self.root / "other-checkout/Assets/UnityBox/Additional"
+        additional.mkdir(parents=True)
+        runner.write_json(additional / "package.json", {"name": "fixture.additional", "version": "1.0.0"})
+        (additional / "Original.cs").write_text("// unchanged original\n")
+        self.assertEqual(self.prepare("--source-package", str(additional)), 0)
+        copied = self.project / "Packages/fixture.additional/Original.cs"
+        self.assertEqual(copied.read_bytes(), (additional / "Original.cs").read_bytes())
+        marker = runner.read_json(self.project / runner.MARKER)
+        self.assertEqual(marker["packages"]["fixture.additional"]["source"], str(additional))
+        self.assertEqual(marker["selected_packages"], ["fixture.additional", "top.sealoong.unitybox.avatar-security-system"])
 
     def test_vrc_rejects_old_or_prerelease_sdk_before_creating_project(self):
         for version in ("3.6.0", "3.7.0-beta.1"):
@@ -226,6 +256,24 @@ class PreparationTests(unittest.TestCase):
                                 "--unity", str(self.root / "missing-unity")])
         self.assertEqual(code, 2)
         self.assertFalse((self.project / ".unitybox-test-results").exists())
+
+
+    def test_category_scopes_and_benchmark_commands_keep_local_suites(self):
+        runner.write_json(self.package / "Fixture.Tests.asmdef", {"name": "Fixture.Tests",
+                          "optionalUnityReferences": ["TestAssemblies"]})
+        self.assertEqual(self.prepare(), 0)
+        for options, category, expected in ((["--benchmark"], "UnityBoxPerformance", []),
+                (["--exclude-category", "UnityBoxPerformance"], "!UnityBoxPerformance", ["Fixture.Tests"]),
+                (["--graphics", "--exclude-category", "UnityBoxPerformance;UnityBoxGraphics"],
+                 "!UnityBoxPerformance;!UnityBoxGraphics", ["Fixture.Tests"])):
+            with contextlib.redirect_stdout(io.StringIO()):
+                runner.main(["run", "--project", str(self.project), "--unity", str(self.root / "missing"), *options])
+            latest = runner.read_json(self.project / ".unitybox-test-results/latest.json")["run_id"]
+            run = runner.read_json(self.project / ".unitybox-test-results" / latest / "run.json")
+            self.assertEqual(run["command"][run["command"].index("-testCategory") + 1], category)
+            self.assertEqual(run["selected_assemblies"], ["Fixture.Tests"])
+            self.assertEqual(run["expected_assemblies"], expected)
+            self.assertEqual("-nographics" in run["command"], "--graphics" not in options)
 
 
 if __name__ == "__main__":

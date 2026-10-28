@@ -582,7 +582,6 @@ namespace UnityBox.AnimatorOptimizer
                     useAutomaticThresholds = false,
                     hideFlags = HideFlags.HideInHierarchy,
                 };
-                AddSubAsset(controller, rootTree);
                 SetNormalizedBlendValues(rootTree, false);
 
                 var rootChildren = new List<ChildMotion>();
@@ -641,6 +640,7 @@ namespace UnityBox.AnimatorOptimizer
                     }
                 }
                 rootTree.children = rootChildren.ToArray();
+                AddSubAsset(controller, rootTree);
 
                 var stateMachine = new AnimatorStateMachine
                 {
@@ -656,6 +656,7 @@ namespace UnityBox.AnimatorOptimizer
                 state.writeDefaultValues = true;
                 stateMachine.defaultState = state;
                 AddSubAsset(controller, stateMachine);
+                Undo.RegisterCreatedObjectUndo(state, "Animator Optimizer");
 
                 var generatedLayer = new AnimatorControllerLayer
                 {
@@ -754,8 +755,8 @@ namespace UnityBox.AnimatorOptimizer
                     0f, options.UseVrChatParameterSemantics);
             var updateTree = AnimatorOptimizerAapBuilder.BuildStateRegisterUpdate(controller, stateRegisterParameter,
                 plan.StateRegisterProgram, initializedParameter, GeneratedAssetPrefix + "StateRegister_" + report.Index);
-            var outputTree = BuildAapStateOutputTree(controller, stateRegisterParameter, plan.StateRegisterStates,
-                GeneratedAssetPrefix + "StateOutput_" + report.Index);
+            var outputTree = BuildAapStateOutputTree(controller, stateRegisterParameter, plan.StateRegisterProgram,
+                plan.StateRegisterStates, initializedParameter, GeneratedAssetPrefix + "StateOutput_" + report.Index);
 
             var generatedLayerName = string.IsNullOrWhiteSpace(options.GeneratedLayerName)
                 ? GeneratedLayerName
@@ -764,15 +765,12 @@ namespace UnityBox.AnimatorOptimizer
                 controller,
                 GeneratedAssetPrefix + "StateRegisterStateMachine_" + report.Index,
                 GeneratedAssetPrefix + "StateRegister (WD On) " + report.Index,
-                updateTree);
+                updateTree, plan.StateTag);
             var outputStateMachine = CreateSingleStateMachine(
                 controller,
                 GeneratedAssetPrefix + "StateOutputStateMachine_" + report.Index,
                 GeneratedAssetPrefix + "StateOutput (WD On) " + report.Index,
-                outputTree);
-            updateStateMachine.defaultState.tag = plan.StateTag ?? string.Empty;
-            outputStateMachine.defaultState.tag = plan.StateTag ?? string.Empty;
-            outputStateMachine.behaviours = ClonePreservableLayerBehaviours(controller, new[] { report });
+                outputTree, plan.StateTag, ClonePreservableLayerBehaviours(controller, new[] { report }));
             var updateLayer = new AnimatorControllerLayer
             {
                 name = generatedLayerName + "/AAPStateRegister_" + report.Index + "/Update",
@@ -1429,51 +1427,60 @@ namespace UnityBox.AnimatorOptimizer
             AnimatorController controller,
             string name,
             string stateName,
-            Motion motion)
+            Motion motion,
+            string stateTag = null,
+            StateMachineBehaviour[] behaviours = null)
         {
             var stateMachine = new AnimatorStateMachine
             {
                 name = name,
                 hideFlags = HideFlags.HideInHierarchy,
             };
+            stateMachine.behaviours = behaviours ?? Array.Empty<StateMachineBehaviour>();
             var state = stateMachine.AddState(stateName, new Vector3(320f, 80f, 0f));
             state.motion = motion;
+            state.tag = stateTag ?? string.Empty;
             state.writeDefaultValues = true;
             stateMachine.defaultState = state;
             AddSubAsset(controller, stateMachine);
+            Undo.RegisterCreatedObjectUndo(state, "Animator Optimizer");
             return stateMachine;
         }
 
         private static BlendTree BuildAapStateOutputTree(
             AnimatorController controller,
             string stateRegisterParameter,
+            AnimatorOptimizerAapProgram program,
             IReadOnlyList<AnimatorState> states,
+            string initializedParameter,
             string name)
         {
-            var tree = new BlendTree
-            {
-                name = name,
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = stateRegisterParameter,
-                useAutomaticThresholds = false,
-                hideFlags = HideFlags.HideInHierarchy,
-            };
-            tree.children = states.Select((state, index) =>
+            var motions = states.Select((state, index) =>
             {
                 var settings = AnimatorOptimizerAnalyzer.ToMotionRef(state);
                 var motion = settings.Motion;
                 AnimatorOptimizerMotionUtility.TryNormalizeSingletonTree(motion, out motion);
-                return new ChildMotion
+                if (motion == null) return null;
+                if (settings.Speed == 1f && settings.CycleOffset == 0f && !settings.Mirror)
+                    return motion;
+                var wrapper = new BlendTree
                 {
-                    motion = motion,
-                    threshold = index,
-                    timeScale = settings.Speed,
-                    cycleOffset = settings.CycleOffset,
-                    mirror = settings.Mirror,
+                    name = name + "_Playback_" + index,
+                    blendType = BlendTreeType.Simple1D,
+                    blendParameter = stateRegisterParameter,
+                    useAutomaticThresholds = false,
+                    hideFlags = HideFlags.HideInHierarchy,
+                    children = new[] { new ChildMotion
+                    {
+                        motion = motion, threshold = index, timeScale = settings.Speed,
+                        cycleOffset = settings.CycleOffset, mirror = settings.Mirror,
+                    } },
                 };
+                AddSubAsset(controller, wrapper);
+                return (Motion)wrapper;
             }).ToArray();
-            AddSubAsset(controller, tree);
-            return tree;
+            return AnimatorOptimizerAapBuilder.BuildStateRegisterOutput(controller, stateRegisterParameter,
+                program, motions, initializedParameter, name);
         }
 
         private static string EnsureFloatParameterWithDefault(
@@ -2802,9 +2809,9 @@ namespace UnityBox.AnimatorOptimizer
                     useAutomaticThresholds = false,
                     hideFlags = HideFlags.HideInHierarchy,
                 };
-                AddSubAsset(controller, tree);
                 tree.children = retained.Select(index => plan.SelectorSamples[index])
                     .Select(sample => ToChildMotion(sample.Value, sample.Motion, emptyClip)).ToArray();
+                AddSubAsset(controller, tree);
                 return new BuiltMotion { Motion = tree };
             }
 
@@ -2949,13 +2956,12 @@ namespace UnityBox.AnimatorOptimizer
                 useAutomaticThresholds = false,
                 hideFlags = HideFlags.HideInHierarchy,
             };
-            AddSubAsset(controller, tree);
-
             tree.children = new[]
             {
                 ToChildMotion(0f, falseNode, emptyClip),
                 ToChildMotion(1f, trueNode, emptyClip),
             };
+            AddSubAsset(controller, tree);
             var result = new BuiltTruthNode
             {
                 Motion = tree,
@@ -3453,6 +3459,7 @@ namespace UnityBox.AnimatorOptimizer
             if (string.IsNullOrWhiteSpace(AssetDatabase.GetAssetPath(controller)))
                 throw new InvalidOperationException("无法向未保存的 AnimatorController 添加子资源。");
             AssetDatabase.AddObjectToAsset(asset, controller);
+            Undo.RegisterCreatedObjectUndo(asset, "Animator Optimizer");
         }
 
         private static void SetNormalizedBlendValues(BlendTree tree, bool normalized)

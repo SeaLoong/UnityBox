@@ -548,6 +548,16 @@ namespace UnityBox.AnimatorOptimizer
                     report.AddOptimization($"检测到 {impossibleTransitions} 条条件矛盾的有效 Transition；不会把它们作为可达输出或输入维度。");
             }
 
+            // Null native states hold the previously animated pose. Mixed null/
+            // animated graphs must retain that history before any decision rewrite.
+            var sourceStates = EnumerateLayerSourceStates(new[] { layer }, 0).ToList();
+            if (sourceStates.Any(state => state.motion == null) && sourceStates.Any(state => state.motion != null))
+            {
+                report.AddReason("空 Motion 状态保留上次输出；混合空/动画状态使用原生状态机，其他层继续优化。");
+                CollectAllBindings(layer.stateMachine, report);
+                return report;
+            }
+
             var planningReport = CreateTrialReport(report);
             var built = TryAlternative(planningReport, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
                 TryBuildPlan(controller, layer.stateMachine, analyzableStates, options, trial, out candidate), out var plan);
@@ -727,6 +737,16 @@ namespace UnityBox.AnimatorOptimizer
             if (controller == null || plan == null)
                 return false;
 
+            // Native BlendTree axes read Float slots. VRChat's Bool/Int inputs
+            // retain their platform type, so their state machines stay in place.
+            foreach (var name in plan.RequiredFloatParameters)
+                if (TryGetVrcGlobalParameterType(name, options.UseVrChatParameterSemantics, out var type))
+                {
+                    var declared = controller.parameters.FirstOrDefault(parameter => parameter.name == name);
+                    if (type != AnimatorControllerParameterType.Float || (declared?.type ?? type) != AnimatorControllerParameterType.Float)
+                        report.AddReason($"平台输入 '{name}' 使用 {declared?.type ?? type} 参数槽；保留原生条件状态机，其他层继续优化。");
+                }
+
             var parameters = new HashSet<string>(StringComparer.Ordinal);
             if (plan.ConstantMotion != null)
             {
@@ -745,6 +765,12 @@ namespace UnityBox.AnimatorOptimizer
             {
                 var parameter = (controller.parameters ?? Array.Empty<AnimatorControllerParameter>())
                     .FirstOrDefault(candidate => string.Equals(candidate.name, parameterName, StringComparison.Ordinal));
+                if (TryGetVrcGlobalParameterType(parameterName, options.UseVrChatParameterSemantics, out var platformType) &&
+                    (platformType != AnimatorControllerParameterType.Float || (parameter?.type ?? platformType) != AnimatorControllerParameterType.Float))
+                {
+                    report.AddReason($"平台输入 '{parameterName}' 使用 {parameter?.type ?? platformType} 参数槽；保留源 BlendTree 和原参数类型。");
+                    continue;
+                }
                 if (parameter == null)
                 {
                     if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
@@ -1031,7 +1057,7 @@ namespace UnityBox.AnimatorOptimizer
                 TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
                     TryBuildAapStateRegisterPlan(controller, stateMachine, childStates, options, trial, out candidate), out plan))
             {
-                report.AddWarning("AAP 按每次逻辑求值更新状态寄存器，支持混合条件并保留未命中时的历史；反馈延迟与首帧行为仍需 Unity 验证，不能视为逐帧等价证明。");
+                report.AddOptimization("AAP Update 与 Output 使用同一帧输入计算下一状态，保留状态历史并同步输出；Entry 条件只在初始化时执行。");
                 return true;
             }
 
@@ -1981,11 +2007,16 @@ namespace UnityBox.AnimatorOptimizer
             }
             if (report.Index == 0 && report.BlendingMode == AnimatorLayerBlendingMode.Additive)
             {
-                report.AddReason("首层采用 Additive；移到 AAP Output 次层后的叠加基准尚未证明一致，保留原层。");
+                report.AddReason("首层 Additive 使用原生首层基准；保留该层的位置和原生状态机。");
                 return false;
             }
 
             var states = childStates.Select(child => child.state).ToList();
+            if (states.Any(state => state.motion == null))
+            {
+                report.AddReason("空 Motion 状态保留上一次姿态；保留原生状态机以延续该姿态历史。");
+                return false;
+            }
             if (states.Distinct().Count() != states.Count || states.Count > 4096)
                 return false;
             var stateIndices = states
@@ -2071,7 +2102,7 @@ namespace UnityBox.AnimatorOptimizer
             }
             foreach (var assumption in plan.Assumptions) report.AddWarning("启发式：" + assumption);
             if (program.UsesRootExit)
-                report.AddWarning("AAP 根 Exit 在一次逻辑更新中重新计算有序 Entry；不保留 Exit→Entry 的潜在额外帧延迟，仅属于实验性转换契约。");
+                report.AddWarning("AAP 根 Exit 按有序 Entry 回到当前输入决定的状态。");
             report.AddOptimization($"AAP 符号图：{states.Count} 个状态、{program.Axes.Count} 个有效输入、" +
                 $"{program.DecisionNodeCount} 个共享条件节点、{program.ValueClipCount} 个赋值 Clip；不枚举全部输入组合。");
             return true;

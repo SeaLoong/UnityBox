@@ -256,7 +256,7 @@ namespace UnityBox.AnimatorOptimizer
                 : flags == AnimatorOptimizerOptions.PracticalHeuristics
                 ? "0/1 Float 开关 + 短动画端点；可能改变连续输入和动画过程。"
                 : flags == AnimatorOptimizerOptions.AggressiveHeuristics
-                ? "再启用时间采样、双态补集和稳定输入收敛；不保证逐帧等价。"
+                ? "再启用时间采样、双态补集和稳定输入收敛；按所选采样精度与终态规则生成。"
                 : "使用自定义策略。实际采用的假设会在逐层诊断中列出。";
             EditorGUILayout.LabelField(summary, EditorStyles.wordWrappedMiniLabel);
             showDetails = Section(detailsKey, "自定义策略与采样预算", false);
@@ -271,7 +271,7 @@ namespace UnityBox.AnimatorOptimizer
                 flags = enabled ? flags | flag : flags & ~flag;
             }
             Toggle(AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles, "Float 开关假定 0/1",
-                "仅识别默认值为 0/1、阈值处于 0~1 且两端判断不同的非全局 Float 参数。不是外部 writer 值域证明；连续输入可能改变效果。");
+                "仅识别默认值为 0/1、阈值处于 0~1 且两端判断不同的非全局 Float 参数。输入方使用离散的 0/1 值。");
             Toggle(AnimatorOptimizerComponent.HeuristicFlags.ShortAnimationEndpoints, "短动画取端点 / 零速固定",
                 "普通属性非循环 Clip：正向取末帧、反向或零速取首帧；同时限制原动画帧数和实际播放秒数。动画中间过程会消失。");
             Toggle(AnimatorOptimizerComponent.HeuristicFlags.SampleMotionTime, "Motion Time 采样树",
@@ -279,15 +279,15 @@ namespace UnityBox.AnimatorOptimizer
             Toggle(AnimatorOptimizerComponent.HeuristicFlags.ComplementaryToggle, "双态返回条件按补集补齐",
                 "仅用于同参数、反向条件的简单双态图，以默认态出发条件为准。可能取消阈值空档、重叠和有意设计的滞回。");
             Toggle(AnimatorOptimizerComponent.HeuristicFlags.StableInputConvergence, "稳定输入下消除中间状态",
-                "只有每个源状态最终收敛到相同输出才放行；假定输入暂时不变，直接输出终态。不是逐帧等价，仍拒绝输出振荡环。");
+                "只有每个源状态最终收敛到相同输出才放行；假定输入暂时不变，直接输出终态。输出直接取收敛终态；振荡图使用 StateRegister。");
             GUI.changed = previousChanged || flags != previous;
             return flags;
         }
 
         public static void DrawAapSummary()
         {
-            EditorGUILayout.HelpBox("AAP 支持混合条件和状态保持。每个源层生成更新 + 输出两层，不保证减层或提速；反馈延迟与首帧行为尚未进行 Unity 验证。", MessageType.Warning);
-            EditorGUILayout.LabelField("构建时由 VRCSDK 回退流程处理；仅运行 NDMF 的预览不会执行 AAP 转换。", EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.HelpBox("AAP 用于有状态的有限条件图。Update 与 Output 同帧选择下一状态，支持 Entry 初始化和状态保持；每个源层生成更新 + 输出两层。", MessageType.Info);
+            EditorGUILayout.LabelField("离线、VRCSDK 和 NDMF 构建使用相同的 StateRegister 决策计划。", EditorStyles.wordWrappedMiniLabel);
         }
 
     }

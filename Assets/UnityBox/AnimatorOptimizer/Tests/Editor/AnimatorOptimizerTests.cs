@@ -337,7 +337,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void ConvertsWriteDefaultsOnNullMotionStateAsEmptyOutput()
+        public void RetainsMixedNullMotionStatesAndOptimizesIndependentLayers()
         {
             var controller = CreateController();
             controller.AddParameter(new AnimatorControllerParameter
@@ -366,11 +366,13 @@ namespace UnityBox.AnimatorOptimizer.Tests
 
             var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions());
 
-            Assert.That(report.Layers[0].CanConvert, Is.True);
-            Assert.That(report.Layers[0].ConversionKind,
-                Is.EqualTo(AnimatorOptimizerConversionKind.BooleanTruthTable));
-            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }).GeneratedLayers,
-                Has.Count.EqualTo(1));
+            Assert.That(report.Layers[0].CanConvert, Is.False);
+            Assert.That(report.Layers[0].Reasons.Any(reason => reason.Contains("空 Motion")), Is.True);
+            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 1 },
+                new AnimatorOptimizerOptions { RequireAtLeastTwoLayers = false }).GeneratedLayers, Has.Count.EqualTo(1));
+            Assert.That(controller.layers[0].stateMachine, Is.SameAs(stateMachine));
+            Assert.That(controller.parameters.Single(parameter => parameter.name == "EmptyGate").type,
+                Is.EqualTo(AnimatorControllerParameterType.Bool));
         }
 
         [Test]
@@ -1891,7 +1893,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void ConvertsVrcFuryLocalRemoteStyleGlobalIsLocalToggle()
+        public void PreservesVrcFuryLocalRemoteStyleNativeIsLocalConditions()
         {
             var controller = CreateController();
             AddBooleanToggleLayer(controller, "VRCFury Local Remote", "IsLocal");
@@ -1900,9 +1902,11 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var options = new AnimatorOptimizerOptions { UseVrChatParameterSemantics = true };
             var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
 
-            Assert.That(report.Layers[0].CanConvert, Is.True);
-            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }, options).GeneratedLayers,
+            Assert.That(report.Layers[0].CanConvert, Is.False);
+            options.RequireAtLeastTwoLayers = false;
+            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 1 }, options).GeneratedLayers,
                 Has.Count.EqualTo(1));
+            Assert.That(controller.layers[0].stateMachine.states.Length, Is.EqualTo(2));
             Assert.That(controller.parameters.Any(parameter => parameter.name == "IsLocal"), Is.False);
         }
 
@@ -2085,8 +2089,10 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var globalReport = AnimatorOptimizerAnalyzer.Analyze(globalController, globalOptions);
             var globalIssues = AnimatorOptimizerConverter.GetSelectionIssues(
                 globalReport, new[] { 0, 1 }, globalOptions);
-            Assert.That(globalIssues, Is.Empty);
-            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(globalController, new[] { 0, 1 }, globalOptions).GeneratedLayers,
+            Assert.That(globalReport.Layers[0].CanConvert, Is.False);
+            Assert.That(globalIssues, Is.Not.Empty);
+            globalOptions.RequireAtLeastTwoLayers = false;
+            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(globalController, new[] { 1 }, globalOptions).GeneratedLayers,
                 Has.Count.EqualTo(1));
             Assert.That(globalController.parameters.First(parameter => parameter.name == "Viseme").type,
                 Is.EqualTo(AnimatorControllerParameterType.Int));

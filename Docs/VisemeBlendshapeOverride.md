@@ -1,78 +1,11 @@
 # Viseme Blendshape Override
 
-> 用 VRChat 内建 `Viseme` 与 `Voice` Animator 参数，生成一层可自定义权重、可独立响应区间的口型 BlendShape 覆盖层。
+本分支维护 Animator Optimizer；此目录中的其它插件源码保留为基线。
+Viseme Blendshape Override 的持续开发、当前功能、迁移步骤和测量结果统一维护在 `refactor`：
 
-## 功能概述
+- [当前手册](https://github.com/SeaLoong/UnityBox/blob/refactor/Docs/VisemeBlendshapeOverride.md)
+- [七插件变更与升级](https://github.com/SeaLoong/UnityBox/blob/refactor/Docs/RefactorChanges.md)
+- [功能、构建与性能](https://github.com/SeaLoong/UnityBox/blob/refactor/Docs/Testing.md)
 
-| 功能 | 说明 |
-|---|---|
-| **替代默认 Viseme 绑定** | 构建时把 Avatar Descriptor 切到 `VisemeParameterOnly`，不再使用 VRChat 默认固定 100 的口型权重 |
-| **Default Weight** | 使用一个全局 `Weight` 作为默认输出值 |
-| **Voice 强度缩放** | 可用内建 `Voice` 参数对输出做二次缩放 |
-| **Custom Settings** | 每个 viseme 可单独覆盖 `Weight`，并指定 `Voice Mode / Voice Min / Voice Max` |
-| **直接指定 BlendShape** | 每个 viseme 直接通过下拉框指定 BlendShape |
-
-## 适用场景
-
-- 默认 VRChat 口型幅度太大，想把嘴型整体收敛
-- 不同 viseme 需要不同开口程度
-- 想让 `aa`、`oh`、`ou` 等元音与 `PP`、`FF` 这类辅音有不同的响应节奏
-- 想保留 VRChat 官方 viseme 输入链路，但接管最终输出表现
-
-## 快速开始
-
-1. 把 `VisemeBlendshapeOverrideComponent` 挂到 Avatar Root
-2. 默认 `Renderer` 会优先尝试使用名为 `Body` 的 `SkinnedMeshRenderer`
-3. 在 Inspector 中：
-   - 先设置 `Weight`
-   - 保持 `Voice Mode = Linear`
-   - 默认 `Voice Min = 0`、`Voice Max = 1`
-4. 如需更精细控制：
-   - 找到对应 viseme
-   - 勾选 `Custom Settings`
-   - 单独设置 `Weight`
-   - 再按需设置 `Voice Mode / Voice Min / Voice Max`
-5. 构建 / 上传 Avatar
-
-## 调参建议
-
-### Voice 默认值
-
-- `Voice Min = 0`
-- `Voice Max = 1`
-
-VRChat SDK 公开侧并没有提供一个“官方可配置阈值区间”实现；这里直接使用内建 `Voice` float 参数的完整 $0..1$ 范围作为默认值。
-
-### Naming
-
-VRChat 的 viseme 名沿用了官方/历史命名形式，因此会出现 `PP / FF / aa / oh` 这样的混合大小写。当前 Inspector 已统一按小写显示，但内部仍保留原始枚举与映射语义以确保兼容性。
-
-### 元音建议
-
-- `aa`：适合更高的 `Voice Min / Max`，避免一开口就“爆嘴”
-- `oh / ou`：适合更低的 `Voice Min`，让口型更容易被声音带起来
-
-### 辅音建议
-
-- `PP / FF`：通常适合较小的 `Weight`，但可用较低 `Voice Min` 提高灵敏度
-- `SS / nn`：一般建议更保守，避免持续开口感太强
-
-## 构建行为说明
-
-该工具在构建时会：
-
-1. 读取 Avatar Descriptor 或组件上的 viseme 映射
-2. 安装 NDMF 时：在其它 Animator 合并插件处理完成后，把口型层追加到最终虚拟 FX Controller
-3. 未安装 NDMF 时：生成 / 复用插件专用 FX Controller 副本作为回退路径
-4. 通过 `Viseme` 参数切换状态
-5. 未启用 `Custom Settings` 的 viseme 使用全局 `Weight / Voice` 设置
-6. 启用 `Custom Settings` 的 viseme 可覆盖默认设置
-7. `Voice Mode = Linear` 时通过 `Voice` 1D BlendTree 缩放输出强度
-
-也就是说，在 NDMF 项目里，源码中的原始 FX Controller 不再代表最终运行时结果；真正生效的是 NDMF 构建后的虚拟 Animator 输出。
-
-## 包信息
-
-- VPM 包名：`top.sealoong.unitybox.viseme-blendshape-override`
-- 源码目录：`Assets/UnityBox/VisemeBlendshapeOverride/`
-- 包内说明：`Assets/UnityBox/VisemeBlendshapeOverride/README.md`
+安装当前实现时从 `refactor` 获取该包；八插件组合测试从该分支取七包，并从
+`feat/animator-optimizer` 取优化器。此处使用分支入口保持手册与对应源码同步。

@@ -71,36 +71,28 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 Is.EqualTo(type == AnimatorControllerParameterType.Bool ? 0.5f : 0f));
         }
 
-        [TestCase("IsLocal", AnimatorControllerParameterType.Bool)]
-        [TestCase("Viseme", AnimatorControllerParameterType.Int)]
-        public void ExplicitVrchatModeAllowsUndeclaredBuiltinsWithoutCreatingOrUpgradingThem(string name, AnimatorControllerParameterType type)
+        [TestCase("IsLocal", AnimatorControllerParameterType.Bool, false)]
+        [TestCase("Viseme", AnimatorControllerParameterType.Int, false)]
+        [TestCase("IsLocal", AnimatorControllerParameterType.Bool, true)]
+        [TestCase("Viseme", AnimatorControllerParameterType.Int, true)]
+        public void ExplicitVrchatModeRetainsNativePlatformConditionLayers(string name, AnimatorControllerParameterType type, bool declared)
         {
+            if (declared) controller.AddParameter(name, type);
             AddSelector(name, type);
-            var options = Options();
-            options.UseVrChatParameterSemantics = true;
-
-            var result = AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0 }, options);
-
-            Assert.That(controller.parameters.Any(parameter => parameter.name == name), Is.False);
-            Assert.That(result.UpgradedParameters, Does.Not.Contain(name));
-            Assert.That(result.GeneratedLayers.Count, Is.EqualTo(1));
-        }
-
-        [TestCase("IsLocal", AnimatorControllerParameterType.Bool)]
-        [TestCase("Viseme", AnimatorControllerParameterType.Int)]
-        public void ExplicitVrchatModePreservesDeclaredBuiltinsWhenLocalUpgradesAreDisabled(string name, AnimatorControllerParameterType type)
-        {
-            controller.AddParameter(name, type);
-            AddSelector(name, type);
+            var sourceMachine = controller.layers[0].stateMachine;
             var options = Options();
             options.UseVrChatParameterSemantics = true;
             options.UpgradeBoolParametersToFloat = false;
             options.UpgradeIntParametersToFloat = false;
 
-            var result = AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0 }, options);
+            var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
 
-            Assert.That(controller.parameters.Single(parameter => parameter.name == name).type, Is.EqualTo(type));
-            Assert.That(result.UpgradedParameters, Does.Not.Contain(name));
+            Assert.That(report.Layers[0].CanConvert, Is.False);
+            Assert.That(report.Layers[0].Reasons.Any(reason => reason.Contains("参数槽")), Is.True);
+            Assert.Throws<InvalidOperationException>(() => AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0 }, options));
+            Assert.That(controller.layers[0].stateMachine, Is.SameAs(sourceMachine));
+            Assert.That(controller.parameters.Any(parameter => parameter.name == name), Is.EqualTo(declared));
+            if (declared) Assert.That(controller.parameters.Single(parameter => parameter.name == name).type, Is.EqualTo(type));
         }
 
         [Test]
@@ -140,7 +132,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void AapMissingBuiltinRequiresExplicitModeAndPreservesItInTheCompiledProgram()
+        public void AapBuiltinBoolKeepsItsNativeStateMachineInsteadOfUsingAFloatAxis()
         {
             var graph = new AnimatorOptimizerFiniteGraph { DefaultState = 0 };
             graph.States.Add(new List<AnimatorOptimizerFiniteGraph.Edge>());
@@ -154,17 +146,10 @@ namespace UnityBox.AnimatorOptimizer.Tests
             var options = Options();
             Assert.That(AnimatorOptimizerAapProgram.TryCompile(graph, declarations, options, out _, out _), Is.False);
             options.UseVrChatParameterSemantics = true;
-            Assert.That(AnimatorOptimizerAapProgram.TryCompile(graph, declarations, options, out var program, out var reason),
-                Is.True, reason);
-            controller.AddParameter(new AnimatorControllerParameter
-            {
-                name = "State", type = AnimatorControllerParameterType.Float, defaultFloat = 0f,
-            });
-
-            var update = AnimatorOptimizerAapBuilder.BuildStateRegisterUpdate(controller, "State", program);
-
-            Assert.That(update, Is.Not.Null);
-            Assert.That(controller.parameters.Any(parameter => parameter.name == "IsLocal"), Is.False);
+            Assert.That(AnimatorOptimizerAapProgram.TryCompile(graph, declarations, options, out var program, out var reason), Is.False);
+            Assert.That(reason, Does.Contain("参数槽"));
+            Assert.That(program, Is.Null);
+            Assert.That(controller.parameters, Is.Empty);
         }
 
         [Test]

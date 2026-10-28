@@ -419,21 +419,6 @@ namespace UnityBox.AnimatorOptimizer
             // Coalescing is a separate whole-controller pass. Explicit index mode
             // must not silently modify unrequested legacy reactive layers.
             options.MergeSynchronizedStateMachines &= config.OptimizeAllConvertibleLayers;
-            if (options.EnableAapStateRegisterOptimization)
-            {
-                if (!config.OptimizeAllConvertibleLayers)
-                {
-                    // SDK fallback cannot map source indices across NDMF layer reordering.
-                    AnimatorOptimizerBuildState.MarkNdmfProcessed(context.AvatarRootObject);
-                    Debug.LogWarning("[AnimatorOptimizer] AAP with manual Layer indices is skipped during NDMF builds because source Layer identity cannot be preserved through the physical fallback.");
-                    return;
-                }
-                // The symbolic AAP materializer currently targets physical controllers.
-                // VirtualClip can write FloatCurves, but this adapter does not yet
-                // implement the same register/layer contract. Keep fallback eligible.
-                Debug.LogWarning("[AnimatorOptimizer] AAP StateRegister is handled by the physical VRCSDK fallback; NDMF virtual processing is skipped.");
-                return;
-            }
 
             // Mark the virtual path before any remaining eligibility checks. Even when no
             // Layer is profitable to merge, the VRCSDK fallback must not process the
@@ -470,6 +455,9 @@ namespace UnityBox.AnimatorOptimizer
                     return;
                 }
             }
+            if (options.EnableAapStateRegisterOptimization && ConvertVirtualAapLayers(controller,
+                    animatorServices.ControllerContext.CloneContext, options, requestedLayers))
+                layers = controller.Layers.ToList();
             if (options.NormalizeAlwaysOneParameters)
             {
                 Debug.LogWarning("[AnimatorOptimizer] AlwaysOne aliasing assumes named parameters remain one at runtime; external writers cannot be excluded by static analysis.");
@@ -489,7 +477,8 @@ namespace UnityBox.AnimatorOptimizer
 
             var analysisScope = BeginLayerScope(controller, options);
             var candidates = layers
-                .Select((layer, index) => TryBuildPlan(controller, layer, options, out var plan, analysisScope)
+                .Select((layer, index) => !IsGeneratedLayerName(layer.Name, options.GeneratedLayerName) &&
+                    TryBuildPlan(controller, layer, options, out var plan, analysisScope)
                     ? new VirtualCandidate
                     {
                         Layer = layer,
@@ -2215,6 +2204,13 @@ namespace UnityBox.AnimatorOptimizer
             VirtualLayerScope scope = null)
         {
             plan = null;
+            // A native empty state retains the preceding animated pose. A BlendTree
+            // instead normalizes away a missing child, so mixed empty/animated state
+            // machines retain their native transitions, including Root Exit history.
+            var sourceStates = layer?.StateMachine?.AllStates().Where(state => state != null).ToList();
+            if (sourceStates != null && sourceStates.Any(state => state.Motion == null) &&
+                sourceStates.Any(state => state.Motion != null))
+                return false;
             var previousScope = currentLayerScope;
             currentLayerScope = scope ?? BeginLayerScope(controller, options);
             var previousExitTime = currentLayerScope.HasExitTime;
@@ -2667,7 +2663,10 @@ namespace UnityBox.AnimatorOptimizer
         {
             if (controller == null || plan == null)
                 return false;
-            var parameters = new HashSet<string>(StringComparer.Ordinal);
+            var parameters = new HashSet<string>(plan.BooleanParameters ?? Enumerable.Empty<string>(), StringComparer.Ordinal);
+            if (!string.IsNullOrWhiteSpace(plan.SelectorParameter)) parameters.Add(plan.SelectorParameter);
+            foreach (var dimension in plan.DecisionDimensions ?? Enumerable.Empty<VirtualDecisionDimension>())
+                parameters.Add(dimension.Parameter);
             foreach (var motion in EnumerateVirtualPlanMotions(plan))
                 CollectVirtualMotionParameters(motion?.Motion, parameters, new HashSet<VirtualMotion>());
             foreach (var motion in EnumerateVirtualPlanMotions(plan))
@@ -2675,8 +2674,14 @@ namespace UnityBox.AnimatorOptimizer
             plan.ReferencedParameters = parameters;
             foreach (var parameterName in parameters)
             {
-                if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
-                    continue;
+                // Native BlendTrees read Float parameter slots. Platform Bool/Int
+                // inputs keep their native state machines rather than becoming tree axes.
+                if (TryGetVirtualGlobalParameterType(parameterName, options.UseVrChatParameterSemantics, out var global))
+                {
+                    if (global.type != AnimatorControllerParameterType.Float) return false;
+                    if (!controller.Parameters.TryGetValue(parameterName, out var declared)) continue;
+                    if (declared.type != AnimatorControllerParameterType.Float) return false;
+                }
                 if (!controller.Parameters.TryGetValue(parameterName, out var parameter))
                     return false;
                 if (parameter.type == AnimatorControllerParameterType.Float && !IsFinite(parameter.defaultFloat))

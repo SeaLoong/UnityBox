@@ -44,6 +44,12 @@ namespace UnityBox.AnimatorOptimizer
             RequireFloatParameter(controller, parameterName);
             if (float.IsNaN(value) || float.IsInfinity(value))
                 throw new ArgumentOutOfRangeException(nameof(value), "AAP 输出必须是有限数值。");
+            return CreateAapValueClipCore(controller, parameterName, value, name, null);
+        }
+
+        private static AnimationClip CreateAapValueClipCore(AnimatorController controller, string parameterName,
+            float value, string name, string initializedParameter)
+        {
             var clip = new AnimationClip
             {
                 name = string.IsNullOrWhiteSpace(name)
@@ -57,6 +63,10 @@ namespace UnityBox.AnimatorOptimizer
                 clip,
                 binding,
                 AnimationCurve.Constant(0f, 1f / 60f, value));
+            if (initializedParameter != null)
+                AnimationUtility.SetEditorCurve(clip,
+                    EditorCurveBinding.FloatCurve(string.Empty, typeof(Animator), initializedParameter),
+                    AnimationCurve.Constant(0f, 1f / 60f, 1f));
             AddSubAsset(controller, clip);
             return clip;
         }
@@ -90,8 +100,8 @@ namespace UnityBox.AnimatorOptimizer
         /// Builds the feedback tree for a finite, zero-duration Boolean state machine.
         /// The outer 1D tree reads the current state register; each child is a Boolean
         /// decision tree that animates the register to the next state index. The caller
-        /// should place this tree in a WD On state above/before the output tree that reads
-        /// the same register.
+        /// places this tree in a WD On state. Pair a symbolic program with
+        /// BuildStateRegisterOutput for visible output in the same evaluation.
         /// </summary>
         public static BlendTree BuildBooleanStateRegisterUpdate(
             AnimatorController controller,
@@ -207,6 +217,43 @@ namespace UnityBox.AnimatorOptimizer
             string initializedParameter = null,
             string name = null)
         {
+            ValidateStateRegisterProgram(controller, stateRegisterParameter, program, initializedParameter);
+            name = string.IsNullOrWhiteSpace(name) ? "AnimatorOptimizer_AAP_Symbolic" : name;
+            return BuildStateRegisterDecision(controller, stateRegisterParameter, program, initializedParameter, name, value =>
+            {
+                return CreateAapValueClipCore(controller, stateRegisterParameter, value,
+                    name + "_Value_" + value, initializedParameter);
+            });
+        }
+
+        /// <summary>
+        /// Evaluates the same next-state decision as Update using the current frame's
+        /// parameter snapshot. Unity publishes animated parameter values after graph
+        /// evaluation, so reading only the register would delay visible output one frame.
+        /// </summary>
+        public static BlendTree BuildStateRegisterOutput(
+            AnimatorController controller,
+            string stateRegisterParameter,
+            AnimatorOptimizerAapProgram program,
+            IReadOnlyList<Motion> stateMotions,
+            string initializedParameter = null,
+            string name = null)
+        {
+            ValidateStateRegisterProgram(controller, stateRegisterParameter, program, initializedParameter);
+            if (stateMotions == null || stateMotions.Count != program.StateCount ||
+                stateMotions.Any(motion => motion == null || !AnimatorOptimizerMotionUtility.IsAcyclic(motion)))
+                throw new ArgumentException("State-register output requires one non-null Motion entry per state.", nameof(stateMotions));
+            name = string.IsNullOrWhiteSpace(name) ? "AnimatorOptimizer_AAP_Output" : name;
+            return BuildStateRegisterDecision(controller, stateRegisterParameter, program, initializedParameter, name,
+                value => stateMotions[value]);
+        }
+
+        private static void ValidateStateRegisterProgram(
+            AnimatorController controller,
+            string stateRegisterParameter,
+            AnimatorOptimizerAapProgram program,
+            string initializedParameter)
+        {
             RequireController(controller);
             RequireFloatParameter(controller, stateRegisterParameter);
             if (program == null) throw new ArgumentNullException(nameof(program));
@@ -243,23 +290,23 @@ namespace UnityBox.AnimatorOptimizer
                     throw new InvalidOperationException("AAP 的 0/1 值域约定与当前参数默认值不符: " + axis.Parameter);
             }
 
-            // All declarations, defaults and aliasing are checked before adding assets.
-            name = string.IsNullOrWhiteSpace(name) ? "AnimatorOptimizer_AAP_Symbolic" : name;
+        }
+
+        private static BlendTree BuildStateRegisterDecision(
+            AnimatorController controller,
+            string stateRegisterParameter,
+            AnimatorOptimizerAapProgram program,
+            string initializedParameter,
+            string name,
+            Func<int, Motion> createLeaf)
+        {
             var motions = new Motion[program.Nodes.Count];
             for (var index = 0; index < program.Nodes.Count; index++)
             {
                 var node = program.Nodes[index];
                 if (node.IsLeaf)
                 {
-                    var clip = CreateAapValueClip(controller, stateRegisterParameter, node.Value, name + "_Value_" + node.Value);
-                    if (program.RequiresInitialization)
-                    {
-                        AnimationUtility.SetEditorCurve(clip,
-                            EditorCurveBinding.FloatCurve(string.Empty, typeof(Animator), initializedParameter),
-                            AnimationCurve.Constant(0f, 1f / 60f, 1f));
-                        EditorUtility.SetDirty(clip);
-                    }
-                    motions[index] = clip;
+                    motions[index] = createLeaf(node.Value);
                     continue;
                 }
                 var axis = program.Axes[node.AxisIndex];
@@ -511,7 +558,7 @@ namespace UnityBox.AnimatorOptimizer
         /// non-negative; this is the exact normalization construction, not a reciprocal
         /// approximation. A / B can be represented by passing B-1 when B >= 1.
         /// The caller must keep the weight parameter at one and the denominator finite
-        /// and non-negative at runtime; parameter defaults alone cannot prove that.
+        /// and non-negative for every evaluation.
         /// </summary>
         public static BlendTree BuildOnePlusDivision(
             AnimatorController controller,
@@ -728,8 +775,7 @@ namespace UnityBox.AnimatorOptimizer
         {
             RequireFloatParameter(controller, name);
             var parameter = controller.parameters.First(candidate => string.Equals(candidate.name, name, StringComparison.Ordinal));
-            // This validates the initial value only. The caller must ensure the
-            // weight remains one at runtime; static code cannot prove external writes.
+            // Runtime callers keep this declared weight input at one.
             if (parameter.defaultFloat != 1f)
                 throw new InvalidOperationException($"AAP Direct 权重参数 '{name}' 的默认值必须为 1。");
         }
@@ -755,6 +801,7 @@ namespace UnityBox.AnimatorOptimizer
         private static void AddSubAsset(AnimatorController controller, UnityEngine.Object asset)
         {
             AssetDatabase.AddObjectToAsset(asset, controller);
+            Undo.RegisterCreatedObjectUndo(asset, "Animator Optimizer AAP");
         }
 
         private static string Sanitize(string value)

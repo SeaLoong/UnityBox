@@ -7,6 +7,7 @@ using System.Reflection;
 using nadena.dev.ndmf;
 using nadena.dev.ndmf.animator;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
@@ -19,6 +20,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             "UnityBox.AnimatorOptimizer.AnimatorOptimizerNdmfProcessor", true);
         private readonly List<UnityEngine.Object> objects = new List<UnityEngine.Object>();
         private readonly List<BuildContext> buildContexts = new List<BuildContext>();
+        private readonly List<string> assetPaths = new List<string>();
 
         [SetUp]
         public void SetUp() => AnimatorOptimizerBuildState.ReleaseAll();
@@ -29,6 +31,8 @@ namespace UnityBox.AnimatorOptimizer.Tests
             foreach (var context in buildContexts) context.DeactivateAllExtensionContexts();
             buildContexts.Clear();
             AnimatorOptimizerBuildState.ReleaseAll();
+            foreach (var path in assetPaths) AssetDatabase.DeleteAsset(path);
+            assetPaths.Clear();
             foreach (var item in objects.Where(item => item != null)) UnityEngine.Object.DestroyImmediate(item);
             objects.Clear();
         }
@@ -237,6 +241,245 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(controller.Layers.ToList().IndexOf(expected), Is.EqualTo(2));
         }
 
+        [TestCase(false, false, false, 1, false, false, false)]
+        [TestCase(true, false, false, 1, false, false, false)]
+        [TestCase(true, true, false, 1, false, false, false)]
+        [TestCase(false, false, true, 1, false, false, false)]
+        [TestCase(true, false, false, 3, false, false, false)]
+        [TestCase(false, false, false, 4, false, false, false)]
+        [TestCase(true, false, false, 1, true, false, false)]
+        [TestCase(true, false, false, 1, true, true, false)]
+        [TestCase(false, false, false, 1, false, false, true)]
+        public void AapVirtualCompilationCommitsCurrentGraphAndPreservesManualIdentity(
+            bool manualSelection, bool masked, bool additive, int historyLayerCount, bool writeDefaultsOff,
+            bool coverRetainedBindings, bool firstLayerZeroWeight)
+        {
+            var root = Track(new GameObject("AAP commit Avatar"));
+            var outputs = new List<Transform>();
+            for (var index = 0; index < historyLayerCount; index++)
+            {
+                var output = new GameObject("Output" + index);
+                output.transform.SetParent(root.transform, false);
+                outputs.Add(output.transform);
+            }
+            var keep = new GameObject("Keep");
+            keep.transform.SetParent(root.transform, false);
+            var blocked = new GameObject("Blocked");
+            blocked.transform.SetParent(root.transform, false);
+            var animator = root.AddComponent<Animator>();
+            var source = Track(new AnimatorController());
+            var baselineMachine = Track(new AnimatorStateMachine { name = "Retained source" });
+            var baseline = Track(baselineMachine.AddState("Keep"));
+            var baseClip = CreateAapClip("Keep", "Keep", 3f);
+            baseline.motion = baseClip;
+            if (additive) SetAapCurve(baseClip, "Output0", 10f);
+            if (masked) SetAapCurve(baseClip, "Blocked", 12f);
+            var sourceLayers = new List<AnimatorControllerLayer>
+            {
+                new AnimatorControllerLayer { name = "Retained", stateMachine = baselineMachine, defaultWeight = 1f, syncedLayerIndex = -1 },
+            };
+            var sourceMachines = new List<AnimatorStateMachine>();
+            var secondStates = new List<AnimatorState>();
+            for (var index = 0; index < historyLayerCount; index++)
+            {
+                source.AddParameter("Gate" + index, AnimatorControllerParameterType.Bool);
+                var machine = Track(new AnimatorStateMachine { name = "Stateful source " + index });
+                var first = Track(machine.AddState("First"));
+                var second = Track(machine.AddState("Second"));
+                first.motion = CreateAapClip("First " + index, "Output" + index, 0f);
+                second.motion = CreateAapClip("Second " + index, "Output" + index, 1f + index);
+                if (masked)
+                {
+                    SetAapCurve((AnimationClip)first.motion, "Blocked", 0f);
+                    SetAapCurve((AnimationClip)second.motion, "Blocked", 7f);
+                }
+                if (coverRetainedBindings)
+                {
+                    SetAapCurve((AnimationClip)first.motion, "Keep", 3f);
+                    SetAapCurve((AnimationClip)second.motion, "Keep", 3f);
+                }
+                first.writeDefaultValues = second.writeDefaultValues = !writeDefaultsOff;
+                machine.defaultState = first;
+                var transition = Track(first.AddTransition(second));
+                transition.hasExitTime = false;
+                transition.duration = 0f;
+                transition.AddCondition(AnimatorConditionMode.If, 0f, "Gate" + index);
+                var layer = new AnimatorControllerLayer
+                {
+                    name = "History " + index, stateMachine = machine, defaultWeight = 1f, syncedLayerIndex = -1,
+                    blendingMode = additive ? AnimatorLayerBlendingMode.Additive : AnimatorLayerBlendingMode.Override,
+                };
+                if (masked)
+                {
+                    var mask = Track(new AvatarMask { name = "Output only", transformCount = 3 });
+                    mask.SetTransformPath(0, ""); mask.SetTransformActive(0, true);
+                    mask.SetTransformPath(1, "Output0"); mask.SetTransformActive(1, true);
+                    mask.SetTransformPath(2, "Blocked"); mask.SetTransformActive(2, false);
+                    layer.avatarMask = mask;
+                }
+                if (firstLayerZeroWeight) layer.defaultWeight = 0f;
+                sourceLayers.Add(layer);
+                sourceMachines.Add(machine);
+                secondStates.Add(second);
+            }
+            if (firstLayerZeroWeight) sourceLayers.RemoveAt(0);
+            source.layers = sourceLayers.ToArray();
+            var originalPath = "Assets/AapOriginal_" + Guid.NewGuid().ToString("N") + ".controller";
+            assetPaths.Add(originalPath);
+            PersistAapCommittedGraph(source, originalPath);
+            AssetDatabase.SaveAssets();
+            var referenceRoot = Track(new GameObject("AAP reference Animator"));
+            foreach (Transform child in root.transform)
+            {
+                var referenceChild = new GameObject(child.name);
+                referenceChild.transform.SetParent(referenceRoot.transform, false);
+            }
+            var referenceAnimator = referenceRoot.AddComponent<Animator>();
+            var referenceController = Track(new AnimatorOverrideController(source));
+            var referenceClip = Track(UnityEngine.Object.Instantiate((AnimationClip)secondStates[0].motion));
+            SetAapCurve(referenceClip, "Output0", 5f);
+            referenceController[(AnimationClip)secondStates[0].motion] = referenceClip;
+            referenceAnimator.runtimeAnimatorController = referenceController;
+            animator.runtimeAnimatorController = source;
+            var component = root.AddComponent<AnimatorOptimizerComponent>();
+            component.targetMode = AnimatorOptimizerComponent.TargetMode.AnimatorComponent;
+            component.animator = animator;
+            component.optimizeAllConvertibleLayers = !manualSelection;
+            component.layerIndices = Enumerable.Range(firstLayerZeroWeight ? 0 : 1, historyLayerCount).ToList();
+            component.enableAapStateRegisterOptimization = true;
+            component.preserveMmdCompatibility = false;
+            component.removeEffectivelyEmptyLayers = false;
+            component.normalizeAlwaysOneParameters = false;
+            component.mergeSynchronizedStateMachines = false;
+            AnimatorOptimizerBuildState.Capture(root, "AAP regression");
+            var context = CreateBuildContext(root);
+            Invoke("CaptureSourceLayerSelection", context);
+            var services = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+            var controller = services.ControllerContext.Controllers[animator];
+            var retained = firstLayerZeroWeight ? null : controller.Layers.First();
+            var selected = controller.Layers.Skip(firstLayerZeroWeight ? 0 : 1).ToList();
+            var identities = selected.Select(layer => layer.VirtualLayerIndex).ToList();
+            var selectedMask = selected[0].AvatarMask;
+            var selectedMotion = (VirtualClip)selected[0].StateMachine.States.Last().State.Motion;
+            selectedMotion.SetFloatCurve(EditorCurveBinding.FloatCurve("Output0", typeof(Transform), "m_LocalPosition.x"),
+                AnimationCurve.Constant(0f, 1f / 60f, 5f));
+            if (!firstLayerZeroWeight)
+            {
+                var inserted = controller.AddLayer(new LayerPriority(-1), "Inserted before source selection");
+                inserted.DefaultWeight = 1f;
+            }
+
+            Invoke("Process", context, false);
+
+            Assert.That(AnimatorOptimizerBuildState.WasNdmfProcessed(root), Is.True);
+            if (retained != null) Assert.That(controller.Layers, Has.Member(retained));
+            if (writeDefaultsOff && !coverRetainedBindings)
+            {
+                Assert.That(controller.Parameters["Gate0"].type, Is.EqualTo(AnimatorControllerParameterType.Bool));
+                Assert.That(selected[0].Name, Is.EqualTo("History 0"));
+                Assert.That(selected[0].StateMachine.States, Has.Count.EqualTo(2));
+                Assert.That(controller.Parameters.Keys.Any(name => name.StartsWith("AO/StateRegister/", StringComparison.Ordinal)), Is.False);
+                return;
+            }
+            var layers = controller.Layers.ToList();
+            for (var index = 0; index < historyLayerCount; index++)
+            {
+                Assert.That(layers, Has.Member(selected[index]));
+                Assert.That(selected[index].VirtualLayerIndex, Is.EqualTo(identities[index]));
+                Assert.That(selected[index].Name, Does.Contain("/Output"));
+                Assert.That(layers[layers.IndexOf(selected[index]) - 1].Name, Does.Contain("/Update"));
+                Assert.That(layers.IndexOf(selected[index]), Is.EqualTo((firstLayerZeroWeight ? 1 : 3) + index * 2));
+                Assert.That(controller.Parameters["Gate" + index].type, Is.EqualTo(AnimatorControllerParameterType.Float));
+                Assert.That(source.parameters[index].type, Is.EqualTo(AnimatorControllerParameterType.Bool));
+                Assert.That(source.layers[index + (firstLayerZeroWeight ? 0 : 1)].stateMachine, Is.SameAs(sourceMachines[index]));
+            }
+            Assert.That(selected[0].AvatarMask, Is.SameAs(selectedMask));
+            Assert.That(selected[0].DefaultWeight, Is.EqualTo(1f));
+            Assert.That(selected[0].BlendingMode, Is.EqualTo(additive ? AnimatorLayerBlendingMode.Additive : AnimatorLayerBlendingMode.Override));
+            Assert.That(controller.Parameters.Keys.Count(name => name.StartsWith("AO/StateRegister/", StringComparison.Ordinal)), Is.EqualTo(historyLayerCount));
+            Assert.That(AnimationUtility.GetEditorCurve((AnimationClip)secondStates[0].motion,
+                EditorCurveBinding.FloatCurve("Output0", typeof(Transform), "m_LocalPosition.x")).keys[0].value, Is.EqualTo(1f));
+
+            context.DeactivateAllExtensionContexts();
+            var committed = (AnimatorController)animator.runtimeAnimatorController;
+            Assert.That(committed, Is.Not.SameAs(source));
+            Assert.That(committed.layers, Has.Length.EqualTo((firstLayerZeroWeight ? 0 : 2) + historyLayerCount * 2));
+            var assetPath = "Assets/AapFinalCommit_" + Guid.NewGuid().ToString("N") + ".controller";
+            try
+            {
+                PersistAapCommittedGraph(committed, assetPath);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+                animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath);
+                animator.Rebind(); referenceAnimator.Rebind();
+                animator.Update(0f); referenceAnimator.Update(0f);
+                var referenceOutput = referenceRoot.transform.Find("Output0");
+                Assert.That(outputs[0].localPosition.x, Is.EqualTo(referenceOutput.localPosition.x).Within(0.0001f));
+                animator.SetFloat("Gate0", 1f); referenceAnimator.SetBool("Gate0", true);
+                animator.Update(1f / 60f); referenceAnimator.Update(1f / 60f);
+                Assert.That(outputs[0].localPosition.x, Is.EqualTo(referenceOutput.localPosition.x).Within(0.0001f), "native source and committed symbolic output use the same additive reference pose");
+                if (!additive) Assert.That(outputs[0].localPosition.x, Is.EqualTo(5f).Within(0.0001f));
+                animator.SetFloat("Gate0", 0f); referenceAnimator.SetBool("Gate0", false);
+                animator.Update(1f / 60f); referenceAnimator.Update(1f / 60f);
+                Assert.That(outputs[0].localPosition.x, Is.EqualTo(referenceOutput.localPosition.x).Within(0.0001f));
+                if (masked) Assert.That(blocked.transform.localPosition.x, Is.EqualTo(12f).Within(0.0001f));
+                for (var index = 1; index < historyLayerCount; index++)
+                {
+                    Assert.That(outputs[index].localPosition.x, Is.EqualTo(0f).Within(0.0001f), "registers have independent history");
+                    animator.SetFloat("Gate" + index, 1f); referenceAnimator.SetBool("Gate" + index, true);
+                    animator.Update(1f / 60f); referenceAnimator.Update(1f / 60f);
+                    animator.SetFloat("Gate" + index, 0f); referenceAnimator.SetBool("Gate" + index, false);
+                    animator.Update(1f / 60f); referenceAnimator.Update(1f / 60f);
+                    Assert.That(outputs[index].localPosition.x, Is.EqualTo(referenceRoot.transform.Find("Output" + index).localPosition.x).Within(0.0001f));
+                    Assert.That(outputs[0].localPosition.x, Is.EqualTo(5f).Within(0.0001f));
+                }
+                Assert.That(AssetDatabase.FindAssets("t:AnimatorController", new[] { "Assets/UnityBox/Generated/AnimatorOptimizerNdmf" }), Is.Empty);
+            }
+            finally
+            {
+                animator.runtimeAnimatorController = null;
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+        }
+
+        private AnimationClip CreateAapClip(string name, string path, float value)
+        {
+            var clip = Track(new AnimationClip { name = name });
+            AnimationUtility.SetEditorCurve(clip,
+                EditorCurveBinding.FloatCurve(path, typeof(Transform), "m_LocalPosition.x"),
+                AnimationCurve.Constant(0f, 1f / 60f, value));
+            return clip;
+        }
+
+        private static void SetAapCurve(AnimationClip clip, string path, float value) =>
+            AnimationUtility.SetEditorCurve(clip,
+                EditorCurveBinding.FloatCurve(path, typeof(Transform), "m_LocalPosition.x"),
+                AnimationCurve.Constant(0f, 1f / 60f, value));
+
+        private static void PersistAapCommittedGraph(AnimatorController controller, string path)
+        {
+            AssetDatabase.CreateAsset(controller, path);
+            var pending = new Queue<UnityEngine.Object>();
+            var visited = new HashSet<UnityEngine.Object>();
+            pending.Enqueue(controller);
+            while (pending.Count > 0)
+            {
+                var value = pending.Dequeue();
+                if (value == null || !visited.Add(value)) continue;
+                if (value != controller && !EditorUtility.IsPersistent(value)) AssetDatabase.AddObjectToAsset(value, controller);
+                using var serialized = new SerializedObject(value);
+                var property = serialized.GetIterator();
+                while (property.Next(true))
+                {
+                    if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    var child = property.objectReferenceValue;
+                    if (child is AnimatorStateMachine || child is AnimatorState || child is AnimatorTransitionBase ||
+                        child is AnimationClip || child is BlendTree || child is AvatarMask || child is StateMachineBehaviour)
+                        pending.Enqueue(child);
+                }
+            }
+        }
+
         [Test]
         public void AmbiguousSourceLayerSelectionIsRejected()
         {
@@ -306,9 +549,9 @@ namespace UnityBox.AnimatorOptimizer.Tests
             };
             var arguments = new object[] { controller, layer, options, null, null };
 
-            Assert.That(Invoke("TryBuildPlan", arguments), Is.EqualTo(vrchat));
+            Assert.That(Invoke("TryBuildPlan", arguments), Is.EqualTo(vrchat && sameOutput));
             Assert.That(controller.Parameters.ContainsKey("IsLocal"), Is.False);
-            if (vrchat)
+            if (vrchat && sameOutput)
             {
                 var plans = Array.CreateInstance(arguments[3].GetType(), 1);
                 plans.SetValue(arguments[3], 0);
@@ -341,7 +584,14 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 UpgradeBoolParametersToFloat = true,
             };
             var arguments = new object[] { controller, converted, options, null, null };
-            Assert.That(Invoke("TryBuildPlan", arguments), Is.True);
+            Assert.That(Invoke("TryBuildPlan", arguments), Is.EqualTo(!vrchat));
+            if (vrchat)
+            {
+                Assert.That(controller.Parameters["IsLocal"].type, Is.EqualTo(AnimatorControllerParameterType.Bool));
+                Assert.That(transition.Conditions.Single().mode, Is.EqualTo(AnimatorConditionMode.If));
+                Assert.That(converted.StateMachine.States, Has.Count.EqualTo(2));
+                return;
+            }
             var plans = Array.CreateInstance(arguments[3].GetType(), 1);
             plans.SetValue(arguments[3], 0);
 
@@ -355,6 +605,127 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 ? AnimatorConditionMode.If : AnimatorConditionMode.Greater));
             Assert.That(transition.Conditions.Single().threshold, Is.EqualTo(vrchat ? 0f : 0.5f));
             if (!vrchat) Assert.That(controller.Parameters["IsLocal"].defaultFloat, Is.EqualTo(1f));
+        }
+
+        [TestCase("IsLocal", AnimatorControllerParameterType.Bool, false)]
+        [TestCase("Viseme", AnimatorControllerParameterType.Int, false)]
+        [TestCase("Gate", AnimatorControllerParameterType.Bool, true)]
+        public void NativeCommittedRetainedLayersRunAlongsideOptimizedLayers(
+            string parameter, AnimatorControllerParameterType type, bool emptyMotion)
+        {
+            var root = Track(new GameObject("Retained native Avatar"));
+            var referenceRoot = Track(new GameObject("Native source Avatar"));
+            foreach (var parent in new[] { root, referenceRoot })
+            foreach (var path in new[] { "Output", "Other0", "Other1" })
+            {
+                var child = new GameObject(path);
+                child.transform.SetParent(parent.transform, false);
+                child.transform.localPosition = new Vector3(0.125f, 0.25f, 0.5f);
+            }
+            var source = Track(new AnimatorController());
+            source.AddParameter(parameter, type);
+            var machine = Track(new AnimatorStateMachine { name = "Native input" });
+            var off = Track(machine.AddState("Off"));
+            var on = Track(machine.AddState("On"));
+            off.motion = emptyMotion ? null : CreateAapClip("Off", "Output", 0f);
+            on.motion = CreateAapClip("On", "Output", 1f);
+            off.writeDefaultValues = on.writeDefaultValues = true;
+            machine.defaultState = off;
+            if (emptyMotion)
+            {
+                var enter = Track(off.AddTransition(on));
+                enter.duration = 0f; enter.hasExitTime = false;
+                enter.AddCondition(AnimatorConditionMode.If, 0f, parameter);
+                var exit = Track(on.AddExitTransition());
+                exit.duration = 0f; exit.hasExitTime = false;
+                exit.AddCondition(AnimatorConditionMode.IfNot, 0f, parameter);
+            }
+            else
+            {
+                foreach (var state in new[] { off, on })
+                {
+                    var transition = Track(machine.AddAnyStateTransition(state));
+                    transition.duration = 0f; transition.hasExitTime = false;
+                    transition.canTransitionToSelf = true;
+                    transition.AddCondition(type == AnimatorControllerParameterType.Bool
+                            ? (state == off ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If)
+                            : (state == off ? AnimatorConditionMode.NotEqual : AnimatorConditionMode.Equals),
+                        type == AnimatorControllerParameterType.Int ? 1f : 0f, parameter);
+                }
+            }
+            var layers = new List<AnimatorControllerLayer>
+            {
+                new AnimatorControllerLayer { name = "Retained native", stateMachine = machine, defaultWeight = 1f, syncedLayerIndex = -1 },
+            };
+            for (var index = 0; index < 2; index++)
+            {
+                var constantMachine = Track(new AnimatorStateMachine { name = "Constant " + index });
+                var state = Track(constantMachine.AddState("Constant"));
+                state.writeDefaultValues = true;
+                state.motion = CreateAapClip("Constant " + index, "Other" + index, 2f + index);
+                layers.Add(new AnimatorControllerLayer
+                {
+                    name = "Constant " + index, stateMachine = constantMachine, defaultWeight = 1f, syncedLayerIndex = -1,
+                });
+            }
+            source.layers = layers.ToArray();
+            var sourcePath = "Assets/RetainedSource_" + Guid.NewGuid().ToString("N") + ".controller";
+            assetPaths.Add(sourcePath);
+            PersistAapCommittedGraph(source, sourcePath);
+            AssetDatabase.SaveAssets();
+            var animator = root.AddComponent<Animator>();
+            var reference = referenceRoot.AddComponent<Animator>();
+            animator.runtimeAnimatorController = reference.runtimeAnimatorController = source;
+            animator.cullingMode = reference.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var component = root.AddComponent<AnimatorOptimizerComponent>();
+            component.targetMode = AnimatorOptimizerComponent.TargetMode.AnimatorComponent;
+            component.animator = animator;
+            component.useVrChatParameterSemantics = !emptyMotion;
+            component.enableAapStateRegisterOptimization = true;
+            component.preserveMmdCompatibility = false;
+            component.removeEffectivelyEmptyLayers = false;
+            component.normalizeAlwaysOneParameters = false;
+            component.mergeSynchronizedStateMachines = false;
+            AnimatorOptimizerBuildState.Capture(root, "Native retained regression");
+            var context = CreateBuildContext(root);
+            Invoke("CaptureSourceLayerSelection", context);
+            var services = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+            var controller = services.ControllerContext.Controllers[animator];
+            var retained = controller.Layers.First();
+            Invoke("Process", context, false);
+            Assert.That(controller.Layers, Has.Member(retained));
+            Assert.That(retained.StateMachine.States, Has.Count.EqualTo(2));
+            Assert.That(controller.Parameters[parameter].type, Is.EqualTo(type));
+            Assert.That(controller.Layers.Count(), Is.EqualTo(2), "the two independent constant layers still combine");
+            context.DeactivateAllExtensionContexts();
+            var committed = (AnimatorController)animator.runtimeAnimatorController;
+            var committedPath = "Assets/RetainedCommit_" + Guid.NewGuid().ToString("N") + ".controller";
+            assetPaths.Add(committedPath);
+            PersistAapCommittedGraph(committed, committedPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(committedPath, ImportAssetOptions.ForceSynchronousImport);
+            animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<AnimatorController>(committedPath);
+            animator.Rebind(); reference.Rebind();
+            for (var frame = 0; frame < 90; frame++)
+            {
+                var value = (frame / 10) % 2;
+                if (type == AnimatorControllerParameterType.Bool)
+                {
+                    animator.SetBool(parameter, value != 0); reference.SetBool(parameter, value != 0);
+                }
+                else
+                {
+                    animator.SetInteger(parameter, value); reference.SetInteger(parameter, value);
+                }
+                animator.Update(1f / 60f); reference.Update(1f / 60f);
+                foreach (var path in new[] { "Output", "Other0", "Other1" })
+                    Assert.That(Vector3.Distance(root.transform.Find(path).localPosition,
+                            referenceRoot.transform.Find(path).localPosition), Is.LessThan(0.0001f),
+                        "frame=" + frame + ", path=" + path);
+            }
+            Assert.That(source.parameters.Single().type, Is.EqualTo(type));
+            Assert.That(source.layers[0].stateMachine, Is.SameAs(machine));
+            Assert.That(source.layers, Has.Length.EqualTo(3));
         }
 
         [Test]

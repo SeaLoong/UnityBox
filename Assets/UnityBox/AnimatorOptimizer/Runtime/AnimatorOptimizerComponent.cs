@@ -105,7 +105,7 @@ namespace UnityBox.AnimatorOptimizer
         public float shortAnimationMaxSeconds = 0.1f;
 
         [Range(2, 33)]
-        [Tooltip("Motion Time 使用这些均匀采样点，并补入原曲线关键时间（总计最多 65 点）。采样点之间为线性近似，不保证保留原缓动。")]
+        [Tooltip("Motion Time 使用这些均匀采样点，并补入原曲线关键时间（总计最多 65 点）。采样点之间线性插值；增加采样数可更细致地保留缓动形状。")]
         public int motionTimeSampleCount = 9;
 
         [Tooltip("严格阻止源 Layer 之间或与未合并 Layer 之间存在重复动画绑定。关闭可能改变原 Layer 覆盖优先级。")]
@@ -120,11 +120,11 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("合并相同 Entry/Exit/Transition 结构、互不重叠的静态属性层，保留原状态历史和 WD，不强制变成无状态树。可用于旧版 MA 的重复 Shape/Material 响应式层；AAP、NaN、骨骼和回调层保留。")]
         public bool mergeSynchronizedStateMachines = true;
 
-        [Tooltip("实验性：用共享 AAP 决策图计算混合 Bool/Int/Float 条件、有序 Entry/AnyState 和状态保持。支持批量处理，每个源层生成更新/输出两层；反馈时序尚未进行 Unity 验证。")]
+        [Tooltip("用共享 AAP 决策图计算混合 Bool/Int/Float 条件、有序 Entry/AnyState 和状态保持。Update 与 Output 同帧计算下一状态，支持首帧 Entry 初始化；每个源层生成更新/输出两层。")]
         public bool enableAapStateRegisterOptimization = false;
 
         [Range(64, 16384)]
-        [Tooltip("AAP 共享条件节点上限，不是输入组合数上限；还有独立的运算与内存保护。仅影响实验性 AAP 转换。")]
+        [Tooltip("AAP 共享条件节点数量上限；输入组合由共享决策图压缩，生成预算包含更新与输出两套分支。")]
         public int maxAapDecisionNodes = 4096;
 
         [Tooltip("删除能证明没有可见动画输出的空 Layer；默认只删除非首层，并保留含 AAP/Behaviour 的 Layer。")]

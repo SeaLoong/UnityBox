@@ -1,0 +1,16 @@
+{
+  "result": "Succeeded",
+  "output": "/workspace/unitybox-setup/unity/projects/iteration-composed8-final-core/.unitybox-player-results/20261028T191509-16a49ce8/UnityBoxPlayer",
+  "total_errors": 0,
+  "total_warnings": 2,
+  "total_size_bytes": 58454182,
+  "duration_seconds": 10.6540956,
+  "hook_providers": [
+    "BlendshapeRuntimeTests",
+    "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests",
+    "UnityBox.AdvancedCostumeController.Tests.CostumeRuntimeTests",
+    "UnityBox.VisemeBlendshapeOverride.Tests.VisemeAnimatorEvaluationTests",
+    "UnityBox.AnimatorOptimizer.Tests.OptimizerRuntimeAndPerformanceTests"
+  ],
+  "source_configuration_components": 3
+}

@@ -11,8 +11,8 @@ namespace UnityBox.AnimatorOptimizer
     /// Immutable, asset-free AAP state-register program. Conditions are ANDed within
     /// each edge; ordered edges are first-match choices, not an unordered OR/sum.
     /// A reduced ordered multi-valued decision diagram avoids enumerating the full
-    /// Cartesian input domain. This models one logical transition per evaluation,
-    /// not Unity's undocumented cross-layer feedback latency or Animator.Play calls.
+    /// Cartesian input domain. Update and visible Output evaluate one logical transition from the same
+    /// parameter snapshot; the animated register is published for the next evaluation.
     /// </summary>
     public sealed class AnimatorOptimizerAapProgram
     {
@@ -64,7 +64,7 @@ namespace UnityBox.AnimatorOptimizer
             UseVrChatParameterSemantics = useVrChatParameterSemantics;
             DecisionNodeCount = nodes.Count(node => !node.IsLeaf);
             ValueClipCount = nodes.Count(node => node.IsLeaf);
-            EstimatedChildReferenceCount = nodes.Sum(node => node.Children.Count) + roots.Length * 2 + (hasEntry ? 2 : 0);
+            EstimatedChildReferenceCount = nodes.Sum(node => node.Children.Count) * 2 + roots.Length * 3 + (hasEntry ? 4 : 0);
             var key = new System.Text.StringBuilder("aap-dag:" + (useVrChatParameterSemantics ? "vrchat:" : "unity:"));
             key.Append(defaultState).Append(':').Append(hasEntry).Append(':').Append(entryRoot).Append('|');
             foreach (var axis in axes)
@@ -100,7 +100,7 @@ namespace UnityBox.AnimatorOptimizer
         public bool UseVrChatParameterSemantics { get; }
         public int DecisionNodeCount { get; }
         public int ValueClipCount { get; }
-        public int EstimatedMotionAssetCount => Nodes.Count + 2 + (RequiresInitialization ? 1 : 0);
+        public int EstimatedMotionAssetCount => Nodes.Count + DecisionNodeCount + StateCount + 2 + (RequiresInitialization ? 2 : 0);
         public int EstimatedChildReferenceCount { get; }
         public string StructuralKey { get; }
 
@@ -217,7 +217,13 @@ namespace UnityBox.AnimatorOptimizer
                 program = new Compiler(axes, options.MaxAapDecisionNodes, options.UseVrChatParameterSemantics).Compile(graph);
                 foreach (var axis in program.Axes)
                 {
-                    if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(axis.Parameter, options.UseVrChatParameterSemantics)) continue;
+                    if (AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(axis.Parameter, options.UseVrChatParameterSemantics, out var platformType))
+                    {
+                        if (platformType == AnimatorControllerParameterType.Float && axis.SourceType == AnimatorControllerParameterType.Float) continue;
+                        reason = $"平台输入 '{axis.Parameter}' 使用 {axis.SourceType} 参数槽；保留原生条件状态机。";
+                        program = null;
+                        return false;
+                    }
                     if (axis.SourceType == AnimatorControllerParameterType.Bool && !options.UpgradeBoolParametersToFloat ||
                         axis.SourceType == AnimatorControllerParameterType.Int && !options.UpgradeIntParametersToFloat)
                     {
