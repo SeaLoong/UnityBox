@@ -23,7 +23,7 @@ namespace UnityBox.AnimatorOptimizer
 
         protected override void Configure()
         {
-            // NDMF removes IEditorOnly components during Resolving. Capture before that pass,
+            // Capture and strip our SDK-independent authoring component on the build clone,
             // then perform the actual optimization late on the virtual controller.
             InPhase(BuildPhase.Resolving)
                 .Run("AnimatorOptimizer/CaptureConfig", context =>
@@ -37,18 +37,19 @@ namespace UnityBox.AnimatorOptimizer
                     AnimatorOptimizerBuildState.Capture(context.AvatarRootObject, "NDMF before RemoveEditorOnly");
                     AnimatorOptimizerBuildState.MarkNdmfCaptured(context.AvatarRootObject);
                     AnimatorOptimizerNdmfProcessor.CaptureSourceLayerSelection(context);
+                    AnimatorOptimizerPlatform.StripConfigurationComponents(context.AvatarRootObject);
                 })
                 .BeforePass("nadena.dev.ndmf.system.RemoveEditorOnly");
 
             InPhase(BuildPhase.Optimizing)
                 .AfterPlugin("nadena.dev.modular-avatar")
-                .WithRequiredExtension(typeof(AnimatorServicesContext), sequence => sequence.Run(
+                .WithCompatibleExtensions(new[] { typeof(AnimatorServicesContext), typeof(VirtualControllerContext) }, sequence => sequence.Run(
                     "AnimatorOptimizer/OptimizeVirtualFX",
                     context => AnimatorOptimizerNdmfProcessor.Process(context, false)));
 
             InPhase(BuildPhase.PlatformFinish)
                 .AfterPlugin("top.sealoong.unitybox.avatar-security-system")
-                .WithRequiredExtension(typeof(AnimatorServicesContext), sequence => sequence.Run(
+                .WithCompatibleExtensions(new[] { typeof(AnimatorServicesContext), typeof(VirtualControllerContext) }, sequence => sequence.Run(
                     "AnimatorOptimizer/OptimizeVirtualFXLate",
                     context => AnimatorOptimizerNdmfProcessor.Process(context, true)));
         }
@@ -238,6 +239,8 @@ namespace UnityBox.AnimatorOptimizer
 
         private sealed class SourceLayerSelection
         {
+            public bool IsCaptured;
+            public bool HasActivePlayableController;
             public bool IsValid;
             public List<AnimatorStateMachine> StateMachines = new List<AnimatorStateMachine>();
             public SourceLayerSelection() { }
@@ -246,16 +249,18 @@ namespace UnityBox.AnimatorOptimizer
         internal static void CaptureSourceLayerSelection(BuildContext context)
         {
             var selection = context.GetState<SourceLayerSelection>();
+            selection.IsCaptured = true;
+            selection.HasActivePlayableController = false;
             selection.IsValid = false;
             selection.StateMachines.Clear();
             var config = AnimatorOptimizerBuildState.Get(context.AvatarRootObject);
-            if (config == null || config.OptimizeAllConvertibleLayers) return;
+            if (config == null) return;
             AnimatorController source;
             if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
             {
                 var descriptor = context.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
                 var type = ToVrcLayerType(config.PlayableLayer);
-                source = descriptor == null ? null :
+                source = descriptor == null || !descriptor.customizeAnimationLayers ? null :
                     (descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                     .Concat(descriptor.specialAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                     .Where(layer => layer.type == type && !layer.isDefault)
@@ -268,7 +273,8 @@ namespace UnityBox.AnimatorOptimizer
                     ? config.Controller as AnimatorController
                     : target != null ? target.runtimeAnimatorController as AnimatorController : null;
             }
-            if (source == null) return;
+            selection.HasActivePlayableController = source != null;
+            if (source == null || config.OptimizeAllConvertibleLayers) return;
             var layers = source.layers;
             foreach (var index in (config.LayerIndices ?? new List<int>()).Distinct())
             {
@@ -319,10 +325,76 @@ namespace UnityBox.AnimatorOptimizer
                 return;
             if (config.ExecuteLateOptimization != latePhase)
                 return;
-            var animatorServices = context.Extension<AnimatorServicesContext>();
-            if (animatorServices == null)
+            var selection = context.GetState<SourceLayerSelection>();
+            if (!selection.IsCaptured) CaptureSourceLayerSelection(context);
+            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer &&
+                !selection.HasActivePlayableController)
+            {
+                // NDMF's VRChat bindings enable customization when services activate. An
+                // inactive source must not become eligible merely because that occurred.
+                AnimatorOptimizerBuildState.MarkNdmfProcessed(context.AvatarRootObject);
+                Debug.LogWarning("[AnimatorOptimizer] The configured Playable Layer had no active custom controller before NDMF; preserving it.");
                 return;
+            }
 
+            // Compatible extensions remain live when another plugin owns them. When no
+            // plugin needs animator services, only activate them after the target checks,
+            // and release exactly the contexts acquired here before returning to NDMF's
+            // statically scheduled passes. An Avatar without AO must have no side effects.
+            var animatorServices = GetActiveExtension<AnimatorServicesContext>(context);
+            var ownsAnimatorServices = animatorServices == null;
+            var ownsControllers = GetActiveExtension<VirtualControllerContext>(context) == null;
+            var descriptor = context.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
+            var restoreDisabledDescriptor = ownsControllers && descriptor != null &&
+                !descriptor.customizeAnimationLayers;
+            var baseLayers = restoreDisabledDescriptor ? descriptor.baseAnimationLayers?.ToArray() : null;
+            var specialLayers = restoreDisabledDescriptor ? descriptor.specialAnimationLayers?.ToArray() : null;
+            try
+            {
+                if (ownsAnimatorServices)
+                    animatorServices = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+                ProcessVirtual(context, config, animatorServices);
+            }
+            finally
+            {
+                try
+                {
+                    if (ownsAnimatorServices)
+                        context.DeactivateExtensionContext<AnimatorServicesContext>();
+                }
+                finally
+                {
+                    try
+                    {
+                        if (ownsControllers)
+                            context.DeactivateExtensionContext<VirtualControllerContext>();
+                    }
+                    finally
+                    {
+                        // Optimizing a child Animator must not enable unrelated inactive
+                        // Avatar Playable Layers as a side effect of NDMF's platform adapter.
+                        if (restoreDisabledDescriptor && descriptor != null)
+                        {
+                            descriptor.baseAnimationLayers = baseLayers;
+                            descriptor.specialAnimationLayers = specialLayers;
+                            descriptor.customizeAnimationLayers = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static T GetActiveExtension<T>(BuildContext context) where T : class, IExtensionContext
+        {
+            // NDMF 1.9+ exposes no TryGetExtension; this accessor throws only when the
+            // requested context is absent. Activation errors are never caught here.
+            try { return context.Extension<T>(); }
+            catch (Exception) { return null; }
+        }
+
+        private static void ProcessVirtual(BuildContext context, AnimatorOptimizerConfigData config,
+            AnimatorServicesContext animatorServices)
+        {
             var controllerKey = ResolveVirtualControllerKey(config, context.AvatarRootObject);
             if (controllerKey == null ||
                 !animatorServices.ControllerContext.Controllers.TryGetValue(controllerKey, out var controller) ||
@@ -340,6 +412,8 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             var options = config.CreateOptions().Clone();
+            // Only AvatarPlayableLayer targets (or explicitly opted-in Animator targets)
+            // inherit VRChat builtins; merely participating in an Avatar build is insufficient.
             // Coalescing is a separate whole-controller pass. Explicit index mode
             // must not silently modify unrequested legacy reactive layers.
             options.MergeSynchronizedStateMachines &= config.OptimizeAllConvertibleLayers;
@@ -776,7 +850,7 @@ namespace UnityBox.AnimatorOptimizer
                 active = active.Where(transition => AnimatorOptimizerSemanticUtility.ConditionsMayBeReachable(
                     transition.Conditions, name =>
                         controller.Parameters.TryGetValue(name, out var declaration) ? declaration.type :
-                        TryGetVirtualGlobalParameterType(name, out var global) ? global.type :
+                        TryGetVirtualGlobalParameterType(name, currentLayerScope?.Options?.UseVrChatParameterSemantics == true, out var global) ? global.type :
                         (AnimatorControllerParameterType?)null)).ToList();
             return active;
         }
@@ -2590,7 +2664,7 @@ namespace UnityBox.AnimatorOptimizer
             plan.ReferencedParameters = parameters;
             foreach (var parameterName in parameters)
             {
-                if (IsVrcGlobalParameter(parameterName))
+                if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
                     continue;
                 if (!controller.Parameters.TryGetValue(parameterName, out var parameter))
                     return false;
@@ -2636,8 +2710,9 @@ namespace UnityBox.AnimatorOptimizer
             }
         }
 
-        private static bool IsVrcGlobalParameter(string parameterName)
+        private static bool IsVrcGlobalParameter(string parameterName, bool useVrChatParameterSemantics)
         {
+            if (!useVrChatParameterSemantics) return false;
             switch (parameterName)
             {
                 case "IsLocal":
@@ -3109,7 +3184,7 @@ namespace UnityBox.AnimatorOptimizer
                 .Concat(machine.StateMachineTransitions.Values.SelectMany(transitions => GetEffectiveVirtualTransitions(transitions)));
             return edges.All(edge => AnimatorOptimizerSemanticUtility.AreReadOnlyConditions(edge.Conditions, name =>
                 controller.Parameters.TryGetValue(name, out var parameter) ? parameter?.type :
-                    TryGetVirtualGlobalParameterType(name, out var global) ? global.type : (AnimatorControllerParameterType?)null));
+                    TryGetVirtualGlobalParameterType(name, currentLayerScope?.Options?.UseVrChatParameterSemantics == true, out var global) ? global.type : (AnimatorControllerParameterType?)null));
         }
 
         private static bool TryBuildVirtualStaticObservableMotionSignature(
@@ -3391,13 +3466,13 @@ namespace UnityBox.AnimatorOptimizer
             if (string.IsNullOrWhiteSpace(source.parameter) || float.IsNaN(source.threshold) || float.IsInfinity(source.threshold))
                 return false;
             var hasDeclaredParameter = controller.Parameters.TryGetValue(source.parameter, out var parameter);
-            if (!hasDeclaredParameter && !TryGetVirtualGlobalParameterType(source.parameter, out parameter))
+            if (!hasDeclaredParameter && !TryGetVirtualGlobalParameterType(source.parameter, options.UseVrChatParameterSemantics, out parameter))
                 return false;
             if (parameter.type == AnimatorControllerParameterType.Float && !IsFinite(parameter.defaultFloat))
                 return false;
             if (parameter.type == AnimatorControllerParameterType.Bool)
             {
-                if (hasDeclaredParameter && !options.UpgradeBoolParametersToFloat ||
+                if (hasDeclaredParameter && !options.UpgradeBoolParametersToFloat && !IsVrcGlobalParameter(source.parameter, options.UseVrChatParameterSemantics) ||
                     (source.mode != AnimatorConditionMode.If && source.mode != AnimatorConditionMode.IfNot &&
                      source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual))
                     return false;
@@ -3409,7 +3484,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (Math.Abs((double)source.threshold) > 16777214d)
                     return false;
-                if (hasDeclaredParameter && !options.UpgradeIntParametersToFloat ||
+                if (hasDeclaredParameter && !options.UpgradeIntParametersToFloat && !IsVrcGlobalParameter(source.parameter, options.UseVrChatParameterSemantics) ||
                     (source.mode != AnimatorConditionMode.Equals && source.mode != AnimatorConditionMode.NotEqual &&
                      source.mode != AnimatorConditionMode.Greater && source.mode != AnimatorConditionMode.Less) ||
                     source.threshold != Mathf.Round(source.threshold))
@@ -3439,9 +3514,11 @@ namespace UnityBox.AnimatorOptimizer
         }
 
         private static bool TryGetVirtualGlobalParameterType(
-            string parameterName,
+            string parameterName, bool useVrChatParameterSemantics,
             out AnimatorControllerParameter parameter)
         {
+            parameter = null;
+            if (!useVrChatParameterSemantics) return false;
             parameter = new AnimatorControllerParameter
             {
                 name = parameterName,
@@ -4203,7 +4280,7 @@ namespace UnityBox.AnimatorOptimizer
                 .Concat(plans.SelectMany(plan => plan.DecisionDimensions ?? Enumerable.Empty<VirtualDecisionDimension>())
                     .Select(dimension => dimension.Parameter))
                 .Concat(plans.SelectMany(plan => plan.ReferencedParameters ?? new HashSet<string>(StringComparer.Ordinal))
-                    .Where(name => !IsVrcGlobalParameter(name)))
+                    .Where(name => !IsVrcGlobalParameter(name, options.UseVrChatParameterSemantics)))
                 .Distinct(StringComparer.Ordinal).ToList();
             var animated = CollectVirtualAnimatedAnimatorParameterNames(controller);
             if (names.Any(name => VirtualParameterNeedsUpgrade(controller, name, options) &&
@@ -4220,7 +4297,7 @@ namespace UnityBox.AnimatorOptimizer
             var bools = new HashSet<string>(StringComparer.Ordinal);
             foreach (var name in names)
             {
-                if (IsVrcGlobalParameter(name))
+                if (IsVrcGlobalParameter(name, options.UseVrChatParameterSemantics))
                     continue;
                 if (!controller.Parameters.TryGetValue(name, out var parameter))
                     continue;
@@ -4291,7 +4368,7 @@ namespace UnityBox.AnimatorOptimizer
             string name,
             AnimatorOptimizerOptions options)
         {
-            if (controller == null || !controller.Parameters.TryGetValue(name, out var parameter))
+            if (controller == null || IsVrcGlobalParameter(name, options.UseVrChatParameterSemantics) || !controller.Parameters.TryGetValue(name, out var parameter))
                 return false;
             return parameter.type == AnimatorControllerParameterType.Bool && options.UpgradeBoolParametersToFloat ||
                    parameter.type == AnimatorControllerParameterType.Int && options.UpgradeIntParametersToFloat;
@@ -4420,7 +4497,7 @@ namespace UnityBox.AnimatorOptimizer
                 return existingAlwaysOne;
             var prefix = string.IsNullOrWhiteSpace(options?.WeightParameterPrefix)
                 ? WeightParameterPrefix : options.WeightParameterPrefix.Trim();
-            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectVirtualReservedParameterNames(controller));
+            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectVirtualReservedParameterNames(controller), options?.UseVrChatParameterSemantics == true);
             controller.Parameters = controller.Parameters.SetItem(name, new AnimatorControllerParameter
             {
                 name = name,

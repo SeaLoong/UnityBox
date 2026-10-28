@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDKBase;
 using Object = UnityEngine.Object;
 
 namespace UnityBox.AnimatorOptimizer
@@ -132,7 +131,7 @@ namespace UnityBox.AnimatorOptimizer
                     issues.Add($"Layer 组 ({group.BlendingMode}/{group.MaskKey}) 的 StateMachine Behaviour 不完全一致，合并会丢失 MMD/其它回调语义。");
             }
 
-            issues.AddRange(GetParameterSafetyIssues(report, selected));
+            issues.AddRange(GetParameterSafetyIssues(report, selected, options));
             var sourceLayers = report.Layers.Select(layer => layer.SourceLayer).ToArray();
             foreach (var group in groups)
             {
@@ -269,7 +268,7 @@ namespace UnityBox.AnimatorOptimizer
 
             var controls = EnumerateLayerControls(report.SourceLayer.stateMachine, new HashSet<int>()).ToList();
             if (controls.Count == 0 || controls.Any(control =>
-                    !AppliesToTargetPlayable(control, options) || selected.Contains(control.layer)))
+                    !AppliesToTargetPlayable(control, options) || selected.Contains(control.LayerIndex)))
                 return false;
             if (StateMachineHasUnsupportedBehaviour(report.SourceLayer.stateMachine) ||
                 StateMachineHasAnimatorParameterCurve(report.SourceLayer.stateMachine, new HashSet<int>()))
@@ -297,7 +296,7 @@ namespace UnityBox.AnimatorOptimizer
         private static bool IsRetainableUnselectedLayerBehaviour(StateMachineBehaviour behaviour)
         {
             return AnimatorOptimizerAnalyzer.IsPreservableLayerBehaviour(behaviour) ||
-                   behaviour is VRC_AnimatorLayerControl;
+                   AnimatorOptimizerPlatform.GetLayerControl(behaviour) != null;
         }
 
         private static bool StateMachineHasAnimatorParameterCurve(
@@ -345,9 +344,9 @@ namespace UnityBox.AnimatorOptimizer
             {
                 foreach (var control in controls.Where(control => AppliesToTargetPlayable(control, options)))
                 {
-                    if (selected.Contains(control.layer))
+                    if (selected.Contains(control.LayerIndex))
                     {
-                        issues.Add($"VRCAnimatorLayerControl 引用了待合并 Layer {control.layer}；合并后无法保留该 Layer 的独立权重控制。");
+                        issues.Add($"VRCAnimatorLayerControl 引用了待合并 Layer {control.LayerIndex}；合并后无法保留该 Layer 的独立权重控制。");
                     }
                 }
             }
@@ -383,18 +382,18 @@ namespace UnityBox.AnimatorOptimizer
                 }
             }
             foreach (var control in EnumerateLayerControlsFromLayers(layers))
-                if (AppliesToTargetPlayable(control, options) && (control.layer < 0 || control.layer >= layers.Count))
-                    issues.Add($"VRCAnimatorLayerControl 引用了不存在的 Layer {control.layer}，不能安全重排。");
+                if (AppliesToTargetPlayable(control, options) && (control.LayerIndex < 0 || control.LayerIndex >= layers.Count))
+                    issues.Add($"VRCAnimatorLayerControl 引用了不存在的 Layer {control.LayerIndex}，不能安全重排。");
             return issues;
         }
 
-        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateLayerControls(
+        private static IEnumerable<IAnimatorOptimizerLayerControl> EnumerateLayerControls(
             AnimatorController controller)
         {
             return EnumerateLayerControlsFromLayers(controller?.layers ?? Array.Empty<AnimatorControllerLayer>());
         }
 
-        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateLayerControls(
+        private static IEnumerable<IAnimatorOptimizerLayerControl> EnumerateLayerControls(
             AnimatorStateMachine stateMachine,
             ISet<int> visited)
         {
@@ -402,8 +401,8 @@ namespace UnityBox.AnimatorOptimizer
                 yield break;
             foreach (var behaviour in stateMachine.behaviours ?? Array.Empty<StateMachineBehaviour>())
             {
-                if (behaviour is VRC_AnimatorLayerControl control)
-                    yield return control;
+                var control = AnimatorOptimizerPlatform.GetLayerControl(behaviour);
+                if (control != null) yield return control;
             }
             foreach (var child in stateMachine.states ?? Array.Empty<ChildAnimatorState>())
             {
@@ -411,8 +410,8 @@ namespace UnityBox.AnimatorOptimizer
                     continue;
                 foreach (var behaviour in child.state.behaviours ?? Array.Empty<StateMachineBehaviour>())
                 {
-                    if (behaviour is VRC_AnimatorLayerControl control)
-                        yield return control;
+                    var control = AnimatorOptimizerPlatform.GetLayerControl(behaviour);
+                    if (control != null) yield return control;
                 }
             }
             foreach (var child in stateMachine.stateMachines ?? Array.Empty<ChildAnimatorStateMachine>())
@@ -423,29 +422,17 @@ namespace UnityBox.AnimatorOptimizer
         }
 
         private static bool AppliesToTargetPlayable(
-            VRC_AnimatorLayerControl control,
+            IAnimatorOptimizerLayerControl control,
             AnimatorOptimizerOptions options)
         {
-            if (control == null || options == null || !options.HasKnownPlayableLayer)
-                return false;
-            switch (options.TargetPlayableLayer)
-            {
-                case AnimatorOptimizerComponent.PlayableLayer.FX:
-                    return control.playable == VRC_AnimatorLayerControl.BlendableLayer.FX;
-                case AnimatorOptimizerComponent.PlayableLayer.Gesture:
-                    return control.playable == VRC_AnimatorLayerControl.BlendableLayer.Gesture;
-                case AnimatorOptimizerComponent.PlayableLayer.Action:
-                    return control.playable == VRC_AnimatorLayerControl.BlendableLayer.Action;
-                case AnimatorOptimizerComponent.PlayableLayer.Additive:
-                    return control.playable == VRC_AnimatorLayerControl.BlendableLayer.Additive;
-                default:
-                    return false;
-            }
+            return control != null && options != null && options.HasKnownPlayableLayer &&
+                control.PlayableLayer == options.TargetPlayableLayer;
         }
 
         internal static IReadOnlyList<string> GetParameterSafetyIssues(
             AnimatorOptimizerReport report,
-            IEnumerable<int> selectedLayerIndices)
+            IEnumerable<int> selectedLayerIndices,
+            AnimatorOptimizerOptions options)
         {
             if (report == null)
                 return Array.Empty<string>();
@@ -463,7 +450,7 @@ namespace UnityBox.AnimatorOptimizer
                 var declaration = report.Controller.parameters.FirstOrDefault(candidate => candidate.name == parameter);
                 if (declaration != null && declaration.type == AnimatorControllerParameterType.Float)
                     continue;
-                if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(parameter))
+                if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(parameter, options.UseVrChatParameterSemantics))
                 {
                     continue;
                 }
@@ -580,7 +567,7 @@ namespace UnityBox.AnimatorOptimizer
             var regularReports = selectedReports.Where(layer => layer.ConversionKind != AnimatorOptimizerConversionKind.AapStateRegister).ToList();
             var emptyClip = regularReports.Count == 0 ? null : CreateEmptyClip(controller);
             var weightParameter = regularReports.Count == 0 ? null : EnsureWeightParameter(controller, options.WeightParameterPrefix,
-                options.NormalizeAlwaysOneParameters);
+                options.NormalizeAlwaysOneParameters, options.UseVrChatParameterSemantics);
             var groups = BuildLayerGroups(regularReports);
             var generatedLayers = new List<AnimatorControllerLayer>();
             var generatedAtIndex = new Dictionary<int, List<AnimatorControllerLayer>>();
@@ -758,13 +745,13 @@ namespace UnityBox.AnimatorOptimizer
             var stateRegisterParameter = EnsureFloatParameterWithDefault(
                 controller,
                 "AO/StateRegister/" + report.Index,
-                plan.StateRegisterProgram.DefaultState);
+                plan.StateRegisterProgram.DefaultState, options.UseVrChatParameterSemantics);
             var initializedParameter = !plan.StateRegisterProgram.RequiresInitialization
                 ? null
                 : EnsureFloatParameterWithDefault(
                     controller,
                     "AO/StateRegisterInitialized/" + report.Index,
-                    0f);
+                    0f, options.UseVrChatParameterSemantics);
             var updateTree = AnimatorOptimizerAapBuilder.BuildStateRegisterUpdate(controller, stateRegisterParameter,
                 plan.StateRegisterProgram, initializedParameter, GeneratedAssetPrefix + "StateRegister_" + report.Index);
             var outputTree = BuildAapStateOutputTree(controller, stateRegisterParameter, plan.StateRegisterStates,
@@ -895,12 +882,12 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var control in controls)
             {
                 if (!options.HasKnownPlayableLayer || AppliesToTargetPlayable(control, options))
-                    protectedIndices.Add(control.layer);
+                    protectedIndices.Add(control.LayerIndex);
             }
             return protectedIndices;
         }
 
-        private static IEnumerable<VRC_AnimatorLayerControl> EnumerateLayerControlsFromLayers(
+        private static IEnumerable<IAnimatorOptimizerLayerControl> EnumerateLayerControlsFromLayers(
             IReadOnlyList<AnimatorControllerLayer> layers)
         {
             var visited = new HashSet<int>();
@@ -910,7 +897,7 @@ namespace UnityBox.AnimatorOptimizer
                     yield return control;
                 if (layer == null || layer.syncedLayerIndex < 0 || layer.syncedLayerIndex >= layers.Count) continue;
                 foreach (var state in AnimatorOptimizerAnalyzer.EnumerateLayerSourceStates(layers, layer.syncedLayerIndex))
-                    foreach (var control in (layer.GetOverrideBehaviours(state) ?? Array.Empty<StateMachineBehaviour>()).OfType<VRC_AnimatorLayerControl>())
+                    foreach (var control in (layer.GetOverrideBehaviours(state) ?? Array.Empty<StateMachineBehaviour>()).Select(AnimatorOptimizerPlatform.GetLayerControl).Where(control => control != null))
                         yield return control;
             }
         }
@@ -935,9 +922,9 @@ namespace UnityBox.AnimatorOptimizer
             }
 
             // Capture override behaviours using OLD synced indices before remapping.
-            var controls = EnumerateLayerControlsFromLayers(oldLayers).Distinct().ToList();
+            var controls = EnumerateLayerControlsFromLayers(oldLayers).GroupBy(control => control.Behaviour).Select(group => group.First()).ToList();
             var syncedUpdates = new List<(AnimatorControllerLayer Layer, int Index)>();
-            var controlUpdates = new List<(VRC_AnimatorLayerControl Control, int Index)>();
+            var controlUpdates = new List<(IAnimatorOptimizerLayerControl Control, int Index)>();
             foreach (var layer in newLayers)
             {
                 if (layer != null && layer.syncedLayerIndex >= 0)
@@ -951,7 +938,7 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var control in controls)
             {
                 if (!options.HasKnownPlayableLayer || !AppliesToTargetPlayable(control, options)) continue;
-                if (oldToNew.TryGetValue(control.layer, out var newIndex))
+                if (oldToNew.TryGetValue(control.LayerIndex, out var newIndex))
                     controlUpdates.Add((control, newIndex));
                 else throw new InvalidOperationException("LayerControl 的目标层丢失，拒绝猜测索引映射。");
             }
@@ -959,10 +946,10 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var update in syncedUpdates) update.Layer.syncedLayerIndex = update.Index;
             foreach (var update in controlUpdates)
             {
-                if (update.Control.layer == update.Index) continue;
-                Undo.RecordObject(update.Control, "Animator Optimizer Layer References");
-                update.Control.layer = update.Index;
-                EditorUtility.SetDirty(update.Control);
+                if (update.Control.LayerIndex == update.Index) continue;
+                Undo.RecordObject(update.Control.Behaviour, "Animator Optimizer Layer References");
+                update.Control.LayerIndex = update.Index;
+                EditorUtility.SetDirty(update.Control.Behaviour);
             }
         }
 
@@ -1492,10 +1479,10 @@ namespace UnityBox.AnimatorOptimizer
         private static string EnsureFloatParameterWithDefault(
             AnimatorController controller,
             string prefix,
-            float defaultValue)
+            float defaultValue, bool useVrChatParameterSemantics)
         {
             prefix = string.IsNullOrWhiteSpace(prefix) ? "AO/StateRegister" : prefix.Trim();
-            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectReservedParameterNames(controller));
+            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectReservedParameterNames(controller), useVrChatParameterSemantics);
             controller.AddParameter(new AnimatorControllerParameter
             {
                 name = name,
@@ -1540,9 +1527,7 @@ namespace UnityBox.AnimatorOptimizer
             try
             {
                 AssetDatabase.ImportAsset(outputPath, ImportAssetOptions.ForceSynchronousImport);
-                var copy = AssetDatabase.LoadAssetAtPath<AnimatorController>(outputPath);
-                if (copy == null)
-                    throw new InvalidOperationException("复制后无法重新载入 AnimatorController: " + outputPath);
+                var copy = LoadCopiedController(source, outputPath);
                 var selection = selectedLayerIndices?.ToList() ?? new List<int>();
                 if (selection.Count == 0 && GetSynchronizedLayerGroups(copy, options).Count > 0)
                 {
@@ -1559,6 +1544,21 @@ namespace UnityBox.AnimatorOptimizer
                     AssetDatabase.DeleteAsset(outputPath);
                 throw;
             }
+        }
+
+        internal static AnimatorController LoadCopiedController(AnimatorController source, string copyPath)
+        {
+            // CopyAsset duplicates the whole serialized file, which may contain several
+            // controllers (including equal names). File-local identity survives the copy;
+            // LoadAssetAtPath<T> only chooses the first matching type in that container.
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(source, out string _, out long sourceId))
+                throw new InvalidOperationException("Unable to identify the source AnimatorController sub-asset.");
+            var matches = AssetDatabase.LoadAllAssetsAtPath(copyPath).OfType<AnimatorController>()
+                .Where(candidate => AssetDatabase.TryGetGUIDAndLocalFileIdentifier(candidate,
+                    out string _, out long candidateId) && candidateId == sourceId).ToArray();
+            if (matches.Length != 1)
+                throw new InvalidOperationException("Unable to uniquely locate the copied AnimatorController by local file ID: " + copyPath);
+            return matches[0];
         }
 
         // Controller copies still reference external trees, states and behaviours.
@@ -3084,7 +3084,7 @@ namespace UnityBox.AnimatorOptimizer
                 var parameter = parameters[index];
                 if (!required.Contains(parameter.name))
                     continue;
-                if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(parameter.name))
+                if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(parameter.name, options.UseVrChatParameterSemantics))
                     continue;
 
                 if (parameter.type == AnimatorControllerParameterType.Bool && options.UpgradeBoolParametersToFloat)
@@ -3342,7 +3342,7 @@ namespace UnityBox.AnimatorOptimizer
         private static string EnsureWeightParameter(
             AnimatorController controller,
             string prefix,
-            bool normalizeAlwaysOne)
+            bool normalizeAlwaysOne, bool useVrChatParameterSemantics)
         {
             if (normalizeAlwaysOne)
             {
@@ -3351,7 +3351,7 @@ namespace UnityBox.AnimatorOptimizer
                     return existingAlwaysOne;
             }
             prefix = string.IsNullOrWhiteSpace(prefix) ? "AO/LayerWeight" : prefix.Trim();
-            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectReservedParameterNames(controller));
+            var name = AnimatorOptimizerSemanticUtility.AllocateParameterName(prefix, CollectReservedParameterNames(controller), useVrChatParameterSemantics);
 
             controller.AddParameter(new AnimatorControllerParameter
             {

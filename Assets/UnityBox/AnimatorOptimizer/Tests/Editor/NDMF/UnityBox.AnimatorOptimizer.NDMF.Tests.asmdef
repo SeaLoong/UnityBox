@@ -8,7 +8,8 @@
     "nadena.dev.ndmf",
     "UnityEngine.TestRunner",
     "VRC.SDK3A",
-    "VRC.SDKBase"
+    "VRC.SDKBase",
+    "UnityBox.AnimatorOptimizer.VRC"
   ],
   "includePlatforms": [
     "Editor"
@@ -25,7 +26,9 @@
   "autoReferenced": false,
   "defineConstraints": [
     "UNITY_INCLUDE_TESTS",
-    "NDMF_AVAILABLE"
+    "NDMF_AVAILABLE",
+    "UNITYBOX_VRC_AVATARS",
+    "UNITYBOX_VRC_BASE"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"
@@ -35,6 +38,16 @@
       "name": "nadena.dev.ndmf",
       "expression": "1.9.0",
       "define": "NDMF_AVAILABLE"
+    },
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_BASE"
     }
   ],
   "noEngineReferences": false

@@ -5,8 +5,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace UnityBox.AnimatorOptimizer
 {
@@ -21,6 +19,7 @@ namespace UnityBox.AnimatorOptimizer
         public int AnimatorComponentIndex;
         public bool OptimizeAllConvertibleLayers;
         public List<int> LayerIndices = new List<int>();
+        public bool UseVrChatParameterSemantics;
         public bool UpgradeBoolParametersToFloat;
         public bool UpgradeIntParametersToFloat;
         public bool AllowFloatConditionApproximation;
@@ -64,7 +63,7 @@ namespace UnityBox.AnimatorOptimizer
             if (component == null || requireEnabled && !component.enabled)
                 return null;
 
-            avatarRoot ??= component.GetComponentInParent<VRCAvatarDescriptor>()?.gameObject ?? component.gameObject;
+            avatarRoot ??= AnimatorOptimizerPlatform.FindAvatarRoot(component);
             var animator = component.animator;
             if (component.targetMode != AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer && animator == null)
                 animator = FindDefaultAnimator(avatarRoot);
@@ -84,6 +83,7 @@ namespace UnityBox.AnimatorOptimizer
                 LayerIndices = component.layerIndices != null
                     ? new List<int>(component.layerIndices)
                     : new List<int>(),
+                UseVrChatParameterSemantics = component.targetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer || component.useVrChatParameterSemantics,
                 UpgradeBoolParametersToFloat = component.upgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = component.upgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = component.allowFloatConditionApproximation,
@@ -129,6 +129,7 @@ namespace UnityBox.AnimatorOptimizer
                     : WeightParameterPrefix,
                 RequireAtLeastTwoLayers = true,
                 StrictCurveConflicts = StrictCurveConflicts,
+                UseVrChatParameterSemantics = UseVrChatParameterSemantics,
                 UpgradeBoolParametersToFloat = UpgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = UpgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = AllowFloatConditionApproximation,
@@ -252,7 +253,9 @@ namespace UnityBox.AnimatorOptimizer
         private static readonly HashSet<int> NdmfCaptured = new HashSet<int>();
         private static readonly HashSet<int> NdmfProcessed = new HashSet<int>();
 
-        public static void Capture(GameObject avatarRoot, string stage)
+        public static void Capture(GameObject avatarRoot, string stage) => Capture(avatarRoot, stage, false);
+
+        public static void Capture(GameObject avatarRoot, string stage, bool useVrChatParameterSemantics)
         {
             if (avatarRoot == null)
                 return;
@@ -264,6 +267,7 @@ namespace UnityBox.AnimatorOptimizer
                     Release(avatarRoot);
                 return;
             }
+            config.UseVrChatParameterSemantics |= useVrChatParameterSemantics;
             Configs[avatarRoot.GetInstanceID()] = config;
             if (config.VerboseLogging)
                 Debug.Log($"[AnimatorOptimizer] Captured config at {stage} from '{config.SourceObjectName}'.");
@@ -316,114 +320,21 @@ namespace UnityBox.AnimatorOptimizer
         }
     }
 
-    public sealed class AnimatorOptimizerConfigCaptureCallback : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MinValue + 20;
-
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            AnimatorOptimizerBuildState.Release(avatarGameObject);
-            AnimatorOptimizerBuildState.Capture(avatarGameObject, "early VRCSDK preprocess");
-            return true;
-        }
-    }
-
-    public sealed class AnimatorOptimizerPreprocessCallback : IVRCSDKPreprocessAvatarCallback
-    {
-        // VRCFury's EditorOnly cleanup is around -1024 in the current project. We use -1023
-        // and a configuration snapshot so the component may already have been removed.
-        public int callbackOrder => -1023;
-
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            var capturedConfig = AnimatorOptimizerBuildState.Get(avatarGameObject);
-            if (capturedConfig != null && capturedConfig.ExecuteLateOptimization)
-            {
-                Debug.Log("[AnimatorOptimizer] Late optimization requested; early VRCSDK callback deferred.");
-                return true;
-            }
-            // This state belongs to the core Editor assembly. Checking it needs
-            // no NDMF reference or matching version define in a second assembly.
-            if (AnimatorOptimizerBuildState.WasNdmfProcessed(avatarGameObject))
-            {
-                Debug.Log("[AnimatorOptimizer] NDMF processed this Avatar; VRCSDK fallback skipped.");
-                return true;
-            }
-            try
-            {
-                var config = AnimatorOptimizerBuildState.Get(avatarGameObject) ??
-                             AnimatorOptimizerConfigData.FromAvatar(avatarGameObject);
-                if (config == null)
-                    return true;
-                return AnimatorOptimizerProcessor.ProcessAvatar(avatarGameObject, config);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[AnimatorOptimizer] Build processing failed: {exception.Message}\n{exception.StackTrace}");
-                return false;
-            }
-        }
-    }
-
-    public sealed class AnimatorOptimizerLatePreprocessCallback : IVRCSDKPreprocessAvatarCallback
-    {
-        // ASS uses int.MaxValue - 1 in this project. Run after that callback when NDMF
-        // is not present; with NDMF, the PlatformFinish plugin owns the late pass.
-        public int callbackOrder => int.MaxValue;
-
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            var config = AnimatorOptimizerBuildState.Get(avatarGameObject);
-            if (config == null || !config.ExecuteLateOptimization)
-                return true;
-            if (AnimatorOptimizerBuildState.WasNdmfProcessed(avatarGameObject))
-                return true;
-            try
-            {
-                return AnimatorOptimizerProcessor.ProcessAvatar(avatarGameObject, config);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[AnimatorOptimizer] Late build processing failed: {exception.Message}\n{exception.StackTrace}");
-                return false;
-            }
-        }
-    }
-
-    public sealed class AnimatorOptimizerPostprocessCallback : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => -1023;
-
-        public void OnPostprocessAvatar()
-        {
-            AnimatorOptimizerProcessor.RestoreAndCleanup();
-            AnimatorOptimizerBuildState.ReleaseAll();
-        }
-    }
-
     public static class AnimatorOptimizerProcessor
     {
         private const string GeneratedRoot = "Assets/UnityBox/AnimatorOptimizer/Generated";
-        private static readonly List<BuildAssignmentSnapshot> Snapshots = new List<BuildAssignmentSnapshot>();
+        private static readonly List<Action> Snapshots = new List<Action>();
         private static readonly HashSet<string> GeneratedControllerPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        private sealed class BuildAssignmentSnapshot
-        {
-            public VRCAvatarDescriptor Descriptor;
-            public bool CustomizeAnimationLayers;
-            public VRCAvatarDescriptor.CustomAnimLayer[] BaseLayers;
-            public VRCAvatarDescriptor.CustomAnimLayer[] SpecialLayers;
-            public List<(Animator Animator, RuntimeAnimatorController Controller)> Animators =
-                new List<(Animator, RuntimeAnimatorController)>();
-        }
 
         public static bool ProcessAvatar(GameObject avatarRoot, AnimatorOptimizerConfigData config)
         {
             if (avatarRoot == null || config == null)
                 return true;
 
-            var source = ResolveSourceController(avatarRoot, config, out var descriptor, out var targetAnimator);
-            if (config.TargetMode != AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer && targetAnimator == null)
+            var target = ResolveControllerTarget(avatarRoot, config);
+            var source = config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController
+                ? config.Controller as AnimatorController : target?.Controller;
+            if (config.TargetMode != AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer && target == null)
             {
                 Debug.LogError("[AnimatorOptimizer] No unambiguous target Animator exists inside this Avatar. Assign the intended Animator explicitly.");
                 return false;
@@ -481,11 +392,9 @@ namespace UnityBox.AnimatorOptimizer
                 aapCount = 0;
             }
 
-            var descriptorSnapshot = descriptor != null || targetAnimator != null
-                ? SnapshotDescriptor(descriptor, targetAnimator)
-                : null;
-            if (descriptorSnapshot != null)
-                Snapshots.Add(descriptorSnapshot);
+            var assignmentSnapshot = target?.CaptureRestore();
+            if (assignmentSnapshot != null)
+                Snapshots.Add(assignmentSnapshot);
 
             var copyPath = string.Empty;
             try
@@ -500,12 +409,12 @@ namespace UnityBox.AnimatorOptimizer
                 // layer identities even with several AAP layers or duplicate names.
                 if (selected.Count >= 2 || aapCount > 0)
                     AnimatorOptimizerConverter.ConvertInPlace(generated, selected, options);
-                var bindingRoot = targetAnimator != null ? targetAnimator.transform : avatarRoot.transform;
+                var bindingRoot = target.BindingRoot ?? avatarRoot.transform;
                 if (selected.Count < 2 && aapCount == 0)
                     options.RequireAtLeastTwoLayers = false;
                 var cleanupMessages = AnimatorOptimizerConverter.CleanupControllerInPlace(
                     generated, bindingRoot, options);
-                AssignController(descriptor, targetAnimator, config, generated);
+                target.Assign(generated);
                 EditorUtility.SetDirty(avatarRoot);
                 if (config.VerboseLogging)
                     Debug.Log($"[AnimatorOptimizer] Optimized '{source.name}' into '{copyPath}'. " +
@@ -515,8 +424,8 @@ namespace UnityBox.AnimatorOptimizer
             catch (Exception exception)
             {
                 Debug.LogError($"[AnimatorOptimizer] Failed to optimize '{source.name}': {exception.Message}\n{exception.StackTrace}");
-                RestoreSnapshot(descriptorSnapshot);
-                Snapshots.Remove(descriptorSnapshot);
+                RestoreSnapshot(assignmentSnapshot);
+                Snapshots.Remove(assignmentSnapshot);
                 if (!string.IsNullOrWhiteSpace(copyPath) &&
                     AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(copyPath) != null)
                 {
@@ -536,9 +445,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (!AssetDatabase.CopyAsset(sourcePath, path))
                     throw new InvalidOperationException("Unable to copy AnimatorController: " + sourcePath);
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
-                var loaded = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
-                if (loaded == null) throw new InvalidOperationException("Unable to load copied AnimatorController: " + path);
-                return loaded;
+                return AnimatorOptimizerConverter.LoadCopiedController(source, path);
             }
 
             // NDMF and other preprocessors can provide an unsaved controller. Reuse
@@ -591,134 +498,34 @@ namespace UnityBox.AnimatorOptimizer
             AssetDatabase.SaveAssets();
         }
 
-        private static AnimatorController ResolveSourceController(
-            GameObject avatarRoot,
-            AnimatorOptimizerConfigData config,
-            out VRCAvatarDescriptor descriptor,
-            out Animator targetAnimator)
+        private static IAnimatorOptimizerControllerTarget ResolveControllerTarget(
+            GameObject avatarRoot, AnimatorOptimizerConfigData config)
         {
-            descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            targetAnimator = config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer
-                ? null : config.ResolveAnimator(avatarRoot);
-            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
-                return config.Controller as AnimatorController;
-            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent)
-                return targetAnimator != null ? targetAnimator.runtimeAnimatorController as AnimatorController : null;
-            return GetPlayableController(descriptor, config.PlayableLayer);
+            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
+                return AnimatorOptimizerPlatform.Adapter?.ResolvePlayableTarget(avatarRoot, config.PlayableLayer);
+            var animator = config.ResolveAnimator(avatarRoot);
+            return animator == null ? null : new AnimatorTarget(animator);
         }
 
-        private static void AssignController(
-            VRCAvatarDescriptor descriptor,
-            Animator targetAnimator,
-            AnimatorOptimizerConfigData config,
-            AnimatorController controller)
+        private sealed class AnimatorTarget : IAnimatorOptimizerControllerTarget
         {
-            if (config.TargetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent ||
-                config.TargetMode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
+            private readonly Animator animator;
+            public AnimatorTarget(Animator animator) { this.animator = animator; }
+            public AnimatorController Controller => animator != null ? animator.runtimeAnimatorController as AnimatorController : null;
+            public Transform BindingRoot => animator != null ? animator.transform : null;
+            public void Assign(AnimatorController controller)
             {
-                if (targetAnimator == null)
-                    throw new InvalidOperationException("Target Animator was removed before assignment.");
-                targetAnimator.runtimeAnimatorController = controller;
-                return;
+                if (animator == null) throw new InvalidOperationException("Target Animator was removed before assignment.");
+                animator.runtimeAnimatorController = controller;
             }
-
-            var layers = GetPlayableLayers(descriptor, config.PlayableLayer, out var isBase);
-            if (layers == null)
-                throw new InvalidOperationException("Target Playable Layer array is missing.");
-            var layerIndex = Array.FindIndex(layers, layer => layer.type == ToVrcLayerType(config.PlayableLayer));
-            if (layerIndex < 0)
-                throw new InvalidOperationException("Target Playable Layer is missing.");
-            layers[layerIndex].animatorController = controller;
-            layers[layerIndex].isDefault = false;
-            if (isBase)
-                descriptor.baseAnimationLayers = layers;
-            else
-                descriptor.specialAnimationLayers = layers;
-        }
-
-        private static BuildAssignmentSnapshot SnapshotDescriptor(
-            VRCAvatarDescriptor descriptor,
-            Animator targetAnimator)
-        {
-            var snapshot = new BuildAssignmentSnapshot
+            public Action CaptureRestore()
             {
-                Descriptor = descriptor,
-                CustomizeAnimationLayers = descriptor != null && descriptor.customizeAnimationLayers,
-                BaseLayers = descriptor == null || descriptor.baseAnimationLayers == null
-                    ? null
-                    : (VRCAvatarDescriptor.CustomAnimLayer[])descriptor.baseAnimationLayers.Clone(),
-                SpecialLayers = descriptor == null || descriptor.specialAnimationLayers == null
-                    ? null
-                    : (VRCAvatarDescriptor.CustomAnimLayer[])descriptor.specialAnimationLayers.Clone(),
-            };
-            if (targetAnimator != null)
-                snapshot.Animators.Add((targetAnimator, targetAnimator.runtimeAnimatorController));
-            return snapshot;
-        }
-
-        private static void RestoreSnapshot(BuildAssignmentSnapshot snapshot)
-        {
-            if (snapshot == null)
-                return;
-            if (snapshot.Descriptor != null)
-            {
-                snapshot.Descriptor.customizeAnimationLayers = snapshot.CustomizeAnimationLayers;
-                snapshot.Descriptor.baseAnimationLayers = snapshot.BaseLayers;
-                snapshot.Descriptor.specialAnimationLayers = snapshot.SpecialLayers;
-                EditorUtility.SetDirty(snapshot.Descriptor);
-            }
-            foreach (var assignment in snapshot.Animators)
-            {
-                if (assignment.Animator != null)
-                    assignment.Animator.runtimeAnimatorController = assignment.Controller;
+                var original = animator.runtimeAnimatorController;
+                return () => { if (animator != null) animator.runtimeAnimatorController = original; };
             }
         }
 
-        private static AnimatorController GetPlayableController(
-            VRCAvatarDescriptor descriptor,
-            AnimatorOptimizerComponent.PlayableLayer playableLayer)
-        {
-            if (descriptor == null || !descriptor.customizeAnimationLayers)
-                return null;
-            var layers = GetPlayableLayers(descriptor, playableLayer, out _);
-            if (layers == null)
-                return null;
-            var layer = layers.FirstOrDefault(candidate => candidate.type == ToVrcLayerType(playableLayer));
-            return layer.isDefault ? null : layer.animatorController as AnimatorController;
-        }
-
-        private static VRCAvatarDescriptor.CustomAnimLayer[] GetPlayableLayers(
-            VRCAvatarDescriptor descriptor,
-            AnimatorOptimizerComponent.PlayableLayer playableLayer,
-            out bool isBase)
-        {
-            isBase = playableLayer <= AnimatorOptimizerComponent.PlayableLayer.FX;
-            return isBase ? descriptor?.baseAnimationLayers : descriptor?.specialAnimationLayers;
-        }
-
-        private static VRCAvatarDescriptor.AnimLayerType ToVrcLayerType(
-            AnimatorOptimizerComponent.PlayableLayer playableLayer)
-        {
-            switch (playableLayer)
-            {
-                case AnimatorOptimizerComponent.PlayableLayer.Base:
-                    return VRCAvatarDescriptor.AnimLayerType.Base;
-                case AnimatorOptimizerComponent.PlayableLayer.Additive:
-                    return VRCAvatarDescriptor.AnimLayerType.Additive;
-                case AnimatorOptimizerComponent.PlayableLayer.Gesture:
-                    return VRCAvatarDescriptor.AnimLayerType.Gesture;
-                case AnimatorOptimizerComponent.PlayableLayer.Action:
-                    return VRCAvatarDescriptor.AnimLayerType.Action;
-                case AnimatorOptimizerComponent.PlayableLayer.FX:
-                    return VRCAvatarDescriptor.AnimLayerType.FX;
-                case AnimatorOptimizerComponent.PlayableLayer.Sitting:
-                    return VRCAvatarDescriptor.AnimLayerType.Sitting;
-                case AnimatorOptimizerComponent.PlayableLayer.TPose:
-                    return VRCAvatarDescriptor.AnimLayerType.TPose;
-                default:
-                    return VRCAvatarDescriptor.AnimLayerType.IKPose;
-            }
-        }
+        private static void RestoreSnapshot(Action snapshot) => snapshot?.Invoke();
 
         private static string GetGeneratedControllerPath(GameObject avatarRoot, AnimatorController source)
         {

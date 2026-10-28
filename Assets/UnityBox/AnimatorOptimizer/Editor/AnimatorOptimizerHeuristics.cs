@@ -64,7 +64,7 @@ namespace UnityBox.AnimatorOptimizer
             {
                 if (string.IsNullOrWhiteSpace(name)) return null;
                 if (declarations.TryGetValue(name, out var value)) return value;
-                return AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(name, out var type)
+                return AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(name, options.UseVrChatParameterSemantics, out var type)
                     ? new AnimatorControllerParameter { name = name, type = type } : null;
             }
             AnimatorControllerParameterType? TypeOf(string name) => Resolve(name)?.type;
@@ -133,7 +133,7 @@ namespace UnityBox.AnimatorOptimizer
                 var approximate = false;
                 var binary = type == AnimatorControllerParameterType.Float &&
                     options.Heuristics.HasFlag(AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles) &&
-                    !AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(group.Key) &&
+                    !AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(group.Key, options.UseVrChatParameterSemantics) &&
                     (parameter.defaultFloat == 0f || parameter.defaultFloat == 1f) &&
                     conditions.All(condition => condition.threshold >= 0f && condition.threshold <= 1f &&
                         Matches(condition, 0f) != Matches(condition, 1f));
@@ -552,7 +552,7 @@ namespace UnityBox.AnimatorOptimizer
                 var result = new List<AnimatorOptimizerFiniteGraph.Edge>();
                 foreach (var transition in source)
                 {
-                    if (!TransitionMayBeReachable(controller, transition.conditions)) continue;
+                    if (!TransitionMayBeReachable(controller, transition.conditions, options)) continue;
                     if (transition.destinationStateMachine != null || entry && transition.isExit ||
                         transition.isExit && transition.destinationState != null ||
                         !transition.isExit && (transition.destinationState == null || !indices.ContainsKey(transition.destinationState))) return null;
@@ -585,7 +585,7 @@ namespace UnityBox.AnimatorOptimizer
                 Parameter = axis.Parameter, ParameterType = axis.Type, Values = axis.Values, IsApproximate = axis.IsApproximate,
             }).ToList();
             if (dimensions.Any(axis => declarations.TryGetValue(axis.Parameter, out var parameter) &&
-                !IsVrcGlobalParameter(axis.Parameter) &&
+                !IsVrcGlobalParameter(axis.Parameter, options.UseVrChatParameterSemantics) &&
                 (parameter.type == AnimatorControllerParameterType.Bool && !options.UpgradeBoolParametersToFloat ||
                  parameter.type == AnimatorControllerParameterType.Int && !options.UpgradeIntParametersToFloat))) return false;
             plan = BuildDecisionPlanFromTable(null, dimensions,

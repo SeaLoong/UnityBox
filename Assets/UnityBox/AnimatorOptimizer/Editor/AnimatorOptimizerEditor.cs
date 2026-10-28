@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
 
 namespace UnityBox.AnimatorOptimizer
 {
@@ -69,13 +68,16 @@ namespace UnityBox.AnimatorOptimizer
             if (component == null)
                 return;
 
+            var hasBuildIntegration = AnimatorOptimizerPlatform.Adapter != null;
             using (new EditorGUILayout.HorizontalScope())
             {
                 AnimatorOptimizerEditorStyles.ClippedText("Animator Optimizer", AnimatorOptimizerEditorStyles.ClippedTitle);
-                AnimatorOptimizerEditorStyles.DrawBadge(component.enabled ? "BUILD TIME" : "DISABLED",
-                    component.enabled ? AnimatorOptimizerEditorStyles.AccentColor : AnimatorOptimizerEditorStyles.UnsupportedColor);
+                AnimatorOptimizerEditorStyles.DrawBadge(hasBuildIntegration ? component.enabled ? "BUILD TIME" : "DISABLED" : "OFFLINE",
+                    !hasBuildIntegration || component.enabled ? AnimatorOptimizerEditorStyles.AccentColor : AnimatorOptimizerEditorStyles.UnsupportedColor);
             }
-            EditorGUILayout.LabelField("构建时优化副本，不修改源 Controller。先选目标和策略，其他设置通常无需调整。",
+            EditorGUILayout.LabelField(hasBuildIntegration
+                    ? "VRChat Avatar 构建时优化副本。先选目标和策略，其他设置通常无需调整。"
+                    : "普通 Unity 构建只移除配置组件，不会自动优化。请从下方离线面板保存优化副本，再将副本分配到目标 Animator 的 Controller 字段。",
                 EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.Space(5f);
 
@@ -109,9 +111,16 @@ namespace UnityBox.AnimatorOptimizer
                 Field(nameof(AnimatorOptimizerComponent.targetMode), "目标类型");
                 var mode = (AnimatorOptimizerComponent.TargetMode)Property(nameof(AnimatorOptimizerComponent.targetMode)).enumValueIndex;
                 if (mode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer)
+                {
                     Field(nameof(AnimatorOptimizerComponent.playableLayer), "Playable Layer");
+                    if (AnimatorOptimizerPlatform.Adapter == null)
+                        EditorGUILayout.HelpBox("Avatar Playable Layer 需要 VRChat Avatars SDK 3.7 或更新版本。普通 Unity 项目可选择 Animator / Explicit Controller，并从详细面板保存优化副本。", MessageType.Info);
+                }
                 else
+                {
                     Field(nameof(AnimatorOptimizerComponent.animator), "Animator", "留空优先根 Animator，否则仅接受唯一子 Animator；多个候选时必须指定。");
+                    Field(nameof(AnimatorOptimizerComponent.useVrChatParameterSemantics), "VRChat 参数语义");
+                }
                 if (mode == AnimatorOptimizerComponent.TargetMode.ExplicitController)
                     Field(nameof(AnimatorOptimizerComponent.controller), "Controller");
 
@@ -164,8 +173,12 @@ namespace UnityBox.AnimatorOptimizer
                     indices.GetArrayElementAtIndex(index).intValue = ordered[index];
             }
             if (ordered.Any(index => index >= layers.Length))
-                EditorGUILayout.HelpBox("存在当前源 Controller 尚未包含的索引；已保留，可能由构建插件生成。", MessageType.Info);
-            EditorGUILayout.LabelField("构建时其它插件可能改变 Layer 索引；自动选择通常更稳妥。", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.HelpBox(AnimatorOptimizerPlatform.Adapter != null
+                    ? "存在当前源 Controller 尚未包含的索引；已保留，可能由构建插件生成。"
+                    : "存在当前 Controller 不包含的索引；请在离线面板中重新确认所选 Layer。", MessageType.Info);
+            EditorGUILayout.LabelField(AnimatorOptimizerPlatform.Adapter != null
+                ? "构建时其它插件可能改变 Layer 索引；自动选择通常更稳妥。"
+                : "保存副本前，请在离线面板中确认所选 Layer。", EditorStyles.wordWrappedMiniLabel);
         }
 
         private void DrawConversion()
@@ -329,7 +342,9 @@ namespace UnityBox.AnimatorOptimizer
                     AnimatorOptimizerEditorStyles.DrawBadge($"{cachedReport.ConvertibleLayerCount} / {cachedReport.Layers.Count} 可转换",
                         cachedReport.ConvertibleLayerCount > 0 ? AnimatorOptimizerEditorStyles.ConvertibleColor : AnimatorOptimizerEditorStyles.UnsupportedColor);
                 }
-                EditorGUILayout.LabelField("这是源 Controller 预览；构建时会重新分析其它插件生成后的最终 Controller。", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(AnimatorOptimizerPlatform.Adapter != null
+                    ? "这是源 Controller 预览；Avatar 构建时会重新分析其它插件生成后的最终 Controller。"
+                    : "这是源 Controller 预览；打开离线面板生成副本后，需要手动将副本分配给目标 Animator。", EditorStyles.wordWrappedMiniLabel);
                 var heuristicCount = cachedReport.ConvertibleLayers.Count(layer => layer.UsesHeuristics);
                 if (heuristicCount > 0)
                     EditorGUILayout.LabelField($"其中 {heuristicCount} 层依赖已启用的启发式；详细面板可查看每层假设。", EditorStyles.wordWrappedMiniLabel);
@@ -341,7 +356,8 @@ namespace UnityBox.AnimatorOptimizer
             }
             using (new EditorGUI.DisabledScope(ResolveController(component) == null))
             {
-                if (GUILayout.Button("打开详细分析与优化面板", GUILayout.Height(28f)))
+                if (GUILayout.Button(AnimatorOptimizerPlatform.Adapter != null
+                    ? "打开详细分析与优化面板" : "打开离线面板 · 保存优化副本", GUILayout.Height(28f)))
                 {
                     var window = AnimatorOptimizerWindow.ShowWindow();
                     window.SetTarget(ResolveController(component), AnimatorOptimizerConfigData.CreateOptions(component));
@@ -357,35 +373,13 @@ namespace UnityBox.AnimatorOptimizer
                 return component.controller as AnimatorController;
             if (component.targetMode == AnimatorOptimizerComponent.TargetMode.AnimatorComponent)
             {
-                var descriptorRoot = component.GetComponentInParent<VRCAvatarDescriptor>();
-                var avatarRoot = descriptorRoot != null ? descriptorRoot.gameObject : component.gameObject;
+                var avatarRoot = AnimatorOptimizerPlatform.FindAvatarRoot(component);
                 var config = AnimatorOptimizerConfigData.FromComponent(component, avatarRoot, requireEnabled: false);
                 var animator = config.ResolveAnimator(avatarRoot);
                 return animator != null ? animator.runtimeAnimatorController as AnimatorController : null;
             }
-            var descriptor = component.GetComponent<VRCAvatarDescriptor>() ?? component.GetComponentInParent<VRCAvatarDescriptor>();
-            if (descriptor == null || !descriptor.customizeAnimationLayers)
-                return null;
-            var layerType = ToVrcLayerType(component.playableLayer);
-            var layers = component.playableLayer <= AnimatorOptimizerComponent.PlayableLayer.FX
-                ? descriptor.baseAnimationLayers : descriptor.specialAnimationLayers;
-            var layer = layers?.FirstOrDefault(candidate => candidate.type == layerType);
-            return layer == null || layer.Value.isDefault ? null : layer.Value.animatorController as AnimatorController;
-        }
-
-        private static VRCAvatarDescriptor.AnimLayerType ToVrcLayerType(AnimatorOptimizerComponent.PlayableLayer layer)
-        {
-            switch (layer)
-            {
-                case AnimatorOptimizerComponent.PlayableLayer.Base: return VRCAvatarDescriptor.AnimLayerType.Base;
-                case AnimatorOptimizerComponent.PlayableLayer.Additive: return VRCAvatarDescriptor.AnimLayerType.Additive;
-                case AnimatorOptimizerComponent.PlayableLayer.Gesture: return VRCAvatarDescriptor.AnimLayerType.Gesture;
-                case AnimatorOptimizerComponent.PlayableLayer.Action: return VRCAvatarDescriptor.AnimLayerType.Action;
-                case AnimatorOptimizerComponent.PlayableLayer.FX: return VRCAvatarDescriptor.AnimLayerType.FX;
-                case AnimatorOptimizerComponent.PlayableLayer.Sitting: return VRCAvatarDescriptor.AnimLayerType.Sitting;
-                case AnimatorOptimizerComponent.PlayableLayer.TPose: return VRCAvatarDescriptor.AnimLayerType.TPose;
-                default: return VRCAvatarDescriptor.AnimLayerType.IKPose;
-            }
+            var root = AnimatorOptimizerPlatform.FindAvatarRoot(component);
+            return AnimatorOptimizerPlatform.Adapter?.ResolvePlayableTarget(root, component.playableLayer)?.Controller;
         }
     }
 }

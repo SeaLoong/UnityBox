@@ -1896,10 +1896,11 @@ namespace UnityBox.AnimatorOptimizer.Tests
             AddBooleanToggleLayer(controller, "VRCFury Local Remote", "IsLocal");
             AddSingleMotionLayer(controller, "VRCFury Local Remote Other", "VRCFury/LocalRemoteOther", 1f);
 
-            var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions());
+            var options = new AnimatorOptimizerOptions { UseVrChatParameterSemantics = true };
+            var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
 
             Assert.That(report.Layers[0].CanConvert, Is.True);
-            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }).GeneratedLayers,
+            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 0, 1 }, options).GeneratedLayers,
                 Has.Count.EqualTo(1));
             Assert.That(controller.parameters.Any(parameter => parameter.name == "IsLocal"), Is.False);
         }
@@ -1975,44 +1976,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void RejectsVrcFuryStyleParameterDriverLayer()
-        {
-            var controller = CreateController();
-            controller.AddParameter(new AnimatorControllerParameter
-            {
-                name = "VF/DriverToggle",
-                type = AnimatorControllerParameterType.Bool,
-            });
-            var stateMachine = new AnimatorStateMachine { name = "VRCFury Driver StateMachine" };
-            var state = stateMachine.AddState("Driver State", new Vector3(300f, 0f));
-            state.motion = CreateClip(controller, "Driver Motion", "VRCFury/Driver", 1f);
-            state.writeDefaultValues = true;
-            stateMachine.defaultState = state;
-            var driverType = FindVrcType(
-                "VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver", "VRCSDK3A");
-            Assert.That(driverType, Is.Not.Null, "VRC Avatar ParameterDriver 类型未加载。");
-            var driver = state.AddStateMachineBehaviour(driverType);
-            var driverBaseType = FindVrcType("VRC.SDKBase.VRC_AvatarParameterDriver", "VRCSDKBase");
-            var parameterType = driverBaseType?.GetNestedType(
-                "Parameter", BindingFlags.Public | BindingFlags.NonPublic);
-            var changeType = driverBaseType?.GetNestedType(
-                "ChangeType", BindingFlags.Public | BindingFlags.NonPublic);
-            Assert.That(parameterType, Is.Not.Null, "VRC Avatar ParameterDriver.Parameter 类型未加载。");
-            Assert.That(changeType, Is.Not.Null, "VRC Avatar ParameterDriver.ChangeType 类型未加载。");
-            var parameter = Activator.CreateInstance(parameterType);
-            SetMemberValue(parameter, "name", "VF/DriverToggle");
-            SetMemberValue(parameter, "type", Enum.Parse(changeType, "Set"));
-            SetMemberValue(parameter, "value", 1f);
-            ((System.Collections.IList)GetMemberValue(driver, "parameters")).Add(parameter);
-            AddLayer(controller, "VRCFury Driver", stateMachine);
-
-            var report = AnimatorOptimizerAnalyzer.Analyze(controller, new AnimatorOptimizerOptions());
-
-            Assert.That(report.Layers[0].CanConvert, Is.False);
-            Assert.That(report.Layers[0].Reasons.Any(reason => reason.Contains("Behaviour")), Is.True);
-        }
-
-        [Test]
         public void RejectsProxyClipInsteadOfTreatingItAsEmptyOrStatic()
         {
             var controller = CreateController();
@@ -2072,34 +2035,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void RemapsVrcAnimatorLayerControlWhenMergedLayersShiftFollowingLayer()
-        {
-            var controller = CreateController();
-            AddSingleMotionLayerWithLayerControl(
-                controller,
-                "Controller Holder",
-                "LayerControl/Holder",
-                0f,
-                targetLayer: 3);
-            AddSingleMotionLayer(controller, "Merge A", "LayerControl/A", 1f);
-            AddSingleMotionLayer(controller, "Merge B", "LayerControl/B", 1f);
-            AddSingleMotionLayer(controller, "Controlled Target", "LayerControl/Target", 1f);
-            AssetDatabase.SaveAssets();
-
-            var control = FindLayerControl(controller.layers[0].stateMachine);
-            var options = new AnimatorOptimizerOptions
-            {
-                HasKnownPlayableLayer = true,
-                TargetPlayableLayer = AnimatorOptimizerComponent.PlayableLayer.FX,
-            };
-            AnimatorOptimizerConverter.ConvertInPlace(controller, new[] { 1, 2 }, options);
-
-            Assert.That(Convert.ToInt32(GetMemberValue(
-                    FindLayerControl(controller.layers[0].stateMachine), "layer")), Is.EqualTo(2));
-            Assert.That(Convert.ToInt32(GetMemberValue(control, "layer")), Is.EqualTo(2));
-        }
-
-        [Test]
         public void RejectsBlendTreeParameterThatIsMissingOrExternallyControlled()
         {
             var missingController = CreateController();
@@ -2145,11 +2080,12 @@ namespace UnityBox.AnimatorOptimizer.Tests
             AddMotionLayer(globalController, "Global Tree", globalTree);
             AddSingleMotionLayer(globalController, "Global Other", "Tree/GlobalOther", 1f);
 
-            var globalReport = AnimatorOptimizerAnalyzer.Analyze(globalController, new AnimatorOptimizerOptions());
+            var globalOptions = new AnimatorOptimizerOptions { UseVrChatParameterSemantics = true };
+            var globalReport = AnimatorOptimizerAnalyzer.Analyze(globalController, globalOptions);
             var globalIssues = AnimatorOptimizerConverter.GetSelectionIssues(
-                globalReport, new[] { 0, 1 }, new AnimatorOptimizerOptions());
+                globalReport, new[] { 0, 1 }, globalOptions);
             Assert.That(globalIssues, Is.Empty);
-            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(globalController, new[] { 0, 1 }).GeneratedLayers,
+            Assert.That(AnimatorOptimizerConverter.ConvertInPlace(globalController, new[] { 0, 1 }, globalOptions).GeneratedLayers,
                 Has.Count.EqualTo(1));
             Assert.That(globalController.parameters.First(parameter => parameter.name == "Viseme").type,
                 Is.EqualTo(AnimatorControllerParameterType.Int));
@@ -2543,7 +2479,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
         }
 
         [Test]
-        public void LateOptimizationConfigurationIsCapturedAndOrderedLast()
+        public void LateOptimizationConfigurationIsCaptured()
         {
             var avatar = new GameObject("Animator Optimizer Late Avatar");
             try
@@ -2555,8 +2491,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
 
                 Assert.That(config.ExecuteLateOptimization, Is.True);
                 Assert.That(config.CreateOptions().ExecuteLateOptimization, Is.True);
-                Assert.That(new AnimatorOptimizerLatePreprocessCallback().callbackOrder,
-                    Is.EqualTo(int.MaxValue));
             }
             finally
             {
@@ -2812,86 +2746,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
             toOn.offset = 0f;
             toOn.AddCondition(AnimatorConditionMode.If, 0f, parameterName);
             AddLayer(controller, layerName, stateMachine);
-        }
-
-        private static void AddSingleMotionLayerWithLayerControl(
-            AnimatorController controller,
-            string layerName,
-            string curvePath,
-            float value,
-            int targetLayer)
-        {
-            var stateMachine = new AnimatorStateMachine { name = layerName + " StateMachine" };
-            var state = stateMachine.AddState(layerName + " State", new Vector3(300f, 0f));
-            state.motion = CreateClip(controller, layerName + " Clip", curvePath, value);
-            state.writeDefaultValues = true;
-            stateMachine.defaultState = state;
-            var controlType = FindVrcType(
-                "VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl", "VRCSDK3A");
-            Assert.That(controlType, Is.Not.Null, "VRC Animator LayerControl 类型未加载。");
-            var control = stateMachine.AddStateMachineBehaviour(controlType);
-            SetMemberValue(control, "playable", Enum.Parse(
-                FindVrcType("VRC.SDKBase.VRC_AnimatorLayerControl", "VRCSDKBase")
-                    .GetNestedType("BlendableLayer", BindingFlags.Public | BindingFlags.NonPublic), "FX"));
-            SetMemberValue(control, "layer", targetLayer);
-            SetMemberValue(control, "goalWeight", 1f);
-            AddLayer(controller, layerName, stateMachine);
-        }
-
-        private static object FindLayerControl(AnimatorStateMachine stateMachine)
-        {
-            return stateMachine.behaviours.First(behaviour =>
-                behaviour != null && behaviour.GetType().Name == "VRCAnimatorLayerControl");
-        }
-
-        private static Type FindVrcType(string fullName, string assemblyName)
-        {
-            var type = Type.GetType(fullName + ", " + assemblyName, false);
-            if (type != null)
-                return type;
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .Select(assembly => assembly.GetType(fullName, false))
-                .FirstOrDefault(candidate => candidate != null);
-        }
-
-        private static object GetMemberValue(object target, string memberName)
-        {
-            var member = FindMember(target?.GetType(), memberName);
-            if (member is FieldInfo field)
-                return field.GetValue(target);
-            if (member is PropertyInfo property)
-                return property.GetValue(target);
-            throw new InvalidOperationException($"找不到成员 {target?.GetType().FullName}.{memberName}");
-        }
-
-        private static void SetMemberValue(object target, string memberName, object value)
-        {
-            var member = FindMember(target?.GetType(), memberName);
-            if (member is FieldInfo field)
-            {
-                field.SetValue(target, value);
-                return;
-            }
-            if (member is PropertyInfo property)
-            {
-                property.SetValue(target, value);
-                return;
-            }
-            throw new InvalidOperationException($"找不到成员 {target?.GetType().FullName}.{memberName}");
-        }
-
-        private static MemberInfo FindMember(Type type, string memberName)
-        {
-            while (type != null)
-            {
-                var member = type.GetMember(memberName,
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    .FirstOrDefault();
-                if (member != null)
-                    return member;
-                type = type.BaseType;
-            }
-            return null;
         }
 
         private static void AddMotionLayer(

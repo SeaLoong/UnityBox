@@ -7,7 +7,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.TestTools;
-using VRC.SDK3.Avatars.Components;
 
 namespace UnityBox.AnimatorOptimizer.Tests
 {
@@ -56,17 +55,6 @@ namespace UnityBox.AnimatorOptimizer.Tests
             AnimatorOptimizerBuildState.Capture(avatar, "test disabled");
             Assert.That(AnimatorOptimizerBuildState.Get(avatar), Is.Null);
             Assert.That(AnimatorOptimizerBuildState.WasNdmfProcessed(avatar), Is.False);
-        }
-
-        [Test]
-        public void NewSdkBuildDropsSnapshotForRemovedComponent()
-        {
-            var avatar = CreateObject("Avatar");
-            var component = avatar.AddComponent<AnimatorOptimizerComponent>();
-            AnimatorOptimizerBuildState.Capture(avatar, "old build");
-            UnityEngine.Object.DestroyImmediate(component);
-            new AnimatorOptimizerConfigCaptureCallback().OnPreprocessAvatar(avatar);
-            Assert.That(AnimatorOptimizerBuildState.Get(avatar), Is.Null);
         }
 
         [Test]
@@ -167,36 +155,79 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(animator.runtimeAnimatorController, Is.SameAs(source));
         }
 
-        [TestCase(false)]
-        [TestCase(true)]
-        public void PlayableAssignmentPreservesDescriptorCustomization(bool customizeAnimationLayers)
+        [Test]
+        public void OfflineCopyPreservesSelectedControllerIdentityInsideSharedAssetFile()
         {
+            var source = CreateSharedFileControllers(out var first);
+            Assert.That(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(source, out string sourceGuid, out long sourceId), Is.True);
+            var copy = AnimatorOptimizerConverter.CreateOptimizedCopy(source, folder + "/Selected.controller",
+                new[] { 0 }, new AnimatorOptimizerOptions
+                {
+                    RequireAtLeastTwoLayers = false,
+                    RemoveEffectivelyEmptyLayers = false,
+                    MergeSynchronizedStateMachines = false,
+                });
+
+            Assert.That(AssetDatabase.TryGetGUIDAndLocalFileIdentifier(copy, out string copyGuid, out long copyId), Is.True);
+            Assert.That(copyGuid, Is.Not.EqualTo(sourceGuid));
+            Assert.That(copyId, Is.EqualTo(sourceId));
+            Assert.That(copy.parameters.Single(parameter => parameter.name == "SourceIdentity").defaultInt, Is.EqualTo(17));
+            Assert.That(source.layers[0].name, Is.EqualTo("Base"));
+            Assert.That(first.parameters.Single(parameter => parameter.name == "SourceIdentity").defaultInt, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void BuildCopyPreservesSelectedSubAssetInsteadOfChoosingFirstController()
+        {
+            var source = CreateSharedFileControllers(out var first);
             var avatar = CreateObject("Avatar");
             CreateObject("Target", avatar);
-            var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
-            var source = CreateController();
-            descriptor.baseAnimationLayers = new[] { new VRCAvatarDescriptor.CustomAnimLayer
-                { type = VRCAvatarDescriptor.AnimLayerType.FX, isDefault = false, animatorController = source } };
-            descriptor.customizeAnimationLayers = customizeAnimationLayers;
+            var animator = avatar.AddComponent<Animator>();
+            animator.runtimeAnimatorController = source;
             var component = avatar.AddComponent<AnimatorOptimizerComponent>();
+            component.targetMode = AnimatorOptimizerComponent.TargetMode.AnimatorComponent;
+            component.animator = animator;
             component.optimizeAllConvertibleLayers = false;
             component.layerIndices.Clear();
+            component.removeEffectivelyEmptyLayers = true;
             component.mergeSynchronizedStateMachines = false;
-            var preview = typeof(AnimatorOptimizerEditor).GetMethod("ResolveController",
-                BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { component });
-            if (customizeAnimationLayers) Assert.That(preview, Is.SameAs(source));
-            else Assert.That(preview, Is.Null);
+
             Assert.That(AnimatorOptimizerProcessor.ProcessAvatar(avatar,
                 AnimatorOptimizerConfigData.FromComponent(component, avatar)), Is.True);
-            Assert.That(descriptor.customizeAnimationLayers, Is.EqualTo(customizeAnimationLayers));
-            if (customizeAnimationLayers)
-                Assert.That(descriptor.baseAnimationLayers[0].animatorController, Is.Not.SameAs(source));
-            else
-                Assert.That(descriptor.baseAnimationLayers[0].animatorController, Is.SameAs(source),
-                    "Disabled custom layers are stale configuration, not an optimization target.");
+
+            var generated = (AnimatorController)animator.runtimeAnimatorController;
+            Assert.That(generated, Is.Not.SameAs(source));
+            Assert.That(generated.parameters.Single(parameter => parameter.name == "SourceIdentity").defaultInt, Is.EqualTo(17));
+            Assert.That(generated.layers[0].stateMachine, Is.Not.SameAs(source.layers[0].stateMachine));
+            Assert.That(first.parameters.Single(parameter => parameter.name == "SourceIdentity").defaultInt, Is.EqualTo(3));
             AnimatorOptimizerProcessor.RestoreAndCleanup();
-            Assert.That(descriptor.customizeAnimationLayers, Is.EqualTo(customizeAnimationLayers));
-            Assert.That(descriptor.baseAnimationLayers[0].animatorController, Is.SameAs(source));
+            Assert.That(animator.runtimeAnimatorController, Is.SameAs(source));
+        }
+
+        private AnimatorController CreateSharedFileControllers(out AnimatorController first)
+        {
+            first = CreateController();
+            var second = CreateController();
+            // Equal names prevent a name-based lookup from accidentally passing.
+            first.name = second.name = "Shared name";
+            first.AddParameter(new AnimatorControllerParameter { name = "SourceIdentity", type = AnimatorControllerParameterType.Int, defaultInt = 3 });
+            second.AddParameter(new AnimatorControllerParameter { name = "SourceIdentity", type = AnimatorControllerParameterType.Int, defaultInt = 17 });
+            var path = folder + "/Container.controller";
+            AssetDatabase.CreateAsset(first, path);
+            AssetDatabase.AddObjectToAsset(second, first);
+            foreach (var controller in new[] { first, second })
+            {
+                var machine = controller.layers[0].stateMachine;
+                AssetDatabase.AddObjectToAsset(machine, first);
+                AssetDatabase.AddObjectToAsset(machine.defaultState, first);
+                AssetDatabase.AddObjectToAsset(machine.defaultState.motion, first);
+                EditorUtility.SetDirty(controller);
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            Assert.That(AssetDatabase.IsSubAsset(second), Is.True);
+            Assert.That(AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimatorController>().Count(), Is.EqualTo(2));
+            return second;
         }
 
         [TestCase("..")]

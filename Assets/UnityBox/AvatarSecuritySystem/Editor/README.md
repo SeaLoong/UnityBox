@@ -4,7 +4,7 @@
 
 [![Unity](https://img.shields.io/badge/Unity-2022.3-black.svg)](https://unity.com/)
 [![VRChat](https://img.shields.io/badge/VRChat_SDK-≥3.7.0-blue.svg)](https://vrchat.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](../../../../LICENSE)
 
 ---
 
@@ -660,7 +660,7 @@ ASS 是否使用 NDMF 由编译期常量决定，而不是运行期反射：`Edi
 
 ## 许可证
 
-MIT License — 详见项目根目录 [LICENSE](../../../LICENSE)。
+MIT License — 详见项目根目录 [LICENSE](../../../../LICENSE)。
 
 ---
 

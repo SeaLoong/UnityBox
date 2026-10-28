@@ -25,6 +25,8 @@ namespace UnityBox.AnimatorOptimizer
         public string WeightParameterPrefix = "AO/LayerWeight";
         public bool RequireAtLeastTwoLayers = true;
         public bool StrictCurveConflicts = true;
+        // Explicit controller semantics, independent of which SDKs are installed.
+        public bool UseVrChatParameterSemantics = false;
         public bool UpgradeBoolParametersToFloat = true;
         public bool UpgradeIntParametersToFloat = true;
         public bool AllowFloatConditionApproximation = false;
@@ -73,6 +75,7 @@ namespace UnityBox.AnimatorOptimizer
                 WeightParameterPrefix = WeightParameterPrefix,
                 RequireAtLeastTwoLayers = RequireAtLeastTwoLayers,
                 StrictCurveConflicts = StrictCurveConflicts,
+                UseVrChatParameterSemantics = UseVrChatParameterSemantics,
                 UpgradeBoolParametersToFloat = UpgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = UpgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = AllowFloatConditionApproximation,
@@ -528,11 +531,11 @@ namespace UnityBox.AnimatorOptimizer
                 return report;
             }
 
-            var analyzableStates = GetPotentiallyReachableStates(controller, layer.stateMachine, states);
+            var analyzableStates = GetPotentiallyReachableStates(controller, layer.stateMachine, states, options);
             report.Options = options;
             report.LayerMotionBindings = controllerBindings;
             report.LayerMotionBindingsAreComplete = bindingsComplete;
-            report.HasExitTime = HasEffectiveExitTime(layer.stateMachine, controller);
+            report.HasExitTime = HasEffectiveExitTime(layer.stateMachine, controller, options);
             if (nestedStateMachines.Length == 0 && analyzableStates.Count < states.Length)
                 report.AddOptimization($"忽略 {states.Length - analyzableStates.Count} 个从 Default / Entry / 有效 Transition 不可达的 State（不支持外部 Animator.Play 按名称跳转）。");
             if (nestedStateMachines.Length == 0)
@@ -540,7 +543,7 @@ namespace UnityBox.AnimatorOptimizer
                 var impossibleTransitions = GetEffectiveAnimatorTransitions(layer.stateMachine.entryTransitions)
                     .Cast<AnimatorTransitionBase>().Concat(GetEffectiveTransitions(layer.stateMachine.anyStateTransitions))
                     .Concat(analyzableStates.SelectMany(child => GetEffectiveTransitions(child.state?.transitions)))
-                    .Count(transition => !TransitionMayBeReachable(controller, transition.conditions));
+                    .Count(transition => !TransitionMayBeReachable(controller, transition.conditions, options));
                 if (impossibleTransitions > 0)
                     report.AddOptimization($"检测到 {impossibleTransitions} 条条件矛盾的有效 Transition；不会把它们作为可达输出或输入维度。");
             }
@@ -656,14 +659,20 @@ namespace UnityBox.AnimatorOptimizer
                 behaviour.GetType().FullName, "nadena.dev.modular_avatar.core.ModularAvatarMMDLayerControl", StringComparison.Ordinal);
         }
 
-        internal static bool IsVrcGlobalParameter(string parameterName)
+        internal static bool IsVrcGlobalParameter(string parameterName, bool useVrChatParameterSemantics)
         {
-            return TryGetVrcGlobalParameterType(parameterName, out _);
+            return TryGetVrcGlobalParameterType(parameterName, useVrChatParameterSemantics, out _);
         }
 
         internal static bool TryGetVrcGlobalParameterType(
-            string parameterName,
+            string parameterName, bool useVrChatParameterSemantics,
             out AnimatorControllerParameterType type)
+        {
+            type = default;
+            return useVrChatParameterSemantics && TryGetKnownVrcParameterType(parameterName, out type);
+        }
+
+        private static bool TryGetKnownVrcParameterType(string parameterName, out AnimatorControllerParameterType type)
         {
             type = AnimatorControllerParameterType.Float;
             switch (parameterName)
@@ -738,7 +747,7 @@ namespace UnityBox.AnimatorOptimizer
                     .FirstOrDefault(candidate => string.Equals(candidate.name, parameterName, StringComparison.Ordinal));
                 if (parameter == null)
                 {
-                    if (IsVrcGlobalParameter(parameterName))
+                    if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
                         continue;
                     report.AddReason($"BlendTree 引用了不存在的 Animator 参数: {parameterName}");
                     continue;
@@ -747,7 +756,7 @@ namespace UnityBox.AnimatorOptimizer
                 switch (parameter.type)
                 {
                     case AnimatorControllerParameterType.Bool:
-                        if (IsVrcGlobalParameter(parameterName))
+                        if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
                             break;
                         if (!options.UpgradeBoolParametersToFloat)
                             report.AddReason($"BlendTree 参数 '{parameterName}' 是 Bool；需要启用 Bool → Float 才能安全放入生成树。");
@@ -755,7 +764,7 @@ namespace UnityBox.AnimatorOptimizer
                             plan.RequiredFloatParameters.Add(parameterName);
                         break;
                     case AnimatorControllerParameterType.Int:
-                        if (IsVrcGlobalParameter(parameterName))
+                        if (IsVrcGlobalParameter(parameterName, options.UseVrChatParameterSemantics))
                             break;
                         if (!options.UpgradeIntParametersToFloat)
                             report.AddReason($"BlendTree 参数 '{parameterName}' 是 Int；需要启用 Int → Float 才能安全放入生成树。");
@@ -838,7 +847,8 @@ namespace UnityBox.AnimatorOptimizer
         private static List<ChildAnimatorState> GetPotentiallyReachableStates(
             AnimatorController controller,
             AnimatorStateMachine stateMachine,
-            IReadOnlyList<ChildAnimatorState> states)
+            IReadOnlyList<ChildAnimatorState> states,
+            AnimatorOptimizerOptions options)
         {
             var allStates = states.Where(child => child.state != null).ToList();
             if (allStates.Count == 0)
@@ -856,7 +866,7 @@ namespace UnityBox.AnimatorOptimizer
             Add(stateMachine.defaultState);
             foreach (var transition in GetEffectiveAnimatorTransitions(stateMachine.entryTransitions))
             {
-                if (transition == null || !TransitionMayBeReachable(controller, transition.conditions))
+                if (transition == null || !TransitionMayBeReachable(controller, transition.conditions, options))
                     continue;
                 Add(transition.destinationState);
             }
@@ -865,14 +875,14 @@ namespace UnityBox.AnimatorOptimizer
             // is visited. Inspect each edge once instead of states × AnyState edges.
             if (pending.Count > 0)
                 foreach (var transition in GetEffectiveTransitions(stateMachine.anyStateTransitions))
-                    if (TransitionMayBeReachable(controller, transition.conditions))
+                    if (TransitionMayBeReachable(controller, transition.conditions, options))
                         Add(transition.destinationState);
             while (pending.Count > 0)
             {
                 var current = pending.Dequeue();
                 foreach (var transition in GetEffectiveTransitions(current.transitions))
                 {
-                    if (TransitionMayBeReachable(controller, transition.conditions))
+                    if (TransitionMayBeReachable(controller, transition.conditions, options))
                         Add(transition.destinationState);
                 }
             }
@@ -906,7 +916,8 @@ namespace UnityBox.AnimatorOptimizer
 
         private static bool TransitionMayBeReachable(
             AnimatorController controller,
-            IReadOnlyList<AnimatorCondition> conditions)
+            IReadOnlyList<AnimatorCondition> conditions,
+            AnimatorOptimizerOptions options)
         {
             if (controller == null) return true;
             var declarations = controller.parameters ?? Array.Empty<AnimatorControllerParameter>();
@@ -916,7 +927,7 @@ namespace UnityBox.AnimatorOptimizer
                 var matches = declarations.Where(candidate => candidate != null &&
                     string.Equals(candidate.name, name, StringComparison.Ordinal)).Take(2).ToArray();
                 if (matches.Length > 1) return null;
-                return matches.Length == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, out var type)
+                return matches.Length == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, options?.UseVrChatParameterSemantics == true, out var type)
                     ? type : (AnimatorControllerParameterType?)null;
             });
         }
@@ -972,11 +983,11 @@ namespace UnityBox.AnimatorOptimizer
 
             var allStatesAreStatic = childStates.All(child =>
                 child.state != null && !GetEffectiveAapTransitions(child.state.transitions)
-                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions)));
+                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions, options)));
             var effectiveAnyTransitions = GetEffectiveAapTransitions(stateMachine.anyStateTransitions)
-                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions, options)).ToList();
             var effectiveEntryTransitions = GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
-                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions, options)).ToList();
             var noAnyTransitions = effectiveAnyTransitions.Count == 0;
             if (TryAlternative(report, (AnimatorOptimizerLayerReport trial, out AnimatorOptimizerMotionPlan candidate) =>
                 TryBuildEffectEquivalentPlan(controller, stateMachine, childStates, trial, out candidate), out plan))
@@ -1236,7 +1247,7 @@ namespace UnityBox.AnimatorOptimizer
             var childStates = GetPotentiallyReachableStates(
                 controller,
                 childMachine,
-                childMachine.states ?? Array.Empty<ChildAnimatorState>());
+                childMachine.states ?? Array.Empty<ChildAnimatorState>(), options);
             return TryBuildPlan(controller, childMachine, childStates, options, report, out plan);
         }
 
@@ -1259,7 +1270,7 @@ namespace UnityBox.AnimatorOptimizer
             var stateSet = new HashSet<AnimatorState>(states);
             var entryTransitions = new List<NormalizedStateTransition>();
             var effectiveEntryTransitions = GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
-                .Where(transition => TransitionMayBeReachable(controller, transition.conditions)).ToList();
+                .Where(transition => TransitionMayBeReachable(controller, transition.conditions, options)).ToList();
             for (var order = 0; order < effectiveEntryTransitions.Count; order++)
             {
                 var transition = effectiveEntryTransitions[order];
@@ -1303,7 +1314,7 @@ namespace UnityBox.AnimatorOptimizer
                 var exits = new List<NormalizedStateTransition>();
                 foreach (var transition in GetEffectiveAapTransitions(state.transitions))
                 {
-                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                    if (!TransitionMayBeReachable(controller, transition.conditions, options))
                         continue;
                     if (transition == null || !transition.isExit || transition.destinationState != null ||
                         transition.destinationStateMachine != null ||
@@ -1523,7 +1534,7 @@ namespace UnityBox.AnimatorOptimizer
             foreach (var stateMachine in stateMachines)
             {
                 if (!HasOnlyReadOnlyTransitionConditions(controller, stateMachine,
-                    stateMachine.states.Where(child => child.state != null).Select(child => child.state)))
+                    stateMachine.states.Where(child => child.state != null).Select(child => child.state), report.Options))
                 {
                     report.AddReason("Transition 可能消费 Trigger 或参数类型未知；输出相同也不能删除条件副作用。");
                     return false;
@@ -1846,7 +1857,7 @@ namespace UnityBox.AnimatorOptimizer
             if (stateMachine == null || childStates.Count < 2 ||
                 childStates.Any(child => child.state == null) ||
                 GetEffectiveAnimatorTransitions(stateMachine.entryTransitions)
-                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions)))
+                    .Any(transition => TransitionMayBeReachable(controller, transition.conditions, options)))
                 return false;
 
             var states = childStates.Select(child => child.state).ToList();
@@ -1857,7 +1868,7 @@ namespace UnityBox.AnimatorOptimizer
             for (var order = 0; order < effectiveAnyTransitions.Count; order++)
             {
                 var transition = effectiveAnyTransitions[order];
-                if (!TransitionMayBeReachable(controller, transition.conditions))
+                if (!TransitionMayBeReachable(controller, transition.conditions, options))
                     continue;
                 if (transition == null || transition.destinationState == null ||
                     !stateSet.Contains(transition.destinationState) ||
@@ -1891,7 +1902,7 @@ namespace UnityBox.AnimatorOptimizer
                 for (var order = 0; order < sourceTransitions.Count; order++)
                 {
                     var transition = sourceTransitions[order];
-                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                    if (!TransitionMayBeReachable(controller, transition.conditions, options))
                         continue;
                     if (transition == null || transition.destinationState == null ||
                         !stateSet.Contains(transition.destinationState) ||
@@ -2006,7 +2017,7 @@ namespace UnityBox.AnimatorOptimizer
                 {
                     // The shared contradiction proof validates all condition types
                     // before pruning, including conditions on other parameters.
-                    if (!TransitionMayBeReachable(controller, transition.conditions))
+                    if (!TransitionMayBeReachable(controller, transition.conditions, options))
                         continue;
                     if (transition.destinationStateMachine != null ||
                         transition.isExit && (!allowExit || transition.destinationState != null) ||
@@ -2119,7 +2130,7 @@ namespace UnityBox.AnimatorOptimizer
             var defaultState = stateMachine.defaultState ?? states[0];
             if (!states.Contains(defaultState))
                 return false;
-            if (!HasOnlyReadOnlyTransitionConditions(controller, stateMachine, states))
+            if (!HasOnlyReadOnlyTransitionConditions(controller, stateMachine, states, report.Options))
             {
                 report.AddReason("Transition 可能消费 Trigger 或参数类型未知；输出相同也不能删除条件副作用。");
                 return false;
@@ -2178,7 +2189,7 @@ namespace UnityBox.AnimatorOptimizer
         }
 
         private static bool HasOnlyReadOnlyTransitionConditions(AnimatorController controller,
-            AnimatorStateMachine machine, IEnumerable<AnimatorState> states)
+            AnimatorStateMachine machine, IEnumerable<AnimatorState> states, AnimatorOptimizerOptions options)
         {
             var declarations = controller.parameters;
             var edges = GetEffectiveAnimatorTransitions(machine.entryTransitions).Cast<AnimatorTransitionBase>()
@@ -2186,12 +2197,12 @@ namespace UnityBox.AnimatorOptimizer
                 .Concat(states.SelectMany(state => GetEffectiveTransitions(state.transitions)))
                 .Concat(machine.stateMachines.Where(child => child.stateMachine != null).SelectMany(child =>
                     GetEffectiveAnimatorTransitions(machine.GetStateMachineTransitions(child.stateMachine))));
-            return edges.Where(edge => TransitionMayBeReachable(controller, edge.conditions)).All(edge =>
+            return edges.Where(edge => TransitionMayBeReachable(controller, edge.conditions, options)).All(edge =>
                 AnimatorOptimizerSemanticUtility.AreReadOnlyConditions(edge.conditions, name =>
                 {
                     var matches = declarations.Where(parameter => parameter != null && parameter.name == name).Take(2).ToList();
                     if (matches.Count > 1) return null;
-                    return matches.Count == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, out var type)
+                    return matches.Count == 1 ? matches[0].type : TryGetVrcGlobalParameterType(name, options?.UseVrChatParameterSemantics == true, out var type)
                         ? type : (AnimatorControllerParameterType?)null;
                 }));
         }
@@ -2610,7 +2621,7 @@ namespace UnityBox.AnimatorOptimizer
             for (var order = 0; order < transitions.Count; order++)
             {
                 var transition = transitions[order];
-                if (transition != null && !TransitionMayBeReachable(controller, transition.conditions))
+                if (transition != null && !TransitionMayBeReachable(controller, transition.conditions, options))
                     continue;
                 if (transition == null || transition.destinationState == null ||
                     !stateSet.Contains(transition.destinationState) || transition.destinationStateMachine != null ||
@@ -2685,7 +2696,7 @@ namespace UnityBox.AnimatorOptimizer
                 .FirstOrDefault(candidate => string.Equals(candidate.name, source.parameter, StringComparison.Ordinal));
             if (parameter == null)
             {
-                if (!TryGetVrcGlobalParameterType(source.parameter, out var globalType))
+                if (!TryGetVrcGlobalParameterType(source.parameter, options.UseVrChatParameterSemantics, out var globalType))
                 {
                     report.AddReason("Transition 引用了不存在的 Animator 参数: " + source.parameter);
                     return false;
@@ -2713,7 +2724,7 @@ namespace UnityBox.AnimatorOptimizer
                     report.AddReason("Bool Equals/NotEqual 阈值必须为 0 或 1。");
                     return false;
                 }
-                if (!options.UpgradeBoolParametersToFloat)
+                if (!options.UpgradeBoolParametersToFloat && !IsVrcGlobalParameter(source.parameter, options.UseVrChatParameterSemantics))
                 {
                     report.AddReason($"条件使用 Bool 参数 '{source.parameter}'；需要勾选 Bool → Float 才能作为 BlendTree 参数。");
                     report.AddSuggestion("在“参数与合并（高级）”启用 Bool → Float；参数写入者与 Behaviour 引用仍会独立检查。");
@@ -2743,7 +2754,7 @@ namespace UnityBox.AnimatorOptimizer
                     report.AddReason("Int 条件阈值必须是整数。");
                     return false;
                 }
-                if (!options.UpgradeIntParametersToFloat)
+                if (!options.UpgradeIntParametersToFloat && !IsVrcGlobalParameter(source.parameter, options.UseVrChatParameterSemantics))
                 {
                     report.AddReason($"条件使用 Int 参数 '{source.parameter}'；需要勾选 Int → Float 才能作为 BlendTree 参数。");
                     report.AddSuggestion("在“参数与合并（高级）”启用 Int → Float；保留整数输入约定，避免连续值插值改变选择结果。");
@@ -2998,7 +3009,7 @@ namespace UnityBox.AnimatorOptimizer
             if (state.motion != null && ContainsPotentialProxyMotion(state.motion, new HashSet<int>()))
                 report.AddReason("State Motion 包含 VRChat/VRCFury proxy Clip，必须保留平台特殊 Motion。");
             if (!allowTransitions && GetEffectiveTransitions(state.transitions)
-                .Any(transition => TransitionMayBeReachable(controller, transition.conditions)))
+                .Any(transition => TransitionMayBeReachable(controller, transition.conditions, report.Options)))
                 report.AddReason("State 包含 Transition，不能按 Constant Motion 处理。");
             if (state.behaviours != null && state.behaviours.Length > 0)
             {
@@ -3174,16 +3185,16 @@ namespace UnityBox.AnimatorOptimizer
             return false;
         }
 
-        private static bool HasEffectiveExitTime(AnimatorStateMachine machine, AnimatorController controller)
+        private static bool HasEffectiveExitTime(AnimatorStateMachine machine, AnimatorController controller, AnimatorOptimizerOptions options)
         {
             if (machine == null)
                 return false;
             bool IsTimed(AnimatorStateTransition transition) => transition.hasExitTime &&
-                TransitionMayBeReachable(controller, transition.conditions);
+                TransitionMayBeReachable(controller, transition.conditions, options);
             return GetEffectiveTransitions(machine.anyStateTransitions).Any(IsTimed) ||
                 machine.states.Any(child => child.state != null &&
                     GetEffectiveTransitions(child.state.transitions).Any(IsTimed)) ||
-                machine.stateMachines.Any(child => HasEffectiveExitTime(child.stateMachine, controller));
+                machine.stateMachines.Any(child => HasEffectiveExitTime(child.stateMachine, controller, options));
         }
 
         private static bool TryCollectStateMachineMotionBindings(
@@ -3507,11 +3518,14 @@ namespace UnityBox.AnimatorOptimizer
                     names.Add(property.stringValue);
         }
 
-        public static string AllocateParameterName(string prefix, ISet<string> reserved)
+        public static string AllocateParameterName(string prefix, ISet<string> reserved) =>
+            AllocateParameterName(prefix, reserved, false);
+
+        public static string AllocateParameterName(string prefix, ISet<string> reserved, bool useVrChatParameterSemantics)
         {
             var name = prefix;
             var suffix = 1;
-            while (reserved.Contains(name) || AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(name))
+            while (reserved.Contains(name) || AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(name, useVrChatParameterSemantics))
                 name = prefix + "_" + suffix++;
             reserved.Add(name);
             return name;

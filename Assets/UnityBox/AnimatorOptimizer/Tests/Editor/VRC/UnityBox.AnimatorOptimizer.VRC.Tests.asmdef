@@ -1,0 +1,45 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.VRC.Tests",
+  "rootNamespace": "UnityBox.AnimatorOptimizer.Tests",
+  "references": [
+    "UnityBox.AnimatorOptimizer",
+    "UnityBox.AnimatorOptimizer.Runtime",
+    "UnityEngine.TestRunner",
+    "UnityBox.AnimatorOptimizer.VRC",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "VRCSDK3A.dll",
+    "VRCSDKBase.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_AVATARS",
+    "UNITYBOX_VRC_BASE"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_BASE"
+    }
+  ],
+  "noEngineReferences": false
+}

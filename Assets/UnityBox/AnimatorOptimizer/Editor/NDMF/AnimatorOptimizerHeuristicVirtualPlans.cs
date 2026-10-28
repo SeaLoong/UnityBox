@@ -109,7 +109,7 @@ namespace UnityBox.AnimatorOptimizer
                 Parameter = axis.Parameter, Type = axis.Type, Values = axis.Values, IsApproximate = axis.IsApproximate,
             }).ToList();
             if (dimensions.Any(axis => controller.Parameters.TryGetValue(axis.Parameter, out var parameter) &&
-                !IsVrcGlobalParameter(axis.Parameter) &&
+                !IsVrcGlobalParameter(axis.Parameter, options.UseVrChatParameterSemantics) &&
                 (parameter.type == AnimatorControllerParameterType.Bool && !options.UpgradeBoolParametersToFloat ||
                  parameter.type == AnimatorControllerParameterType.Int && !options.UpgradeIntParametersToFloat))) return false;
             plan = BuildVirtualDecisionPlanFromTable(dimensions,

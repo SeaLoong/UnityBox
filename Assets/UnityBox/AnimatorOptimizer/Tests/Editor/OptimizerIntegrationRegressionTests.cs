@@ -45,7 +45,7 @@ namespace UnityBox.AnimatorOptimizer.Tests
             AddFloat("Toggle");
             var count = AssetDatabase.LoadAllAssetsAtPath(controllerPath).Length;
             Assert.Throws<ArgumentException>(() => AnimatorOptimizerAapBuilder.BuildBooleanStateRegisterUpdate(
-                controller, "VelocityX", new[] { "Toggle" }, 2, 0, TwoStateTable()));
+                controller, "VelocityX", new[] { "Toggle" }, 2, 0, TwoStateTable(), useVrChatParameterSemantics: true));
             Assert.That(AssetDatabase.LoadAllAssetsAtPath(controllerPath), Has.Length.EqualTo(count));
         }
 

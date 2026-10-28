@@ -24,7 +24,7 @@
 | Build Pipeline Logger           | 构建管线日志记录器                                          |
 | Animator Optimizer             | 参数驱动 Animator 图分析与受限 BlendTree 转换 |
 | Prefab Diff Patcher             | Prefab 差异比较与选择合并 |
-| Avatar Security System          | VRChat Avatar 手势密码防盗保护系统                          |
+| Avatar Security System          | 本分支保留的 VRChat 手势密码工具；修复与当前边界见 refactor |
 | Viseme Blendshape Override      | 用内建 `Viseme` / `Voice` 参数驱动可限幅、可独立响应区间的口型替代层 |
 
 ## Animator Optimizer
@@ -32,7 +32,25 @@
 - [功能、限制与使用方法](Assets/UnityBox/AnimatorOptimizer/README.md)
 - [审查与修复记录](Docs/AnimatorOptimizerAudit.md)
 - [测试指南](Docs/Testing.md)
-- 依赖 Unity 2022.3、VRChat Avatars ≥3.7、NDMF ≥1.9。AAP 状态寄存器仍是默认关闭的实验功能。
+- [可复用 Unity 环境与测试项目](Docs/UnityEnvironment.md)
+- 核心仅要求 Unity 2022.3。普通 Unity 中可通过离线窗口分析、清理、转换并保存 Controller，
+  不安装 SDK/NDMF 也可使用；包清单不再强制安装平台依赖。
+- Avatar 构建适配可选：VRChat Base/Avatars ≥3.7；NDMF 虚拟图适配另需 NDMF ≥1.9。
+  缺依赖时相应装配和集成测试不参与。普通 Unity Build 只剥离配置组件，不自动优化 Controller。
+- AAP 状态寄存器仍是默认关闭的实验功能。Bool/Int 升为 Float 后，普通 Unity 参数写入方
+  需要相应使用 SetFloat 或关闭升级；不能套用 VRChat 参数映射假设。
+- 空白离线窗口默认使用普通 Unity 参数语义，关闭 Bool/Int 升级。Avatar Playable Layer
+  自动采用 VRChat 内建参数规则，其余 Animator/Explicit Controller 需显式启用，进入
+  SDK/NDMF 构建也不自动切换。组件配置保留已有升级选项；新增平台语义开关默认关闭。
+
+已安装 Unity 2022.3.22f1。2026-10-28 核心类型检查 5 个、仅 SDK 配置 19 个程序集通过；在固定
+SDK 3.8.2、MA 1.18、NDMF 1.11 的共享环境中，优化器启用的真实依赖闭包 **23 个程序集**
+C# 编译通过，未修改第三方源码；范围仅限优化器及其依赖。Editor 仍因缺许可证启动失败，
+没有 Unity import、IL 后处理、build、EditMode 或上传通过结论。源码声明 168 个回归用例，尚未实际执行。
+
+NDMF 服务现按实际有效配置激活；原关闭或默认的 Playable 来源不会因服务改写 Descriptor
+而被重新启用。无配置时不激活服务，子 Animator 入口恢复原关闭的 Playable 状态，避免
+复活残留控制器。该保守策略也跳过其它插件稍后为原无效来源新建的层，详见审查记录。
 
 ## 目录结构
 
@@ -45,6 +63,7 @@ Assets/UnityBox/
 ├── BlendshapeControllerGenerator/    # top.sealoong.unitybox.blendshape-controller-generator
 ├── AvatarColliderMonitor/            # top.sealoong.unitybox.avatar-collider-monitor
 ├── BuildPipelineLogger/              # top.sealoong.unitybox.build-pipeline-logger
+├── PrefabDiffPatcher/                # top.sealoong.unitybox.prefab-diff-patcher
 ├── AvatarSecuritySystem/             # top.sealoong.unitybox.avatar-security-system
 └── VisemeBlendshapeOverride/         # top.sealoong.unitybox.viseme-blendshape-override
 ```
@@ -55,6 +74,11 @@ Assets/UnityBox/
 - Blendshape Controller Generator docs: `Docs/BlendshapeControllerGenerator.md`
 - Avatar Security System docs: `Assets/UnityBox/AvatarSecuritySystem/Editor/README.md`
 - Viseme Blendshape Override docs: `Docs/VisemeBlendshapeOverride.md`
+
+上列七包仍是本分支保留的代码与资料；其最新修复、独立 Unity 拆分、
+`Docs/RefactorChanges.md` 与 `Docs/DependencyArchitecture.md` 在 `refactor`。
+切换前保存工作，不要把 refactor 的依赖表或测试结论直接用于本分支七包。
+线上 VPM listing 的已发布版本也可能不同于当前功能分支源码。
 
 ## VPM 仓库发布说明
 

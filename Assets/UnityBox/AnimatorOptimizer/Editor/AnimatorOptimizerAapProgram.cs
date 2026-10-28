@@ -51,7 +51,7 @@ namespace UnityBox.AnimatorOptimizer
         }
 
         private AnimatorOptimizerAapProgram(IReadOnlyList<Axis> axes, IReadOnlyList<Axis> assumptionAxes, IReadOnlyList<Node> nodes,
-            int[] roots, int entryRoot, int defaultState, bool hasEntry, bool hasExit)
+            int[] roots, int entryRoot, int defaultState, bool hasEntry, bool hasExit, bool useVrChatParameterSemantics)
         {
             Axes = Array.AsReadOnly(axes.ToArray());
             AssumptionAxes = Array.AsReadOnly(assumptionAxes.ToArray());
@@ -61,10 +61,11 @@ namespace UnityBox.AnimatorOptimizer
             DefaultState = defaultState;
             RequiresInitialization = hasEntry;
             UsesRootExit = hasExit;
+            UseVrChatParameterSemantics = useVrChatParameterSemantics;
             DecisionNodeCount = nodes.Count(node => !node.IsLeaf);
             ValueClipCount = nodes.Count(node => node.IsLeaf);
             EstimatedChildReferenceCount = nodes.Sum(node => node.Children.Count) + roots.Length * 2 + (hasEntry ? 2 : 0);
-            var key = new System.Text.StringBuilder("aap-dag:");
+            var key = new System.Text.StringBuilder("aap-dag:" + (useVrChatParameterSemantics ? "vrchat:" : "unity:"));
             key.Append(defaultState).Append(':').Append(hasEntry).Append(':').Append(entryRoot).Append('|');
             foreach (var axis in axes)
             {
@@ -96,6 +97,7 @@ namespace UnityBox.AnimatorOptimizer
         public int StateCount => StateRoots.Count;
         public bool RequiresInitialization { get; }
         public bool UsesRootExit { get; }
+        public bool UseVrChatParameterSemantics { get; }
         public int DecisionNodeCount { get; }
         public int ValueClipCount { get; }
         public int EstimatedMotionAssetCount => Nodes.Count + 2 + (RequiresInitialization ? 1 : 0);
@@ -135,7 +137,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (!resolved.TryGetValue(condition.parameter, out var parameter))
                 {
                     declarations.TryGetValue(condition.parameter, out parameter);
-                    if (parameter == null && AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(condition.parameter, out var type))
+                    if (parameter == null && AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(condition.parameter, options.UseVrChatParameterSemantics, out var type))
                         parameter = new AnimatorControllerParameter { name = condition.parameter, type = type };
                     resolved.Add(condition.parameter, parameter);
                 }
@@ -172,7 +174,7 @@ namespace UnityBox.AnimatorOptimizer
                 var approximate = false;
                 var binary = parameter.type == AnimatorControllerParameterType.Float &&
                     options.Heuristics.HasFlag(AnimatorOptimizerComponent.HeuristicFlags.BinaryFloatToggles) &&
-                    !AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(group.Key) &&
+                    !AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(group.Key, options.UseVrChatParameterSemantics) &&
                     (parameter.defaultFloat == 0f || parameter.defaultFloat == 1f) &&
                     group.All(condition => condition.threshold >= 0f && condition.threshold <= 1f &&
                         AnimatorOptimizerFiniteGraph.Matches(condition, 0f) != AnimatorOptimizerFiniteGraph.Matches(condition, 1f));
@@ -212,10 +214,10 @@ namespace UnityBox.AnimatorOptimizer
             }
             try
             {
-                program = new Compiler(axes, options.MaxAapDecisionNodes).Compile(graph);
+                program = new Compiler(axes, options.MaxAapDecisionNodes, options.UseVrChatParameterSemantics).Compile(graph);
                 foreach (var axis in program.Axes)
                 {
-                    if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(axis.Parameter)) continue;
+                    if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(axis.Parameter, options.UseVrChatParameterSemantics)) continue;
                     if (axis.SourceType == AnimatorControllerParameterType.Bool && !options.UpgradeBoolParametersToFloat ||
                         axis.SourceType == AnimatorControllerParameterType.Int && !options.UpgradeIntParametersToFloat)
                     {
@@ -243,6 +245,7 @@ namespace UnityBox.AnimatorOptimizer
             private readonly IReadOnlyList<Axis> axes;
             private readonly Dictionary<string, int> axisByName;
             private readonly int maxNodes;
+            private readonly bool useVrChatParameterSemantics;
             private readonly List<Node> nodes = new List<Node>();
             private readonly Dictionary<int, int> leaves = new Dictionary<int, int>();
             private readonly Dictionary<string, int> uniqueNodes = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -250,10 +253,11 @@ namespace UnityBox.AnimatorOptimizer
             private int workRemaining = 2097152;
             private int workingChildren;
 
-            public Compiler(IReadOnlyList<Axis> axes, int maxNodes)
+            public Compiler(IReadOnlyList<Axis> axes, int maxNodes, bool useVrChatParameterSemantics)
             {
                 this.axes = axes;
                 this.maxNodes = maxNodes;
+                this.useVrChatParameterSemantics = useVrChatParameterSemantics;
                 axisByName = axes.Select((axis, index) => (axis, index))
                     .ToDictionary(item => item.axis.Parameter, item => item.index, StringComparer.Ordinal);
             }
@@ -373,7 +377,7 @@ namespace UnityBox.AnimatorOptimizer
                 return new AnimatorOptimizerAapProgram(usedAxes.Select(id => axes[id]).ToArray(),
                     axes.Where(axis => axis.AssumesBinaryFloat || axis.IsApproximate).ToArray(), compact,
                     roots.Select(root => remap[root]).ToArray(), graph.Entries.Count > 0 ? remap[entry] : -1,
-                    graph.DefaultState, graph.Entries.Count > 0, graph.States.SelectMany(state => state).Any(edge => edge.Destination < 0));
+                    graph.DefaultState, graph.Entries.Count > 0, graph.States.SelectMany(state => state).Any(edge => edge.Destination < 0), useVrChatParameterSemantics);
             }
         }
     }

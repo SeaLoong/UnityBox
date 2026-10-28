@@ -1,0 +1,42 @@
+{
+  "name": "UnityBox.AnimatorOptimizer.VRC",
+  "rootNamespace": "UnityBox.AnimatorOptimizer",
+  "references": [
+    "UnityBox.AnimatorOptimizer",
+    "UnityBox.AnimatorOptimizer.Runtime",
+    "VRC.SDK3A",
+    "VRC.SDK3A.Editor",
+    "VRC.SDKBase",
+    "VRC.SDKBase.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "VRCSDK3A.dll",
+    "VRCSDK3A-Editor.dll",
+    "VRCSDKBase.dll",
+    "VRCSDKBase-Editor.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "UNITYBOX_VRC_AVATARS",
+    "UNITYBOX_VRC_BASE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_BASE"
+    }
+  ],
+  "noEngineReferences": false
+}

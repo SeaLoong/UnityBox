@@ -1,18 +1,20 @@
 {
   "name": "UnityBox.AnimatorOptimizer.Runtime",
   "rootNamespace": "UnityBox.AnimatorOptimizer",
-  "references": [
-    "VRC.SDKBase"
-  ],
+  "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
-  "overrideReferences": true,
-  "precompiledReferences": [
-    "VRCSDKBase.dll"
-  ],
+  "overrideReferences": false,
+  "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [],
-  "versionDefines": [],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_BASE"
+    }
+  ],
   "noEngineReferences": false
 }

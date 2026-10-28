@@ -1,0 +1,323 @@
+{
+  "editor_version": "2022.3.22f1",
+  "format_version": 1,
+  "modules": {
+    "com.unity.modules.animation": {
+      "manifest_sha256": "9f33e30941fa60097b78db1ac3abc011292a7a0fc5efe3e31823601cc1e6f0ee",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.audio": {
+      "manifest_sha256": "6520984db2e046ec2287a2b5c4e7c5dd7b075dd13fb65cf38a939dd2ea520085",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.director": {
+      "manifest_sha256": "70c492d8ef56a6a08e4d43f90f4d22321e9d10313799a3b67e5d048743cabe17",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.imgui": {
+      "manifest_sha256": "32216a5863c0fae3196b93985d782a60adeda202379ba0f6a586881825db6ce4",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.jsonserialize": {
+      "manifest_sha256": "07c68427be064b897956df3c4abddf0d29e15eb239dffa51902beb3658f151cf",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.particlesystem": {
+      "manifest_sha256": "fed991166604707db5760d6dd76324fcbd098e3eb70bc63bdc28511013ad5bd2",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.physics": {
+      "manifest_sha256": "501c26d4db004e70142c76224927de44d9e7ea91de4b2ba47cd969a78ea9c692",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.subsystems": {
+      "manifest_sha256": "a27b9455949457cdc358480d9695b94c5d7c9ddbca87fa9db7a36d7b436d2e31",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.ui": {
+      "manifest_sha256": "c0cf2720fba0590142e92fe3d7ef2dbc0a57728b02075092039dfeb885bd7d50",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.unityanalytics": {
+      "manifest_sha256": "a25d940fec5d6aa4e7d1769400812adbb92b3904e5aa88edee25fe3a3db20c86",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.vr": {
+      "manifest_sha256": "07b04a6e60f49ac745dfc8799517e0ac77ca760f241e4c24790f74f8a324cdfd",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    },
+    "com.unity.modules.xr": {
+      "manifest_sha256": "5be2de3cef27516f573d080c58ac8f5956821f7acdae4519c8622c376094ed73",
+      "source": "editor-builtin",
+      "version": "1.0.0"
+    }
+  },
+  "packages": {
+    "com.unity.burst": {
+      "archive": "com.unity.burst-1.8.7.tgz",
+      "dependencies": {
+        "com.unity.mathematics": "1.2.1"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "299e6076960ced1ebd65de077bcaf65419c1ef4a93cdd94e1920ec347c87c0b9",
+      "shasum": "976d5c065e11cb48a9981e1d2c9402a6f20e6fdc",
+      "source": "unity-registry",
+      "tree_sha256": "f8e03fe3a707b40eff44ee1b49354b09281eb9d878c7fd68384fbc029bc1f84b",
+      "url": "https://download.packages.unity.com/com.unity.burst/-/com.unity.burst-1.8.7.tgz",
+      "version": "1.8.7",
+      "vpmDependencies": {}
+    },
+    "com.unity.collections": {
+      "archive": "com.unity.collections-2.1.4.tgz",
+      "dependencies": {
+        "com.unity.burst": "1.8.4",
+        "com.unity.modules.unityanalytics": "1.0.0",
+        "com.unity.nuget.mono-cecil": "1.11.4"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "0750bc9b8feceb525fe275b70f8d8d720751b9354e1bf715b1c86060d53677fb",
+      "shasum": "5fa8c71c5c0e053ebce9b56bac1e01db50fb0774",
+      "source": "unity-registry",
+      "tree_sha256": "fa5d06ec708dc177aa8b7bc9cee8ee4da57dc81fc8e8d74a2e44902d9c7ca59a",
+      "url": "https://download.packages.unity.com/com.unity.collections/-/com.unity.collections-2.1.4.tgz",
+      "version": "2.1.4",
+      "vpmDependencies": {}
+    },
+    "com.unity.ext.nunit": {
+      "archive": "com.unity.ext.nunit-1.0.6.tgz",
+      "dependencies": {},
+      "editor_version": "2022.3.22f1",
+      "sha256": "2314edd22ed0e5ebd39d8d51f981d93059d5361954327984c8367bc43650e2bb",
+      "source": "editor-bundled",
+      "tree_sha256": "50ff26fcfe1a3e81babed3d52113395488ef0dcacdff6a77439160eb5d5d7a8a",
+      "version": "1.0.6",
+      "vpmDependencies": {}
+    },
+    "com.unity.mathematics": {
+      "archive": "com.unity.mathematics-1.2.6.tgz",
+      "dependencies": {},
+      "editor_version": "2022.3.22f1",
+      "sha256": "7e6138f7db1f905ae10e4ce47b568a5c40e6870f887cb418a912a0ce629474ad",
+      "source": "editor-bundled",
+      "tree_sha256": "0f8a5595f461fca8686d4eb9bd644d2726794c73e33349c22d453e6a58ae0d3a",
+      "version": "1.2.6",
+      "vpmDependencies": {}
+    },
+    "com.unity.nuget.mono-cecil": {
+      "archive": "com.unity.nuget.mono-cecil-1.11.4.tgz",
+      "dependencies": {},
+      "editor_version": "2022.3.22f1",
+      "sha256": "3e87e7790dafffc96acb98cee76b630b74b3b270a72455c2aa9d0ebcbf98d1db",
+      "source": "editor-bundled",
+      "tree_sha256": "e891da84d9f7433d5a62aeb8efaea1da20deedc4178e5768abf98440e01237fe",
+      "version": "1.11.4",
+      "vpmDependencies": {}
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "archive": "com.unity.nuget.newtonsoft-json-3.2.1.tgz",
+      "dependencies": {},
+      "editor_version": "2022.3.22f1",
+      "sha256": "677bfa857a567d237b905b350f8058c8a3838e22077131e712f0d004700f74c2",
+      "source": "editor-bundled",
+      "tree_sha256": "80b066e8ce578b39ce26a2b4c22016ac481e7fd62e883e94e1504a5ec3705cc2",
+      "version": "3.2.1",
+      "vpmDependencies": {}
+    },
+    "com.unity.postprocessing": {
+      "archive": "com.unity.postprocessing-3.2.2.tgz",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "4f3b33aaa5e966bb3e5ff44558ef9e8de9f5301ff85f4017cb4abacdb8a5dc39",
+      "shasum": "4e904fb61e6bddcb875195c39fe043869b1c280e",
+      "source": "unity-registry",
+      "tree_sha256": "1619926e8bcba03d902ecf7e718806cab07c01a4ab5469cbbce79207c145a273",
+      "url": "https://download.packages.unity.com/com.unity.postprocessing/-/com.unity.postprocessing-3.2.2.tgz",
+      "version": "3.2.2",
+      "vpmDependencies": {}
+    },
+    "com.unity.test-framework": {
+      "archive": "com.unity.test-framework-1.1.33.tgz",
+      "dependencies": {
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      },
+      "editor_version": "2022.3.22f1",
+      "sha256": "037d9797581d8db3935177c2605de1cc45acca95b69d3e26af84e268656468cb",
+      "source": "editor-bundled",
+      "tree_sha256": "c34f260c639dd2bda5f04ae7453c6e004061c3ec6dd1ca246ed9016bc6627506",
+      "version": "1.1.33",
+      "vpmDependencies": {}
+    },
+    "com.unity.timeline": {
+      "archive": "com.unity.timeline-1.7.6.tgz",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.audio": "1.0.0",
+        "com.unity.modules.director": "1.0.0",
+        "com.unity.modules.particlesystem": "1.0.0"
+      },
+      "editor_version": "2022.3.22f1",
+      "sha256": "2bca1f538615b002f640fb0bc43f43af38a38309a3dfaca3722a4f491e46cf65",
+      "source": "editor-bundled",
+      "tree_sha256": "4df8abb897679a3de6591770f86c011921b1babb3b35c2ce1d2952adedb54910",
+      "version": "1.7.6",
+      "vpmDependencies": {}
+    },
+    "com.unity.ugui": {
+      "dependencies": {
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.ui": "1.0.0"
+      },
+      "editor_version": "2022.3.22f1",
+      "source": "editor-builtin",
+      "tree_sha256": "a0948cfdbba056349656a51e6f6d1ab39995dcefb0aa865c2ea1365674283b70",
+      "version": "1.0.0",
+      "vpmDependencies": {}
+    },
+    "com.unity.xr.legacyinputhelpers": {
+      "archive": "com.unity.xr.legacyinputhelpers-2.1.7.tgz",
+      "dependencies": {
+        "com.unity.modules.vr": "1.0.0",
+        "com.unity.modules.xr": "1.0.0"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "e780b3b0a21ff3355642e550dc98ca303eadb136caa48e79dad9b4f43fbd1ea0",
+      "shasum": "73c6fbd3348c132f48ce6acfae873ecf3303662f",
+      "source": "unity-registry",
+      "tree_sha256": "3d71f109fc3be7e8ef436b3635e2a3eb701310e5c9626bbf42b50c3ed8e21ff8",
+      "url": "https://download.packages.unity.com/com.unity.xr.legacyinputhelpers/-/com.unity.xr.legacyinputhelpers-2.1.7.tgz",
+      "version": "2.1.7",
+      "vpmDependencies": {}
+    },
+    "com.unity.xr.management": {
+      "archive": "com.unity.xr.management-4.3.3.tgz",
+      "dependencies": {
+        "com.unity.modules.subsystems": "1.0.0",
+        "com.unity.modules.vr": "1.0.0",
+        "com.unity.modules.xr": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "66ce099233f815d5c940e4d911aa5f8972425a017b08dec173d329959c11d9f0",
+      "shasum": "5f0978b5f7640d75520c138245209c7ecec06f56",
+      "source": "unity-registry",
+      "tree_sha256": "59deeba040a8c0afd2584560daec3f5662ca6c0596af57457d6b2072dfb7c72b",
+      "url": "https://download.packages.unity.com/com.unity.xr.management/-/com.unity.xr.management-4.3.3.tgz",
+      "version": "4.3.3",
+      "vpmDependencies": {}
+    },
+    "com.unity.xr.oculus": {
+      "archive": "com.unity.xr.oculus-4.0.0.tgz",
+      "dependencies": {
+        "com.unity.xr.management": "4.2.0"
+      },
+      "registry": "https://packages.unity.com",
+      "sha256": "d3521853e3ee624b07ea415019b85c66913f935376b0142d305dca2fc7326505",
+      "shasum": "99e6bd94dcb31520139f86802611d65ff84e93ea",
+      "source": "unity-registry",
+      "tree_sha256": "8adf066a1be7d3d48bba9ef8c2b2819e5ff9d77594eff1dfad9ad1844049483c",
+      "url": "https://download.packages.unity.com/com.unity.xr.oculus/-/com.unity.xr.oculus-4.0.0.tgz",
+      "version": "4.0.0",
+      "vpmDependencies": {}
+    },
+    "com.vrchat.avatars": {
+      "archive": "com.vrchat.avatars-3.8.2.zip",
+      "dependencies": {},
+      "sha256": "e770adf8ac2a4f440b7fd85a9d6b7d6895448f75ae288d6e9193848ca8400bdf",
+      "source": "github-release",
+      "tree_sha256": "18c148533a3424e40410d68e3429bcb519acb45debf07c477c347e5d772ce5a6",
+      "url": "https://github.com/vrchat/packages/releases/download/3.8.2/com.vrchat.avatars-3.8.2.zip",
+      "version": "3.8.2",
+      "vpmDependencies": {
+        "com.vrchat.base": "3.8.2"
+      }
+    },
+    "com.vrchat.base": {
+      "archive": "com.vrchat.base-3.8.2.zip",
+      "dependencies": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0"
+      },
+      "sha256": "768736b737bd7e2624399301e19175f8b4d1e5022d4a3d64bb2f16c9d74a2c94",
+      "source": "github-release",
+      "tree_sha256": "130341617b801d4a55a23815b31660c6b9cc050aa6077d87ba22a1cd6a635e33",
+      "url": "https://github.com/vrchat/packages/releases/download/3.8.2/com.vrchat.base-3.8.2.zip",
+      "version": "3.8.2",
+      "vpmDependencies": {}
+    },
+    "nadena.dev.modular-avatar": {
+      "archive": "nadena.dev.modular-avatar-1.18.0.zip",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "2.0.0"
+      },
+      "sha256": "3041535095c1f3365721aae786407db5f0a3c0491d1e2942918c9aa59edddefa",
+      "source": "github-release",
+      "tree_sha256": "7f933088d15569e5410898f3c59b9f1035787be24d3400cc69125b2de2175196",
+      "url": "https://github.com/bdunderscore/modular-avatar/releases/download/1.18.0/nadena.dev.modular-avatar-1.18.0.zip",
+      "version": "1.18.0",
+      "vpmDependencies": {
+        "nadena.dev.ndmf": ">=1.11.0 <2.0.0-a"
+      }
+    },
+    "nadena.dev.ndmf": {
+      "archive": "nadena.dev.ndmf-1.11.0.zip",
+      "dependencies": {
+        "com.unity.modules.animation": "1.0.0"
+      },
+      "sha256": "bc27b4da59d6aea70127d3c23ac8dd1024f435c92879834ec3261514ed46feee",
+      "source": "github-release",
+      "tree_sha256": "978fc8a8a0d246804e833cc250025d3c9b0ceba5049da6b8add871fc1a4e3b8b",
+      "url": "https://github.com/bdunderscore/ndmf/releases/download/1.11.0/nadena.dev.ndmf-1.11.0.zip",
+      "version": "1.11.0",
+      "vpmDependencies": {}
+    }
+  },
+  "prepared_profiles": [
+    "core",
+    "vrc"
+  ],
+  "profiles": {
+    "core": {
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.test-framework": "1.1.33"
+    },
+    "vrc": {
+      "com.unity.burst": "1.8.7",
+      "com.unity.collections": "2.1.4",
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.mathematics": "1.2.6",
+      "com.unity.nuget.newtonsoft-json": "3.2.1",
+      "com.unity.postprocessing": "3.2.2",
+      "com.unity.test-framework": "1.1.33",
+      "com.unity.timeline": "1.7.6",
+      "com.unity.ugui": "1.0.0",
+      "com.unity.xr.management": "4.3.3",
+      "com.unity.xr.oculus": "4.0.0",
+      "com.vrchat.avatars": "3.8.2",
+      "com.vrchat.base": "3.8.2",
+      "nadena.dev.modular-avatar": "1.18.0",
+      "nadena.dev.ndmf": "1.11.0"
+    }
+  }
+}

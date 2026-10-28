@@ -11,7 +11,7 @@ namespace UnityBox.AnimatorOptimizer
     public sealed class AnimatorOptimizerWindow : EditorWindow
     {
         [SerializeField] private RuntimeAnimatorController controllerObject;
-        [SerializeField] private AnimatorOptimizerOptions options = new AnimatorOptimizerOptions();
+        [SerializeField] private AnimatorOptimizerOptions options = CreateOfflineOptions();
         [SerializeField] private string outputPath;
         [SerializeField] private string search = string.Empty;
         [SerializeField] private int filter;
@@ -65,7 +65,7 @@ namespace UnityBox.AnimatorOptimizer
         public void SetTarget(AnimatorController controller, AnimatorOptimizerOptions configuration)
         {
             controllerObject = controller;
-            options = configuration?.Clone() ?? new AnimatorOptimizerOptions();
+            options = configuration?.Clone() ?? CreateOfflineOptions();
             selected.Clear();
             selectedMachines.Clear();
             selectedLayerNames.Clear();
@@ -95,7 +95,7 @@ namespace UnityBox.AnimatorOptimizer
             tab = Mathf.Clamp(tab, 0, 2);
             filter = Mathf.Clamp(filter, 0, 7);
             search ??= string.Empty;
-            options ??= new AnimatorOptimizerOptions();
+            options ??= CreateOfflineOptions();
             selectedMachines ??= new List<AnimatorStateMachine>();
             selectedLayerNames ??= new List<string>();
             selectedLayerIndices ??= new List<int>();
@@ -480,11 +480,21 @@ namespace UnityBox.AnimatorOptimizer
             }
         }
 
+        private static AnimatorOptimizerOptions CreateOfflineOptions() => new AnimatorOptimizerOptions
+        {
+            UseVrChatParameterSemantics = false,
+            UpgradeBoolParametersToFloat = false,
+            UpgradeIntParametersToFloat = false,
+        };
+
         private void DrawOptions()
         {
             GUIContent ToggleLabel(string label) => AnimatorOptimizerEditorStyles.FieldLabel(label, minimumFieldWidth: 24f);
             GUIContent FieldLabel(string label) => AnimatorOptimizerEditorStyles.FieldLabel(label, minimumFieldWidth: 110f);
             var before = AnimatorOptimizerEditorStyles.BuildOptionsKey(options);
+            options.UseVrChatParameterSemantics = EditorGUILayout.Toggle(
+                AnimatorOptimizerEditorStyles.FieldLabel("VRChat 内建参数语义", "仅 VRChat Controller 启用：允许未声明的 IsLocal / Viseme 等平台参数，并保留其类型。普通 Unity 必须声明所有参数。", 24f),
+                options.UseVrChatParameterSemantics);
             EditorGUILayout.LabelField("先选优化方式，再按需要启用 AAP。改变选项不会自动扩大手动选层。", EditorStyles.wordWrappedMiniLabel);
             options.Heuristics = AnimatorOptimizerEditorStyles.DrawHeuristics(options.Heuristics, "Window", out var details);
             if (details && (options.Heuristics & AnimatorOptimizerComponent.HeuristicFlags.ShortAnimationEndpoints) != 0)

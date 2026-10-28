@@ -2,11 +2,7 @@
   "name": "UnityBox.AnimatorOptimizer",
   "rootNamespace": "UnityBox.AnimatorOptimizer",
   "references": [
-    "UnityBox.AnimatorOptimizer.Runtime",
-    "VRC.SDK3A",
-    "VRC.SDK3A.Editor",
-    "VRC.SDKBase",
-    "VRC.SDKBase.Editor"
+    "UnityBox.AnimatorOptimizer.Runtime"
   ],
   "includePlatforms": [
     "Editor"
@@ -14,12 +10,7 @@
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": true,
-  "precompiledReferences": [
-    "VRCSDK3A.dll",
-    "VRCSDK3A-Editor.dll",
-    "VRCSDKBase.dll",
-    "VRCSDKBase-Editor.dll"
-  ],
+  "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],

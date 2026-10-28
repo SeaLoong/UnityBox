@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VRC.SDKBase;
 
 namespace UnityBox.AnimatorOptimizer
 {
@@ -9,7 +8,10 @@ namespace UnityBox.AnimatorOptimizer
     [AddComponentMenu("UnityBox/Animator Optimizer")]
 #endif
     [DisallowMultipleComponent]
-    public sealed class AnimatorOptimizerComponent : MonoBehaviour, IEditorOnly
+    public sealed class AnimatorOptimizerComponent : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+        , VRC.SDKBase.IEditorOnly
+#endif
     {
         public enum TargetMode
         {
@@ -74,10 +76,13 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("当 optimizeAllConvertibleLayers 关闭时要处理的 Layer 索引。")]
         public List<int> layerIndices = new List<int>();
 
-        [Tooltip("把本地 Animator Bool 参数改为 Float。VRChat Bool Expression 参数会按 0/1 映射到本地 Float。")]
+        [Tooltip("仅对 Animator / Explicit Controller 目标显式启用 VRChat 内建参数语义；子 Animator 默认不会收到 Avatar Playable 参数。仅在调用方确实提供这些参数时开启。Avatar Playable Layer 目标始终使用 VRChat 语义。")]
+        public bool useVrChatParameterSemantics = false;
+
+        [Tooltip("把本地 Animator Bool 参数改为 Float。VRChat Expression 自动映射 0/1；普通 Unity 脚本须改用 SetFloat，否则关闭升级。")]
         public bool upgradeBoolParametersToFloat = true;
 
-        [Tooltip("把本地 Animator Int 参数改为 Float。VRChat Int Expression 参数会以整数值映射到本地 Float。")]
+        [Tooltip("把本地 Animator Int 参数改为 Float。VRChat Expression 自动映射整数值；普通 Unity 脚本须改用 SetFloat，否则关闭升级。")]
         public bool upgradeIntParametersToFloat = true;
 
         [Tooltip("Float 条件默认优先用相邻可表示值构造精确阶跃；此选项仅允许不支持的零/极端阈值回退到近似。存在状态历史的图仍需单独证明。")]
@@ -153,6 +158,7 @@ namespace UnityBox.AnimatorOptimizer
             targetMode = TargetMode.AvatarPlayableLayer;
             playableLayer = PlayableLayer.FX;
             optimizeAllConvertibleLayers = true;
+            useVrChatParameterSemantics = false;
             upgradeBoolParametersToFloat = true;
             upgradeIntParametersToFloat = true;
             allowFloatConditionApproximation = false;

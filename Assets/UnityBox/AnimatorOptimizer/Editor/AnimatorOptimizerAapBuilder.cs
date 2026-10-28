@@ -100,11 +100,22 @@ namespace UnityBox.AnimatorOptimizer
             int stateCount,
             int defaultState,
             IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> nextStateByStateAndMask,
+            string name = null) => BuildBooleanStateRegisterUpdate(controller, stateRegisterParameter,
+                inputParameters, stateCount, defaultState, nextStateByStateAndMask, false, name);
+
+        public static BlendTree BuildBooleanStateRegisterUpdate(
+            AnimatorController controller,
+            string stateRegisterParameter,
+            IReadOnlyList<string> inputParameters,
+            int stateCount,
+            int defaultState,
+            IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> nextStateByStateAndMask,
+            bool useVrChatParameterSemantics,
             string name = null)
         {
             RequireController(controller);
             RequireFloatParameter(controller, stateRegisterParameter);
-            if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(stateRegisterParameter))
+            if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(stateRegisterParameter, useVrChatParameterSemantics))
                 throw new ArgumentException("AAP 状态寄存器不能使用 VRChat 内置参数名。", nameof(stateRegisterParameter));
             if (stateCount < 1 || defaultState < 0 || defaultState >= stateCount)
                 throw new ArgumentOutOfRangeException(nameof(stateCount), "State Register 的状态数量或默认状态无效。");
@@ -199,8 +210,8 @@ namespace UnityBox.AnimatorOptimizer
             RequireController(controller);
             RequireFloatParameter(controller, stateRegisterParameter);
             if (program == null) throw new ArgumentNullException(nameof(program));
-            if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(stateRegisterParameter) ||
-                AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(initializedParameter))
+            if (AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(stateRegisterParameter, program.UseVrChatParameterSemantics) ||
+                AnimatorOptimizerAnalyzer.IsVrcGlobalParameter(initializedParameter, program.UseVrChatParameterSemantics))
                 throw new ArgumentException("AAP 状态/初始化寄存器不能使用 VRChat 内置参数名。");
             if (controller.parameters.First(parameter => parameter.name == stateRegisterParameter).defaultFloat != program.DefaultState)
                 throw new ArgumentException("AAP 寄存器默认值必须与符号计划一致。", nameof(stateRegisterParameter));
@@ -224,7 +235,7 @@ namespace UnityBox.AnimatorOptimizer
                 if (declarations.Any(parameter => parameter.type == AnimatorControllerParameterType.Float &&
                     !AnimatorOptimizerAnalyzer.IsFinite(parameter.defaultFloat)))
                     throw new InvalidOperationException("AAP 输入参数的默认值必须是有限数: " + axis.Parameter);
-                if (AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(axis.Parameter, out var globalType) &&
+                if (AnimatorOptimizerAnalyzer.TryGetVrcGlobalParameterType(axis.Parameter, program.UseVrChatParameterSemantics, out var globalType) &&
                     globalType == axis.SourceType && (declarations.Length == 0 || declarations[0].type == globalType))
                     continue;
                 RequireFloatParameter(controller, axis.Parameter);

@@ -17,7 +17,8 @@ C# plugins and Python package scripts; earlier React/TypeScript conventions do n
 - Preserve Undo and isolate generated controllers from original assets. Check
   references before cleanup; an empty AssetDatabase path can mean an in-memory asset.
 - Keep optional integrations behind assembly/version constraints. Declared minimum
-  dependency versions must support the APIs used.
+  dependency versions must support the APIs used. Generic Unity algorithms must not
+  infer VRChat built-ins or change script parameter types without an explicit choice.
 - Report actionable failures instead of swallowing exceptions. Preserve underlying
   test exit statuses when capturing output.
 - Follow [Docs/Testing.md](Docs/Testing.md); distinguish syntax/package checks from
