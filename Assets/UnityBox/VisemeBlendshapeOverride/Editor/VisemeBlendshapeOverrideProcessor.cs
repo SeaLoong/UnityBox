@@ -105,14 +105,25 @@ namespace UnityBox.VisemeBlendshapeOverride
                 throw new ArgumentException("Save an editable AnimatorController under Assets/ before building.", nameof(controller));
             var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
                 controller, relatedControllers, plan.Config.writeDefaultsMode);
-            VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(controller);
+            var usesVoice = plan.ResolvedBindings.Any(binding =>
+                binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled);
+            RequireParameterType(controller, VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter, AnimatorControllerParameterType.Int);
+            if (usesVoice)
+                RequireParameterType(controller, VisemeBlendshapeOverrideUtils.BuiltInVoiceParameter, AnimatorControllerParameterType.Float);
             VisemeBlendshapeOverrideUtils.EnsureVisemeParameter(controller);
-            if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
-                VisemeBlendshapeOverrideUtils.EnsureVoiceParameter(controller);
+            if (usesVoice) VisemeBlendshapeOverrideUtils.EnsureVoiceParameter(controller);
+            VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(controller);
             GenerateFallbackLayer(controller, plan.RelativePath, plan.ControlledBlendshapes,
                 plan.ResolvedBindings, useWriteDefaultsOn);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
+        }
+
+        private static void RequireParameterType(AnimatorController controller, string name, AnimatorControllerParameterType type)
+        {
+            var existing = controller.parameters.FirstOrDefault(parameter => parameter.name == name);
+            if (existing != null && existing.type != type)
+                throw new ArgumentException($"Parameter '{name}' is {existing.type}; the viseme input requires {type}.");
         }
 
         public static List<ResolvedBinding> ResolveBindings(

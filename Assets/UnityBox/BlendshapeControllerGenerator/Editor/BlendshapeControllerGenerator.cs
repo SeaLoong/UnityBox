@@ -36,6 +36,8 @@ public class BlendshapeControllerGenerator : EditorWindow
   private string controllerName = "";
   private string pendingGenerationFolder;
   private bool installAvatarControls = true;
+  private AnimatorController lastMeshController;
+  public AnimatorController GeneratedController { get; private set; }
 
   private class MeshEntry
   {
@@ -389,7 +391,26 @@ public class BlendshapeControllerGenerator : EditorWindow
         Generate();
       }
     }
+    if (BlendshapeAvatarIntegration.Installer is IBlendshapeAvatarUninstaller uninstaller &&
+        GUILayout.Button("Remove Selected MA Controls"))
+      uninstaller.Uninstall(avatarRoot, meshEntries.Where(entry => entry.enabled && entry.renderer != null)
+        .SelectMany(entry => new[] { GetMeshIdentity(entry.renderer), entry.renderer.name }).Distinct().ToArray());
+    if (GeneratedController != null)
+    {
+      EditorGUILayout.ObjectField("Generated Controller", GeneratedController, typeof(AnimatorController), false);
+      if (GUILayout.Button("Assign to Animation Root Animator")) AssignGeneratedController();
+    }
     EditorGUI.EndDisabledGroup();
+  }
+
+  public void AssignGeneratedController()
+  {
+    var animator = avatarRoot.GetComponent<Animator>();
+    if (animator == null) animator = Undo.AddComponent<Animator>(avatarRoot);
+    Undo.RecordObject(animator, "Assign generated blendshape controller");
+    animator.runtimeAnimatorController = GeneratedController;
+    EditorUtility.SetDirty(animator);
+    PrefabUtility.RecordPrefabInstancePropertyModifications(animator);
   }
 
   private bool ValidateGeneration(out string error)
@@ -406,6 +427,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       error = "Float duration must be positive and all curve settings must be finite.";
     if (error != null) return false;
 
+    var selectedBindings = new HashSet<(SkinnedMeshRenderer Renderer, string Shape)>();
     foreach (var entry in meshEntries.Where(entry => entry.enabled))
     {
       if (entry.renderer == null || entry.renderer.sharedMesh == null)
@@ -434,6 +456,12 @@ public class BlendshapeControllerGenerator : EditorWindow
         error = "The mesh has changed since scanning. Scan it again before generating.";
         return false;
       }
+      foreach (var shape in entry.blendshapeNames.Where((name, index) => entry.selected[index]))
+        if (!selectedBindings.Add((entry.renderer, shape)))
+        {
+          error = "Blendshape selected more than once: " + entry.renderer.name + "/" + shape;
+          return false;
+        }
       if ((entry.boolOffValues ?? new List<float>()).Concat(entry.boolOnValues ?? new List<float>())
           .Any(value => float.IsNaN(value) || float.IsInfinity(value)))
       {
@@ -626,6 +654,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       return;
     }
 
+    var generated = new List<AnimatorController>();
     int clipIndex = 0;
     for (int mi = 0; mi < meshEntries.Count; mi++)
     {
@@ -649,12 +678,24 @@ public class BlendshapeControllerGenerator : EditorWindow
         return;
       }
 
+      generated.Add(lastMeshController);
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
         var t = (types != null && types.Count == names.Count) ? types[j] : BlendParamType.Float;
         clipIndex += (t == BlendParamType.Bool) ? 2 : 1;
       }
+    }
+    if (!installAvatarControls || BlendshapeAvatarIntegration.Installer == null)
+    {
+      string avatarIdentity = SanitizeName(avatarRoot.name) + "_" +
+        StableHash(avatarRoot.scene.path + "/" + GetHierarchyIdentity(avatarRoot.transform));
+      string combinedRoot = outputFolder.TrimEnd('/') + "/" + avatarIdentity + "/Combined";
+      EnsureAssetFolder(combinedRoot);
+      string combinedFolder = AssetDatabase.GenerateUniqueAssetPath(combinedRoot + "/Build");
+      EnsureAssetFolder(combinedFolder);
+      GeneratedController = BlendshapeControllerComposer.Combine(generated, combinedFolder + "/Blendshapes.controller");
+      EditorGUIUtility.PingObject(GeneratedController);
     }
     EditorUtility.ClearProgressBar();
   }
@@ -664,7 +705,7 @@ public class BlendshapeControllerGenerator : EditorWindow
     var safeNames = BuildParameterSuffixes(names);
     string meshName = mr.gameObject.name;
     string computedRelative = GetRelativePath(avatarRoot.transform, mr.transform);
-    string meshIdentity = SanitizeName(meshName) + "_" + StableHash(computedRelative);
+    string meshIdentity = GetMeshIdentity(mr);
     string avatarIdentity = SanitizeName(avatarRoot.name) + "_" +
       StableHash(avatarRoot.scene.path + "/" + GetHierarchyIdentity(avatarRoot.transform));
     string meshOutputFolder = outputFolder.TrimEnd('/') + "/" + avatarIdentity + "/" + meshIdentity;
@@ -750,6 +791,7 @@ public class BlendshapeControllerGenerator : EditorWindow
         layer.name = safeName;
         layer.defaultWeight = 1f;
         layer.stateMachine = stateMachine;
+        layer.syncedLayerIndex = -1;
 
         controller.AddLayer(layer);
       }
@@ -821,7 +863,7 @@ public class BlendshapeControllerGenerator : EditorWindow
         toOff.canTransitionToSelf = false;
         toOff.AddCondition(AnimatorConditionMode.IfNot, 0f, paramName);
 
-        var layer = new AnimatorControllerLayer { name = safeName, defaultWeight = 1f, stateMachine = stateMachine };
+        var layer = new AnimatorControllerLayer { name = safeName, defaultWeight = 1f, stateMachine = stateMachine, syncedLayerIndex = -1 };
         controller.AddLayer(layer);
       }
     }
@@ -837,6 +879,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       BlendshapeAvatarIntegration.Installer?.Install(new BlendshapeGenerationResult(
         avatarRoot, controller, baseControllerNameForMenu, meshName, controls));
     pendingGenerationFolder = null;
+    lastMeshController = controller;
 
     EditorUtility.SetDirty(controller);
     AssetDatabase.SaveAssets();
@@ -846,6 +889,9 @@ public class BlendshapeControllerGenerator : EditorWindow
     Debug.Log("Generated Animator Controller and clips in: " + meshSubFolder + " Binding path used: '" + shownPath + "'");
     return false;
   }
+
+  private string GetMeshIdentity(SkinnedMeshRenderer renderer) =>
+    SanitizeName(renderer.name) + "_" + StableHash(GetRelativePath(avatarRoot.transform, renderer.transform));
 
   private static string GetRelativePath(Transform root, Transform target)
   {

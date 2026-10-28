@@ -20,6 +20,35 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static readonly Dictionary<string, Shader> _shaderCache = new Dictionary<string, Shader>();
         private static readonly HashSet<string> _generatedContentAssetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _skipSecondPassLayerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public sealed class BuildContext
+        {
+            internal uint Seed;
+            internal bool Enabled, DecoyLayers, DecoyStates;
+            internal string Folder;
+            internal string[] GeneratedAssets, SkipLayers;
+        }
+        public static BuildContext CaptureContext() => new BuildContext
+        {
+            Seed = _seed, Enabled = _enabled, DecoyLayers = _decoyLayersEnabled,
+            DecoyStates = _decoyStatesEnabled, Folder = _generatedFolder,
+            GeneratedAssets = _generatedContentAssetPaths.ToArray(),
+            SkipLayers = _skipSecondPassLayerNames.ToArray(),
+        };
+        public static void RestoreContext(BuildContext context)
+        {
+            _seed = context.Seed;
+            _enabled = context.Enabled;
+            _decoyLayersEnabled = context.DecoyLayers;
+            _decoyStatesEnabled = context.DecoyStates;
+            _generatedFolder = context.Folder;
+            _initialized = true;
+            _shaderCache.Clear();
+            _generatedContentAssetPaths.Clear();
+            _skipSecondPassLayerNames.Clear();
+            foreach (var path in context.GeneratedAssets) _generatedContentAssetPaths.Add(path);
+            foreach (var layer in context.SkipLayers) _skipSecondPassLayerNames.Add(layer);
+        }
+        public static string GeneratedFolder { get { EnsureInitialized(); return _generatedFolder; } }
         public static bool IsEnabled => _enabled;
         public static bool DecoyLayersEnabled => _decoyLayersEnabled;
         public static bool DecoyStatesEnabled => _decoyStatesEnabled;
@@ -555,12 +584,38 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
+        public static AnimatorController DuplicateAnimatorControllerForBuild(RuntimeAnimatorController sourceController, string slotKey)
+        {
+            if (sourceController is AnimatorController controller)
+                return DuplicateAnimatorControllerForBuild(controller, slotKey);
+            EnsureInitialized();
+            string folder = _generatedFolder + "/PlayableControllers";
+            EnsureFolder(folder);
+            string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + SanitizeFileName(slotKey) + "_Resolved.controller");
+            var copy = ControllerGraphCopy.CreateEditableCopy(sourceController, path);
+            string motionFolder = path.Substring(0, path.Length - ".controller".Length) + "_Motions";
+            EnsureFolder(motionFolder);
+            CloneReferencedMotionsForController(copy, motionFolder, slotKey);
+            RegisterGeneratedAssetPath(path);
+            return copy;
+        }
+
         public static AnimatorController DuplicateAnimatorControllerForBuild(AnimatorController sourceController, string slotKey)
         {
             EnsureInitialized();
             string sourcePath = AssetDatabase.GetAssetPath(sourceController);
             if (string.IsNullOrEmpty(sourcePath))
-                return sourceController;
+            {
+                string folder = _generatedFolder + "/PlayableControllers";
+                EnsureFolder(folder);
+                string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + SanitizeFileName(slotKey) + "_Memory.controller");
+                var copy = ControllerGraphCopy.CreateEditableCopy(sourceController, path);
+                string memoryMotionFolder = path.Substring(0, path.Length - ".controller".Length) + "_Motions";
+                EnsureFolder(memoryMotionFolder);
+                CloneReferencedMotionsForController(copy, memoryMotionFolder, slotKey);
+                RegisterGeneratedAssetPath(path);
+                return copy;
+            }
             if (IsAssetUnderGeneratedFolder(sourcePath))
                 return sourceController;
 

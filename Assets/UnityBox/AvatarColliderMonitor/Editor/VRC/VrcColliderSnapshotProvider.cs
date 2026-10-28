@@ -2,6 +2,8 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using System;
+using VRC.SDK3.Dynamics.PhysBone.Components;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDKBase.Editor.BuildPipeline;
 
@@ -32,15 +34,35 @@ namespace UnityBox.AvatarColliderMonitor
 
     public static string FieldToKey(FieldInfo field) => "VRC/" + field.Name.Substring("collider_".Length);
 
+    [Serializable]
+    private sealed class PhysBoneConfiguration
+    {
+      public string component;
+      public Matrix4x4 localToWorld;
+      public bool activeInHierarchy, enabled;
+    }
+
     private static void Capture(GameObject root, ColliderSnapshot snapshot)
     {
       var descriptor = root.GetComponent<VRCAvatarDescriptor>();
-      if (descriptor == null) return;
-      foreach (var field in GetColliderFields())
+      if (descriptor != null)
+        foreach (var field in GetColliderFields())
+        {
+          var config = (VRCAvatarDescriptor.ColliderConfig)field.GetValue(descriptor);
+          snapshot.Add(FieldToKey(field), "VRC · " + ObjectNames.NicifyVariableName(field.Name.Substring("collider_".Length)),
+            config.transform, JsonUtility.ToJson(config));
+        }
+      foreach (var collider in root.GetComponentsInChildren<VRCPhysBoneCollider>(true))
       {
-        var config = (VRCAvatarDescriptor.ColliderConfig)field.GetValue(descriptor);
-        snapshot.Add(FieldToKey(field), "VRC · " + ObjectNames.NicifyVariableName(field.Name.Substring("collider_".Length)),
-          config.transform, JsonUtility.ToJson(config));
+        var target = collider.rootTransform != null ? collider.rootTransform : collider.transform;
+        var configuration = new PhysBoneConfiguration
+        {
+          component = EditorJsonUtility.ToJson(collider), localToWorld = target.localToWorldMatrix,
+          activeInHierarchy = collider.gameObject.activeInHierarchy, enabled = collider.enabled,
+        };
+        snapshot.Add("VRC/PhysBone/" + collider.GetInstanceID(),
+          "PhysBoneCollider · " + ColliderSnapshot.CapturePath(collider.transform), target,
+          JsonUtility.ToJson(configuration));
       }
     }
   }

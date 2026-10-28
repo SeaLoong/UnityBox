@@ -17,16 +17,18 @@ namespace UnityBox.AvatarColliderMonitor
     public string avatarName;
     public int avatarInstanceId;
     public DateTime timestamp;
+    public string sessionId;
+    public Dictionary<string, Bounds> worldBounds = new Dictionary<string, Bounds>();
     public Dictionary<string, Transform> colliders = new Dictionary<string, Transform>();
     public Dictionary<string, string> paths = new Dictionary<string, string>();
     public Dictionary<string, string> configurations = new Dictionary<string, string>();
     public Dictionary<string, int> transformIds = new Dictionary<string, int>();
     public Dictionary<string, string> displayNames = new Dictionary<string, string>();
 
-    public void Add(string key, string label, Transform transform, string configuration)
+    public void Add(string key, string label, Transform transform, string configuration, string capturedPath = null)
     {
       colliders[key] = transform;
-      paths[key] = CapturePath(transform);
+      paths[key] = capturedPath ?? CapturePath(transform);
       configurations[key] = configuration;
       transformIds[key] = transform != null ? transform.GetInstanceID() : 0;
       displayNames[key] = label;
@@ -35,17 +37,18 @@ namespace UnityBox.AvatarColliderMonitor
     public string GetColliderPath(string name) => paths.TryGetValue(name, out var path) ? path : "null";
     public string GetDisplayName(string key) => displayNames.TryGetValue(key, out var name) ? name : key;
     public IEnumerable<string> KeysComparedTo(ColliderSnapshot previous) =>
-      previous != null && previous.avatarInstanceId == avatarInstanceId
+      previous != null && previous.avatarInstanceId == avatarInstanceId && previous.sessionId == sessionId
         ? paths.Keys.Union(previous.paths.Keys)
         : paths.Keys;
 
     public bool HasChangedFrom(ColliderSnapshot previous, string key)
     {
-      if (previous == null || previous.avatarInstanceId != avatarInstanceId) return false;
+      if (previous == null || previous.avatarInstanceId != avatarInstanceId || previous.sessionId != sessionId) return false;
       return previous.paths.ContainsKey(key) != paths.ContainsKey(key) ||
         previous.GetColliderPath(key) != GetColliderPath(key) ||
         Value(previous.transformIds, key) != Value(transformIds, key) ||
-        Value(previous.configurations, key) != Value(configurations, key);
+        Value(previous.configurations, key) != Value(configurations, key) ||
+        Value(previous.worldBounds, key) != Value(worldBounds, key);
     }
 
     private static T Value<T>(Dictionary<string, T> source, string key) =>
@@ -62,10 +65,73 @@ namespace UnityBox.AvatarColliderMonitor
     }
   }
 
+  public sealed class ColliderSnapshotComparison
+  {
+    public readonly ColliderSnapshot Snapshot;
+    public readonly ColliderSnapshot Previous;
+    public readonly string[] Keys;
+    public readonly HashSet<string> ChangedKeys;
+    public bool HasChanges => ChangedKeys.Count != 0;
+
+    internal ColliderSnapshotComparison(ColliderSnapshot snapshot, ColliderSnapshot previous)
+    {
+      Snapshot = snapshot;
+      Previous = previous;
+      Keys = snapshot.KeysComparedTo(previous).ToArray();
+      ChangedKeys = new HashSet<string>(Keys.Where(key => snapshot.HasChangedFrom(previous, key)));
+    }
+  }
+
+  // Sampling happens when explicitly refreshed, not on each IMGUI Layout/Repaint event.
+  public sealed class ColliderSnapshotPreview
+  {
+    private ColliderSnapshot current;
+    private GameObject root;
+    public void Invalidate() => current = null;
+    public ColliderSnapshot Get(GameObject selected)
+    {
+      if (selected == null) { root = null; current = null; return null; }
+      if (current == null || root != selected)
+      {
+        root = selected;
+        current = AvatarColliderMonitor.CaptureSnapshot(selected, "Preview", "Current");
+      }
+      return current;
+    }
+  }
+
+  public sealed class ColliderChangeCount
+  {
+    public string Key;
+    public string Label;
+    public int Count;
+  }
+
   public static class AvatarColliderMonitor
   {
     private static readonly List<ColliderSnapshot> snapshots = new List<ColliderSnapshot>();
     private const int MaximumSnapshots = 1000;
+    private static int revision;
+    private static int comparisonRevision = -1;
+    private static int comparisonCount = -1;
+    private static List<ColliderSnapshotComparison> comparisons = new List<ColliderSnapshotComparison>();
+    private static readonly string CurrentSession = GetSessionId();
+    private static ColliderChangeCount[] changeStatistics = Array.Empty<ColliderChangeCount>();
+    private static int totalChanges;
+    public static int TotalChanges { get { GetHistoryComparisons(); return totalChanges; } }
+    public static IReadOnlyList<ColliderChangeCount> GetChangeStatistics()
+    {
+      GetHistoryComparisons();
+      return changeStatistics;
+    }
+
+    private static string GetSessionId()
+    {
+      const string key = "UnityBox.AvatarColliderMonitor.Session";
+      string value = SessionState.GetString(key, "");
+      if (value.Length == 0) { value = Guid.NewGuid().ToString("N"); SessionState.SetString(key, value); }
+      return value;
+    }
     private const string ENABLED_KEY = "AvatarColliderMonitor_Enabled";
     private const string LOG_CHANGES_KEY = "AvatarColliderMonitor_LogChanges";
     private const string VERBOSE_KEY = "AvatarColliderMonitor_Verbose";
@@ -105,24 +171,30 @@ namespace UnityBox.AvatarColliderMonitor
       var snapshot = new ColliderSnapshot
       {
         phase = phase, timing = timing, timestamp = DateTime.Now,
-        avatarName = root.name, avatarInstanceId = root.GetInstanceID()
+        avatarName = root.name, avatarInstanceId = root.GetInstanceID(), sessionId = CurrentSession
       };
-      foreach (var component in root.GetComponentsInChildren<Component>(true))
-      {
-        if (!(component is Collider) && !(component is Collider2D)) continue;
-        var configuration = new UnityColliderConfiguration
-        {
-          component = EditorJsonUtility.ToJson(component),
-          localToWorld = component.transform.localToWorldMatrix,
-          activeInHierarchy = component.gameObject.activeInHierarchy,
-          layer = component.gameObject.layer
-        };
-        snapshot.Add("Unity/" + component.GetInstanceID(),
-          component.GetType().Name + " · " + ColliderSnapshot.CapturePath(component.transform),
-          component.transform, JsonUtility.ToJson(configuration));
-      }
+      foreach (var component in root.GetComponentsInChildren<Collider>(true))
+        AddUnityCollider(snapshot, component, component.bounds);
+      foreach (var component in root.GetComponentsInChildren<Collider2D>(true))
+        AddUnityCollider(snapshot, component, component.bounds);
       CollectAdditionalColliders?.Invoke(root, snapshot);
       return snapshot;
+    }
+
+    private static void AddUnityCollider(ColliderSnapshot snapshot, Component component, Bounds bounds)
+    {
+      var configuration = new UnityColliderConfiguration
+      {
+        component = EditorJsonUtility.ToJson(component),
+        localToWorld = component.transform.localToWorldMatrix,
+        activeInHierarchy = component.gameObject.activeInHierarchy,
+        layer = component.gameObject.layer
+      };
+      string key = "Unity/" + component.GetInstanceID();
+      string path = ColliderSnapshot.CapturePath(component.transform);
+      snapshot.Add(key, component.GetType().Name + " · " + path, component.transform,
+        JsonUtility.ToJson(configuration), path);
+      snapshot.worldBounds[key] = bounds;
     }
 
     // Component inputs remain accepted, including descriptors from optional integrations.
@@ -132,6 +204,7 @@ namespace UnityBox.AvatarColliderMonitor
       if (root == null || (!IsEnabled && phase != "Manual")) return;
       var snapshot = CaptureSnapshot(root, phase, timing);
       snapshots.Add(snapshot);
+      revision++;
       if (snapshots.Count > MaximumSnapshots) snapshots.RemoveAt(0);
       var previous = GetPreviousSnapshot(snapshots.Count - 1);
       if (LogChanges && previous != null)
@@ -148,13 +221,104 @@ namespace UnityBox.AvatarColliderMonitor
     }
 
     public static List<ColliderSnapshot> GetSnapshots() => snapshots;
-    public static void Clear() => snapshots.Clear();
+    public static void Clear() { snapshots.Clear(); revision++; }
+
+    public static IReadOnlyList<ColliderSnapshotComparison> GetHistoryComparisons()
+    {
+      if (comparisonRevision == revision && comparisonCount == snapshots.Count) return comparisons;
+      var latest = new Dictionary<(int, string), ColliderSnapshot>();
+      comparisons = new List<ColliderSnapshotComparison>(snapshots.Count);
+      foreach (var snapshot in snapshots)
+      {
+        var key = (snapshot.avatarInstanceId, snapshot.sessionId);
+        latest.TryGetValue(key, out var previous);
+        comparisons.Add(new ColliderSnapshotComparison(snapshot, previous));
+        latest[key] = snapshot;
+      }
+      var counts = new Dictionary<string, ColliderChangeCount>();
+      totalChanges = 0;
+      foreach (var comparison in comparisons)
+        foreach (var key in comparison.ChangedKeys)
+        {
+          totalChanges++;
+          if (!counts.TryGetValue(key, out var count))
+            counts[key] = count = new ColliderChangeCount { Key = key,
+              Label = comparison.Snapshot.paths.ContainsKey(key)
+                ? comparison.Snapshot.GetDisplayName(key) : comparison.Previous.GetDisplayName(key) };
+          count.Count++;
+        }
+      changeStatistics = counts.Values.OrderByDescending(value => value.Count)
+        .ThenBy(value => value.Key, StringComparer.Ordinal).ToArray();
+      comparisonRevision = revision;
+      comparisonCount = snapshots.Count;
+      return comparisons;
+    }
+
+    [Serializable] private sealed class HistoryData { public int schema = 1; public List<SnapshotData> snapshots = new List<SnapshotData>(); }
+    [Serializable] private sealed class SnapshotData
+    {
+      public string phase, timing, avatarName, timestamp, sessionId;
+      public int avatarInstanceId;
+      public List<EntryData> entries = new List<EntryData>();
+    }
+    [Serializable] private sealed class EntryData
+    {
+      public string key, path, label, configuration;
+      public int transformId;
+      public Bounds worldBounds;
+      public bool hasBounds;
+    }
+
+    public static string ExportHistoryJson()
+    {
+      var data = new HistoryData();
+      foreach (var snapshot in snapshots)
+      {
+        var record = new SnapshotData { phase = snapshot.phase, timing = snapshot.timing,
+          avatarName = snapshot.avatarName, avatarInstanceId = snapshot.avatarInstanceId,
+          timestamp = snapshot.timestamp.ToString("O"), sessionId = snapshot.sessionId };
+        foreach (var key in snapshot.paths.Keys)
+          record.entries.Add(new EntryData { key = key, path = snapshot.paths[key],
+            label = snapshot.GetDisplayName(key), configuration = snapshot.configurations[key],
+            transformId = snapshot.transformIds[key],
+            hasBounds = snapshot.worldBounds.TryGetValue(key, out var bounds), worldBounds = bounds });
+        data.snapshots.Add(record);
+      }
+      return JsonUtility.ToJson(data, true);
+    }
+
+    public static void ImportHistoryJson(string json, bool append = false)
+    {
+      var data = JsonUtility.FromJson<HistoryData>(json);
+      if (data.schema != 1) throw new ArgumentException("Unsupported collider history schema: " + data.schema);
+      if (!append) snapshots.Clear();
+      foreach (var record in data.snapshots)
+      {
+        var snapshot = new ColliderSnapshot { phase = record.phase, timing = record.timing,
+          avatarName = record.avatarName, avatarInstanceId = record.avatarInstanceId,
+          timestamp = DateTime.Parse(record.timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind),
+          sessionId = record.sessionId };
+        foreach (var entry in record.entries)
+        {
+          snapshot.colliders[entry.key] = null;
+          snapshot.paths[entry.key] = entry.path;
+          snapshot.displayNames[entry.key] = entry.label;
+          snapshot.configurations[entry.key] = entry.configuration;
+          snapshot.transformIds[entry.key] = entry.transformId;
+          if (entry.hasBounds) snapshot.worldBounds[entry.key] = entry.worldBounds;
+        }
+        snapshots.Add(snapshot);
+      }
+      if (snapshots.Count > MaximumSnapshots) snapshots.RemoveRange(0, snapshots.Count - MaximumSnapshots);
+      revision++;
+    }
     public static ColliderSnapshot GetPreviousSnapshot(int index)
     {
       if (index < 0 || index >= snapshots.Count) return null;
       int rootId = snapshots[index].avatarInstanceId;
+      string sessionId = snapshots[index].sessionId;
       for (int i = index - 1; i >= 0; i--)
-        if (snapshots[i].avatarInstanceId == rootId) return snapshots[i];
+        if (snapshots[i].avatarInstanceId == rootId && snapshots[i].sessionId == sessionId) return snapshots[i];
       return null;
     }
   }
@@ -189,6 +353,32 @@ namespace UnityBox.AvatarColliderMonitor
     private bool showOnlyChanges = false;
     private string searchFilter = "";
     private GameObject selectedAvatar = null;
+    private readonly ColliderSnapshotPreview preview = new ColliderSnapshotPreview();
+    private double nextPreviewRefresh;
+    private bool showBounds;
+
+    private void OnEnable()
+    {
+      SceneView.duringSceneGui += DrawBounds;
+      Undo.undoRedoPerformed += InvalidatePreview;
+    }
+    private void OnDisable()
+    {
+      SceneView.duringSceneGui -= DrawBounds;
+      Undo.undoRedoPerformed -= InvalidatePreview;
+    }
+    private void OnHierarchyChange() => InvalidatePreview();
+    private void InvalidatePreview() { preview.Invalidate(); Repaint(); }
+    private void DrawBounds(SceneView view)
+    {
+      if (!showBounds || selectedAvatar == null) return;
+      var snapshot = preview.Get(selectedAvatar);
+      var color = Handles.color;
+      Handles.color = Color.cyan;
+      foreach (var bounds in snapshot.worldBounds.Values)
+        Handles.DrawWireCube(bounds.center, bounds.size);
+      Handles.color = color;
+    }
 
     private void OnGUI()
     {
@@ -245,6 +435,7 @@ namespace UnityBox.AvatarColliderMonitor
       {
         if (GUILayout.Button("Refresh", GUILayout.Width(80)))
         {
+          preview.Invalidate();
           Repaint();
         }
         if (GUILayout.Button("Take Snapshot", GUILayout.Width(100)))
@@ -254,6 +445,7 @@ namespace UnityBox.AvatarColliderMonitor
       }
       EditorGUILayout.EndHorizontal();
 
+      showBounds = EditorGUILayout.Toggle("Scene Bounds", showBounds);
       if (selectedAvatar == null)
       {
         EditorGUILayout.HelpBox("Select a root GameObject in Settings to preview Unity colliders and available integrations", MessageType.Info);
@@ -262,11 +454,11 @@ namespace UnityBox.AvatarColliderMonitor
       {
         previewScrollPosition = EditorGUILayout.BeginScrollView(previewScrollPosition, GUILayout.Height(325));
 
-        var preview = AvatarColliderMonitor.CaptureSnapshot(selectedAvatar, "Preview", "Current");
-        foreach (var key in preview.paths.Keys)
+        var currentPreview = preview.Get(selectedAvatar);
+        foreach (var key in currentPreview.paths.Keys)
         {
-          var displayName = preview.GetDisplayName(key);
-          var collider = preview.colliders[key];
+          var displayName = currentPreview.GetDisplayName(key);
+          var collider = currentPreview.colliders[key];
           string value = collider != null ? collider.name : "<null>";
 
           EditorGUILayout.BeginHorizontal();
@@ -303,38 +495,14 @@ namespace UnityBox.AvatarColliderMonitor
         return;
       }
 
-      int totalChanges = 0;
-      var changesByCollider = new Dictionary<string, int>();
-
-      for (int i = 1; i < snapshots.Count; i++)
-      {
-        var prev = AvatarColliderMonitor.GetPreviousSnapshot(i);
-        var curr = snapshots[i];
-
-        foreach (var name in curr.KeysComparedTo(prev))
-        {
-          if (curr.HasChangedFrom(prev, name))
-          {
-            totalChanges++;
-            if (!changesByCollider.ContainsKey(name))
-              changesByCollider[name] = 0;
-            changesByCollider[name]++;
-          }
-        }
-      }
-
-      EditorGUILayout.LabelField($"Total Changes: {totalChanges}");
-
-      if (changesByCollider.Count > 0)
+      EditorGUILayout.LabelField($"Total Changes: {AvatarColliderMonitor.TotalChanges}");
+      var statistics = AvatarColliderMonitor.GetChangeStatistics();
+      if (statistics.Count > 0)
       {
         EditorGUILayout.LabelField("Changes by Collider:", EditorStyles.boldLabel);
-
         statisticsScrollPosition = EditorGUILayout.BeginScrollView(statisticsScrollPosition, GUILayout.Height(250));
-        foreach (var kvp in changesByCollider.OrderByDescending(x => x.Value))
-        {
-          var displayName = snapshots.LastOrDefault(item => item.paths.ContainsKey(kvp.Key))?.GetDisplayName(kvp.Key) ?? kvp.Key;
-          EditorGUILayout.LabelField($"{displayName}: {kvp.Value}");
-        }
+        foreach (var count in statistics)
+          EditorGUILayout.LabelField($"{count.Label}: {count.Count}");
         EditorGUILayout.EndScrollView();
       }
 
@@ -353,6 +521,16 @@ namespace UnityBox.AvatarColliderMonitor
       GUILayout.FlexibleSpace();
       EditorGUILayout.LabelField($"Total: {snapshots.Count}", EditorStyles.label, GUILayout.Width(100));
 
+      if (GUILayout.Button("Export JSON", GUILayout.Width(100)))
+      {
+        string path = EditorUtility.SaveFilePanel("Export collider history", "", "collider-history.json", "json");
+        if (!string.IsNullOrEmpty(path)) System.IO.File.WriteAllText(path, AvatarColliderMonitor.ExportHistoryJson());
+      }
+      if (GUILayout.Button("Import JSON", GUILayout.Width(100)))
+      {
+        string path = EditorUtility.OpenFilePanel("Import collider history", "", "json");
+        if (!string.IsNullOrEmpty(path)) AvatarColliderMonitor.ImportHistoryJson(System.IO.File.ReadAllText(path));
+      }
       if (GUILayout.Button("Clear", GUILayout.Width(80)))
       {
         if (EditorUtility.DisplayDialog("Clear History", "Clear all monitoring records?", "OK", "Cancel"))
@@ -379,25 +557,12 @@ namespace UnityBox.AvatarColliderMonitor
         for (int i = 0; i < snapshots.Count; i++)
         {
           var snapshot = snapshots[i];
-          bool hasChanges = false;
-
-          if (i > 0)
-          {
-            var prev = AvatarColliderMonitor.GetPreviousSnapshot(i);
-            foreach (var colliderKey in snapshot.KeysComparedTo(prev))
-            {
-              if (snapshot.HasChangedFrom(prev, colliderKey))
-              {
-                hasChanges = true;
-                break;
-              }
-            }
-          }
+          bool hasChanges = AvatarColliderMonitor.GetHistoryComparisons()[i].HasChanges;
 
           if (showOnlyChanges && !hasChanges && i > 0) continue;
           if (!string.IsNullOrEmpty(searchFilter) &&
-              !snapshot.phase.ToLower().Contains(searchFilter.ToLower()) &&
-              !snapshot.timing.ToLower().Contains(searchFilter.ToLower())) continue;
+              snapshot.phase.IndexOf(searchFilter, StringComparison.OrdinalIgnoreCase) < 0 &&
+              snapshot.timing.IndexOf(searchFilter, StringComparison.OrdinalIgnoreCase) < 0) continue;
 
           DrawSnapshot(snapshot, i, hasChanges);
         }
@@ -440,10 +605,11 @@ namespace UnityBox.AvatarColliderMonitor
       {
         EditorGUI.indentLevel++;
 
-        var previous = AvatarColliderMonitor.GetPreviousSnapshot(index);
-        foreach (var colliderKey in snapshot.KeysComparedTo(previous))
+        var comparison = AvatarColliderMonitor.GetHistoryComparisons()[index];
+        var previous = comparison.Previous;
+        foreach (var colliderKey in comparison.Keys)
         {
-          var isDiff = snapshot.HasChangedFrom(previous, colliderKey);
+          var isDiff = comparison.ChangedKeys.Contains(colliderKey);
           var displayName = snapshot.paths.ContainsKey(colliderKey)
             ? snapshot.GetDisplayName(colliderKey)
             : previous.GetDisplayName(colliderKey) + " (removed)";
@@ -468,7 +634,15 @@ namespace UnityBox.AvatarColliderMonitor
       EditorGUILayout.EndVertical();
     }
 
-    private void OnInspectorUpdate() => Repaint();
+    private void OnInspectorUpdate()
+    {
+      if (EditorApplication.timeSinceStartup >= nextPreviewRefresh)
+      {
+        nextPreviewRefresh = EditorApplication.timeSinceStartup + 0.5;
+        preview.Invalidate();
+      }
+      Repaint();
+    }
   }
   #endregion
 }

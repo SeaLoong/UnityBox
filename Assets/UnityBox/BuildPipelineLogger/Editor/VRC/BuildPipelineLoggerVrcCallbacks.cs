@@ -444,6 +444,7 @@ namespace UnityBox.BuildPipelineLogger
         {
             if (BuildPipelineLoggerSettings.VRCSDK)
                 BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⛳ END");
+            BuildPipelineLoggerTrace.EndBuild();
         }
     }
 

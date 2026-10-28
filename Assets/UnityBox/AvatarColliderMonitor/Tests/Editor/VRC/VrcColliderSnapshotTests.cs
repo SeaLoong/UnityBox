@@ -2,6 +2,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
+using VRC.SDK3.Dynamics.PhysBone.Components;
 
 namespace UnityBox.AvatarColliderMonitor.Tests
 {
@@ -91,6 +92,44 @@ namespace UnityBox.AvatarColliderMonitor.Tests
           Assert.That(records[1].HasChangedFrom(records[0], VrcColliderSnapshotProvider.FieldToKey(field)), Is.False);
       }
       finally { Object.DestroyImmediate(other); }
+    }
+
+    [Test]
+    public void PhysBoneColliderCapturesRadiusAndResolvedRootWithoutDescriptor()
+    {
+      var root = new GameObject("PhysicsRoot");
+      try
+      {
+        var child = new GameObject("PhysBone"); child.transform.SetParent(root.transform, false);
+        var target = new GameObject("Target"); target.transform.SetParent(root.transform, false);
+        var collider = child.AddComponent<VRCPhysBoneCollider>();
+        collider.rootTransform = target.transform;
+        collider.radius = .1f;
+        string key = "VRC/PhysBone/" + collider.GetInstanceID();
+        var first = AvatarColliderMonitor.CaptureSnapshot(root, "Manual", "Before");
+        Assert.That(first.GetColliderPath(key), Is.EqualTo("PhysicsRoot/Target"));
+        collider.radius = .5f;
+        var second = AvatarColliderMonitor.CaptureSnapshot(root, "Manual", "After");
+        Assert.That(second.HasChangedFrom(first, key), Is.True);
+        target.transform.localPosition = Vector3.one;
+        var moved = AvatarColliderMonitor.CaptureSnapshot(root, "Manual", "Moved");
+        Assert.That(moved.HasChangedFrom(second, key), Is.True);
+      }
+      finally { Object.DestroyImmediate(root); }
+    }
+
+    [Test]
+    public void DisabledPhysBoneColliderUnderInactiveRootRemainsInSnapshot()
+    {
+      var collider = avatar.AddComponent<VRCPhysBoneCollider>();
+      collider.enabled = false;
+      avatar.SetActive(false);
+      string key = "VRC/PhysBone/" + collider.GetInstanceID();
+      var first = AvatarColliderMonitor.CaptureSnapshot(avatar, "Manual", "Disabled");
+      Assert.That(first.paths, Contains.Key(key));
+      avatar.SetActive(true);
+      Assert.That(AvatarColliderMonitor.CaptureSnapshot(avatar, "Manual", "Enabled")
+        .HasChangedFrom(first, key), Is.True);
     }
 
     [Test]

@@ -1,42 +1,37 @@
 # Changelog
 
-以下历史版本条目保留发布时的描述；当前行为、默认值与限制以 Editor/README.md 和技术参考为准。历史验证不代表当前修订已重新执行测试。
+历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
 ## [Unreleased]
 
-### Optional platform integration
+### Added
 
-- Runtime configuration and Editor animation/configuration/asset tools compile without VRChat SDK.
-- SDK upload and Descriptor operations now live in the optional `UnityBox.AvatarSecuritySystem.VRChat` assembly; NDMF requires SDK plus NDMF 1.8+.
-- Graph builders require an explicit platform behaviour adapter. The SDK path preserves its original behaviours; no new generic Unity password runtime is supplied.
-- Configuration keeps the real optional IEditorOnly marker when SDK Base is present, for pre-upload validation; upload adapters also strip configuration from build clones explicitly.
-- Split pure Unity core tests from optional SDK integration tests; package installation no longer forces SDK dependencies.
-
+- 独立 Unity Animator 运行后端、StandaloneSecurityBuilder 与 Inspector 生成按钮。
+- Unity 场景构建处理器在构建副本移除作者配置，保留实际运行驱动和源场景配置。
+- StandaloneSecurityInput 提供 SetGesture、解锁/超时查询及 Restart。
+- 无曲线生命周期层，支持解锁后重新锁定与超时后的新一轮输入。
+- AnimatorOverrideController 展开及独立内存 Controller 持久化副本。
+- 实际 Animator 时间线测试、多 Avatar 资源生命周期用例及 16/64/256 子对象性能样本。
 
 ### Fixed
 
-- 关闭自定义动画层时忽略残留 Controller；生成启用 FX 前恢复构建克隆的 base/special 默认槽位，独立构建快照仍可还原原设置。
-- 同文件多个 Controller 子资产按 local file ID 选择正确副本；Motion 复制/解析失败中止，禁止回退可变源 BlendTree。
-- NDMF 安装状态不再替代实际处理状态：早期 SDK 捕获每次重置，NDMF 成功后才去重，失败/后处理释放弱引用快照。
-- NDMF 与独立生成都隔离持久化 Controller；晚期新插入的持久化 Controller 也先复制，再修正层索引/处理名称。无需其它插件先激活 AnimatorServices。
-- 独立构建始终隔离需要编辑的 FX 和 ExpressionParameters，恢复 Descriptor 原引用和开关；复制失败不再退回修改源资产。
-- 保留第三方内存 Controller，同源多 Playable 槽位的 Controller/Motion 副本分别隔离。
-- 修复 Holding 错误条件的不可达逻辑、成功/超时竞争、空密码 UI 和过期配置快照。
-- 保留显式音频引用，构建不再修改源音频/Logo 导入设置。
+- 生成层显式使用 syncedLayerIndex=-1，修复默认同步到第0层而导致功能状态机不独立的问题。
+- 持久化完整生成状态图；已经拥有资源路径的对象不再重复 AddObjectToAsset。
+- 每个 Avatar 使用自己的 Build_<id> 输出目录，SDK 后处理只回收对应目录。
+- 构建快照保存/恢复对应 Avatar 的名称映射和资源跟踪，支持交错的多 Avatar 后期处理。
+- 生命周期 LayerControl 的兄弟层目标在层插入后按最终名称刷新。
+- 旧层清理将内部键与显示名成对管理，包含生命周期层，重新生成和普通用户层共存时继续正确执行。
+- Contact 根分支索引由一次扫描生成，锁定与恢复图复用索引。
+- 补齐 Editor 脚本、程序集及正式包目录的固定 metadata，保留已有资源 GUID。
+- 从原场景三处 ASS 配置恢复 Runtime/Component.cs.meta 的原 GUID
+  1c51e6a139920bb4ca12700dc82627ff，保持原场景内容和引用。
 
-### Changed
+### Integration
 
-- 新建/Reset 组件默认关闭主动负载；Play Mode 跳过负载生成，旧序列化配置不自动迁移。
-- 用户文档和技术参考按当前源码重写，删除固定第三方顺序、尾部密码匹配、通用防盗/兼容性等未经支持的承诺。
-- FX AnimatorOverrideController 明确报错；默认防御模式关闭 Lock 的组合仍不支持。
-
-### Tests
-
-- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。真实 Unity 2022.3.22f1 中核心 15 项和 SDK 27 项全部通过、零跳过；完整测试环境为 SDK 3.8.2、MA 1.18、NDMF 1.11。实际 Avatar 构建、NDMF 最终提交与 VRChat 运行仍需验证。
-
-### Removed
-
-- 移除「溢出模式」（`enableOverflow`）：该选项已不再产生实际效果；粒子计划固定为「尽量补满剩余粒子 / Mesh 预算但不超限」策略，Inspector 选项、多语言文案与文档描述已同步清理
+- 普通 Unity 核心与 VRChat/NDMF 可选适配保持独立；包安装不强制获取 SDK。
+- SDK 使用原生 ParameterDriver、PlayAudio、LayerControl，并本地注册 Restart 请求。
+- 新组件/Reset 默认关闭遗留主动负载；普通 Unity Builder 生成手势工作流。
+- 测试、实际构建和性能结果汇总到仓库 Docs/Testing.md 与 Docs/Performance.md。
 
 ## [0.7.23] - 2026-08-11
 

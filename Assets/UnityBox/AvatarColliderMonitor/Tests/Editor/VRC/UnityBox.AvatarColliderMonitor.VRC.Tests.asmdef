@@ -29,6 +29,8 @@
   "precompiledReferences": [
     "nunit.framework.dll",
     "VRCSDK3A.dll",
-    "VRCSDKBase.dll"
+    "VRCSDKBase.dll",
+    "VRC.SDK3.Dynamics.PhysBone.dll",
+    "VRC.Dynamics.dll"
   ]
 }

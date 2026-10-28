@@ -42,6 +42,11 @@ namespace UnityBox.AdvancedCostumeController
       List<OutfitData> selectedOutfits,
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData defaultOutfit)
+      => Execute(selectedOutfits, outfitIndexMap, defaultOutfit, true);
+
+    /// <summary>Runs the same complete generation pipeline for scripts and batch tests.</summary>
+    public void Execute(List<OutfitData> selectedOutfits, Dictionary<GameObject, int> outfitIndexMap,
+      OutfitData defaultOutfit, bool showConfirmation)
     {
       if (config.EnableCustomMixer && !config.EnableParts)
       {
@@ -78,9 +83,11 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       var resolvedFolder = config.GetResolvedGeneratedFolder();
-      string controllerPath = Utils.CombineAssetPath(resolvedFolder, config.GetControllerFileName());
-      if (!ShowPreflightDialog(selectedOutfits, defaultOutfit,
-        File.Exists(controllerPath), controllerPath)) return;
+      EnsureGeneratedFolder(resolvedFolder);
+      string buildFolder = AssetDatabase.GenerateUniqueAssetPath(Utils.CombineAssetPath(resolvedFolder, "Build"));
+      string controllerPath = Utils.CombineAssetPath(buildFolder, config.GetControllerFileName());
+      if (showConfirmation && !ShowPreflightDialog(selectedOutfits, defaultOutfit,
+        Utils.FindDirectChild(config.CostumesRoot.transform, ACCConfig.MenuObjectName) != null, controllerPath)) return;
 
       int undoGroup = -1;
       try
@@ -130,20 +137,17 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("创建动画控制器…", "Creating animator controller…"), 0.7f);
-        // When icon generation is disabled, keep the existing MenuIcons assets.
-        // The menu presentation snapshot restores their references after the
-        // generated menu tree is rebuilt; deleting the folder here would turn
-        // those restored references into Missing assets.
-        PrepareGeneratedFolder(resolvedFolder, preserveMenuIcons: !config.AutoGenerateMenuIcons);
-
-        var controller = animBuilder.CreateController(selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
+        // Each generation keeps its complete asset set for scene Undo and existing references.
+        EnsureGeneratedFolder(buildFolder);
+        var controller = new AnimationBuilder(config, buildFolder).CreateController(
+          selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
 
         if (config.AutoGenerateMenuIcons)
         {
           EditorUtility.DisplayProgressBar(T("生成中", "Generating"),
             T("生成菜单图标…", "Generating menu icons…"), 0.9f);
           int iconCount = MenuIconGenerator.Generate(costumesRoot, menuRoot,
-            resolvedFolder, menuIconRequests);
+            buildFolder, menuIconRequests);
           Debug.Log(T($"[ACC] 已生成 {iconCount} 个菜单图标。",
             $"[ACC] Generated {iconCount} menu icons."));
         }
@@ -158,6 +162,13 @@ namespace UnityBox.AdvancedCostumeController
         mergeAnimator.animator = controller;
         ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { mergeAnimator });
 
+        var avatarDescriptor = costumesRoot.GetComponentInParent<VRCAvatarDescriptor>();
+        var parameterRoot = avatarDescriptor != null ? avatarDescriptor.gameObject : costumesRoot.transform.root.gameObject;
+        int totalBits = nadena.dev.ndmf.ParameterInfo.ForUI.GetParametersForObject(parameterRoot).Sum(parameter => parameter.BitUsage);
+        if (totalBits > MaxParameterBits)
+          throw new InvalidOperationException($"Expression parameter budget exceeded: {totalBits}/{MaxParameterBits} bits. Enable compression or reduce selected controls.");
+        Debug.Log($"[ACC] Avatar expression parameter budget: {totalBits}/{MaxParameterBits} bits.");
+        AssetDatabase.SaveAssets();
         EditorUtility.SetDirty(menuRoot);
         EditorUtility.SetDirty(mergeAnimator);
         string completionMessage = T(
@@ -174,6 +185,13 @@ namespace UnityBox.AdvancedCostumeController
             : ""));
         Debug.Log(completionMessage);
       }
+      catch
+      {
+        if (undoGroup >= 0) Undo.RevertAllDownToGroup(undoGroup);
+        undoGroup = -1;
+        if (AssetDatabase.IsValidFolder(buildFolder)) AssetDatabase.DeleteAsset(buildFolder);
+        throw;
+      }
       finally
       {
         if (undoGroup >= 0)
@@ -182,54 +200,10 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
-    private static void PrepareGeneratedFolder(string resolvedFolder, bool preserveMenuIcons)
+    private static void EnsureGeneratedFolder(string folder)
     {
-      // 输出目录按 ParamPrefix 隔离，因而可以在重新生成时安全清理旧 Controller 与 Clip，
-      // 避免 AssetDatabase.CreateAsset 因同名旧动画文件而失败。自动图标关闭时保留
-      // MenuIcons，否则菜单展示快照恢复的 Texture2D 引用会因资产被删除而变成 Missing。
-      if (AssetDatabase.IsValidFolder(resolvedFolder))
-      {
-        if (!preserveMenuIcons)
-        {
-          AssetDatabase.DeleteAsset(resolvedFolder);
-        }
-        else
-        {
-          string menuIconFolder = Utils.CombineAssetPath(resolvedFolder, "MenuIcons");
-          foreach (var subfolder in AssetDatabase.GetSubFolders(resolvedFolder))
-          {
-            if (string.Equals(subfolder, menuIconFolder, StringComparison.OrdinalIgnoreCase))
-              continue;
-            AssetDatabase.DeleteAsset(subfolder);
-          }
-
-          string projectRoot = Directory.GetParent(Application.dataPath).FullName;
-          string fullFolder = Path.Combine(projectRoot,
-            resolvedFolder.Replace('/', Path.DirectorySeparatorChar));
-          if (Directory.Exists(fullFolder))
-          {
-            foreach (var file in Directory.GetFiles(fullFolder, "*",
-              SearchOption.TopDirectoryOnly))
-            {
-              if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
-              AssetDatabase.DeleteAsset(ToAssetPath(file));
-            }
-          }
-        }
-      }
-
-      Directory.CreateDirectory(resolvedFolder);
+      Directory.CreateDirectory(folder);
       AssetDatabase.Refresh();
-    }
-
-    private static string ToAssetPath(string fullPath)
-    {
-      string normalizedPath = Path.GetFullPath(fullPath).Replace('\\', '/');
-      string projectRoot = Directory.GetParent(Application.dataPath).FullName
-        .Replace('\\', '/');
-      if (normalizedPath.StartsWith(projectRoot + "/", StringComparison.OrdinalIgnoreCase))
-        return normalizedPath.Substring(projectRoot.Length + 1);
-      return normalizedPath;
     }
 
     #region 菜单构建
@@ -565,8 +539,8 @@ namespace UnityBox.AdvancedCostumeController
       sb.AppendLine(T($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}", $"- Parts: {outfits.Sum(o => o.Parts.Count)}"));
       sb.AppendLine(T($"- 输出目录：{config.GetResolvedGeneratedFolder()}", $"- Output: {config.GetResolvedGeneratedFolder()}"));
       sb.AppendLine(controllerExists
-        ? T($"- Controller：已存在，继续生成将覆盖 {controllerPath}",
-          $"- Controller: existing file will be overwritten {controllerPath}")
+        ? T($"- Controller：保留旧资产，新结果写入 {controllerPath}",
+          $"- Controller: previous assets are retained; new result {controllerPath}")
         : T($"- Controller：将新建 {controllerPath}",
           $"- Controller: new file will be created {controllerPath}"));
       var defaultChoice = defaultOutfit?.DefaultChoiceObject ??

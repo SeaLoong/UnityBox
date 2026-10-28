@@ -52,6 +52,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 stateMachine = stateMachine,
                 blendingMode = AnimatorLayerBlendingMode.Override,
                 iKPass = false,
+                syncedLayerIndex = -1,
             };
         }
 
@@ -158,10 +159,8 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (!string.IsNullOrWhiteSpace(assetPath) && !string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            if (AssetDatabase.LoadAllAssetsAtPath(controllerPath).Any(existing => existing == asset))
-                return;
-
-            AssetDatabase.AddObjectToAsset(asset, controllerPath);
+            if (string.IsNullOrWhiteSpace(assetPath))
+                AssetDatabase.AddObjectToAsset(asset, controllerPath);
         }
 
         internal static AnimationClip CreateBlendshapeClip(

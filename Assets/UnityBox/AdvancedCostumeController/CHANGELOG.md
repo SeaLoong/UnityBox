@@ -4,6 +4,15 @@
 
 以下为尚未发布的 `refactor` 分支变更；历史版本条目保留当时行为，当前使用方式以 README 和使用手册为准。
 
+### Runtime, generation and performance iteration
+
+- Avatar 生成改为每次写入独立 Build，Controller、Clip 与图标共同保留；重新生成支持完整菜单和 Controller 引用的 Undo/Redo。
+- 安装按整个 Avatar 的 NDMF 参数查询校验256bit预算，超额时撤回场景并清理当前 Build。
+- 生成层显式设置独立同步索引，普通 Unity 的 Parts、共享 Mixer 和独立 Mixer 以真实 Animator 和 Standalone Player 参数序列运行。
+- 生成前的动画目标名称检查使用一次层级遍历和哈希集合，消除同级对象重复遍历。
+- 增加2/8/24套服装的资产持久化及 Animator.Update 测量，以及256×256材质变体图标渲染与像素回归。
+- 编辑器组件创建直接使用 Unity Undo.AddComponent，统一用户操作对应的 Undo 记录。
+
 ### Fixed
 
 - 多套服装共享容器时以各自 Base 保持身份，保留真实菜单目录并启用所需祖先，避免去重遗漏、路径合并和选中服装不可见。
@@ -15,11 +24,11 @@
 
 - 将完整 Scanner、Models、AnimationBuilder、Localization 和选择算法迁入 SDK/MA 独立 Core。新增普通 Unity 扫描/生成窗口，实际生成切换、Parts、两类 Mixer 与材质曲线；Avatar 生成继续调用同一核心。无 SDK 时明确拒绝网络压缩。
 - SDK Descriptor 与 Parameter Driver、MA 扫描/菜单/安装各自留在真实可选适配器；Runtime 标记保持原路径/GUID，无 SDK 可用，有 SDK 时实现真实 `IEditorOnly`。包不再强制安装 SDK/MA，Avatar 工作流需另行安装。
-- Core 共 32 个 EditMode 用例（规则18、扫描7、实际生成7），19 个集成用例仍使用真实 SDK/MA。公开模型、Scanner、AnimationBuilder 等移至 Core，自定义 asmdef 需要相应引用。
+- Core 覆盖规则、扫描、实际生成和真实 Animator；SDK/MA 集成覆盖菜单、参数、Undo、编码/解码和图标。公开模型、Scanner、AnimationBuilder 等移至 Core，自定义 asmdef 需要相应引用。
 
 - 最低 Modular Avatar 版本修正为 1.18.0，以匹配现用 API。
 - MA 集成要求 SDK Base/Avatars >= 3.7.3，以匹配 `VRCConstraintSource(Transform, float)`；独立 SDK 适配器仍支持 3.7.0。
-- 文档同步扫描、输出隔离、混搭选择值、材质转换与升级限制；保留并补齐 19 个依赖真实 SDK/MA 的 EditMode 集成用例。
+- 文档同步扫描、独立 Build 输出、混搭选择值、材质转换和升级步骤；集成用例使用真实 SDK/MA。
 - 含被清理字符的旧参数名或输出目录可能改变，需重新生成并检查保存值和旧引用。
 
 ## [0.4.13] - 2026-08-08

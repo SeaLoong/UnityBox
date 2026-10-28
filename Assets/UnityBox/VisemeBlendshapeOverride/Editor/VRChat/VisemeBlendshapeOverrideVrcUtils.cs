@@ -86,16 +86,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             var layers = descriptor.baseAnimationLayers;
 
             var source = layers[fxIndex].isDefault ? null : layers[fxIndex].animatorController;
-            if (source != null && !(source is AnimatorController))
-                throw new InvalidOperationException("The fallback path requires an AnimatorController FX layer. " +
-                    "Use NDMF 1.7 or newer for AnimatorOverrideController support.");
-
             // Each build gets its own asset; avatars with the same name must never overwrite each other.
             var controllerPath = GetFallbackGeneratedControllerPath(avatarRoot);
             EnsureFolder(Path.GetDirectoryName(controllerPath)?.Replace('\\', '/'));
             controllerPath = AssetDatabase.GenerateUniqueAssetPath(controllerPath);
-            var controller = source is AnimatorController existingController
-                ? CloneControllerToPath(existingController, controllerPath)
+            var controller = source != null
+                ? VisemeControllerCopy.CreateEditableCopy(source, controllerPath)
                 : AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
             layers[fxIndex].animatorController = controller;
@@ -103,33 +99,6 @@ namespace UnityBox.VisemeBlendshapeOverride
             descriptor.baseAnimationLayers = layers;
             descriptor.customizeAnimationLayers = true;
             return controller;
-        }
-
-        private static AnimatorController CloneControllerToPath(AnimatorController source, string targetPath)
-        {
-            var sourcePath = AssetDatabase.GetAssetPath(source);
-            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
-                return source;
-
-            EnsureFolder(Path.GetDirectoryName(targetPath)?.Replace('\\', '/'));
-
-            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(targetPath) != null)
-                AssetDatabase.DeleteAsset(targetPath);
-
-            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(source, out string _, out long sourceLocalId))
-                throw new InvalidOperationException($"Failed to identify source FX controller at '{sourcePath}'.");
-            if (!AssetDatabase.CopyAsset(sourcePath, targetPath))
-                throw new InvalidOperationException($"Failed to clone FX controller from '{sourcePath}' to '{targetPath}'.");
-
-            // A file can contain multiple AnimatorControllers. CopyAsset preserves its
-            // local IDs; loading only the main asset can silently select another graph.
-            var clonedController = AssetDatabase.LoadAllAssetsAtPath(targetPath).OfType<AnimatorController>()
-                .FirstOrDefault(candidate => AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
-                    candidate, out string _, out long localId) && localId == sourceLocalId);
-            if (clonedController == null)
-                throw new InvalidOperationException($"Failed to resolve cloned FX controller {sourceLocalId} at '{targetPath}'.");
-
-            return clonedController;
         }
 
         private static string GetFallbackGeneratedControllerPath(GameObject avatarRoot)
@@ -165,13 +134,20 @@ namespace UnityBox.VisemeBlendshapeOverride
                 current = next;
             }
         }
+        private static AnimatorController GetBaseController(RuntimeAnimatorController source)
+        {
+            while (source is AnimatorOverrideController overridden)
+                source = overridden.runtimeAnimatorController;
+            return source as AnimatorController;
+        }
+
         public static IEnumerable<AnimatorController> GetRelatedControllers(VRCAvatarDescriptor descriptor)
         {
             return (descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .Concat(descriptor.specialAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .Where(layer => !layer.isDefault)
-                .Select(layer => layer.animatorController as AnimatorController)
-                .Where(controller => controller != null && !controller.name.StartsWith("vrc_", StringComparison.OrdinalIgnoreCase));
+                .Select(layer => GetBaseController(layer.animatorController))
+                .Where(controller => controller != null);
         }
     }
 }

@@ -9,7 +9,9 @@
     "VRC.SDKBase.Editor",
     "nadena.dev.modular-avatar.core",
     "nadena.dev.modular-avatar.core.editor",
-    "UnityBox.AdvancedCostumeController.Core"
+    "UnityBox.AdvancedCostumeController.Core",
+    "nadena.dev.ndmf",
+    "nadena.dev.ndmf.vrchat"
   ],
   "includePlatforms": [
     "Editor"

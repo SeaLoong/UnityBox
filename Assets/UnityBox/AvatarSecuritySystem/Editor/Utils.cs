@@ -31,6 +31,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       {
         name = name,
         defaultWeight = defaultWeight,
+        syncedLayerIndex = -1,
         stateMachine = stateMachine
       };
     }
@@ -194,13 +195,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       if (string.IsNullOrEmpty(controllerPath))
         return;
       string assetPath = AssetDatabase.GetAssetPath(asset);
-      if (!string.IsNullOrEmpty(assetPath))
-      {
-        if (!string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
-          return;
-        if (AssetDatabase.IsSubAsset(asset) || asset == controller)
-          return;
-      }
+      if (!string.IsNullOrEmpty(assetPath)) return;
       AssetDatabase.AddObjectToAsset(asset, controller);
     }
     public static void AddSubAssets(AnimatorController controller, params UnityEngine.Object[] assets)
@@ -233,6 +228,39 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       AssetDatabase.CreateAsset(newClip, path);
       _emptyClipCache[path] = newClip;
       return newClip;
+    }
+    public static void SaveControllerGraph(AnimatorController controller)
+    {
+      var visited = new HashSet<UnityEngine.Object>();
+      var queue = new Queue<UnityEngine.Object>();
+      foreach (var layer in controller.layers) queue.Enqueue(layer.stateMachine);
+      while (queue.Count != 0)
+      {
+        var current = queue.Dequeue();
+        if (current == null || !visited.Add(current)) continue;
+        AddSubAsset(controller, current);
+        if (current is AnimatorStateMachine machine)
+        {
+          foreach (var state in machine.states) queue.Enqueue(state.state);
+          foreach (var child in machine.stateMachines)
+          {
+            queue.Enqueue(child.stateMachine);
+            foreach (var transition in machine.GetStateMachineTransitions(child.stateMachine)) queue.Enqueue(transition);
+          }
+          foreach (var transition in machine.anyStateTransitions) queue.Enqueue(transition);
+          foreach (var transition in machine.entryTransitions) queue.Enqueue(transition);
+          foreach (var behaviour in machine.behaviours) queue.Enqueue(behaviour);
+        }
+        else if (current is AnimatorState state)
+        {
+          foreach (var transition in state.transitions) queue.Enqueue(transition);
+          foreach (var behaviour in state.behaviours) queue.Enqueue(behaviour);
+          queue.Enqueue(state.motion);
+        }
+        else if (current is BlendTree tree)
+          foreach (var child in tree.children) queue.Enqueue(child.motion);
+      }
+      EditorUtility.SetDirty(controller);
     }
     public static void SaveAndRefresh() => AssetDatabase.SaveAssets();
     public static void LogOptimizationStats(AnimatorController controller, string systemName = "ASS")

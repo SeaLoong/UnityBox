@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityBox.PrefabDiffPatcher
@@ -1316,14 +1318,34 @@ namespace UnityBox.PrefabDiffPatcher
                 }
             }
             GameObject workingRoot = null;
+            var workingScene = EditorSceneManager.NewPreviewScene();
             try
             {
-                workingRoot = ComposeNode(string.Empty, sourceA, sourceB, selectionContext, isRoot: true);
+                // Instantiating the base asset once preserves its Variant/nested Prefab
+                // relationships and avoids repeatedly cloning descendant hierarchies.
+                if (PrefabUtility.IsPartOfPrefabAsset(sourceA) && sourceA.transform.parent == null)
+                {
+                    workingRoot = (GameObject)PrefabUtility.InstantiatePrefab(sourceA, workingScene);
+                    ApplyToPrefabInstance(string.Empty, sourceA, sourceB, workingRoot, selectionContext);
+                }
+                else
+                {
+                    workingRoot = ComposeNode(string.Empty, sourceA, sourceB, selectionContext, isRoot: true);
+                    if (workingRoot != null) SceneManager.MoveGameObjectToScene(workingRoot, workingScene);
+                }
                 if (workingRoot == null)
                     throw new InvalidOperationException("根据当前选择没有可生成的结果对象。");
 
                 RemapReferences(workingRoot, selectionContext.ObjectRemap);
                 ClearHideFlagsRecursively(workingRoot.transform);
+                foreach (var node in workingRoot.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!PrefabUtility.IsPartOfPrefabInstance(node)) continue;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(node.gameObject);
+                    foreach (var component in node.GetComponents<Component>())
+                        if (component != null)
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                }
 
                 var asset = PrefabUtility.SaveAsPrefabAsset(workingRoot, outputPath, out bool success);
                 if (!success || asset == null)
@@ -1335,6 +1357,50 @@ namespace UnityBox.PrefabDiffPatcher
             {
                 if (workingRoot != null)
                     Object.DestroyImmediate(workingRoot);
+                EditorSceneManager.ClosePreviewScene(workingScene);
+            }
+        }
+
+        private static void ApplyToPrefabInstance(string path, GameObject sourceA, GameObject sourceB,
+            GameObject result, SelectionContext context)
+        {
+            if (path.Length != 0 && context.IsObjectSelected(path) && sourceB != null)
+            {
+                result.name = sourceB.name;
+                result.layer = sourceB.layer;
+                result.tag = sourceB.tag;
+                result.SetActive(sourceB.activeSelf);
+                GameObjectUtility.SetStaticEditorFlags(result, GameObjectUtility.GetStaticEditorFlags(sourceB));
+            }
+
+            RegisterNodeRemap(sourceA, result, context.ObjectRemap);
+            RegisterNodeRemap(sourceB, result, context.ObjectRemap);
+            if (sourceA != null && sourceB != null)
+                ApplySelectedComponentsAtNode(result, sourceA, sourceB, path, context);
+
+            var resultChildren = PrefabDiffUtility.GetChildMap(result.transform);
+            foreach (var child in BuildOrderedChildEntries(sourceA?.transform, sourceB?.transform))
+            {
+                string childPath = PrefabDiffUtility.CombinePath(path, child.Key);
+                if (child.ChildA != null)
+                {
+                    var output = resultChildren[child.Key].gameObject;
+                    if (context.HasAnySelectionAtOrBelow(childPath))
+                        ApplyToPrefabInstance(childPath, child.ChildA.gameObject, child.ChildB?.gameObject, output, context);
+                    else
+                    {
+                        foreach (var source in new[] { child.ChildA, child.ChildB })
+                            if (source != null)
+                                foreach (var pair in BuildOldToNewRemap(source.gameObject, output))
+                                    context.ObjectRemap[pair.Key] = pair.Value;
+                    }
+                }
+                else if (context.HasAnySelectionAtOrBelow(childPath))
+                {
+                    var added = ComposeNode(childPath, null, child.ChildB.gameObject, context);
+                    if (added != null)
+                        added.transform.SetParent(result.transform, false);
+                }
             }
         }
 
@@ -1349,7 +1415,7 @@ namespace UnityBox.PrefabDiffPatcher
             if (sourceA == null && sourceB != null && !subtreeSelected && !isRoot)
                 return null;
 
-            var shellSource = ChooseShellSource(sourceA, sourceB, objectSelected);
+            var shellSource = isRoot ? sourceA : ChooseShellSource(sourceA, sourceB, objectSelected);
             if (shellSource == null)
                 return null;
 
@@ -1684,7 +1750,13 @@ namespace UnityBox.PrefabDiffPatcher
                 }
 
                 if (changed)
+                {
                     so.ApplyModifiedPropertiesWithoutUndo();
+                    // Rebuild custom serializer caches from the remapped backing fields
+                    // before their next OnBeforeSerialize writes those caches out again.
+                    if (component is ISerializationCallbackReceiver callbacks)
+                        callbacks.OnAfterDeserialize();
+                }
             }
         }
 

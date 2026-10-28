@@ -5,6 +5,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 {
     public sealed class ASSConfigData
     {
+        public ASSConfigData Clone()
+        {
+            var clone = (ASSConfigData)MemberwiseClone();
+            clone.gesturePassword = gesturePassword == null ? null : new System.Collections.Generic.List<int>(gesturePassword);
+            return clone;
+        }
+
         public SystemLanguage uiLanguage;
         public List<int> gesturePassword;
         public bool useRightHand;

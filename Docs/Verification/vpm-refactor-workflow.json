@@ -1,0 +1,21 @@
+{
+  "repo": "/workspace/unitybox-refactor-review",
+  "scope": "Local workflow/package validation; no deployment or Unity execution",
+  "packages": [
+    "top.sealoong.unitybox.advanced-costume-controller",
+    "top.sealoong.unitybox.avatar-collider-monitor",
+    "top.sealoong.unitybox.avatar-security-system",
+    "top.sealoong.unitybox.blendshape-controller-generator",
+    "top.sealoong.unitybox.build-pipeline-logger",
+    "top.sealoong.unitybox.prefab-diff-patcher",
+    "top.sealoong.unitybox.viseme-blendshape-override"
+  ],
+  "checks": [
+    "workflow exit 0",
+    "ZIP CRC",
+    "exact package contents including metadata",
+    "manifest equality",
+    "listing SHA256",
+    "VCC page URL"
+  ]
+}

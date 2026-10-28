@@ -1,241 +1,116 @@
 # Avatar Security System 技术参考
 
-本文描述 `refactor` 分支当前实现，替代旧文档中的固定第三方顺序、通用兼容性、
-安全强度和负载效果承诺。用户配置见 [README](README.md)。历史版本变化保留在
-[CHANGELOG](../CHANGELOG.md)，历史实验见仓库 `SESSION_HANDOFF_2026-10-24.md`。
+ASS 将配置、图生成、原生 Unity 运行、VRChat 行为和构建资产生命周期分别组织为独立模块。
+[用户指南](README.md)包含 Inspector 与输入 API 的使用流程。
 
-## 1. 实现范围与验证状态
+## 结构与装配
 
-ASSComponent 在无 SDK 时是纯 Unity `MonoBehaviour`；安装 `com.vrchat.base >= 3.7.0` 时
-通过单点条件编译保留真实 `IEditorOnly` 标记，适配 SDK 的 preprocess 前校验。实际功能由 Editor 构建器生成
-Animator、动画、材质和对象。没有运行时密码服务器或所有权验证。密码序列和解锁参数
-存在于构建资源中，名称混淆不能使其成为可信认证机制。
-
-本轮已完成源码审查；真实 Unity 2022.3.22f1 导入并执行 42 项 EditMode 回归测试，
-全部通过且零跳过（核心 15、SDK 27）。完整环境为 SDK 3.8.2、MA 1.18、NDMF 1.11，
-证据见仓库 `Docs/Testing.md`。实际 Avatar 构建、NDMF 最终 Controller 提交和 VRChat
-运行仍需验证；下列设计约束不能据测试通过扩大为完整运行时保证。
-
-## 2. 代码结构与职责
-
-| 文件 | 职责 |
+| 模块 | 职责 |
 | --- | --- |
-| `Runtime/Component.cs` | SDK 独立 ASSComponent、默认值和输入字段校验 |
-| `Inspector.cs` / `I18n.cs` | 配置 UI 与中英日文案 |
-| `ASSConfigData.cs` | 纯 Unity 配置快照与密码校验 |
-| `VRChat/Processor.cs` | SDK 主入口、Descriptor 快照、资产隔离、主功能协调、参数注册与清理 |
-| `VRChat/ConfigCaptureProcessor.cs` | 每次早期 SDK preprocess 重置状态并捕获配置 |
-| `NDMF/NDMFPlugin.cs` | NDMF Resolving 捕获及 PlatformFinish 主功能调用 |
-| `VRChat/PlayableObfuscationProcessor.cs` | SDK 后期 Playable 混淆及 ASS 层索引刷新 |
-| `Lock.cs` | 身体锁定、一次性恢复和终态释放 |
-| `GesturePassword.cs` | 手势序列、保持/容错、成功/失败及反馈启用 |
-| `Countdown.cs` | 输入期限、TimeUp 参数和独立警告音频层 |
-| `Feedback.cs` | Overlay mesh/material 与音频对象 |
-| `VRChat/Defense.cs` | 遗留主动负载生成；新组件默认禁用，Play Mode 跳过 |
-| `Obfuscator.cs` | 生成名、Controller/Motion 副本及可选图变换 |
-| `Utils.cs` / `Constants.cs` | SDK 独立参数、曲线、子资产、名称和路径工具 |
-| `IAnimatorBehaviourAdapter.cs` | 生成器要求的平台行为契约，不提供空实现 |
-| `VRChat/VrcAnimatorBehaviourAdapter.cs` | 原 SDK ParameterDriver / PlayAudio / LayerControl 实现 |
-| `VRChat/VrcPlayableControllers.cs` | Descriptor 层遍历及核心 Controller 资源处理的适配 |
-| `VRChat/ConfigurationStripper.cs` | 在上传克隆中显式移除配置组件 |
+| Runtime/Component.cs | 角色配置；SDK Base 可用时实现真实 IEditorOnly |
+| Runtime/AnimatorStateEntryActions.cs | 原生 Animator 状态进入时设置参数、层权重并播放声音 |
+| Runtime/StandaloneSecurityInput.cs | SetGesture、IsUnlocked、HasTimedOut、Restart 的运行时接口 |
+| ASSConfigData.cs | 配置捕获和独立列表副本 |
+| StandaloneConfigurationStripper.cs | Unity 构建场景副本中移除 ASSComponent，保留运行驱动与源配置 |
+| StandaloneSecurityBuilder.cs | 生成普通 Unity 可持久化 Controller 和输入组件 |
+| UnityAnimatorBehaviourAdapter.cs | 将生成请求转为原生 StateMachineBehaviour |
+| VRChat/VrcAnimatorBehaviourAdapter.cs | 将同一请求转为 SDK Behaviour |
+| Lock/GesturePassword/Countdown/Feedback | 身体显示、手势、期限、警告与视听资源 |
+| AnimatorLifecycle.cs | 解锁后重启及超时重试；恢复已释放功能层 |
+| Utils.cs | 参数/转场、独立层创建、图持久化与资源工具 |
+| ControllerGraphCopy.cs | 内存图复制与 OverrideController 展开 |
+| Obfuscator.cs | 名称映射、Motion 副本与每次构建的上下文捕获/恢复 |
+| VRChat/Processor.cs | Descriptor、参数、功能生成、独立目录及 SDK 还原 |
+| NDMF/NDMFPlugin.cs | Resolving 捕获与 PlatformFinish 生成 |
 
-| 装配 | 依赖与编译条件 |
-| --- | --- |
-| `UnityBox.AvatarSecuritySystem.Runtime` | 无 SDK 时仅 Unity；有 SDK Base 时通过 `UNITYBOX_VRC_BASE` 保留真实 IEditorOnly 标记 |
-| `UnityBox.AvatarSecuritySystem` | Runtime + UnityEditor；核心图、曲线、资源与配置 UI |
-| `UnityBox.AvatarSecuritySystem.VRChat` | 核心 + SDK；`com.vrchat.avatars >= 3.7.0` 定义 `UNITYBOX_VRC_SDK` |
-| `UnityBox.AvatarSecuritySystem.NDMF` | 核心 + VRChat 适配 + NDMF；同时要求 SDK 与 NDMF >= 1.8.0 |
-| `UnityBox.AvatarSecuritySystem.Editor.Tests` | 纯 Unity 核心 + Test Framework |
-| `UnityBox.AvatarSecuritySystem.VRChat.Tests` | 核心 + SDK 适配 + Test Framework；要求 SDK |
+核心 Editor/Runtime 装配引用 Unity；VRChat 与 NDMF 使用可选适配装配。SDK 门槛为
+Base/Avatars 3.7，NDMF 适配为 1.8。普通 Unity 使用 UnityAnimatorBehaviourAdapter，
+SDK 路径使用 VrcAnimatorBehaviourAdapter；第三方平台可实现 IAnimatorBehaviourAdapter
+及 IAnimatorLayerWeightAdapter 接入状态进入操作与层权重操作。
 
-Runtime 的 asmdef 不硬引用 SDK 装配，使用真实 VRCSDKBase.dll 的自动引用设置；只有可选标记
-受包版本定义控制，不是伪造接口。包清单不再强制安装 SDK。`IAnimatorBehaviourAdapter` 让原手势/计时/锁定图不依赖 SDK
-类型，但关键进入状态行为必须显式提供；三个生成器在 null 适配器下直接抛异常，
-不会生成缺少参数驱动的伪可用系统。SDK Processor 注入 `VrcAnimatorBehaviourAdapter.Instance`，
-沿用原有 VRC Behaviour 字段和值；本次没有引入新的通用 Unity 运行时密码后端。
+## 生成图和运行周期
 
-## 3. 配置与入口判定
+所有生成层显式设置 `syncedLayerIndex=-1`，分别运行自己的状态机。中性 Base Layer 在
+最前，功能层依次追加；生命周期层不绑定用户属性，使用 WD Off。功能层使用 WD On，
+完成恢复/反馈后通过层权重归零释放输出。
 
-`ASSConfigData.FromAvatar` 先检查 Avatar 根，再使用包含 inactive 子对象的
-`GetComponentInChildren` 找第一份配置。它不会按 MonoBehaviour.enabled 过滤。
-多组件行为不应作为配置合并功能使用。
-
-`FromComponent` 复制值字段和密码列表，避免后续源列表变化影响已捕获的配置。
-音频是保留的 Unity 资源引用。没有组件时重新 Capture 会移除该 Avatar 的旧快照。
-
-普通模式下：
-
-- 非法手势值（0–7 以外）使主处理失败。
-- null/空密码列表合法但表示跳过生成。
-- Play Mode 且 `enabledInPlaymode=false` 时跳过生成。
-- `defaultEnableDefense` 会绕过普通密码/计时生成，但不代表该遗留模式经过完整验证。
-
-`OnValidate` 限制警告阈值不超过总时长一半，确保 maxHold 大于 hold+tolerance，
-将旧 WD 字段归一化为 On。默认防御模式会取消 disableDefense。
-新组件/Reset 默认 disableDefense=true、defaultEnableDefense=false；不会自动迁移旧场景值。
-
-## 4. 构建时序与资源隔离
-
-### SDK 独立路径
-
-1. `VRChat/ConfigCaptureProcessor` 在所有 SDK 构建中以 `int.MinValue+10` 重置本次状态并捕获配置。
-2. `Processor` 的 callbackOrder 为 -1024；记录 Descriptor 原 Playable 层、
-   ExpressionParameters 及 customizeAnimationLayers/customExpressions 开关。
-3. 清理仅指向 ASS Generated 路径的过期控制器引用，再清理 Generated。
-   无 AssetDatabase 路径的第三方内存 Controller 不视为过期 ASS 资产。
-4. 无论是否启用混淆，复制将被修改的 FX Controller；需要 Playable 混淆时准备其它
-   槽位的独立副本。同一源用于多个槽位时，输出 Controller 和 Motion 目录各自隔离。
-   Controller 从同文件多子资产中按原 local file ID 选择；Controller/Motion 复制或解析
-   失败会终止，不能退回源 BlendTree 后继续递归写入。
-   customizeAnimationLayers=false 时不复制旧数组中的无效 Controller；生成启用 FX 前
-   先将 build clone 的 base/special 槽位设为默认，缺少 FX 时补建，原快照不受影响。
-5. 生成各功能层，对原 ExpressionParameters 做构建副本；原资产缺失时创建新副本。
-6. `ConfigurationStripper` 在 SDK preprocess 最后显式移除构建克隆中的配置组件。
-7. SDK 后处理恢复快照与开关，清除配置快照，只有存在独立构建快照时回收 Generated。
-
-主 SDK 回调失败/抛异常也会尝试恢复快照。后处理是否在某个第三方失败路径运行，仍由
-SDK/第三方环境决定，应在重复构建回归中确认，不能以成功路径推断所有异常均可恢复。
-
-### NDMF 路径
-
-- Resolving 在 NDMF RemoveEditorOnly 之前更新 Processor 的弱键配置快照，然后清理
-  构建克隆配置；若中间插件已经剥离组件，则保留本次早期 SDK 捕获，同时清除完成标记。
-- PlatformFinish 调用 `ProcessAvatar(..., hasNDMF:true)`，并声明
-  `AfterPlugin("jp.lilxyzw.lilycalinventory")`。只有成功返回才标记 NDMF 完成；失败释放本次状态。
-- SDK 主回调仅在本 Avatar 的 NDMF 完成标记存在时跳过。捕获不等于处理，NDMF 关闭
-  ApplyOnBuild/ApplyOnPlay 时独立 SDK 路径仍可工作。每次 SDK 早期捕获、失败及后处理
-  都清理旧标记，避免同对象重试继承过期成功状态。
-- 当前实现读取 Descriptor 上的 Controller，两种路径都先复制将修改的持久化 Controller
-  与外部 Motion，再生成；仅安装 ASS + NDMF 也不依赖其它插件先克隆资产。没有强制启用
-  `AnimatorServicesContext`，不能声称覆盖所有最终虚拟图/第三方提交顺序。
-- NDMF 后处理通常不删除 Generated，以免构建对象仍引用其中资产。下一次主处理仍会
-  清理共享目录，连续多 Avatar 和失败重试是必须覆盖的回归场景。
-
-### 后置处理
-
-`PlayableObfuscationProcessor` 注册在 `int.MaxValue-1`，使用真实 NDMF 完成状态决定路径。
-对有有效 ASS 配置的 Avatar，先复制晚期新增的持久化 Controller，再刷新 ASS 的
-`VRCAnimatorLayerControl` 索引。开启混淆且没有 VRC Contact 组件时才处理 Playable 图，
-处理后再次刷新索引。检测 Contact 时跳过图混淆，不等于保证所有 Contact/SPS 组合可用。
-
-callbackOrder、NDMF phase 和 AfterPlugin 只描述本插件的约束；同 order 无固定相对顺序，
-不应在文档列出第三方当前实现数值并承诺永远兼容。
-
-## 5. 生成参数与 FX
-
-以下是关闭混淆时的可读名称；开启混淆后通过 Constants/Obfuscator 映射。
-
-| 参数 | 表达式注册 | 语义 |
+| 层 | 主路径 | 进入操作 |
 | --- | --- | --- |
-| `ASS_PasswordCorrect` | Bool；default=0，saved=true，networkSynced=true | 保存/同步解锁状态，不代表身份 |
-| `ASS_TimeUp` | 普通模式注册 Bool；default=0，saved=false，networkSynced=false | 本地输入期限到达 |
-| `IsLocal` | VRChat 内建参数 | 本地/远端入口条件 |
-| `GestureLeft` / `GestureRight` | VRChat 内建参数 | 手势值 0–7 |
+| Lock | Remote → Locked → UnlockRestore → Unlocked | 完成后释放自身 |
+| Password | Wait → InputWaiting → Holding → Confirmed/下一位 → Success → Completed → Release | Success 写 PasswordCorrect |
+| Countdown | Remote → Countdown → TimeUp/Unlocked → Release | TimeUp 本地写超时状态 |
+| Audio | Remote → Waiting → WarningBeep → Stop → Release | 进入警告状态播放声音 |
+| Lifecycle | Armed ↔ Unlocked；Restart 可回到 Armed | 重置 TimeUp/Restart，启用功能层 |
 
-可选混淆会增加额外参数和图结构。表达式总预算仍需由最终 SDK 构建验证。
-注册保留用户其他参数，并对同名 ASS 当前参数做替换；旧命名配置的迁移不是通用参数垃圾回收。
+Holding Clip 长度等于 maxHold；确认转场的 normalized exit time 为 hold/maxHold，且继续
+检查当前手势。错误输入使用两条转场表达小于或大于，连续保持从头重新计时。
+Confirmed 允许保留上一位或转向下一位，容错状态按配置期限等待下一位；末位直接成功。
 
-`GetFXController` 启用 customizeAnimationLayers，复用当前可编辑 AnimatorController，
-或创建 FX。AnimatorOverrideController 明确报错，不会静默忽略覆盖信息。
-所有 ASS 生成状态当前采用 WD On；不要根据隐藏的 writeDefaultsMode=Off 推断生成结果。
+解锁后生命周期层保持工作。PasswordCorrect 变回 false 时进入 Armed，恢复所有功能层
+权重；它们从 Release/Unlocked 回到等待入口。Restart 本地 Bool 可从 Armed 自身重进，
+重置超时状态并恢复层权重，使超时终态同样接受新输入。参数写入在真实原生
+StateMachineBehaviour 或 SDK ParameterDriver 的状态进入回调中执行。
 
-## 6. 状态机与反馈
+普通 Unity 后端缓存当前 Controller 的参数类型，按 Bool/Int/Float/Trigger 类型执行赋值。
+localOnly 按 IsLocal 的实际 Bool/Int/Float 类型判断。StandaloneSecurityInput 持有生成后的
+参数名称，因此名称混淆与运行时输入 API 可同时使用。
 
-### Lock
+## 身体显示与动画控制权
 
-仅 `disableRootChildren=true` 时生成。Remote 为初始状态，本地且未解锁进入 Locked；
-已解锁或之后成功时进入 UnlockRestore，再进入 Unlocked。
+生成前只扫描一次 Avatar 组件，索引 Contact 自身所在的根分支及 rootTransform 指向的
+根分支。Lock 与 UnlockRestore 复用这份 HashSet。普通分支生成三条缩放曲线；Contact
+分支按原 Renderer 启用状态隐藏/恢复，Transform 保持工作。
 
-Locked 对普通根子对象写缩放 0；对于含 Contact 或其 rootTransform 引用的分支写
-Renderer.enabled，保留 Transform。恢复 clip 还原生成时记录的缩放/可见性，稳定态
-不再写用户对象曲线，并用 layer control 释放 ASS 层。
+UnlockRestore 恢复生成时的缩放/可见性，然后 Lock 层权重归零。生命周期层没有身体
+属性曲线，用户自身动画层继续驱动其缩放和可见性。真实 Animator 用例包含基础层持续
+输出另一缩放值的场景，检查解锁后该值重新成为输出。
 
-当前没有可靠的运行中重新启用已自释放层的通用方案，所以不要承诺将解锁参数改回 false
-必然重新锁定。相关行为应在实际客户端验证。
+## 资源身份与复制
 
-### GesturePassword
+`Utils.SaveControllerGraph` 遍历状态机、状态、转场、Behaviour 和 Motion，把尚无资源
+路径的生成对象加入 Controller。已有路径的对象保持原资源关系，避免重复 AddObjectToAsset。
+生成后的 Clip、状态与原生 Behaviour 可直接进入 Player 构建。
 
-`Wait_Input → InputWaiting → Step_N_Holding → Step_N_Confirmed` 是普通输入主路径。
-正确输入 Holding 的最短时间通过 clip 的 normalized exit time 表达，并继续检查手势
-仍是当前值。Holding 的错误出口分成 `< expected` 与 `> expected` 两条转场，表示 OR；
-单条转场里不能同时要求这两个条件。
+`ControllerGraphCopy` 展开 OverrideController 链，按原始 Clip 对象身份解析有效覆盖。
+图对象通过明确的 AnimatorStateMachine/State/Transition/BlendTree 构造器创建，随后
+CopySerialized 并重映射图内共享引用。Override 仅替换状态和 BlendTree 的 Motion 引用，
+Behaviour 中的独立音频/Clip 配置保持其语义。瞬态 Clip/Mask 一并持久化。
 
-非末位 Confirmed 允许保持刚确认的手势，遇到下一位进入下一 Holding；其它值进入
-ErrorTolerance，容错期限内恢复到下一位可继续，否则回到输入等待。Confirmed 等待过久
-也回到输入等待。最后一位直接进入 Success，不创建该位的 Confirmed/ErrorTolerance。
-Idle=0 使用相同规则；代码没有通用任意后缀序列匹配。
+持久化 Controller 副本保留 CopyAsset 的同文件 local file ID 选择；外部 Motion 按资源
+身份复制。内存 Controller 也生成独立可持久化图；SDK 后处理还原原 Descriptor 引用。
 
-Success 使用 ParameterDriver 设置 PasswordCorrect，播放配置的成功音效；之后
-Completed 清理反馈并进入 Release 自释放。已有 saved 解锁参数和远端已解锁状态也有
-对应完成路径。AnyState 失败转场同时要求 TimeUp=true 且 PasswordCorrect=false。
+原配置 MonoScript GUID 已由 Assets/UnityBox.unity 三处具有 gesturePassword 等 ASS 字段
+的序列化块恢复，值为 `1c51e6a139920bb4ca12700dc82627ff`。类型解析测试直接检查该 GUID
+对应 MonoScript.GetClass() 为 ASSComponent，原场景文件保持原内容。
+此前缺失的 Editor 脚本、asmdef 和包目录 metadata 已补齐确定的稳定 GUID；已有 metadata
+保持原值，仓库路径探针继续由正式打包筛选排除。
 
-### Countdown 与 Audio
+## 多 Avatar 构建生命周期
 
-Countdown 由本地未解锁入口启动。计时 clip 控制 Overlay 进度；没有 Overlay 时用
-无可见目标的计时曲线维持时长。超时转场要求尚未解锁，TimeUp driver 仅本地写参数。
-成功和超时终态会释放倒计时层。
+每次 Avatar 构建分配 `Generated/Build_<id>`，Controller、参数和共享空 Clip 都进入该目录。
+同一 Avatar 的生成重试更新自己的目录；另一个 Avatar 的目录及引用继续保留。
+Obfuscator 的种子、目录、生成资源集合和跳过二次处理的层集合随该 Avatar 的构建快照保存，
+晚期处理恢复对应快照，交错处理不同 Avatar 时仍使用各自的名称和输出路径。
 
-警告 Audio 是独立可选层，在总时长减 warningThreshold 后开始警告；音频等待 clip
-包含实现所用的小余量，因此并非精确音频时钟。成功或 TimeUp 后停音并释放层。
-关闭 warning sound 不影响密码成功音效。
+SDK 路径记录原 base/special Controller、参数及自定义开关；后处理先还原，再仅回收此次
+SDK 快照所属的生成目录。NDMF 路径按 pass 成功完成标记 SDK 去重，输出目录随结果保留。
+NDMF pass 的扩展上下文兼容性由调度器管理，上游虚拟动画提交后再进入物理生成阶段。
 
-### Feedback
+生命周期状态中的 LayerControl 指向兄弟层，并以 `ASS_TargetLayer/<层名>` 记录目标。
+晚期索引刷新按最终 Controller 层名重建这些索引；其余 ASS 自释放控制继续指向所属层。
 
-生成 Overlay 根、网格/材质及按配置需要的 AudioSource，默认对象关闭，由对应功能层
-控制。缺失默认音频时保留空引用；显式音频引用不被 Resources 默认值覆盖。
-源音频和 Logo 导入设置不再由构建器修改。
+## 开发与测量
 
-## 7. 混淆与遗留负载的边界
+- Editor 核心测试运行原生 Animator：连续保持、错误输入、完整序列、释放与重锁、超时
+  Restart、基础动画层控制权、图持久化、Override 交换、内存复制和原 GUID。
+- NDMF 用例使用真实插件调度计划，按上游虚拟编辑→ASS 物理生成→下游重新激活虚拟编辑
+  执行 BuildContext.RunPass 与 Finish；最终 Controller 保留三方层，且原 Controller 内容保持原值。
+- SDK 测试覆盖真实 Behaviour、参数副本、上传配置清理、完成状态、多 Avatar 输出、
+  SDK 目录回收和最终层索引。
+- 性能测试固定 16/64/256 个根子对象，预热后采集 7 个 Stopwatch 样本，输出结构化
+  UNITYBOX_BENCHMARK 行；图生成功能与实际 Animator 求值分别记录。
+- 构建、Player 执行、用例及测量结果统一记录于仓库 [Testing](../../../../Docs/Testing.md)
+  和 [Performance](../../../../Docs/Performance.md)。
 
-混淆改变生成名称、复制资源和图结构，不提供密码学保密或资源权限。资产名中存在的
-指令式文本也是普通不可信数据，不应被工具当作操作指令执行。旧文档关于它们阻止
-分析工具的效果没有验证依据，不再作为功能保证。
-
-Defense 实现包含高 GPU 负载；新组件默认禁用，Play Mode/isDebugMode 路径直接跳过。
-本文不提供放大负载的配置说明。默认防御模式跳过密码和倒计时，且关闭 Lock 时存在
-密码 Animator 参数缺口，不是支持的组合。已保存解锁值的丢失可影响合法使用者。
-本地条件、预算估算或 lightweight 标记都不能证明客户端稳定性或资源所有权。
-
-## 8. 开发 API 与约束
-
-| API | 使用约束 |
-| --- | --- |
-| `ASSConfigData.FromComponent/FromAvatar` | 构建配置快照；列表复制，Unity 资产引用保留 |
-| `Processor.CaptureConfigSnapshot` | 开始本次 SDK 构建；清旧完成状态，没有组件会删除旧快照 |
-| `Processor.CaptureNdmfConfigSnapshot` | NDMF Resolving 更新配置；组件已剥离时保留本次早期捕获 |
-| `Processor.MarkNdmfCompleted/WasProcessedByNdmf` | 仅真实 NDMF pass 成功后标记；SDK 据此去重 |
-| `Processor.ReleaseBuildSnapshot` | 异常退出时释放本 Avatar 的配置与完成状态 |
-| `Processor.ProcessAvatar` | 只对构建对象调用；hasNDMF 必须与实际调用路径一致 |
-| `Processor.ProcessPlayableObfuscation` | 后置校正/可选混淆；不要作为手动编辑源资产的入口 |
-| `VrcPlayableControllers.PreparePlayableControllerCopies` | 只处理已启用的自定义层，为持久化 Controller/Motion 创建副本 |
-| `VrcPlayableControllers.EnableCustomAnimationLayers` | 在构建对象上启用输出；原关闭时清除残留 Controller 的有效语义并补 FX 槽位 |
-| `Utils.AddIsLocalCondition` | 按现有参数类型构造条件；不是对第三方所有图变换的保证 |
-| `Utils.AddSubAsset` | 保存控制器使用的生成资源引用 |
-| `Obfuscator.DuplicateAnimatorControllerForBuild` | 对保存的 Controller 构建副本；内存 Controller 仍由调用方管理，不保证深复制 |
-| `new GesturePassword/Countdown/Lock(..., adapter)` | 显式提供状态进入行为；SDK 使用 `VrcAnimatorBehaviourAdapter.Instance` |
-| `IAnimatorBehaviourAdapter.AddDisableSelfLayerControl` | 使用实际层索引，仅用于所属 ASS 层 |
-
-不要把用户文件放入 `Constants.ASSET_FOLDER`。修改默认值不等于迁移已有序列化配置；
-重命名带序列化引用的脚本/资源须保留原 `.meta`。原脚本 GUID 缺失需要从开发项目恢复。
-
-## 9. 测试矩阵与未解决项
-
-纯 Unity 用例位于 `../Tests/Editor/AnimationCoreTests.cs`：配置复制、手势范围、按现有参数
-类型生成条件、连续保持/超时图、真实追加层索引、缺失平台行为拒绝生成和 Controller
-副本隔离。测试记录适配器只检查生成请求，不模拟任何 SDK 类型。
-
-SDK 集成用例移至 `../Tests/Editor/VRChat/BuildAssetIsolationTests.cs`：原资产/表达式参数
-隔离、配置快照、安全默认值，以及原 SDK Behaviour 字段、上传组件清理、完成标记生命周期及晚期源资产保护。当前声明 15 个核心和 27 个 SDK 用例；两个测试装配
-均要求 `UNITY_INCLUDE_TESTS`；后者另要求 SDK。实际结果以 Unity Test Runner 报告为准。
-
-本地应验证：
-
-- SDK 独立与 NDMF 两条构建路径，Play Mode 开/关，连续两次构建及切换 Avatar。
-- 非默认/默认 FX、明确拒绝 OverrideController、原表达式参数存在/缺失、构建异常恢复。
-- 错误手势、连续保持、Idle 密码、重复手势、成功/超时边界、saved 解锁及远端行为。
-- Lock 开/关、Contact 分支、衣柜/口型与同一属性冲突、WD 和 layer control 最终索引。
-- Overlay/警告音效开/关、自定义音频、缺失资源和最终包元数据。
-
-尚未解决或证明：NDMF 最终 Controller 提交时序、共享 Generated 多 Avatar 生命周期、
-释放层后的动态重锁、主动负载安全性/有效性，以及任意第三方组合的兼容性。
-正式包排除仓库动画路径探针及平台相关 fixture；其历史实验不能替代以上测试。
+遗留主动负载默认关闭，普通 Unity Builder 始终生成手势工作流；SDK 仍保留已有配置
+字段供既有工程读取。正式包保留既有 metadata，排除动画路径实验探针和平台 Bundle。

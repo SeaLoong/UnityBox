@@ -20,6 +20,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters ExpressionParameters;
             public bool CustomExpressions;
             public bool CustomizeAnimationLayers;
+            public string GeneratedFolder;
         }
 
         private static readonly List<PlayableLayerSnapshot> PlayableLayerSnapshots = new List<PlayableLayerSnapshot>();
@@ -27,6 +28,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             public ASSConfigData Config;
             public bool NdmfCompleted;
+            public Obfuscator.BuildContext ObfuscationContext;
+            public string GeneratedFolder;
         }
 
         // Object identity and weak keys prevent a destroyed avatar's instance ID from
@@ -71,7 +74,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             //   - NDMF 路径：NDMFPlugin 在 NDMF 管线内处理，未调用 SnapshotPlayableLayers
             //   - 独立路径：OnPreprocessAvatar 调用了 SnapshotPlayableLayers
             // 通过 PlayableLayerSnapshots 有无快照来区分，以决定是否清理 Generated。
-            bool hasSnapshots = PlayableLayerSnapshots.Count > 0;
+            var generatedFolders = PlayableLayerSnapshots.Select(snapshot => snapshot.GeneratedFolder).Where(path => !string.IsNullOrEmpty(path)).Distinct().ToArray();
+            bool hasSnapshots = generatedFolders.Length > 0;
 
             RestorePlayableLayerSnapshots("postprocess");
             ClearConfigSnapshots("postprocess");
@@ -82,7 +86,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             // 因此该路径不在 SDK 后处理立即删除 Generated。
             if (hasSnapshots)
             {
-                CleanupTransientGeneratedAssets("postprocess");
+                foreach (var folder in generatedFolders) CleanupTransientGeneratedAssets("postprocess", folder);
             }
         }
         /// <summary>
@@ -111,12 +115,15 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 Debug.Log($"[ASS] Using AvatarSecuritySystem component from child object '{assConfig.sourceObjectName}'");
             }
-            Debug.Log("[ASS] Write Defaults: all generated ASS states use WD On");
+            var build = BuildSnapshots.GetValue(avatarGameObject, _ => new BuildSnapshot { Config = assConfig });
+            if (string.IsNullOrEmpty(build.GeneratedFolder))
+                build.GeneratedFolder = ASSET_FOLDER + "/Build_" + System.Guid.NewGuid().ToString("N");
+            Debug.Log("[ASS] Write Defaults: generated feature states use WD On; the lifecycle supervisor has no property curves");
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
                 enableDecoyLayers: assConfig.enableDecoyLayers,
                 enableDecoyStates: assConfig.enableDecoyStates,
-                generatedFolder: ASSET_FOLDER);
+                generatedFolder: build.GeneratedFolder);
             Constants.ApplyObfuscation();
             if (!assConfig.defaultEnableDefense)
             {
@@ -209,16 +216,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 GenerateDecoyLayer(fxController, instructionalClips);
                 InjectFakeStatesIntoRealLayers(fxController, instructionalClips);
             }
+            if (!assConfig.defaultEnableDefense)
+                AnimatorLifecycle.Generate(fxController, VrcAnimatorBehaviourAdapter.Instance, VrcAnimatorBehaviourAdapter.Instance);
             RegisterASSParameters(descriptor, assConfig);
+            Utils.SaveControllerGraph(fxController);
             Utils.SaveAndRefresh();
             Utils.LogOptimizationStats(fxController);
+            build.ObfuscationContext = Obfuscator.CaptureContext();
             Debug.Log("[ASS] Security system generation complete!");
             return true;
         }
 
-        private static void CleanupTransientGeneratedAssets(string stage)
+        private static void CleanupTransientGeneratedAssets(string stage, string folder = null)
         {
-            string generatedPath = ASSET_FOLDER.Replace('\\', '/');
+            string generatedPath = (folder ?? Obfuscator.GeneratedFolder).Replace('\\', '/');
             if (!AssetDatabase.IsValidFolder(generatedPath))
                 return;
             try
@@ -240,10 +251,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public static void CaptureConfigSnapshot(GameObject avatarGameObject, string stage)
         {
             if (avatarGameObject == null) return;
+            BuildSnapshots.TryGetValue(avatarGameObject, out var previous);
             BuildSnapshots.Remove(avatarGameObject);
             var config = ASSConfigData.FromAvatar(avatarGameObject);
             if (config == null) return;
-            BuildSnapshots.Add(avatarGameObject, new BuildSnapshot { Config = config });
+            BuildSnapshots.Add(avatarGameObject, new BuildSnapshot { Config = config, GeneratedFolder = previous?.GeneratedFolder });
             Debug.Log($"[ASS] Captured AvatarSecuritySystem configuration at {stage} from '{config.sourceObjectName}'");
         }
 
@@ -302,7 +314,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 SpecialLayers = CloneAndSanitizePlayableLayers(descriptor.specialAnimationLayers),
                 ExpressionParameters = descriptor.expressionParameters,
                 CustomExpressions = descriptor.customExpressions,
-                CustomizeAnimationLayers = descriptor.customizeAnimationLayers
+                CustomizeAnimationLayers = descriptor.customizeAnimationLayers,
+                GeneratedFolder = Obfuscator.GeneratedFolder
             });
         }
 
@@ -438,6 +451,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!ShouldProcessAvatar(assConfig))
                 return true;
 
+            if (BuildSnapshots.TryGetValue(avatarGameObject, out var build) && build.ObfuscationContext != null)
+            {
+                Obfuscator.RestoreContext(build.ObfuscationContext);
+                Constants.ApplyObfuscation();
+            }
             // Late build hooks may have installed a different persistent controller.
             // Isolate it before repairing layer indices or renaming its graph.
             VrcPlayableControllers.PreparePlayableControllerCopies(descriptor,
@@ -477,7 +495,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var layers = controller.layers;
                 for (int i = 0; i < layers.Length; i++)
                 {
-                    RefreshASSLayerControlIndices(layers[i].stateMachine, i, ref changedCount);
+                    RefreshASSLayerControlIndices(layers[i].stateMachine, i, layers, ref changedCount);
                 }
 
                 if (changedCount > 0)
@@ -489,7 +507,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         }
 
         private static void RefreshASSLayerControlIndices(
-            AnimatorStateMachine stateMachine, int layerIndex, ref int changedCount)
+            AnimatorStateMachine stateMachine, int layerIndex, AnimatorControllerLayer[] layers, ref int changedCount)
         {
             if (stateMachine == null) return;
 
@@ -509,9 +527,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
                         changedCount++;
                     }
-                    if (control.layer != layerIndex)
+                    int targetIndex = layerIndex;
+                    if (control.debugString.StartsWith(AnimatorLifecycle.TargetLayerPrefix, System.StringComparison.Ordinal))
                     {
-                        control.layer = layerIndex;
+                        string targetName = control.debugString.Substring(AnimatorLifecycle.TargetLayerPrefix.Length);
+                        targetIndex = System.Array.FindIndex(layers, layer => layer.name == targetName);
+                        if (targetIndex < 0) continue;
+                    }
+                    if (control.layer != targetIndex)
+                    {
+                        control.layer = targetIndex;
                         changedCount++;
                     }
                 }
@@ -519,7 +544,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             foreach (var childMachine in stateMachine.stateMachines)
             {
-                RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, ref changedCount);
+                RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, layers, ref changedCount);
             }
         }
 
@@ -574,7 +599,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             bool needTimeUp = !(assConfig != null && assConfig.defaultEnableDefense);
             if (needTimeUp)
             {
-                existingParams.RemoveAll(p => p.name == PARAM_TIME_UP);
+                existingParams.RemoveAll(p => p.name == PARAM_TIME_UP || p.name == PARAM_RESTART);
+                assParams.Add(new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
+                {
+                    name = PARAM_RESTART, valueType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.ValueType.Bool,
+                    defaultValue = 0f, saved = false, networkSynced = false,
+                });
                 assParams.Add(new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.Parameter
                 {
                     name = PARAM_TIME_UP,
@@ -617,7 +647,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             assParams.AddRange(existingParams);
             expressionParameters.parameters = assParams.ToArray();
-            assetFolder = assetFolder ?? ASSET_FOLDER;
+            assetFolder = assetFolder ?? Obfuscator.GeneratedFolder;
             System.IO.Directory.CreateDirectory(assetFolder);
             AssetDatabase.Refresh();
             AssetDatabase.CreateAsset(expressionParameters,
@@ -645,9 +675,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             else
             {
-                string path = $"{ASSET_FOLDER}/{CONTROLLER_NAME}";
-                System.IO.Directory.CreateDirectory(ASSET_FOLDER);
+                string path = $"{Obfuscator.GeneratedFolder}/{CONTROLLER_NAME}";
+                System.IO.Directory.CreateDirectory(Obfuscator.GeneratedFolder);
                 controller = AnimatorController.CreateAnimatorControllerAtPath(path);
+                var idle = controller.layers[0].stateMachine.AddState("Idle");
+                idle.writeDefaultValues = false;
+                idle.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
                 var layers = descriptor.baseAnimationLayers;
                 for (int i = 0; i < layers.Length; i++)
                 {
@@ -674,22 +707,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (controller == null) return;
 
-            string controllerPath = AssetDatabase.GetAssetPath(controller)?.Replace('\\', '/');
-            string generatedFxPath = $"{ASSET_FOLDER}/{CONTROLLER_NAME}".Replace('\\', '/');
-            if (string.Equals(controllerPath, generatedFxPath, System.StringComparison.OrdinalIgnoreCase))
-            {
-                bool hasLayers = controller.layers.Length > 0;
-                bool hasParameters = controller.parameters.Length > 0;
-                if (hasLayers || hasParameters)
-                {
-                    controller.layers = new AnimatorControllerLayer[0];
-                    controller.parameters = new AnimatorControllerParameter[0];
-                    EditorUtility.SetDirty(controller);
-                    Debug.Log("[ASS] Reset generated FX controller layers and parameters before regeneration");
-                }
-                return;
-            }
-
             var keptLayers = new List<AnimatorControllerLayer>();
             int removedCount = 0;
             foreach (var layer in controller.layers)
@@ -714,20 +731,19 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return true;
 
             // Constants 当前可能已经切换到清洁名；补查按当前 Avatar 名生成的历史混淆层名。
-            string[] internalKeys =
+            var managedNames = new[]
             {
-                "LAYER_LOCK", "LAYER_PASSWORD_INPUT", "LAYER_COUNTDOWN",
-                "LAYER_AUDIO", "LAYER_DEFENSE"
+                (key: "LAYER_LOCK", clean: "ASS_Lock"),
+                (key: "LAYER_PASSWORD_INPUT", clean: "ASS_PasswordInput"),
+                (key: "LAYER_COUNTDOWN", clean: "ASS_Countdown"),
+                (key: "LAYER_AUDIO", clean: "ASS_Audio"),
+                (key: "LAYER_DEFENSE", clean: "ASS_Defense"),
+                (key: "LAYER_LIFECYCLE", clean: "ASS_Lifecycle"),
             };
-            string[] cleanNames =
-            {
-                "ASS_Lock", "ASS_PasswordInput", "ASS_Countdown",
-                "ASS_Audio", "ASS_Defense"
-            };
-            for (int i = 0; i < internalKeys.Length; i++)
+            foreach (var name in managedNames)
             {
                 if (layer.name == Obfuscator.GetObfuscatedLayerNameForCleanup(
-                    internalKeys[i], cleanNames[i], avatarName))
+                    name.key, name.clean, avatarName))
                     return true;
             }
 
@@ -842,7 +858,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             string guardParam = Obfuscator.Param("Guard", "_ASS_Guard");
             Utils.AddParameterIfNotExists(controller, guardParam,
                 AnimatorControllerParameterType.Bool, false);
-            var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            var emptyClip = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             int injectedCount = 0;
             foreach (var layer in controller.layers)
             {
@@ -921,7 +937,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var layer = Utils.CreateLayer(decoyLayer.layerName, 1f);
             var sm = layer.stateMachine;
-            var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            var emptyClip = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;

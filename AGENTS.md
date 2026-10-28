@@ -1,11 +1,22 @@
 # Repository workflow
 
-- Keep the repository-wide audit and refactoring changes on `refactor`. Review the optimizer on its own feature branch after rebasing it onto `master`. Preserve local work when switching branches; do not create Git worktrees unless explicitly requested. The user's latest branch instruction supersedes earlier directions to work on `master`.
-- Preserve user-authored scenes, fixtures and unrelated changes. Keep experimental ASS probes out of release packages using `.github/scripts/package_vpm.py`.
-- Unity `.meta` files contain persistent asset and script identities. Preserve existing GUIDs and include metadata in packages; do not regenerate known metadata to resolve missing references.
-- Run `python3 .github/scripts/test_package_vpm.py` when changing package assembly. For plugin behavior, use the relevant Unity EditMode tests and an isolated Unity 2022.3 project with the actual core/integration dependency profile described in `Docs/Testing.md`.
-- Clearly distinguish source/syntax checks and VPM archive validation from Unity compilation, Editor tests, and VRChat runtime validation. A successful zip build does not validate a plugin's behavior.
-
-- Keep generic Unity behavior independent of optional SDK/MA/NDMF assemblies. Platform semantics must be explicit, not inferred merely from installed packages. Preserve real SDK `IEditorOnly` markers when available.
-- Use `scripts/unity/test_project.py` outside the checkout and follow `.agents/skills/unitybox-testing/SKILL.md` and `Docs/UnityEnvironment.md`. Never substitute SDK stubs, missing test assemblies, or zero-test runs for validation.
-- Shared tools require Python 3.12; run `python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v` for changes to them. Roslyn type checks do not replace Unity import, IL postprocessing, builds, or tests.
+- Develop the seven repository plugins on `refactor`; develop Animator Optimizer on
+  `feat/animator-optimizer`, already rebased onto `master`. Keep both source branches independent.
+  Compose eight-package verification with `test_project.py --source-package`, using the two checkouts.
+- The user authorized committing and pushing completed, tested work to both branches. Coordinate
+  shared edits and final pushes; preserve any new remote work. Original optimizer history is backed up
+  at `backup/animator-optimizer-before-rebase`.
+- Preserve user scenes, fixtures, original GUIDs and unrelated edits. Each cloud task already has its
+  checkout; use the existing directories and create worktrees only when the user requests one.
+- Follow `code-simplifier.md`: implement clear input/output contracts, finish features with actual
+  native behavior/build/Player checks, and document measured workflows and supported scenarios.
+- Keep ordinary Unity functionality independent of optional SDK/MA/NDMF services. Preserve actual SDK
+  `IEditorOnly` markers when the SDK is installed, and use real dependency/version constraints.
+- Prepare owned projects outside checkouts using `scripts/unity/test_project.py`. Read
+  `.agents/skills/unitybox-testing/SKILL.md`, `Docs/UnityEnvironment.md` and `Docs/Testing.md`.
+  Runtime, graphics and performance scopes have explicit commands and saved artifacts.
+- Shared tools require Python 3.12. Run `python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v`
+  after tool edits, and `python3 .github/scripts/test_package_vpm.py -v` for packaging changes.
+  Keep experimental ASS probes out of release packages and preserve known metadata.
+- Record test outputs and performance data in `Docs/VerificationResults.json` and
+  `Docs/PerformanceResults.json`; explain user-visible behavior and migration in the manuals.

@@ -1268,6 +1268,7 @@ namespace UnityBox.AdvancedCostumeController
       {
         name = layerName,
         defaultWeight = 1f,
+        syncedLayerIndex = -1,
         stateMachine = new AnimatorStateMachine()
       };
       layer.stateMachine.name = layer.name;

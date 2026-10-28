@@ -1,66 +1,43 @@
-# temp 分支审查与修正
+# temp 变更的保留与修复
 
-> 历史审查记录：下述提交操作发生于最初的 temp 审查。保留的变更及后续修复现位于 `refactor`，当前总览见 [插件审查](PluginAudit.md) 和 [测试指南](Testing.md)。
+原临时提交 `75396e7 chore: TEMP` 保留于 `backup/temp-75396e7`，文件变更经 `bee33c6`
+进入 `refactor`。原场景和实验二进制保留，当前源码继续在对应工作分支迭代并推送。
+整体升级步骤见 [变更清单](RefactorChanges.md)。
 
-## 提交处理
+## ACC 共享容器
 
-已在本地 `temp` 撤掉 `75396e7 chore: TEMP` 的提交记录，保留其全部文件变更。
-原提交可通过 `backup/temp-75396e7` 恢复；未改写或推送远端。
-原有场景、实验二进制及 ASS changelog 保持原样。
+原变更用 `BaseObject` 区分多套服装，解决 `OutfitObject` 去重带来的遗漏。
+后续修复同时处理组根、组织祖先和菜单路径：
 
-## ACC：问题真实，原修复不完整
+- `P/{A, A_variant, B}` 中，两套独立服装使用各自 Base；切换 B 时保持 P 的组织路径。
+- `P/B` 与 `Q/B` 的菜单保留真实目录，各自拥有独立 Mixer 控制项。
+- 当前预览的服装、变体和部件勾选进入生成模型，两种 Mixer 使用相同归属规则。
+- 切换动画激活所需组织祖先，服装在初始关闭的父容器下也能正常显示。
 
-原改动针对多个独立服装共用容器时，菜单误嵌套、参数路径冲突以及 Mixer
-按 `OutfitObject` 去重而漏掉服装的问题。改用 `BaseObject` 标识服装是合理的。
-但原修复有两个遗漏：
+`OutfitContainerRegressionTests` 的七个用例覆盖共享容器、变体归属、Mixer 目录与实际
+动画采样。后续原生 Animator 场景进一步覆盖 Parts、共享/独立 Mixer 和生成结果重载。
+本轮生成层显式独立求值，生成目录采用每次保留的 Build 与场景 Undo 事务。
 
-- `P/{A, A_variant, B}` 中 A 有变体，A 的组根是 P，B 的组根是 B。
-  两个组根不相等，所以原规范化不会处理它们。选 B 的动画会关闭 P，
-  即使 B 自身开启也不可见。
-- 菜单路径删掉其他服装组根后，`P/B` 与 `Q/B` 都变成 `B`，Mixer 复用同一个
-  子菜单，将两套服装混在一起。只修菜单外观不能修正对象控制归属。
+## ASS 路径绑定实验归档
 
-本次修正：容器内只要包含其他独立服装的 Base，就回退到当前 Base 作为组根；
-正常单 Base 加变体的专属容器保持不变。菜单保留真实组织路径。
-普通切换、Mixer 入口、共享变体及独立 Mixer 激活动画会启用所需组织祖先，
-避免初始关闭的父容器继续隐藏选中的服装；不控制 CostumesRoot 或 Avatar 根。
+仓库保存的 `ass_path_probe` 与 `ass_path_probe_modified` 均为 **41,600 字节**，构建版本
+Unity **2022.3.22f1**。两者只有 `ASS_Marker_OLD` → `ASS_Marker_NEW` 的 **14 字节**
+等长替换；`PlainMarker` 是对照目标。历史运行日志记录：修改目标 scale 保持 1，对照目标
+scale 到 2。字节偏移和具体构造保存在 [实验归档](../SESSION_HANDOFF_2026-10-24.md)。
 
-新增 `OutfitContainerRegressionTests` 共 7 个 EditMode 测试用例，覆盖共享组根、
-祖先冲突、正常变体分组、两种 Mixer 参数模式的目录隔离，以及父容器初始
-开启/关闭时生成曲线和实际 `SampleAnimation` 后的可见性。
+探针菜单区分内存改名、原包和修改包，使用独立 `AssetBundleBuild[]`，生成时检查两个标记、
+Controller 和对照动画；切换场景及清理生成资产支持保存/取消。
+实验脚本和二进制留在源码归档，VPM 筛选器排除这些入口和固定 GUID fixture。
 
-## ASS：实验探针，不是生产防护实现
+当前 ASS 的使用入口为完整普通 Unity 手势运行时与 Avatar 构建流程，见
+[用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)和
+[技术参考](../Assets/UnityBox/AvatarSecuritySystem/Editor/ASS_TechnicalDoc.md)。
 
-提供的两个 41,600 字节 bundle（Unity 2022.3.22f1）之间，仅有
-`ASS_Marker_OLD` 到 `ASS_Marker_NEW` 的等长替换，其他字节相同。
-这验证了 fixture 的改动范围；动画是否断绑仍须在 Unity 实际加载后观察。
-该实验不能证明精准编辑会失败、所有热上传工具都受影响，或平台会拒绝上传。
+## 复现与结果
 
-本次修正实验代码的三个问题：
+普通回归使用独立测试工程和真实依赖，执行命令见 [测试指南](Testing.md)。
+测试框架记录实际程序集、非零执行数、输出断言、退出码和 NUnit XML；性能阶段独立串行
+采样。当前各运行与内容指纹见 [验证结果](VerificationResults.json)。
 
-- 切换场景或删除生成资产之前提示保存，允许取消。
-- 显式区分内存改名、原包、修改包三种模式，检查两个标记、控制器及对照动画；
-  不再把任意未驱动结果误报为实验成功。
-- 使用显式 `AssetBundleBuild[]`，只构建探针，不构建项目其他带标签的 bundle。
-
-现存实验资产没有对应的已提交 `.meta`，不能依赖其固定 GUID 直接导入复现；
-应从菜单重新生成。实验脚本和二进制仍保留在源码仓库；后续 refactor 的打包筛选器已将它们和固定 GUID
-fixture 排除，正式 VPM 包保留 Editor 回归测试，不再包含这些实验入口。
-
-## 验证状态与本地复测
-
-- 通过：C# 语法解析、7 个 VPM 包的现有 CI 打包流程、ZIP 完整性/内容及 SHA256。
-- 通过：二进制替换范围检查、用户场景/changelog 与原 temp 提交逐字节一致检查。
-- 后续原生复测：Unity 2022.3.22f1 已导入并执行 `OutfitContainerRegressionTests`
-  的全部 7 项用例，全部通过、零跳过；它们包含在七插件完整 179 项通过结果中。
-  XML 运行 ID 为 `20261028T171628-fc5a70ec`（UTC），固定依赖 SDK 3.8.2、MA 1.18、
-  NDMF 1.11。证据见 [测试指南](Testing.md)。
-- 三种实验探针、真实 VRChat 构建和游戏内验证仍未执行；EditMode 结果不能证明这些
-  历史 bundle 或实验结论在当前项目中成立。
-
-在已有 VRChat/Modular Avatar 的 Unity 2022.3 项目中，安装 Unity Test Framework，
-在 Test Runner 的 EditMode 中运行 `OutfitContainerRegressionTests`。若按 VPM 包安装，
-需将 `top.sealoong.unitybox.advanced-costume-controller` 加入项目 manifest 的
-`testables`。然后依次运行 Tools > UnityBox > ASS > Animation Path Binding Probe
-下的 Original Bundle、Modified Bundle、Create & Run，确认各自 PASS。
-旧内存探针场景缺少对照标记，必须从菜单重新生成，不能直接沿用。
+研究探针通过 `Tools > UnityBox > ASS > Animation Path Binding Probe` 菜单重新生成
+自己的实验资源，再分别运行 Original Bundle、Modified Bundle 和内存改名场景。

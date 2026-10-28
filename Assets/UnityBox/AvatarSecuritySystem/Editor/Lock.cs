@@ -18,6 +18,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             this.config = config;
             this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
+        private HashSet<Transform> contactBranches;
         public void Generate()
         {
             if (config == null || !config.disableRootChildren)
@@ -26,6 +27,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 return;
             }
 
+            contactBranches = CollectContactBranches(avatarRoot.transform);
             // 确保 Blend Tree 和过渡条件依赖的参数存在
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
@@ -84,7 +86,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 200, 0));
             // 稳定解锁状态不应继续写用户对象属性，避免抢占外部插件的 active/scale 控制权。
             unlockedState.writeDefaultValues = true;
-            unlockedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            unlockedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             var unlockRestoreState = layer.stateMachine.AddState(
                 Obfuscator.State("UnlockRestore"),
                 new Vector3(200, 250, 0));
@@ -104,7 +106,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     guardA = reGuards[0];
                     guardB = reGuards[1];
                 }
-                preLockState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+                preLockState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
                 // 每个影子状态赋值为 lockClip
                 foreach (var sh in extraShadows)
                     sh.motion = lockClip;
@@ -177,7 +179,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     if (IsASSObject(child)) continue;
                     string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                    if (ContainsVRCContact(child, avatarRoot.transform))
+                    if (contactBranches.Contains(child))
                     {
                         // Contact 依赖父级 Transform 参与碰撞计算，不能把包含 Contact
                         // Sender/Receiver 的整棵分支缩放为 0；只关闭视觉 Renderer，保留 Contact。
@@ -219,7 +221,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 if (IsASSObject(child)) continue;
                 string childPath = AnimationUtility.CalculateTransformPath(child, avatarRoot.transform);
-                if (ContainsVRCContact(child, avatarRoot.transform))
+                if (contactBranches.Contains(child))
                 {
                     // Contact 分支没有被 ASS 缩放，恢复其中 Renderer 的构建时启用状态。
                     SetRendererEnabledInClip(clip, child, avatarRoot.transform, restoreEnabled: true);
@@ -252,9 +254,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
         private HashSet<string> _assObjectNames;
-        private static bool ContainsVRCContact(Transform branch, Transform avatarRoot)
+        private static HashSet<Transform> CollectContactBranches(Transform avatarRoot)
         {
-            if (branch == null || avatarRoot == null) return false;
+            var branches = new HashSet<Transform>();
 
             // 同时保护 Contact 自身所在分支和 ContactBase.rootTransform 所指向的骨骼分支。
             // 某些插件把 Contact 挂在独立节点，但把 rootTransform 指向 Avatar 骨骼。
@@ -278,20 +280,18 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 }
                 if (!isContact) continue;
 
-                if (IsInBranch(component.transform, branch))
-                    return true;
-
+                AddRootBranch(component.transform, avatarRoot, branches);
                 var rootTransform = component.GetType().GetField("rootTransform")?.GetValue(component) as Transform;
-                if (IsInBranch(rootTransform, branch))
-                    return true;
+                AddRootBranch(rootTransform, avatarRoot, branches);
             }
 
-            return false;
+            return branches;
         }
-        private static bool IsInBranch(Transform transform, Transform branch)
+        private static void AddRootBranch(Transform transform, Transform avatarRoot, HashSet<Transform> branches)
         {
-            return transform != null && branch != null &&
-                (transform == branch || transform.IsChildOf(branch));
+            if (transform == null || transform == avatarRoot || !transform.IsChildOf(avatarRoot)) return;
+            while (transform.parent != avatarRoot) transform = transform.parent;
+            branches.Add(transform);
         }
         private static int SetRendererEnabledInClip(
             AnimationClip clip, Transform branch, Transform animationRoot,

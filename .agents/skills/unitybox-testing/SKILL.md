@@ -1,106 +1,80 @@
 ---
 name: unitybox-testing
-description: Prepare isolated UnityBox test projects, run real Unity EditMode tests, and distinguish compilation, licensing, and runtime test evidence.
+description: Install and activate a real Unity cloud toolchain, execute isolated functional, graphics, Player and performance checks, and retain source-matched evidence.
 ---
 
-# UnityBox testing
+# UnityBox real Unity verification
 
-Use this skill when setting up or verifying UnityBox changes in a managed environment.
-Tell the user when you begin applying it. Read [UnityEnvironment.md](../../../Docs/UnityEnvironment.md)
-for the installed Editor, dependency cache, activation state, and verification limits.
+Read the checkout's `AGENTS.md`, branch/status, [UnityEnvironment.md](../../../Docs/UnityEnvironment.md)
+and [Testing.md](../../../Docs/Testing.md). Tell the user when applying this skill for the first time.
+The user authorized completing, committing and pushing tested changes on `refactor` and
+`feat/animator-optimizer`; preserve those separate source branches and supplied assets/GUIDs.
 
-## Preserve the user's project
+## Set up the machine
 
-- Each cloud task is already isolated; do not create a Git worktree unless user explicitly requests one.
-- Keep working checkouts and unique review evidence under `/workspace`; `/tmp` can be cleared when
-  the environment restarts. The refactor checkout is `/workspace/unitybox-refactor-review`.
-- Read the current checkout's `AGENTS.md` and inspect its branch/status. The refactor work and
-  AnimatorOptimizer feature work may be in separate checkouts; do not switch branches to test them.
-- Use `scripts/unity/test_project.py prepare --repo <checkout> --project <outside-checkout>`.
-  Select packages with repeatable `--package`; use an independently named output per profile.
-- Do not copy or modify the user's scene. Preparation copies packages using the selected checkout's
-  packaging filter and keeps tests. Existing GUID metadata remains unchanged.
-- Reuse only directories owned by the script. The script rejects nonempty unowned destinations.
+- Inspect the managed runtime's current network state. Preserve inherited proxy, CA and authentication.
+- Use Python 3.12+. Reuse `/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity`
+  (2022.3.22f1) and `/workspace/unitybox-setup/unity/dependencies` when present.
+- Otherwise run `scripts/unity/install_editor.py`, then `fetch_dependencies.py --profile core`
+  and `--profile vrc`. The installers verify the pinned hashes, package graph and Editor modules.
+- Current machine activation succeeded through official Hub with the user's Personal account.
+  Ordinary tests use `--xdg-root /workspace/unitybox-setup/unity/interactive` and keep HOME unchanged.
+- On a new machine, provide an authenticated private desktop for official Hub sign-in. Let the user
+  handle credentials/terms. Use official Hub's Licenses and Installs → Locate for the old Editor.
+  Keep account data private and close the external relay after the user finishes.
+- For container graphics use private Xauthority and Xvfb without MIT-SHM, x11vnc `-noshm`.
+  If proxy CA trust causes Hub's popup to close, use the system p11-kit NSS trust module for those
+  processes while retaining TLS verification. See the environment manual for the retained helpers.
 
-## Choose the actual dependency scope
+## Prepare the actual dependency scope
 
-- Use Python 3.12 for these shared tools, including the safe tar extraction in the installer/fetcher.
-  Reuse an already installed Editor and verified dependency lock/cache; do not redownload each task.
-- `python scripts/unity/fetch_dependencies.py --profile core` verifies 2 real packages and 2 Editor
-  modules; the completed `vrc` lock covers 17 packages and 12 modules. Both profiles are now cached
-  and verified. An earlier CDN 403 was resolved after the environment's network state changed.
-  The full VRC fixture pins SDK Base/Avatars 3.8.2 with MA 1.18.0 and NDMF 1.11.0: actual DLL
-  inspection found SDK 3.7.0–3.7.2 lacks the two-argument VRCConstraintSource constructor used by
-  MA 1.13/1.18. SDK 3.7.3 first provides it, so ACC/BGC MA adapters require at least that version.
-  Original SDK 3.7 directories/archives/lock remain under the environment's
-  `unity/sdk-compatibility/3.7.0/` for the narrower minimum-version evidence; do not relabel those
-  results as proving the full MA integration.
-  `--update-lock --profile core` updates only core and preserves VRC records;
-  `--update-lock --profile vrc` records a full graph only after all downloads and hashes succeed. Respect
-  `prepared_profiles`; never infer a completed VRC graph from a core-only lock.
-- Deterministic HTTP denials (including 403) are not retried. Retry a denied URL only when there is
-  relevant new evidence, such as an actual environment/network-policy change.
-- `--profile core` embeds real UTF 1.1.33/NUnit 1.0.6 from `--dependency-cache` and tests enabled
-  Unity-only assemblies. Repository VPM declarations for full workflows are recorded but do not
-  force SDK installation; core success does not establish SDK/NDMF correctness.
-- `--profile vrc` embeds real VRChat packages and resolves the chosen packages' declared dependencies.
-  Use `--offline` to require all UPM dependencies in cache. Missing VPM dependencies must be cached.
-  Preparation checks SDK >= 3.7.0, dependency ranges and prerelease ordering before writing the project.
-  For full MA integration use the pinned SDK 3.8.2 fixture, not merely any SDK satisfying >= 3.7.0.
-  VRC also embeds the real Editor-bundled UGUI 1.0.0 source package, explicitly declared by SDK 3.8.2.
-  Core does not acquire this extra dependency.
-- The VRC preparer explicitly adds the real Editor-bundled Android JNI module because the SDK's
-  Oculus package references Android.Permission while compiling in the Linux Editor. Core omits it.
-- For NDMF, cache the real package and its dependencies, then pass `--dependency nadena.dev.ndmf`.
-  The optimizer's optional adapter now requires NDMF >= 1.11: 1.9/1.10 lack original-node metadata
-  needed for source-layer identity and clip metadata. Earlier API/signature checks missed that runtime
-  requirement. Other packages retain their own declared minimums.
-  Add `--dependency nadena.dev.modular-avatar` when checking ACC/BGC's optional MA integration;
-  having MA in the cache alone does not add it to a prepared project.
-  Honor assembly version constraints. Never generate fake SDK/NDMF types or substitute skipped
-  integration tests for coverage.
-- Express an asmdef minimum version as `"3.7.0"`, not `"[3.7.0,)"`. Unity 2022.3 did not
-  enable several native versionDefine symbols for the latter form even though the supplemental
-  Roslyn parser accepted it. Always verify actual discovery of each expected test assembly.
+- Keep unique projects/evidence in `/workspace`, outside source checkouts. `/tmp` is scratch space.
+- Use `test_project.py prepare --repo <checkout> --project <new-owned-path> --profile core`.
+  Select packages with repeatable `--package`. Compose another checkout's package with
+  `--source-package <actual-package-directory>`; do not merge branches for testing.
+- Main checkout: `/workspace/UnityBox` on `feat/animator-optimizer`.
+  Seven-plugin checkout: `/workspace/unitybox-refactor-review` on `refactor`.
+- Core uses real UTF1.1.33/NUnit1.0.6. SDK-only uses `--profile vrc --offline` with Base/Avatars3.8.2.
+  Add `--dependency nadena.dev.ndmf` and `--dependency nadena.dev.modular-avatar` for full integration.
+  NDMF1.11 and MA1.18 are cached. VRC embeds actual UGUI and declares AndroidJNI for Oculus code.
+- Honor actual asmdef minima: AO NDMF>=1.11; ACC/BCG MA path SDK>=3.7.3. The lock pins SDK3.8.2.
+  Minimum versionDefine expressions use `3.7.0`, for example; inspect native suite discovery.
+- Preparation preserves original metadata and copies package tests. The user's source scene stays
+  unchanged. The ownership marker records source paths/content and expected local test assemblies.
+- Freeze source before final preparation. Retain completed project snapshots; use new paths for
+  changed source. Preserve logs, XML, run metadata and reports.
 
-## Execute and inspect evidence
+## Finish functionality and verify outputs
 
-1. Run `python scripts/unity/test_project.py run --project <project> --unity <Editor> --timeout 1200`.
-   The default Editor is `/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity`.
-2. The runner sets writable XDG locations without changing HOME. If a legitimate license is already
-   configured under a writable XDG root, pass that location with `--xdg-root`.
-3. Run `python scripts/unity/test_project.py report --project <project>`. Review the actual exit code,
-   fresh XML, nonzero executed tests, tested assemblies, failures, skipped cases, and log blockers.
-4. If there is no valid Unity license, report the license error and missing XML as a blocked run.
-   Continue independent source/packaging or real-DLL compilation checks. Do not report Unity tests
-   as passing merely because the Editor installed or C# compiled.
-   The account already has Personal. Cloud Hub login successfully updated this machine's license
-   on 2026-10-29 and genuine tests now execute; do not keep treating the original licensing failure
-   as current. Recheck only when activation/session conditions actually change.
-5. The runner always supplies `-assemblyNames` using the prepared project's own test suites unless
-   explicitly overridden; an empty selection fails before launch. `manifest.testables` alone did not
-   stop the SDK's upstream VTP tests being discovered. Keep third-party test execution separate.
-   Filtered runs may use `--assembly-names 'A;B'` and `--test-filter`; state the limited scope. After
-   relevant fixes, perform the full requested scope rather than hiding failures with a narrow filter.
+1. Run `test_project.py run --project <project> --xdg-root <activated-root> --timeout 1200`
+   with `--exclude-category 'UnityBoxPerformance;UnityBoxGraphics'` for full functional scope.
+2. Review real exit0, fresh NUnit XML, nonzero tests, every expected assembly and no failed/skipped
+   cases. The runner always limits execution to the prepared local `-assemblyNames`.
+3. Use filters to diagnose a failure, fix its cause and rerun the complete affected scope.
+   Cover native Animator frames, original-vs-generated output, saved assets/reload, Undo/Redo,
+   source preservation and real SDK/MA/NDMF integration as appropriate.
+4. Run graphics cases with `--graphics --test-category UnityBoxGraphics`, passing the private
+   desktop's environment to the subprocess. Check actual rendered pixels and saved icons.
+5. Run `verify_player.py --project <core-project> --xdg-root <activated-root> --timeout 1200`.
+   Require actual Linux Player build and execution, expected package providers, nonzero output
+   checks, successful scene stripping and source authoring configuration retention.
+6. Stop other Editors before `test_project.py run ... --benchmark`. Require structured records for
+   every selected plugin. Preserve sizes, warmups, sample counts, timings and memory-counter meaning.
+   Player steady-state Animator.Update and Editor generation measure separate operations.
+7. Parallelize at most two functional Editors. Dedicated performance execution is serial.
+   Delete only rebuildable owned caches when disk space requires it, retaining imported DLLs,
+   source snapshots and raw evidence. Check active projects before cleaning their caches.
 
-The runner keeps each invocation's command, logs, JSON and actual XML under the isolated project's
-`.unitybox-test-results/`. Timeout cleanup targets only the process group it created. Do not activate,
-submit, or change licensing credentials as part of an ordinary test run.
+## Retain reviewable results and publish the code
 
-## Validate harness changes
-
-Run `python -m unittest discover -s scripts/unity -p 'test_*.py' -v` when changing these tools.
-For packaging rule changes also run `.github/scripts/test_package_vpm.py` as directed by
-`AGENTS.md`. Label Python harness tests, package checks, Roslyn compilation against real Editor DLLs,
-and Unity EditMode execution separately in the final result.
-
-When licensing blocks Editor execution, `scripts/unity/compile_assemblies.py` can type-check the
-actual source against the Editor's Roslyn/compiler references and real cached dependency packages.
-Use `--tests --profile core` or `--tests --profile vrc`, an explicit `--repo`, `--editor`,
-`--dependency-cache`, and an `--output` outside the checkout; select packages with `--package`.
-Unlike the project preparer, the compiler's vrc profile considers every cached dependency package.
-Inspect its `compile-report.json`, source hashes, errors, and omitted upstream optional references.
-It does not reproduce all Unity importer, assembly resolution, platform-symbol, or IL postprocessor
-rules. The historical 23-assembly optimizer and 55-assembly seven-plugin integration checks passed,
-but they remain separate from the genuine Editor results. Read the latest
-Docs/Testing.md before claiming any scope passed.
+- Run Python unittest discovery after harness edits and `.github/scripts/test_package_vpm.py`
+  for package checks. Verify the real VPM workflow's archives, CRC, exact metadata and listing hashes.
+- Use `capture_evidence.py` to compare imported source bytes against final checkouts and record
+  source/XML/log hashes. Store current functional, graphics, Player and performance results in
+  Docs/VerificationResults.json, UnityNativeResults.json and PerformanceResults.json.
+- Update workflow manuals and Docs/RefactorChanges.md with concrete changed behavior, migration
+  requirements and measured effects. Scope counts overlap; report each scope separately.
+- Commit and push both authorized branches. Inspect current remote tips, preserve remote work,
+  then verify pushed commit SHAs and clean checkouts. Keep the original optimizer backup ref.
+- Update reusable environment start instructions with final remote branches and current commands.
+  Configuration draft saving and configuration publishing are separate actions in the environment UI.

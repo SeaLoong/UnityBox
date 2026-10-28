@@ -1,64 +1,73 @@
 # Blendshape Controller Generator
 
-Unity 2022.3 工具，为 SkinnedMeshRenderer 生成 blendshape 动画和 Animator Controller。
-完整扫描窗口及生成流程不需要 VRChat SDK/MA；可选 MA 适配增加 Avatar 菜单、FX 与同步
-参数安装。包说明见 [README](../Assets/UnityBox/BlendshapeControllerGenerator/README.md)。
+Unity 2022.3 工具，为多个 SkinnedMeshRenderer 生成 Float、Bool 与反向 Bool 控制，并把
+各 Renderer 的动画合成为一个可直接分配的 Animator Controller。普通 Unity 使用完整
+扫描、生成、合成和分配流程；可选 MA 适配提供 Avatar 菜单、同步参数和 FX 安装。
 
-## 使用
+## 普通 Unity 使用
 
-1. 打开 Tools > UnityBox > Blendshape Controller Generator，选择场景 **Animation Root**。
-2. Scan 查找 Renderer，或 Add 手动加入。Scan Filter 按对象名过滤，Include Inactive 包含
-   未激活对象；Renderer 必须属于 Animation Root。
-3. 勾选 blendshape，设置每个 Mesh 的前缀和 Float/Bool 类型。清洗后重名会得到不同后缀，
-   跨 Mesh 的参数冲突也会提示调整，以预览的实际名称为准。
-4. 设置安全的 `Assets/...` 输出目录及 Controller Name，点击 Generate。
-5. 普通 Unity 中将结果分配给 Animation Root 上的 Animator，再由项目代码/UI 驱动参数。
-   每个 Renderer 分别生成一个 Controller，使用多个时须自行合并或选择。
+1. 打开 **Tools > UnityBox > Blendshape Controller Generator**，选择 **Animation Root**。
+2. Scan 查找 Renderer，或 Add 手动添加。Filter 按对象名称筛选，Include Inactive 包含
+   未激活对象。动画路径相对 Animation Root，同级对象使用唯一名称。
+3. 勾选 blendshape，设置各 Mesh 前缀及 Float/Bool 类型。Float 参数输入 0～1；Bool
+   false/true 对应 Off/On，**Inv** 交换两端输出。
+4. 设置 `Assets/...` 输出目录后 Generate。窗口展示合成后的 **Generated Controller**。
+5. 点击 **Assign to Animation Root Animator**，创建或更新根上的 Animator；该操作支持
+   Undo/Redo。也可将输出 Controller 手工赋给其它同构层级上的 Animator。
 
-若需 MA，另外安装 SDK Base/Avatars **≥3.7.3**、MA **≥1.13.0**。满足条件后集成程序集
-启用，勾选 **Install MA Controls** 才安装菜单/FX/同步参数；取消可继续只输出 Unity 资产。
-包本身不强制安装这些平台依赖。MA 1.13/1.18 使用的双参数 VRCConstraintSource 构造器
-从 SDK 3.7.3 才存在，3.7.0～3.7.2 不满足该集成路径。
+每个选中 Renderer 保留自己的 Controller/Clip，并额外生成 `Combined/Build[ n]/`
+下的 `Blendshapes.controller`。合成 Controller 保留各层参数、Mask、层权重和状态图引用，
+同时驱动全部 Renderer。重新生成写入新的 Build，先前结果继续引用其原动画资产。
 
-## 参数与曲线
+生成前按 Renderer＋blendshape 检查重复勾选。合成 API
+`BlendshapeControllerComposer.Combine(sources, outputPath)` 统一参数并检查类型、默认值和
+动画绑定冲突；一个具体 binding 由一个输入 Controller 提供，错误提示直接列出冲突项。
 
-- Float 输入 0～1 控制动画归一化采样时间。Duration 和 Value Scale 缩放曲线，默认
-  从 0 到100；Duration必须大于0，输入必须有限。零Scale生成全零，阶梯无限切线保留。
-- Bool false/true 分别使用 Off/On，**Inv** 交换输出；默认参数值为false。
-- 生成层使用 Write Defaults Off。MA 模式匹配 Avatar 的 WD 策略，并将 Float/Bool
-  注册为保存/同步参数，分别占8/1bit；普通 Unity 不产生网络同步服务。
-- Curve、Duration、Loop、Value Scale 存在 EditorPrefs，不是 Avatar 上的持久组件配置。
-- 名称中的 `/` 在 MA 菜单中形成层级，`Smile` 与 `Smile/Big` 可同时保留独立控件。
+## 曲线和参数
 
-## 输出、重复生成与 Undo
+- Float 以参数驱动状态的 normalized time，默认曲线从 0 到100。Duration 缩放动画时长，
+  Value Scale 缩放输出值；零 Scale 保持阶梯切线并输出零。
+- Bool 默认 false，Off/On 自定义两个输出值；Inv 改变 false/true 与两端值的对应关系。
+- 生成层使用 Write Defaults Off，且各层显式保持独立同步索引。
+- Curve、Duration、Loop、Value Scale 保存在 EditorPrefs；窗口显示生成后的完整参数名称。
+
+## Modular Avatar 安装与参数预算
+
+安装 SDK Base/Avatars **≥3.7.3** 和 MA **≥1.13** 后，勾选 **Install MA Controls**。
+MA 的 NDMF 依赖随实际 MA 版本安装；本轮执行组合是 SDK3.8.2、MA1.18、NDMF1.11。
+
+生成器在 `Blendshapes Menu` 下按 Renderer 身份安装菜单、FX 和参数。名称中的 `/` 构成
+子菜单，`Smile` 与 `Smile/Big` 可同时作为独立控件。Float/Bool 同步成本分别为8/1bit。
+
+安装使用与 MA 参数窗口相同的 NDMF `ParameterInfo` 查询，统计已有 Descriptor 参数、
+其它 MA 控件和本次替换后的参数，总预算为256bit。重新生成以新参数类型重新计算，
+超过预算时显示实际位数并恢复原菜单和 Controller。一次安装对应一次 Undo/Redo。
+
+**Remove Selected MA Controls** 移除当前启用 Renderer 的菜单、FX 与参数声明，保留
+其它 Renderer 的结果；移除同样支持 Undo。历史公共菜单根上的对应声明会随更新迁移，
+仍被其它 Controller 使用的声明继续保留。
+
+## 输出与维护
 
 ```text
-{OutputFolder}/{AvatarIdentity}/{MeshIdentity}/Build[ n]/
-├── {ControllerName}.controller
-├── 0000_Float.anim
-└── 其它已选 Float 或 Bool Off/On 动画
+{OutputFolder}/{AvatarIdentity}/
+├── {MeshIdentity}/Build[ n]/
+│   ├── {ControllerName}.controller
+│   └── 所选 Float 或 Bool Off/On 动画
+└── Combined/Build[ n]/Blendshapes.controller
 ```
 
-普通窗口仍沿用此内部目录命名。根身份包括场景/层级位置，Renderer 身份包含相对路径；
-同名 Mesh 不再覆盖。对象改名或移动可能得到新目录，需检查旧资产、菜单和参数引用。
+合成 Controller 引用各 Renderer Build 中的状态图和 Clip，因此一起保留这些目录。
+旧 Build 用于 Undo 和旧引用；清理时按项目引用情况删除。根与 Renderer 身份包含场景、
+层级和相对路径，移动对象后重新 Scan，再生成并分配新结果。
 
-每次先写独立 Build，成功后 MA 模式才替换对应 Renderer 的菜单、FX 与参数声明；普通
-模式不修改场景 Animator，需手动换用新结果。取消/异常清理本次未完成目录，保留旧引用；
-在失败前已完成的其它 Renderer 结果保留。MA 安装异常会报告，不再被当作成功忽略。
+## 行为测试和性能
 
-改型或取消部分选择后，MA 模式移除本生成器旧声明；原公共菜单根的对应声明迁移，仍被
-其它控制器使用的项保留。全部取消不会自动卸载以前生成的内容，需手工移除相应根。
+测试直接运行真实 Animator，检查 Float 的0、0.25、0.5、0.75、1及返回值，反复切换
+Bool/反向 Bool，以及合成 Controller 重新加载后的多 Renderer 输出。安装测试覆盖
+整个 Avatar 的参数预算、参数改型、Undo/Redo、超额回滚和选择性卸载。
 
-旧Build保留以支持场景Undo和旧引用，确认无引用再清理；场景Undo不撤销资产文件生成/
-删除。输出不得离开Assets，拒绝点路径、空路径段、反斜线及冒号。
-
-## 验证和限制
-
-同父同名对象或对象名含 `/` 会造成Unity动画绑定歧义，应先修正层级。更换sharedMesh或
-删除blendshape后重新Scan。多个表情、口型或生成器同时写同一属性时，检查最终图和参数预算。
-
-`Tests/Core/Editor` 声明14个真实资产/曲线/路径用例；`Tests/Editor` 声明5个MA集成用例，
-仅在实际SDK/MA存在时启用。VPM/UPM安装时加入manifest testables。真实Unity
-2022.3.22f1已执行核心14项和SDK/MA集成5项，全部通过、零跳过；完整环境使用
-SDK3.8.2、MA1.18、NDMF1.11。最终Avatar构建、合并后的绑定与参数预算仍需项目验证。
-最新证据见 [Testing](Testing.md)，迁移影响见 [RefactorChanges](RefactorChanges.md)。
+独立 Player 探针构建并运行同一份 Float＋反向 Bool 合成结果。性能场景分别测量
+4/16/64个 blendshape 的持久化生成，以及预热后9组、每组512帧的真实 Animator.Update。
+生成时延包含资产持久化；逐帧时延单独采集。数值、环境和复现命令见
+[性能记录](Performance.md)，完整执行结果见[测试指南](Testing.md)。

@@ -7,7 +7,7 @@ using VRCAnimatorPlayAudio = VRC.SDK3.Avatars.Components.VRCAnimatorPlayAudio;
 
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
-  public sealed class VrcAnimatorBehaviourAdapter : IAnimatorBehaviourAdapter
+  public sealed class VrcAnimatorBehaviourAdapter : IAnimatorBehaviourAdapter, IAnimatorLayerWeightAdapter
   {
     public static readonly VrcAnimatorBehaviourAdapter Instance = new VrcAnimatorBehaviourAdapter();
     /// <summary>
@@ -19,13 +19,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       if (finalState == null || fxLayerIndex < 0)
         return;
 
-      var control = finalState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
+      AddLayerWeightControl(finalState, fxLayerIndex, 0f, debugString);
+    }
+    public void AddLayerWeightControl(AnimatorState state, int layerIndex, float weight, string debugString)
+    {
+      var control = state.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
       control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
-      control.layer = fxLayerIndex;
-      control.goalWeight = 0f;
+      control.layer = layerIndex;
+      control.goalWeight = weight;
       control.blendDuration = 0f;
       control.debugString = debugString;
-      Debug.Log($"[ASS] Final state '{finalState.name}' disables FX sub-layer index {fxLayerIndex}");
+      Debug.Log($"[ASS] State '{state.name}' sets FX sub-layer index {layerIndex} to {weight}");
     }
     public void AddParameterDriverBehaviour(AnimatorState state, string parameterName, float value, bool localOnly = false)
     {

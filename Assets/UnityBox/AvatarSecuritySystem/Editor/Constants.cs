@@ -7,11 +7,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public const string SharedEmptyClipDisplayName = "_Empty";
             public const string ParamPasswordCorrect = "ASS_PasswordCorrect";
             public const string ParamTimeUp = "ASS_TimeUp";
+            public const string ParamRestart = "ASS_Restart";
             public const string LayerLock = "ASS_Lock";
             public const string LayerPasswordInput = "ASS_PasswordInput";
             public const string LayerCountdown = "ASS_Countdown";
             public const string LayerAudio = "ASS_Audio";
             public const string LayerDefense = "ASS_Defense";
+            public const string LayerLifecycle = "ASS_Lifecycle";
             public const string Overlay = "ASS_Overlay";
             public const string AudioWarning = "ASS_Audio_Warning";
             public const string AudioSuccess = "ASS_Audio_Success";
@@ -53,6 +55,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const string AUDIO_COUNTDOWN_WARNING = "CountdownWarning";
         public static string PARAM_PASSWORD_CORRECT = DefaultNames.ParamPasswordCorrect;
         public static string PARAM_TIME_UP = DefaultNames.ParamTimeUp;
+        public static string PARAM_RESTART = DefaultNames.ParamRestart;
         public const string PARAM_IS_LOCAL = "IsLocal";
         public const string PARAM_GESTURE_LEFT = "GestureLeft";
         public const string PARAM_GESTURE_RIGHT = "GestureRight";
@@ -61,6 +64,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public static string LAYER_COUNTDOWN = DefaultNames.LayerCountdown;
         public static string LAYER_AUDIO = DefaultNames.LayerAudio;
         public static string LAYER_DEFENSE = DefaultNames.LayerDefense;
+        public static string LAYER_LIFECYCLE = DefaultNames.LayerLifecycle;
         public static string GO_OVERLAY = DefaultNames.Overlay;
         public static string GO_AUDIO_WARNING = DefaultNames.AudioWarning;
         public static string GO_AUDIO_SUCCESS = DefaultNames.AudioSuccess;
@@ -97,11 +101,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             PARAM_PASSWORD_CORRECT = Obfuscator.Param("PARAM_PASSWORD_CORRECT", DefaultNames.ParamPasswordCorrect);
             PARAM_TIME_UP = Obfuscator.Param("PARAM_TIME_UP", DefaultNames.ParamTimeUp);
+            PARAM_RESTART = Obfuscator.Param("PARAM_RESTART", DefaultNames.ParamRestart);
             LAYER_LOCK = Obfuscator.Layer("LAYER_LOCK", DefaultNames.LayerLock);
             LAYER_PASSWORD_INPUT = Obfuscator.Layer("LAYER_PASSWORD_INPUT", DefaultNames.LayerPasswordInput);
             LAYER_COUNTDOWN = Obfuscator.Layer("LAYER_COUNTDOWN", DefaultNames.LayerCountdown);
             LAYER_AUDIO = Obfuscator.Layer("LAYER_AUDIO", DefaultNames.LayerAudio);
             LAYER_DEFENSE = Obfuscator.Layer("LAYER_DEFENSE", DefaultNames.LayerDefense);
+            LAYER_LIFECYCLE = Obfuscator.Layer("LAYER_LIFECYCLE", DefaultNames.LayerLifecycle);
             GO_OVERLAY = Obfuscator.GameObject("GO_OVERLAY", DefaultNames.Overlay);
             GO_AUDIO_WARNING = Obfuscator.GameObject("GO_AUDIO_WARNING", DefaultNames.AudioWarning);
             GO_AUDIO_SUCCESS = Obfuscator.GameObject("GO_AUDIO_SUCCESS", DefaultNames.AudioSuccess);
@@ -145,6 +151,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 || layerName == LAYER_PASSWORD_INPUT
                 || layerName == LAYER_COUNTDOWN
                 || layerName == LAYER_AUDIO
+                || layerName == LAYER_LIFECYCLE
+                || layerName == DefaultNames.LayerLifecycle
                 || layerName == LAYER_DEFENSE
                 || layerName == DefaultNames.LayerLock
                 || layerName == DefaultNames.LayerPasswordInput

@@ -38,6 +38,20 @@ namespace UnityBox.AvatarSecuritySystem
             EditorGUILayout.Space(10);
             DrawConfigurationSections();
             serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Generate Standalone Unity Controller"))
+            {
+                string path = EditorUtility.SaveFilePanelInProject("Generate ASS Controller", "ASS_Standalone", "controller", "Choose the output controller.");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var controller = StandaloneSecurityBuilder.Build(_target.gameObject, ASSConfigData.FromComponent(_target), path);
+                    var animator = _target.GetComponent<Animator>() ?? Undo.AddComponent<Animator>(_target.gameObject);
+                    Undo.RecordObject(animator, "Assign ASS Controller");
+                    animator.runtimeAnimatorController = controller;
+                    EditorUtility.SetDirty(animator);
+                    Selection.activeObject = controller;
+                }
+            }
         }
         private void DrawHeaderSection()
         {

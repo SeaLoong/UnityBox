@@ -62,9 +62,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             {
                 var layer = layers[i];
                 if (layer.isDefault || (fxOnly && layer.type != VRCAvatarDescriptor.AnimLayerType.FX)) continue;
-                if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
+                if (layer.animatorController == null) continue;
 
-                var clonedController = Obfuscator.DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
+                var clonedController = Obfuscator.DuplicateAnimatorControllerForBuild(layer.animatorController, $"{scope}_{layer.type}_{i}");
                 if (clonedController == null) continue;
 
                 layer.animatorController = clonedController;

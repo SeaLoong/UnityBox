@@ -5,6 +5,9 @@ using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using System;
+using System.IO;
+using UnityEditor.UnityLinker;
 
 
 namespace UnityBox.BuildPipelineLogger
@@ -19,15 +22,19 @@ namespace UnityBox.BuildPipelineLogger
     
     public static class BuildPipelineLoggerSettings
     {
-private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
+        private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
+        private static bool? assetPipeline;
+        private static bool? buildPipeline;
+        private static bool? vrcsdk;
+        private static bool? ndmf;
         
         /// <summary>
         /// Asset Pipeline - 资产导入管线 (AssetPostprocessor)
         /// </summary>
         public static bool AssetPipeline
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "AssetPipeline", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "AssetPipeline", value);
+            get => (assetPipeline ??= EditorPrefs.GetBool(PREF_PREFIX + "AssetPipeline", false));
+            set { assetPipeline = value; EditorPrefs.SetBool(PREF_PREFIX + "AssetPipeline", value); }
         }
         
         /// <summary>
@@ -35,8 +42,8 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool BuildPipeline
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "BuildPipeline", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "BuildPipeline", value);
+            get => (buildPipeline ??= EditorPrefs.GetBool(PREF_PREFIX + "BuildPipeline", false));
+            set { buildPipeline = value; EditorPrefs.SetBool(PREF_PREFIX + "BuildPipeline", value); }
         }
         
         /// <summary>
@@ -44,8 +51,8 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool VRCSDK
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "VRCSDK", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "VRCSDK", value);
+            get => (vrcsdk ??= EditorPrefs.GetBool(PREF_PREFIX + "VRCSDK", false));
+            set { vrcsdk = value; EditorPrefs.SetBool(PREF_PREFIX + "VRCSDK", value); }
         }
         
         /// <summary>
@@ -53,8 +60,87 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool NDMF
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "NDMF", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value);
+            get => (ndmf ??= EditorPrefs.GetBool(PREF_PREFIX + "NDMF", false));
+            set { ndmf = value; EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value); }
+        }
+    }
+
+    [Serializable]
+    public sealed class BuildPipelineLogEntry
+    {
+        public int sequence;
+        public double elapsed_ms;
+        public string pipeline;
+        public int order;
+        public string marker;
+        public string message;
+    }
+
+    [Serializable]
+    public sealed class BuildPipelineTraceData
+    {
+        public int schema = 1;
+        public string started_utc;
+        public bool completed;
+        public double elapsed_ms;
+        public List<BuildPipelineLogEntry> entries = new List<BuildPipelineLogEntry>();
+    }
+
+    public static class BuildPipelineLoggerTrace
+    {
+        private static BuildPipelineTraceData current = new BuildPipelineTraceData();
+        private static BuildPipelineTraceData lastCompleted;
+        private static long started;
+        public static IReadOnlyList<BuildPipelineLogEntry> Entries => current.entries;
+        public static bool Completed => current.completed;
+        private static double Elapsed => started == 0 ? 0 :
+            (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
+        public static void BeginBuild()
+        {
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+            current = new BuildPipelineTraceData { started_utc = DateTime.UtcNow.ToString("O") };
+        }
+
+        public static void Record(string pipeline, int order, string marker, string message)
+        {
+            if (started == 0 || current.completed) BeginBuild();
+            current.entries.Add(new BuildPipelineLogEntry
+            {
+                sequence = current.entries.Count, elapsed_ms = Elapsed,
+                pipeline = pipeline, order = order, marker = marker, message = message,
+            });
+        }
+
+        public static void EndBuild()
+        {
+            current.elapsed_ms = Elapsed;
+            current.completed = true;
+            lastCompleted = current;
+        }
+
+        public static string ExportJson()
+        {
+            if (!current.completed) current.elapsed_ms = Elapsed;
+            return JsonUtility.ToJson(current, true);
+        }
+
+        public static void Save(string path) => File.WriteAllText(path, ExportJson());
+        public static string ExportLastCompletedJson() => JsonUtility.ToJson(lastCompleted ?? current, true);
+        public static void SaveLastCompleted(string path) => File.WriteAllText(path, ExportLastCompletedJson());
+
+        [MenuItem("Tools/UnityBox/Build Pipeline Logger/Export Last Completed Build...")]
+        private static void ExportLastCompletedBuild()
+        {
+            string path = EditorUtility.SaveFilePanel("Export completed build trace", "", "unitybox-completed-build.json", "json");
+            if (!string.IsNullOrEmpty(path)) SaveLastCompleted(path);
+        }
+
+        [MenuItem("Tools/UnityBox/Build Pipeline Logger/Export Current Trace...")]
+        private static void ExportCurrentTrace()
+        {
+            string path = EditorUtility.SaveFilePanel("Export build trace", "", "unitybox-build-trace.json", "json");
+            if (!string.IsNullOrEmpty(path)) Save(path);
         }
     }
 
@@ -63,7 +149,11 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         private const string Prefix = "[BPL]";
         private static readonly HashSet<System.Type> loggedShaderCallbacks = new HashSet<System.Type>();
 
-        public static void BeginBuild() => loggedShaderCallbacks.Clear();
+        public static void BeginBuild()
+        {
+            loggedShaderCallbacks.Clear();
+            BuildPipelineLoggerTrace.BeginBuild();
+        }
         public static bool ShouldLogShader(System.Type callbackType) => loggedShaderCallbacks.Add(callbackType);
 
         public static void Log(string pipeline, int order, string message, string tag = null)
@@ -73,7 +163,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
             if (pipeline == "VRCSDK" &&
                 (message.Contains("VRCFury") || message.Contains("NDMF") ||
                  message.Contains("RemoveEditorOnly") || message.Contains("RemoveAvatarEditorOnly")))
-                message = "Callback-order sample (framework execution unverified): " + message;
+                message = "Callback-order sample: " + message;
             var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
             var orderColored = $"<color=#00FF00>Order={order}</color>";
             
@@ -81,6 +171,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
                 ? orderColored
                 : $"<color=#FFFF00>{tag}</color> | {orderColored}";
 
+            BuildPipelineLoggerTrace.Record(pipeline, order, tag, message);
             Debug.Log($"{Prefix} {pipelineColored} | {middle} | {message}");
         }
 
@@ -88,6 +179,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         {
             var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
             var markerColored = $"<color=#FFFF00>{marker}</color>";
+            BuildPipelineLoggerTrace.Record(pipeline, 0, marker, message);
             Debug.Log($"{Prefix} {pipelineColored} | {markerColored} | {message}");
         }
     }
@@ -716,47 +808,17 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     
     #endregion
 
-    // IUnityLinkerProcessor 需要 Unity.Build.Pipeline 包，在VRChat项目中可能不可用
-    // 如需测试，请取消注释并添加包引用
-
-    /*
-    #region ==================== IUnityLinkerProcessor ====================
-    
-    public class UnityLinkerLogger_Early : IUnityLinkerProcessor
-    {
-        public int callbackOrder => -100;
-        
-        public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
-        {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◎");
-            return null;
-        }
-    }
-    
-    public class UnityLinkerLogger_Mid : IUnityLinkerProcessor
+    public class UnityLinkerLogger : IUnityLinkerProcessor
     {
         public int callbackOrder => 0;
-        
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "○");
+            if (BuildPipelineLoggerSettings.BuildPipeline)
+                BuildPipelineLoggerLog.Log("BUILD", callbackOrder,
+                    "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "LINKER");
             return null;
         }
     }
-    
-    public class UnityLinkerLogger_Late : IUnityLinkerProcessor
-    {
-        public int callbackOrder => 100;
-        
-        public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
-        {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◉");
-            return null;
-        }
-    }
-    
-    #endregion
-    */
 
     #region ==================== IPostprocessBuildWithReport ====================
     
@@ -827,6 +889,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         {
             if (BuildPipelineLoggerSettings.BuildPipeline)
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "⛳ END");
+            BuildPipelineLoggerTrace.EndBuild();
         }
     }
     

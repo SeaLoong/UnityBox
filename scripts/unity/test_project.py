@@ -9,7 +9,9 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
+import platform
 from pathlib import Path
 import re
 import shutil
@@ -160,6 +162,13 @@ def prepare(args):
         available[data["name"]] = manifest.parent
     aliases = {path.name: name for name, path in available.items()}
     selected = [aliases.get(name, name) for name in args.package] if args.package else list(available)
+    for source in args.source_package:
+        source = source.resolve()
+        name = read_json(source / "package.json")["name"]
+        if name in available:
+            raise ValueError(f"Additional package duplicates {name}: {source}")
+        available[name] = source
+        selected.append(name)
     if not selected or any(name not in available for name in selected):
         raise ValueError(f"Unknown or empty package selection: {selected}; available: {list(available)}")
     selected = sorted(set(selected))
@@ -319,7 +328,31 @@ def evaluate_run(run, directory):
                     reasons.append("No tests executed in expected assembly: " + name)
         except (ET.ParseError, ValueError) as exc:
             reasons.append(f"Invalid NUnit XML: {exc}")
+    benchmarks = []
+    benchmark_log = directory / "unity.log"
+    if benchmark_log.is_file():
+        for line in benchmark_log.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.startswith("UNITYBOX_BENCHMARK "):
+                continue
+            try:
+                record = json.loads(line.removeprefix("UNITYBOX_BENCHMARK "))
+                for key in ("plugin", "scenario"):
+                    if not isinstance(record[key], str) or not record[key]:
+                        raise ValueError(f"Missing benchmark {key}")
+                if record["samples"] <= 0 or record["size"] < 0:
+                    raise ValueError("Invalid benchmark sample count or size")
+                values = [record[key] for key in ("min_ms", "median_ms", "p95_ms", "max_ms")]
+                if not all(isinstance(value, (int, float)) and math.isfinite(value) and value >= 0 for value in values):
+                    raise ValueError("Invalid benchmark timing")
+                if values != sorted(values):
+                    raise ValueError("Benchmark timing quantiles are out of order")
+                benchmarks.append(record)
+            except (ValueError, TypeError, KeyError) as exc:
+                reasons.append(f"Invalid benchmark record: {exc}")
+    if run.get("benchmark") and not benchmarks:
+        reasons.append("Benchmark run produced no measurement records")
     return {"passed": not reasons, "reasons": reasons, "tests": results, "log_errors": blockers[:50],
+            "benchmarks": benchmarks,
             "run": run, "results_xml": str(xml),
             "results_sha256": hashlib.sha256(xml.read_bytes()).hexdigest() if xml.is_file() else None}
 
@@ -361,13 +394,22 @@ def run_tests(args):
         folder = xdg_root / kind.lower()
         folder.mkdir(parents=True, exist_ok=True)
         env["XDG_" + kind + "_HOME"] = str(folder)
-    command = [str(args.unity.resolve()), "-batchmode", "-nographics", "-projectPath", str(project),
+    command = [str(args.unity.resolve()), "-batchmode"]
+    if not args.graphics:
+        command.append("-nographics")
+    command += ["-projectPath", str(project),
                "-runTests", "-testPlatform", "EditMode", "-testResults", str(directory / "results.xml"),
                "-logFile", str(directory / "unity.log")]
     if args.test_filter:
         command.extend(["-testFilter", args.test_filter])
+    category = args.test_category or ("UnityBoxPerformance" if args.benchmark else None)
+    category_parts = [category] if category else []
+    category_parts += ["!" + part.strip() for part in (args.exclude_category or "").split(";") if part.strip()]
+    category_filter = ";".join(category_parts)
+    if category_filter:
+        command.extend(["-testCategory", category_filter])
     assemblies = (selected_assemblies if args.assembly_names
-                  else [] if args.test_filter else metadata["test_assemblies"])
+                  else [] if args.test_filter or category else metadata["test_assemblies"])
     # Unity can discover test methods in ordinary SDK Editor assemblies even
     # when they are absent from manifest.testables. Always restrict the actual
     # invocation to this checkout's selected suites, including filtered runs.
@@ -378,7 +420,9 @@ def run_tests(args):
            "started_at": utc_now(), "started_epoch": time.time(), "timeout_seconds": args.timeout,
            "expected_assemblies": assemblies, "timed_out": False, "exit_code": None,
            "selected_assemblies": selected_assemblies,
-           "xdg_root": str(xdg_root), "test_filter": args.test_filter}
+           "xdg_root": str(xdg_root), "test_filter": args.test_filter,
+           "test_category": category_filter or None, "benchmark": args.benchmark, "graphics": args.graphics,
+           "machine": {"platform": platform.platform(), "cpu_count": os.cpu_count()}}
     process = None
     try:
         with (directory / "launcher.log").open("w", encoding="utf-8") as stream:
@@ -431,17 +475,22 @@ def main(argv=None):
     prep.add_argument("--repo", type=Path, required=True)
     prep.add_argument("--project", type=Path, required=True)
     prep.add_argument("--package", action="append", default=[], help="Package name or Assets/UnityBox directory name; repeatable")
+    prep.add_argument("--source-package", action="append", type=Path, default=[], help="Include an additional local package directory from another checkout")
     prep.add_argument("--profile", choices=("core", "vrc"), default="core")
     prep.add_argument("--dependency-cache", type=Path, default=Path(DEFAULT_CACHE))
     prep.add_argument("--dependency", action="append", default=[], help="Additional real cached package, e.g. nadena.dev.ndmf")
     prep.add_argument("--offline", action="store_true", help="Also require all VRC UPM dependencies in cache")
     prep.set_defaults(action=prepare)
-    run = commands.add_parser("run", help="Run actual Unity tests and fail closed on incomplete evidence")
+    run = commands.add_parser("run", help="Execute Unity tests and collect NUnit results")
     run.add_argument("--project", type=Path, required=True)
     run.add_argument("--unity", type=Path, default=Path(DEFAULT_EDITOR))
     run.add_argument("--timeout", type=float, default=1200)
     run.add_argument("--xdg-root", type=Path)
     run.add_argument("--test-filter")
+    run.add_argument("--test-category", help="Unity Test Framework category filter")
+    run.add_argument("--exclude-category", help="Category excluded from this run")
+    run.add_argument("--benchmark", action="store_true", help="Run UnityBoxPerformance cases and collect actual timing records")
+    run.add_argument("--graphics", action="store_true", help="Enable graphics using the caller's DISPLAY and Xauthority")
     run.add_argument("--assembly-names", help="Semicolon-separated test assembly names")
     run.set_defaults(action=run_tests)
     rep = commands.add_parser("report", help="Re-evaluate recorded exit, log, and NUnit XML evidence")

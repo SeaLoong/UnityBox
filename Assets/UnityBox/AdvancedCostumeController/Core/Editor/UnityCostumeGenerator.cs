@@ -33,12 +33,13 @@ namespace UnityBox.AdvancedCostumeController
       choices = choices.OrderBy(choice => CostumeHierarchy.GetHierarchyPath(config.CostumesRoot, choice), StringComparer.Ordinal).ToList();
       // Unity paths cannot distinguish same-named siblings or names containing '/'.
       // Validate all scanned descendants, including inactive parts and renderers.
+      var targetNames = new HashSet<(Transform Parent, string Name)>();
       foreach (var node in config.CostumesRoot.GetComponentsInChildren<Transform>(true))
       {
         if (node == config.CostumesRoot.transform) continue;
         if (node.name.Contains("/") || node.name.Length == 0)
           throw new ArgumentException("Animation target names cannot be empty or contain '/': " + node.name);
-        if (node.parent.Cast<Transform>().Count(sibling => sibling.name == node.name) > 1)
+        if (!targetNames.Add((node.parent, node.name)))
           throw new ArgumentException("Same-named siblings make animation bindings ambiguous: " + node.name);
       }
       if (choices.Any(choice => !choice.transform.IsChildOf(config.CostumesRoot.transform)))

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -25,7 +24,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         public const string NoneBlendshapeValue = "__NONE__";
 
         [Serializable]
-        public class VisemeBinding
+        public class VisemeBinding : ISerializationCallbackReceiver
         {
             [HideInInspector]
             public Viseme viseme;
@@ -41,12 +40,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             [Tooltip("Blendshape weight used when custom settings are enabled for this viseme.")]
             public float weight = 100f;
 
-            // NOTE: This field was previously named "voiceModulationMode" with type VoiceModulationMode
-            // (Disabled=0, Linear=1). The renamed to "voiceMode" with type VoiceModeOverride
-            // (Global=0, Disabled=1, Linear=2) means the integer values from old serialized data
-            // would map incorrectly if using FormerlySerializedAs (Disabled→Global, Linear→Disabled).
-            // To prevent silent voice modulation corruption, we dropped the attribute — old data
-            // defaults to Global (uses the component-level voiceModulationMode, which defaults to Linear).
+            [SerializeField, HideInInspector, FormerlySerializedAs("voiceModulationMode")]
+            private int legacyVoiceMode = -1;
+
             [Tooltip("Voice mode for this viseme when custom settings are enabled.")]
             public VoiceModeOverride voiceMode = VoiceModeOverride.Global;
 
@@ -55,6 +51,16 @@ namespace UnityBox.VisemeBlendshapeOverride
                 Global,
                 Disabled,
                 Linear,
+            }
+
+            public void OnBeforeSerialize() { }
+
+            public void OnAfterDeserialize()
+            {
+                if (legacyVoiceMode < 0) return;
+                voiceMode = legacyVoiceMode == 0 ? VoiceModeOverride.Disabled :
+                    legacyVoiceMode == 1 ? VoiceModeOverride.Linear : VoiceModeOverride.Global;
+                legacyVoiceMode = -1;
             }
 
             [Range(0f, 1f)]
@@ -103,57 +109,55 @@ namespace UnityBox.VisemeBlendshapeOverride
         [Tooltip("Per-viseme settings.")]
         public List<VisemeBinding> bindings = new List<VisemeBinding>();
 
+        private static readonly Viseme[] SupportedVisemes =
+        {
+            Viseme.sil, Viseme.PP, Viseme.FF, Viseme.TH, Viseme.DD, Viseme.kk, Viseme.CH, Viseme.SS,
+            Viseme.nn, Viseme.RR, Viseme.aa, Viseme.E, Viseme.ih, Viseme.oh, Viseme.ou,
+        };
+
         public void EnsureBindings()
         {
-            if (bindings == null)
-                bindings = new List<VisemeBinding>();
-
-            var existing = bindings
-                .Where(binding => binding != null)
-                .GroupBy(binding => binding.viseme)
-                .ToDictionary(group => group.Key, group => group.First());
-
-            var orderedBindings = new List<VisemeBinding>();
-            foreach (var viseme in GetSupportedVisemes())
-            {
-                if (!existing.TryGetValue(viseme, out var binding) || binding == null)
-                {
-                    binding = new VisemeBinding
+            var ordered = bindings != null && bindings.Count == SupportedVisemes.Length;
+            if (ordered)
+                for (var index = 0; index < SupportedVisemes.Length; index++)
+                    if (bindings[index] == null || bindings[index].viseme != SupportedVisemes[index])
                     {
-                        viseme = viseme,
-                        blendshapeName = string.Empty,
-                        weight = 100f,
-                        useCustomSettings = false,
-                        voiceMode = VisemeBinding.VoiceModeOverride.Global,
-                        voiceMin = 0f,
-                        voiceMax = 1f,
-                    };
-                }
-                else
-                {
-                    binding.viseme = viseme;
-                    binding.blendshapeName ??= string.Empty;
-                    binding.weight = Mathf.Clamp(binding.weight, 0f, 100f);
-                    binding.voiceMode = SanitizeVoiceModeOverride(binding.voiceMode);
-                    binding.voiceMin = Mathf.Clamp01(binding.voiceMin);
-                    binding.voiceMax = Mathf.Clamp01(binding.voiceMax);
-                    if (binding.voiceMax <= binding.voiceMin)
-                    {
-                        binding.voiceMax = Mathf.Min(1f, binding.voiceMin + 0.001f);
-                        binding.voiceMin = Mathf.Max(0f, binding.voiceMax - 0.001f);
+                        ordered = false;
+                        break;
                     }
-                }
-
-                orderedBindings.Add(binding);
+            if (!ordered)
+            {
+                var existing = new Dictionary<Viseme, VisemeBinding>();
+                if (bindings != null)
+                    foreach (var binding in bindings)
+                        if (binding != null && !existing.ContainsKey(binding.viseme)) existing.Add(binding.viseme, binding);
+                bindings = new List<VisemeBinding>(SupportedVisemes.Length);
+                foreach (var viseme in SupportedVisemes)
+                    bindings.Add(existing.TryGetValue(viseme, out var binding) ? binding : new VisemeBinding { viseme = viseme });
             }
 
-            bindings = orderedBindings;
+            foreach (var binding in bindings)
+            {
+                binding.blendshapeName ??= string.Empty;
+                binding.weight = Mathf.Clamp(binding.weight, 0f, 100f);
+                binding.voiceMode = SanitizeVoiceModeOverride(binding.voiceMode);
+                binding.voiceMin = Mathf.Clamp01(binding.voiceMin);
+                binding.voiceMax = Mathf.Clamp01(binding.voiceMax);
+                if (binding.voiceMax <= binding.voiceMin)
+                {
+                    binding.voiceMax = Mathf.Min(1f, binding.voiceMin + 0.001f);
+                    binding.voiceMin = Mathf.Max(0f, binding.voiceMax - 0.001f);
+                }
+            }
         }
 
         public VisemeBinding GetBinding(Viseme viseme)
         {
-            EnsureBindings();
-            return bindings.FirstOrDefault(binding => binding.viseme == viseme);
+            var index = (int)viseme;
+            if ((uint)index >= SupportedVisemes.Length) return null;
+            if (bindings == null || bindings.Count != SupportedVisemes.Length ||
+                bindings[index] == null || bindings[index].viseme != viseme) EnsureBindings();
+            return bindings[index];
         }
 
         public SkinnedMeshRenderer ResolveTargetRenderer(SkinnedMeshRenderer fallback = null)
@@ -192,10 +196,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public static List<Viseme> GetSupportedVisemes()
         {
-            return Enum.GetValues(typeof(Viseme))
-                .Cast<Viseme>()
-                .OrderBy(viseme => (int)viseme)
-                .ToList();
+            return new List<Viseme>(SupportedVisemes);
         }
 
 #if UNITY_EDITOR
@@ -207,23 +208,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         private void OnValidate()
         {
             InitializeEditorDefaults();
-
-            foreach (var binding in bindings)
-            {
-                if (binding == null)
-                    continue;
-
-                binding.blendshapeName ??= string.Empty;
-                binding.weight = Mathf.Clamp(binding.weight, 0f, 100f);
-                binding.voiceMode = SanitizeVoiceModeOverride(binding.voiceMode);
-                binding.voiceMin = Mathf.Clamp01(binding.voiceMin);
-                binding.voiceMax = Mathf.Clamp01(binding.voiceMax);
-                if (binding.voiceMax <= binding.voiceMin)
-                {
-                    binding.voiceMax = Mathf.Min(1f, binding.voiceMin + 0.001f);
-                    binding.voiceMin = Mathf.Max(0f, binding.voiceMax - 0.001f);
-                }
-            }
 
             globalWeight = Mathf.Clamp(globalWeight, 0f, 100f);
             voiceModulationMode = SanitizeVoiceMode(voiceModulationMode);
@@ -252,16 +236,13 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static VoiceModulationMode SanitizeVoiceMode(VoiceModulationMode mode)
         {
-            return Enum.IsDefined(typeof(VoiceModulationMode), mode)
-                ? mode
-                : VoiceModulationMode.Linear;
+            return (uint)mode <= (uint)VoiceModulationMode.Linear ? mode : VoiceModulationMode.Linear;
         }
 
         private static VisemeBinding.VoiceModeOverride SanitizeVoiceModeOverride(VisemeBinding.VoiceModeOverride mode)
         {
-            return Enum.IsDefined(typeof(VisemeBinding.VoiceModeOverride), mode)
-                ? mode
-                : VisemeBinding.VoiceModeOverride.Global;
+            return (uint)mode <= (uint)VisemeBinding.VoiceModeOverride.Linear
+                ? mode : VisemeBinding.VoiceModeOverride.Global;
         }
     }
 }

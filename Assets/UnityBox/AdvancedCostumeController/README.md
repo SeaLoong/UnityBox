@@ -34,7 +34,7 @@ ACC 从指定的**服装根节点（Costumes Root）**扫描服装，生成可�
 
 **默认服装或变体**可以直接拖入某套服装本体、对象变体或材质变体；对象移出 `Costumes Root` 后该输入会自动清空。生成时会优先使用指定且已启用的对象作为普通服装选择和混搭的初始版本；留空或指定对象未启用时，使用预览中第一个启用对象所属服装组和对象/变体。
 
-ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其对象名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；混搭启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按场景、Avatar 和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产；关闭**自动生成菜单图标**时会保留该目录下已有的 `MenuIcons` 资产。
+ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其对象名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；混搭启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 和自动图标按场景、Avatar 与参数前缀隔离，每次写入新的 `Build[ n]`。旧结果继续保留，重新生成后可用 Undo 恢复原 Controller 和图标引用；关闭**自动生成菜单图标**时沿用已有图标。
 
 ## Avatar 工作流配置项
 
@@ -108,7 +108,7 @@ ACC 首先使用 ACC 自己的 `ACCOutfitMarker` 作为最高优先级服装声�
 - 材质变体图标会应用全局规则和精准槽位覆盖；
 - 父级子菜单没有独立目标时，会继承第一个有图标的后代图标。
 
-图标保存到当前 ACC 输出目录下的 `MenuIcons/`，重新生成时会更新实际拍摄请求对应的 PNG。开启此选项时，完整 Generate 会清理整个专属输出目录，包括旧 PNG；实际拍摄请求会更新对应菜单项图标。需长期保留的手工图标应放在生成目录外。关闭时不会运行图标生成器，Parts 文件夹仍可使用 `OutlineBlank2`，但不会给部件子项补这张预置图标。
+图标保存到本次 `Build[ n]/MenuIcons/`，每个 Build 保留独立 PNG，菜单 Undo 可重新引用旧图。关闭自动图标时复用原图标；Parts 文件夹继续使用 `OutlineBlank2`，部件子项保留其原有展示。
 
 ACC 输出目录按场景名、Avatar 名和 Parameter Prefix 的稳定文件名隔离；名称清理或截断后追加原文哈希。Root Menu Name 不参与目录。相同场景名、相同 Avatar 名及相同 Prefix 仍可能共用输出，因此不同实例应使用不同 Prefix 或 Output Folder。
 
@@ -186,7 +186,7 @@ ACC 的三个组件都使用 Unity Undo：
 - 在 Prefab 实例中修改 ACC 组件、菜单项或参数组件时，ACC 会登记 Prefab 覆盖，保存场景后修改不会丢失；
 - 通过 Unity 添加或移除 ACC 组件仍遵循 Unity 自身的组件 Undo 记录。刚添加组件后修改字段时，第一次 Undo 会先撤销字段修改，下一次才撤销组件添加；
 - 材质变体首次打开 Inspector 时的自动初始化也会产生独立记录，必要时可以先撤销自动生成的规则，再撤销组件添加；
-- 生成目录中 Controller、AnimationClip、PNG 的删除属于 AssetDatabase 文件操作，不纳入场景 Undo，生成前请确认摘要并备份需要保留的手工资产。
+- 每次生成保留独立 Controller、AnimationClip 和 PNG；重新生成支持一次 Undo/Redo 切换完整菜单、参数和 Controller 引用。生成失败时撤回本次场景操作并删除本次未完成 Build。
 
 ### `ACCVariantMaterialOverride`
 
@@ -239,23 +239,25 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 如果优先保证结构简单、便于调试，或项目已有足够同步参数预算，可以保持关闭。压缩主要用于同步参数较多，尤其是混搭槽位较多的 Avatar。
 
-## Avatar 工作流的生成限制
+## Avatar 工作流的输入与摘要
 
 - 参数前缀必须包含字母或数字，并在同一 Avatar 上保持唯一；
 - 输出目录必须是 `Assets` 下的安全相对路径；
 - 混搭必须同时启用部件控制；
 - 服装对象数量必须在 VRChat `Int` 可表达范围内；
-- 生成前的确认窗口会显示即将覆盖的 Controller、参数预算和压缩结构。
+- 生成前的确认窗口显示新 Build 的 Controller 路径、保留旧资产的行为、参数成本与压缩结构；安装时通过 NDMF ParameterInfo 校验整个 Avatar 的256bit预算。
 
 
 ## 升级与验证
 
 含空格、标点等字符的旧参数名及输出目录可能改变。更新后重新 Generate，并检查原有自定义参数引用；VRChat 保存的相关菜单选择可能重置。旧目录不会自动迁移或删除，确认无引用后再清理。
 
-`UnityBox.AdvancedCostumeController.Core` 包含真实扫描、完整动画生成、模型、选择算法、命名/路径及普通 Unity 窗口；原 Avatar 生成器调用同一实现。`Tests/Core/Editor` 共 **32** 个 EditMode 用例：规则和 Animator 辅助 18、扫描 7、完整生成 7。完整生成用例会创建实际资产并检查切换片段采样、Parts/Mixer、材质曲线、重复生成和错误路径。
+`UnityBox.AdvancedCostumeController.Core` 包含真实扫描、完整动画生成、模型、选择算法、命名/路径及普通 Unity 窗口；原 Avatar 生成器调用同一实现。`Tests/Core/Editor` 覆盖规则、扫描、真实资产、真实 Animator 的 Parts 与两种 Mixer。Standalone Player 探针运行普通选择、Mixer 与返回选择序列。性能场景测量2/8/24套服装的资产生成与逐帧 Animator.Update，详见 [性能记录](../../../Docs/Performance.md)。
 
-`UnityBox.AdvancedCostumeController.VRChat` 仅在真实 SDK Avatars >= 3.7 时启用，处理 Avatar 根识别和 Parameter Driver。完整 Avatar 编辑器、MA 扫描适配与原 `Tests/Editor` 的 **19** 个集成用例还要求 SDK Base/Avatars >= 3.7.3 与 MA >= 1.18。MA 使用的双参数 `VRCConstraintSource` 构造函数从 SDK 3.7.3 才可用；3.7.0～3.7.2 不满足这条集成路径。Runtime 标记始终可用；SDK Base 存在时才实现其真实 `IEditorOnly`，没有替代 SDK 类型。
+`UnityBox.AdvancedCostumeController.VRChat` 仅在真实 SDK Avatars >= 3.7 时启用，处理 Avatar 根识别和 Parameter Driver。完整 Avatar 编辑器、MA 扫描适配与`Tests/Editor` 的菜单、压缩、安装、预算、Undo/Redo及真实图标渲染用例还要求 SDK Base/Avatars >= 3.7.3 与 MA >= 1.18。MA 使用的双参数 `VRCConstraintSource` 构造函数从 SDK 3.7.3 才可用；3.7.0～3.7.2 不满足这条集成路径。Runtime 标记始终可用；SDK Base 存在时才实现其真实 `IEditorOnly`，没有替代 SDK 类型。
 
 `Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。原 MonoBehaviour 路径/GUID 保留，迁移文件已有的 `.meta` 同步保留。已有 Avatar 项目继续保留 SDK/MA；普通 Unity 入口不迁移或卸载既有 MA 组件。
 
-在 Test Runner 的 EditMode 运行测试；VPM 安装时将本包名加入项目 manifest 的 `testables`。单元测试不替代图标渲染、MA 构建和 VRChat 同步验证；实际执行结果见仓库验证记录。
+在 Test Runner 的 EditMode 运行测试；VPM 安装时将本包名加入项目 manifest 的 `testables`。核心套件评估真实 Animator，Avatar 套件运行 MA 安装、预算和压缩参数流，图形套件读取实际渲染图标；各程序集与图形运行结果见[验证结果](../../../Docs/VerificationResults.json)。
+
+批处理使用 `Generator.Execute(outfits, indexMap, defaultOutfit, false)` 执行同一完整安装流程。图形测试通过真实相机生成256×256红/绿变体PNG并读取像素，性能测试按预热和多次采样记录时延。执行结果与复现命令统一收录在 [测试指南](../../../Docs/Testing.md) 和 [性能记录](../../../Docs/Performance.md)。

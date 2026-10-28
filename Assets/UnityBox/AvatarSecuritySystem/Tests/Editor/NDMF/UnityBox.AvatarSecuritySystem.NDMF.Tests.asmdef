@@ -1,0 +1,46 @@
+{
+  "name": "UnityBox.AvatarSecuritySystem.NDMF.Tests",
+  "rootNamespace": "UnityBox.AvatarSecuritySystem.Tests",
+  "references": [
+    "UnityBox.AvatarSecuritySystem",
+    "UnityBox.AvatarSecuritySystem.Runtime",
+    "UnityBox.AvatarSecuritySystem.VRChat",
+    "UnityBox.AvatarSecuritySystem.NDMF",
+    "VRC.SDK3A",
+    "VRC.SDKBase",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "VRCSDK3A.dll",
+    "VRCSDKBase.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_SDK",
+    "NDMF_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_SDK"
+    },
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "1.8.0",
+      "define": "NDMF_AVAILABLE"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

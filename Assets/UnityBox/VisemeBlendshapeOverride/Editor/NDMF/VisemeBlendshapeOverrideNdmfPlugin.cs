@@ -95,13 +95,14 @@ namespace UnityBox.VisemeBlendshapeOverride
                 animatorServices.ControllerContext.Controllers[VRCAvatarDescriptor.AnimLayerType.FX] = fxController;
             }
 
-            fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
             EnsureVirtualVisemeParameter(fxController);
 
             if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 EnsureVirtualVoiceParameter(fxController);
 
-            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config);
+            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config,
+                animatorServices.ControllerContext.Controllers.Select(entry => entry.Value));
+            fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
             // The service tracks original virtual paths while other plugins rename/reparent renderers.
             var virtualPath = animatorServices.ObjectPathRemapper.GetVirtualPathForObject(plan.TargetRenderer.gameObject);
             GenerateVirtualLayer(fxController, virtualPath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
@@ -130,8 +131,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             float defaultFloat = 0f)
         {
             var parameters = controller.Parameters;
-            if (parameters.TryGetValue(name, out var existingParameter) && existingParameter.type == type)
+            if (parameters.TryGetValue(name, out var existingParameter))
+            {
+                if (existingParameter.type != type)
+                    throw new ArgumentException($"Parameter '{name}' is {existingParameter.type}; the viseme input requires {type}.");
                 return;
+            }
 
             controller.Parameters = parameters.SetItem(name, new AnimatorControllerParameter
             {
@@ -145,7 +150,8 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static bool ResolveVirtualWriteDefaults(
             VirtualAnimatorController controller,
-            VisemeBlendshapeOverrideComponent config)
+            VisemeBlendshapeOverrideComponent config,
+            IEnumerable<VirtualAnimatorController> relatedControllers)
         {
             switch (config.writeDefaultsMode)
             {
@@ -155,7 +161,8 @@ namespace UnityBox.VisemeBlendshapeOverride
                     return false;
             }
 
-            foreach (var layer in controller.Layers)
+            foreach (var current in relatedControllers.Where(item => item != null).Append(controller).Distinct())
+            foreach (var layer in current.Layers)
             {
                 if (layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName)
                     continue;

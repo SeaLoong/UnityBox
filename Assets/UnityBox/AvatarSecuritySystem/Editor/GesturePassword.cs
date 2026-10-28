@@ -44,7 +44,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var waitState = layer.stateMachine.AddState(
                 Obfuscator.State("Wait_Input"),
                 new Vector3(50, 50, 0));
-            waitState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            waitState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             waitState.writeDefaultValues = true;
             layer.stateMachine.defaultState = waitState;
             var inputWaitingState = layer.stateMachine.AddState(
@@ -60,8 +60,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var timeUpFailedState = layer.stateMachine.AddState(
                 Obfuscator.State("TimeUp_Failed"),
                 new Vector3(50, -50, 0));
-            timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             timeUpFailedState.writeDefaultValues = true;
+            var retry = Utils.CreateTransition(timeUpFailedState, inputWaitingState);
+            retry.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
             anyToFailed.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
@@ -83,8 +85,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Password_Release"),
                 new Vector3(50 + (password.Count + 3) * 350, 150, 0));
-            releaseState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             releaseState.writeDefaultValues = true;
+            var rearm = Utils.CreateTransition(releaseState, waitState);
+            rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
+            rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             // 本地 Avatar 若带有已保存的解锁参数，也走 Completed→Release，
             // 让“加载即解锁”和“输入密码后解锁”的最终层状态一致；
             // 该过渡只从 Wait_Input 出发，不会打断正在播放的 Success 音效。
@@ -220,7 +225,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     AnimatorControllerParameterType.Bool, false);
                 Utils.AddParameterIfNotExists(controller, guardB,
                     AnimatorControllerParameterType.Bool, false);
-                var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+                var emptyClip = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
                 var decoyHolds = new List<AnimatorState>();
                 int decoyCount = Mathf.Clamp(Obfuscator.RngInt(ref rng, 2, 4), 2, password.Count);
                 for (int d = 0; d < decoyCount; d++)

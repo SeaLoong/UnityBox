@@ -10,6 +10,8 @@ using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using VRC.SDK3.Avatars.Components;
+using VRC.SDK3.Avatars.ScriptableObjects;
 
 public class BlendshapeGeneratorTests
 {
@@ -18,6 +20,7 @@ public class BlendshapeGeneratorTests
   private Scene testScene;
   private string folder;
   private readonly List<Mesh> meshes = new List<Mesh>();
+  private readonly List<ScriptableObject> transientAssets = new List<ScriptableObject>();
 
   [SetUp]
   public void SetUp()
@@ -43,6 +46,8 @@ public class BlendshapeGeneratorTests
     if (testScene.IsValid()) EditorSceneManager.ClosePreviewScene(testScene);
     foreach (var mesh in meshes) UnityEngine.Object.DestroyImmediate(mesh);
     meshes.Clear();
+    foreach (var asset in transientAssets) UnityEngine.Object.DestroyImmediate(asset);
+    transientAssets.Clear();
     if (AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
   }
 
@@ -105,6 +110,90 @@ public class BlendshapeGeneratorTests
     Assert.That(items.Count(item => item.PortableControl.Type == PortableControlType.RadialPuppet), Is.EqualTo(2));
     Assert.That(items.Where(item => item.PortableControl.Type == PortableControlType.RadialPuppet)
       .Select(item => item.PortableControl.SubParameters[0]).Distinct().Count(), Is.EqualTo(2));
+  }
+
+  [Test]
+  public void ExistingAvatarParametersAreIncludedInThe256BitBudget()
+  {
+    var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+    descriptor.expressionParameters = ExpressionParameters(32);
+    var error = Assert.Throws<TargetInvocationException>(() =>
+      Generate(Renderer(avatar.transform, "Face", "Smile"), "Bool", false, "Face_"));
+    Assert.That(error.InnerException, Is.TypeOf<InvalidOperationException>());
+    Assert.That(error.InnerException.Message, Does.Contain("257/256"));
+    Assert.That(avatar.transform.Find("Blendshapes Menu"), Is.Null);
+    Assert.That(descriptor.expressionParameters.parameters.Length, Is.EqualTo(32));
+  }
+
+  [Test]
+  public void RegenerationRecomputesBudgetFromTheReplacementType()
+  {
+    var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+    descriptor.expressionParameters = ExpressionParameters(31);
+    var renderer = Renderer(avatar.transform, "Face", "Smile");
+    Generate(renderer, "Float", false, "Face_");
+    Generate(renderer, "Bool", false, "Face_");
+    var declared = avatar.GetComponentsInChildren<ModularAvatarParameters>().SelectMany(item => item.parameters).ToArray();
+    Assert.That(declared.Length, Is.EqualTo(1));
+    Assert.That(declared[0].syncType, Is.EqualTo(ParameterSyncType.Bool));
+    Assert.That(avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>().Length, Is.EqualTo(1));
+  }
+
+  [Test]
+  public void InstallingControlsSupportsOneStepUndoAndRedo()
+  {
+    Generate(Renderer(avatar.transform, "Face", "Smile"), "Float", false, "Face_");
+    var controller = avatar.GetComponentInChildren<ModularAvatarMergeAnimator>().animator;
+    Undo.FlushUndoRecordObjects();
+    Undo.PerformUndo();
+    Assert.That(avatar.transform.Find("Blendshapes Menu"), Is.Null);
+    Assert.That(AssetDatabase.LoadAssetAtPath<AnimatorController>(AssetDatabase.GetAssetPath(controller)), Is.Not.Null);
+    Undo.PerformRedo();
+    Assert.That(avatar.GetComponentInChildren<ModularAvatarMergeAnimator>().animator, Is.EqualTo(controller));
+  }
+
+  [Test]
+  public void OverBudgetReplacementRestoresTheInstalledController()
+  {
+    var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+    descriptor.expressionParameters = ExpressionParameters(31);
+    var renderer = Renderer(avatar.transform, "Face", "Smile");
+    Generate(renderer, "Bool", false, "Face_");
+    var original = avatar.GetComponentInChildren<ModularAvatarMergeAnimator>().animator;
+    descriptor.expressionParameters = ExpressionParameters(32);
+    var error = Assert.Throws<TargetInvocationException>(() => Generate(renderer, "Float", false, "Face_"));
+    Assert.That(error.InnerException.Message, Does.Contain("264/256"));
+    var current = avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>();
+    Assert.That(current.Length, Is.EqualTo(1));
+    Assert.That(current[0].animator, Is.EqualTo(original));
+    Assert.That(avatar.GetComponentInChildren<ModularAvatarParameters>().parameters.Single().syncType, Is.EqualTo(ParameterSyncType.Bool));
+  }
+
+  [Test]
+  public void RemovingOneRendererControlsKeepsTheOtherAndSupportsUndo()
+  {
+    Generate(Renderer(avatar.transform, "Face", "Smile"), "Float", false, "Face_");
+    Generate(Renderer(avatar.transform, "Body", "Slim"), "Float", false, "Body_");
+    var target = avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>().Single(merge =>
+      merge.animator.animationClips.SelectMany(AnimationUtility.GetCurveBindings).Any(binding => binding.path == "Face"));
+    new ModularAvatarBlendshapeInstaller().Uninstall(avatar, new[] { target.gameObject.name });
+    var remaining = avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>();
+    Assert.That(remaining.Length, Is.EqualTo(1));
+    Assert.That(remaining[0].animator.animationClips.SelectMany(AnimationUtility.GetCurveBindings).All(binding => binding.path == "Body"), Is.True);
+    Undo.FlushUndoRecordObjects();
+    Undo.PerformUndo();
+    Assert.That(avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>().Length, Is.EqualTo(2));
+  }
+
+  private VRCExpressionParameters ExpressionParameters(int floats)
+  {
+    var result = ScriptableObject.CreateInstance<VRCExpressionParameters>();
+    transientAssets.Add(result);
+    result.parameters = Enumerable.Range(0, floats).Select(index => new VRCExpressionParameters.Parameter
+    {
+      name = "Existing" + index, valueType = VRCExpressionParameters.ValueType.Float, networkSynced = true
+    }).ToArray();
+    return result;
   }
 
   private static GameObject Child(Transform parent, string name)

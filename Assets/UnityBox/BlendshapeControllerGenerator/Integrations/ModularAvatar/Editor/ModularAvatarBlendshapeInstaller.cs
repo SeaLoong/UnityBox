@@ -8,7 +8,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 
 [InitializeOnLoad]
-public sealed class ModularAvatarBlendshapeInstaller : IBlendshapeAvatarInstaller
+public sealed class ModularAvatarBlendshapeInstaller : IBlendshapeAvatarInstaller, IBlendshapeAvatarUninstaller
 {
   static ModularAvatarBlendshapeInstaller()
   {
@@ -17,6 +17,9 @@ public sealed class ModularAvatarBlendshapeInstaller : IBlendshapeAvatarInstalle
 
   public void Install(BlendshapeGenerationResult generation)
   {
+    Undo.IncrementCurrentGroup();
+    int undoGroup = Undo.GetCurrentGroup();
+    Undo.SetCurrentGroupName("Install blendshape controls");
     var avatarRoot = generation.Root;
     var controller = generation.Controller;
     var menuIdentity = generation.MenuIdentity;
@@ -96,14 +99,46 @@ public sealed class ModularAvatarBlendshapeInstaller : IBlendshapeAvatarInstalle
         Undo.DestroyObjectImmediate(existing.gameObject);
       }
       menu.name = menuIdentity;
+      var parameterConflicts = new List<string>();
+      var provided = nadena.dev.ndmf.ParameterInfo.ForUI.GetParametersForObject(avatarRoot,
+        (type, first, second) => parameterConflicts.Add(first.EffectiveName)).ToArray();
+      var ownNames = new HashSet<string>(generation.Controls.Select(control => control.ParameterName), StringComparer.Ordinal);
+      var ownConflicts = parameterConflicts.Where(ownNames.Contains).Distinct().ToArray();
+      if (ownConflicts.Length > 0)
+        throw new InvalidOperationException("Blendshape parameter types conflict with existing controls: " + string.Join(", ", ownConflicts));
+      int parameterCost = provided.Sum(parameter => parameter.BitUsage);
+      int maximum = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters.MAX_PARAMETER_COST;
+      if (parameterCost > maximum)
+        throw new InvalidOperationException($"Expression parameter budget exceeded: {parameterCost}/{maximum} bits. Change selected Float controls to Bool or remove unused controls.");
+      Debug.Log($"[BlendshapeControllerGenerator] Expression parameter budget: {parameterCost}/{maximum} bits.");
+      Undo.CollapseUndoOperations(undoGroup);
       PrefabUtility.RecordPrefabInstancePropertyModifications(top.gameObject);
       UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(avatarRoot.scene);
     }
     catch
     {
-      Undo.DestroyObjectImmediate(menu);
+      Undo.RevertAllDownToGroup(undoGroup);
       throw;
     }
+  }
+
+  public void Uninstall(GameObject root, IReadOnlyList<string> menuIdentities)
+  {
+    var top = FindDirectChild(root.transform, "Blendshapes Menu");
+    if (top == null) return;
+    Undo.IncrementCurrentGroup();
+    int group = Undo.GetCurrentGroup();
+    Undo.SetCurrentGroupName("Remove selected blendshape controls");
+    foreach (string identity in menuIdentities.Distinct())
+    {
+      var menu = FindDirectChild(top, identity);
+      if (menu == null || menu.GetComponent<ModularAvatarMergeAnimator>() == null) continue;
+      RemoveLegacyParameters(top.gameObject, menu, null);
+      Undo.DestroyObjectImmediate(menu.gameObject);
+    }
+    if (top.childCount == 0) Undo.DestroyObjectImmediate(top.gameObject);
+    Undo.CollapseUndoOperations(group);
+    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(root.scene);
   }
 
   private static HashSet<string> GetBlendshapeBindingPaths(RuntimeAnimatorController controller)

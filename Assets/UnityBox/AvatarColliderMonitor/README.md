@@ -1,72 +1,68 @@
 # Avatar Collider Monitor
 
-记录并比较根 GameObject 下的 Unity `Collider` / `Collider2D`，帮助定位场景和构建中的变化。
-需要 Unity 2022.3；独立 Unity 项目不需要 VRChat SDK、Modular Avatar 或 NDMF。
-VPM 包名：`top.sealoong.unitybox.avatar-collider-monitor`。
+捕获根 GameObject 下的 Unity 3D/2D 碰撞体，比较阶段变化、查看世界包围盒，并保存历史记录。
+需要 Unity 2022.3；普通 Unity 项目可以直接使用。VPM 包名：
+`top.sealoong.unitybox.avatar-collider-monitor`。
 
 ## 使用
 
-打开 `Tools > UnityBox > Avatar Collider Monitor`，在 **Root Object** 选择要检查的
-GameObject。预览包含根对象及其所有子对象（包括未激活对象）的 Unity 碰撞体。
-点击 **Take Snapshot** 手动采样；对象旁的箭头可定位关联 Transform。
+打开 `Tools > UnityBox > Avatar Collider Monitor`，在 **Root Object** 选择根对象。
+预览包括根对象及未激活子对象中的 `Collider` / `Collider2D`。点击箭头定位 Transform，
+点击 **Take Snapshot** 手动采样；**Refresh** 立即更新预览。
 
-| 设置 | 作用与默认值 |
+| 设置或操作 | 行为 |
 | --- | --- |
-| Enable Monitoring | 启用自动采样；默认关闭，关闭时仍可手动采样 |
-| Log Changes | 同一根对象的相邻样本有变化时输出日志；默认开启 |
-| Verbose Logging | 输出各采样点日志；默认关闭 |
-| Show Only Changes | 在历史视图中过滤没有变化的条目 |
+| Enable Monitoring | 开启 Unity 构建及已安装平台适配的自动采样；默认关闭 |
+| Log Changes | 输出同一根对象相邻样本的变化；默认开启 |
+| Verbose Logging | 输出采样阶段名称；默认关闭 |
+| Scene Bounds | 在 Scene View 用青色线框显示 Unity 报告的世界包围盒 |
+| Show Only Changes / Search | 按变化标记和阶段名称过滤历史 |
+| Export JSON / Import JSON | 保存或恢复冻结的历史数据 |
+| Clear | 清除当前历史 |
 
-设置使用原有 EditorPrefs 键保存，切换开关无需重载脚本。历史保留最近 1000 条记录，
-**Clear** 清除历史。历史保存在编辑器静态内存中；脚本重载会清空记录，没有磁盘导出
-或跨会话历史恢复。窗口和包名保留 `Avatar Collider Monitor` 以兼容原来的使用入口。
+预览在对象切换、层级/Undo 变化、手动刷新时重新采样，并以 0.5 秒间隔更新组件属性。
+IMGUI 的重复 Layout/Repaint 复用同一个预览快照。历史差异和统计在记录变化后计算一次，
+后续读取复用缓存；滚动窗口直接使用缓存的键、变化集合和计数。
 
-## 捕获和比较
+## 捕获内容
 
-Unity 碰撞体按组件实例区分，同一 Transform 上的多个组件不会互相覆盖。快照冻结
-组件序列化配置、世界变换矩阵、激活状态、Layer、Transform 身份和层级路径。
-比较能检测配置、对象状态、路径的变化，以及碰撞体组件的添加和移除；对象后续改名
-或销毁不会改写历史。窗口展示路径和变化标记，完整配置保存在快照数据中。
+每个碰撞体按组件实例区分。同一 Transform 上的多个组件各自记录序列化配置、世界矩阵、
+激活状态、Layer、Transform 身份、层级路径和世界包围盒。Unity 报告的包围盒反映当前
+物理组件状态；禁用或未激活碰撞体的几何配置仍保存在组件快照中。
 
-历史仅与同一个根 GameObject 实例的上一条样本比较。构建副本和源场景对象是不同
-实例，不会被强行当作同一对象比较。开启监控后，Unity 的 `IProcessSceneWithReport`
-回调为正在处理的每个场景根对象记录样本；手动采样不依赖构建回调。
+比较覆盖配置/变换/状态变化，以及组件增加或移除。对象之后改名或销毁，历史中的路径与
+配置保持捕获时的值。记录始终与同一 Editor 会话、同一根实例的上一条样本比较；交错采样
+多个根对象时分别形成历史。
 
-## 可选集成
+历史保存最近 1000 条记录。JSON 保留时间、阶段、路径、配置、包围盒、身份和会话标记；
+导入恢复冻结数据，导入条目与实时对象连接分开。不同 Editor 会话的实例编号即使相同，也
+分别形成历史。代码可使用 `ExportHistoryJson`、`ImportHistoryJson(json, append)`；
+`append=true` 合并记录后仍保留最新 1000 条。
 
-| 安装内容 | 增加的功能 | 程序集 |
+## 可选适配与 API
+
+| 环境 | 采样内容 | 程序集 |
 | --- | --- | --- |
-| 仅 Unity | Unity 碰撞体预览、手动历史比较、场景处理采样 | `UnityBox.AvatarColliderMonitor` |
-| VRChat Avatars SDK（使用 >= 3.7.0） | 根对象 Descriptor 的 `collider_*` 配置、Avatar 预处理早/晚观察点 | `UnityBox.AvatarColliderMonitor.VRC` |
-| NDMF | Resolving / Generating / Transforming / Optimizing 各一个观察点 | `UnityBox.AvatarColliderMonitor.NDMF` |
+| Unity | 3D/2D 碰撞体、手动记录、场景处理回调 | `UnityBox.AvatarColliderMonitor` |
+| VRChat Avatars SDK ≥3.7 | Descriptor 的 `collider_*`、PhysBoneCollider 配置与根变换、早/晚 Avatar preprocess 采样 | `.VRC` |
+| NDMF | Resolving、Generating、Transforming、Optimizing 阶段采样 | `.NDMF` |
 
-集成程序集分别按 `com.vrchat.avatars` / `nadena.dev.ndmf` 包的存在启用；未安装时
-核心照常工作。VRC provider 把 Descriptor 的 `ColliderConfig` 加到相同快照，使用
-`VRC/` 键区分 Unity 组件。NDMF 集成只使用根 GameObject，不直接依赖 VRC 类型。
-代码扩展可订阅 `AvatarColliderMonitor.CollectAdditionalColliders` 添加独立配置。
-原 `RecordSnapshot` 调用仍接受 Component（包括 Descriptor），也接受 GameObject。
+各阶段记录当前回调收到的根对象。SDK 配置使用 `VRC/` 键，与 `Unity/` 组件键并列显示。PhysBoneCollider 在普通根对象上也可
+采样，包含未激活/禁用组件，冻结半径、高度等序列化配置及解析后的 rootTransform 世界矩阵。
+扩展 provider 可订阅 `CollectAdditionalColliders`，使用 `snapshot.Add` 添加自己的冻结配置。
+`RecordSnapshot` 接受 GameObject 或 Component。`CaptureSnapshot` 返回独立样本，
+`GetHistoryComparisons` 和 `GetChangeStatistics` 返回当前历史的缓存视图。
 
-## 边界
+## 测试与性能
 
-- 这是采样诊断工具，不进行持续逐帧记录，也不修改、恢复或绘制碰撞体几何。
-  不会自动采集 PhysBoneCollider 等其它 SDK 自定义组件。
-- NDMF 观察点不是所有插件的全局阶段开始/结束；SDK 同 order 的回调也没有绝对
-  前后顺序保证。采样之间发生又恢复的瞬时变化可能无法被记录。
-- 没有 VRCFury 内部每个 feature 的可靠事件钩子；场景存在组件不表示构建发生。
-- SDK 后处理没有传入构建对象，所以不从场景中随意选一个对象伪造构建后快照。
-  单凭差异不能确定哪个第三方插件造成变化。外部资源本身的内容变化也不等于
-  碰撞体组件序列化配置发生变化。
+核心程序集 `UnityBox.AvatarColliderMonitor.Tests` 覆盖 3D/2D、未激活对象、多组件、路径冻结、
+配置/包围盒变化、跨根与跨会话隔离、JSON 往返、1000 条历史上限、预览/统计缓存。
+`.VRC.Tests` 覆盖真实 Descriptor provider 和平台采样。
 
-## 单元测试
+`UnityBoxPerformance` 类别测量 32/256/1024 个碰撞体捕获，以及 100/1000 条记录的完整
+历史重算与缓存读取对照。每个场景预热后采样 9 次，缓存读取使用批量操作记录每次耗时和
+分配量。实际数据及命令见[性能报告](../../../Docs/Performance.md)，运行回归见
+[测试指南](../../../Docs/Testing.md)。UPM/VPM 安装时将本包名加入 manifest 的 `testables`。
 
-安装 Unity Test Framework，在 Test Runner 的 **EditMode** 运行：
-
-- `UnityBox.AvatarColliderMonitor.Tests`：只需要 Unity，覆盖 3D/2D 碰撞体、未激活
-  子对象、多组件添加/移除、配置与状态变化、冻结历史、跨根对象隔离、手动采样和扩展接口。
-- `UnityBox.AvatarColliderMonitor.VRC.Tests`：额外需要真实 VRChat Avatars SDK，覆盖
-  Descriptor 配置、SDK 自动采样开关及历史隔离；缺少 SDK 时该程序集不会编译。
-
-通过 VPM/UPM 安装时，将本包名追加到 `Packages/manifest.json` 的 `testables`。
-源码位于 `Tests/Editor/ColliderSnapshotTests.cs` 和 `Tests/Editor/VRC/`。
-这些测试不能代替真实 SDK/NDMF 构建顺序验证；本次改动的 Unity 执行结果须以实际
-Test Runner 报告为准，源码和配置检查不代表测试通过。
+本包在 Unity 2022.3.22f1 的执行记录与程序集结果统一保存在
+[验证结果](../../../Docs/VerificationResults.json)，性能场景由独立运行采样。

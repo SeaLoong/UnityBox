@@ -133,6 +133,7 @@ namespace UnityBox.VisemeBlendshapeOverride.Tests
         public void FailedSdkPreprocessKeepsConfigurationForRetry()
         {
             var original = new AnimatorController();
+            original.AddParameter("Viseme", AnimatorControllerParameterType.Float);
             var overrides = new AnimatorOverrideController(original);
             descriptor.customizeAnimationLayers = true;
             try
@@ -264,33 +265,73 @@ namespace UnityBox.VisemeBlendshapeOverride.Tests
         }
 
         [Test]
-        public void UnsupportedOverrideControllerFailsWithoutReplacingExistingFx()
+        public void OverrideControllerFlattensEffectiveMotionsAndAddsVisemeLayer()
         {
-            var original = new AnimatorController();
+            var folder = "Assets/VisemeOverrides_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", Path.GetFileName(folder));
+            generatedFolders.Add(folder);
+            var original = AnimatorController.CreateAnimatorControllerAtPath(folder + "/Source.controller");
+            var sourceClip = new AnimationClip { name = "Original clip" };
+            var replacement = new AnimationClip { name = "Replacement clip" };
+            AssetDatabase.CreateAsset(sourceClip, folder + "/Original.anim");
+            AssetDatabase.CreateAsset(replacement, folder + "/Replacement.anim");
+            var state = original.layers[0].stateMachine.AddState("Original state");
+            original.layers[0].stateMachine.defaultState = state;
+            state.motion = sourceClip;
+            AssetDatabase.SaveAssets();
+            var bytes = File.ReadAllBytes(AssetDatabase.GetAssetPath(original));
             var overrides = new AnimatorOverrideController(original);
+            overrides[sourceClip] = replacement;
             descriptor.customizeAnimationLayers = true;
+            descriptor.baseAnimationLayers = new[] { new VRCAvatarDescriptor.CustomAnimLayer
+            {
+                type = VRCAvatarDescriptor.AnimLayerType.FX, isDefault = false, animatorController = overrides,
+            } };
             try
             {
-                descriptor.baseAnimationLayers = new[]
-                {
-                    new VRCAvatarDescriptor.CustomAnimLayer
-                    {
-                        type = VRCAvatarDescriptor.AnimLayerType.FX,
-                        isDefault = false,
-                        animatorController = overrides
-                    }
-                };
-                descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeBlendShape;
+                var result = Build();
+                Assert.That(result.layers[0].stateMachine.defaultState.motion, Is.SameAs(replacement));
+                Assert.That(result.layers[0].stateMachine, Is.Not.SameAs(original.layers[0].stateMachine));
+                Assert.That(result.layers.Count(layer => layer.name == VisemeBlendshapeOverrideUtils.GeneratedLayerName), Is.EqualTo(1));
+                Assert.That(state.motion, Is.SameAs(sourceClip));
+                Assert.That(File.ReadAllBytes(AssetDatabase.GetAssetPath(original)), Is.EqualTo(bytes));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(overrides); }
+        }
 
-                Assert.Throws<InvalidOperationException>(() =>
-                    VisemeBlendshapeOverrideVrcProcessor.ProcessAvatar(avatar));
-                Assert.That(descriptor.baseAnimationLayers[0].animatorController, Is.SameAs(overrides));
-                Assert.That(descriptor.lipSync, Is.EqualTo(VRC_AvatarDescriptor.LipSyncStyle.VisemeBlendShape));
+        [Test]
+        public void AutoWriteDefaultsReadsRelatedOverrideControllerBaseGraph()
+        {
+            var original = new AnimatorController { name = "vrc_UserGesture" };
+            var machine = new AnimatorStateMachine();
+            var clip = new AnimationClip();
+            var state = new AnimatorState { motion = clip, writeDefaultValues = false };
+            machine.states = new[] { new ChildAnimatorState { state = state } };
+            machine.defaultState = state;
+            original.layers = new[] { new AnimatorControllerLayer { name = "Gesture", stateMachine = machine, syncedLayerIndex = -1 } };
+            var overrides = new AnimatorOverrideController(original);
+            descriptor.customizeAnimationLayers = true;
+            descriptor.baseAnimationLayers = new[]
+            {
+                new VRCAvatarDescriptor.CustomAnimLayer { type = VRCAvatarDescriptor.AnimLayerType.FX, isDefault = true },
+                new VRCAvatarDescriptor.CustomAnimLayer { type = VRCAvatarDescriptor.AnimLayerType.Gesture,
+                    isDefault = false, animatorController = overrides },
+            };
+            config.writeDefaultsMode = VisemeBlendshapeOverrideComponent.WriteDefaultsMode.Auto;
+            try
+            {
+                var controller = Build();
+                var layer = controller.layers.Single(item => item.name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
+                Assert.That(layer.stateMachine.states.All(child => !child.state.writeDefaultValues), Is.True);
+                Assert.That(state.writeDefaultValues, Is.False);
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(overrides);
                 UnityEngine.Object.DestroyImmediate(original);
+                UnityEngine.Object.DestroyImmediate(machine);
+                UnityEngine.Object.DestroyImmediate(state);
+                UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 

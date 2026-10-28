@@ -8,6 +8,11 @@ public interface IBlendshapeAvatarInstaller
   void Install(BlendshapeGenerationResult generation);
 }
 
+public interface IBlendshapeAvatarUninstaller
+{
+  void Uninstall(GameObject root, IReadOnlyList<string> menuIdentities);
+}
+
 public static class BlendshapeAvatarIntegration
 {
   public static IBlendshapeAvatarInstaller Installer { get; set; }

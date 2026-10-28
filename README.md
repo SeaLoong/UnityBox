@@ -1,62 +1,68 @@
 # UnityBox
 
-用于普通 Unity 和 Avatar 编辑流程的一组 Unity 2022.3 工具。当前 `refactor` 分支拆分了
-独立核心与可选 VRChat/Modular Avatar/NDMF 适配；完整变更、升级后果和剩余限制见
-[变更清单](Docs/RefactorChanges.md)。Animator Optimizer 在独立
-`feat/animator-optimizer`，已 rebase 到 master，尚未合并；它不等同于外部 Avatar Optimizer。
+Unity 2022.3 的编辑、动画生成和构建工具集。`refactor` 持续维护七个插件；
+Animator Optimizer 在 `feat/animator-optimizer` 开发。八插件组合通过隔离工程装入两个
+checkout 的包进行功能、Player 和性能测试，源码分支保持独立。
 
-## 安装
+## 工具入口
 
-通过 [VCC / ALCOM 添加入口](https://sealoong.github.io/UnityBox/) 或手工添加 VPM 源：
+| 插件 | 普通 Unity 工作流 | Avatar 集成 | 手册 |
+| --- | --- | --- | --- |
+| Advanced Costume Controller | 服装、变体、Parts、两种 Mixer、材质动画生成 | MA 菜单、FX、图标、骨架与同步参数 | [服装手册](Docs/AdvancedCostumeController.md) |
+| Blendshape Controller Generator | Float/Bool/反向曲线、组合 Controller、Animator 分配 | MA 安装/移除、总参数预算与 Undo | [Blendshape 手册](Docs/BlendshapeControllerGenerator.md) |
+| Viseme Blendshape Override | 15 口型、Voice 曲线、OverrideController、序列化迁移 | Descriptor、SDK 回退、NDMF 虚拟图 | [口型手册](Docs/VisemeBlendshapeOverride.md) |
+| Avatar Security System | 手势保持、密码、超时、解锁、重锁和 Restart 的完整运行时 | SDK 参数/LayerControl、NDMF 构建 | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md) |
+| Prefab Diff Patcher | 属性/组件/子树选择合并、Variant 与嵌套链接、引用重映射 | 共用普通 Unity 入口 | [Prefab 手册](Assets/UnityBox/PrefabDiffPatcher/README.md) |
+| Avatar Collider Monitor | 3D/2D 几何快照、缓存预览、历史 JSON、世界包围盒 | PhysBoneCollider、Descriptor、构建阶段采样 | [碰撞体手册](Assets/UnityBox/AvatarColliderMonitor/README.md) |
+| Build Pipeline Logger | 有序耗时轨迹、Shader 热路径、UnityLinker、JSON 导出 | SDK 与 NDMF 阶段日志 | [日志手册](Assets/UnityBox/BuildPipelineLogger/README.md) |
+
+各包位于 `Assets/UnityBox/<目录>`，清单名称为 `top.sealoong.unitybox.*`。
+普通核心直接使用 Unity；SDK、MA、NDMF 功能按实际安装的包启用。
+程序集和输入服务见 [依赖架构](Docs/DependencyArchitecture.md)。
+
+## 安装与升级
+
+通过 [VCC / ALCOM](https://sealoong.github.io/UnityBox/) 添加 VPM 源：
 
 ```text
 https://sealoong.github.io/UnityBox/vpm.json
 ```
 
-普通 Unity 可使用源码或本地 UPM 包。当前分支不再强制安装所有 Avatar 依赖；已有 Avatar
-工程保留所需 SDK/MA/NDMF。线上 listing 版本可能尚未包含本分支改动，安装后应检查实际版本。
+源码或本地 UPM 安装可以直接选择所需包。使用本轮分支实现时，从 `refactor` 获取七个包，
+从 `feat/animator-optimizer` 获取优化器；版本对应当前源码提交，发布 listing 对应发布产物。
+升级时保留 `.meta` 与场景，重新生成 Controller、菜单和参数安装结果。
+生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
+ASS 组件原 GUID 已从仓库场景恢复，三处原场景引用继续使用同一个脚本身份。
 
-## 工具与文档
+## 功能、构建与性能
 
-| 工具 | 普通 Unity 功能 | 可选平台功能与最低条件 | 文档 |
-| --- | --- | --- | --- |
-| Advanced Costume Controller | 扫描、服装/部件/Mixer/材质动画资产生成 | SDK ≥3.7.3、MA ≥1.18：菜单、FX、骨架、图标和网络参数 | [手册](Docs/AdvancedCostumeController.md) |
-| Blendshape Controller Generator | Float/Bool blendshape控制器生成窗口 | SDK ≥3.7.3、MA ≥1.13：菜单、FX和同步参数 | [手册](Docs/BlendshapeControllerGenerator.md) |
-| Avatar Collider Monitor | 任意根对象3D/2D碰撞体快照、历史和场景采样 | SDK Descriptor/provider、独立NDMF阶段采样 | [说明](Assets/UnityBox/AvatarColliderMonitor/README.md) |
-| Build Pipeline Logger | Unity导入与构建日志 | 独立SDK/NDMF回调日志 | [说明](Assets/UnityBox/BuildPipelineLogger/README.md) |
-| Prefab Diff Patcher | Prefab比较、选择合并、引用重映射 | 无额外依赖 | [说明](Assets/UnityBox/PrefabDiffPatcher/README.md) |
-| Avatar Security System | 配置、Controller工具和显式行为适配的图构造API | SDK ≥3.7：手势/锁定/反馈；NDMF另需≥1.8 | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)、[技术参考](Assets/UnityBox/AvatarSecuritySystem/Editor/ASS_TechnicalDoc.md) |
-| Viseme Blendshape Override | 口型Controller/Clip生成、映射和Voice曲线 | SDK ≥3.7：Avatar输入与构建；NDMF另需≥1.7 | [手册](Docs/VisemeBlendshapeOverride.md) |
+八插件组合功能测试已通过：纯 Unity **294/294**、SDK **369/369**、完整 MA/NDMF
+**456/456**，分别执行8、13、19个测试程序集，均退出码0、零失败、零跳过。
+各范围重复核心用例，分别计数；运行标识、原始结果和源指纹见[测试指南](Docs/Testing.md)。
 
-SDK指真实VRChat Base/Avatars组合。MA使用的API从SDK3.7.3才存在，3.7.0～3.7.2不能
-据宽泛依赖声明视为兼容。当前完整验证组合固定SDK3.8.2、MA1.18、NDMF1.11。
-各包位于`Assets/UnityBox/<工具目录>`，独立清单使用`top.sealoong.unitybox.*`名称。
-程序集/API迁移、组件身份与构建边界见[依赖架构](Docs/DependencyArchitecture.md)。
+[功能总览](Docs/PluginAudit.md) 列出每个插件的输入、输出和执行场景；
+[变更与迁移](Docs/RefactorChanges.md) 解释修复触发条件、行为变化和生成资产的升级方式。
+[测试指南](Docs/Testing.md) 包含核心、完整依赖、图标渲染、独立 Player 和串行基准命令。
+[性能报告](Docs/Performance.md) 与 [原始测量](Docs/PerformanceResults.json) 记录规模、样本数、
+中位数、p95 和实际运行环境；[验证结果](Docs/VerificationResults.json) 保存各次运行及内容指纹。
 
-## 开发与验证
+测试工具使用真实 Unity **2022.3.22f1**、UTF **1.1.33**、NUnit **1.0.6**。
+Avatar 组合固定 SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。
+现有 Personal 已激活云端 Editor。环境复用见 [Unity 环境](Docs/UnityEnvironment.md) 与
+[测试 skill](.agents/skills/unitybox-testing/SKILL.md)。配置其它云机器可直接复制
+[安装与测试提示词](Docs/UnityCloudSetupPrompt.md)。
 
-- [插件审查](Docs/PluginAudit.md)、[全部改动及后果](Docs/RefactorChanges.md)、[temp审查](Docs/TempBranchReview.md)
-- [测试指南与实际结果](Docs/Testing.md)、[Unity安装和隔离工程](Docs/UnityEnvironment.md)
-- [可复用测试skill](.agents/skills/unitybox-testing/SKILL.md)、[仓库规则](AGENTS.md)
+## 开发和发布
 
-Unity **2022.3.22f1** 已通过现有 Personal 账号激活，真实 EditMode 测试已运行：
-无 SDK 核心 **93/93**、仅 SDK **150/150**、完整 SDK 3.8.2 + MA 1.18 + NDMF 1.11
-**179/179**，
-均零跳过、exit 0，14 个完整范围测试程序集全部发现。仅 SDK 的独立结果及本次 XML、
-日志和运行标识见 [测试指南](Docs/Testing.md)。这些结果覆盖 Unity 导入、编译和所列
-EditMode 行为；实际 Avatar 上传与游戏内运行仍需在项目中验证。
+共享工具要求 Python 3.12：
 
-共享工具测试：`python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v`，要求
-Python3.12；打包测试：`python3 .github/scripts/test_package_vpm.py`。
-源场景、实验资产和已知GUID保留；原本未提交的metadata需从开发项目恢复，不能生成随机
-GUID修复旧组件引用。生成器升级后应重新生成并检查参数名、旧引用、Undo和已保存值。
+```sh
+python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v
+python3 .github/scripts/test_package_vpm.py -v
+```
 
-## VPM 发布
+GitHub Actions 根据 `Assets/UnityBox/*/package.json` 构建包。筛选器保留源码、测试和既有
+metadata，排除 Generated、实验探针和平台 bundle；归档每次覆盖重建。
+两个工作分支各自保留开发提交，原优化器 rebase 前的提交另存于远端备份分支。
 
-GitHub Actions从已跟踪的`Assets/UnityBox/*/package.json`发现包，不自动包含子模块。
-发布筛选器保留已有meta与Editor回归测试，排除Generated和ASS实验探针/fixture/bundle。
-ZIP覆盖重建，避免旧文件残留；本轮未代为推送、发布或合并两个分支。
-
-## 许可证
-
-本项目采用 [MIT License](LICENSE)。软件按原样提供，使用和分发时保留版权及许可声明。
+项目采用 [MIT License](LICENSE)。

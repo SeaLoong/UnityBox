@@ -1,190 +1,101 @@
-# Avatar Security System (ASS)
+# Avatar Security System
 
-ASS 提供独立 Unity 动画/配置核心，以及可选 VRChat 构建适配。安装 VRChat 适配依赖后，
-它在 Avatar 构建时生成手势密码、可选身体锁定、倒计时与视听反馈。
-它控制 Avatar 的本地使用流程，不提供资源所有权验证，也不能保证阻止缓存提取、
-修改构建资源或重新上传。名称混淆与已保存的解锁参数都不是安全认证。
+ASS 为角色提供手势密码、身体显示锁、输入倒计时、Overlay 和声音反馈。普通 Unity 使用
+原生 Animator 后端；VRChat 使用 SDK Behaviour 后端；两条入口共享同一套图生成器。
 
-本文描述 `refactor` 分支当前代码；历史版本行为见 [CHANGELOG](../CHANGELOG.md)，
-开发细节见 [技术参考](ASS_TechnicalDoc.md)。本轮在真实 Unity 2022.3.22f1 中通过
-42 项 EditMode 测试（核心 15、真实 SDK 集成 27），零跳过；完整配置使用 SDK 3.8.2、
-MA 1.18 和 NDMF 1.11。实际 Avatar 构建、NDMF 最终提交和 VRChat 运行仍需验证，
-自动化结果不代表所有项目组合的兼容性保证。
+## 普通 Unity 使用
 
-## 安装与现有项目迁移
+1. 给角色根对象添加 `Avatar Security System (ASS)`，配置密码、使用的手、连续保持时长和倒计时。
+2. 点击 Inspector 的 **Generate Standalone Unity Controller**，选择 Assets 内的输出文件。
+3. 生成器创建并分配 Animator Controller，同时配置 `StandaloneSecurityInput`。
+4. 输入脚本通过下面的 API 设置手势；0–7 的数值对应 Idle、Fist、HandOpen、Fingerpoint、
+   Victory、RockNRoll、HandGun、ThumbsUp。
 
-- 核心仅需要 Unity 2022.3；导入源码或本地 UPM 包即可使用配置、Controller/Clip 工具与核心测试。
-- VRChat 上传功能另外安装 SDK Avatars ≥ 3.7.0；包清单不再自动安装 SDK。
-- 在 VCC / ALCOM 添加 `https://sealoong.github.io/UnityBox/vpm.json`，安装
-  `top.sealoong.unitybox.avatar-security-system`。
-- NDMF 为可选集成，需要 SDK 和 NDMF ≥ 1.8.0（使用 `PlatformFinish`）。缺少其中任一依赖时，
-  对应适配装配不参与编译；纯 Unity 核心仍可用。旧 NDMF 不会禁用 SDK 独立回退。
-- 源码安装时保留 `.meta`。当前仓库缺少部分原始元数据，包括
-  `Runtime/Component.cs.meta`；需要从原开发项目恢复，不能用新 GUID 修复旧场景引用。
+```csharp
+var input = avatar.GetComponent<UnityBox.AvatarSecuritySystem.StandaloneSecurityInput>();
+input.SetGesture(1);                 // 默认左手；右手传 rightHand: true
+bool unlocked = input.IsUnlocked;
+bool timedOut = input.HasTimedOut;
+input.Restart();                     // 重新锁定、重置计时并接受新的密码输入
+```
 
-新建或 Reset 的组件默认 `disableDefense=true`、`defaultEnableDefense=false`。
-已有场景中的序列化配置不会自动变成新默认值，升级后应检查原配置。
+每一位必须连续保持 `gestureHoldTime`。短暂错误输入会重置当前保持；确认后按配置的
+容错时长接收下一位。成功后恢复身体显示，播放声音并释放功能层的权重。独立的空曲线
+生命周期层继续运行：解锁参数变回 false 时重新启用密码、锁定和计时层；Restart 也可从
+超时终态开始新一轮。解锁期间，身体缩放重新由用户自己的动画层控制。
 
-## 无 SDK 的功能范围
+生成的普通 Unity Controller 默认 `IsLocal=true`。应用可显式驱动 `IsLocal`，并通过
+`GestureLeft`/`GestureRight` 提供整数输入。`StandaloneSecurityInput` 保存实际生成的参数名，
+开启名称混淆时仍可使用同一 API。独立 Unity 入口生成手势工作流，并保持遗留主动负载关闭。
 
-`Runtime` 中的配置与路径/Bundle 探针只引用 Unity；`Editor` 中的配置快照、动画参数与
-转场工具、Clip/Controller 资源管理及图构造不依赖 VRChat。仓库探针的菜单位于
-`Tools/UnityBox/ASS`；实验脚本不随正式 VPM 包发布。
+Editor 脚本入口：
 
-手势、计时和锁定图调用方必须显式传入 `IAnimatorBehaviourAdapter`，提供状态进入时的
-参数赋值、音频和层权重操作；不传会立即报错。包内可用实现是可选的
-`VrcAnimatorBehaviourAdapter.Instance`，由上传处理器注入。核心没有新增通用 Unity
-密码运行时，也不会在缺少 SDK 时输出省略关键行为却声称可用的控制器。
+```csharp
+var config = ASSConfigData.FromComponent(component);
+var controller = StandaloneSecurityBuilder.Build(avatar, config, "Assets/MyAvatar/ASS.controller");
+animator.runtimeAnimatorController = controller;
+```
 
-普通 Unity 项目可直接调用 `ASSConfigData.FromComponent`、`Utils.CreateLayer`、
-`Utils.CreateTransition`、`Utils.AddIsLocalCondition` 等 API。`IsLocal` 和手势在核心中是
-普通 Animator 参数；不提供网络或手势输入服务。完整 Avatar 功能请按下方 VRChat 流程使用。
+`Build` 使用配置副本，保留调用方的列表、音频引用和配置值。输出控制器、空 Clip 与生成
+状态均持久化为资源，适用于 Editor 手动求值及实际 Player 构建。Unity 构建场景处理器只在
+构建副本中移除 ASSComponent，保留 Animator、StandaloneSecurityInput 与状态进入行为；
+源场景的配置继续用于编辑和重新生成。
 
-## 推荐使用流程（VRChat）
+## VRChat 使用
 
-1. 在带 `VRCAvatarDescriptor` 的 Avatar 根添加
-   `UnityBox/Avatar Security System (ASS)`。构建器也会查找子对象中的组件，但只读取
-   找到的第一份配置，因此每个 Avatar 只保留一个 ASS 组件。
-2. 设置 `gesturePassword` 和 `useRightHand`；新组件默认序列为 `[1, 2, 3, 4]`，左手。
-3. 按需要启用 `disableRootChildren`（Inspector 中的 Avatar Lock）。此字段为 true
-   表示生成锁定层，而不是禁用整个 ASS。
-4. 保持 `disableDefense=true`、`defaultEnableDefense=false`，先测试密码、锁定与反馈。
-5. 若需要 Unity Play Mode 预览，启用 `enabledInPlaymode`。预览仍需要实际驱动
-   `GestureLeft`/`GestureRight` 和 `IsLocal` 的测试环境；只进入 Play Mode 不会自动模拟 VRChat。
-6. 在测试 Avatar 上运行 SDK/NDMF 构建，检查 Console 和最终 FX，再进行游戏内验证。
+安装真实 SDK Base/Avatars ≥3.7.0，在 Avatar 根配置 ASS，然后运行 SDK 构建。配置在早期
+捕获，生成阶段创建 FX、参数和反馈对象，构建克隆中的配置组件随后被移除。
+NDMF ≥1.8 的可选适配在 Resolving 捕获配置、PlatformFinish 生成结果；成功完成后 SDK
+回调复用该次结果。新建及 Reset 的组件默认关闭遗留主动负载。
 
-普通模式下，将密码列表留空会跳过主功能生成；仅取消 MonoBehaviour 的 enabled
-开关并不是当前实现支持的卸载方法。移除组件或恢复未生成的项目备份更明确。
-
-## 手势与计时
-
-| 值 | 手势 | 值 | 手势 |
+| 表达式参数 | 保存 | 网络同步 | 作用 |
 | --- | --- | --- | --- |
-| 0 | Idle | 4 | Victory |
-| 1 | Fist | 5 | RockNRoll |
-| 2 | HandOpen | 6 | HandGun |
-| 3 | Fingerpoint | 7 | ThumbsUp |
+| `ASS_PasswordCorrect` | 是 | 是 | 解锁状态 |
+| `ASS_TimeUp` | 否 | 否 | 本地超时状态 |
+| `ASS_Restart` | 否 | 否 | 本地重新开始请求；生命周期层消费后清零 |
 
-- `gestureHoldTime` 是每个正确手势在 Holding 状态连续保持的最短时间，默认 0.15 秒。
-  Holding 中离开当前值会回到输入等待，不能把多次短暂命中累计为一次保持。
-- 非最后一位确认后等待下一位。`gestureMaxHoldTime` 控制 Confirmed 状态的等待超时，
-  默认 3 秒；它不是跨所有状态累计计算的全局手势保持时间。
-- Confirmed 中既不是刚确认的手势，也不是下一位时进入 ErrorTolerance；
-  `gestureErrorTolerance` 默认 0.3 秒，及时切回下一位可继续，否则回到输入等待。
-- Idle(0) 是普通可选密码值，不会在所有状态中被特殊忽略。
-- 当前状态机没有通用的任意后缀匹配算法；不要依赖任意错误前缀都能无缝接到密码。
-- `countdownDuration` 默认 30 秒，Inspector 范围为 10–30 秒。倒计时只在本地且尚未
-  解锁时开始。已正确解锁不会再进入超时失败状态。
-- 隐藏字段 `warningThreshold` 默认 10 秒，`OnValidate` 将它限制为不超过倒计时的一半，
-  因此短倒计时不一定在最后 10 秒报警。
+`IsLocal` 和两只手的 Gesture 参数使用平台输入。成功、计时和层权重行为由真实 SDK
+ParameterDriver、PlayAudio、AnimatorLayerControl 生成。生命周期层处理解锁后的重新
+锁定；最终层索引刷新同时维护自释放控制与指向兄弟功能层的重新启用控制。
 
-成功后会设置已保存且同步的解锁 Bool。再次加载时，已有 true 值可以直接跳过密码。
-它可能因客户端保存状态变化而丢失，也可以被拥有构建资源的人修改，不能区分资源所有者。
-Inspector 的 Weak/Medium/Strong 仅按长度和不同手势数量分类，不是安全强度评估。
+每个 Avatar 使用独立的 `Generated/Build_<id>` 目录；处理另一个 Avatar 或重试构建只
+更新自己的输出。SDK 后处理恢复原 Descriptor、Controller、参数和开关，并回收该次 SDK
+目录。NDMF 输出目录跟随构建结果保留，连续处理多个 Avatar 时原输出引用继续有效。
 
-## 功能与配置
+FX 支持 AnimatorController、内存 Controller 和 AnimatorOverrideController。Override
+按 Clip 对象身份展开，保留重名 Clip、交换覆盖与嵌套图；生成结果拥有独立状态图，复制
+外部 Motion 后再处理。原 Controller、Clip、BlendTree 和表达式参数保持原有内容。
 
-| 字段 | 新组件默认值 | 当前行为 |
-| --- | --- | --- |
-| `gesturePassword` | `[1, 2, 3, 4]` | 允许 0–7；普通模式空列表跳过生成，越界值中止生成 |
-| `useRightHand` | false | false 使用 GestureLeft，true 使用 GestureRight |
-| `gestureHoldTime` | 0.15 | 连续正确 Holding 最短秒数 |
-| `gestureMaxHoldTime` | 3 | 非最终步骤确认后的等待上限 |
-| `gestureErrorTolerance` | 0.3 | Confirmed 后错误输入的恢复窗口 |
-| `countdownDuration` | 30 | 普通模式的总输入期限 |
-| `disableRootChildren` | true | 生成本地身体锁定层 |
-| `disableOverlay` | false | true 时不生成全屏遮罩，密码逻辑仍运行 |
-| `disableWarningSound` | false | true 时不生成警告音频层/对象，成功反馈独立 |
-| `enabledInPlaymode` | false | false 时跳过 Play Mode 构建生成 |
-| `disableDefense` | true | 跳过主动负载生成 |
-| `defaultEnableDefense` | false | 遗留高级模式；跳过密码与倒计时，依赖已保存参数，不推荐作为验证方式 |
-| `lightweightDefense` | false | 遗留负载配置；不是性能或客户端稳定性保证 |
-| `disableObfuscation` | false | 禁用或启用名称/生成资源混淆 |
-| `enablePlayableLayerObfuscation` | true | 允许后置处理 Playable Controller；检测 Contact 时跳过 |
-| `enableDecoyLayers` / `enableDecoyStates` | true / true | 可生成额外混淆层/状态，增加图规模 |
-| `writeDefaultsMode` | On | 隐藏兼容字段；当前生成器统一使用 WD On，旧值在 OnValidate 中归一化 |
+## 配置与显示
 
-### 身体锁定
+- `disableRootChildren=true` 生成身体显示锁。普通根分支写缩放；含 VRC Contact 或其
+  rootTransform 的分支只切换 Renderer，保留 Contact 所依赖的 Transform。
+- Lock 只写自己负责的缩放/Renderer 属性；Overlay、进度和音频由各自功能层管理。
+- Overlay 与警告音效独立开关。关闭警告音效仍保留密码成功声音；显式音频引用优先。
+- 空密码用于关闭普通密码生成功能；移除组件可从构建配置中移除 ASS。
+- 原场景配置脚本 GUID **1c51e6a139920bb4ca12700dc82627ff** 已从仓库场景三处 ASS
+  序列化块恢复到 `Runtime/Component.cs.meta`。保留该 metadata 即可延续原场景引用。
+- Editor 脚本、程序集及包目录补齐固定 metadata，导入不同工程时保持相同资源标识。
 
-本地尚未解锁时，普通根子对象通过缩放隐藏。包含 VRC Contact 组件或相关 rootTransform
-引用的分支改为关闭 Renderer，避免整体缩放 Contact 结构。ASS 自身反馈对象不作为身体隐藏。
+## 测试与性能
 
-解锁先经过一次性的 `UnlockRestore`，再进入不写用户对象曲线的稳定状态，并自释放
-对应 ASS FX 层权重。该设计需要与最终合并后的 FX、WD 策略及衣柜/Contact 插件共同验证；
-不能保证任意第三方状态机重排都兼容。当前实现也不能承诺主动重锁已经释放的层。
+`StandaloneRuntimeTests` 使用真实 Animator.Update 验证连续保持、错误输入、完整序列、
+解锁、功能层释放、二次锁定与输入、超时/Restart，以及解锁后用户动画控制权。另检查
+原 GUID 的 MonoScript 类型、持久化图、重名 Clip 的交叉 Override 和内存 Controller 副本。
+`GenerationLifecycleTests` 覆盖多 Avatar、同 Avatar 重试、SDK 回收与兄弟层控制索引。
+`NdmfFinalizationTests` 执行真实插件调度和最终提交，同时保留上游虚拟编辑、ASS 生成层及
+下游虚拟编辑，并检查最终原生动画输出与原资源内容。
 
-### 视听反馈
+Unity 2022.3.22f1、SDK 3.8.2、NDMF 1.11.0 的完整功能运行通过 **57/57**：核心 26、
+SDK 30、NDMF 最终提交 1，运行 ID 为 `20261028T185613-8ad4eb53`。
 
-PasswordInput 层负责普通输入流程中的 Overlay 与成功音效；Countdown 负责进度，
-Audio 层负责最后一段时间的警告音效。关闭 Lock 不会关闭这些功能。
-`warningBeep`、`successSound` 为隐藏字段；为空时才从 Resources 取默认资源，构建不再
-更改源音频或 Logo 的导入设置。缺少 Shader/资源可能产生降级或缺失反馈，应检查日志。
+性能测试用 16、64、256 个根子对象生成锁定/恢复图，先预热，再采集 7 个样本，输出
+中位数、P95、最小/最大耗时与可用的托管分配数据。Contact 分支一次性建立索引，生成
+锁定与恢复 Clip 时复用该索引，替代按每个根子对象重复扫描整棵 Avatar 的处理。
 
-### 主动负载与遗留默认模式
-
-Defense 代码仍包含可能显著影响客户端的 GPU 负载。本轮没有增强该机制；Play Mode
-直接跳过主动负载生成，即使 `enabledInPlaymode` 为 true 也只预览其他功能。
-`IsLocal` 条件是运行逻辑，不是对其他玩家或合法使用者完全无影响的保证。
-
-`defaultEnableDefense=true` 在 OnValidate 时会强制取消 `disableDefense`，并跳过密码与
-倒计时。它与关闭 Avatar Lock 的组合仍有密码 Animator 参数注册缺口，不作为支持组合。
-不要把已保存参数、名称混淆或负载是否触发解释为资源所有权验证。
-
-## 构建与资源生命周期
-
-- 每次 SDK 构建都由早期回调重新捕获配置并清除上次完成标记，主处理以 `callbackOrder=-1024` 执行。
-- `ASSComponent` 在检测到 `com.vrchat.base >= 3.7.0` 时保留真实 SDK `IEditorOnly` 标记，
-  避免 SDK 在 preprocess 之前的非法组件检查；无 SDK 时没有该类型依赖。可选 SDK 最终回调
-  仍显式清理构建克隆配置，NDMF 在 RemoveEditorOnly 前捕获并清理。源配置与序列化字段保留。
-- NDMF 在 Resolving 捕获配置，在 PlatformFinish 生成主功能，并声明位于
-  `jp.lilxyzw.lilycalinventory` 之后。只有该 Avatar 的 NDMF 生成成功完成，SDK 主回调才跳过。
-  仅捕获配置不算完成；安装 NDMF 但关闭 ApplyOnBuild/ApplyOnPlay 时仍走 SDK 独立回退。
-  状态按弱对象引用保存，失败/后处理会清理，每次新构建重新开始。
-- Playable 混淆的 SDK 回调位于 `int.MaxValue-1`。这些数值只是本插件注册顺序，
-  不保证所有版本的 VRCFury/NDMF/其他插件都在预期位置执行。
-- 独立构建复制需要修改的 Controller 和 ExpressionParameters，并保存 Descriptor
-  原引用/开关；后处理恢复引用，再回收生成目录。无资产路径的第三方内存 Controller 不会被当成过期产物清空。
-- NDMF 与独立路径都会复制将被修改的持久化 Controller；不会因为安装 NDMF 就假定
-  上游已经克隆了它们。晚期钩子新插入的持久化 Controller 也先复制，再校正索引/处理名称。
-  内存 Controller 仍由调用方管理。ASS 不强制启用 AnimatorServices；提交时序和连续多
-  Avatar 构建仍需实测。
-- 输出位于 `Assets/UnityBox/AvatarSecuritySystem/Generated`。这是共享临时目录，
-  不应保存用户资产。NDMF 后处理不立即删除它，以免构建对象仍持有引用。
-- Descriptor 原本关闭自定义动画层时，残留的 base/special Controller 不参与复制或处理。
-  生成需要启用 FX 时，先将构建克隆的旧槽位恢复默认语义，避免顺便启用残留 Gesture/Action 等层；
-  SDK 独立路径的原引用和关闭开关仍由快照恢复。缺少 FX 槽位时会补建。
-- 复制包含多个 Controller 的同一资产文件时按 local file ID 选择目标，不再取文件中的第一个。
-  Controller/Motion 复制或解析失败会中止，不能回退并递归修改源 BlendTree。
-- FX AnimatorOverrideController 当前明确报错，应先在上游得到实际 AnimatorController。
-
-这些行为以源码为准，不构成“编辑时零影响”或“始终自动清理”的承诺。应保留项目备份，
-检查连续构建后原始控制器、表达式参数及其它 Avatar 引用是否保持完整。
-
-## 测试与排查
-
-- 无 SDK：`Tests/Editor/AnimationCoreTests.cs`，装配
-  `UnityBox.AvatarSecuritySystem.Editor.Tests`，覆盖配置复制、输入类型、Holding 出口/时间、
-  本地超时请求、实际层索引、缺少适配器时拒绝生成及保存 Controller 的副本隔离。
-- 有 SDK：`Tests/Editor/VRChat/BuildAssetIsolationTests.cs`，装配
-  `UnityBox.AvatarSecuritySystem.VRChat.Tests`，另覆盖表达式参数、上传资源隔离、
-  SDK Behaviour 配置、组件清理、NDMF 实际完成判定、失败重试及晚期控制器隔离。
-  当前声明 15 个核心与 27 个 SDK 用例；没有 SDK 时不编译 SDK 集成用例。
-
-安装 Unity Test Framework 后在 Test Runner 的 EditMode 运行；UPM/VPM 安装时在项目
-manifest 的 `testables` 中加入 `top.sealoong.unitybox.avatar-security-system`。
-核心图测试的记录适配器只验证生成器请求，不冒充 SDK，也不证明 VRChat 运行时表现。
-Unity 编译/测试结果应以实际项目的 Test Runner 报告为准。
-
-建议按以下顺序排查：
-
-1. 检查 Console 编译错误、VRChat/NDMF 版本、组件与脚本 GUID。
-2. 保持主动负载关闭，检查密码、手势源、IsLocal，以及最终 FX 是否包含 ASS 层。
-3. 测试错误输入、连续保持、成功与超时边界、已保存解锁和远端状态。
-4. 连续构建两次并更换 Avatar，确认原资产引用不变；含 Contact/衣柜时检查解锁后控制权。
-5. 若仅第三方组合失败，记录完整依赖版本与最终 FX，不根据固定 callbackOrder 推断插件已运行。
-
-ASS 动画路径探针属于仓库实验，正式包不包含其脚本、固定 GUID fixture 或二进制。
-其历史结果只能说明特定 AssetBundle 与字符串替换行为，不能证明通用防热上传。
+实际范围、运行 ID 与原生结果见 [测试指南](../../../../Docs/Testing.md)，测量数据与硬件
+条件见 [性能记录](../../../../Docs/Performance.md)。实现结构见 [技术参考](ASS_TechnicalDoc.md)，
+版本变化见 [CHANGELOG](../CHANGELOG.md)。正式包保留功能测试，排除仓库路径探针与实验 Bundle。
 
 ## 许可证
 

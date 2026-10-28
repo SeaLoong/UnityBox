@@ -1,51 +1,39 @@
-# 全仓插件审查
+# 插件功能与验证场景
 
-`refactor` 覆盖七个插件的源码、UI、依赖、生成与构建入口、资产身份和 VPM 打包。
-已修复确定缺陷，并拆分可独立使用的 Unity 核心与可选 SDK/MA/NDMF 适配。逐项改动、
-升级后果和未解决边界见 [RefactorChanges](RefactorChanges.md)，程序集迁移见
-[DependencyArchitecture](DependencyArchitecture.md)。Animator Optimizer 在独立 feature
-分支，未合入本分支，也不能使用本报告的七包结果作为它的验证证据。
+`refactor` 维护七个插件的独立 Unity 核心和 Avatar 适配。Animator Optimizer 的源码在
+`feat/animator-optimizer`；组合测试直接装入两个 checkout 的包。
+各次执行、内容指纹和输出计数集中记录于 [验证结果](VerificationResults.json)，
+基准数据集中记录于 [性能报告](Performance.md)。
 
-## 结论
-
-| 插件 | 当前完成的工作 | 仍需实际验证/限制 |
+| 插件 | 已实现的工作流 | 功能场景与可观察输出 |
 | --- | --- | --- |
-| ACC | 共享容器归属/祖先激活、Mixer 选择与分组、路径/参数/菜单碰撞、失败转换保护；完整 Unity 生成窗口与可选 MA 安装 | 图标、完整 Undo、压缩网络行为、MA 最终构建；旧输出可能要重新生成并检查参数保存值 |
-| Blendshape | Bool 反向、Renderer 身份、菜单/参数冲突、改型残留、失败原引用保护；无 SDK 完整生成，可选 MA Controls | 多 Controller 合并、总参数预算、同绑定冲突；旧 Build 保留后需手工清理 |
-| 口型 | 映射继承/None、Voice 阈值、FX 创建/持久化、虚拟路径、禁用组件；独立核心和真实 SDK/NDMF；SDK 按实际完成消费配置去重 | 游戏内输入、Write Defaults、后续优化顺序；OverrideController 回退明确不支持 |
-| ASS | 图条件/连续保持/超时、空配置；按实际完成状态交接、两路径源资产/复制身份与失败保护；独立图 API、默认禁用主动负载 | 原始缺失 metadata、NDMF 最终提交、多 Avatar 生成目录、释放层后动态重锁；无资源所有权保证 |
-| Prefab | 部分/批量选择、局部 Transform、嵌套/数组引用映射、输出 GUID/输入保护 | 第三方自定义序列化、复杂引用图、嵌套/Variant 继承不保证保留 |
-| Collider | 真实冻结快照、不同根隔离、设置与历史上限；普通 GameObject 3D/2D 和可选 SDK provider | 是阶段采样，无 PhysBone 几何或 VRCFury feature 内部钩子 |
-| Logger | 每次构建重置 shader 去重；普通 Unity 日志和独立平台回调 | callbackOrder 是观察位置；Linker 未启用，无第三方内部完整追踪 |
+| ACC | 服装/变体、Parts、共享/独立 Mixer、材质、图标、同步压缩、MA 安装 | 原生 Animator 切换可见对象；本地编码/远端解码图和 Driver 写入值；生成与重新生成的 Undo/Redo；真实图标像素 |
+| Blendshape | Float/Bool/反向、多个 Renderer 的组合 Controller、Animator 分配、MA 安装/移除 | 原生 Animator 权重；组合后绑定和参数类型；整 Avatar 参数预算；安装、移除、重新生成的 Undo |
+| 口型 | 15 口型、Voice、Auto/On/Off WD、OverrideController、旧字段迁移 | 多口型与音量组合的逐帧权重；SDK/AOC 与 NDMF 关联图策略；最终提交后的 Controller、重命名路径及后续处理 |
+| ASS | 普通 Unity 运行时、连续手势保持、超时、解锁/重锁、Restart、SDK/NDMF 构建 | Animator 的密码/计时参数和对象缩放；解锁后重新锁定；内存/AOC 副本；原场景 GUID；构建服务提交和源图隔离 |
+| Prefab | 属性、组件和子树选择；Variant 与嵌套 Prefab；布局、托管引用和自定义序列化 | 保存重载后的实际 Prefab 类型、嵌套源路径、组件与引用；数组/循环/共享引用；活动用户场景与 dirty 状态 |
+| Collider | 3D/2D 与 PhysBoneCollider 快照、几何变化、缓存预览、历史 JSON、包围盒 | 多根对象和跨会话身份；同一 Mesh 引用重新烘焙后的几何差异；禁用/非活动对象；历史恢复和阶段采样 |
+| Logger | Unity 导入/构建、SDK/NDMF、真实 Linker、Shader 去重和耗时轨迹 | 多次构建独立序号和时间；当前/最后完成轨迹 JSON；实际 Player 构建中的 Linker 与场景回调 |
 
-SDK/MA/NDMF 不再是所有包的强制安装依赖。缺少它们时普通核心仍可编译；ASS 的完整手势
-运行行为和口型的输入来源仍由平台或调用者提供，没有伪造通用 Unity 平台服务。
-Runtime 配置保留已知 GUID，并在真实 SDK Base 可用时保留其 `IEditorOnly` 标记。
+## 本轮完成的关键修复
 
-## 资产与发布
+服装、Blendshape、口型和 ASS 生成层显式设置 `syncedLayerIndex=-1`，因此每层独立求值。
+旧实现的 C# 默认值 0 会把后续层同步到基础层；本轮以真实 Animator 输出覆盖该问题。
 
-现有 `.meta` 随包保留，不再在安装时丢掉仓库已知 GUID。Generated、ASS 实验探针、固定
-GUID fixture 和平台 bundle 被排除，源码仓库仍保留实验；Editor 回归测试继续随包。
-ZIP 覆盖重建避免旧删除文件残留。未知原始脚本 GUID 不能从当前文件内容推导，仍需从原
-项目恢复；本轮新增的 Editor 文件元数据不声称恢复了以前未提交的身份。
+ASS 提供 `StandaloneSecurityBuilder.Build` 与 `StandaloneSecurityInput`，普通 Unity 可直接
+运行完整手势流程。组件脚本的原 GUID `1c51e6a139920bb4ca12700dc82627ff` 来自已提交场景的
+三处序列化引用，恢复 metadata 后场景保持原内容。
 
-ASS 主动 GPU 负载仅保留历史实现，不增强；新建/Reset 默认关闭，Play Mode 跳过。
-已有序列化配置不会自动迁移。名称混淆、已保存参数与动画路径探针不能证明资源所有权、
-通用防热上传或客户端稳定性。
+Prefab 在 A 的实例上应用选择，保留 Variant 祖先与嵌套连接。Collider 将几何和历史比较
+缓存在对应快照版本，Logger 将常用设置缓存并保留最后完成构建的轨迹；这些路径分别有
+规模化基准，与生成类工具的资产写入、Animator 更新基准一起列入统一性能报告。
 
-## 验证结论
+## 资产与输入契约
 
-现有 Personal 账号登录 Hub 后已完成机器激活。2026-10-29，真实 Unity 2022.3.22f1
-无 SDK 核心 **93/93**、仅SDK **150/150**、SDK 3.8.2 + MA 1.18 + NDMF 1.11
-完整范围 **179/179**
-全部通过，零跳过、零失败、exit 0；完整范围 14 个预期测试程序集均发现。Prefab 的原生
-组件覆写、子树命名和引用误报问题也在这次执行中暴露并修复，具体后果见变更清单。
+普通 Unity 的 Viseme、Voice 和手势由项目脚本写入 Animator 或对应输入 API；Avatar 模式
+由真实平台服务提供。平台语义和可选包由明确入口选择。
+生成器采用独立 Build 输出，源 Controller、Clip、参数资产和用户场景保持原引用身份。
+已知 metadata 随包保留；重载、复制、Undo、Redo 和失败回滚通过输出对象及资产引用检查。
 
-真实 Unity 导入、编译与这些 EditMode 行为已有通过证据；它不证明所有第三方插件组合、
-Avatar 最终提交/上传或游戏内逐帧行为都已验证。此前 Roslyn 核心19、仅SDK40、完整55个
-程序集的类型检查是历史补充证据，不能替代本次原生执行。共享工具25项 Python 测试和
-5项打包测试属于其它验证层次。
-
-新增源码和交接修复的最终证据、仅SDK范围、用例清单及可执行命令见
-[Testing](Testing.md)；环境安装、锁校验、合法激活和复用流程见
-[UnityEnvironment](UnityEnvironment.md)。
+详细迁移步骤见 [变更清单](RefactorChanges.md)，程序集映射见
+[依赖架构](DependencyArchitecture.md)，执行命令见 [测试指南](Testing.md)。

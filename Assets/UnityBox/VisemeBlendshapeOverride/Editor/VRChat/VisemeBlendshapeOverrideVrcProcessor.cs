@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using UnityEditor.Animations;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
@@ -49,12 +51,30 @@ namespace UnityBox.VisemeBlendshapeOverride
         {
             if (!TryCreateBuildPlan(avatarRoot, out var plan)) return false;
             var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            var controller = VisemeBlendshapeOverrideVrcUtils.GetOrCreateFallbackFxController(descriptor, avatarRoot);
-            VisemeBlendshapeOverrideProcessor.BuildController(controller, plan,
-                VisemeBlendshapeOverrideVrcUtils.GetRelatedControllers(descriptor));
-            descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
-            EditorUtility.SetDirty(descriptor);
-            return true;
+            var originalBaseLayers = descriptor.baseAnimationLayers?.ToArray();
+            var originalSpecialLayers = descriptor.specialAnimationLayers?.ToArray();
+            var originalCustomization = descriptor.customizeAnimationLayers;
+            var originalLipSync = descriptor.lipSync;
+            AnimatorController controller = null;
+            try
+            {
+                controller = VisemeBlendshapeOverrideVrcUtils.GetOrCreateFallbackFxController(descriptor, avatarRoot);
+                VisemeBlendshapeOverrideProcessor.BuildController(controller, plan,
+                    VisemeBlendshapeOverrideVrcUtils.GetRelatedControllers(descriptor));
+                descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
+                EditorUtility.SetDirty(descriptor);
+                return true;
+            }
+            catch
+            {
+                descriptor.baseAnimationLayers = originalBaseLayers;
+                descriptor.specialAnimationLayers = originalSpecialLayers;
+                descriptor.customizeAnimationLayers = originalCustomization;
+                descriptor.lipSync = originalLipSync;
+                if (controller != null)
+                    AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(controller));
+                throw;
+            }
         }
     }
 

@@ -1,85 +1,73 @@
 # Advanced Costume Controller
 
-ACC 扫描 Costumes Root 下的服装、变体和部件，生成 Animator Controller/Clip；完整 Avatar
-工作流还可安装 MA 菜单、同步参数、骨架和图标。核心仅要求 Unity 2022.3，包不再强制
-安装 SDK/MA。字段、扫描规则、压缩结构和所有组件操作详见
-[包内完整手册](../Assets/UnityBox/AdvancedCostumeController/README.md)。
+ACC 扫描 Costumes Root 下的服装、变体与部件，生成普通 Unity 可用的 Animator Controller
+和 Clip。Avatar 工作流在相同动画核心之上安装 MA 菜单、骨架、FX、同步参数与256×256图标。
+字段和完整操作见[包内手册](../Assets/UnityBox/AdvancedCostumeController/README.md)。
 
-## 选择工作流
+## 工作流
 
-| 入口 | 功能 | 额外条件 |
+| 入口 | 功能 | 依赖 |
 | --- | --- | --- |
-| Tools > UnityBox > Advanced Costume Controller (Unity Assets) | 真实服装扫描、Controller/Clip、Parts、两种 Mixer、材质曲线 | 无 SDK/MA |
-| Tools > UnityBox > Advanced Costume Controller | Avatar 菜单、参数、Setup Outfit、图标和 FX 安装 | SDK Base/Avatars ≥3.7.3、MA ≥1.18 |
+| Tools > UnityBox > Advanced Costume Controller (Unity Assets) | 扫描、Controller/Clip、Parts、两种 Mixer、材质曲线 | Unity2022.3 |
+| Tools > UnityBox > Advanced Costume Controller | MA 菜单、Setup Outfit、FX、参数压缩和图标 | SDK Base/Avatars≥3.7.3、MA≥1.18 |
 
-缺少完整集成时，原菜单也打开普通 Unity 窗口。独立 SDK Driver/Descriptor 适配最低仍为
-Avatars 3.7；MA 使用的双参数 `VRCConstraintSource` 从 SDK 3.7.3 才提供，不应使用
-3.7.0～3.7.2 进行完整 MA 集成。
+1. 选择 Costumes Root，设置参数前缀与 `Assets/...` 输出目录，刷新服装预览。
+2. 使用 `ACCOutfitMarker` 显式声明服装；配置本体、变体、部件与持久分组。
+3. 按需启用 Parts Control、Custom Mixer、独立混搭参数和默认服装/变体。
+4. 普通 Unity 生成后将 Controller 分配给 Costumes Root 上的 Animator，通过 Float 参数
+   驱动选择与部件。Avatar 入口直接安装 MA 菜单、同步参数和 FX。
 
-## 普通 Unity
+普通 Unity 入口和 Avatar 入口共用 `Scanner`、`OutfitData`、`AnimationBuilder` 和选择
+算法。脚本可调用 `UnityCostumeGenerator.Generate(config, selectedOutfits)`；完整 Avatar
+批处理可调用 `Generator.Execute(outfits, indexMap, defaultOutfit, false)`。
 
-1. 选择场景中的 Costumes Root、参数前缀与 Assets 下输出目录，点击 Scan / Refresh。
-2. 无独立骨架时可在服装根添加 `ACCOutfitMarker`；三个 ACC Runtime 标记均可在无 SDK
-   项目中使用。MA 标记识别只在相应适配可用时加入。
-3. 勾选服装组，按需打开 Parts Control、Custom Mixer、独立部件参数，指定默认服装/变体。
-4. 点击 Generate Unity Assets，把输出 Controller 赋给 **Costumes Root 上的 Animator**。
-5. 项目自己的 UI/脚本驱动 Animator Float 参数；主选择从 0 连续编号，开启 Mixer 后其值
-   紧接最后一个普通服装值。参数的名称与默认值以生成 Controller 为准。
+## Parts 与 Mixer
 
-普通窗口提供服装组选择；更细的临时部件/变体选择可通过共享 OutfitData 模型传给
-`UnityCostumeGenerator.Generate`，或使用完整 Avatar 窗口。材质规则可在
-`ACCVariantMaterialOverride` 编辑，自动转换 Inspector 属于 Avatar 集成。
+主选择从0连续编号，Mixer 值紧接最后一个普通服装值。正常选择激活对应服装组，Parts
+参数分别控制部件。共享 Mixer 打开基础服装组并复用普通部件参数；独立 Mixer 的每个
+槽位用0表示关闭、1..N选择本体或变体候选。切回普通选择会恢复相应服装组及其部件。
 
-此入口不会自动分配 Animator、执行 Setup Outfit 或安装 MA。没有 SDK 时不能生成网络
-压缩 Driver；即使有 SDK，表达式参数同步安装仍是 Avatar 工作流，普通游戏保持压缩关闭。
+临时分组可保存为 `ACCPartGroupMarker`。材质规则由 `ACCVariantMaterialOverride`
+提供，全局替换与 Renderer 槽位替换共同参与动画和图标，精准槽位规则优先。
 
-## Avatar 工作流
+Animator 使用 Float 读取离散选择，Avatar 表达式使用 Bool、Int或压缩位。普通 Unity
+脚本使用 SetFloat；Avatar 的离散输入由平台参数服务提供。每个 ACC 实例使用独立前缀。
 
-在完整窗口刷新预览，选择服装、本体/变体与部件；按需保存临时分组为
-`ACCPartGroupMarker`。未保存编辑的刷新/切换有确认提示。Custom Mixer 要求 Parts Control。
+## 参数压缩与预算
 
-- 共享部件模式复用普通部件 Bool；多对象组有整体变体选择域。
-- 独立部件模式每个槽位用 0 表示关闭、1..N 表示候选，按当前预览勾选和临时分组生成。
-- 默认服装可指定本体、对象变体或材质变体；无有效指定时使用首个启用对象。
-- Animator BlendTree 使用 Float 读取离散数值；Avatar 表达式两值域使用 Bool、多值使用
-  Int 或压缩位。这依赖 Avatar 输入语义，不能直接照搬成普通 Unity SetInteger 调用。
-- 参数压缩默认关闭。多值域编码为同步 Bool 位和本地参数，并新增编码/解码状态；它减少
-  同步位数，不保证降低 Animator 成本。
+压缩把多值选择编码为同步 Bool 位，Animator 内保留本地选择值。多个选择域共用一个
+编码/解码层：本地状态写入本域位，远端状态从同步位恢复本域选择值。三选一占2bit，
+七选一占3bit，普通同步 Int 占8bit；二选一直接使用1bit Bool。
 
-生成前检查参数预算与覆盖摘要。ACC_Menu 复用展示属性，重建控制项及本命名空间的参数，
-不复用旧控件 Parameter/Value。图标使用 Preview Scene 渲染，透明输出仍可写入；需检查
-实际材质、灯光和 Avatar 姿态。不同 ACC 实例使用不同 Parameter Prefix。
+窗口预览显示本 ACC 的同步位数和压缩结构。完整安装还通过 NDMF 的公开 ParameterInfo
+查询整个 Avatar 的参数成本，包含 Descriptor、其它 MA 控件和本次结果，按256bit预算
+检查。超过预算的生成会恢复原菜单及 Controller，并显示实际成本。
 
-## 生成资产与迁移
+## 生成资产和 Undo
 
-普通 Unity 默认目录是 `Assets/UnityBox/Generated/AdvancedCostumeControllerUnity`，
-每次创建新的 Build 子目录并保留旧结果；失败清理本次不完整生成，旧引用仍可用。
-Avatar 工作流在其场景/Avatar/前缀专属目录内清理并重建资产；关闭自动图标时保留
-MenuIcons。**不要让普通入口与 Avatar 清理目录重合，也不要把手工资产放入清理目录。**
+两种入口都在场景、根身份与前缀命名空间下创建新的 `Build[ n]`。Avatar Build 同时包含
+Controller、Animations 和本次自动图标。旧 Build 持续保留，因此重新生成后的场景 Undo
+可恢复旧 Controller、菜单、参数与图标引用，Redo 再切回新结果。
 
-共享容器修复会让普通切换和 Mixer 保持独立服装归属，恢复必要组织祖先，不控制
-CostumesRoot/Avatar 根。菜单保留真实路径。特殊字符被清理/截断的参数和文件名加稳定
-哈希，避免碰撞；更新后需重新生成并检查旧自定义引用和保存的菜单选择。
+生成异常时撤回本次场景操作并清理本次 Build；既有输出保留。关闭自动图标时沿用菜单
+展示快照中的原图标。更改菜单文字不改变参数，特殊路径字符使用稳定哈希区分身份。
 
-显示名相同的部件菜单会追加序号。材质变体转换前验证匹配槽位，无匹配保留来源；成功
-转换仍会清理来源组件和子对象，需要保留对照时先复制。场景改动可 Undo，但 AssetDatabase
-文件删除不是完整场景 Undo，旧输出没有通用自动迁移。
+## 图标与材质
 
-动画绑定仍受 Unity 路径规则约束：对象名中的 `/` 或同父下同名对象可能歧义；菜单能区分
-不代表动画能正确绑定。Write Defaults、第三方合并和多个工具驱动同一属性需检查最终图。
+图标在自有 Preview Scene 中克隆 Avatar，通过专用 Layer 与正交相机渲染原 Renderer，
+输出透明256×256 PNG。服装图标使用共同取景框，部件按自身 Bounds 取景；材质变体逐项
+恢复源材质后应用替换，源对象的材质、层与激活状态保持原值。新图标写入当前 Build 的
+MenuIcons，历史图标继续支持 Undo。
 
-## 开发与测试
+## 行为测试和性能
 
-Core/Editor 包含 Models、Scanner、AnimationBuilder、Localization、普通窗口及生成器；
-Editor 保留完整 MA 工作流；Integrations/VRChat/Editor 提供真实平台 Driver/根识别。
-Runtime 标记保留原类型、字段和已有 GUID。旧 Editor 扩展使用搬迁公开类型时增加
-`UnityBox.AdvancedCostumeController.Core` 引用。
+真实 Animator 测试按普通选择→切换服装→Mixer→返回普通选择驱动参数，同时检查四个
+部件和两个服装组；共享与独立 Mixer 分别运行。压缩测试在真实 Animator 中选择本地
+编码、远端解码状态，并核对真实 SDK ParameterDriver 的位和选择值。
 
-`Tests/Core/Editor` 声明 32 个用例，覆盖规则18、扫描7、完整资产生成7；平台
-`Tests/Editor` 声明19个，另需实际SDK/MA。使用真实 Unity Test Framework，按包安装时将
-本包名加入项目 manifest 的 testables。用例覆盖不等于图标/Undo/VRChat同步已运行。
+安装测试执行重复生成、Undo/Redo和预算超额回滚。图形场景实际渲染红/绿材质变体，
+读取PNG验证尺寸、非透明像素与颜色差异。独立 Player 探针构建运行两种 Mixer 和 Parts。
 
-真实 Unity 2022.3.22f1 中核心 32 项与 SDK/MA 集成 19 项全部通过，零跳过；完整
-依赖组合为 SDK 3.8.2、MA 1.18、NDMF 1.11。图标、完整 Undo、网络同步和最终 Avatar
-构建仍需项目验证。最新执行范围见 [测试指南](Testing.md)，全部变更及风险见
-[RefactorChanges](RefactorChanges.md)。
+性能场景测量2/8/24套服装及每套两个部件的完整资产生成；另在预热后采集9组、每组
+512帧的 Animator.Update。图标场景预热后采集5组双图渲染和资产导入时延。
+环境、测量值与命令见[性能记录](Performance.md)，测试执行见[测试指南](Testing.md)。
