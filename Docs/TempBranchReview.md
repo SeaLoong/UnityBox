@@ -44,15 +44,16 @@
 - 使用显式 `AssetBundleBuild[]`，只构建探针，不构建项目其他带标签的 bundle。
 
 现存实验资产没有对应的已提交 `.meta`，不能依赖其固定 GUID 直接导入复现；
-应从菜单重新生成。实验脚本和二进制仍保留在 ASS 包中，现有发布流程会包含它们；
-正式发布前建议单独整理实验目录。
+应从菜单重新生成。实验脚本和二进制仍保留在源码仓库；后续 refactor 的打包筛选器已将它们和固定 GUID
+fixture 排除，正式 VPM 包保留 Editor 回归测试，不再包含这些实验入口。
 
 ## 验证状态与本地复测
 
 - 通过：C# 语法解析、7 个 VPM 包的现有 CI 打包流程、ZIP 完整性/内容及 SHA256。
 - 通过：二进制替换范围检查、用户场景/changelog 与原 temp 提交逐字节一致检查。
 - 未执行：Unity 编译、7 个 EditMode 用例、三种探针运行及 VRChat 构建/游戏内验证。
-  当前云环境没有 Unity Editor 和许可证；语法解析与打包不代表编译或功能通过。
+  上述历史检查时尚无 Editor；现已安装 2022.3.22f1，但实际启动因无许可证失败。
+  后续真实依赖类型检查见 [测试指南](Testing.md)，仍不代表 Unity 行为测试通过。
 
 在已有 VRChat/Modular Avatar 的 Unity 2022.3 项目中，安装 Unity Test Framework，
 在 Test Runner 的 EditMode 中运行 `OutfitContainerRegressionTests`。若按 VPM 包安装，

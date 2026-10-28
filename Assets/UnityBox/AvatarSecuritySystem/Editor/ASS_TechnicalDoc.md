@@ -6,34 +6,52 @@
 
 ## 1. 实现范围与验证状态
 
-ASSComponent 是 `MonoBehaviour, IEditorOnly` 配置载体；实际功能由 Editor 构建器生成
+ASSComponent 在无 SDK 时是纯 Unity `MonoBehaviour`；安装 `com.vrchat.base >= 3.7.0` 时
+通过单点条件编译保留真实 `IEditorOnly` 标记，适配 SDK 的 preprocess 前校验。实际功能由 Editor 构建器生成
 Animator、动画、材质和对象。没有运行时密码服务器或所有权验证。密码序列和解锁参数
 存在于构建资源中，名称混淆不能使其成为可信认证机制。
 
-本轮已做源码审查、C# 语法解析和包构建检查。Unity 编译、EditMode 回归、NDMF/SDK
-实际构建和 VRChat 运行尚未执行。下列描述是代码行为与设计约束，不是运行通过报告。
+本轮已完成源码审查，并通过真实 Unity/SDK/NDMF 引用的 Roslyn 类型检查。云端缺少
+Unity 许可，Editor 导入、IL 后处理、EditMode 回归、NDMF/SDK 实际构建和 VRChat
+运行仍未执行。下列描述是代码行为与设计约束，不是运行通过报告。
 
 ## 2. 代码结构与职责
 
 | 文件 | 职责 |
 | --- | --- |
-| `Runtime/Component.cs` | ASSComponent、默认值、输入字段校验和 IEditorOnly 标记 |
+| `Runtime/Component.cs` | SDK 独立 ASSComponent、默认值和输入字段校验 |
 | `Inspector.cs` / `I18n.cs` | 配置 UI 与中英日文案 |
-| `Processor.cs` | ASSConfigData、SDK 主入口、配置/Descriptor 快照、资产隔离、主功能协调、参数注册与清理 |
-| `ConfigCaptureProcessor.cs` | 无 NDMF 时在早期 SDK preprocess 捕获配置 |
+| `ASSConfigData.cs` | 纯 Unity 配置快照与密码校验 |
+| `VRChat/Processor.cs` | SDK 主入口、Descriptor 快照、资产隔离、主功能协调、参数注册与清理 |
+| `VRChat/ConfigCaptureProcessor.cs` | 每次早期 SDK preprocess 重置状态并捕获配置 |
 | `NDMF/NDMFPlugin.cs` | NDMF Resolving 捕获及 PlatformFinish 主功能调用 |
-| `PlayableObfuscationProcessor.cs` | SDK 后期 Playable 混淆及 ASS 层索引刷新 |
+| `VRChat/PlayableObfuscationProcessor.cs` | SDK 后期 Playable 混淆及 ASS 层索引刷新 |
 | `Lock.cs` | 身体锁定、一次性恢复和终态释放 |
 | `GesturePassword.cs` | 手势序列、保持/容错、成功/失败及反馈启用 |
 | `Countdown.cs` | 输入期限、TimeUp 参数和独立警告音频层 |
 | `Feedback.cs` | Overlay mesh/material 与音频对象 |
-| `Defense.cs` | 遗留主动负载生成；新组件默认禁用，Play Mode 跳过 |
+| `VRChat/Defense.cs` | 遗留主动负载生成；新组件默认禁用，Play Mode 跳过 |
 | `Obfuscator.cs` | 生成名、Controller/Motion 副本及可选图变换 |
-| `Utils.cs` / `Constants.cs` | 参数、曲线、子资产、VRChat behaviour、名称和路径工具 |
+| `Utils.cs` / `Constants.cs` | SDK 独立参数、曲线、子资产、名称和路径工具 |
+| `IAnimatorBehaviourAdapter.cs` | 生成器要求的平台行为契约，不提供空实现 |
+| `VRChat/VrcAnimatorBehaviourAdapter.cs` | 原 SDK ParameterDriver / PlayAudio / LayerControl 实现 |
+| `VRChat/VrcPlayableControllers.cs` | Descriptor 层遍历及核心 Controller 资源处理的适配 |
+| `VRChat/ConfigurationStripper.cs` | 在上传克隆中显式移除配置组件 |
 
-Runtime 装配引用 `VRC.SDKBase`。主 Editor 装配引用 Runtime 与 VRChat SDK，NDMF 子装配
-单独引用 NDMF，并使用 `NDMF_AVAILABLE` 约束。包清单只要求 SDK Avatars ≥ 3.7.0，
-没有为可选 NDMF 固定兼容版本。
+| 装配 | 依赖与编译条件 |
+| --- | --- |
+| `UnityBox.AvatarSecuritySystem.Runtime` | 无 SDK 时仅 Unity；有 SDK Base 时通过 `UNITYBOX_VRC_BASE` 保留真实 IEditorOnly 标记 |
+| `UnityBox.AvatarSecuritySystem` | Runtime + UnityEditor；核心图、曲线、资源与配置 UI |
+| `UnityBox.AvatarSecuritySystem.VRChat` | 核心 + SDK；`com.vrchat.avatars >= 3.7.0` 定义 `UNITYBOX_VRC_SDK` |
+| `UnityBox.AvatarSecuritySystem.NDMF` | 核心 + VRChat 适配 + NDMF；同时要求 SDK 与 NDMF >= 1.8.0 |
+| `UnityBox.AvatarSecuritySystem.Editor.Tests` | 纯 Unity 核心 + Test Framework |
+| `UnityBox.AvatarSecuritySystem.VRChat.Tests` | 核心 + SDK 适配 + Test Framework；要求 SDK |
+
+Runtime 的 asmdef 不硬引用 SDK 装配，使用真实 VRCSDKBase.dll 的自动引用设置；只有可选标记
+受包版本定义控制，不是伪造接口。包清单不再强制安装 SDK。`IAnimatorBehaviourAdapter` 让原手势/计时/锁定图不依赖 SDK
+类型，但关键进入状态行为必须显式提供；三个生成器在 null 适配器下直接抛异常，
+不会生成缺少参数驱动的伪可用系统。SDK Processor 注入 `VrcAnimatorBehaviourAdapter.Instance`，
+沿用原有 VRC Behaviour 字段和值；本次没有引入新的通用 Unity 运行时密码后端。
 
 ## 3. 配置与入口判定
 
@@ -59,36 +77,43 @@ Runtime 装配引用 `VRC.SDKBase`。主 Editor 装配引用 Runtime 与 VRChat 
 
 ### SDK 独立路径
 
-1. `ConfigCaptureProcessor`（仅无 NDMF 时编译）以 `int.MinValue+10` 捕获配置，
-   防止 IEditorOnly 清理后主回调找不到组件。
+1. `VRChat/ConfigCaptureProcessor` 在所有 SDK 构建中以 `int.MinValue+10` 重置本次状态并捕获配置。
 2. `Processor` 的 callbackOrder 为 -1024；记录 Descriptor 原 Playable 层、
    ExpressionParameters 及 customizeAnimationLayers/customExpressions 开关。
 3. 清理仅指向 ASS Generated 路径的过期控制器引用，再清理 Generated。
    无 AssetDatabase 路径的第三方内存 Controller 不视为过期 ASS 资产。
 4. 无论是否启用混淆，复制将被修改的 FX Controller；需要 Playable 混淆时准备其它
    槽位的独立副本。同一源用于多个槽位时，输出 Controller 和 Motion 目录各自隔离。
-   复制失败会终止，不能退回修改用户源资产。
+   Controller 从同文件多子资产中按原 local file ID 选择；Controller/Motion 复制或解析
+   失败会终止，不能退回源 BlendTree 后继续递归写入。
+   customizeAnimationLayers=false 时不复制旧数组中的无效 Controller；生成启用 FX 前
+   先将 build clone 的 base/special 槽位设为默认，缺少 FX 时补建，原快照不受影响。
 5. 生成各功能层，对原 ExpressionParameters 做构建副本；原资产缺失时创建新副本。
-6. SDK 后处理恢复快照与开关，清除配置快照，只有存在独立构建快照时回收 Generated。
+6. `ConfigurationStripper` 在 SDK preprocess 最后显式移除构建克隆中的配置组件。
+7. SDK 后处理恢复快照与开关，清除配置快照，只有存在独立构建快照时回收 Generated。
 
 主 SDK 回调失败/抛异常也会尝试恢复快照。后处理是否在某个第三方失败路径运行，仍由
 SDK/第三方环境决定，应在重复构建回归中确认，不能以成功路径推断所有异常均可恢复。
 
 ### NDMF 路径
 
-- Resolving 捕获 NDMF 私有配置快照，同时同步到 Processor 的快照表。
+- Resolving 在 NDMF RemoveEditorOnly 之前更新 Processor 的弱键配置快照，然后清理
+  构建克隆配置；若中间插件已经剥离组件，则保留本次早期 SDK 捕获，同时清除完成标记。
 - PlatformFinish 调用 `ProcessAvatar(..., hasNDMF:true)`，并声明
-  `AfterPlugin("jp.lilxyzw.lilycalinventory")`；私有快照在 finally 中释放。
-- SDK 主回调检测到 Processor 快照时跳过；没有快照时警告并尝试独立回退。
-- 当前实现读取 Descriptor 上的 Controller，在 NDMF 路径不进行独立 Controller
-  复制，也不使用 `AnimatorServicesContext`。因此不能称其已保证“最终虚拟 FX 注入”
-  或“位于所有第三方之后”；需实测所用 NDMF 版本的提交顺序。
+  `AfterPlugin("jp.lilxyzw.lilycalinventory")`。只有成功返回才标记 NDMF 完成；失败释放本次状态。
+- SDK 主回调仅在本 Avatar 的 NDMF 完成标记存在时跳过。捕获不等于处理，NDMF 关闭
+  ApplyOnBuild/ApplyOnPlay 时独立 SDK 路径仍可工作。每次 SDK 早期捕获、失败及后处理
+  都清理旧标记，避免同对象重试继承过期成功状态。
+- 当前实现读取 Descriptor 上的 Controller，两种路径都先复制将修改的持久化 Controller
+  与外部 Motion，再生成；仅安装 ASS + NDMF 也不依赖其它插件先克隆资产。没有强制启用
+  `AnimatorServicesContext`，不能声称覆盖所有最终虚拟图/第三方提交顺序。
 - NDMF 后处理通常不删除 Generated，以免构建对象仍引用其中资产。下一次主处理仍会
   清理共享目录，连续多 Avatar 和失败重试是必须覆盖的回归场景。
 
 ### 后置处理
 
-`PlayableObfuscationProcessor` 注册在 `int.MaxValue-1`，先刷新 ASS 的
+`PlayableObfuscationProcessor` 注册在 `int.MaxValue-1`，使用真实 NDMF 完成状态决定路径。
+对有有效 ASS 配置的 Avatar，先复制晚期新增的持久化 Controller，再刷新 ASS 的
 `VRCAnimatorLayerControl` 索引。开启混淆且没有 VRC Contact 组件时才处理 Playable 图，
 处理后再次刷新索引。检测 Contact 时跳过图混淆，不等于保证所有 Contact/SPS 组合可用。
 
@@ -175,22 +200,32 @@ Defense 实现包含高 GPU 负载；新组件默认禁用，Play Mode/isDebugMo
 | API | 使用约束 |
 | --- | --- |
 | `ASSConfigData.FromComponent/FromAvatar` | 构建配置快照；列表复制，Unity 资产引用保留 |
-| `Processor.CaptureConfigSnapshot` | 早期捕获；没有组件会删除该 Avatar 的旧快照 |
+| `Processor.CaptureConfigSnapshot` | 开始本次 SDK 构建；清旧完成状态，没有组件会删除旧快照 |
+| `Processor.CaptureNdmfConfigSnapshot` | NDMF Resolving 更新配置；组件已剥离时保留本次早期捕获 |
+| `Processor.MarkNdmfCompleted/WasProcessedByNdmf` | 仅真实 NDMF pass 成功后标记；SDK 据此去重 |
+| `Processor.ReleaseBuildSnapshot` | 异常退出时释放本 Avatar 的配置与完成状态 |
 | `Processor.ProcessAvatar` | 只对构建对象调用；hasNDMF 必须与实际调用路径一致 |
 | `Processor.ProcessPlayableObfuscation` | 后置校正/可选混淆；不要作为手动编辑源资产的入口 |
-| `Obfuscator.PreparePlayableControllerCopies` | 确保源 Controller/Motion 不被构建写入 |
+| `VrcPlayableControllers.PreparePlayableControllerCopies` | 只处理已启用的自定义层，为持久化 Controller/Motion 创建副本 |
+| `VrcPlayableControllers.EnableCustomAnimationLayers` | 在构建对象上启用输出；原关闭时清除残留 Controller 的有效语义并补 FX 槽位 |
 | `Utils.AddIsLocalCondition` | 按现有参数类型构造条件；不是对第三方所有图变换的保证 |
 | `Utils.AddSubAsset` | 保存控制器使用的生成资源引用 |
-| `Utils.AddDisableSelfLayerControl` | 使用实际层索引，仅用于所属 ASS 层 |
+| `Obfuscator.DuplicateAnimatorControllerForBuild` | 对保存的 Controller 构建副本；内存 Controller 仍由调用方管理，不保证深复制 |
+| `new GesturePassword/Countdown/Lock(..., adapter)` | 显式提供状态进入行为；SDK 使用 `VrcAnimatorBehaviourAdapter.Instance` |
+| `IAnimatorBehaviourAdapter.AddDisableSelfLayerControl` | 使用实际层索引，仅用于所属 ASS 层 |
 
 不要把用户文件放入 `Constants.ASSET_FOLDER`。修改默认值不等于迁移已有序列化配置；
 重命名带序列化引用的脚本/资源须保留原 `.meta`。原脚本 GUID 缺失需要从开发项目恢复。
 
 ## 9. 测试矩阵与未解决项
 
-EditMode 用例位于 `../Tests/Editor/BuildAssetIsolationTests.cs`（相对本目录为
-`../Tests/Editor`）：资产隔离、表达式参数保留、同源多槽位、第三方内存控制器、
-空密码、安全默认值、配置快照与参数同步语义。当前云端尚未执行这些 Unity 用例。
+纯 Unity 用例位于 `../Tests/Editor/AnimationCoreTests.cs`：配置复制、手势范围、按现有参数
+类型生成条件、连续保持/超时图、真实追加层索引、缺失平台行为拒绝生成和 Controller
+副本隔离。测试记录适配器只检查生成请求，不模拟任何 SDK 类型。
+
+SDK 集成用例移至 `../Tests/Editor/VRChat/BuildAssetIsolationTests.cs`：原资产/表达式参数
+隔离、配置快照、安全默认值，以及原 SDK Behaviour 字段、上传组件清理、完成标记生命周期及晚期源资产保护。当前声明 15 个核心和 27 个 SDK 用例；两个测试装配
+均要求 `UNITY_INCLUDE_TESTS`；后者另要求 SDK。实际结果以 Unity Test Runner 报告为准。
 
 本地应验证：
 

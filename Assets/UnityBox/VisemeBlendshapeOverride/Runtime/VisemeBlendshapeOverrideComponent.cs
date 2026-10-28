@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
 
 namespace UnityBox.VisemeBlendshapeOverride
 {
@@ -12,17 +10,27 @@ namespace UnityBox.VisemeBlendshapeOverride
     [AddComponentMenu("UnityBox/Viseme Blendshape Override")]
 #endif
     [DisallowMultipleComponent]
-    public class VisemeBlendshapeOverrideComponent : MonoBehaviour, IEditorOnly
+    public class VisemeBlendshapeOverrideComponent : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+        , VRC.SDKBase.IEditorOnly
+#endif
     {
+        // Numeric values match the original serialized phoneme IDs. This is a Unity-owned data model.
+        public enum Viseme
+        {
+            sil = 0, PP = 1, FF = 2, TH = 3, DD = 4, kk = 5, CH = 6, SS = 7,
+            nn = 8, RR = 9, aa = 10, E = 11, ih = 12, oh = 13, ou = 14,
+        }
+
         public const string NoneBlendshapeValue = "__NONE__";
 
         [Serializable]
         public class VisemeBinding
         {
             [HideInInspector]
-            public VRC_AvatarDescriptor.Viseme viseme;
+            public Viseme viseme;
 
-            [Tooltip("Blendshape used for this viseme. Leave it empty to use the Avatar Descriptor mapping.")]
+            [Tooltip("Blendshape used for this viseme. Leave it empty to use an optional platform default mapping.")]
             public string blendshapeName = string.Empty;
 
             [FormerlySerializedAs("overrideGlobalVoiceSettings")]
@@ -81,7 +89,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         [Tooltip("Default weight used when a viseme does not use custom settings.")]
         public float globalWeight = 100f;
 
-        [Tooltip("Scale the configured viseme weight by VRChat's built-in Voice parameter.")]
+        [Tooltip("Scale the configured viseme weight by the Animator Voice float parameter.")]
         public VoiceModulationMode voiceModulationMode = VoiceModulationMode.Linear;
 
         [Range(0f, 1f)]
@@ -142,18 +150,18 @@ namespace UnityBox.VisemeBlendshapeOverride
             bindings = orderedBindings;
         }
 
-        public VisemeBinding GetBinding(VRC_AvatarDescriptor.Viseme viseme)
+        public VisemeBinding GetBinding(Viseme viseme)
         {
             EnsureBindings();
             return bindings.FirstOrDefault(binding => binding.viseme == viseme);
         }
 
-        public SkinnedMeshRenderer ResolveTargetRenderer(VRCAvatarDescriptor descriptor)
+        public SkinnedMeshRenderer ResolveTargetRenderer(SkinnedMeshRenderer fallback = null)
         {
-            return targetRenderer != null ? targetRenderer : descriptor != null ? descriptor.VisemeSkinnedMesh : null;
+            return targetRenderer != null ? targetRenderer : fallback;
         }
 
-        public string ResolveBlendshapeName(VRCAvatarDescriptor descriptor, VisemeBinding binding)
+        public string ResolveBlendshapeName(IReadOnlyList<string> defaults, VisemeBinding binding)
         {
             if (binding == null)
                 return string.Empty;
@@ -165,28 +173,27 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (!string.IsNullOrWhiteSpace(storedName))
                 return storedName;
 
-            return GetDescriptorBlendshapeName(descriptor, binding.viseme);
+            return GetDefaultBlendshapeName(defaults, binding.viseme);
         }
 
-        public static string GetDescriptorBlendshapeName(
-            VRCAvatarDescriptor descriptor,
-            VRC_AvatarDescriptor.Viseme viseme)
+        public static string GetDefaultBlendshapeName(
+            IReadOnlyList<string> defaults,
+            Viseme viseme)
         {
-            if (descriptor == null || descriptor.VisemeBlendShapes == null)
+            if (defaults == null)
                 return string.Empty;
 
             var index = (int)viseme;
-            if (index < 0 || index >= descriptor.VisemeBlendShapes.Length)
+            if (index < 0 || index >= defaults.Count)
                 return string.Empty;
 
-            return descriptor.VisemeBlendShapes[index] ?? string.Empty;
+            return defaults[index] ?? string.Empty;
         }
 
-        public static List<VRC_AvatarDescriptor.Viseme> GetSupportedVisemes()
+        public static List<Viseme> GetSupportedVisemes()
         {
-            return Enum.GetValues(typeof(VRC_AvatarDescriptor.Viseme))
-                .Cast<VRC_AvatarDescriptor.Viseme>()
-                .Where(viseme => viseme != VRC_AvatarDescriptor.Viseme.Count)
+            return Enum.GetValues(typeof(Viseme))
+                .Cast<Viseme>()
                 .OrderBy(viseme => (int)viseme)
                 .ToList();
         }
@@ -194,12 +201,12 @@ namespace UnityBox.VisemeBlendshapeOverride
 #if UNITY_EDITOR
         private void Reset()
         {
-            InitializeDefaultsFromDescriptor();
+            InitializeEditorDefaults();
         }
 
         private void OnValidate()
         {
-            InitializeDefaultsFromDescriptor();
+            InitializeEditorDefaults();
 
             foreach (var binding in bindings)
             {
@@ -231,39 +238,16 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public void EnsureEditorDefaults()
         {
-            InitializeDefaultsFromDescriptor();
+            InitializeEditorDefaults();
         }
 
-        private void InitializeDefaultsFromDescriptor()
+        private void InitializeEditorDefaults()
         {
             EnsureBindings();
-
-            var descriptor = GetComponent<VRCAvatarDescriptor>();
-            if (descriptor != null && targetRenderer == null)
-                targetRenderer = ResolveDefaultRenderer(descriptor);
-
-            // Empty bindings intentionally follow the Descriptor, including later mapping edits.
+            // Platform defaults are resolved by optional editor adapters; never copy them into explicit overrides.
         }
 
-        private SkinnedMeshRenderer ResolveDefaultRenderer(VRCAvatarDescriptor descriptor)
-        {
-            var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            if (renderers == null || renderers.Length == 0)
-                return null;
 
-            if (descriptor != null && descriptor.VisemeSkinnedMesh != null &&
-                descriptor.VisemeSkinnedMesh.transform.IsChildOf(transform))
-                return descriptor.VisemeSkinnedMesh;
-
-            var bodyRenderer = renderers.FirstOrDefault(renderer =>
-                string.Equals(renderer.name, "Body", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(renderer.gameObject.name, "Body", StringComparison.OrdinalIgnoreCase));
-
-            if (bodyRenderer != null)
-                return bodyRenderer;
-
-            return renderers.FirstOrDefault();
-        }
 #endif
 
         private static VoiceModulationMode SanitizeVoiceMode(VoiceModulationMode mode)

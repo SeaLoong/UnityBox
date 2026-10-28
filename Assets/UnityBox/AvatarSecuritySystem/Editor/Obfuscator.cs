@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
 using Object = UnityEngine.Object;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
@@ -447,43 +446,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             _generatedContentAssetPaths.Add(normalized);
         }
 
-        public static void PreparePlayableControllerCopies(VRCAvatarDescriptor descriptor, bool fxOnly = false)
+        public static void ObfuscateControllers(IEnumerable<AnimatorController> controllers, bool hasNDMF)
         {
             EnsureInitialized();
-            if (descriptor == null) return;
-
-            var baseLayers = descriptor.baseAnimationLayers;
-            PreparePlayableControllerCopies(baseLayers, "Base", fxOnly);
-            descriptor.baseAnimationLayers = baseLayers;
-
-            var specialLayers = descriptor.specialAnimationLayers;
-            PreparePlayableControllerCopies(specialLayers, "Special", fxOnly);
-            descriptor.specialAnimationLayers = specialLayers;
-        }
-
-        private static void PreparePlayableControllerCopies(VRCAvatarDescriptor.CustomAnimLayer[] layers, string scope, bool fxOnly)
-        {
-            if (layers == null) return;
-
-            for (int i = 0; i < layers.Length; i++)
-            {
-                var layer = layers[i];
-                if (layer.isDefault || (fxOnly && layer.type != VRCAvatarDescriptor.AnimLayerType.FX)) continue;
-                if (!(layer.animatorController is AnimatorController sourceController) || sourceController == null) continue;
-
-                var clonedController = DuplicateAnimatorControllerForBuild(sourceController, $"{scope}_{layer.type}_{i}");
-                if (clonedController == null) continue;
-
-                layer.animatorController = clonedController;
-                layer.isDefault = false;
-                layers[i] = layer;
-            }
-        }
-
-        public static void ObfuscatePlayableControllers(VRCAvatarDescriptor descriptor, bool hasNDMF)
-        {
-            EnsureInitialized();
-            if (!_enabled || descriptor == null) return;
+            if (!_enabled || controllers == null) return;
 
             int controllerCount = 0;
             int layerCount = 0;
@@ -492,14 +458,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int blendTreeCount = 0;
             int clipCount = 0;
 
-            foreach (var animLayer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
+            foreach (var controller in controllers)
             {
-                if (animLayer.isDefault) continue;
-                if (!(animLayer.animatorController is AnimatorController controller) || controller == null) continue;
+                if (controller == null) continue;
 
-                // NDMF 路径：NDMF 已在 -11000 克隆所有控制器，ASS 直接 in-place 完整改名
-                // 非 NDMF 路径：ASS 已复制所有控制器到 Generated，在副本上完整改名
-                // 两种模式下所有控制器都做层名 + 内部状态重命名
+                // 两种路径均由 ASS 入口显式隔离将修改的持久化控制器；
+                // NDMF 本身不会无条件克隆所有控制器。内存图仍由调用方管理。
                 ObfuscateAnimatorController(controller,
                     allowInternalRename: true,
                     ref layerCount,
@@ -591,8 +555,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
-        private static AnimatorController DuplicateAnimatorControllerForBuild(AnimatorController sourceController, string slotKey)
+        public static AnimatorController DuplicateAnimatorControllerForBuild(AnimatorController sourceController, string slotKey)
         {
+            EnsureInitialized();
             string sourcePath = AssetDatabase.GetAssetPath(sourceController);
             if (string.IsNullOrEmpty(sourcePath))
                 return sourceController;
@@ -613,11 +578,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 throw new InvalidOperationException($"[ASS] Cannot safely copy playable controller '{sourcePath}' to '{controllerPath}'. The source will not be modified.");
             }
 
-            var clonedController = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            // An NDMF asset container can hold several controllers. CopyAsset keeps
+            // their local file IDs; loading the first controller can select another slot.
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceController, out _, out long sourceControllerId))
+                throw new InvalidOperationException($"[ASS] Cannot identify source playable controller '{sourcePath}'. The source will not be modified.");
+            var clonedController = AssetDatabase.LoadAllAssetsAtPath(controllerPath)
+                .OfType<AnimatorController>()
+                .FirstOrDefault(candidate => AssetDatabase.TryGetGUIDAndLocalFileIdentifier(candidate, out _, out long localId)
+                    && localId == sourceControllerId);
             if (clonedController == null)
-            {
-                throw new InvalidOperationException($"[ASS] Cannot load copied playable controller '{controllerPath}'. The source will not be modified.");
-            }
+                throw new InvalidOperationException($"[ASS] Cannot resolve copied playable controller '{controllerPath}' with local file ID {sourceControllerId}. The source will not be modified.");
 
             RegisterGeneratedAssetPath(controllerPath);
 
@@ -701,16 +671,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (!isInternalMotion)
             {
                 string copiedAssetPath = GetOrCreateCopiedMotionAssetPath(motionPath, motionFolder, slotKey, copiedAssetPaths);
-                var copiedMotion = ResolveMotionFromCopiedAsset(motion, copiedAssetPath);
-                if (copiedMotion != null)
-                {
-                    resolvedMotion = copiedMotion;
-                }
-                else
-                {
-                    Debug.LogWarning($"[ASS] Obfuscator: Failed to resolve copied motion '{motion.name}' from '{motionPath}'");
-                    resolvedMotion = motion;
-                }
+                resolvedMotion = ResolveMotionFromCopiedAsset(motion, copiedAssetPath);
             }
 
             clonedMotions[motion] = resolvedMotion;
@@ -770,9 +731,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             if (!AssetDatabase.CopyAsset(sourceAssetPath, copiedAssetPath))
             {
-                Debug.LogWarning($"[ASS] Obfuscator: Failed to copy motion asset '{sourceAssetPath}' to '{copiedAssetPath}'");
-                copiedAssetPaths[sourceAssetPath] = sourceAssetPath;
-                return sourceAssetPath;
+                throw new InvalidOperationException($"[ASS] Cannot safely copy motion asset '{sourceAssetPath}' to '{copiedAssetPath}'. The source will not be modified.");
             }
 
             RegisterGeneratedAssetPath(copiedAssetPath);
@@ -782,15 +741,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
         private static Motion ResolveMotionFromCopiedAsset(Motion sourceMotion, string copiedAssetPath)
         {
-            if (string.IsNullOrEmpty(copiedAssetPath))
-                return null;
-
             string sourceAssetPath = AssetDatabase.GetAssetPath(sourceMotion);
-            if (string.IsNullOrEmpty(sourceAssetPath))
-                return null;
-
-            if (PathsEqual(sourceAssetPath, copiedAssetPath))
-                return sourceMotion;
+            if (string.IsNullOrEmpty(copiedAssetPath) || string.IsNullOrEmpty(sourceAssetPath)
+                || PathsEqual(sourceAssetPath, copiedAssetPath))
+                throw new InvalidOperationException($"[ASS] Cannot safely resolve a separate copy of motion '{sourceMotion?.name}' from '{sourceAssetPath}' at '{copiedAssetPath}'. The source will not be modified.");
 
             AssetDatabase.TryGetGUIDAndLocalFileIdentifier(sourceMotion, out _, out long sourceLocalId);
             var copiedMotions = AssetDatabase.LoadAllAssetsAtPath(copiedAssetPath)
@@ -822,7 +776,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (sourceMotions.Count == 1 && copiedMotions.Count == 1)
                 return copiedMotions[0];
 
-            return null;
+            throw new InvalidOperationException($"[ASS] Cannot safely resolve copied motion '{sourceMotion.name}' from '{sourceAssetPath}' at '{copiedAssetPath}'. The source will not be modified.");
         }
 
         private static void ObfuscateStateMachineRecursive(

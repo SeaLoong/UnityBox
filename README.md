@@ -1,73 +1,60 @@
 # UnityBox
 
-此仓库用于存放开发中或可直接复用的 Unity 工具脚本，便于在多个项目间共享。
+用于普通 Unity 和 Avatar 编辑流程的一组 Unity 2022.3 工具。当前 `refactor` 分支拆分了
+独立核心与可选 VRChat/Modular Avatar/NDMF 适配；完整变更、升级后果和剩余限制见
+[变更清单](Docs/RefactorChanges.md)。Animator Optimizer 在独立
+`feat/animator-optimizer`，已 rebase 到 master，尚未合并；它不等同于外部 Avatar Optimizer。
 
-## 通过 VCC / ALCOM 安装
+## 安装
 
-1. 将本仓库添加为 VPM 源：
-   - **一键添加（推荐）**：点击链接 → [添加到 VCC](https://sealoong.github.io/UnityBox/)
-   - **手动添加**：在 VCC / ALCOM 的设置中添加以下 VPM 源地址：
+通过 [VCC / ALCOM 添加入口](https://sealoong.github.io/UnityBox/) 或手工添加 VPM 源：
 
-     ```
-     https://sealoong.github.io/UnityBox/vpm.json
-     ```
-
-2. 在 VCC / ALCOM 中找到以下包并按需安装：
-
-| 包名                            | 说明                                                        |
-| ------------------------------- | ----------------------------------------------------------- |
-| Advanced Costume Controller     | VRChat 换装控制器，通过 Modular Avatar 菜单快速配置衣装切换 |
-| Blendshape Controller Generator | Blendshape 动画控制器生成器                                 |
-| Avatar Collider Monitor         | VRChat 模型碰撞体监视器                                     |
-| Build Pipeline Logger           | 构建管线日志记录器                                          |
-| Prefab Diff Patcher             | 比较两个 Prefab 并按选择合并对象、组件与引用 |
-| Avatar Security System          | VRChat Avatar 手势解锁、显示锁定与反馈工具                          |
-| Viseme Blendshape Override      | 用内建 `Viseme` / `Voice` 参数驱动可限幅、可独立响应区间的口型替代层 |
-
-## 目录结构
-
-每个工具都是独立的 VPM 包，位于 `Assets/UnityBox/` 下：
-
-```
-Assets/UnityBox/
-├── AdvancedCostumeController/        # top.sealoong.unitybox.advanced-costume-controller
-├── BlendshapeControllerGenerator/    # top.sealoong.unitybox.blendshape-controller-generator
-├── AvatarColliderMonitor/            # top.sealoong.unitybox.avatar-collider-monitor
-├── BuildPipelineLogger/              # top.sealoong.unitybox.build-pipeline-logger
-├── PrefabDiffPatcher/                # top.sealoong.unitybox.prefab-diff-patcher
-├── AvatarSecuritySystem/             # top.sealoong.unitybox.avatar-security-system
-└── VisemeBlendshapeOverride/         # top.sealoong.unitybox.viseme-blendshape-override
+```text
+https://sealoong.github.io/UnityBox/vpm.json
 ```
 
-## 工具文档
+普通 Unity 可使用源码或本地 UPM 包。当前分支不再强制安装所有 Avatar 依赖；已有 Avatar
+工程保留所需 SDK/MA/NDMF。线上 listing 版本可能尚未包含本分支改动，安装后应检查实际版本。
 
-所有包要求 Unity 2022.3；下表列出额外依赖的最低版本，具体以各包 `package.json` 为准。
+## 工具与文档
 
-| 工具 | 当前说明 | 依赖 |
-| --- | --- | --- |
-| ACC | [完整手册](Docs/AdvancedCostumeController.md)、[包内说明](Assets/UnityBox/AdvancedCostumeController/README.md) | VRChat Avatars ≥3.7、Modular Avatar ≥1.18 |
-| Blendshape 生成器 | [完整手册](Docs/BlendshapeControllerGenerator.md) | VRChat Avatars ≥3.7、Modular Avatar ≥1.13 |
-| 碰撞体监控 | [使用与采样边界](Assets/UnityBox/AvatarColliderMonitor/README.md) | VRChat Avatars ≥3.7；NDMF 可选 |
-| 构建日志 | [使用与日志范围](Assets/UnityBox/BuildPipelineLogger/README.md) | VRChat Avatars ≥3.7；NDMF 可选 |
-| Prefab 差异合并 | [使用与合并语义](Assets/UnityBox/PrefabDiffPatcher/README.md) | 不要求 VRChat SDK |
-| ASS | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)、[技术参考](Assets/UnityBox/AvatarSecuritySystem/Editor/ASS_TechnicalDoc.md) | VRChat Avatars ≥3.7；NDMF 可选 |
-| 口型覆盖 | [完整手册](Docs/VisemeBlendshapeOverride.md)、[包内说明](Assets/UnityBox/VisemeBlendshapeOverride/README.md) | VRChat Avatars ≥3.7、NDMF ≥1.7 |
+| 工具 | 普通 Unity 功能 | 可选平台功能与最低条件 | 文档 |
+| --- | --- | --- | --- |
+| Advanced Costume Controller | 扫描、服装/部件/Mixer/材质动画资产生成 | SDK ≥3.7.3、MA ≥1.18：菜单、FX、骨架、图标和网络参数 | [手册](Docs/AdvancedCostumeController.md) |
+| Blendshape Controller Generator | Float/Bool blendshape控制器生成窗口 | SDK ≥3.7.3、MA ≥1.13：菜单、FX和同步参数 | [手册](Docs/BlendshapeControllerGenerator.md) |
+| Avatar Collider Monitor | 任意根对象3D/2D碰撞体快照、历史和场景采样 | SDK Descriptor/provider、独立NDMF阶段采样 | [说明](Assets/UnityBox/AvatarColliderMonitor/README.md) |
+| Build Pipeline Logger | Unity导入与构建日志 | 独立SDK/NDMF回调日志 | [说明](Assets/UnityBox/BuildPipelineLogger/README.md) |
+| Prefab Diff Patcher | Prefab比较、选择合并、引用重映射 | 无额外依赖 | [说明](Assets/UnityBox/PrefabDiffPatcher/README.md) |
+| Avatar Security System | 配置、Controller工具和显式行为适配的图构造API | SDK ≥3.7：手势/锁定/反馈；NDMF另需≥1.8 | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)、[技术参考](Assets/UnityBox/AvatarSecuritySystem/Editor/ASS_TechnicalDoc.md) |
+| Viseme Blendshape Override | 口型Controller/Clip生成、映射和Voice曲线 | SDK ≥3.7：Avatar输入与构建；NDMF另需≥1.7 | [手册](Docs/VisemeBlendshapeOverride.md) |
 
-测试环境、命令、测试范围与未验证项见 [测试指南](Docs/Testing.md)。
-`feat/animator-optimizer` 的插件名是 **Animator Optimizer**，不等同于外部的 Avatar Optimizer；它尚未合入本分支。
+SDK指真实VRChat Base/Avatars组合。MA使用的API从SDK3.7.3才存在，3.7.0～3.7.2不能
+据宽泛依赖声明视为兼容。当前完整验证组合固定SDK3.8.2、MA1.18、NDMF1.11。
+各包位于`Assets/UnityBox/<工具目录>`，独立清单使用`top.sealoong.unitybox.*`名称。
+程序集/API迁移、组件身份与构建边界见[依赖架构](Docs/DependencyArchitecture.md)。
 
-## VPM 仓库发布说明
+## 开发与验证
 
-- GitHub Actions 会自动通过 `git ls-files 'Assets/UnityBox/*/package.json'` 发现主仓库中已跟踪的包，因此新增包时通常**不再需要手动修改 workflow 里的路径列表**。
-- 因为发现范围只包含**主仓库已跟踪文件**，所以像 Git 子模块内容不会被自动发布到当前仓库的 VPM listing 中。
+- [插件审查](Docs/PluginAudit.md)、[全部改动及后果](Docs/RefactorChanges.md)、[temp审查](Docs/TempBranchReview.md)
+- [测试指南与实际结果](Docs/Testing.md)、[Unity安装和隔离工程](Docs/UnityEnvironment.md)
+- [可复用测试skill](.agents/skills/unitybox-testing/SKILL.md)、[仓库规则](AGENTS.md)
 
-## 开发与审查
+Unity2022.3.22f1已安装。最终真实C#类型检查通过：无SDK19、仅SDK40、完整平台55个
+程序集；插件共声明177个回归用例，尚未实际执行。实际Unity测试
+启动因没有许可证exit1，没有NUnitXML；用户当前无授权，因此EditMode、导入、构建上传
+及运行时行为尚未获通过结论。Python测试和ZIP校验不能替代它们。
 
-- 全仓修复和文档更新位于 `refactor`；Animator 优化器在 `feat/animator-optimizer` 独立审查，该分支已 rebase 到 `master`。
-- 全仓功能审查、修复及待验证项见 [插件审查记录](Docs/PluginAudit.md)。
-- 包构建测试：`python3 .github/scripts/test_package_vpm.py`。发布包保留已有 `.meta`，排除生成目录和 ASS 实验探针；Editor 回归测试源码保留。
-- 已缺失的 `.meta` 需要从原开发项目恢复。不要重新生成已有脚本的 GUID 来修补场景引用。
+共享工具测试：`python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v`，要求
+Python3.12；打包测试：`python3 .github/scripts/test_package_vpm.py`。
+源场景、实验资产和已知GUID保留；原本未提交的metadata需从开发项目恢复，不能生成随机
+GUID修复旧组件引用。生成器升级后应重新生成并检查参数名、旧引用、Undo和已保存值。
+
+## VPM 发布
+
+GitHub Actions从已跟踪的`Assets/UnityBox/*/package.json`发现包，不自动包含子模块。
+发布筛选器保留已有meta与Editor回归测试，排除Generated和ASS实验探针/fixture/bundle。
+ZIP覆盖重建，避免旧文件残留；本轮未代为推送、发布或合并两个分支。
 
 ## 许可证
 
-本项目采用 MIT 许可证（MIT）。详见仓库根目录的 `LICENSE` 文件。简要说明：你可以自由地复制、修改、合并、发布、分发、再许可和/或出售本软件的副本，但必须在所有副本或重要部分中包含原始版权声明和本许可声明。软件按"原样"提供，不附带任何明示或暗示的担保。
+本项目采用 [MIT License](LICENSE)。软件按原样提供，使用和分发时保留版权及许可声明。

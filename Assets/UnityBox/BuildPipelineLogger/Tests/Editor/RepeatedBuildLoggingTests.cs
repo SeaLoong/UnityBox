@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -29,9 +30,8 @@ namespace UnityBox.BuildPipelineLogger.Tests
       BuildPipelineLoggerLog.BeginBuild();
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public void ShaderCallbackLogsAgainOnTheNextBuild(bool avatarBuild)
+    [Test]
+    public void ShaderCallbackLogsAgainOnTheNextBuild()
     {
       var shader = Shader.Find("Hidden/InternalErrorShader");
       Assert.That(shader, Is.Not.Null);
@@ -39,18 +39,43 @@ namespace UnityBox.BuildPipelineLogger.Tests
       var data = new List<ShaderCompilerData>();
       for (int build = 0; build < 2; build++)
       {
-        if (avatarBuild)
-          new VRCSDKPreprocessAvatarLogger_MinValue().OnPreprocessAvatar(null);
-        else
-        {
-          LogAssert.Expect(LogType.Log, new Regex("IPreprocessBuildWithReport.OnPreprocessBuild"));
-          new PreBuildLogger_MinValue().OnPreprocessBuild(null);
-        }
+        LogAssert.Expect(LogType.Log, new Regex("IPreprocessBuildWithReport.OnPreprocessBuild"));
+        new PreBuildLogger_MinValue().OnPreprocessBuild(null);
         LogAssert.Expect(LogType.Log, new Regex("IPreprocessShaders.OnProcessShader"));
         callback.OnProcessShader(shader, default, data);
         callback.OnProcessShader(shader, default, data);
         LogAssert.NoUnexpectedReceived();
       }
+    }
+
+    [Test]
+    public void DisabledShaderLoggingLeavesVariantsUntouchedAndDoesNotConsumeFirstLog()
+    {
+      var shader = Shader.Find("Hidden/InternalErrorShader");
+      Assert.That(shader, Is.Not.Null);
+      var variants = new List<ShaderCompilerData> { default, default };
+      var callback = new PreprocessShadersLogger_Early();
+      BuildPipelineLoggerLog.BeginBuild();
+      BuildPipelineLoggerSettings.BuildPipeline = false;
+      callback.OnProcessShader(shader, default, variants);
+      Assert.That(variants, Has.Count.EqualTo(2));
+      LogAssert.NoUnexpectedReceived();
+      BuildPipelineLoggerSettings.BuildPipeline = true;
+      LogAssert.Expect(LogType.Log, new Regex("IPreprocessShaders.OnProcessShader"));
+      callback.OnProcessShader(shader, default, variants);
+      Assert.That(variants, Has.Count.EqualTo(2));
+      LogAssert.NoUnexpectedReceived();
+    }
+
+    [Test]
+    public void AssemblyFilterReturnsOriginalInputWithoutRemovingAssemblies()
+    {
+      var assemblies = new[] { "Game.dll", "OptionalIntegration.dll" };
+      LogAssert.Expect(LogType.Log, new Regex("IFilterBuildAssemblies.OnFilterAssemblies"));
+      var result = new FilterAssembliesLogger_Early().OnFilterAssemblies(BuildOptions.None, assemblies);
+      Assert.That(result, Is.SameAs(assemblies));
+      Assert.That(result, Is.EqualTo(new[] { "Game.dll", "OptionalIntegration.dll" }));
+      LogAssert.NoUnexpectedReceived();
     }
   }
 }

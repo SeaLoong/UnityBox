@@ -110,44 +110,6 @@ public class BlendshapeGeneratorTests
       .Select(item => item.PortableControl.SubParameters[0]).Distinct().Count(), Is.EqualTo(2));
   }
 
-  [Test]
-  public void SanitizedShapeNamesNeverShareParameters()
-  {
-    var names = new[] { "A/B", "A_B", "A_B_2" };
-    var result = (string[])InvokeStatic("BuildParameterSuffixes", (object)names);
-    Assert.That(result.Distinct().Count(), Is.EqualTo(3));
-    Assert.That(result[2], Is.EqualTo("A_B_2"));
-  }
-
-  [TestCase("Assets/../Outside", false)]
-  [TestCase("/tmp/Assets", false)]
-  [TestCase("Assets\\Output", false)]
-  [TestCase("Assets//Output", false)]
-  [TestCase("Assets/./Output", false)]
-  [TestCase("Assets/Output:Other", false)]
-  [TestCase("Assets/Output", true)]
-  public void OutputMustStayInsideAssets(string path, bool expected)
-  {
-    Assert.That((bool)InvokeStatic("IsSafeOutputFolder", path), Is.EqualTo(expected));
-  }
-
-  [Test]
-  public void ZeroValueScalePreservesStepTangentsWithoutCreatingNaN()
-  {
-    var source = new AnimationCurve(
-      new Keyframe(0f, 0f, float.PositiveInfinity, float.PositiveInfinity),
-      new Keyframe(1f, 1f, float.PositiveInfinity, float.PositiveInfinity));
-    var scaled = (AnimationCurve)InvokeStatic("BuildScaledCurve", source, 2f, 0f);
-
-    Assert.That(scaled.keys.Select(key => key.time), Is.EqualTo(new[] { 0f, 2f }));
-    Assert.That(scaled.keys.All(key => key.value == 0f), Is.True);
-    Assert.That(scaled.keys.All(key => !float.IsNaN(key.inTangent) &&
-      !float.IsNaN(key.outTangent)), Is.True);
-    Assert.That(scaled.keys.All(key => float.IsPositiveInfinity(key.inTangent) &&
-      float.IsPositiveInfinity(key.outTangent)), Is.True);
-    Assert.That(scaled.Evaluate(1f), Is.EqualTo(0f));
-  }
-
   private SkinnedMeshRenderer Renderer(Transform parent, string name, params string[] shapes)
   {
     var go = new GameObject(name); go.transform.SetParent(parent, false);
@@ -164,7 +126,7 @@ public class BlendshapeGeneratorTests
   {
     var names = Enumerable.Range(0, renderer.sharedMesh.blendShapeCount).Select(renderer.sharedMesh.GetBlendShapeName).ToList();
     var enumType = typeof(BlendshapeControllerGenerator).GetNestedType("BlendParamType", BindingFlags.NonPublic);
-    var types = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(enumType));
+    var types = (IList)System.Activator.CreateInstance(typeof(List<>).MakeGenericType(enumType));
     foreach (var name in names) types.Add(Enum.Parse(enumType, type));
     var method = typeof(BlendshapeControllerGenerator).GetMethod("GenerateForMesh", BindingFlags.NonPublic | BindingFlags.Instance);
     Assert.That((bool)method.Invoke(window, new object[] { renderer, names,

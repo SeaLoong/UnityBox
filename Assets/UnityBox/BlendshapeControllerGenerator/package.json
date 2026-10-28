@@ -2,7 +2,7 @@
   "name": "top.sealoong.unitybox.blendshape-controller-generator",
   "displayName": "Blendshape Controller Generator",
   "version": "0.1.1",
-  "description": "A VRChat avatar editor tool for generating blendshape animation controllers with Modular Avatar integration.",
+  "description": "Generate Unity blendshape animation clips and Animator controllers, with optional VRChat / Modular Avatar menu and FX installation.",
   "unity": "2022.3",
   "author": {
     "name": "SeaLoong",
@@ -16,8 +16,5 @@
     "editor",
     "blendshape"
   ],
-  "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.0",
-    "nadena.dev.modular-avatar": ">=1.13.0"
-  }
+  "vpmDependencies": {}
 }

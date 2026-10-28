@@ -1,0 +1,34 @@
+{
+  "name": "UnityBox.AvatarSecuritySystem.VRChat.Tests",
+  "rootNamespace": "UnityBox.AvatarSecuritySystem",
+  "references": [
+    "UnityBox.AvatarSecuritySystem",
+    "UnityBox.AvatarSecuritySystem.Runtime",
+    "UnityBox.AvatarSecuritySystem.VRChat",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_SDK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_SDK"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

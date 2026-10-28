@@ -1,13 +1,15 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
-using VRC.SDKBase;
 namespace UnityBox.AvatarSecuritySystem
 {
 #if UNITY_EDITOR
     [AddComponentMenu("UnityBox/Avatar Security System (ASS)")]
 #endif
-    public class ASSComponent : MonoBehaviour, IEditorOnly
+    public class ASSComponent : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+        , VRC.SDKBase.IEditorOnly
+#endif
     {
         [Tooltip("#{language.ui_language_tooltip}")]
         public SystemLanguage uiLanguage = SystemLanguage.Unknown;

@@ -2,7 +2,7 @@
   "name": "top.sealoong.unitybox.avatar-collider-monitor",
   "displayName": "Avatar Collider Monitor",
   "version": "0.1.0",
-  "description": "A VRChat avatar editor tool for monitoring and visualizing avatar collider configurations.",
+  "description": "A Unity editor tool for capturing and comparing Collider and Collider2D configurations, with optional VRChat and NDMF integrations.",
   "unity": "2022.3",
   "author": {
     "name": "SeaLoong",
@@ -15,8 +15,5 @@
     "avatar",
     "editor",
     "collider"
-  ],
-  "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.0"
-  }
+  ]
 }

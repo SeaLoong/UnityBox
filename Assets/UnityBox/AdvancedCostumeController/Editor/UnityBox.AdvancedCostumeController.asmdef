@@ -8,7 +8,8 @@
     "VRC.SDKBase",
     "VRC.SDKBase.Editor",
     "nadena.dev.modular-avatar.core",
-    "nadena.dev.modular-avatar.core.editor"
+    "nadena.dev.modular-avatar.core.editor",
+    "UnityBox.AdvancedCostumeController.Core"
   ],
   "includePlatforms": [
     "Editor"
@@ -18,11 +19,19 @@
   "overrideReferences": false,
   "precompiledReferences": [],
   "autoReferenced": true,
-  "defineConstraints": [],
+  "defineConstraints": [
+    "UNITYBOX_VRC_AVATARS",
+    "MODULAR_AVATAR_AVAILABLE"
+  ],
   "versionDefines": [
     {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.3",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
       "name": "nadena.dev.modular-avatar",
-      "expression": "",
+      "expression": "1.18.0",
       "define": "MODULAR_AVATAR_AVAILABLE"
     }
   ],

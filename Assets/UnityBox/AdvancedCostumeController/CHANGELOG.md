@@ -13,8 +13,13 @@
 
 ### Changed
 
+- 将完整 Scanner、Models、AnimationBuilder、Localization 和选择算法迁入 SDK/MA 独立 Core。新增普通 Unity 扫描/生成窗口，实际生成切换、Parts、两类 Mixer 与材质曲线；Avatar 生成继续调用同一核心。无 SDK 时明确拒绝网络压缩。
+- SDK Descriptor 与 Parameter Driver、MA 扫描/菜单/安装各自留在真实可选适配器；Runtime 标记保持原路径/GUID，无 SDK 可用，有 SDK 时实现真实 `IEditorOnly`。包不再强制安装 SDK/MA，Avatar 工作流需另行安装。
+- Core 共 32 个 EditMode 用例（规则18、扫描7、实际生成7），19 个集成用例仍使用真实 SDK/MA。公开模型、Scanner、AnimationBuilder 等移至 Core，自定义 asmdef 需要相应引用。
+
 - 最低 Modular Avatar 版本修正为 1.18.0，以匹配现用 API。
-- 文档同步扫描、输出隔离、混搭选择值、材质转换与升级限制；新增/补齐 19 个 EditMode 回归用例，尚未在本云环境执行。
+- MA 集成要求 SDK Base/Avatars >= 3.7.3，以匹配 `VRCConstraintSource(Transform, float)`；独立 SDK 适配器仍支持 3.7.0。
+- 文档同步扫描、输出隔离、混搭选择值、材质转换与升级限制；保留并补齐 19 个依赖真实 SDK/MA 的 EditMode 集成用例。
 - 含被清理字符的旧参数名或输出目录可能改变，需重新生成并检查保存值和旧引用。
 
 ## [0.4.13] - 2026-08-08

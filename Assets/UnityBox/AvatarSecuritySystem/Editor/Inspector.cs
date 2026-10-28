@@ -33,6 +33,8 @@ namespace UnityBox.AvatarSecuritySystem
             serializedObject.Update();
             EditorGUILayout.Space(10);
             DrawHeaderSection();
+            if (System.Type.GetType("UnityBox.AvatarSecuritySystem.Editor.Processor, UnityBox.AvatarSecuritySystem.VRChat") == null)
+                EditorGUILayout.HelpBox("Unity configuration and animation tools are available. Avatar upload generation requires the optional VRChat SDK 3.7+ integration.", MessageType.Info);
             EditorGUILayout.Space(10);
             DrawConfigurationSections();
             serializedObject.ApplyModifiedProperties();

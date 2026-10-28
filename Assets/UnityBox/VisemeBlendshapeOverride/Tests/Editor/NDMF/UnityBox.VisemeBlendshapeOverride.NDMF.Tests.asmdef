@@ -1,0 +1,42 @@
+{
+  "name": "UnityBox.VisemeBlendshapeOverride.NDMF.Tests",
+  "rootNamespace": "UnityBox.VisemeBlendshapeOverride.Tests",
+  "references": [
+    "UnityBox.VisemeBlendshapeOverride",
+    "UnityBox.VisemeBlendshapeOverride.Runtime",
+    "UnityBox.VisemeBlendshapeOverride.VRChat",
+    "UnityBox.VisemeBlendshapeOverride.NDMF",
+    "VRC.SDK3A",
+    "VRC.SDKBase",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_SDK",
+    "NDMF_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "[3.7.0,)",
+      "define": "UNITYBOX_VRC_SDK"
+    },
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "[1.7.0,)",
+      "define": "NDMF_AVAILABLE"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

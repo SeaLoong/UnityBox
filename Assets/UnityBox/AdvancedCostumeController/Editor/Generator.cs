@@ -346,16 +346,11 @@ namespace UnityBox.AdvancedCostumeController
     public static ChoiceParameterLayout GetMainChoiceLayout(
       Dictionary<GameObject, int> outfitIndexMap, bool includeCustomMixer,
       bool usesCompression)
-    {
-      return new ChoiceParameterLayout(outfitIndexMap.Count + (includeCustomMixer ? 1 : 0),
-        usesCompression);
-    }
+      => CostumeChoiceResolver.GetMainChoiceLayout(outfitIndexMap, includeCustomMixer, usesCompression);
 
     /// <summary>混搭紧随最后一个服装对象，使用连续的选择值。</summary>
     public static int GetCustomMixerValue(int outfitCount)
-    {
-      return outfitCount;
-    }
+      => CostumeChoiceResolver.GetCustomMixerValue(outfitCount);
 
     public static void AddChoiceParameters(
       ModularAvatarParameters rootParams,
@@ -472,26 +467,12 @@ namespace UnityBox.AdvancedCostumeController
     public static GameObject ResolveDefaultChoiceObject(
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap)
-    {
-      if (defaultOutfit == null) return null;
-      if (defaultOutfit.DefaultChoiceObject != null &&
-          outfitIndexMap.ContainsKey(defaultOutfit.DefaultChoiceObject))
-        return defaultOutfit.DefaultChoiceObject;
-      if (outfitIndexMap.ContainsKey(defaultOutfit.BaseObject))
-        return defaultOutfit.BaseObject;
-
-      return defaultOutfit.GetAllObjects().FirstOrDefault(outfitIndexMap.ContainsKey);
-    }
+      => CostumeChoiceResolver.ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
 
     public static int ResolveDefaultChoiceIndex(
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap)
-    {
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      return defaultChoice != null && outfitIndexMap.TryGetValue(defaultChoice, out var index)
-        ? index
-        : 0;
-    }
+      => CostumeChoiceResolver.ResolveDefaultChoiceIndex(defaultOutfit, outfitIndexMap);
 
     /// <summary>
     /// Mixer 进入时预选默认服装组中与默认版本对应的部件候选，并沿用普通 Parts
@@ -502,25 +483,7 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData outfit,
       MixerPartSlot slot)
-    {
-      if (defaultOutfit == null || outfit == null || slot == null ||
-          outfit.BaseObject != defaultOutfit.BaseObject)
-        return 0;
-
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      int candidateIndex = slot.Candidates.FindIndex(candidate =>
-        candidate.VariantObject == defaultChoice);
-      if (candidateIndex < 0) return 0;
-
-      var normalControl = outfit.GetPartControls().FirstOrDefault(control =>
-        control.Parts != null && control.Parts.Count > 0 &&
-        OutfitData.GetMixerSlotKey(outfit.BaseObject, control) == slot.Key);
-      bool defaultActive = normalControl != null
-        ? normalControl.Parts.All(part => part != null && part.activeSelf)
-        : slot.Candidates[candidateIndex].Control.Parts.All(part =>
-          part != null && part.activeSelf);
-      return defaultActive ? candidateIndex + 1 : 0;
-    }
+      => CostumeChoiceResolver.GetMixerSlotDefaultValue(defaultOutfit, outfitIndexMap, outfit, slot);
 
     /// <summary>
     /// 获取共享部件参数模式下某个服装组的默认整体变体索引。
@@ -530,16 +493,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData outfit)
-    {
-      if (outfit == null || defaultOutfit == null ||
-          outfit.BaseObject != defaultOutfit.BaseObject)
-        return 0;
-
-      var choices = outfit.GetAllObjects();
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      int index = choices.IndexOf(defaultChoice);
-      return index >= 0 ? index : 0;
-    }
+      => CostumeChoiceResolver.GetMixerVariantDefaultValue(defaultOutfit, outfitIndexMap, outfit);
 
     private void BuildPartsMenu(
       GameObject menuRoot,

@@ -2,7 +2,7 @@
   "name": "top.sealoong.unitybox.avatar-security-system",
   "displayName": "Avatar Security System",
   "version": "0.7.24",
-  "description": "A VRChat avatar editor tool for protecting avatars with gesture-based password security system.",
+  "description": "Unity Animator gesture-password tools and animation/bundle diagnostics, with optional VRChat upload integration.",
   "unity": "2022.3",
   "author": {
     "name": "SeaLoong",
@@ -17,7 +17,5 @@
     "security",
     "password"
   ],
-  "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.0"
-  }
+  "vpmDependencies": {}
 }

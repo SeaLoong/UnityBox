@@ -4,8 +4,21 @@
 
 ## [Unreleased]
 
+### Optional platform integration
+
+- Runtime configuration and Editor animation/configuration/asset tools compile without VRChat SDK.
+- SDK upload and Descriptor operations now live in the optional `UnityBox.AvatarSecuritySystem.VRChat` assembly; NDMF requires SDK plus NDMF 1.8+.
+- Graph builders require an explicit platform behaviour adapter. The SDK path preserves its original behaviours; no new generic Unity password runtime is supplied.
+- Configuration keeps the real optional IEditorOnly marker when SDK Base is present, for pre-upload validation; upload adapters also strip configuration from build clones explicitly.
+- Split pure Unity core tests from optional SDK integration tests; package installation no longer forces SDK dependencies.
+
+
 ### Fixed
 
+- 关闭自定义动画层时忽略残留 Controller；生成启用 FX 前恢复构建克隆的 base/special 默认槽位，独立构建快照仍可还原原设置。
+- 同文件多个 Controller 子资产按 local file ID 选择正确副本；Motion 复制/解析失败中止，禁止回退可变源 BlendTree。
+- NDMF 安装状态不再替代实际处理状态：早期 SDK 捕获每次重置，NDMF 成功后才去重，失败/后处理释放弱引用快照。
+- NDMF 与独立生成都隔离持久化 Controller；晚期新插入的持久化 Controller 也先复制，再修正层索引/处理名称。无需其它插件先激活 AnimatorServices。
 - 独立构建始终隔离需要编辑的 FX 和 ExpressionParameters，恢复 Descriptor 原引用和开关；复制失败不再退回修改源资产。
 - 保留第三方内存 Controller，同源多 Playable 槽位的 Controller/Motion 副本分别隔离。
 - 修复 Holding 错误条件的不可达逻辑、成功/超时竞争、空密码 UI 和过期配置快照。
@@ -19,7 +32,7 @@
 
 ### Tests
 
-- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。当前云端仅执行静态检查，未运行 Unity 编译或测试。
+- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。当前云端已通过真实 Unity/SDK/NDMF 引用下的 Roslyn 类型检查；缺少 Unity 许可，未执行 Editor 导入或 EditMode 测试。
 
 ### Removed
 

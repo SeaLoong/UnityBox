@@ -263,20 +263,12 @@ namespace UnityBox.AdvancedCostumeController
     /// <summary>混搭模式下一个部件槽位的 Int 参数名。</summary>
     public static string BuildMixerSlotParamName(
       ACCConfig config, OutfitData outfit, MixerPartSlot slot)
-    {
-      string groupPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
-      string raw = ACCConfig.MixerParamPrefix + "/" + groupPath + "/" + slot.Key;
-      return Utils.BuildParamName(config.MainParameterName, raw);
-    }
+      => CostumeChoiceResolver.BuildMixerSlotParamName(config, outfit, slot);
 
     /// <summary>共享普通部件参数模式下一个服装组的整体变体 Int 参数名。</summary>
     public static string BuildMixerVariantParamName(
       ACCConfig config, OutfitData outfit)
-    {
-      string groupPath = Utils.GetRelativePath(config.CostumesRoot, outfit.OutfitObject);
-      string raw = ACCConfig.MixerParamPrefix + "/" + groupPath + "/Variant";
-      return Utils.BuildParamName(config.MainParameterName, raw);
-    }
+      => CostumeChoiceResolver.BuildMixerVariantParamName(config, outfit);
 
   }
 }

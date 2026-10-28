@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -69,160 +68,15 @@ public static class Utils
     return true;
   }
 
-  /// <summary>
-  /// 检查 Transform 上是否有网格组件
-  /// </summary>
-  public static bool HasMeshOn(Transform t)
-  {
-    if (t == null) return false;
-
-    var smr = t.GetComponent<SkinnedMeshRenderer>();
-    if (smr != null) return true;
-
-    var mr = t.GetComponent<MeshRenderer>();
-    var mf = t.GetComponent<MeshFilter>();
-    return mr != null && mf != null;
-  }
-
-  /// <summary>检查节点或其后代是否包含可渲染网格。</summary>
-  public static bool HasMeshInHierarchy(Transform root)
-  {
-    if (root == null) return false;
-    return root.GetComponentsInChildren<Renderer>(true)
-      .Any(renderer => renderer is SkinnedMeshRenderer ||
-        (renderer is MeshRenderer && renderer.GetComponent<MeshFilter>() != null));
-  }
-
-  /// <summary>
-  /// 检查节点是否拥有服装骨架：至少一个 SkinnedMeshRenderer 的 rootBone
-  /// 与其 Renderer 的最低公共祖先必须正好是当前节点。这样既支持骨架分支
-  /// 内包含 Mesh，也不会把包裹多个服装的上层容器误识别为服装。
-  /// </summary>
-  public static bool OwnsSkeleton(Transform root)
-  {
-    return TryGetOwnedArmature(root, out _);
-  }
-
-  /// <summary>
-  /// 获取一个服装根所拥有的 Armature。已有 MA Merge Armature 时优先使用它；
-  /// 否则兼容旧版通过 SkinnedMeshRenderer.rootBone 推导的骨架分支。
-  /// </summary>
+  public static bool HasMeshOn(Transform target) => CostumeHierarchy.HasMeshOn(target);
+  public static bool HasMeshInHierarchy(Transform root) => CostumeHierarchy.HasMeshInHierarchy(root);
+  public static bool OwnsSkeleton(Transform root) => CostumeHierarchy.OwnsSkeleton(root);
   public static bool TryGetOwnedArmature(Transform root, out Transform armature)
-  {
-    armature = null;
-    if (root == null) return false;
-
-    // ACCOutfitMarker 的服装根优先级由 Scanner 处理；这里仅负责读取骨架归属。
-    // Modular Avatar 的 Setup Outfit 会在服装根上写入 MA Outfit Root，
-    // 其 armatureRoot 是 MA 路径下最可靠的服装骨架归属信息。
-    var outfitRoot = root.GetComponent<ModularAvatarOutfitRoot>();
-    if (outfitRoot != null && outfitRoot.armatureRoot != null)
-    {
-      armature = outfitRoot.armatureRoot;
-      return true;
-    }
-
-    if (TryGetOwnedMergeArmature(root, out var mergeArmature))
-    {
-      // 返回真实挂载 MA Merge Armature 的骨架对象。若 root 是更上层组织容器，
-      // Scanner 可以据此判断它不是服装根，并继续向下扫描真正的服装对象。
-      armature = mergeArmature.transform;
-      return true;
-    }
-
-    foreach (var renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-    {
-      if (renderer.rootBone == null) continue;
-
-      var armatureCandidate = renderer.rootBone.parent ?? renderer.rootBone;
-      bool candidateIsDirectArmature = armatureCandidate.parent == root;
-      if (!candidateIsDirectArmature &&
-          !IsLowestCommonAncestor(renderer.transform, armatureCandidate, root))
-        continue;
-
-      // Setup Outfit 采用 outfitHips.parent 作为 Armature；当 Hips 直接挂在
-      // 服装根下时，退回使用 Hips 自身作为骨架分支，兼容旧版非标准层级。
-      if (armatureCandidate == root)
-      {
-        armature = renderer.rootBone;
-      }
-      else
-      {
-        var branch = armatureCandidate;
-        while (branch.parent != null && branch.parent != root)
-          branch = branch.parent;
-        armature = branch;
-      }
-      return true;
-    }
-    return false;
-  }
-
-  private static bool IsLowestCommonAncestor(
-    Transform first, Transform second, Transform expected)
-  {
-    if (first == null || second == null || expected == null) return false;
-
-    var ancestors = new HashSet<Transform>();
-    for (var current = first; current != null; current = current.parent)
-      ancestors.Add(current);
-
-    for (var current = second; current != null; current = current.parent)
-    {
-      if (!ancestors.Contains(current)) continue;
-      return current == expected;
-    }
-    return false;
-  }
-
-  /// <summary>
-  /// 查找属于当前服装根的 MA Merge Armature。组件必须位于当前根的直接骨架分支中；
-  /// MA Outfit Root/ACC Outfit Marker 下的嵌套服装会被隔离，避免外层组织节点吞掉子服装。
-  /// </summary>
-  public static bool TryGetOwnedMergeArmature(
-    Transform root,
-    out ModularAvatarMergeArmature mergeArmature)
-  {
-    mergeArmature = null;
-    if (root == null) return false;
-
-    foreach (var candidate in root.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
-    {
-      if (candidate == null) continue;
-      if (candidate.transform == root)
-      {
-        mergeArmature = candidate;
-        return true;
-      }
-
-      var branch = candidate.transform;
-      while (branch.parent != null && branch.parent != root)
-        branch = branch.parent;
-      if (branch.parent != root) continue;
-
-      var nestedOutfitRoot = candidate.GetComponentInParent<ModularAvatarOutfitRoot>();
-      if (nestedOutfitRoot != null && nestedOutfitRoot.transform != root) continue;
-      var nestedAccMarker = candidate.GetComponentInParent<ACCOutfitMarker>();
-      if (nestedAccMarker != null && nestedAccMarker.transform != root) continue;
-
-      mergeArmature = candidate;
-      return true;
-    }
-    return false;
-  }
-
-  /// <summary>检查节点是否位于任一 SkinnedMeshRenderer 的骨架分支中。</summary>
+    => CostumeHierarchy.TryGetOwnedArmature(root, out armature);
+  public static bool TryGetOwnedMergeArmature(Transform root, out ModularAvatarMergeArmature armature)
+    => ModularAvatarCostumeScanIntegration.TryGetOwnedMergeArmature(root, out armature);
   public static bool IsSkeletonNode(Transform node, Transform outfitRoot)
-  {
-    if (node == null || outfitRoot == null) return false;
-
-    foreach (var renderer in outfitRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-    {
-      if (renderer.rootBone != null && node.IsChildOf(renderer.rootBone))
-        return true;
-    }
-    return false;
-  }
+    => CostumeHierarchy.IsSkeletonNode(node, outfitRoot);
 
   /// <summary>
   /// 查找或创建子对象
@@ -371,175 +225,25 @@ public static class Utils
     return "acc:parts|" + GetStableMenuPath(menuRoot.transform, outfitSubmenu.transform);
   }
 
-  /// <summary>获取相对路径中的所有层级名称，每个名称保持原样。</summary>
   public static List<string> GetRelativePathSegments(GameObject root, GameObject node)
-  {
-    var parts = new List<string>();
-    var t = node.transform;
-    while (t != null && t != root.transform)
-    {
-      parts.Add(t.name);
-      t = t.parent;
-    }
-    parts.Reverse();
-    return parts;
-  }
-
-  /// <summary>
-  /// 获取从 root 到 node 的相对路径
-  /// </summary>
+    => CostumeHierarchy.GetRelativePathSegments(root, node);
   public static string GetRelativePath(GameObject root, GameObject node)
-  {
-    return string.Join("/", GetRelativePathSegments(root, node));
-  }
-
-  /// <summary>
-  /// 获取层级路径（用于排序）
-  /// </summary>
+    => CostumeHierarchy.GetRelativePath(root, node);
   public static string GetHierarchyPath(GameObject root, GameObject node)
-  {
-    var indices = new List<int>();
-    var t = node.transform;
-    while (t != null && t != root.transform)
-    {
-      indices.Add(t.GetSiblingIndex());
-      t = t.parent;
-    }
-    indices.Reverse();
-    return string.Join("/", indices.Select(i => i.ToString("D4")));
-  }
+    => CostumeHierarchy.GetHierarchyPath(root, node);
 
-  /// <summary>
-  /// 清理字符串，只保留字母数字和斜杠
-  /// </summary>
-  public static string Sanitize(string s)
-  {
-    if (string.IsNullOrEmpty(s)) return "";
-    var arr = s.Select(c => char.IsLetterOrDigit(c) || c == '/' ? c : '_').ToArray();
-    return new string(arr);
-  }
-
-  /// <summary>
-  /// 清理字符串用于文件名，将所有非法字符（包括斜杠）替换为下划线
-  /// </summary>
-  public static string SanitizeForFileName(string s)
-  {
-    if (string.IsNullOrEmpty(s)) return "";
-    var arr = s.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray();
-    return new string(arr);
-  }
-
-  /// <summary>保留可读前缀，并区分被文件名清理折叠的空格、标点和路径分隔符。</summary>
-  public static string GetStableAssetName(string value)
-  {
-    value = value ?? "";
-    string sanitized = SanitizeForFileName(value);
-    const int maximumPrefixLength = 80;
-    if (sanitized == value && sanitized.Length <= maximumPrefixLength)
-      return sanitized;
-    if (sanitized.Length > maximumPrefixLength)
-      sanitized = sanitized.Substring(0, maximumPrefixLength);
-    return sanitized + "_" + StableIdentifierHash(value);
-  }
-
-  private static string StableIdentifierHash(string value)
-  {
-    using (var algorithm = System.Security.Cryptography.SHA256.Create())
-    {
-      var bytes = algorithm.ComputeHash(System.Text.Encoding.UTF8.GetBytes(value));
-      return string.Concat(bytes.Take(8).Select(valueByte => valueByte.ToString("x2")));
-    }
-  }
-
-  /// <summary>检查命名空间能否产生至少包含一个字母或数字的稳定资产名。</summary>
-  public static bool HasUsableGenerationNamespace(string value)
-  {
-    return !string.IsNullOrWhiteSpace(value) &&
-      SanitizeForFileName(value).Any(char.IsLetterOrDigit);
-  }
-
-  /// <summary>
-  /// 验证用户输入的输出目录是 Assets 内的安全相对路径。
-  /// 生成时会删除该目录下当前 ACC 的专属子目录，不能接受绝对路径或父级跳转。
-  /// </summary>
-  public static bool IsSafeAssetsFolder(string path)
-  {
-    if (string.IsNullOrWhiteSpace(path)) return false;
-
-    string normalized = path.Replace('\\', '/').TrimEnd('/');
-    if (normalized != "Assets" && !normalized.StartsWith("Assets/")) return false;
-
-    return normalized.Split('/').All(segment =>
-      !string.IsNullOrWhiteSpace(segment) && segment != "." && segment != "..");
-  }
-
-  /// <summary>将合法的 Assets 路径规范化为 Unity AssetDatabase 使用的斜杠形式。</summary>
-  public static string NormalizeAssetsFolder(string path)
-  {
-    return path.Replace('\\', '/').TrimEnd('/');
-  }
-
-  /// <summary>合并并规范化 Unity AssetDatabase 使用的路径。</summary>
-  public static string CombineAssetPath(params string[] parts)
-  {
-    return Path.Combine(parts).Replace('\\', '/');
-  }
-
-  /// <summary>
-  /// 构建参数名称
-  /// </summary>
-  public static string BuildParamName(string paramPrefix, string relPath)
-  {
-    relPath = relPath ?? "";
-    string path = Sanitize(relPath);
-    if (path != relPath)
-      path += "_" + StableIdentifierHash(relPath);
-    if (string.IsNullOrEmpty(paramPrefix))
-      return path;
-    return paramPrefix + "/" + path;
-  }
-
-  /// <summary>
-  /// 格式化菜单显示名称。格式化仅用于标签，不会改变动画绑定或参数路径。
-  /// 依次执行精确前缀/后缀移除和可选正则替换；无效正则会保留前两步结果。
-  /// </summary>
-  public static string FormatPartDisplayName(
-    string source,
-    string prefixToRemove,
-    string suffixToRemove,
-    string regexPattern,
-    string regexReplacement)
-  {
-    string result = source ?? "";
-    if (!string.IsNullOrEmpty(prefixToRemove) &&
-        result.StartsWith(prefixToRemove, StringComparison.Ordinal))
-      result = result.Substring(prefixToRemove.Length);
-    if (!string.IsNullOrEmpty(suffixToRemove) &&
-        result.EndsWith(suffixToRemove, StringComparison.Ordinal))
-      result = result.Substring(0, result.Length - suffixToRemove.Length);
-
-    if (!string.IsNullOrWhiteSpace(regexPattern))
-    {
-      try { result = Regex.Replace(result, regexPattern, regexReplacement ?? ""); }
-      catch (ArgumentException) { }
-    }
-
-    return string.IsNullOrWhiteSpace(result) ? source : result;
-  }
-
-  public static bool IsValidRegex(string pattern)
-  {
-    if (string.IsNullOrWhiteSpace(pattern)) return true;
-    try
-    {
-      _ = new Regex(pattern);
-      return true;
-    }
-    catch (ArgumentException)
-    {
-      return false;
-    }
-  }
+  // Keep existing callers on the same rules as the SDK-independent core.
+  public static string Sanitize(string value) => CostumeGenerationCore.Sanitize(value);
+  public static string SanitizeForFileName(string value) => CostumeGenerationCore.SanitizeForFileName(value);
+  public static string GetStableAssetName(string value) => CostumeGenerationCore.GetStableAssetName(value);
+  public static bool HasUsableGenerationNamespace(string value) => CostumeGenerationCore.HasUsableGenerationNamespace(value);
+  public static bool IsSafeAssetsFolder(string path) => CostumeGenerationCore.IsSafeAssetsFolder(path);
+  public static string NormalizeAssetsFolder(string path) => CostumeGenerationCore.NormalizeAssetsFolder(path);
+  public static string CombineAssetPath(params string[] parts) => CostumeGenerationCore.CombineAssetPath(parts);
+  public static string BuildParamName(string prefix, string path) => CostumeGenerationCore.BuildParamName(prefix, path);
+  public static string FormatPartDisplayName(string source, string prefix, string suffix, string pattern, string replacement)
+    => CostumeGenerationCore.FormatPartDisplayName(source, prefix, suffix, pattern, replacement);
+  public static bool IsValidRegex(string pattern) => CostumeGenerationCore.IsValidRegex(pattern);
 
   /// <summary>
   /// 在节点上确保存在子菜单组件

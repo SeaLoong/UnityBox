@@ -10,12 +10,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSConfigData config;
+        private readonly IAnimatorBehaviourAdapter behaviours;
 
-        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSConfigData config)
+        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, IAnimatorBehaviourAdapter behaviours)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
+            this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
 
         public void Generate()
@@ -33,7 +35,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             string gestureParam = config.useRightHand ? 
                 PARAM_GESTURE_RIGHT : PARAM_GESTURE_LEFT;
-            Utils.EnsureBuiltInVRCParameters(controller,
+            Utils.EnsureInputParameters(controller,
                 ensureIsLocal: true,
                 ensureGestureParameters: true);
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
@@ -273,17 +275,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             if (config.successSound != null)
             {
-                Utils.AddPlayAudioBehaviour(successState, 
+                behaviours.AddPlayAudioBehaviour(successState,
                     GO_AUDIO_SUCCESS, 
                     config.successSound);
             }
-            Utils.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: false);
+            behaviours.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: false);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Gesture password layer created with stability check: " +
                      $"password length={password.Count}, min hold={gestureHoldTime}s, max hold={gestureMaxHoldTime}s, error tolerance={gestureErrorTolerance}s");
             int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
-            Utils.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_PasswordInput/Release");
+            behaviours.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_PasswordInput/Release");
         }
         private AnimationClip CreateInputWaitingClip()
         {

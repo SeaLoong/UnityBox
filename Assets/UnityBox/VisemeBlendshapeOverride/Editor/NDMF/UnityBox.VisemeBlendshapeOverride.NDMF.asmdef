@@ -4,6 +4,7 @@
   "references": [
     "UnityBox.VisemeBlendshapeOverride",
     "UnityBox.VisemeBlendshapeOverride.Runtime",
+    "UnityBox.VisemeBlendshapeOverride.VRChat",
     "VRC.SDK3A",
     "VRC.SDKBase",
     "nadena.dev.ndmf"
@@ -17,9 +18,15 @@
   "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [
+    "UNITYBOX_VRC_SDK",
     "NDMF_AVAILABLE"
   ],
   "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "[3.7.0,)",
+      "define": "UNITYBOX_VRC_SDK"
+    },
     {
       "name": "nadena.dev.ndmf",
       "expression": "[1.7.0,)",

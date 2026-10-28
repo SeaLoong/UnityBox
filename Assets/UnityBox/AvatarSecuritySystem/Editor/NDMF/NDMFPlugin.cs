@@ -1,5 +1,4 @@
 using nadena.dev.ndmf;
-using System.Collections.Generic;
 using UnityEngine;
 
 [assembly: ExportsPlugin(typeof(UnityBox.AvatarSecuritySystem.Editor.NDMFPlugin))]
@@ -18,56 +17,20 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public override string QualifiedName => "top.sealoong.unitybox.avatar-security-system";
         public override string DisplayName => "Avatar Security System";
 
-        private sealed class ASSConfigSnapshot
-        {
-            private static readonly Dictionary<int, ASSConfigData> Snapshots = new Dictionary<int, ASSConfigData>();
-
-            public static void Capture(GameObject avatarRoot)
-            {
-                if (avatarRoot == null) return;
-
-                var config = ASSConfigData.FromAvatar(avatarRoot);
-                if (config == null)
-                {
-                    Snapshots.Remove(avatarRoot.GetInstanceID());
-                    return;
-                }
-
-                Snapshots[avatarRoot.GetInstanceID()] = config;
-                Debug.Log($"[ASS] NDMF captured ASS configuration from '{config.sourceObjectName}'");
-            }
-
-            public static ASSConfigData GetCapturedConfig(GameObject avatarRoot)
-            {
-                if (avatarRoot == null) return null;
-                Snapshots.TryGetValue(avatarRoot.GetInstanceID(), out var snapshot);
-                return snapshot;
-            }
-
-            public static void Release(GameObject avatarRoot)
-            {
-                if (avatarRoot == null) return;
-                Snapshots.Remove(avatarRoot.GetInstanceID());
-            }
-        }
-
         protected override void Configure()
         {
             InPhase(BuildPhase.Resolving)
                 .Run("Capture Avatar Security System Config", ctx =>
             {
-                ASSConfigSnapshot.Capture(ctx.AvatarRootObject);
-                // 同步写入 Processor.ConfigSnapshots，确保 PlayableObfuscationProcessor
-                // （VRCSDK callback，int.MaxValue-1）也能拿到配置快照
-                Processor.CaptureConfigSnapshot(ctx.AvatarRootObject,
-                    "NDMF Resolving (synced to Processor)");
-            });
+                Processor.CaptureNdmfConfigSnapshot(ctx.AvatarRootObject);
+                ConfigurationStripper.Strip(ctx.AvatarRootObject);
+            }).BeforePass("nadena.dev.ndmf.system.RemoveEditorOnly");
 
             InPhase(BuildPhase.PlatformFinish)
                 .AfterPlugin("jp.lilxyzw.lilycalinventory")
                 .Run("Generate Avatar Security System", ctx =>
             {
-                var capturedConfig = ASSConfigSnapshot.GetCapturedConfig(ctx.AvatarRootObject);
+                var capturedConfig = Processor.GetCapturedConfig(ctx.AvatarRootObject);
                 try
                 {
                     if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true, configOverride: capturedConfig))
@@ -75,10 +38,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         throw new System.Exception(
                             "[ASS] Avatar Security System processing failed (see previous log for details)");
                     }
+                    Processor.MarkNdmfCompleted(ctx.AvatarRootObject);
                 }
-                finally
+                catch
                 {
-                    ASSConfigSnapshot.Release(ctx.AvatarRootObject);
+                    Processor.ReleaseBuildSnapshot(ctx.AvatarRootObject);
+                    throw;
                 }
             });
         }

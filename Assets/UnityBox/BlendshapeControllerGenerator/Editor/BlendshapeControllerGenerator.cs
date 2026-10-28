@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using System.Collections.Immutable;
 using UnityEditor.Animations;
 using UnityEngine;
-using nadena.dev.modular_avatar.core;
 
 public class BlendshapeControllerGenerator : EditorWindow
 {
@@ -37,6 +35,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   private float batchBoolOn = 100f;
   private string controllerName = "";
   private string pendingGenerationFolder;
+  private bool installAvatarControls = true;
 
   private class MeshEntry
   {
@@ -67,9 +66,14 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     EditorGUILayout.LabelField("Blendshape Controller Generator", EditorStyles.boldLabel);
 
-    avatarRoot = (GameObject)EditorGUILayout.ObjectField("Avatar", avatarRoot, typeof(GameObject), true);
+    avatarRoot = (GameObject)EditorGUILayout.ObjectField("Animation Root", avatarRoot, typeof(GameObject), true);
 
-    EditorGUILayout.HelpBox("Binding path uses the Avatar-to-Target relative path (Target must be a descendant of the Avatar).", MessageType.Info);
+    EditorGUILayout.HelpBox("Bindings are relative to the Animation Root. Targets must be under this root.", MessageType.Info);
+    if (BlendshapeAvatarIntegration.Installer != null)
+      installAvatarControls = EditorGUILayout.Toggle("Install MA Controls", installAvatarControls);
+    EditorGUILayout.HelpBox(!installAvatarControls || BlendshapeAvatarIntegration.Installer == null
+      ? "Unity asset generation: assign the generated controller to an Animator on the Animation Root. Install VRChat Avatars SDK 3.7.3+ and Modular Avatar 1.13+ to also create avatar menus and FX installation."
+      : "Modular Avatar integration active: generation also installs expression menus, parameters and the FX controller on the Animation Root.", MessageType.Info);
 
     EditorGUILayout.BeginHorizontal();
     EditorGUILayout.LabelField("Output Folder", GUILayout.MaxWidth(80));
@@ -147,10 +151,10 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
       EditorGUILayout.EndHorizontal();
 
-      EditorGUILayout.HelpBox("Scan Filter: the filter matches GameObject names under the Avatar. Leave empty for no filtering.", MessageType.Info);
+      EditorGUILayout.HelpBox("Scan Filter: the filter matches GameObject names under the Animation Root. Leave empty for no filtering.", MessageType.Info);
 
       EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.LabelField("Meshes to generate (choose from Avatar or add manually)", EditorStyles.label);
+      EditorGUILayout.LabelField("Meshes to generate (choose from the Animation Root or add manually)", EditorStyles.label);
 
       if (GUILayout.Button("Add", GUILayout.Width(60)))
       {
@@ -354,7 +358,7 @@ public class BlendshapeControllerGenerator : EditorWindow
 
     if (avatarRoot == null)
     {
-      EditorGUILayout.HelpBox("Please specify an Avatar (used as the binding root).", MessageType.Error);
+      EditorGUILayout.HelpBox("Please specify an Animation Root.", MessageType.Error);
     }
 
     EditorGUILayout.Space();
@@ -378,7 +382,7 @@ public class BlendshapeControllerGenerator : EditorWindow
           var rel = GetRelativePath(avatarRoot.transform, mr.transform);
           if (rel == null)
           {
-            EditorUtility.DisplayDialog("Invalid Avatar", "One or more selected meshes are not descendants of the Avatar. Ensure Avatar is ancestor of the mesh.", "OK");
+            EditorUtility.DisplayDialog("Invalid Animation Root", "One or more selected meshes are outside the Animation Root. Choose their common ancestor as the root.", "OK");
             return;
           }
         }
@@ -392,7 +396,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     error = null;
     if (avatarRoot == null || EditorUtility.IsPersistent(avatarRoot))
-      error = "Select an Avatar instance in a scene.";
+      error = "Select an Animation Root instance in a scene.";
     else if (!IsSafeOutputFolder(outputFolder))
       error = "Output Folder must be a project Assets path without empty, '.' or '..' segments.";
     else if (string.IsNullOrEmpty(blendshapePropertyPrefix))
@@ -411,7 +415,7 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
       if (GetRelativePath(avatarRoot.transform, entry.renderer.transform) == null)
       {
-        error = "Every selected renderer must be inside the selected Avatar.";
+        error = "Every selected renderer must be inside the selected Animation Root.";
         return false;
       }
       for (var current = entry.renderer.transform; current != avatarRoot.transform; current = current.parent)
@@ -822,14 +826,23 @@ public class BlendshapeControllerGenerator : EditorWindow
       }
     }
 
-    CreateMAMenu(avatarRoot, baseControllerNameForMenu, controllerPath, meshPrefix, names, sels, types, meshName);
+    var controls = new List<BlendshapeGeneratedControl>();
+    for (int i = 0; i < names.Count; i++)
+    {
+      if (!sels[i]) continue;
+      controls.Add(new BlendshapeGeneratedControl(names[i], parameterPrefix + meshPrefix + safeNames[i],
+        types != null && types.Count == names.Count && types[i] == BlendParamType.Bool));
+    }
+    if (installAvatarControls)
+      BlendshapeAvatarIntegration.Installer?.Install(new BlendshapeGenerationResult(
+        avatarRoot, controller, baseControllerNameForMenu, meshName, controls));
     pendingGenerationFolder = null;
 
     EditorUtility.SetDirty(controller);
     AssetDatabase.SaveAssets();
     AssetDatabase.Refresh();
 
-    string shownPath = computedRelative != null ? (computedRelative + " (relative to Avatar)") : "(bound to target object)";
+    string shownPath = computedRelative != null ? (computedRelative + " (relative to Animation Root)") : "(bound to target object)";
     Debug.Log("Generated Animator Controller and clips in: " + meshSubFolder + " Binding path used: '" + shownPath + "'");
     return false;
   }
@@ -854,191 +867,6 @@ public class BlendshapeControllerGenerator : EditorWindow
   {
     var arr = (s ?? "").Select(c => (char.IsLetterOrDigit(c) ? c : '_')).ToArray();
     return arr.Length == 0 ? "Item" : new string(arr);
-  }
-
-  private void CreateMAMenu(GameObject avatarRoot, string menuIdentity, string controllerPath,
-    string meshPrefix, List<string> names, List<bool> selected, List<BlendParamType> types,
-    string displayName)
-  {
-    var safeNames = BuildParameterSuffixes(names);
-    var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-    if (controller == null) throw new InvalidOperationException("Generated controller could not be loaded.");
-    var top = FindDirectChild(avatarRoot.transform, "Blendshapes Menu");
-    if (top == null) top = CreateChild(avatarRoot.transform, "Blendshapes Menu").transform;
-    EnsureComponent<ModularAvatarMenuInstaller>(top.gameObject);
-    ConfigureSubmenu(top.gameObject, "Blendshapes");
-
-    var existing = FindDirectChild(top, menuIdentity);
-    if (existing == null)
-    {
-      // Recognize a menu from the old name-only generator by its animation target,
-      // so the first regeneration does not leave two active controllers behind.
-      var legacy = FindDirectChild(top, displayName);
-      var oldMerge = legacy != null ? legacy.GetComponent<ModularAvatarMergeAnimator>() : null;
-      var targetPaths = GetBlendshapeBindingPaths(controller);
-      if (oldMerge != null && targetPaths.Count > 0 &&
-          targetPaths.SetEquals(GetBlendshapeBindingPaths(oldMerge.animator)))
-        existing = legacy;
-    }
-
-    var menu = CreateChild(top, menuIdentity + " (building)");
-    try
-    {
-      ConfigureSubmenu(menu, displayName);
-      var parameters = Undo.AddComponent<ModularAvatarParameters>(menu);
-      // Reserve directories first: shapes "Face" and "Face/Smile" must coexist.
-      for (int i = 0; i < names.Count; i++)
-      {
-        if (!selected[i]) continue;
-        EnsureMenuDirectories(menu.transform, MenuSegments(names[i]).SkipLast(1));
-      }
-      for (int i = 0; i < names.Count; i++)
-      {
-        if (!selected[i]) continue;
-        string paramName = parameterPrefix + meshPrefix + safeNames[i];
-        var parts = MenuSegments(names[i]);
-        var parent = EnsureMenuDirectories(menu.transform, parts.SkipLast(1));
-        var node = CreateUniqueChild(parent, parts.LastOrDefault() ?? safeNames[i]);
-        var item = Undo.AddComponent<ModularAvatarMenuItem>(node);
-        bool isBool = types != null && types.Count == names.Count && types[i] == BlendParamType.Bool;
-        item.label = parts.LastOrDefault() ?? names[i];
-        item.PortableControl.Type = isBool ? PortableControlType.Toggle : PortableControlType.RadialPuppet;
-        item.PortableControl.Parameter = isBool ? paramName : "";
-        item.PortableControl.SubParameters = isBool
-          ? ImmutableList<string>.Empty : ImmutableList.Create(paramName);
-        item.PortableControl.Value = isBool ? 1 : 0;
-        item.automaticValue = false;
-        item.isSaved = true;
-        item.isSynced = true;
-        item.isDefault = false;
-        EditorUtility.SetDirty(item);
-        parameters.parameters.Add(new ParameterConfig
-        {
-          nameOrPrefix = paramName,
-          remapTo = "",
-          internalParameter = false,
-          isPrefix = false,
-          syncType = isBool ? ParameterSyncType.Bool : ParameterSyncType.Float,
-          localOnly = false,
-          defaultValue = 0,
-          saved = true,
-          hasExplicitDefaultValue = true
-        });
-      }
-      var merge = Undo.AddComponent<ModularAvatarMergeAnimator>(menu);
-      merge.animator = controller;
-      merge.pathMode = MergeAnimatorPathMode.Relative;
-      merge.relativePathRoot = new AvatarObjectReference();
-      merge.relativePathRoot.Set(avatarRoot);
-      merge.mergeAnimatorMode = MergeAnimatorMode.Append;
-      merge.layerType = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor.AnimLayerType.FX;
-      merge.matchAvatarWriteDefaults = true;
-      EditorUtility.SetDirty(merge);
-      EditorUtility.SetDirty(parameters);
-
-      if (existing != null)
-      {
-        RemoveLegacyParameters(top.gameObject, existing, menu.transform);
-        Undo.DestroyObjectImmediate(existing.gameObject);
-      }
-      menu.name = menuIdentity;
-      PrefabUtility.RecordPrefabInstancePropertyModifications(top.gameObject);
-      UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(avatarRoot.scene);
-    }
-    catch
-    {
-      Undo.DestroyObjectImmediate(menu);
-      throw;
-    }
-  }
-
-  private static HashSet<string> GetBlendshapeBindingPaths(RuntimeAnimatorController controller)
-  {
-    return controller == null ? new HashSet<string>() : new HashSet<string>(controller.animationClips
-      .SelectMany(AnimationUtility.GetCurveBindings)
-      .Where(binding => binding.type == typeof(SkinnedMeshRenderer) &&
-        binding.propertyName.StartsWith("blendShape.", StringComparison.Ordinal))
-      .Select(binding => binding.path));
-  }
-
-  private static void RemoveLegacyParameters(GameObject top, Transform oldMenu, Transform replacement)
-  {
-    var legacyParameters = top.GetComponent<ModularAvatarParameters>();
-    var merge = oldMenu.GetComponent<ModularAvatarMergeAnimator>();
-    var controller = merge != null ? merge.animator as AnimatorController : null;
-    if (legacyParameters == null || controller == null) return;
-    var names = new HashSet<string>(controller.parameters.Select(parameter => parameter.name));
-    // Keep parameters still consumed by other generated controllers.
-    foreach (Transform sibling in top.transform)
-    {
-      if (sibling == oldMenu || sibling == replacement) continue;
-      var other = sibling.GetComponent<ModularAvatarMergeAnimator>();
-      if (other != null && other.animator is AnimatorController otherController)
-        names.ExceptWith(otherController.parameters.Select(parameter => parameter.name));
-    }
-    Undo.RecordObject(legacyParameters, "Migrate blendshape parameter declarations");
-    legacyParameters.parameters.RemoveAll(parameter => !parameter.isPrefix && names.Contains(parameter.nameOrPrefix));
-    EditorUtility.SetDirty(legacyParameters);
-    PrefabUtility.RecordPrefabInstancePropertyModifications(legacyParameters);
-  }
-
-  private static T EnsureComponent<T>(GameObject target) where T : Component
-  {
-    return target.GetComponent<T>() ?? Undo.AddComponent<T>(target);
-  }
-
-  private static void ConfigureSubmenu(GameObject target, string label)
-  {
-    var item = EnsureComponent<ModularAvatarMenuItem>(target);
-    Undo.RecordObject(item, "Configure blendshape submenu");
-    item.label = label;
-    item.PortableControl.Type = PortableControlType.SubMenu;
-    item.PortableControl.Parameter = "";
-    item.PortableControl.SubParameters = ImmutableList<string>.Empty;
-    item.automaticValue = false;
-    item.MenuSource = SubmenuSource.Children;
-    EditorUtility.SetDirty(item);
-    PrefabUtility.RecordPrefabInstancePropertyModifications(item);
-  }
-
-  private static Transform EnsureMenuDirectories(Transform parent, IEnumerable<string> parts)
-  {
-    foreach (var part in parts)
-    {
-      var child = FindDirectChild(parent, part);
-      if (child == null) child = CreateChild(parent, part).transform;
-      ConfigureSubmenu(child.gameObject, part);
-      parent = child;
-    }
-    return parent;
-  }
-
-  private static string[] MenuSegments(string name)
-  {
-    return name.Split('/').Select(part => part.Trim()).Where(part => part.Length > 0).ToArray();
-  }
-
-  private static Transform FindDirectChild(Transform parent, string name)
-  {
-    foreach (Transform child in parent)
-      if (child.name == name) return child;
-    return null;
-  }
-
-  private static GameObject CreateChild(Transform parent, string name)
-  {
-    var result = new GameObject(name);
-    Undo.RegisterCreatedObjectUndo(result, "Create blendshape menu");
-    result.transform.SetParent(parent, false);
-    return result;
-  }
-
-  private static GameObject CreateUniqueChild(Transform parent, string name)
-  {
-    string candidate = name;
-    for (int i = 2; FindDirectChild(parent, candidate) != null; i++)
-      candidate = name + " (" + i + ")";
-    return CreateChild(parent, candidate);
   }
 
   private static string GetTransformPath(Transform t)

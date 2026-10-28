@@ -22,3 +22,6 @@ C# plugins and Python package scripts; earlier React/TypeScript conventions do n
   test exit statuses when capturing output.
 - Follow [Docs/Testing.md](Docs/Testing.md); distinguish syntax/package checks from
   Unity compilation and functional tests, and state what remains unrun.
+
+- Keep ordinary Unity logic independent of optional platform assemblies; use explicit adapters and actual package/version constraints. Installed SDK packages alone must not enable platform input semantics.
+- Preserve the real SDK `IEditorOnly` marker when available, and distinguish installed integrations from actual processing success before skipping fallback callbacks.

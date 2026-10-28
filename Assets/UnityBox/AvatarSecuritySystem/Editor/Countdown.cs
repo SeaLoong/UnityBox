@@ -9,11 +9,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSConfigData config;
-        public Countdown(AnimatorController controller, GameObject avatarRoot, ASSConfigData config)
+        private readonly IAnimatorBehaviourAdapter behaviours;
+        public Countdown(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, IAnimatorBehaviourAdapter behaviours)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
+            this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
         public void Generate()
         {
@@ -50,7 +52,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 250, 0));
             timeUpState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
             timeUpState.writeDefaultValues = true;
-            Utils.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
+            behaviours.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Countdown_Release"),
                 new Vector3(200, 300, 0));
@@ -69,8 +71,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Countdown layer created, duration: {duration}s, warning threshold: {config.warningThreshold:F1}s");
             int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
-            Utils.AddDisableSelfLayerControl(unlockedState, layerIndex, "ASS_Countdown/Unlocked");
-            Utils.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_Countdown/Release");
+            behaviours.AddDisableSelfLayerControl(unlockedState, layerIndex, "ASS_Countdown/Unlocked");
+            behaviours.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_Countdown/Release");
         }
         public void GenerateAudioLayer()
         {
@@ -123,7 +125,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, beepClip);
             if (config.warningBeep != null)
             {
-                Utils.AddPlayAudioBehaviour(beepState,
+                behaviours.AddPlayAudioBehaviour(beepState,
                     GO_AUDIO_WARNING,
                     config.warningBeep);
             }
@@ -147,7 +149,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Warning audio layer created: waiting={warningStartTime}s, beeping={warningThreshold}s");
             int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
-            Utils.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_Audio/Release");
+            behaviours.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_Audio/Release");
         }
         private AnimationClip CreateCountdownClip(float duration)
         {

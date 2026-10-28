@@ -2,7 +2,7 @@
   "name": "top.sealoong.unitybox.advanced-costume-controller",
   "displayName": "高级服装控制器 (Advanced Costume Controller)",
   "version": "0.4.13",
-  "description": "VRChat 服装切换编辑器工具，支持 Modular Avatar 菜单、部件控制、混搭和参数压缩。 VRChat outfit switching editor with Modular Avatar menus, parts, mixer, and parameter compression.",
+  "description": "Unity 服装、部件、变体和混搭动画生成器；可选 VRChat / Modular Avatar 菜单、FX 安装与网络参数压缩。 Unity costume animation generation with optional VRChat and Modular Avatar integration.",
   "unity": "2022.3",
   "author": {
     "name": "SeaLoong",
@@ -17,8 +17,5 @@
     "costume",
     "outfit"
   ],
-  "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.0",
-    "nadena.dev.modular-avatar": ">=1.18.0"
-  }
+  "vpmDependencies": {}
 }

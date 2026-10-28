@@ -2,7 +2,7 @@
   "name": "top.sealoong.unitybox.build-pipeline-logger",
   "displayName": "Build Pipeline Logger",
   "version": "0.1.0",
-  "description": "A VRChat avatar editor tool for logging and monitoring the build pipeline process.",
+  "description": "A Unity editor tool for logging asset import and build callbacks, with optional VRChat and NDMF integrations.",
   "unity": "2022.3",
   "author": {
     "name": "SeaLoong",
@@ -16,8 +16,5 @@
     "editor",
     "build",
     "logger"
-  ],
-  "vpmDependencies": {
-    "com.vrchat.avatars": ">=3.7.0"
-  }
+  ]
 }

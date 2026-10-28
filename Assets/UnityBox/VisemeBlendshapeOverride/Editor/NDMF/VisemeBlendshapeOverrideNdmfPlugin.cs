@@ -23,10 +23,15 @@ namespace UnityBox.VisemeBlendshapeOverride
         {
             InPhase(BuildPhase.Transforming)
                 .AfterPlugin("nadena.dev.modular-avatar")
-                .WithRequiredExtension(typeof(AnimatorServicesContext), seq => seq.Run("VisemeBlendshapeOverride/Apply", ctx =>
+                .WithCompatibleExtensions(new[] { typeof(AnimatorServicesContext), typeof(VirtualControllerContext) }, seq => seq.Run("VisemeBlendshapeOverride/Apply", ctx =>
                 {
                     VisemeBlendshapeOverrideNdmfProcessor.ProcessAvatar(ctx);
                 }));
+            InPhase(BuildPhase.Optimizing).Run("VisemeBlendshapeOverride/RemoveAuthoringComponents", ctx =>
+            {
+                foreach (var component in ctx.AvatarRootObject.GetComponentsInChildren<VisemeBlendshapeOverrideComponent>(true))
+                    UnityEngine.Object.DestroyImmediate(component);
+            });
         }
     }
 
@@ -37,12 +42,52 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (context == null || context.AvatarRootObject == null)
                 return;
 
-            if (!VisemeBlendshapeOverrideProcessor.TryCreateBuildPlan(context.AvatarRootObject, out var plan))
+            if (!VisemeBlendshapeOverrideVrcProcessor.TryCreateBuildPlan(context.AvatarRootObject, out var plan))
                 return;
 
-            var animatorServices = context.Extension<AnimatorServicesContext>();
+            // Merely installing this plugin must not activate NDMF animator services.
+            // They can enable Descriptor customization even when there is no valid plan.
+            var descriptor = context.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
+            var animatorServices = GetActiveExtension<AnimatorServicesContext>(context);
+            var ownsAnimatorServices = animatorServices == null;
+            var ownsControllers = GetActiveExtension<VirtualControllerContext>(context) == null;
+            try
+            {
+                if (ownsControllers)
+                    VisemeBlendshapeOverrideVrcUtils.DiscardInactiveLayerAssignments(descriptor);
+                if (ownsAnimatorServices)
+                    animatorServices = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+                ProcessVirtual(context, plan, descriptor, animatorServices);
+            }
+            finally
+            {
+                try
+                {
+                    if (ownsAnimatorServices)
+                        context.DeactivateExtensionContext<AnimatorServicesContext>();
+                }
+                finally
+                {
+                    if (ownsControllers)
+                        context.DeactivateExtensionContext<VirtualControllerContext>();
+                }
+            }
+        }
+
+        private static T GetActiveExtension<T>(BuildContext context) where T : class, IExtensionContext
+        {
+            // NDMF has no TryGetExtension API; Extension throws if the context is absent.
+            // Activation failures are deliberately not caught by this lookup.
+            try { return context.Extension<T>(); }
+            catch (Exception) { return null; }
+        }
+
+        private static void ProcessVirtual(BuildContext context,
+            VisemeBlendshapeOverrideProcessor.BuildPlan plan, VRCAvatarDescriptor descriptor,
+            AnimatorServicesContext animatorServices)
+        {
             // NDMF only commits controllers into Descriptor entries that already exist.
-            VisemeBlendshapeOverrideUtils.EnsureFxLayer(plan.Descriptor);
+            VisemeBlendshapeOverrideVrcUtils.EnsureFxLayer(descriptor);
             if (!animatorServices.ControllerContext.Controllers.TryGetValue(VRCAvatarDescriptor.AnimLayerType.FX, out var fxController) || fxController == null)
             {
                 fxController = VirtualAnimatorController.Create(
@@ -61,9 +106,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             var virtualPath = animatorServices.ObjectPathRemapper.GetVirtualPathForObject(plan.TargetRenderer.gameObject);
             GenerateVirtualLayer(fxController, virtualPath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
 
-            plan.Descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
-            EditorUtility.SetDirty(plan.Config);
-            EditorUtility.SetDirty(plan.Descriptor);
+            descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
+            UnityEngine.Object.DestroyImmediate(plan.Config);
+            EditorUtility.SetDirty(descriptor);
         }
 
         private static void EnsureVirtualVisemeParameter(VirtualAnimatorController controller)

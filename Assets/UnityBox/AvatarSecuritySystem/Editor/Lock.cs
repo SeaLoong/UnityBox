@@ -3,7 +3,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System.Collections.Generic;
 using static UnityBox.AvatarSecuritySystem.Editor.Constants;
-using VRC.SDK3.Avatars.Components;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
     public class Lock
@@ -11,11 +10,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSConfigData config;
-        public Lock(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, VRCAvatarDescriptor descriptor)
+        private readonly IAnimatorBehaviourAdapter behaviours;
+        public Lock(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, IAnimatorBehaviourAdapter behaviours)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
+            this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
         public void Generate()
         {
@@ -159,7 +160,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log("[ASS] Initial lock layer created");
             int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
-            Utils.AddDisableSelfLayerControl(unlockedState, layerIndex, "ASS_Lock/Unlocked");
+            behaviours.AddDisableSelfLayerControl(unlockedState, layerIndex, "ASS_Lock/Unlocked");
         }
         #region Private Methods
         private AnimationClip CreateLockClip()

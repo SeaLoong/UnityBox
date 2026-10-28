@@ -1,0 +1,23 @@
+{
+  "name": "UnityBox.AdvancedCostumeController.Core",
+  "rootNamespace": "UnityBox.AdvancedCostumeController",
+  "references": [
+    "UnityBox.AdvancedCostumeController.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.3",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "1.18.0",
+      "define": "MODULAR_AVATAR_AVAILABLE"
+    }
+  ]
+}

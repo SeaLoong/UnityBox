@@ -22,8 +22,7 @@ namespace UnityBox.AvatarColliderMonitor
       InPhase(phase).Run("Observe_" + name, ctx =>
       {
         if (!AvatarColliderMonitor.IsEnabled) return;
-        var descriptor = ctx.AvatarRootObject.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
-        AvatarColliderMonitor.RecordSnapshot(descriptor, "NDMF-" + name, "Observation");
+        AvatarColliderMonitor.RecordSnapshot(ctx.AvatarRootObject, "NDMF-" + name, "Observation");
       });
     }
   }

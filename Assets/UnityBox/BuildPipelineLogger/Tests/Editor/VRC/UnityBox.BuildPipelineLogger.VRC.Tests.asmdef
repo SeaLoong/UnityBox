@@ -1,0 +1,27 @@
+{
+  "name": "UnityBox.BuildPipelineLogger.VRC.Tests",
+  "references": [
+    "UnityBox.BuildPipelineLogger",
+    "UnityBox.BuildPipelineLogger.VRC",
+    "VRC.SDKBase",
+    "VRC.SDKBase.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITYBOX_VRCSDK",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "",
+      "define": "UNITYBOX_VRCSDK"
+    }
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

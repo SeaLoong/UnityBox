@@ -93,7 +93,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public static string GO_CLOTH_PREFIX = DefaultNames.ClothPrefix;
         public static string GO_SHADER_MAT_PREFIX = DefaultNames.ShaderMatPrefix;
 
-        internal static void ApplyObfuscation()
+        public static void ApplyObfuscation()
         {
             PARAM_PASSWORD_CORRECT = Obfuscator.Param("PARAM_PASSWORD_CORRECT", DefaultNames.ParamPasswordCorrect);
             PARAM_TIME_UP = Obfuscator.Param("PARAM_TIME_UP", DefaultNames.ParamTimeUp);

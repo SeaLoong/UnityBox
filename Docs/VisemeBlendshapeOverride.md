@@ -1,113 +1,104 @@
 # Viseme Blendshape Override
 
-本工具通过 VRChat 内建 `Viseme` 与 `Voice` Animator 参数，在构建时生成自定义口型
-BlendShape 层。它接管已映射嘴型的输出权重，保留 VRChat 官方的口型输入来源。
+生成由 `Viseme` Int（0–14）与可选 `Voice` Float（0–1）驱动的口型 BlendShape Animator。
+核心只需要 Unity 2022.3，不做语音识别或自动采集麦克风；VRChat 适配使用平台提供的输入。
+包内 [README](../Assets/UnityBox/VisemeBlendshapeOverride/README.md) 说明程序集及 API。
 
-## 依赖和入口
+## 依赖与入口
 
-| 项目 | 当前要求 |
+| 内容 | 条件 |
 | --- | --- |
-| Unity | 2022.3 |
-| VRChat Avatars SDK | >= 3.7.0 |
-| VPM 包 | `top.sealoong.unitybox.viseme-blendshape-override` |
-| NDMF | VPM 安装要求 >= 1.7.0 |
-| 组件入口 | Avatar Root 的 Add Component > UnityBox > Viseme Blendshape Override |
+| 配置、Inspector、Controller/Clip 生成 | Unity 2022.3 |
+| Descriptor 默认值、SDK 构建回退 | VRChat Avatars ≥3.7 |
+| NDMF 虚拟 FX | 上述 SDK + NDMF ≥1.7 |
+| 包名 | `top.sealoong.unitybox.viseme-blendshape-override` |
 
-NDMF 1.5 没有当前使用的 Animator Services API。手动复制源码且没有兼容 NDMF 的
-项目会走 SDK 预处理回退。回退只支持持久化 `AnimatorController`；遇到
-`AnimatorOverrideController` 会终止该处理并报告错误，应改用 NDMF 构建路径。
+包不强制安装 SDK/NDMF，缺少时只排除平台适配和对应测试程序集。NDMF 1.5 不具备此处使用
+的 Animator Services API。组件入口为 Add Component > UnityBox > Viseme Blendshape Override。
 
-## 配置步骤
+## 普通 Unity 使用
 
-1. 在有 `VRCAvatarDescriptor` 的 Avatar Root 上添加组件并保持启用。
-2. 检查 Renderer。未指定时，编辑器初始化先找 Descriptor 的 Face Mesh，随后找 Avatar
-   内名为 Body 的 SkinnedMeshRenderer，最后取其它候选。已经指定的 Renderer 不会
-   因 Descriptor 后续更改而自动切换；需要时手动重新指定。
-3. 设置全局 Weight 和 Voice Mode，再逐行检查 15 个 viseme 的映射。
-4. 对需要不同权重/Voice 区间的行启用 Custom Settings。
-5. 构建测试副本，检查最终 FX 和游戏内效果。
+1. 在计划放 Animator 的根对象添加组件，指定该根或其子对象的 SkinnedMeshRenderer。
+2. 逐行选择实际存在的 BlendShape，设置 Weight、Voice Mode 及 Custom Settings。
+3. 没有 Voice 输入时选择 Disabled；有输入则按实际数值检查 Min/Max。
+4. 点击 **Generate Controller Asset**，选择新资产位置；按钮不覆盖已有 Controller。
+5. 将结果分配给根对象 Animator，由项目脚本设置 Viseme/Voice。
 
-Renderer 必须属于当前 Avatar，并且 sharedMesh 中存在对应 BlendShape。组件放在
-Root 的子对象上不会被当前构建入口发现；禁用组件会直接跳过。没有任何有效映射时
-只报告警告并跳过，不会把 Descriptor 改成 VisemeParameterOnly。
+代码调用 `TryCreateBuildPlan(root, out plan)` 后用 `BuildController(controller, plan)`。
+BuildController 明确修改调用者提供、保存在 Assets 中的控制器，重建保留名称的层和子
+资产。需保留原控制器时先复制。单纯添加组件不会自动提供输入服务。
 
-## 映射语义
+## VRChat 配置
 
-| 下拉框值 | 结果 |
+在 Descriptor 所在 Avatar Root 添加并启用组件。Renderer 留空时优先取 Descriptor Face
+Mesh；编辑器默认选择随后还可查找 Body/其它候选。显式指定的 Renderer 不因 Descriptor
+之后更改而自动替换；它必须属于当前 Avatar 且 sharedMesh 有所选 BlendShape。
+
+| 映射值 | 行为 |
 | --- | --- |
-| Avatar Descriptor | 组件存储空映射，每次构建读取 Descriptor 对应 viseme 的名字 |
-| None | 显式禁用该行，不回退到 Descriptor |
-| 具体 BlendShape | 使用该名字；目标 Mesh 缺少它时警告并把该行视为无映射 |
+| Platform default（旧界面 Avatar Descriptor） | 保持空映射，每次构建读取平台默认；无适配时无输出 |
+| None | 显式禁用该行，不回退 |
+| 具体名字 | 固定覆盖；Mesh 缺少该名字时警告并视为无映射 |
 
-打开 Inspector 不会把继承值固定为当前名字。显式 Renderer 与 Descriptor Face Mesh
-不同时，继承的名字仍来自 Descriptor，因此需要确认这些名字也存在于目标 Mesh。
-UI 显示小写口型名称，内部保持 VRChat 的枚举值（例如 `PP / FF / aa / oh`）。
+打开 Inspector 不固化继承值。显式 Renderer 与 Descriptor Face 不同，继承名字仍来自
+Descriptor，需要确认目标 Mesh 也有这些名字。禁用组件、无效 Renderer 或全部无映射会
+跳过，只有成功生成后才切换构建对象 Lip Sync 为 VisemeParameterOnly。
 
-## 权重与 Voice
+## Weight、Voice 与输出
 
-全局 Weight 范围为 0–100，默认 100。Voice 默认 Linear，区间默认 Min=0、Max=1。
-该区间是插件自己的缩放阈值，不是对 VRChat 音频检测器的配置。
+Weight 范围0–100，默认100；Voice默认Linear，Min=0、Max=1。这是插件缩放阈值，不是
+VRChat音频检测器配置。Disabled 使用固定Weight；Linear 在Min以下输出0、Min到Max
+线性增加、Max以上输出Weight。每行Custom Settings关闭时继承全部全局设置，开启后
+可指定独立Weight，并选择Global/Disabled/Linear。非法阈值限制在0–1且保持Min<Max。
 
-| Voice 设置 | 输出 |
-| --- | --- |
-| Disabled | 当前 viseme 使用固定 Weight |
-| Linear | Voice <= Min 时输出 0；Min 到 Max 之间线性增加；Voice >= Max 时输出 Weight |
-| 每行 Global | 仅在 Custom Settings 中可选，继承全局 Voice 模式与阈值 |
+生成层名 `Viseme Blendshape Override`，包含15状态。每个状态归零本插件控制的其它
+嘴型，再输出当前映射权重；未映射的BlendShape不写入。Voice状态用1D BlendTree。
+没有额外平滑滤波。Write Defaults Auto根据已有FX做启发式选择，也可指定On/Off；同一
+BlendShape被其它动画驱动时，检查最终层顺序、权重与WD，不能仅凭生成成功判定兼容。
 
-Custom Settings 关闭时，该行全部使用全局设置；开启时使用该行 Weight，并按其
-Voice Mode 选择全局或独立的 Voice 行为。阈值会限制在 0–1 内并确保 Min < Max；
-例如 Min=Max=1 会被归一化为两个不同阈值。没有额外平滑或延迟滤波。
+## NDMF 与 SDK 交接
 
-调参应先降低整体 Weight，再检查 Voice 的可用范围。元音与辅音可以使用不同权重
-和阈值，但不存在适合所有模型/麦克风的固定推荐值；以测试 Avatar 的实际输入为准。
+NDMF在Transforming阶段排在MA之后，使用ObjectPathRemapper解析虚拟路径；缺FX时
+创建控制器及可接收提交的Descriptor条目。没有配置、禁用配置或无有效plan时不激活
+AnimatorServices，也不改Descriptor；有效plan才按需启用。复用其它插件已激活的服务
+不会将其关闭，仅释放本插件本次启用的上下文。
 
-## 构建结果
+SDK不再仅凭“已安装NDMF”跳过。关闭NDMF Apply on Build/Play或本次没有执行NDMF时，
+SDK仍处理；NDMF和SDK只有成功后才消费构建对象配置，以此防止重复生成。回退失败返回
+false并保留配置供重试。直接ProcessAvatar API保留配置，供调用者明确再次生成。
 
-层名为 `Viseme Blendshape Override`。它使用 `Viseme` Int 参数切换 15 个状态；
-启用 Voice 缩放的状态使用 `Voice` Float 参数控制 1D BlendTree。每个状态重置本插件
-控制的其它嘴型，再输出当前映射权重。未被映射的 BlendShape 不加入此层的绑定。
-成功生成后，构建对象的 Lip Sync 切为 `VisemeParameterOnly`。
+SDK回退复制持久化AnimatorController或创建新FX，保存状态、过渡、树和Clip子资产。
+同一资产文件内存在多个Controller时按所选Controller的localFileID映射副本，不再误用
+主Controller。AnimatorOverrideController不支持，明确报错，不能丢弃覆盖关系。输出每次独立保存在
+`Assets/UnityBox/VisemeBlendshapeOverride/Generated/`，不覆盖或自动删除旧结果。
 
-**NDMF 路径**：在 Transforming 阶段显式排在 Modular Avatar 之后，向虚拟 FX 添加层，
-通过 ObjectPathRemapper 取得对象虚拟路径。FX 不存在时会创建虚拟控制器，并保证
-Descriptor 中存在可接收提交的 FX 条目。这个顺序约束不代表已在所有第三方插件之后；
-后续优化器与其它口型插件的组合仍须检查最终产物。
+Descriptor原customizeAnimationLayers=false时，数组里残留的Controller/Mask不是有效
+输入。SDK回退或本插件首次启用NDMF服务前，先在构建对象恢复这些层的默认状态，再增加
+口型FX，避免同时激活旧动画。源Controller/Mask资产不被改写。这是修复后有意的行为变化，
+不是将原来关闭的自定义层自动迁移为启用。
 
-**SDK 回退路径**：开启 Descriptor 自定义动画层，复制现有持久化 FX 或创建新 FX。
-每次生成独立资产，状态、过渡、BlendTree 和动画保存为控制器子资产；不复用或覆盖
-上一次生成的控制器。输出位于 `Assets/UnityBox/VisemeBlendshapeOverride/Generated/`，
-特殊 Avatar 名称不会被解释成相对目录或反斜线目录。
+安装真实SDK Base≥3.7时组件保留其IEditorOnly标记；适配也显式清理构建副本配置。
+这些步骤不意味着普通Unity源对象会自动删除组件，直接构建API也不是可撤销场景预览。
 
-Write Defaults 可选 Auto/On/Off。Auto 根据已有 FX 的状态判断，跳过部分必须使用
-WD On 的层/Direct BlendTree 情况；它是启发式选择，不是跨插件兼容保证。
-如果其它层驱动相同 BlendShape，应检查层顺序、权重和 Write Defaults。
+## 升级与清理
 
-## 禁用、迁移与清理
+原组件GUID、字段和口型0–14序列化值保留。公开代码枚举现为本包的
+`VisemeBlendshapeOverrideComponent.Viseme`；Descriptor入口搬到VrcProcessor/VrcUtils。
+外部调用者可能需要更新类型或asmdef引用。历史每行Voice格式没有通用整数迁移，需复核
+Custom Settings；不能把口型枚举值保持误解为所有旧字段都自动转换。
 
-禁用或删除组件会让之后的构建跳过生成，不会自动清理磁盘上的旧 Generated 资产，
-也不会替用户重设旧版本已经修改过的源 Avatar。若源 Avatar 仍引用旧插件控制器，
-需要恢复原 FX；若 Lip Sync 已被旧版本改成 VisemeParameterOnly，恢复所需模式和映射。
-确认无场景、Prefab 或其它资产引用后，再删除旧输出。
+禁用/删除组件不清理Generated，也不恢复旧版本已修改的源Avatar。若仍引用旧插件FX或
+Lip Sync仍是VisemeParameterOnly，先恢复需要的源设置；确认无场景/Prefab/其它引用后
+再删除旧资产。
 
-从早期序列化格式升级时，应复核每行 Custom Settings。旧的每行 Voice 枚举与当前
-Global/Disabled/Linear 的数值不同，当前代码不把旧枚举整数直接迁移到新字段，
-旧行会回到 Global。已有自定义 Renderer/BlendShape 名称仍需人工核对。
+## 回归与实测
 
-## 单元测试与实际项目复测
+当前声明39用例：核心9、SDK25、NDMF5。分别位于Tests/Editor/VisemeCoreTests.cs、
+Tests/Editor/VRChat/VisemeRegressionTests.cs和Tests/Editor/NDMF；需要真实依赖和
+Unity Test Framework，包安装时加入manifest testables。覆盖映射、曲线、资产保存、
+回退/去重/重试、原无效层以及动画服务生命周期。
 
-测试文件：`Assets/UnityBox/VisemeBlendshapeOverride/Tests/Editor/VisemeRegressionTests.cs`。
-在 Unity Test Framework 的 **EditMode** 运行
-`UnityBox.VisemeBlendshapeOverride.Tests.VisemeRegressionTests`。
-VPM 安装时把本包名加入项目 `Packages/manifest.json` 的 `testables`，保留其它已有项。
-
-回归覆盖组件禁用、Face/Body 默认选择、Descriptor 继承和显式 None、Voice 非法边界、
-输出曲线、状态/过渡持久化、重复构建的资产隔离、FX 条目补全、Override Controller
-拒绝处理及目录范围。当前云环境未执行 Unity 编译或 EditMode 测试。
-
-实际项目至少验证：
-
-1. NDMF/Modular Avatar 最终构建中，口型层存在并绑定正确 Renderer。
-2. SDK 回退中原 FX 资产不被改写，连续构建和同名 Avatar 的结果相互独立。
-3. `Viseme` 0–14、Voice 低于/处于/高于设定区间，以及 None 映射的行为。
-4. 禁用组件后新构建停止接管口型，源 Avatar 设置符合预期。
-5. 与其它 BlendShape 动画、Write Defaults 混用和 Animator 优化器的组合。
+2026-10-28真实SDK/NDMF闭包类型检查23程序集通过，报告位于
+`/workspace/unitybox-setup/unity/compile-viseme-identity-final-20261028/compile-report.json`。
+无Unity授权，导入/IL后处理/EditMode未执行。实际项目需验证Viseme0–14、Voice区间、
+无效映射、连续构建、NDMF开关、MA合并和其它口型/优化器的组合。总范围见[Testing](Testing.md)。

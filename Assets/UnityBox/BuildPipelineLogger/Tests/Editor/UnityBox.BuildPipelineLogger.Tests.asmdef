@@ -1,10 +1,7 @@
 {
   "name": "UnityBox.BuildPipelineLogger.Tests",
   "references": [
-    "UnityBox.BuildPipelineLogger",
-    "VRC.SDK3A",
-    "VRC.SDKBase",
-    "VRC.SDKBase.Editor"
+    "UnityBox.BuildPipelineLogger"
   ],
   "includePlatforms": [
     "Editor"

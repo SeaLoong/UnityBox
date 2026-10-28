@@ -1,10 +1,7 @@
 {
   "name": "UnityBox.AvatarColliderMonitor.Tests",
   "references": [
-    "UnityBox.AvatarColliderMonitor",
-    "VRC.SDK3A",
-    "VRC.SDKBase",
-    "VRC.SDKBase.Editor"
+    "UnityBox.AvatarColliderMonitor"
   ],
   "includePlatforms": [
     "Editor"

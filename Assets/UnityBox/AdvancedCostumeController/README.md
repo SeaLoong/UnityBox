@@ -1,16 +1,29 @@
 # Advanced Costume Controller（ACC）
 
-ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并生成 Modular Avatar 菜单和 FX Animator Controller。支持服装变体、部件独立控制、持久部件分组、材质变体和混搭模式（Custom Mixer）。
+ACC 从指定的**服装根节点（Costumes Root）**扫描服装，生成可在普通 Unity 使用的 Animator Controller 和动画。支持服装变体、部件独立控制、持久部件分组、材质变体和两种混搭模式（Custom Mixer）；安装可选集成后，还可生成 Modular Avatar 菜单、FX 安装和网络参数压缩。
 
 ## 前置条件
 
-- Unity 2022.3、VRChat SDK Avatars 3.7.0 或更高版本；
+普通动画生成只需 **Unity 2022.3**，包不再强制安装 SDK/MA。需要 Avatar 菜单、骨架安装和同步时，另外安装以下依赖：
+
+- Unity 2022.3、VRChat SDK Base/Avatars 3.7.3 或更高版本；
 - Modular Avatar **1.18.0 或更高版本**；
 - 服装根位于要处理的 Avatar 层级内。
 
 完整使用手册与开发说明见 [Docs/AdvancedCostumeController.md](../../../Docs/AdvancedCostumeController.md)。
 
-## 快速开始
+## 普通 Unity 动画生成
+
+1. 打开 **Tools > UnityBox > Advanced Costume Controller (Unity Assets)**。缺少 SDK/MA 时，原来的 **Advanced Costume Controller** 菜单也打开此窗口。
+2. 设置场景内的 **Costumes Root**、参数前缀和 `Assets/...` 输出目录，点击 **Scan / Refresh**。没有独立骨架时，在服装根对象添加 **ACC Outfit Marker**；三个 ACC 标记在普通 Unity 同样可用。
+3. 勾选服装组，按需开启 **Parts Control**、**Custom Mixer** 和独立混搭参数，指定默认服装或变体后点击 **Generate Unity Assets**。
+4. 将输出 Controller 赋给 **Costumes Root 上的 Animator**，通过项目自己的 UI 或脚本驱动参数。选择值从 0 连续编号；Animator 中的选择、部件和混搭参数使用 Float，以供 BlendTree 读取。
+
+此入口与 Avatar 工作流共用完整 Scanner、模型和 AnimationBuilder，包括部件/Mixer 与材质替换曲线。普通窗口提供服装组选择；更细的临时部件/变体选择可通过共享 `OutfitData` 模型传给 `UnityCostumeGenerator.Generate`，或使用完整 Avatar 窗口。材质替换规则可在 `ACCVariantMaterialOverride` 上编辑，自动对比转换 Inspector 仍属于 Avatar 集成。
+
+普通窗口默认输出到 `Assets/UnityBox/Generated/AdvancedCostumeControllerUnity`，与 Avatar 默认目录分开。每次生成保留旧资产，在场景/所属层级根/参数命名空间下创建新的 `Build` 子目录。此入口不会自动分配场景 Animator、安装 MA 菜单或执行 Setup Outfit。没有 SDK 时网络压缩不可用；已安装真实 SDK 时可生成 Parameter Driver，但表达式参数同步仍需 Avatar 工作流安装。普通游戏控制器应保持压缩关闭。
+
+## Avatar 工作流快速开始
 
 1. 打开 **Tools > UnityBox > Advanced Costume Controller**。
 2. 选择服装根节点，点击**刷新预览**。
@@ -23,7 +36,7 @@ ACC 用于从指定的**服装根节点（Costumes Root）**扫描服装，并�
 
 ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其对象名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；混搭启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 会按场景、Avatar 和参数前缀隔离到输出目录的专属子目录中，重新生成当前命名空间时会清理旧生成资产；关闭**自动生成菜单图标**时会保留该目录下已有的 `MenuIcons` 资产。
 
-## 配置项
+## Avatar 工作流配置项
 
 ### 服装根节点
 
@@ -226,7 +239,7 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 如果优先保证结构简单、便于调试，或项目已有足够同步参数预算，可以保持关闭。压缩主要用于同步参数较多，尤其是混搭槽位较多的 Avatar。
 
-## 安全与生成限制
+## Avatar 工作流的生成限制
 
 - 参数前缀必须包含字母或数字，并在同一 Avatar 上保持唯一；
 - 输出目录必须是 `Assets` 下的安全相对路径；
@@ -239,4 +252,10 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 含空格、标点等字符的旧参数名及输出目录可能改变。更新后重新 Generate，并检查原有自定义参数引用；VRChat 保存的相关菜单选择可能重置。旧目录不会自动迁移或删除，确认无引用后再清理。
 
-`Tests/Editor` 提供 19 个 EditMode 用例。需安装 Unity Test Framework；VPM 安装时将本包名加入项目 manifest 的 `testables`，再从 Test Runner 的 EditMode 运行。当前云端未执行 Unity 编译、这些用例、图标渲染或 VRChat 同步验证；详见完整手册的回归验证章节。
+`UnityBox.AdvancedCostumeController.Core` 包含真实扫描、完整动画生成、模型、选择算法、命名/路径及普通 Unity 窗口；原 Avatar 生成器调用同一实现。`Tests/Core/Editor` 共 **32** 个 EditMode 用例：规则和 Animator 辅助 18、扫描 7、完整生成 7。完整生成用例会创建实际资产并检查切换片段采样、Parts/Mixer、材质曲线、重复生成和错误路径。
+
+`UnityBox.AdvancedCostumeController.VRChat` 仅在真实 SDK Avatars >= 3.7 时启用，处理 Avatar 根识别和 Parameter Driver。完整 Avatar 编辑器、MA 扫描适配与原 `Tests/Editor` 的 **19** 个集成用例还要求 SDK Base/Avatars >= 3.7.3 与 MA >= 1.18。MA 使用的双参数 `VRCConstraintSource` 构造函数从 SDK 3.7.3 才可用；3.7.0～3.7.2 不满足这条集成路径。Runtime 标记始终可用；SDK Base 存在时才实现其真实 `IEditorOnly`，没有替代 SDK 类型。
+
+`Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。原 MonoBehaviour 路径/GUID 保留，迁移文件已有的 `.meta` 同步保留。已有 Avatar 项目继续保留 SDK/MA；普通 Unity 入口不迁移或卸载既有 MA 组件。
+
+在 Test Runner 的 EditMode 运行测试；VPM 安装时将本包名加入项目 manifest 的 `testables`。单元测试不替代图标渲染、MA 构建和 VRChat 同步验证；实际执行结果见仓库验证记录。

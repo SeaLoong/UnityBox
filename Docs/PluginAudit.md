@@ -1,71 +1,46 @@
-# 全仓插件审查与修复
+# 全仓插件审查
 
-本轮以 `master` 为基线，修复保存在 `refactor`，保留从 `temp` 带来的全部改动。审查覆盖 7 个插件的源码、
-配置 UI、依赖声明、生成与构建入口、资产引用，以及 VPM 发布流程。
-下面的“已修复”指代码修正完成；当前云环境没有 Unity Editor、许可证和完整
-VRChat 项目，不能据此宣称插件已经通过 Unity 编译或游戏内验证。
+`refactor` 覆盖七个插件的源码、UI、依赖、生成与构建入口、资产身份和 VPM 打包。
+已修复确定缺陷，并拆分可独立使用的 Unity 核心与可选 SDK/MA/NDMF 适配。逐项改动、
+升级后果和未解决边界见 [RefactorChanges](RefactorChanges.md)，程序集迁移见
+[DependencyArchitecture](DependencyArchitecture.md)。Animator Optimizer 在独立 feature
+分支，未合入本分支，也不能使用本报告的七包结果作为它的验证证据。
 
-## 各插件结果
+## 结论
 
-| 插件 | 已确认的问题与本轮修正 | 仍需关注 |
+| 插件 | 当前完成的工作 | 仍需实际验证/限制 |
 | --- | --- | --- |
-| Viseme Blendshape Override | NDMF 最低版本由 1.5 修正为实际所需的 1.7；使用虚拟路径映射，缺 FX 时创建；跳过禁用组件；优先 Descriptor 面部网格；修复映射继承、Voice 阈值重叠；SDK 回退启用动画层并隔离、保存生成资产 | 回退模式不支持 AnimatorOverrideController，现会明确报错；NDMF/MA 构建顺序及游戏内口型仍待测试 |
-| Advanced Costume Controller | 延续共享组根修复；修正 Mixer 使用过期分组/选择、同显示名菜单覆盖、参数和文件路径清洗碰撞；MA 实际最低版本为 1.18；补上材质变体转换前的匹配检查 | 含特殊字符的路径可能生成新参数名，需重新生成并重新设置已保存选择；图标渲染、Undo、完整构建仍待实测 |
-| Blendshape Controller Generator | 修复 Bool 反向无效、同名 mesh 输出互相覆盖、清洗后参数重名、菜单路径冲突、参数改型与取消选择残留；生成失败/取消保留旧控制器，不再吞掉 MA 集成异常；MA 最低版本修正为 1.13 | 新生成目录保留旧资产以支持旧引用/Undo，确认无引用后才能清理；新菜单和参数需重新生成 |
-| Prefab Diff Patcher | 修复部分选择重绘丢失、批量选择漏根组件、Transform 选中但不应用、父对象位移带来的局部坐标错误；比较与重映射覆盖嵌套字段和引用数组；保留覆盖输出的 GUID，阻止覆盖输入及非法输出路径 | 复杂第三方组件的自定义序列化及真实 Prefab 合并仍待测试 |
-| Avatar Collider Monitor | 修复设置开关；快照冻结对象路径/身份/配置并隔离不同 Avatar；SDK 使用实际构建对象采样；限制历史数量；将 NDMF 拆为可选装配 | 只提供声明清楚的阶段采样，没有可靠的 VRCFury 内部 feature 钩子，也没有 PhysBone 场景几何可视化 |
-| Build Pipeline Logger | shader/compute 去重状态按每次构建重置；NDMF 拆为可选装配；第三方名称的 callbackOrder 观察点不再冒充第三方插件真实执行日志 | Linker 回调仍未启用；相同 order 不能保证绝对前后顺序 |
-| Avatar Security System | 隔离原始 FX 和 ExpressionParameters 资产，保留第三方内存控制器；修复永不触发的手势错误条件、连续保持计时、超时竞争和空配置；新组件默认禁用主动 GPU 负载，Play Mode 跳过该负载 | 已有序列化配置不会自动迁移；主动负载的保护效果不成立为已验证结论，也不保证客户端稳定；见下述限制 |
+| ACC | 共享容器归属/祖先激活、Mixer 选择与分组、路径/参数/菜单碰撞、失败转换保护；完整 Unity 生成窗口与可选 MA 安装 | 图标、完整 Undo、压缩网络行为、MA 最终构建；旧输出可能要重新生成并检查参数保存值 |
+| Blendshape | Bool 反向、Renderer 身份、菜单/参数冲突、改型残留、失败原引用保护；无 SDK 完整生成，可选 MA Controls | 多 Controller 合并、总参数预算、同绑定冲突；旧 Build 保留后需手工清理 |
+| 口型 | 映射继承/None、Voice 阈值、FX 创建/持久化、虚拟路径、禁用组件；独立核心和真实 SDK/NDMF；SDK 按实际完成消费配置去重 | 游戏内输入、Write Defaults、后续优化顺序；OverrideController 回退明确不支持 |
+| ASS | 图条件/连续保持/超时、空配置；按实际完成状态交接、两路径源资产/复制身份与失败保护；独立图 API、默认禁用主动负载 | 原始缺失 metadata、NDMF 最终提交、多 Avatar 生成目录、释放层后动态重锁；无资源所有权保证 |
+| Prefab | 部分/批量选择、局部 Transform、嵌套/数组引用映射、输出 GUID/输入保护 | 第三方自定义序列化、复杂引用图、嵌套/Variant 继承不保证保留 |
+| Collider | 真实冻结快照、不同根隔离、设置与历史上限；普通 GameObject 3D/2D 和可选 SDK provider | 是阶段采样，无 PhysBone 几何或 VRCFury feature 内部钩子 |
+| Logger | 每次构建重置 shader 去重；普通 Unity 日志和独立平台回调 | callbackOrder 是观察位置；Linker 未启用，无第三方内部完整追踪 |
 
-更具体的功能与操作说明见各插件 README，以及 `Docs/AdvancedCostumeController.md`、
-`Docs/BlendshapeControllerGenerator.md`、`Docs/VisemeBlendshapeOverride.md`。
+SDK/MA/NDMF 不再是所有包的强制安装依赖。缺少它们时普通核心仍可编译；ASS 的完整手势
+运行行为和口型的输入来源仍由平台或调用者提供，没有伪造通用 Unity 平台服务。
+Runtime 配置保留已知 GUID，并在真实 SDK Base 可用时保留其 `IEditorOnly` 标记。
 
-## 发布与资源身份
+## 资产与发布
 
-旧流程把所有 `.meta` 从包中排除，连仓库已经保存的脚本 GUID 也丢弃。
-现在发布工具保留已有元数据，忽略生成目录；ASS 的实验脚本、固定 GUID 的测试
-资产和平台相关 bundle 不再混入正式安装包。实验源文件仍保留在仓库。
-各插件 Editor 回归测试源码继续随包提供。
+现有 `.meta` 随包保留，不再在安装时丢掉仓库已知 GUID。Generated、ASS 实验探针、固定
+GUID fixture 和平台 bundle 被排除，源码仓库仍保留实验；Editor 回归测试继续随包。
+ZIP 覆盖重建避免旧删除文件残留。未知原始脚本 GUID 不能从当前文件内容推导，仍需从原
+项目恢复；本轮新增的 Editor 文件元数据不声称恢复了以前未提交的身份。
 
-构建 ZIP 使用覆盖模式，避免再次构建时把已经删除的文件留在旧归档中。
-5 项 Python 测试验证 GUID 保留、实验排除、生成目录排除、旧文件移除和其他包
-测试资产的保留。
+ASS 主动 GPU 负载仅保留历史实现，不增强；新建/Reset 默认关闭，Play Mode 跳过。
+已有序列化配置不会自动迁移。名称混淆、已保存参数与动画路径探针不能证明资源所有权、
+通用防热上传或客户端稳定性。
 
-仓库仍缺少部分原始 `.meta`，例如 ASS 的 `Runtime/Component.cs.meta`。
-需要从原 Unity 开发项目恢复这些文件并纳入版本控制，才能保留已有场景/Prefab
-的脚本引用。不能凭空补一个新 GUID 来恢复原引用。`.gitignore` 已允许跟踪插件
-元数据；不会覆盖已知 GUID。用户原始大场景和实验二进制未因本轮审查重写。
+## 验证结论
 
-## ASS 的功能边界
+Unity 2022.3.22f1 已安装。实际测试启动因无许可证 exit 1，没有 NUnit XML；用户当前无
+授权。因此不能称全部插件已通过 Unity 测试或已证明可用。
 
-密码、锁定、反馈和构建资产隔离可独立于主动负载功能使用。Defense 当前实现
-包含高负载粒子/着色器，不能把它描述为可靠的防盗措施或安全的 Play Mode 测试。
-本轮未增强这类负载；新建/Reset 组件默认关闭它，已有配置需自行检查。
-`defaultEnableDefense` 配合关闭 Lock 的组合仍有参数注册缺口，本轮没有补强
-负载激活路径。动画路径探针只能验证特定包和替换行为，不能证明通用防热上传有效。
-
-## 验证与本地回归
-
-本轮已通过 5 项 Python 发布测试、7 个包实际构建及 ZIP/清单/SHA256 校验、
-当时所有 C# 文件语法解析、asmdef 的 JSON/仓库内装配引用检查，以及
-元数据 GUID 唯一性检查（后续新增用例不改变此处的执行边界）。已直接检查最终安装包保留口型组件原 GUID、
-排除 ASS 探针/bundle 并保留 Editor 回归测试。它们不替代 Unity 编译。
-新增的 EditMode 回归用例调用实际插件方法，但在此环境中尚未执行。
-
-建议本地依次执行：
-
-1. 恢复原项目元数据，在 Unity 2022.3 中安装各包声明的依赖，并检查 Console 编译错误。
-2. 安装 Unity Test Framework，在 Test Runner 的 EditMode 运行各插件 `Tests/Editor`。
-   按 VPM 包安装时，将需测试的包名加入项目 manifest 的 `testables`。
-3. 用自有测试 Avatar 分别跑 SDK 回退和 NDMF/Modular Avatar 构建。口型验证
-   `Viseme` 0–14、Voice 区间、Face/Body 共存、禁用组件及多次构建；服装验证
-   普通切换、两种 Mixer 参数模式、材质变体、撤销与重新生成。
-4. Prefab 合并使用副本，检查骨骼数组/嵌套引用、Transform、重复组件和保留 GUID；
-   监控工具连续构建两次并切换不同 Avatar，检查历史与日志。
-5. ASS 关闭主动负载，测试错误手势、连续保持、成功/超时边界和构建两次后的
-   原始资产引用，再做游戏内功能验证。
-
-在上述检查完成前，状态是“全仓代码审查与已确认缺陷修正完成，Unity 实测待执行”，
-不是“所有插件已证实可用”。
-
-各包文档与当前源码已同步；具体测试命令见 [测试指南](Testing.md)。Animator Optimizer 的独立审查在 `feat/animator-optimizer` 分支，不能将本报告的 7 包结果视为优化器已验证。
+2026-10-28最终源码的真实C#类型检查：无SDK核心闭包19个程序集、仅SDK40个，
+SDK3.8.2 + MA1.18 + NDMF1.11完整所需闭包55个。未修改第三方源码，但 Roslyn 检查不包含 Unity 导入、
+IL 后处理或运行时行为。共享工具 23 项 Python 测试与独立 5 项打包测试是其它验证层次。当前插件共声明177个
+用例（核心91、平台86），尚未实际执行。
+新增源码和交接修复的最终证据、用例清单及可执行命令见 [Testing](Testing.md)；环境安装、
+锁校验、许可边界和复用流程见 [UnityEnvironment](UnityEnvironment.md)。

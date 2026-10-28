@@ -41,10 +41,13 @@ SerializeReference 循环图、RectTransform 布局在所有场景中都得到�
 ## 单元测试与验证状态
 
 安装 Unity Test Framework，在 Test Runner 的 **EditMode** 运行
-`UnityBox.PrefabDiffPatcher.Tests.PrefabDiffRegressionTests`。
+`UnityBox.PrefabDiffPatcher.Editor.Tests` 程序集中的
+`UnityBox.PrefabDiffPatcher.Tests.PrefabDiffRegressionTests`。该程序集仅依赖本包和
+Unity Test Framework，独立 Unity 项目可运行。
 VPM 安装时，将本包名追加到 `Packages/manifest.json` 的 `testables`。
 
 测试覆盖 Transform 应用、未选项保留、克隆局部坐标、骨骼数组/嵌套引用重映射、
 未引入对象引用清理、精确数据比较、同名及特殊字符路径、输出 GUID 和输入路径保护。
 源码位于 `Tests/Editor/PrefabDiffRegressionTests.cs`。
-当前云环境完成了源代码和配置检查，尚未执行 Unity 编译、Prefab 保存或这些测试。
+测试覆盖不能代替真实 Prefab 保存验证；Unity 执行结果以实际 Test Runner 报告为准，
+源码和配置检查不代表测试通过。

@@ -4,44 +4,16 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
-using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace UnityBox.VisemeBlendshapeOverride
 {
-    public class VisemeBlendshapeOverridePreprocessCallback : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -10001;
 
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-#if NDMF_AVAILABLE
-            // When NDMF is present, the dedicated NDMF plugin applies the viseme layer on the virtual
-            // animator controller after other animator-merging plugins have finished. Running the fallback
-            // path as well would clone and dirty the source FX controller, and can leave users inspecting
-            // stale generated clips/layers that are not the final runtime result.
-            return true;
-#else
-            try
-            {
-                VisemeBlendshapeOverrideProcessor.ProcessAvatar(avatarGameObject);
-                return true;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[Viseme Blendshape Override] Avatar processing failed: {exception.Message}\n{exception.StackTrace}");
-                return false;
-            }
-#endif
-        }
-    }
 
     public static class VisemeBlendshapeOverrideProcessor
     {
         public sealed class ResolvedBinding
         {
-            public VRC_AvatarDescriptor.Viseme Viseme;
+            public VisemeBlendshapeOverrideComponent.Viseme Viseme;
             public string BlendshapeName;
             public float Weight;
             public VisemeBlendshapeOverrideComponent.VoiceModulationMode VoiceModulationMode;
@@ -52,7 +24,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         public sealed class BuildPlan
         {
             public GameObject AvatarRoot;
-            public VRCAvatarDescriptor Descriptor;
             public VisemeBlendshapeOverrideComponent Config;
             public SkinnedMeshRenderer TargetRenderer;
             public string RelativePath;
@@ -60,14 +31,11 @@ namespace UnityBox.VisemeBlendshapeOverride
             public List<ResolvedBinding> ResolvedBindings;
         }
 
-        public static bool TryCreateBuildPlan(GameObject avatarRoot, out BuildPlan plan)
+        public static bool TryCreateBuildPlan(GameObject avatarRoot, out BuildPlan plan,
+            SkinnedMeshRenderer defaultRenderer = null, IReadOnlyList<string> defaultBlendshapes = null)
         {
             plan = null;
             if (avatarRoot == null)
-                return false;
-
-            var descriptor = avatarRoot.GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null)
                 return false;
 
             var config = avatarRoot.GetComponent<VisemeBlendshapeOverrideComponent>();
@@ -76,12 +44,12 @@ namespace UnityBox.VisemeBlendshapeOverride
 
             config.EnsureBindings();
 
-            var targetRenderer = config.ResolveTargetRenderer(descriptor);
+            var targetRenderer = config.ResolveTargetRenderer(defaultRenderer);
             if (targetRenderer == null)
             {
                 Debug.LogWarning(
                     $"[Viseme Blendshape Override] '{avatarRoot.name}' has no renderer. " +
-                    "Assign Renderer or configure Avatar Descriptor > Face Mesh.");
+                    "Assign the target Renderer or provide a platform default.");
                 return false;
             }
 
@@ -100,7 +68,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return false;
             }
 
-            var resolvedBindings = ResolveBindings(config, descriptor, targetRenderer);
+            var resolvedBindings = ResolveBindings(config, defaultBlendshapes, targetRenderer);
             var controlledBlendshapes = resolvedBindings
                 .Select(binding => binding.BlendshapeName)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -117,7 +85,6 @@ namespace UnityBox.VisemeBlendshapeOverride
             plan = new BuildPlan
             {
                 AvatarRoot = avatarRoot,
-                Descriptor = descriptor,
                 Config = config,
                 TargetRenderer = targetRenderer,
                 RelativePath = relativePath,
@@ -127,46 +94,30 @@ namespace UnityBox.VisemeBlendshapeOverride
             return true;
         }
 
-        public static void ProcessAvatar(GameObject avatarRoot)
+        /// <summary>Writes this tool's generated layer into an explicitly supplied editable controller asset.</summary>
+        public static void BuildController(AnimatorController controller, BuildPlan plan,
+            IEnumerable<AnimatorController> relatedControllers = null)
         {
-            if (!TryCreateBuildPlan(avatarRoot, out var plan))
-                return;
-
-            var controller = VisemeBlendshapeOverrideUtils.GetOrCreateFallbackFxController(plan.Descriptor, plan.AvatarRoot);
-            if (controller == null)
-            {
-                Debug.LogWarning($"[Viseme Blendshape Override] Failed to get or create an editable FX controller for '{plan.AvatarRoot.name}'.");
-                return;
-            }
-
+            if (controller == null) throw new ArgumentNullException(nameof(controller));
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            var path = AssetDatabase.GetAssetPath(controller);
+            if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("Assets/", StringComparison.Ordinal))
+                throw new ArgumentException("Save an editable AnimatorController under Assets/ before building.", nameof(controller));
+            var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
+                controller, relatedControllers, plan.Config.writeDefaultsMode);
             VisemeBlendshapeOverrideUtils.CleanupGeneratedContent(controller);
             VisemeBlendshapeOverrideUtils.EnsureVisemeParameter(controller);
             if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 VisemeBlendshapeOverrideUtils.EnsureVoiceParameter(controller);
-
-            var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
-                controller,
-                plan.Descriptor,
-                plan.Config.writeDefaultsMode);
-
-            GenerateFallbackLayer(
-                controller,
-                plan.RelativePath,
-                plan.ControlledBlendshapes,
-                plan.ResolvedBindings,
-                useWriteDefaultsOn);
-
-            plan.Descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
-
-            EditorUtility.SetDirty(plan.Config);
-            EditorUtility.SetDirty(plan.Descriptor);
+            GenerateFallbackLayer(controller, plan.RelativePath, plan.ControlledBlendshapes,
+                plan.ResolvedBindings, useWriteDefaultsOn);
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
         }
 
         public static List<ResolvedBinding> ResolveBindings(
             VisemeBlendshapeOverrideComponent config,
-            VRCAvatarDescriptor descriptor,
+            IReadOnlyList<string> defaultBlendshapes,
             SkinnedMeshRenderer targetRenderer)
         {
             var resolved = new List<ResolvedBinding>();
@@ -175,12 +126,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             foreach (var viseme in VisemeBlendshapeOverrideComponent.GetSupportedVisemes())
             {
                 var binding = config.GetBinding(viseme);
-                var resolvedName = config.ResolveBlendshapeName(descriptor, binding);
+                var resolvedName = config.ResolveBlendshapeName(defaultBlendshapes, binding);
                 var sourceLabel = binding != null &&
                                   (string.Equals(binding.blendshapeName?.Trim(), VisemeBlendshapeOverrideComponent.NoneBlendshapeValue, StringComparison.Ordinal) ||
                                    !string.IsNullOrWhiteSpace(binding.blendshapeName))
                     ? "override"
-                    : "Avatar Descriptor";
+                    : "platform defaults";
 
                 if (!string.IsNullOrWhiteSpace(resolvedName))
                 {

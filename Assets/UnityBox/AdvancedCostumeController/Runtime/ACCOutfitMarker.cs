@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITYBOX_VRC_BASE
 using VRC.SDKBase;
+#endif
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -10,7 +12,10 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Outfit Marker")]
   [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Assets/UnityBox/AdvancedCostumeController/README.md#accoutfitmarker")]
-  public class ACCOutfitMarker : MonoBehaviour, IEditorOnly
+  public class ACCOutfitMarker : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+    , IEditorOnly
+#endif
   {
     [Tooltip("移除自动部件菜单显示名称中的统一前缀。\nRemove a common prefix from automatic part menu labels.")]
     public string PartNamePrefixToRemove = "";
