@@ -10,7 +10,6 @@ namespace UnityBox.PrefabDiffPatcher.Tests
 {
     public class PrefabDiffRegressionTests
     {
-        private Scene previousScene;
         private Scene scene;
         private GameObject a;
         private GameObject b;
@@ -19,11 +18,12 @@ namespace UnityBox.PrefabDiffPatcher.Tests
         [SetUp]
         public void SetUp()
         {
-            previousScene = SceneManager.GetActiveScene();
-            scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-            SceneManager.SetActiveScene(scene);
+            // A preview scene leaves any open, unsaved scene and its active status intact.
+            scene = EditorSceneManager.NewPreviewScene();
             a = new GameObject("Avatar");
+            SceneManager.MoveGameObjectToScene(a, scene);
             b = new GameObject("Avatar");
+            SceneManager.MoveGameObjectToScene(b, scene);
             folder = "Assets/__PrefabDiffTests_" + Guid.NewGuid().ToString("N");
             AssetDatabase.CreateFolder("Assets", folder.Substring("Assets/".Length));
         }
@@ -31,9 +31,7 @@ namespace UnityBox.PrefabDiffPatcher.Tests
         [TearDown]
         public void TearDown()
         {
-            if (previousScene.IsValid() && previousScene.isLoaded)
-                SceneManager.SetActiveScene(previousScene);
-            if (scene.IsValid()) EditorSceneManager.CloseScene(scene, true);
+            if (scene.IsValid() && scene.isLoaded) EditorSceneManager.ClosePreviewScene(scene);
             if (AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
         }
 
@@ -112,6 +110,8 @@ namespace UnityBox.PrefabDiffPatcher.Tests
             var diff = PrefabDiffAnalyzer.Analyze(a, b);
             Assert.That(diff.Kind, Is.EqualTo(DiffKind.Modified));
             Assert.That(diff.ComponentDiffs.Any(c => c.Key == "UnityEngine.SkinnedMeshRenderer#0"), Is.True);
+            Assert.That(diff.ComponentDiffs.Single(c => c.Key == "UnityEngine.SkinnedMeshRenderer#0")
+                .PropertyChanges.Any(change => change.Path == "m_Bones.Array.data[0]" && change.Before != change.After), Is.True);
             Assert.That(diff.ComponentDiffs.Any(c => c.Key == "UnityEngine.BoxCollider#0"), Is.True);
         }
 
@@ -120,7 +120,33 @@ namespace UnityBox.PrefabDiffPatcher.Tests
         {
             a.AddComponent<SkinnedMeshRenderer>().bones = new[] { Child(a, "Bone").transform };
             b.AddComponent<SkinnedMeshRenderer>().bones = new[] { Child(b, "Bone").transform };
-            Assert.That(PrefabDiffAnalyzer.Analyze(a, b).HasAnyChanges, Is.False);
+            var diff = PrefabDiffAnalyzer.Analyze(a, b);
+            Assert.That(diff.HasAnyChanges, Is.False, DescribeChanges(diff));
+        }
+
+        [Test]
+        public void ExposedReferenceBindingKeysRemainSignificant()
+        {
+            a.AddComponent<ExposedReferenceFixture>().target = new ExposedReference<GameObject>
+                { exposedName = new PropertyName("ActorA"), defaultValue = Child(a, "Target") };
+            b.AddComponent<ExposedReferenceFixture>().target = new ExposedReference<GameObject>
+                { exposedName = new PropertyName("ActorB"), defaultValue = Child(b, "Target") };
+            var diff = PrefabDiffAnalyzer.Analyze(a, b);
+            var component = diff.ComponentDiffs.Single(c => c.Key ==
+                "UnityBox.PrefabDiffPatcher.Tests.ExposedReferenceFixture#0");
+            Assert.That(component.PropertyChanges.Any(change => change.Path == "target.exposedName" &&
+                change.Before != change.After), Is.True, DescribeChanges(diff));
+        }
+
+        [Test]
+        public void EquivalentExposedReferenceDefaultsDoNotCreateDifferences()
+        {
+            a.AddComponent<ExposedReferenceFixture>().target = new ExposedReference<GameObject>
+                { exposedName = new PropertyName("Actor"), defaultValue = Child(a, "Target") };
+            b.AddComponent<ExposedReferenceFixture>().target = new ExposedReference<GameObject>
+                { exposedName = new PropertyName("Actor"), defaultValue = Child(b, "Target") };
+            var diff = PrefabDiffAnalyzer.Analyze(a, b);
+            Assert.That(diff.HasAnyChanges, Is.False, DescribeChanges(diff));
         }
 
         [Test]
@@ -147,6 +173,14 @@ namespace UnityBox.PrefabDiffPatcher.Tests
             Assert.That(AssetDatabase.AssetPathToGUID(path), Is.EqualTo(guid));
             Assert.Throws<InvalidOperationException>(() => PrefabDiffApplier.ValidateOutputPath(first, b, path));
             Assert.Throws<ArgumentException>(() => PrefabDiffApplier.ValidateOutputPath(a, b, "Assets/../escape.prefab"));
+        }
+
+        private static string DescribeChanges(DiffNode node)
+        {
+            return string.Join("\n", node.ObjectChanges.Select(change => node.Path + ": " + change)
+                .Concat(node.ComponentDiffs.SelectMany(component => component.PropertyChanges.Select(change =>
+                    node.Path + " / " + component.Key + " / " + change.Path + ": " + change.Before + " -> " + change.After)))
+                .Concat(node.Children.Select(DescribeChanges)));
         }
 
         private GameObject Apply(params ComponentSelection[] components)

@@ -15,7 +15,6 @@ public class BlendshapeGeneratorTests
 {
   private BlendshapeControllerGenerator window;
   private GameObject avatar;
-  private Scene previousScene;
   private Scene testScene;
   private string folder;
   private readonly List<Mesh> meshes = new List<Mesh>();
@@ -23,10 +22,9 @@ public class BlendshapeGeneratorTests
   [SetUp]
   public void SetUp()
   {
-    previousScene = SceneManager.GetActiveScene();
-    testScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-    SceneManager.SetActiveScene(testScene);
+    testScene = EditorSceneManager.NewPreviewScene();
     avatar = new GameObject("Avatar");
+    SceneManager.MoveGameObjectToScene(avatar, testScene);
     window = ScriptableObject.CreateInstance<BlendshapeControllerGenerator>();
     folder = "Assets/__BlendshapeTests_" + Guid.NewGuid().ToString("N");
     SetField("avatarRoot", avatar);
@@ -42,8 +40,7 @@ public class BlendshapeGeneratorTests
   {
     EditorUtility.ClearProgressBar();
     if (window != null) UnityEngine.Object.DestroyImmediate(window);
-    if (previousScene.IsValid() && previousScene.isLoaded) SceneManager.SetActiveScene(previousScene);
-    if (testScene.IsValid()) EditorSceneManager.CloseScene(testScene, true);
+    if (testScene.IsValid()) EditorSceneManager.ClosePreviewScene(testScene);
     foreach (var mesh in meshes) UnityEngine.Object.DestroyImmediate(mesh);
     meshes.Clear();
     if (AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
@@ -69,8 +66,8 @@ public class BlendshapeGeneratorTests
   [Test]
   public void SameNamedMeshesGetSeparateAssetsMenusAndBindings()
   {
-    var firstParent = new GameObject("A"); firstParent.transform.SetParent(avatar.transform);
-    var secondParent = new GameObject("B"); secondParent.transform.SetParent(avatar.transform);
+    var firstParent = Child(avatar.transform, "A");
+    var secondParent = Child(avatar.transform, "B");
     Generate(Renderer(firstParent.transform, "Face", "Smile"), "Float", false, "Face_");
     Generate(Renderer(secondParent.transform, "Face", "Smile"), "Float", false, "Face2_");
     var merges = avatar.GetComponentsInChildren<ModularAvatarMergeAnimator>();
@@ -110,9 +107,17 @@ public class BlendshapeGeneratorTests
       .Select(item => item.PortableControl.SubParameters[0]).Distinct().Count(), Is.EqualTo(2));
   }
 
+  private static GameObject Child(Transform parent, string name)
+  {
+    var child = new GameObject(name);
+    SceneManager.MoveGameObjectToScene(child, parent.gameObject.scene);
+    child.transform.SetParent(parent, false);
+    return child;
+  }
+
   private SkinnedMeshRenderer Renderer(Transform parent, string name, params string[] shapes)
   {
-    var go = new GameObject(name); go.transform.SetParent(parent, false);
+    var go = Child(parent, name);
     var renderer = go.AddComponent<SkinnedMeshRenderer>();
     var mesh = new Mesh { vertices = new[] { Vector3.zero } };
     foreach (var shape in shapes)

@@ -137,12 +137,16 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 null
             };
             AssetDatabase.CreateAsset(source, folder + "/Parameters.asset");
+            // Parameter is an inline serialized class: Unity may replace a null
+            // entry with a default instance when the asset is created. Preserve
+            // the actual persisted source state, rather than assuming null survives.
+            var originalSourceJson = EditorJsonUtility.ToJson(source);
             descriptor.expressionParameters = source;
             Invoke(typeof(Processor), "RegisterASSParameters", descriptor, new ASSConfigData(), folder);
 
             Assert.That(descriptor.expressionParameters, Is.Not.SameAs(source));
             Assert.That(source.parameters, Has.Length.EqualTo(2));
-            Assert.That(source.parameters[1], Is.Null);
+            Assert.That(EditorJsonUtility.ToJson(source), Is.EqualTo(originalSourceJson));
             Assert.That(descriptor.expressionParameters.parameters.Select(p => p.name),
                 Does.Contain("UserParameter").And.Contain(Constants.PARAM_PASSWORD_CORRECT));
         }

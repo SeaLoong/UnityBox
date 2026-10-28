@@ -1289,6 +1289,9 @@ namespace UnityBox.PrefabDiffPatcher
 
     internal static class PrefabDiffApplier
     {
+        // Clipboard component pasting rejects NotEditable objects, including HideAndDontSave.
+        private const HideFlags TemporaryCloneHideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
+
         public static GameObject Apply(GameObject sourceA, GameObject sourceB, IReadOnlyList<string> selectedPaths, IReadOnlyList<ComponentSelection> selectedComponents, string outputPath)
         {
             if (sourceA == null) throw new ArgumentNullException(nameof(sourceA));
@@ -1480,7 +1483,7 @@ namespace UnityBox.PrefabDiffPatcher
 
             var clone = Object.Instantiate(source);
             OverwriteComponentFromSource(clone.transform, source.transform);
-            clone.hideFlags = HideFlags.HideAndDontSave;
+            clone.hideFlags = TemporaryCloneHideFlags;
             for (int i = clone.transform.childCount - 1; i >= 0; i--)
             {
                 Object.DestroyImmediate(clone.transform.GetChild(i).gameObject);
@@ -1493,8 +1496,9 @@ namespace UnityBox.PrefabDiffPatcher
             if (source == null)
                 return null;
             var clone = Object.Instantiate(source);
+            clone.name = source.name;
             OverwriteComponentFromSource(clone.transform, source.transform);
-            clone.hideFlags = HideFlags.HideAndDontSave;
+            clone.hideFlags = TemporaryCloneHideFlags;
             return clone;
         }
 
@@ -1611,7 +1615,7 @@ namespace UnityBox.PrefabDiffPatcher
                 throw new InvalidOperationException($"结果中找不到新增节点的父路径: {parentPath}");
 
             var added = Object.Instantiate(sourceNodeB);
-            added.hideFlags = HideFlags.HideAndDontSave;
+            added.hideFlags = TemporaryCloneHideFlags;
             added.transform.SetParent(parent, false);
             added.transform.SetSiblingIndex(Mathf.Min(sourceNodeB.transform.GetSiblingIndex(), parent.childCount - 1));
             added.name = sourceNodeB.name;
@@ -1952,7 +1956,11 @@ namespace UnityBox.PrefabDiffPatcher
             var visitedManagedReferences = new HashSet<long>();
             while (iterator.Next(enterChildren))
             {
-                enterChildren = !ShouldSkipProperty(iterator.propertyPath);
+                // Object references are compared through their normalized logical target;
+                // native PPtr children only contain instance IDs. ExposedReference also
+                // carries an exposedName binding key, so its children must remain visible.
+                enterChildren = !ShouldSkipProperty(iterator.propertyPath) &&
+                                iterator.propertyType != SerializedPropertyType.ObjectReference;
                 if (iterator.propertyType == SerializedPropertyType.ManagedReference &&
                     !visitedManagedReferences.Add(iterator.managedReferenceId)) enterChildren = false;
                 if (ShouldSkipProperty(iterator.propertyPath))

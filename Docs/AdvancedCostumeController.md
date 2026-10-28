@@ -79,5 +79,7 @@ Runtime 标记保留原类型、字段和已有 GUID。旧 Editor 扩展使用�
 `Tests/Editor` 声明19个，另需实际SDK/MA。使用真实 Unity Test Framework，按包安装时将
 本包名加入项目 manifest 的 testables。用例覆盖不等于图标/Undo/VRChat同步已运行。
 
-真实依赖 Roslyn 类型检查已通过，Unity 测试因无许可证尚未执行。最新执行范围见
-[测试指南](Testing.md)，全部变更及风险见 [RefactorChanges](RefactorChanges.md)。
+真实 Unity 2022.3.22f1 中核心 32 项与 SDK/MA 集成 19 项全部通过，零跳过；完整
+依赖组合为 SDK 3.8.2、MA 1.18、NDMF 1.11。图标、完整 Undo、网络同步和最终 Avatar
+构建仍需项目验证。最新执行范围见 [测试指南](Testing.md)，全部变更及风险见
+[RefactorChanges](RefactorChanges.md)。

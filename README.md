@@ -39,10 +39,12 @@ SDK指真实VRChat Base/Avatars组合。MA使用的API从SDK3.7.3才存在，3.7
 - [测试指南与实际结果](Docs/Testing.md)、[Unity安装和隔离工程](Docs/UnityEnvironment.md)
 - [可复用测试skill](.agents/skills/unitybox-testing/SKILL.md)、[仓库规则](AGENTS.md)
 
-Unity2022.3.22f1已安装。最终真实C#类型检查通过：无SDK19、仅SDK40、完整平台55个
-程序集；插件共声明177个回归用例，尚未实际执行。实际Unity测试
-启动因没有许可证exit1，没有NUnitXML；用户当前无授权，因此EditMode、导入、构建上传
-及运行时行为尚未获通过结论。Python测试和ZIP校验不能替代它们。
+Unity **2022.3.22f1** 已通过现有 Personal 账号激活，真实 EditMode 测试已运行：
+无 SDK 核心 **93/93**、仅 SDK **150/150**、完整 SDK 3.8.2 + MA 1.18 + NDMF 1.11
+**179/179**，
+均零跳过、exit 0，14 个完整范围测试程序集全部发现。仅 SDK 的独立结果及本次 XML、
+日志和运行标识见 [测试指南](Docs/Testing.md)。这些结果覆盖 Unity 导入、编译和所列
+EditMode 行为；实际 Avatar 上传与游戏内运行仍需在项目中验证。
 
 共享工具测试：`python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v`，要求
 Python3.12；打包测试：`python3 .github/scripts/test_package_vpm.py`。

@@ -58,6 +58,7 @@ Unity 2022.3 工具，为 SkinnedMeshRenderer 生成 blendshape 动画和 Animat
 删除blendshape后重新Scan。多个表情、口型或生成器同时写同一属性时，检查最终图和参数预算。
 
 `Tests/Core/Editor` 声明14个真实资产/曲线/路径用例；`Tests/Editor` 声明5个MA集成用例，
-仅在实际SDK/MA存在时启用。VPM/UPM安装时加入manifest testables。真实依赖Roslyn类型
-检查通过，但Unity导入、EditMode和Avatar构建未执行，原因是无可用许可证。
+仅在实际SDK/MA存在时启用。VPM/UPM安装时加入manifest testables。真实Unity
+2022.3.22f1已执行核心14项和SDK/MA集成5项，全部通过、零跳过；完整环境使用
+SDK3.8.2、MA1.18、NDMF1.11。最终Avatar构建、合并后的绑定与参数预算仍需项目验证。
 最新证据见 [Testing](Testing.md)，迁移影响见 [RefactorChanges](RefactorChanges.md)。

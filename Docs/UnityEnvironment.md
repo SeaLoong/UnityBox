@@ -26,12 +26,35 @@ python3 scripts/unity/fetch_dependencies.py --profile vrc
 refactor 审查副本恢复到 `/workspace/unitybox-refactor-review`，恢复源码与保留的编译
 哈希核对后再继续修复。临时目录只放可重新生成的数据，不存未提交的唯一工作副本。
 
-目前真实 Editor 启动返回 **exit 1**，日志报告没有有效 Unity 许可证，未产生 NUnit XML。
-因此还不能报告 Unity EditMode 测试通过。许可证启动日志位于
-`/workspace/unitybox-setup/unity/startup-xdg.log`；隔离测试的完整结果保存在各工程的
-`.unitybox-test-results/`。Python 工具测试、C# 语法分析和使用真实 Editor DLL 的 Roslyn
-编译是不同层次的证据，均不能代替 Unity 内实际执行。
-用户已确认目前没有任何 Unity 授权；在授权条件改变前不再重复启动许可检查或询问。
+2026-10-26 初始 Editor 启动返回 **exit 1**，当时没有机器激活，也没有 NUnit XML；
+历史日志保存在 `/workspace/unitybox-setup/unity/startup-xdg.log`。这不代表需要购买付费授权。
+用户账号本身已有 Personal，2026-10-29 通过云 Hub 登录后，真实 Editor 已报告
+`Successfully updated license`，并实际执行测试。最初原生运行暴露的程序集重复引用、
+SDK 模块缺失、测试 fixture 与控制器复制问题已修复；不能把类型检查通过当作测试通过。
+各次真实日志和 NUnit XML 保存在工程 `.unitybox-test-results/`；最终范围以[测试指南](Testing.md)
+中的对应原生执行记录为准。不要继续把已解除的许可阻断当作当前结论。
+
+## 交互登录和当前机器授权
+
+用户现有的免费 Personal 账号已在云 Hub 登录，Editor 实际报告许可更新成功，通常无需
+再次 Add/Get Free。若未来实例尚未激活，先在 Hub Settings → Licenses 看当前机器的有效
+条目；只有确实缺少时才走标准 Personal 激活。旧 Editor 未在 Hub 安装清单中时，可在
+Installs → Locate 指向本文 Editor 路径，让 Hub 执行官方的旧版本授权兼容流程。
+不要复制本机许可证或使用未核验的账号密码命令行登录。
+
+当前交互组件在 `/workspace/unitybox-setup/{desktop,unityhub,devtunnel,tls-trust}`：
+私有 X11/noVNC、官方签名 APT Unity Hub 3.22.5、用户授权的受保护 Dev Tunnels 入口、
+以及标准 p11-kit 系统信任模块。首次登录弹窗关闭曾由平台代理 CA 未进入只读 HOME NSS
+导致；现在 launcher 只对 Hub/Firefox 前置系统信任模块，未关闭 TLS，正向登录站点和
+反向自签证书拒绝均已验证。账号输入和条款确认由用户自行完成。
+
+桌面、钥匙串、Hub、隧道都是运行进程，不能认为环境重建会恢复它们；私有钥匙串是内存
+session collection。不要把账号会话写入仓库、输出 cookie/token，或默认将认证 profile
+发布到其它机器。激活后的测试使用同一个 `--xdg-root /workspace/unitybox-setup/unity/interactive`。
+
+Unity 2022 的 ShortcutProfileStore 另会尝试写固定的 HOME 旧版偏好目录，忽略 XDG。
+精确目录写权限已申请，但底层 HOME 仍为只读；当前记录为启动期环境警告。它未阻止真实
+测试执行，不更改 HOME、不忽略测试断言，也不因此声称完整交互式快捷键配置可用。
 
 ## 已准备的依赖
 
@@ -61,13 +84,18 @@ SDK 3.7 的早期隔离工程暴露了隐含的 `InputField` / `Toggle` 依赖�
 SDK 3.7.0～3.7.2 缺少 MA 1.13/1.18 调用的双参数 `VRCConstraintSource` 构造函数，
 3.7.3 首次提供。因此 ACC/BGC 的 MA 集成最低门槛修正为 SDK **3.7.3**；独立 SDK
 适配器的最低版本仍按各自 asmdef。固定 3.8.2 组合还覆盖 MA 的新版 SDK 条件分支。
-未修改第三方源码，完整所需依赖闭包的 Roslyn 类型检查已通过；Unity 导入、IL 后处理、
-构建和行为测试仍需有授权的 Editor 执行。
+未修改第三方源码，完整所需依赖闭包的 Roslyn 类型检查已通过，现也已运行真实 Editor
+导入及 EditMode 测试；逐帧运行时等价、完整构建及上传仍需另外验证。
 
 历史 SDK 3.7 的 AnimatorOptimizer + NDMF 最低版本类型检查证据保留其原范围，不能
 扩大为 MA 全套兼容结论。原 Base/Avatars 3.7.0 包目录、官方 ZIP 和当时依赖锁保存在
 `/workspace/unitybox-setup/unity/sdk-compatibility/3.7.0/`，原缓存中的 3.7 ZIP 也已保留。
 core 的固定版本与依赖范围没有改变。
+
+AnimatorOptimizer 的可选 NDMF 适配现要求 **NDMF ≥1.11**。原先核对 1.9 公开 API 只足以
+证明部分代码能编译；真实运行发现层身份和 Clip 元数据恢复还需要 1.11 的原对象信息，
+1.9/1.10 没有这项信息。旧版本不再启用该适配；独立 Unity 核心和仅 SDK 路径保持独立。
+七插件分支的 NDMF 门槛分别由各包声明决定，不随优化器的最低版本一起改变。
 
 此前 CDN 返回 403，阻断了完整 VRC 下载；环境网络状态改变后，已实际下载固定版本
 tarball 并验证完整图。当前缓存已完整，不应把旧的 CDN 阻断描述为现状。
@@ -148,6 +176,9 @@ python scripts/unity/test_project.py prepare \
 ACC/BGC 的 Modular Avatar 集成也已改为可选；要一并验证，应再传
 `--dependency nadena.dev.modular-avatar`。缓存中存在 MA 不会自动让它进入每个工程，
 SDK-only 准备结果不能代表 MA/NDMF 集成已覆盖。
+VRC 工程额外声明真实内置 `com.unity.modules.androidjni` 1.0.0：SDK 的 Oculus 包在
+Linux Editor 编译时也会引用 `Android.Permission`。它已随 Editor 安装，不需要 Android
+构建支持或替身程序集；core 工程不添加该模块。
 
 ## 执行和读取结果
 
@@ -155,6 +186,7 @@ SDK-only 准备结果不能代表 MA/NDMF 集成已覆盖。
 python scripts/unity/test_project.py run \
   --project /workspace/unitybox-setup/unity/projects/refactor-core \
   --unity /workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity \
+  --xdg-root /workspace/unitybox-setup/unity/interactive \
   --timeout 1200
 
 python scripts/unity/test_project.py report \
@@ -179,6 +211,8 @@ runner 使用真实 Editor 的 `-batchmode -nographics -runTests -testPlatform E
 该次启动的进程组；无 XML、零测试、全部跳过和许可失败都返回非零。跳过用例会单独
 列出，不能将它们说成通过。`report` 可用 `--run-id` 查看历史运行，并重新核对证据。
 
+默认命令显式传递所准备的本仓库测试程序集给 `-assemblyNames`，不运行第三方包自带测试；
+只有 `manifest.testables` 不足以限制 SDK 的 VTP 测试发现范围。空程序集选择在启动前失败。
 仅调查特定程序集时使用 `--assembly-names 'Assembly.A.Tests;Assembly.B.Tests'`；
 可再使用 `--test-filter` 过滤测试名。单独指定 test filter 时报告只代表选中的范围，
 不会要求其它程序集也出现。完整验证需再执行未过滤的测试。
@@ -192,6 +226,11 @@ python -m unittest discover -s scripts/unity -p 'test_*.py' -v
 Python 测试覆盖打包筛选保留测试、源场景不变、重复准备清理残留、依赖隔离和
 exit/XML/许可/编译/跳过等失败传播，以及锁完整性、缓存损坏拒绝、版本约束与明确
 HTTP 拒绝不重试。这些是测试工具的测试，不是插件的 Unity 行为测试。
+
+原生导入另暴露了 asmdef 的版本条件差异：最低版本应写 `"3.7.0"`、`"1.7.0"`；
+此前 `"[3.7.0,)"` 等表达式在 Unity 2022.3 未产生所需符号，补充 Roslyn 解析却接受它，
+导致某些适配器和测试未启用。现已改用实际生效的最低版本形式，并核对预期程序集全部
+出现在真实 NUnit XML 中，不能只靠静态编译或声明用例数认定覆盖。
 
 ## 无授权时的补充类型检查
 
@@ -215,7 +254,7 @@ python scripts/unity/compile_assemblies.py \
 Unity 导入器、asmdef 解析、平台符号或 IL 后处理规则，因此通过仅表示此引用组合下
 的 C# 类型检查成功，不能代替实际 Editor 导入与测试。
 
-2026-10-28 最终源码的类型检查证据（最低 SDK 组合保留 2026-10-26 的独立记录）：
+2026-10-28 原生修复前快照的补充类型检查证据（最低 SDK 组合保留独立记录）：
 
 | 范围 | 类型检查通过的程序集数（含所需上游） | 报告目录（位于 `/workspace/unitybox-setup/unity/`） |
 | --- | --- | --- |
@@ -227,11 +266,15 @@ Unity 导入器、asmdef 解析、平台符号或 IL 后处理规则，因此通
 | refactor 七插件，SDK 3.8.2 + MA 1.18 + NDMF 1.11 | 55 | `verified-20261028-refactor-vrc/` |
 | ACC/BGC，SDK 3.7.3 + MA 1.18 + NDMF 1.11 最低 SDK 组合 | 30 | `compile-acc-ma118-sdk373/` |
 
-SDK-only 的编译缓存视图只链接真实依赖并排除 MA/NDMF。最新隔离测试工程位于
+SDK-only 的编译缓存视图只链接真实依赖并排除 MA/NDMF。当时隔离测试工程位于
 `projects/verified-optimizer-core`、`projects/verified-optimizer-vrc`、
 `projects/verified-refactor-core` 和 `projects/verified-refactor-vrc`；原始许可失败记录
 仍保存在先前的 `projects/optimizer-core/.unitybox-test-results/`，没有伪装成新源码的运行结果。
 
-两分支声明的 Unity 测试分别为优化器 168、七插件 177；**这些用例尚未实际执行**。
-工具自身的 Python 测试 23 项通过，打包脚本测试另有 5 项通过。实际 Unity 测试启动
-返回 exit 1、无 NUnit XML，结论仍为许可证阻断。
+原生执行的范围、通过数、运行 ID 和限制见各分支[测试指南](Testing.md)；
+[本分支原生结果](UnityNativeResults.json)另保留 XML SHA256、实际装配数和源内容指纹。
+生成结果摘要时逐字节核对了已导入本仓库程序集的 C#/asmdef 与最终 checkout；准备时的
+整包树哈希可能早于后续 Markdown 更新。不能把历史 Roslyn 统计或旧许可失败记录代替
+当前原生结果。工具自身的 Python 测试 **25 项**通过，打包脚本测试另有 **5 项**通过；
+真实 VPM 发布工作流在一次性 staging 校验 refactor 七包和优化器分支八包的 ZIP 内容、
+CRC、SHA256、metadata 与 VCC listing，未上传产物或触发发布。

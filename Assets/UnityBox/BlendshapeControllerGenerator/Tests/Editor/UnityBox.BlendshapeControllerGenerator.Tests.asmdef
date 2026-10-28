@@ -30,5 +30,10 @@
       "expression": "1.13.0",
       "define": "MODULAR_AVATAR_AVAILABLE"
     }
+  ],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "System.Collections.Immutable.dll"
   ]
 }

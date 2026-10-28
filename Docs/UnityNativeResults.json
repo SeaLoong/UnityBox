@@ -1,0 +1,884 @@
+{
+  "schema": 1,
+  "branch": "refactor",
+  "editor": "2022.3.22f1",
+  "platform": "Linux x86_64",
+  "test_platform": "EditMode",
+  "notes": [
+    "Executed using the existing Personal account activation; no credentials or license contents are included.",
+    "Scopes overlap: their counts must not be summed as distinct tests.",
+    "Prepared base revisions precede the native fixes; each imported local assembly source was compared byte-for-byte with the final checkout before committing.",
+    "Assembly SHA256 is over sorted repository-relative source paths and individual file SHA256 values, serialized as compact JSON.",
+    "Prepared package tree hashes include documentation at preparation time; later Markdown-only updates are not runtime source changes.",
+    "Raw XML and logs remain in the workspace. This checked-in summary does not guarantee fresh-task restoration of those external files or activation.",
+    "Results do not establish full Avatar upload, frame-by-frame Animator equivalence, performance, or every supported dependency version.",
+    "Unity2022 reports a nonblocking startup warning for its readonly legacy HOME shortcut-preferences directory; HOME was unchanged."
+  ],
+  "runs": [
+    {
+      "scope": "core",
+      "passed": true,
+      "run_id_utc": "20261028T172507-b0e56a65",
+      "started_at": "2026-10-28T17:25:07.305394+00:00",
+      "finished_at": "2026-10-28T17:25:47.593422+00:00",
+      "project_id": "0194b93c6b784820b2dbc86fa9b87027",
+      "prepared_base_revision": "7f8bd3e6004215f778012e4d0f7b8160b3112f40",
+      "source_checkout": "/workspace/unitybox-refactor-review",
+      "project": "/workspace/unitybox-setup/unity/projects/refactor-exposed-final-core",
+      "profile": "core",
+      "package_versions": {
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.test-framework": "1.1.33",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.4.13",
+        "top.sealoong.unitybox.avatar-collider-monitor": "0.1.0",
+        "top.sealoong.unitybox.avatar-security-system": "0.7.24",
+        "top.sealoong.unitybox.blendshape-controller-generator": "0.1.1",
+        "top.sealoong.unitybox.build-pipeline-logger": "0.1.0",
+        "top.sealoong.unitybox.prefab-diff-patcher": "0.1.1",
+        "top.sealoong.unitybox.viseme-blendshape-override": "0.1.14"
+      },
+      "tests": {
+        "total": 93,
+        "passed": 93,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AvatarColliderMonitor.Tests",
+          "UnityBox.AvatarSecuritySystem.Editor.Tests",
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests",
+          "UnityBox.BuildPipelineLogger.Tests",
+          "UnityBox.PrefabDiffPatcher.Editor.Tests",
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 32,
+            "passed": 32,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarColliderMonitor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "total": 15,
+            "passed": 15,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+            "total": 14,
+            "passed": 14,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BuildPipelineLogger.Tests": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+            "total": 11,
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "a28a97b111b8e4c245f83fd7438285874329d1090715a54c5122f6de6f442202",
+      "workspace_report": "/workspace/unitybox-setup/unity/refactor-exposed-final-core.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.advanced-costume-controller": {
+          "version": "0.4.13",
+          "prepared_tree_sha256": "30257c92d73576f3b83827ab93b9c147521a9903c55aa5f7c24372ad82728167"
+        },
+        "top.sealoong.unitybox.avatar-collider-monitor": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "8711682cb32fdcf6d7ba680b96350fda7a1ec2b8ce036259eb0623ebe2a50f27"
+        },
+        "top.sealoong.unitybox.avatar-security-system": {
+          "version": "0.7.24",
+          "prepared_tree_sha256": "f075423f5ad79344580dfab783b524eaee8b89a2be3b6b74a1d27178e12e5e33"
+        },
+        "top.sealoong.unitybox.blendshape-controller-generator": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "c972916136d22496e223f662f725d9418195bbbb0d89fe603c2e0570df0b7bb9"
+        },
+        "top.sealoong.unitybox.build-pipeline-logger": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "34a8b3bcd0f71d8985cd9ecf52e3619a16e1c803ae5d003cc75e51490eb3156c"
+        },
+        "top.sealoong.unitybox.prefab-diff-patcher": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "3e10a7d3d1836a84eafb2f202a92991f5b0f53ea527d3f9a2a75cee65a2aa99f"
+        },
+        "top.sealoong.unitybox.viseme-blendshape-override": {
+          "version": "0.1.14",
+          "prepared_tree_sha256": "861558cc18e83f45c9ff5e4437fc2edd097d2309b74d309de7ac0f6f34e24fd6"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AdvancedCostumeController.Runtime": {
+          "sha256": "742622176a0bc5c412f4c8eb794445e793f31be1d3bd23d828a81ea2f8becc3f",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController.Core.Tests": {
+          "sha256": "f0eb594928f4e280abf3c88ca39558d17a2c5f3d11a978d001472c02d89d6f42",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController.Core": {
+          "sha256": "13e8fe451791a18b3869b982c3bdbcd5809da132ed11a365ebe23682225fcac1",
+          "file_count": 15
+        },
+        "UnityBox.AvatarColliderMonitor": {
+          "sha256": "ed022e72fd43896e746cec42dcea17b76eb998d3221ec1ee8cf3abf59c1be235",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.Tests": {
+          "sha256": "f7490f2c7b551b5e16e131c0a076fe60c4ceb6fde2bdbddff55df228d303787c",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.Runtime": {
+          "sha256": "69d0ac9e0d0af88260d934484ea69343d18288de1ffe036d77db247777bd11fd",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem": {
+          "sha256": "56a28fc970e554032260e11361d674715937f8a1ce15296a85b3b4763fdc8ab4",
+          "file_count": 12
+        },
+        "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+          "sha256": "9c5fa824b518a560f76a3157613843cbcac01696680760cc829d819af415a6e1",
+          "file_count": 2
+        },
+        "UnityBox.BlendshapeControllerGenerator": {
+          "sha256": "ad57088c21d0852d9c7d650fbd2bb14e6fa64e6caecd04f064fedaea48562af0",
+          "file_count": 3
+        },
+        "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+          "sha256": "ef30e15f7605178711bed78439fdb4a97020bf94b76d317347505442080826c4",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger": {
+          "sha256": "6241404de334e660a8f708e0f91d8399c66f9576412d0526b57e1580ff0d08ef",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.Tests": {
+          "sha256": "76748d99df2a8074ac40eb30eae3c1aaf1b25d36d0f17f647d1a50c040a0fb9e",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher": {
+          "sha256": "4cd3548bbf32ecbec9632174214efd43b88467cae6fc1ab8d541bf7676475710",
+          "file_count": 3
+        },
+        "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+          "sha256": "c9a4f56c0238d95f80478f81001e3a763236ab0ee225902d18e9500c4c2f42f3",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher.TestFixtures": {
+          "sha256": "a99f3fbaf58f2f4b69d6bfb1e8c198da74a33726b8c10cfac827198714808326",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.Runtime": {
+          "sha256": "6c4e61f728fcb2f83f01f7ad8006ca403486a83544739fb839a61027b64b0349",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride": {
+          "sha256": "ff2f1cc74094203f5fd5e0b6a43303bb9d3a64a242d3819850b0548295117deb",
+          "file_count": 5
+        },
+        "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+          "sha256": "f8fdfdb251123406baac04c89328e1414a6137cf7525833c599e41b119a88ff2",
+          "file_count": 2
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    },
+    {
+      "scope": "sdk",
+      "passed": true,
+      "run_id_utc": "20261028T172551-8128a2f9",
+      "started_at": "2026-10-28T17:25:51.538451+00:00",
+      "finished_at": "2026-10-28T17:28:10.281748+00:00",
+      "project_id": "773e0429f08b46f4977f223e153812f1",
+      "prepared_base_revision": "7f8bd3e6004215f778012e4d0f7b8160b3112f40",
+      "source_checkout": "/workspace/unitybox-refactor-review",
+      "project": "/workspace/unitybox-setup/unity/projects/refactor-exposed-final-sdk",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0",
+        "com.vrchat.avatars": "3.8.2",
+        "com.vrchat.base": "3.8.2",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.4.13",
+        "top.sealoong.unitybox.avatar-collider-monitor": "0.1.0",
+        "top.sealoong.unitybox.avatar-security-system": "0.7.24",
+        "top.sealoong.unitybox.blendshape-controller-generator": "0.1.1",
+        "top.sealoong.unitybox.build-pipeline-logger": "0.1.0",
+        "top.sealoong.unitybox.prefab-diff-patcher": "0.1.1",
+        "top.sealoong.unitybox.viseme-blendshape-override": "0.1.14"
+      },
+      "tests": {
+        "total": 150,
+        "passed": 150,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AvatarColliderMonitor.Tests",
+          "UnityBox.AvatarColliderMonitor.VRC.Tests",
+          "UnityBox.AvatarSecuritySystem.Editor.Tests",
+          "UnityBox.AvatarSecuritySystem.VRChat.Tests",
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests",
+          "UnityBox.BuildPipelineLogger.Tests",
+          "UnityBox.BuildPipelineLogger.VRC.Tests",
+          "UnityBox.PrefabDiffPatcher.Editor.Tests",
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests",
+          "UnityBox.VisemeBlendshapeOverride.VRChat.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 32,
+            "passed": 32,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarColliderMonitor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarColliderMonitor.VRC.Tests": {
+            "total": 4,
+            "passed": 4,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "total": 15,
+            "passed": 15,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
+            "total": 27,
+            "passed": 27,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+            "total": 14,
+            "passed": 14,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BuildPipelineLogger.Tests": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BuildPipelineLogger.VRC.Tests": {
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+            "total": 11,
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.VRChat.Tests": {
+            "total": 25,
+            "passed": 25,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "ff6709737f3386a5f8945ca4b69488a92188d63cfee48103216550fc17c0231b",
+      "workspace_report": "/workspace/unitybox-setup/unity/refactor-exposed-final-sdk.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.advanced-costume-controller": {
+          "version": "0.4.13",
+          "prepared_tree_sha256": "30257c92d73576f3b83827ab93b9c147521a9903c55aa5f7c24372ad82728167"
+        },
+        "top.sealoong.unitybox.avatar-collider-monitor": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "8711682cb32fdcf6d7ba680b96350fda7a1ec2b8ce036259eb0623ebe2a50f27"
+        },
+        "top.sealoong.unitybox.avatar-security-system": {
+          "version": "0.7.24",
+          "prepared_tree_sha256": "f075423f5ad79344580dfab783b524eaee8b89a2be3b6b74a1d27178e12e5e33"
+        },
+        "top.sealoong.unitybox.blendshape-controller-generator": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "c972916136d22496e223f662f725d9418195bbbb0d89fe603c2e0570df0b7bb9"
+        },
+        "top.sealoong.unitybox.build-pipeline-logger": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "34a8b3bcd0f71d8985cd9ecf52e3619a16e1c803ae5d003cc75e51490eb3156c"
+        },
+        "top.sealoong.unitybox.prefab-diff-patcher": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "3e10a7d3d1836a84eafb2f202a92991f5b0f53ea527d3f9a2a75cee65a2aa99f"
+        },
+        "top.sealoong.unitybox.viseme-blendshape-override": {
+          "version": "0.1.14",
+          "prepared_tree_sha256": "861558cc18e83f45c9ff5e4437fc2edd097d2309b74d309de7ac0f6f34e24fd6"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AdvancedCostumeController.Runtime": {
+          "sha256": "742622176a0bc5c412f4c8eb794445e793f31be1d3bd23d828a81ea2f8becc3f",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController.Core.Tests": {
+          "sha256": "f0eb594928f4e280abf3c88ca39558d17a2c5f3d11a978d001472c02d89d6f42",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController.VRChat": {
+          "sha256": "9b8d1d18f7be6f4cb15c5ca88a03fda0cf2b56d553bf44d60bd03db7c89f0881",
+          "file_count": 2
+        },
+        "UnityBox.AdvancedCostumeController.Core": {
+          "sha256": "13e8fe451791a18b3869b982c3bdbcd5809da132ed11a365ebe23682225fcac1",
+          "file_count": 15
+        },
+        "UnityBox.AvatarColliderMonitor": {
+          "sha256": "ed022e72fd43896e746cec42dcea17b76eb998d3221ec1ee8cf3abf59c1be235",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.Tests": {
+          "sha256": "f7490f2c7b551b5e16e131c0a076fe60c4ceb6fde2bdbddff55df228d303787c",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.VRC.Tests": {
+          "sha256": "e60666ff374cfde13fd6b38f42627f1839c65aee79d8d48e9b013d0d9a364a3e",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.VRC": {
+          "sha256": "25ffbaaefbeb3b6c914b0f94a7103808c12b83264e14a14d80e276c52d8b5989",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.Runtime": {
+          "sha256": "69d0ac9e0d0af88260d934484ea69343d18288de1ffe036d77db247777bd11fd",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem": {
+          "sha256": "56a28fc970e554032260e11361d674715937f8a1ce15296a85b3b4763fdc8ab4",
+          "file_count": 12
+        },
+        "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+          "sha256": "9c5fa824b518a560f76a3157613843cbcac01696680760cc829d819af415a6e1",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
+          "sha256": "35abf119ad7e0212e705cfcc5d04b3a43ccca62a0c53a5bfb4d0245c12efc226",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.VRChat": {
+          "sha256": "b2039d2c9d26b69ba86b1dafaaa0f09ac947508ef374f45114ab6ca8ab357451",
+          "file_count": 8
+        },
+        "UnityBox.BlendshapeControllerGenerator": {
+          "sha256": "ad57088c21d0852d9c7d650fbd2bb14e6fa64e6caecd04f064fedaea48562af0",
+          "file_count": 3
+        },
+        "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+          "sha256": "ef30e15f7605178711bed78439fdb4a97020bf94b76d317347505442080826c4",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger": {
+          "sha256": "6241404de334e660a8f708e0f91d8399c66f9576412d0526b57e1580ff0d08ef",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.Tests": {
+          "sha256": "76748d99df2a8074ac40eb30eae3c1aaf1b25d36d0f17f647d1a50c040a0fb9e",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.VRC.Tests": {
+          "sha256": "ef9a30a1180d7785d4a3c0e978ea18bbcb0d99ef2024dd8dfce21a335749e58d",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.VRC": {
+          "sha256": "9f69d69c38eed2bf4dc89f44e0da782b5e4583e99d592ff148b5e9f14d6f5fad",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher": {
+          "sha256": "4cd3548bbf32ecbec9632174214efd43b88467cae6fc1ab8d541bf7676475710",
+          "file_count": 3
+        },
+        "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+          "sha256": "c9a4f56c0238d95f80478f81001e3a763236ab0ee225902d18e9500c4c2f42f3",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher.TestFixtures": {
+          "sha256": "a99f3fbaf58f2f4b69d6bfb1e8c198da74a33726b8c10cfac827198714808326",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.Runtime": {
+          "sha256": "6c4e61f728fcb2f83f01f7ad8006ca403486a83544739fb839a61027b64b0349",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride": {
+          "sha256": "ff2f1cc74094203f5fd5e0b6a43303bb9d3a64a242d3819850b0548295117deb",
+          "file_count": 5
+        },
+        "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+          "sha256": "f8fdfdb251123406baac04c89328e1414a6137cf7525833c599e41b119a88ff2",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.VRChat.Tests": {
+          "sha256": "fd653fbf31eafdaaa5d7de3c45ab54e212b997422dbd163a9da77ae596e1f6c4",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.VRChat": {
+          "sha256": "2a067d1774489a71a191e5822b954f86f713596493aa5eceb9495da72f75a7ae",
+          "file_count": 4
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    },
+    {
+      "scope": "sdk-ndmf-ma",
+      "passed": true,
+      "run_id_utc": "20261028T172818-8625ecdf",
+      "started_at": "2026-10-28T17:28:18.177139+00:00",
+      "finished_at": "2026-10-28T17:32:30.433280+00:00",
+      "project_id": "fcd6d4c8ec2d4eda9f835b0a5eae365c",
+      "prepared_base_revision": "7f8bd3e6004215f778012e4d0f7b8160b3112f40",
+      "source_checkout": "/workspace/unitybox-refactor-review",
+      "project": "/workspace/unitybox-setup/unity/projects/refactor-exposed-final-vrc",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.7",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.2.6",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.postprocessing": "3.2.2",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.6",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.7",
+        "com.unity.xr.management": "4.3.3",
+        "com.unity.xr.oculus": "4.0.0",
+        "com.vrchat.avatars": "3.8.2",
+        "com.vrchat.base": "3.8.2",
+        "nadena.dev.modular-avatar": "1.18.0",
+        "nadena.dev.ndmf": "1.11.0",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.4.13",
+        "top.sealoong.unitybox.avatar-collider-monitor": "0.1.0",
+        "top.sealoong.unitybox.avatar-security-system": "0.7.24",
+        "top.sealoong.unitybox.blendshape-controller-generator": "0.1.1",
+        "top.sealoong.unitybox.build-pipeline-logger": "0.1.0",
+        "top.sealoong.unitybox.prefab-diff-patcher": "0.1.1",
+        "top.sealoong.unitybox.viseme-blendshape-override": "0.1.14"
+      },
+      "tests": {
+        "total": 179,
+        "passed": 179,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests",
+          "UnityBox.AvatarColliderMonitor.Tests",
+          "UnityBox.AvatarColliderMonitor.VRC.Tests",
+          "UnityBox.AvatarSecuritySystem.Editor.Tests",
+          "UnityBox.AvatarSecuritySystem.VRChat.Tests",
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests",
+          "UnityBox.BlendshapeControllerGenerator.Tests",
+          "UnityBox.BuildPipelineLogger.Tests",
+          "UnityBox.BuildPipelineLogger.VRC.Tests",
+          "UnityBox.PrefabDiffPatcher.Editor.Tests",
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests",
+          "UnityBox.VisemeBlendshapeOverride.NDMF.Tests",
+          "UnityBox.VisemeBlendshapeOverride.VRChat.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 32,
+            "passed": 32,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "total": 19,
+            "passed": 19,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarColliderMonitor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarColliderMonitor.VRC.Tests": {
+            "total": 4,
+            "passed": 4,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "total": 15,
+            "passed": 15,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
+            "total": 27,
+            "passed": 27,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+            "total": 14,
+            "passed": 14,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BlendshapeControllerGenerator.Tests": {
+            "total": 5,
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BuildPipelineLogger.Tests": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.BuildPipelineLogger.VRC.Tests": {
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+            "total": 11,
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.NDMF.Tests": {
+            "total": 5,
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.VisemeBlendshapeOverride.VRChat.Tests": {
+            "total": 25,
+            "passed": 25,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "exit_code": 0,
+      "recognized_log_errors": [],
+      "results_xml_sha256": "bfd5e568600baaca80ed94932c649b1d335ec0cf438cb8637d85306ab42418cf",
+      "workspace_report": "/workspace/unitybox-setup/unity/refactor-exposed-final-vrc.json",
+      "prepared_local_packages": {
+        "top.sealoong.unitybox.advanced-costume-controller": {
+          "version": "0.4.13",
+          "prepared_tree_sha256": "30257c92d73576f3b83827ab93b9c147521a9903c55aa5f7c24372ad82728167"
+        },
+        "top.sealoong.unitybox.avatar-collider-monitor": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "8711682cb32fdcf6d7ba680b96350fda7a1ec2b8ce036259eb0623ebe2a50f27"
+        },
+        "top.sealoong.unitybox.avatar-security-system": {
+          "version": "0.7.24",
+          "prepared_tree_sha256": "f075423f5ad79344580dfab783b524eaee8b89a2be3b6b74a1d27178e12e5e33"
+        },
+        "top.sealoong.unitybox.blendshape-controller-generator": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "c972916136d22496e223f662f725d9418195bbbb0d89fe603c2e0570df0b7bb9"
+        },
+        "top.sealoong.unitybox.build-pipeline-logger": {
+          "version": "0.1.0",
+          "prepared_tree_sha256": "34a8b3bcd0f71d8985cd9ecf52e3619a16e1c803ae5d003cc75e51490eb3156c"
+        },
+        "top.sealoong.unitybox.prefab-diff-patcher": {
+          "version": "0.1.1",
+          "prepared_tree_sha256": "3e10a7d3d1836a84eafb2f202a92991f5b0f53ea527d3f9a2a75cee65a2aa99f"
+        },
+        "top.sealoong.unitybox.viseme-blendshape-override": {
+          "version": "0.1.14",
+          "prepared_tree_sha256": "861558cc18e83f45c9ff5e4437fc2edd097d2309b74d309de7ac0f6f34e24fd6"
+        }
+      },
+      "imported_local_assemblies": {
+        "UnityBox.AdvancedCostumeController.Runtime": {
+          "sha256": "742622176a0bc5c412f4c8eb794445e793f31be1d3bd23d828a81ea2f8becc3f",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController": {
+          "sha256": "68d3bd946f7191a3750faaeb5e2c029af849f135709f10db6feb745e762a46df",
+          "file_count": 9
+        },
+        "UnityBox.AdvancedCostumeController.Editor.Tests": {
+          "sha256": "a5c5d2dd85155ad0d6698ff2cd33c3dcab4bd7385df700d6397f6bffad3bec69",
+          "file_count": 3
+        },
+        "UnityBox.AdvancedCostumeController.Core.Tests": {
+          "sha256": "f0eb594928f4e280abf3c88ca39558d17a2c5f3d11a978d001472c02d89d6f42",
+          "file_count": 4
+        },
+        "UnityBox.AdvancedCostumeController.VRChat": {
+          "sha256": "9b8d1d18f7be6f4cb15c5ca88a03fda0cf2b56d553bf44d60bd03db7c89f0881",
+          "file_count": 2
+        },
+        "UnityBox.AdvancedCostumeController.Core": {
+          "sha256": "13e8fe451791a18b3869b982c3bdbcd5809da132ed11a365ebe23682225fcac1",
+          "file_count": 15
+        },
+        "UnityBox.AvatarColliderMonitor": {
+          "sha256": "ed022e72fd43896e746cec42dcea17b76eb998d3221ec1ee8cf3abf59c1be235",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.Tests": {
+          "sha256": "f7490f2c7b551b5e16e131c0a076fe60c4ceb6fde2bdbddff55df228d303787c",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.VRC.Tests": {
+          "sha256": "e60666ff374cfde13fd6b38f42627f1839c65aee79d8d48e9b013d0d9a364a3e",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.VRC": {
+          "sha256": "25ffbaaefbeb3b6c914b0f94a7103808c12b83264e14a14d80e276c52d8b5989",
+          "file_count": 2
+        },
+        "UnityBox.AvatarColliderMonitor.NDMF": {
+          "sha256": "2340cb66eaaa095dc38e161e10b658604b2d01ba3aec561ddd5ae623012f0683",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.Runtime": {
+          "sha256": "69d0ac9e0d0af88260d934484ea69343d18288de1ffe036d77db247777bd11fd",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem": {
+          "sha256": "56a28fc970e554032260e11361d674715937f8a1ce15296a85b3b4763fdc8ab4",
+          "file_count": 12
+        },
+        "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+          "sha256": "9c5fa824b518a560f76a3157613843cbcac01696680760cc829d819af415a6e1",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
+          "sha256": "35abf119ad7e0212e705cfcc5d04b3a43ccca62a0c53a5bfb4d0245c12efc226",
+          "file_count": 2
+        },
+        "UnityBox.AvatarSecuritySystem.VRChat": {
+          "sha256": "b2039d2c9d26b69ba86b1dafaaa0f09ac947508ef374f45114ab6ca8ab357451",
+          "file_count": 8
+        },
+        "UnityBox.AvatarSecuritySystem.NDMF": {
+          "sha256": "38ce60b90365f8af62c793cf6dcf4bc89d9fcccba8cc1c9d3b8e5ca2ff43beba",
+          "file_count": 2
+        },
+        "UnityBox.BlendshapeControllerGenerator": {
+          "sha256": "ad57088c21d0852d9c7d650fbd2bb14e6fa64e6caecd04f064fedaea48562af0",
+          "file_count": 3
+        },
+        "UnityBox.BlendshapeControllerGenerator.Tests": {
+          "sha256": "12b9b15b6ecea0d0748b19029818d9185aa960864971c432006573bb982e7121",
+          "file_count": 2
+        },
+        "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
+          "sha256": "ef30e15f7605178711bed78439fdb4a97020bf94b76d317347505442080826c4",
+          "file_count": 2
+        },
+        "UnityBox.BlendshapeControllerGenerator.ModularAvatar": {
+          "sha256": "7b4521d2d255ebb7c327dfe0a1029cfd22f864fbe91a0bf5e599ba987759309a",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger": {
+          "sha256": "6241404de334e660a8f708e0f91d8399c66f9576412d0526b57e1580ff0d08ef",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.Tests": {
+          "sha256": "76748d99df2a8074ac40eb30eae3c1aaf1b25d36d0f17f647d1a50c040a0fb9e",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.VRC.Tests": {
+          "sha256": "ef9a30a1180d7785d4a3c0e978ea18bbcb0d99ef2024dd8dfce21a335749e58d",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.VRC": {
+          "sha256": "9f69d69c38eed2bf4dc89f44e0da782b5e4583e99d592ff148b5e9f14d6f5fad",
+          "file_count": 2
+        },
+        "UnityBox.BuildPipelineLogger.NDMF": {
+          "sha256": "4f9357619d2c8c9865f86d8ccbca5469d6ffe54b80ad5c414f731c9bd62fb44b",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher": {
+          "sha256": "4cd3548bbf32ecbec9632174214efd43b88467cae6fc1ab8d541bf7676475710",
+          "file_count": 3
+        },
+        "UnityBox.PrefabDiffPatcher.Editor.Tests": {
+          "sha256": "c9a4f56c0238d95f80478f81001e3a763236ab0ee225902d18e9500c4c2f42f3",
+          "file_count": 2
+        },
+        "UnityBox.PrefabDiffPatcher.TestFixtures": {
+          "sha256": "a99f3fbaf58f2f4b69d6bfb1e8c198da74a33726b8c10cfac827198714808326",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.Runtime": {
+          "sha256": "6c4e61f728fcb2f83f01f7ad8006ca403486a83544739fb839a61027b64b0349",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride": {
+          "sha256": "ff2f1cc74094203f5fd5e0b6a43303bb9d3a64a242d3819850b0548295117deb",
+          "file_count": 5
+        },
+        "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+          "sha256": "f8fdfdb251123406baac04c89328e1414a6137cf7525833c599e41b119a88ff2",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.VRChat.Tests": {
+          "sha256": "fd653fbf31eafdaaa5d7de3c45ab54e212b997422dbd163a9da77ae596e1f6c4",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.NDMF.Tests": {
+          "sha256": "12e7751cc79cd89509530344149ccda171cc4c1086bd7a1f1530ae224208867c",
+          "file_count": 2
+        },
+        "UnityBox.VisemeBlendshapeOverride.VRChat": {
+          "sha256": "2a067d1774489a71a191e5822b954f86f713596493aa5eceb9495da72f75a7ae",
+          "file_count": 4
+        },
+        "UnityBox.VisemeBlendshapeOverride.NDMF": {
+          "sha256": "6765ed871a371f994d778b7223cf61109950d1f3bf4e10c0c522a844e5de6861",
+          "file_count": 2
+        }
+      },
+      "imported_local_source_matches_final_checkout": true
+    }
+  ]
+}

@@ -185,6 +185,8 @@ class PreparationTests(unittest.TestCase):
         self.assertTrue(runner.dependency_matches("1.11.1", ">=1.11.0 <2.0.0-a"))
 
     def test_run_launch_failure_is_persisted_and_report_exits_nonzero(self):
+        runner.write_json(self.package / "Fixture.Tests.asmdef", {"name": "Fixture.Tests",
+                          "optionalUnityReferences": ["TestAssemblies"]})
         self.assertEqual(self.prepare(), 0)
         with contextlib.redirect_stdout(io.StringIO()):
             code = runner.main(["run", "--project", str(self.project), "--unity", str(self.root / "missing-unity")])
@@ -196,6 +198,34 @@ class PreparationTests(unittest.TestCase):
         self.assertIsNone(report["run"]["exit_code"])
         self.assertFalse(report["passed"])
         self.assertIn("launch_error", report["run"])
+
+    def test_default_and_filtered_invocations_exclude_upstream_sdk_suites(self):
+        for name in ("Fixture.First.Tests", "Fixture.Second.Tests"):
+            folder = self.package / name
+            folder.mkdir()
+            runner.write_json(folder / (name + ".asmdef"), {"name": name,
+                              "optionalUnityReferences": ["TestAssemblies"]})
+        self.assertEqual(self.prepare(), 0)
+        for extra in ([], ["--test-filter", "Fixture.OneCase"]):
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = runner.main(["run", "--project", str(self.project),
+                                    "--unity", str(self.root / "missing-unity"), *extra])
+            self.assertEqual(code, 1)
+            directory = self.project / ".unitybox-test-results"
+            run_id = runner.read_json(directory / "latest.json")["run_id"]
+            recorded = runner.read_json(directory / run_id / "run.json")
+            command = recorded["command"]
+            selected = command[command.index("-assemblyNames") + 1]
+            self.assertEqual(selected, "Fixture.First.Tests;Fixture.Second.Tests")
+            self.assertEqual(recorded["expected_assemblies"], [] if extra else selected.split(";"))
+
+    def test_empty_repository_scope_does_not_launch_other_installed_tests(self):
+        self.assertEqual(self.prepare(), 0)
+        with contextlib.redirect_stderr(io.StringIO()):
+            code = runner.main(["run", "--project", str(self.project),
+                                "--unity", str(self.root / "missing-unity")])
+        self.assertEqual(code, 2)
+        self.assertFalse((self.project / ".unitybox-test-results").exists())
 
 
 if __name__ == "__main__":

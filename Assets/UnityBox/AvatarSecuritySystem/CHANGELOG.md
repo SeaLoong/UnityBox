@@ -32,7 +32,7 @@
 
 ### Tests
 
-- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。当前云端已通过真实 Unity/SDK/NDMF 引用下的 Roslyn 类型检查；缺少 Unity 许可，未执行 Editor 导入或 EditMode 测试。
+- 增加构建副本、参数资产、配置快照及安全默认值的 Editor 回归测试。真实 Unity 2022.3.22f1 中核心 15 项和 SDK 27 项全部通过、零跳过；完整测试环境为 SDK 3.8.2、MA 1.18、NDMF 1.11。实际 Avatar 构建、NDMF 最终提交与 VRChat 运行仍需验证。
 
 ### Removed
 

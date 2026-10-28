@@ -45,7 +45,11 @@ namespace UnityBox.AvatarColliderMonitor.Tests
       var child = new GameObject("InactiveChild");
       child.transform.SetParent(root.transform);
       var capsule = child.AddComponent<CapsuleCollider>();
-      var circle = child.AddComponent<CircleCollider2D>();
+      // Unity prohibits mixing 2D and 3D physics components on one GameObject.
+      // Keep both in the sampled hierarchy and exercise an inactive ancestor.
+      var twoDimensionalChild = new GameObject("TwoDimensional");
+      twoDimensionalChild.transform.SetParent(child.transform);
+      var circle = twoDimensionalChild.AddComponent<CircleCollider2D>();
       child.SetActive(false);
 
       var snapshot = Capture();
@@ -56,7 +60,7 @@ namespace UnityBox.AvatarColliderMonitor.Tests
         Assert.That(snapshot.configurations[Key(collider)], Is.Not.Empty);
       }
       Assert.That(snapshot.paths, Has.Count.EqualTo(4));
-      Assert.That(snapshot.GetColliderPath(Key(circle)), Is.EqualTo("SnapshotRoot/InactiveChild"));
+      Assert.That(snapshot.GetColliderPath(Key(circle)), Is.EqualTo("SnapshotRoot/InactiveChild/TwoDimensional"));
     }
 
     [Test]

@@ -51,9 +51,12 @@ fixture 排除，正式 VPM 包保留 Editor 回归测试，不再包含这些�
 
 - 通过：C# 语法解析、7 个 VPM 包的现有 CI 打包流程、ZIP 完整性/内容及 SHA256。
 - 通过：二进制替换范围检查、用户场景/changelog 与原 temp 提交逐字节一致检查。
-- 未执行：Unity 编译、7 个 EditMode 用例、三种探针运行及 VRChat 构建/游戏内验证。
-  上述历史检查时尚无 Editor；现已安装 2022.3.22f1，但实际启动因无许可证失败。
-  后续真实依赖类型检查见 [测试指南](Testing.md)，仍不代表 Unity 行为测试通过。
+- 后续原生复测：Unity 2022.3.22f1 已导入并执行 `OutfitContainerRegressionTests`
+  的全部 7 项用例，全部通过、零跳过；它们包含在七插件完整 179 项通过结果中。
+  XML 运行 ID 为 `20261028T171628-fc5a70ec`（UTC），固定依赖 SDK 3.8.2、MA 1.18、
+  NDMF 1.11。证据见 [测试指南](Testing.md)。
+- 三种实验探针、真实 VRChat 构建和游戏内验证仍未执行；EditMode 结果不能证明这些
+  历史 bundle 或实验结论在当前项目中成立。
 
 在已有 VRChat/Modular Avatar 的 Unity 2022.3 项目中，安装 Unity Test Framework，
 在 Test Runner 的 EditMode 中运行 `OutfitContainerRegressionTests`。若按 VPM 包安装，

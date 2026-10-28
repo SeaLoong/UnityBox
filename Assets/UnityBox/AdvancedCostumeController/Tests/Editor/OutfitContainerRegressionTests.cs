@@ -14,27 +14,23 @@ namespace UnityBox.AdvancedCostumeController.Tests
   public class OutfitContainerRegressionTests
   {
     private Scene testScene;
-    private Scene previousActiveScene;
     private GameObject root;
     private string temporaryAssetFolder;
 
     [SetUp]
     public void SetUp()
     {
-      previousActiveScene = SceneManager.GetActiveScene();
-      testScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-      SceneManager.SetActiveScene(testScene);
+      testScene = EditorSceneManager.NewPreviewScene();
       root = new GameObject("Costumes");
+      SceneManager.MoveGameObjectToScene(root, testScene);
       temporaryAssetFolder = "Assets/__ACCRegression_" + Guid.NewGuid().ToString("N");
     }
 
     [TearDown]
     public void TearDown()
     {
-      if (previousActiveScene.IsValid() && previousActiveScene.isLoaded)
-        SceneManager.SetActiveScene(previousActiveScene);
       if (testScene.IsValid())
-        EditorSceneManager.CloseScene(testScene, true);
+        EditorSceneManager.ClosePreviewScene(testScene);
       if (AssetDatabase.IsValidFolder(temporaryAssetFolder))
         AssetDatabase.DeleteAsset(temporaryAssetFolder);
     }
@@ -180,6 +176,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     private static GameObject Child(GameObject parent, string name)
     {
       var child = new GameObject(name);
+      SceneManager.MoveGameObjectToScene(child, parent.scene);
       child.transform.SetParent(parent.transform, false);
       return child;
     }

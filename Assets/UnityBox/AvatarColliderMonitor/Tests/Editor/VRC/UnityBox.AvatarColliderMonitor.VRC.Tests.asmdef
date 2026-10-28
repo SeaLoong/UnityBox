@@ -24,5 +24,11 @@
   ],
   "optionalUnityReferences": [
     "TestAssemblies"
+  ],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "VRCSDK3A.dll",
+    "VRCSDKBase.dll"
   ]
 }

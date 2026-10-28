@@ -6,9 +6,10 @@ ASS 提供独立 Unity 动画/配置核心，以及可选 VRChat 构建适配。
 修改构建资源或重新上传。名称混淆与已保存的解锁参数都不是安全认证。
 
 本文描述 `refactor` 分支当前代码；历史版本行为见 [CHANGELOG](../CHANGELOG.md)，
-开发细节见 [技术参考](ASS_TechnicalDoc.md)。本轮已通过真实 Unity/SDK/NDMF 引用下的
-Roslyn 类型检查；云端缺少 Unity 许可，Editor 导入、IL 后处理、EditMode 测试与 VRChat
-实际运行仍未验证，不能将类型检查等同于兼容性保证。
+开发细节见 [技术参考](ASS_TechnicalDoc.md)。本轮在真实 Unity 2022.3.22f1 中通过
+42 项 EditMode 测试（核心 15、真实 SDK 集成 27），零跳过；完整配置使用 SDK 3.8.2、
+MA 1.18 和 NDMF 1.11。实际 Avatar 构建、NDMF 最终提交和 VRChat 运行仍需验证，
+自动化结果不代表所有项目组合的兼容性保证。
 
 ## 安装与现有项目迁移
 

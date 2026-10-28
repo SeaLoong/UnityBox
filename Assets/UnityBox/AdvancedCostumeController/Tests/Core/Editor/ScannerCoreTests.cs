@@ -11,7 +11,6 @@ namespace UnityBox.AdvancedCostumeController.Tests
   {
     private GameObject root;
     private Scene testScene;
-    private Scene previousScene;
     private ICostumeScanIntegration previousIntegration;
 
     [SetUp]
@@ -19,19 +18,16 @@ namespace UnityBox.AdvancedCostumeController.Tests
     {
       previousIntegration = CostumeScanIntegration.Adapter;
       CostumeScanIntegration.Adapter = null;
-      previousScene = SceneManager.GetActiveScene();
-      testScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-      SceneManager.SetActiveScene(testScene);
+      testScene = EditorSceneManager.NewPreviewScene();
       root = new GameObject("Costumes");
+      SceneManager.MoveGameObjectToScene(root, testScene);
     }
 
     [TearDown]
     public void TearDown()
     {
       CostumeScanIntegration.Adapter = previousIntegration;
-      if (previousScene.IsValid() && previousScene.isLoaded)
-        SceneManager.SetActiveScene(previousScene);
-      if (testScene.IsValid()) EditorSceneManager.CloseScene(testScene, true);
+      if (testScene.IsValid()) EditorSceneManager.ClosePreviewScene(testScene);
     }
 
     [Test]
@@ -136,6 +132,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     {
       var outfit = Child(root, "Outfit");
       var externalRig = new GameObject("ExternalRig");
+      SceneManager.MoveGameObjectToScene(externalRig, testScene);
       var hips = Child(externalRig, "Hips");
       MeshChild(outfit, "Body", hips.transform);
       Assert.That(CostumeHierarchy.TryGetOwnedArmature(outfit.transform, out _), Is.False);
@@ -145,6 +142,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     private static GameObject Child(GameObject parent, string name)
     {
       var child = new GameObject(name);
+      SceneManager.MoveGameObjectToScene(child, parent.scene);
       child.transform.SetParent(parent.transform, false);
       return child;
     }

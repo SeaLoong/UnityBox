@@ -98,7 +98,9 @@ Tests/Editor/VRChat/VisemeRegressionTests.cs和Tests/Editor/NDMF；需要真实�
 Unity Test Framework，包安装时加入manifest testables。覆盖映射、曲线、资产保存、
 回退/去重/重试、原无效层以及动画服务生命周期。
 
-2026-10-28真实SDK/NDMF闭包类型检查23程序集通过，报告位于
-`/workspace/unitybox-setup/unity/compile-viseme-identity-final-20261028/compile-report.json`。
-无Unity授权，导入/IL后处理/EditMode未执行。实际项目需验证Viseme0–14、Voice区间、
-无效映射、连续构建、NDMF开关、MA合并和其它口型/优化器的组合。总范围见[Testing](Testing.md)。
+真实Unity2022.3.22f1已执行上述39项EditMode用例，全部通过、零跳过。完整环境为
+SDK3.8.2、MA1.18、NDMF1.11；七插件完整报告为
+`/workspace/unitybox-setup/unity/refactor-native-vrc-symbol-fix-20261029.json`，
+本次XML运行ID为`20261028T171628-fc5a70ec`（UTC）。此前23程序集Roslyn类型检查保留
+为历史静态证据，不能代替该原生执行结果。实际项目仍需验证Viseme0–14与Voice的游戏内
+输入、最终NDMF/MA合并和其它口型/优化器组合。总范围见[Testing](Testing.md)。

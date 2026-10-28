@@ -28,6 +28,9 @@ DEFAULT_CACHE = "/workspace/unitybox-setup/unity/dependencies"
 BUILTINS = ("ai animation assetbundle audio cloth director imageconversion imgui jsonserialize "
             "particlesystem physics physics2d terrain terrainphysics ui uielements unitywebrequest "
             "unitywebrequestassetbundle unitywebrequestaudio unitywebrequesttexture video xr").split()
+# The SDK's Oculus dependency uses Android.Permission even when importing in
+# the Linux Editor. Unity's real module must be present in the VRC fixture.
+VRC_BUILTINS = ("androidjni",)
 
 
 def read_json(path):
@@ -228,6 +231,8 @@ def prepare(args):
                         "version": data["version"], "source": str(source), "origin": origin}
         versions[name] = data["version"]
     dependencies = {"com.unity.modules." + name: "1.0.0" for name in BUILTINS}
+    if args.profile == "vrc":
+        dependencies.update({"com.unity.modules." + name: "1.0.0" for name in VRC_BUILTINS})
     dependencies.update(registry)
     dependencies.update({name: "file:" + name for name in sources})
     local_names = sorted(name for name, (_, _, origin) in sources.items() if origin == "local")
@@ -343,6 +348,10 @@ def stop_process_group(process):
 def run_tests(args):
     project = args.project.resolve()
     metadata = read_json(project / MARKER)
+    selected_assemblies = ([name.strip() for name in args.assembly_names.split(";") if name.strip()]
+                           if args.assembly_names else metadata["test_assemblies"])
+    if not selected_assemblies:
+        raise ValueError("No enabled repository test assemblies were selected; refusing an unrestricted Unity run")
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
     directory = project / ".unitybox-test-results" / run_id
     directory.mkdir(parents=True)
@@ -357,15 +366,18 @@ def run_tests(args):
                "-logFile", str(directory / "unity.log")]
     if args.test_filter:
         command.extend(["-testFilter", args.test_filter])
-    assemblies = (args.assembly_names.split(";") if args.assembly_names
+    assemblies = (selected_assemblies if args.assembly_names
                   else [] if args.test_filter else metadata["test_assemblies"])
-    if args.assembly_names:
-        command.extend(["-assemblyNames", args.assembly_names])
+    # Unity can discover test methods in ordinary SDK Editor assemblies even
+    # when they are absent from manifest.testables. Always restrict the actual
+    # invocation to this checkout's selected suites, including filtered runs.
+    command.extend(["-assemblyNames", ";".join(selected_assemblies)])
     run = {"run_id": run_id, "project_id": metadata["project_id"], "command": command,
            "profile": metadata["profile"], "ignored_vpm_dependencies": metadata.get("ignored_vpm_dependencies", {}),
            "package_versions": {name: package["version"] for name, package in metadata["packages"].items()},
            "started_at": utc_now(), "started_epoch": time.time(), "timeout_seconds": args.timeout,
            "expected_assemblies": assemblies, "timed_out": False, "exit_code": None,
+           "selected_assemblies": selected_assemblies,
            "xdg_root": str(xdg_root), "test_filter": args.test_filter}
     process = None
     try:

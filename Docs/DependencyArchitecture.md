@@ -76,9 +76,18 @@ NDMF 的 RemoveEditorOnly 删除带 EditorOnly Tag 的对象，不代表自动�
 和 `--dependency nadena.dev.modular-avatar`。缓存里有包不等于测试项目已经装入它。
 独立目录与当前证据见 [测试指南](Testing.md)、[Unity 环境](UnityEnvironment.md)。
 
-真实 Roslyn 检查已覆盖无 SDK 的核心闭包与固定平台依赖闭包，但不会完整复现 Unity 导入、
-程序集解析或 IL 后处理。真实 Unity 测试因许可证不可用而未执行。缺包导致测试装配未启用
-不能算通过；源码中的声明数量也不能当作 Test Runner 成功数量。
+真实 Unity 2022.3.22f1 的最终运行通过核心 **93/93**、仅SDK **150/150** 与完整平台
+**179/179**，零跳过，预期程序集均已发现，具体运行标识和实际报告见
+[测试指南](Testing.md)。Prefab包含两项 `ExposedReference` 回归；其原生序列化 fixture
+使用仅 Editor 且受 Test Framework 约束的独立程序集，不进入 Player。
+
+原生导入发现，部分 `versionDefines.expression` 的开区间写法（如 `[3.7.0,)`）
+未启用预期符号；已改用 Unity 支持的最低版本写法 `3.7.0`，NDMF 同理使用 `1.7.0`。
+仅靠此前 Roslyn 范围解析无法发现这个问题。当前 runner 显式选择本仓库测试程序集，
+同时检查预期程序集均被发现；缺包、未编译或未发现不能算通过。
+
+完整平台测试使用真实 SDK 3.8.2、MA 1.18、NDMF 1.11，具体范围和报告见
+[测试指南](Testing.md)。这些 EditMode 结果不代表实际 Avatar 上传或 VRChat 逐帧行为。
 
 ## Animator Optimizer 分支
 

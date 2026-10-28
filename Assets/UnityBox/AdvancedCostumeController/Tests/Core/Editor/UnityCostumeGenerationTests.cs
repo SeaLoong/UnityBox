@@ -4,7 +4,9 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace UnityBox.AdvancedCostumeController.Tests
 {
@@ -13,6 +15,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     private GameObject root;
     private ACCConfig config;
     private string folder;
+    private Scene testScene;
     private ICostumeAvatarIntegration previousAvatarIntegration;
     private ICostumeScanIntegration previousScanIntegration;
     private readonly List<Material> materials = new List<Material>();
@@ -24,7 +27,9 @@ namespace UnityBox.AdvancedCostumeController.Tests
       previousScanIntegration = CostumeScanIntegration.Adapter;
       CostumeAvatarIntegration.Adapter = null;
       CostumeScanIntegration.Adapter = null;
+      testScene = EditorSceneManager.NewPreviewScene();
       root = new GameObject("Unity Costumes");
+      SceneManager.MoveGameObjectToScene(root, testScene);
       folder = "Assets/__ACCGeneration_" + Guid.NewGuid().ToString("N");
       config = new ACCConfig { CostumesRoot = root, ParamPrefix = "Costumes", GeneratedFolder = folder };
     }
@@ -35,6 +40,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
       CostumeAvatarIntegration.Adapter = previousAvatarIntegration;
       CostumeScanIntegration.Adapter = previousScanIntegration;
       if (root != null) UnityEngine.Object.DestroyImmediate(root);
+      if (testScene.IsValid()) EditorSceneManager.ClosePreviewScene(testScene);
       foreach (var material in materials)
         if (material != null && !EditorUtility.IsPersistent(material)) UnityEngine.Object.DestroyImmediate(material);
       materials.Clear();
@@ -95,7 +101,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     public void MaterialVariantWritesOriginalAndReplacementObjectCurves()
     {
       var outfit = Outfit("First");
-      var variant = new GameObject("Red Variant"); variant.transform.SetParent(root.transform, false);
+      var variant = Child(root, "Red Variant");
       var shader = Shader.Find("Hidden/InternalErrorShader");
       Assert.That(shader, Is.Not.Null);
       var original = new Material(shader); materials.Add(original);
@@ -135,13 +141,20 @@ namespace UnityBox.AdvancedCostumeController.Tests
 
     private GameObject Outfit(string name)
     {
-      var outfit = new GameObject(name);
-      outfit.transform.SetParent(root.transform, false);
+      var outfit = Child(root, name);
       outfit.AddComponent<ACCOutfitMarker>();
-      var part = new GameObject("Part");
-      part.transform.SetParent(outfit.transform, false);
+      var part = Child(outfit, "Part");
+      part.AddComponent<MeshFilter>();
       part.AddComponent<MeshRenderer>();
       return outfit;
+    }
+
+    private static GameObject Child(GameObject parent, string name)
+    {
+      var child = new GameObject(name);
+      SceneManager.MoveGameObjectToScene(child, parent.scene);
+      child.transform.SetParent(parent.transform, false);
+      return child;
     }
 
     private static float? ActiveWeight(AnimationClip clip, string path)

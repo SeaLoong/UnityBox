@@ -11,9 +11,10 @@ ASSComponent 在无 SDK 时是纯 Unity `MonoBehaviour`；安装 `com.vrchat.bas
 Animator、动画、材质和对象。没有运行时密码服务器或所有权验证。密码序列和解锁参数
 存在于构建资源中，名称混淆不能使其成为可信认证机制。
 
-本轮已完成源码审查，并通过真实 Unity/SDK/NDMF 引用的 Roslyn 类型检查。云端缺少
-Unity 许可，Editor 导入、IL 后处理、EditMode 回归、NDMF/SDK 实际构建和 VRChat
-运行仍未执行。下列描述是代码行为与设计约束，不是运行通过报告。
+本轮已完成源码审查；真实 Unity 2022.3.22f1 导入并执行 42 项 EditMode 回归测试，
+全部通过且零跳过（核心 15、SDK 27）。完整环境为 SDK 3.8.2、MA 1.18、NDMF 1.11，
+证据见仓库 `Docs/Testing.md`。实际 Avatar 构建、NDMF 最终 Controller 提交和 VRChat
+运行仍需验证；下列设计约束不能据测试通过扩大为完整运行时保证。
 
 ## 2. 代码结构与职责
 

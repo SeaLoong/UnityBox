@@ -89,8 +89,8 @@ Min–Max 之间线性混合，区间外使用端点。`Write Defaults = Auto` �
   声明用例检查调度不强制启用动画服务、无配置/禁用配置、历史无效层和服务所有权。
 
 通过包安装时，将本包名加入项目 `Packages/manifest.json` 的 `testables`。
-本次使用真实 Unity/SDK/NDMF 引用的 Roslyn 类型检查通过；这不等于 Unity Editor
-导入、IL 后处理或 EditMode 执行。当前云环境无 Unity 许可，上述 39 项用例尚未执行。
-NDMF 最终提交和 VRChat 客户端口型仍需实际项目验证。
+真实 Unity 2022.3.22f1 已导入并执行上述 39 项用例，全部通过且零跳过；其中核心
+9 项、SDK 25 项、NDMF 5 项。完整环境使用 SDK 3.8.2、MA 1.18、NDMF 1.11，结果见
+仓库 `Docs/Testing.md`。NDMF 最终提交和 VRChat 客户端口型仍需实际项目验证。
 
 详细说明见仓库的 `Docs/VisemeBlendshapeOverride.md`。

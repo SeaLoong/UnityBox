@@ -24,12 +24,12 @@
   "versionDefines": [
     {
       "name": "com.vrchat.avatars",
-      "expression": "[3.7.0,)",
+      "expression": "3.7.0",
       "define": "UNITYBOX_VRC_SDK"
     },
     {
       "name": "nadena.dev.ndmf",
-      "expression": "[1.7.0,)",
+      "expression": "1.7.0",
       "define": "NDMF_AVAILABLE"
     }
   ],
