@@ -6,7 +6,7 @@
 
 请把当前 Linux 云环境配置成能实际运行 UnityBox 测试和 Player 的开发环境，并把安装命令、启动脚本及结果保存到持久化工作目录。
 
-1. **先取得工具和源码。** 检查当前 checkout、用户改动、磁盘、Linux x86-64 架构、Python 和网络策略。读取可用的云环境 runtime/setup skill，以及仓库的 AGENTS.md。通过已配置的 Git 身份从 `https://github.com/SeaLoong/UnityBox.git` 执行 `git fetch origin refactor feat/animator-optimizer` 获取两个远端分支；复用已有 checkout，或分别建立独立 checkout。先从这两个分支取得 `scripts/unity/`、依赖锁与测试 skill。保留用户场景、原 metadata 和现有改动。当前机器可能没有之前环境的任何文件、桌面、登录会话或许可证，请实际检查并安装。
+1. **先取得工具和源码。** 检查当前 checkout、用户改动、磁盘、Linux x86-64 架构、Python 和网络策略。读取可用的云环境 runtime/setup skill，以及仓库的 AGENTS.md。通过已配置的 Git 身份取得 `https://github.com/SeaLoong/UnityBox.git` 的 `master`，复用已有 checkout；新环境可执行 `git clone --branch master https://github.com/SeaLoong/UnityBox.git`。从同一个 checkout 取得八个插件、`scripts/unity/`、依赖锁和测试 skill。保留用户场景、原 metadata 和现有改动。当前机器可能没有之前环境的任何文件、桌面、登录会话或许可证，请实际检查并安装。
 
 2. **安装真实工具链。** 使用 Python 3.12+、Unity **2022.3.22f1**；首次解包 Editor 至少准备 **13 GiB** 可用空间，并为多个隔离工程和 Player 另留空间。保留平台的代理与 CA。优先使用仓库安装器：它校验固定摘要的 GameCI OCI manifest/Editor 层，再提取 Editor；已有同版本安装可直接复用。确认 LinuxStandaloneSupport 的 Mono playback engine 完整，缺少时从对应版本的官方模块补齐并校验下载内容。运行 Editor 的 `-version` 核对版本。
 
@@ -29,12 +29,11 @@
 
    若 Hub 登录弹窗一闪即退，检查脱敏后的 TLS/DBus/协议回调错误。只读 HOME 的 NSS 数据库不能取得平台代理 CA 时，使用签名发行版提供的 p11-kit 系统信任模块，仅为 Hub/浏览器进程配置相应库搜索路径，让 NSS 读取系统信任库。验证正常 HTTPS 成功、自签证书被拒绝；保持 TLS 校验，不使用忽略证书开关。容器共享内存导致黑窗时，为自有 Xvfb 关闭 MIT-SHM，并让 x11vnc 使用 `-noshm`。将这些启动步骤保存成脚本，认证内容留在私有目录。
 
-4. **分开准备真实依赖范围。** 测试工程放在源码 checkout 外，使用新目录和脚本所有权标记；测试场景由 fixture 创建，用户场景保持原样。先执行普通 Unity 核心，再执行 SDK 回退、完整 MA/NDMF 集成。八插件组合从 refactor 取七包，从 feature 取优化器：
+4. **分开准备真实依赖范围。** 测试工程放在源码 checkout 外，使用新目录和脚本所有权标记；测试场景由 fixture 创建，用户场景保持原样。先执行普通 Unity 核心，再执行 SDK 回退、完整 MA/NDMF 集成。八个插件都从当前 `master` checkout 准备；将 `TASK_REPO` 设为其实际路径：
 
    ```bash
    python3 scripts/unity/test_project.py prepare \
-     --repo "$TASK_REFACTOR_REPO" \
-     --source-package "$TASK_OPTIMIZER_REPO/Assets/UnityBox/AnimatorOptimizer" \
+     --repo "$TASK_REPO" \
      --project "$TASK_UNITY_ROOT/projects/core" --profile core --offline \
      --dependency-cache "$TASK_UNITY_ROOT/dependencies"
    ```
@@ -56,4 +55,4 @@
 
    图标测试继承自有桌面的 DISPLAY/Xauthority，执行 `run --graphics --test-category UnityBoxGraphics` 并读取实际渲染像素。关闭其它测试 Editor 后串行执行 `run --benchmark`，保存预热、规模、样本、中位数、p95 和正确性结果。Player 的固定输入稳态 Animator.Update 与 Editor 生成成本分别记录。实际输出、构建、测量各自使用独立结果目录。
 
-6. **交付可复用结果。** 运行共享 Python 单元测试和相关打包检查。保存真实命令、退出码、XML、日志与源码哈希，使用仓库证据工具生成验证和性能文档。最后说明安装位置、各范围实际通过数量、Player 与图形结果、性能数据，以及日常启动/重跑命令；把通用流程沉淀为文档和测试 skill。配置草稿与已发布环境版本分别记录，凭据、浏览器会话和许可证内容保留在该机器私有存储。
+6. **交付可复用结果。** 运行 `python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v`，再运行 `python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v` 检查打包与发布。保存真实命令、退出码、XML、日志与源码哈希，使用仓库证据工具生成验证和性能文档。最后说明安装位置、各范围实际通过数量、Player 与图形结果、性能数据，以及日常启动/重跑命令；把通用流程沉淀为文档和测试 skill；完成已授权的 `master` 提交与推送，并核对远端 SHA。配置草稿与已发布环境版本分别记录，凭据、浏览器会话和许可证内容保留在该机器私有存储。

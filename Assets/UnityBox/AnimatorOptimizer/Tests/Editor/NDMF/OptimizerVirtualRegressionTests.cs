@@ -607,6 +607,120 @@ namespace UnityBox.AnimatorOptimizer.Tests
             if (!vrchat) Assert.That(controller.Parameters["IsLocal"].defaultFloat, Is.EqualTo(1f));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void AutomaticSelectionRetainsIsolatedGroupWhileManualSelectionCanConvertIt(bool manualSelection)
+        {
+            var root = Track(new GameObject("Singleton group Avatar"));
+            var referenceRoot = Track(new GameObject("Singleton reference Avatar"));
+            foreach (var parent in new[] { root, referenceRoot })
+            foreach (var path in new[] { "Output", "Other0", "Other1" })
+            {
+                var child = new GameObject(path);
+                child.transform.SetParent(parent.transform, false);
+            }
+            var source = Track(new AnimatorController());
+            source.AddParameter("Gate", AnimatorControllerParameterType.Bool);
+            var singletonMachine = Track(new AnimatorStateMachine { name = "Isolated selector" });
+            var off = Track(singletonMachine.AddState("Off"));
+            var on = Track(singletonMachine.AddState("On"));
+            off.motion = CreateAapClip("Off", "Output", 0f);
+            on.motion = CreateAapClip("On", "Output", 1f);
+            off.tag = on.tag = "Isolated selector tag";
+            off.writeDefaultValues = on.writeDefaultValues = true;
+            singletonMachine.defaultState = off;
+            foreach (var state in new[] { off, on })
+            {
+                var transition = Track(singletonMachine.AddAnyStateTransition(state));
+                transition.duration = 0f;
+                transition.hasExitTime = false;
+                transition.canTransitionToSelf = true;
+                transition.AddCondition(state == off ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If, 0f, "Gate");
+            }
+            var layers = new List<AnimatorControllerLayer>
+            {
+                new AnimatorControllerLayer
+                {
+                    name = "Isolated selector", stateMachine = singletonMachine,
+                    defaultWeight = 1f, syncedLayerIndex = -1,
+                },
+            };
+            for (var index = 0; index < 2; index++)
+            {
+                var machine = Track(new AnimatorStateMachine { name = "Merge constant " + index });
+                var state = Track(machine.AddState("Constant"));
+                state.writeDefaultValues = true;
+                state.motion = CreateAapClip("Constant " + index, "Other" + index, 2f + index);
+                layers.Add(new AnimatorControllerLayer
+                {
+                    name = machine.name, stateMachine = machine, defaultWeight = 1f, syncedLayerIndex = -1,
+                });
+            }
+            source.layers = layers.ToArray();
+            var sourcePath = "Assets/SingletonSource_" + Guid.NewGuid().ToString("N") + ".controller";
+            assetPaths.Add(sourcePath);
+            PersistAapCommittedGraph(source, sourcePath);
+            AssetDatabase.SaveAssets();
+            var animator = root.AddComponent<Animator>();
+            var reference = referenceRoot.AddComponent<Animator>();
+            animator.runtimeAnimatorController = reference.runtimeAnimatorController = source;
+            animator.cullingMode = reference.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var component = root.AddComponent<AnimatorOptimizerComponent>();
+            component.targetMode = AnimatorOptimizerComponent.TargetMode.AnimatorComponent;
+            component.animator = animator;
+            component.optimizeAllConvertibleLayers = !manualSelection;
+            if (manualSelection) component.layerIndices.AddRange(new[] { 0, 1, 2 });
+            component.preserveMmdCompatibility = false;
+            component.removeEffectivelyEmptyLayers = false;
+            component.normalizeAlwaysOneParameters = false;
+            component.mergeSynchronizedStateMachines = false;
+            AnimatorOptimizerBuildState.Capture(root, "Singleton group regression");
+            var context = CreateBuildContext(root);
+            Invoke("CaptureSourceLayerSelection", context);
+            var services = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+            var controller = services.ControllerContext.Controllers[animator];
+            var singleton = controller.Layers.First();
+
+            Invoke("Process", context, false);
+
+            Assert.That(controller.Layers.Count(), Is.EqualTo(2), "the two independent constants still merge");
+            Assert.That(controller.Parameters["Gate"].type, Is.EqualTo(manualSelection
+                ? AnimatorControllerParameterType.Float : AnimatorControllerParameterType.Bool));
+            if (manualSelection)
+                Assert.That(controller.Layers, Has.No.Member(singleton), "manual selection explicitly requests its conversion");
+            else
+            {
+                Assert.That(controller.Layers.First(), Is.SameAs(singleton));
+                Assert.That(singleton.StateMachine.States, Has.Count.EqualTo(2));
+            }
+            context.DeactivateAllExtensionContexts();
+            var committed = (AnimatorController)animator.runtimeAnimatorController;
+            var committedPath = "Assets/SingletonCommit_" + Guid.NewGuid().ToString("N") + ".controller";
+            assetPaths.Add(committedPath);
+            PersistAapCommittedGraph(committed, committedPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(committedPath, ImportAssetOptions.ForceSynchronousImport);
+            animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<AnimatorController>(committedPath);
+            animator.Rebind();
+            reference.Rebind();
+            for (var frame = 0; frame < 60; frame++)
+            {
+                var value = (frame / 10) % 2;
+                if (manualSelection) animator.SetFloat("Gate", value);
+                else animator.SetBool("Gate", value != 0);
+                reference.SetBool("Gate", value != 0);
+                animator.Update(1f / 60f);
+                reference.Update(1f / 60f);
+                foreach (var path in new[] { "Output", "Other0", "Other1" })
+                    Assert.That(Vector3.Distance(root.transform.Find(path).localPosition,
+                        referenceRoot.transform.Find(path).localPosition), Is.LessThan(0.0001f),
+                        "frame=" + frame + ", path=" + path);
+            }
+            Assert.That(source.parameters.Single().type, Is.EqualTo(AnimatorControllerParameterType.Bool));
+            Assert.That(source.layers[0].stateMachine, Is.SameAs(singletonMachine));
+            Assert.That(source.layers, Has.Length.EqualTo(3));
+        }
+
         [TestCase("IsLocal", AnimatorControllerParameterType.Bool, false)]
         [TestCase("Viseme", AnimatorControllerParameterType.Int, false)]
         [TestCase("Gate", AnimatorControllerParameterType.Bool, true)]

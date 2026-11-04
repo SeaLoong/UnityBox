@@ -76,6 +76,44 @@ namespace UnityBox.AnimatorOptimizer.Tests
             });
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void AutomaticSelectionRetainsSingletonNativeSelectorWhileMergingOtherLayers(bool differentMask)
+        {
+            var source = CreateController("RecommendedGroups");
+            source.AddParameter("Input", AnimatorControllerParameterType.Bool);
+            AddSelector(source, "Selector", "Target", "Input", AnimatorControllerParameterType.Bool, true);
+            AddConstant(source, "Other", "Other", 3f, true);
+            AddConstant(source, "Third", "Third", 7f, true);
+            if (differentMask)
+            {
+                var mask = new AvatarMask { name = "Selector only", transformCount = 2 };
+                mask.SetTransformPath(0, ""); mask.SetTransformActive(0, true);
+                mask.SetTransformPath(1, "Target"); mask.SetTransformActive(1, true);
+                AssetDatabase.AddObjectToAsset(mask, source);
+                var layers = source.layers; layers[0].avatarMask = mask; source.layers = layers;
+            }
+            else
+                foreach (var state in source.layers[0].stateMachine.states) state.state.tag = "Native selector";
+            var options = new AnimatorOptimizerOptions();
+            var report = AnimatorOptimizerAnalyzer.Analyze(source, options);
+            var recommended = AnimatorOptimizerConverter.GetRecommendedSelection(report, options);
+            Assert.That(recommended, Is.EqualTo(new[] { 1, 2 }));
+            var optimized = OptimizeCopy(source, recommended.ToArray(), options);
+            Assert.That(source.layers.Length, Is.EqualTo(3));
+            Assert.That(optimized.layers.Length, Is.EqualTo(2));
+            Assert.That(optimized.layers[0].stateMachine.states.Length, Is.EqualTo(2));
+            Assert.That(optimized.parameters.Single(parameter => parameter.name == "Input").type,
+                Is.EqualTo(AnimatorControllerParameterType.Bool));
+            var before = CreateAnimator(source, "Target", "Other", "Third");
+            var after = CreateAnimator(optimized, "Target", "Other", "Third");
+            CompareFrames(before, after, 90, frame =>
+            {
+                before.SetBool("Input", frame / 3 % 2 != 0);
+                after.SetBool("Input", frame / 3 % 2 != 0);
+            });
+        }
+
         [TestCase("IsLocal", AnimatorControllerParameterType.Bool)]
         [TestCase("Viseme", AnimatorControllerParameterType.Int)]
         public void ExplicitPlatformInputsExecuteTheirDeclaredNativeParameterType(string parameter, AnimatorControllerParameterType type)
@@ -227,6 +265,45 @@ namespace UnityBox.AnimatorOptimizer.Tests
                 var value = new[] { 0, 1, 0, -1, 0 }[(frame / 8) % 5];
                 before.SetInteger("Choice", value); after.SetFloat("Choice", value);
             });
+        }
+
+        [TestCase(8)]
+        [TestCase(32)]
+        [Category("UnityBoxPerformance")]
+        public void AutomaticSelectionBenchmarksRetainedSingletonsAgainstExplicitConversion(int layerCount)
+        {
+            var source = CreateController("SingletonGroups" + layerCount);
+            var paths = Enumerable.Range(0, layerCount).Select(index => "Target" + index).ToArray();
+            for (var index = 0; index < layerCount; index++)
+            {
+                var input = "Input" + index;
+                source.AddParameter(input, AnimatorControllerParameterType.Bool);
+                AddSelector(source, "Selector" + index, paths[index], input, AnimatorControllerParameterType.Bool, true);
+                foreach (var child in source.layers[index].stateMachine.states) child.state.tag = "Group" + index;
+            }
+            var options = new AnimatorOptimizerOptions();
+            var report = AnimatorOptimizerAnalyzer.Analyze(source, options);
+            Assert.That(AnimatorOptimizerConverter.GetRecommendedSelection(report, options), Is.Empty);
+            var explicitOptions = options.Clone(); explicitOptions.RequireAtLeastTwoLayers = false;
+            var converted = OptimizeCopy(source, Enumerable.Range(0, layerCount).ToArray(), explicitOptions);
+            Assert.That(converted.layers.Length, Is.EqualTo(layerCount));
+            var retainedAnimator = CreateAnimator(source, paths);
+            var convertedAnimator = CreateAnimator(converted, paths);
+            CompareFrames(retainedAnimator, convertedAnimator, 60, frame =>
+            {
+                for (var index = 0; index < layerCount; index++)
+                {
+                    bool value = (frame / 3 + index) % 2 != 0;
+                    retainedAnimator.SetBool("Input" + index, value);
+                    convertedAnimator.SetFloat("Input" + index, value ? 1f : 0f);
+                }
+            });
+            for (var i = 0; i < 30; i++)
+            {
+                retainedAnimator.Update(1f / 60f); convertedAnimator.Update(1f / 60f);
+            }
+            Measure("automatic_retained_singleton_groups", layerCount, () => retainedAnimator.Update(1f / 60f), 300);
+            Measure("explicit_singleton_conversion", layerCount, () => convertedAnimator.Update(1f / 60f), 300);
         }
 
         [TestCase(8)]

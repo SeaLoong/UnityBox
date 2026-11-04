@@ -1410,6 +1410,57 @@ namespace UnityBox.AnimatorOptimizer.Tests
             Assert.That(issues.Any(issue => issue.Contains("时间基准") || issue.Contains("Reference")), Is.True);
         }
 
+        [TestCase("Mask")]
+        [TestCase("BlendMode")]
+        [TestCase("Tag")]
+        public void AutomaticRecommendationPreservesUnmergeableSingletonGroups(string separation)
+        {
+            var controller = CreateController();
+            AddSingleMotionLayer(controller, "First", "FirstOutput", 1f);
+            AddSingleMotionLayer(controller, "Second", "SecondOutput", 2f);
+            var layers = controller.layers;
+            if (separation == "Mask")
+            {
+                var mask = new AvatarMask { name = "Separate" };
+                mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.Head, false);
+                AssetDatabase.AddObjectToAsset(mask, controller);
+                layers[1].avatarMask = mask;
+            }
+            else if (separation == "BlendMode")
+                layers[1].blendingMode = AnimatorLayerBlendingMode.Additive;
+            else
+                layers[1].stateMachine.defaultState.tag = "Separate";
+            controller.layers = layers;
+            var options = new AnimatorOptimizerOptions();
+            var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
+
+            Assert.That(report.ConvertibleLayerCount, Is.EqualTo(2));
+            Assert.That(AnimatorOptimizerConverter.GetRecommendedSelection(report, options), Is.Empty);
+            Assert.That(controller.parameters, Is.Empty);
+            Assert.That(controller.layers[0].stateMachine, Is.SameAs(layers[0].stateMachine));
+            Assert.That(controller.layers[1].stateMachine, Is.SameAs(layers[1].stateMachine));
+            options.RequireAtLeastTwoLayers = false;
+            Assert.That(AnimatorOptimizerConverter.GetRecommendedSelection(report, options), Is.EqualTo(new[] { 0, 1 }),
+                "Explicit single-layer transformation remains available.");
+        }
+
+        [Test]
+        public void AutomaticRecommendationTreatsSkippedSingletonAsAnOverrideBarrier()
+        {
+            var controller = CreateController();
+            AddSingleMotionLayer(controller, "Before", "SharedOutput", 1f);
+            var mask = new AvatarMask { name = "Barrier" };
+            mask.SetHumanoidBodyPartActive(AvatarMaskBodyPart.Head, false);
+            AddSingleMotionLayer(controller, "Singleton", "SharedOutput", 2f, mask);
+            AddSingleMotionLayer(controller, "After", "SharedOutput", 3f);
+            var options = new AnimatorOptimizerOptions();
+            var report = AnimatorOptimizerAnalyzer.Analyze(controller, options);
+
+            Assert.That(report.ConvertibleLayerCount, Is.EqualTo(3));
+            Assert.That(AnimatorOptimizerConverter.GetRecommendedSelection(report, options), Is.Empty);
+            Assert.That(controller.layers.Select(layer => layer.name), Is.EqualTo(new[] { "Before", "Singleton", "After" }));
+        }
+
         [Test]
         public void GeneratesSeparateLayersForDifferentMaskContents()
         {

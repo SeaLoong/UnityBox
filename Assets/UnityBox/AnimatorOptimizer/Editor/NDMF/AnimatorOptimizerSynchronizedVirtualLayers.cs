@@ -120,8 +120,9 @@ namespace UnityBox.AnimatorOptimizer
 
         private static IEnumerable<VirtualCandidateGroup> SplitVirtualCandidateGroup(VirtualCandidateGroup source,
             IReadOnlyList<VirtualLayer> layers, IReadOnlyDictionary<VirtualLayer, HashSet<BindingKey>> bindingsByLayer,
-            ISet<VirtualLayer> completeBindings, AnimatorOptimizerOptions options)
+            ISet<VirtualLayer> completeBindings, AnimatorOptimizerOptions options, bool includeSingletons)
         {
+            var minimumGroupSize = includeSingletons ? 1 : 2;
             VirtualCandidateGroup Create(List<VirtualCandidate> candidates) => new VirtualCandidateGroup
             {
                 BlendingMode = source.BlendingMode, MaskKey = source.MaskKey, Mask = source.Mask,
@@ -146,12 +147,12 @@ namespace UnityBox.AnimatorOptimizer
                 var trial = Create(current.Concat(new[] { candidate }).ToList());
                 if (current.Count > 0 && !Safe(trial))
                 {
-                    if (current.Count > 1) yield return Create(current);
+                    if (current.Count >= minimumGroupSize) yield return Create(current);
                     current = new List<VirtualCandidate>();
                 }
                 current.Add(candidate);
             }
-            if (current.Count > 1) yield return Create(current);
+            if (current.Count >= minimumGroupSize) yield return Create(current);
         }
 
         private static bool HasVirtualParameterOrderConflict(VirtualCandidateGroup group, IReadOnlyList<VirtualLayer> layers)

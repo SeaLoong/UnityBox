@@ -4,7 +4,8 @@
   "references": [
     "UnityBox.AvatarSecuritySystem",
     "UnityBox.AvatarSecuritySystem.Runtime",
-    "nadena.dev.ndmf"
+    "nadena.dev.ndmf",
+    "UnityBox.AvatarSecuritySystem.VRChat"
   ],
   "includePlatforms": [
     "Editor"
@@ -15,13 +16,19 @@
   "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [
-    "NDMF_AVAILABLE"
+    "NDMF_AVAILABLE",
+    "UNITYBOX_VRC_SDK"
   ],
   "versionDefines": [
     {
       "name": "nadena.dev.ndmf",
-      "expression": "",
+      "expression": "1.8.0",
       "define": "NDMF_AVAILABLE"
+    },
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_SDK"
     }
   ],
   "noEngineReferences": false

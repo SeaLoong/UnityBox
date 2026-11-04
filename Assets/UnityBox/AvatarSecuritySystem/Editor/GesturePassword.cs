@@ -10,12 +10,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private readonly AnimatorController controller;
         private readonly GameObject avatarRoot;
         private readonly ASSConfigData config;
+        private readonly IAnimatorBehaviourAdapter behaviours;
 
-        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSConfigData config)
+        public GesturePassword(AnimatorController controller, GameObject avatarRoot, ASSConfigData config, IAnimatorBehaviourAdapter behaviours)
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
             this.config = config;
+            this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
 
         public void Generate()
@@ -33,7 +35,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             string gestureParam = config.useRightHand ? 
                 PARAM_GESTURE_RIGHT : PARAM_GESTURE_LEFT;
-            Utils.EnsureBuiltInVRCParameters(controller,
+            Utils.EnsureInputParameters(controller,
                 ensureIsLocal: true,
                 ensureGestureParameters: true);
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
@@ -42,7 +44,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var waitState = layer.stateMachine.AddState(
                 Obfuscator.State("Wait_Input"),
                 new Vector3(50, 50, 0));
-            waitState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            waitState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             waitState.writeDefaultValues = true;
             layer.stateMachine.defaultState = waitState;
             var inputWaitingState = layer.stateMachine.AddState(
@@ -58,10 +60,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var timeUpFailedState = layer.stateMachine.AddState(
                 Obfuscator.State("TimeUp_Failed"),
                 new Vector3(50, -50, 0));
-            timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             timeUpFailedState.writeDefaultValues = true;
+            var retry = Utils.CreateTransition(timeUpFailedState, inputWaitingState);
+            retry.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
             anyToFailed.AddCondition(AnimatorConditionMode.If, 0, PARAM_TIME_UP);
+            anyToFailed.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             var successState = layer.stateMachine.AddState(
                 Obfuscator.State("Success", "Password_Success"),
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
@@ -80,8 +85,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Password_Release"),
                 new Vector3(50 + (password.Count + 3) * 350, 150, 0));
-            releaseState.motion = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+            releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             releaseState.writeDefaultValues = true;
+            var rearm = Utils.CreateTransition(releaseState, waitState);
+            rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
+            rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             // 本地 Avatar 若带有已保存的解锁参数，也走 Completed→Release，
             // 让“加载即解锁”和“输入密码后解锁”的最终层状态一致；
             // 该过渡只从 Wait_Input 出发，不会打断正在播放的 Success 音效。
@@ -161,14 +169,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasExitTime: true, exitTime: 1.0f);
                 holdTimeout.duration = 0f;
 
-                // Holding → Wait（手势不匹配时超时重置，与确认同时触发防抖动）
-                var holdingError = holdingState.AddTransition(inputWaitingState);
-                holdingError.hasExitTime = true;
-                holdingError.exitTime = holdExitTime;
-                holdingError.duration = 0f;
-                holdingError.hasFixedDuration = true;
-                holdingError.AddCondition(AnimatorConditionMode.Less, gestureValue, gestureParam);
-                holdingError.AddCondition(AnimatorConditionMode.Greater, gestureValue, gestureParam);
+                // A hold must be continuous. Two separate transitions express OR;
+                // Less AND Greater on one transition can never match any gesture.
+                foreach (var mismatch in new[] { AnimatorConditionMode.Less, AnimatorConditionMode.Greater })
+                {
+                    var holdingError = Utils.CreateTransition(holdingState, inputWaitingState);
+                    holdingError.AddCondition(mismatch, gestureValue, gestureParam);
+                }
 
                 if (i == 0)
                 {
@@ -218,7 +225,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     AnimatorControllerParameterType.Bool, false);
                 Utils.AddParameterIfNotExists(controller, guardB,
                     AnimatorControllerParameterType.Bool, false);
-                var emptyClip = Utils.GetOrCreateEmptyClip(ASSET_FOLDER, SHARED_EMPTY_CLIP_FILE);
+                var emptyClip = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
                 var decoyHolds = new List<AnimatorState>();
                 int decoyCount = Mathf.Clamp(Obfuscator.RngInt(ref rng, 2, 4), 2, password.Count);
                 for (int d = 0; d < decoyCount; d++)
@@ -273,17 +280,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
             if (config.successSound != null)
             {
-                Utils.AddPlayAudioBehaviour(successState, 
+                behaviours.AddPlayAudioBehaviour(successState,
                     GO_AUDIO_SUCCESS, 
                     config.successSound);
             }
-            Utils.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: false);
+            behaviours.AddParameterDriverBehaviour(successState, PARAM_PASSWORD_CORRECT, 1f, localOnly: false);
             layer.stateMachine.hideFlags = HideFlags.HideInHierarchy;
             Utils.AddSubAsset(controller, layer.stateMachine);
             Debug.Log($"[ASS] Gesture password layer created with stability check: " +
                      $"password length={password.Count}, min hold={gestureHoldTime}s, max hold={gestureMaxHoldTime}s, error tolerance={gestureErrorTolerance}s");
             int layerIndex = Utils.AddLayerAndGetIndex(controller, layer);
-            Utils.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_PasswordInput/Release");
+            behaviours.AddDisableSelfLayerControl(releaseState, layerIndex, "ASS_PasswordInput/Release");
         }
         private AnimationClip CreateInputWaitingClip()
         {

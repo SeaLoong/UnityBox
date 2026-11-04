@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITYBOX_VRC_BASE
 using VRC.SDKBase;
+#endif
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -15,7 +17,10 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Part Group Marker")]
   [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Assets/UnityBox/AdvancedCostumeController/README.md#accpartgroupmarker")]
-  public class ACCPartGroupMarker : MonoBehaviour, IEditorOnly
+  public class ACCPartGroupMarker : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+    , IEditorOnly
+#endif
   {
     [Tooltip("Group 会将同名对象组合为一个开关；Exclude 会排除当前对象及其所在自动部件。\nGroup combines same-name objects into one toggle; Exclude removes this object from automatic part control.")]
     public ACCPartControlMode Mode = ACCPartControlMode.Group;

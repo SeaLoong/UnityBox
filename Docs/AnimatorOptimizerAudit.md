@@ -1,11 +1,13 @@
 # Animator Optimizer 实现与运行记录
 
-`feat/animator-optimizer` 从 `master` 的 `e9f0b36` 继续开发。其它七插件在独立 `refactor` 分支；本页记录优化器的实现与实际运行流程。
+八个插件已统一在 `master` 维护；优化器与其余插件使用同一个 checkout 准备隔离测试工程。本页记录优化器的实现、输入契约和真实运行流程。
 
 ## 本轮功能迭代
 
 | 问题 | 完成的实现 | 实际检查 |
 | --- | --- | --- |
+| 自动选择两个互不合并的普通单层组，生成后层数仍为两层 | 推荐选择和 NDMF 自动模式只处理实际能合并的多层组；显式手动转换继续提供 | 不同 Mask/BlendMode/Tag 的单层保留、跨层覆盖屏障、原生 Bool 输入与有效多层合并对照 |
+| NDMF 手动选集中的独立单层被分组器丢弃 | 手动模式明确保留已选单层组，自动模式继续要求普通多层组；两者均经过参数、覆盖与顺序检查 | 同一源 Controller 自动保留 Bool 原生层、手动转换为 Float；最终提交、保存重载后各 60 帧输出对照 |
 | AAP 可见输出滞后一帧 | Update 与 Output 共享下一状态决策编译器，输出直接选取当帧目标 Motion | 首帧 Entry、Bool/Int 历史、Float 重叠 AnyState 逐帧对照 |
 | NDMF AAP 只走物理回退，手动选择跳过 | 当前虚拟图建立物理编译快照，复用核心 AAP 计划，复制回独立虚拟 Motion DAG | 自动/手动选层、插层后身份、修改后的当前曲线、最终提交及资产重载 |
 | 生成子资产未随 Undo 回收 | Clip、BlendTree、StateMachine 与 State 都登记创建 Undo | 常规合并和 AAP 的完整资产数量、参数类型、Undo/Redo 后原生运行 |
@@ -55,7 +57,7 @@ NDMF 最低版本为 1.11：该版本提供所需原对象元数据。普通 Uni
 
 `ConfigurePlayerProbe` 为测试工程建立真实持久化 Controller 与场景对象，生成普通 Selector、AAP EntryOn/EntryOff，以及 8/32/64 层原始/优化后成对场景。独立 Linux Player 重新绑定 Animator，先写输入，再手动推进帧并检查输出；性能阶段逐个测量 Animator。
 
-Editor 基准使用 8、32、64 层，先预热再采集 9 次样本，报告每次分析或 Animator.Update 的 median、p95、min、max。前后图使用相同曲线、对象和参数轨迹。功能检查在计时之前执行。
+Editor 基准使用 8、32、64 层，先预热再采集 9 次样本，报告每次分析或 Animator.Update 的 median、p95、min、max。前后图使用相同曲线、对象和参数轨迹。另对 8、32 个不同 Tag 的单层组，比较自动保留原状态机与显式转换为相同层数 BlendTree 的固定输入更新成本；计时前逐帧核对可见结果。功能检查在计时之前执行。
 
 实际采样值、机器与执行命令集中在 [性能实测](Performance.md)；功能与集成执行记录在 [测试指南](Testing.md) 和 [原生结果](UnityNativeResults.json)。不同依赖范围中重复运行的用例分别记录。
 

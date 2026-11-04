@@ -1,0 +1,22 @@
+{
+  "name": "UnityBox.AdvancedCostumeController.VRChat",
+  "references": [
+    "UnityBox.AdvancedCostumeController.Core",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "UNITYBOX_VRC_AVATARS"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_AVATARS"
+    }
+  ]
+}

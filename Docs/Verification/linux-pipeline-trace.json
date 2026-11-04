@@ -1,348 +1,404 @@
 {
   "schema": 1,
-  "started_utc": "2026-10-28T19:15:26.8566450Z",
+  "started_utc": "2026-11-04T19:40:29.7313200Z",
   "completed": true,
-  "elapsed_ms": 10623.0751,
+  "elapsed_ms": 21737.957,
   "entries": [
     {
       "sequence": 0,
-      "elapsed_ms": 0.0128,
+      "elapsed_ms": 4.7443,
+      "pipeline": "BUILD",
+      "order": -2147483648,
+      "marker": "",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 1,
+      "elapsed_ms": 5.1825,
+      "pipeline": "BUILD",
+      "order": -10000,
+      "marker": "⚑ N10000",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 2,
+      "elapsed_ms": 5.4804,
+      "pipeline": "BUILD",
+      "order": -100,
+      "marker": "◎",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 3,
+      "elapsed_ms": 5.6961,
+      "pipeline": "BUILD",
+      "order": 0,
+      "marker": "○",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 4,
+      "elapsed_ms": 5.9226,
+      "pipeline": "BUILD",
+      "order": 100,
+      "marker": "◉",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 5,
+      "elapsed_ms": 6.1134,
+      "pipeline": "BUILD",
+      "order": 10000,
+      "marker": "⚑ P10000",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 6,
+      "elapsed_ms": 6.3459,
+      "pipeline": "BUILD",
+      "order": 2147483647,
+      "marker": "⛳ END",
+      "message": "BuildPlayerProcessor.PrepareForBuild"
+    },
+    {
+      "sequence": 7,
+      "elapsed_ms": 21.3889,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 PRE",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 1,
-      "elapsed_ms": 2.0206,
+      "sequence": 8,
+      "elapsed_ms": 22.8317,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 2,
-      "elapsed_ms": 2.3744,
+      "sequence": 9,
+      "elapsed_ms": 23.1044,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 3,
-      "elapsed_ms": 2.5946,
+      "sequence": 10,
+      "elapsed_ms": 23.3861,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 4,
-      "elapsed_ms": 8.5374,
+      "sequence": 11,
+      "elapsed_ms": 27.878,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 5,
-      "elapsed_ms": 8.9799,
+      "sequence": 12,
+      "elapsed_ms": 28.2258,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 6,
-      "elapsed_ms": 9.4133,
+      "sequence": 13,
+      "elapsed_ms": 28.5254,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
       "message": "IPreprocessBuildWithReport.OnPreprocessBuild"
     },
     {
-      "sequence": 7,
-      "elapsed_ms": 1116.5265,
+      "sequence": 14,
+      "elapsed_ms": 5364.1281,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🎬 SCENE",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 8,
-      "elapsed_ms": 1117.0486,
+      "sequence": 15,
+      "elapsed_ms": 5364.6002,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 9,
-      "elapsed_ms": 1117.4461,
+      "sequence": 16,
+      "elapsed_ms": 5364.9501,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 10,
-      "elapsed_ms": 1118.9205,
+      "sequence": 17,
+      "elapsed_ms": 5366.1253,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 11,
-      "elapsed_ms": 1120.2566,
+      "sequence": 18,
+      "elapsed_ms": 5367.1786,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 12,
-      "elapsed_ms": 1120.6392,
+      "sequence": 19,
+      "elapsed_ms": 5367.583,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 13,
-      "elapsed_ms": 1122.7125,
+      "sequence": 20,
+      "elapsed_ms": 5369.3472,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
       "message": "IProcessSceneWithReport.OnProcessScene Scene: PlayerVerification"
     },
     {
-      "sequence": 14,
-      "elapsed_ms": 1519.5231,
+      "sequence": 21,
+      "elapsed_ms": 5469.0645,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 FILTER",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 7"
     },
     {
-      "sequence": 15,
-      "elapsed_ms": 1523.2654,
+      "sequence": 22,
+      "elapsed_ms": 5469.5419,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 7"
     },
     {
-      "sequence": 16,
-      "elapsed_ms": 1523.7696,
+      "sequence": 23,
+      "elapsed_ms": 5469.8141,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 7"
     },
     {
-      "sequence": 17,
-      "elapsed_ms": 1531.345,
+      "sequence": 24,
+      "elapsed_ms": 5470.6017,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 5"
     },
     {
-      "sequence": 18,
-      "elapsed_ms": 1531.8616,
+      "sequence": 25,
+      "elapsed_ms": 5470.8489,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 5"
     },
     {
-      "sequence": 19,
-      "elapsed_ms": 1532.1976,
+      "sequence": 26,
+      "elapsed_ms": 5471.0607,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 5"
     },
     {
-      "sequence": 20,
-      "elapsed_ms": 1532.5993,
+      "sequence": 27,
+      "elapsed_ms": 5471.2733,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
       "message": "IFilterBuildAssemblies.OnFilterAssemblies Assemblies: 5"
     },
     {
-      "sequence": 21,
-      "elapsed_ms": 2022.0573,
+      "sequence": 28,
+      "elapsed_ms": 5767.6375,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 POST-DLL",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 22,
-      "elapsed_ms": 2022.7411,
+      "sequence": 29,
+      "elapsed_ms": 5769.8731,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 23,
-      "elapsed_ms": 2023.0383,
+      "sequence": 30,
+      "elapsed_ms": 5770.2724,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 24,
-      "elapsed_ms": 2023.4067,
+      "sequence": 31,
+      "elapsed_ms": 5770.5803,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 25,
-      "elapsed_ms": 2023.6979,
+      "sequence": 32,
+      "elapsed_ms": 5770.8794,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 26,
-      "elapsed_ms": 2023.9789,
+      "sequence": 33,
+      "elapsed_ms": 5771.1792,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 27,
-      "elapsed_ms": 2024.2555,
+      "sequence": 34,
+      "elapsed_ms": 5771.5959,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
       "message": "IPostBuildPlayerScriptDLLs.OnPostBuildPlayerScriptDLLs"
     },
     {
-      "sequence": 28,
-      "elapsed_ms": 2704.1233,
+      "sequence": 35,
+      "elapsed_ms": 6061.5413,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🎨 SHADER",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 29,
-      "elapsed_ms": 2704.9298,
+      "sequence": 36,
+      "elapsed_ms": 6062.0243,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 30,
-      "elapsed_ms": 2705.414,
+      "sequence": 37,
+      "elapsed_ms": 6062.3525,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 31,
-      "elapsed_ms": 2705.8072,
+      "sequence": 38,
+      "elapsed_ms": 6062.5976,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 32,
-      "elapsed_ms": 2706.0727,
+      "sequence": 39,
+      "elapsed_ms": 6062.8193,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 33,
-      "elapsed_ms": 2706.6411,
+      "sequence": 40,
+      "elapsed_ms": 6063.1469,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 34,
-      "elapsed_ms": 2706.9014,
+      "sequence": 41,
+      "elapsed_ms": 6063.4144,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
       "message": "IPreprocessShaders.OnProcessShader Shader: Standard"
     },
     {
-      "sequence": 35,
-      "elapsed_ms": 3091.2277,
+      "sequence": 42,
+      "elapsed_ms": 16615.0878,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "LINKER",
       "message": "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile"
     },
     {
-      "sequence": 36,
-      "elapsed_ms": 10605.9404,
+      "sequence": 43,
+      "elapsed_ms": 21728.8232,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 POST",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 37,
-      "elapsed_ms": 10607.1115,
+      "sequence": 44,
+      "elapsed_ms": 21729.1822,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 38,
-      "elapsed_ms": 10607.6741,
+      "sequence": 45,
+      "elapsed_ms": 21729.4552,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 39,
-      "elapsed_ms": 10608.0712,
+      "sequence": 46,
+      "elapsed_ms": 21729.6571,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 40,
-      "elapsed_ms": 10621.8123,
+      "sequence": 47,
+      "elapsed_ms": 21737.0513,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 41,
-      "elapsed_ms": 10622.2748,
+      "sequence": 48,
+      "elapsed_ms": 21737.3525,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
       "message": "IPostprocessBuildWithReport.OnPostprocessBuild"
     },
     {
-      "sequence": 42,
-      "elapsed_ms": 10622.7682,
+      "sequence": 49,
+      "elapsed_ms": 21737.7398,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",

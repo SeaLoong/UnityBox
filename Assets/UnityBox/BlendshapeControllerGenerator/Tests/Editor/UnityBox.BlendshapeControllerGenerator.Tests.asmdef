@@ -1,0 +1,41 @@
+{
+  "name": "UnityBox.BlendshapeControllerGenerator.Tests",
+  "references": [
+    "UnityBox.BlendshapeControllerGenerator",
+    "nadena.dev.modular-avatar.core",
+    "VRC.SDK3A",
+    "VRC.SDKBase",
+    "UnityBox.BlendshapeControllerGenerator.ModularAvatar"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_AVATARS",
+    "MODULAR_AVATAR_AVAILABLE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.3",
+      "define": "UNITYBOX_VRC_AVATARS"
+    },
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "1.13.0",
+      "define": "MODULAR_AVATAR_AVAILABLE"
+    }
+  ],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "System.Collections.Immutable.dll",
+    "VRCSDK3A.dll",
+    "VRCSDKBase.dll"
+  ]
+}

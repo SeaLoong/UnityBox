@@ -1,0 +1,32 @@
+ManifestFileVersion: 0
+CRC: 2135954660
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: c6646c59814bf7d94f3d256f00268b2b
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 3a19e4582bfbf8e8f62baa23a9b1da89
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: c6646c59814bf7d94f3d256f00268b2b
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: e528140bdee2cd946b9b30c38e41b3c8, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/UnityBox/AvatarSecuritySystem/Tests/BundlePathProbe.prefab
+Dependencies: []

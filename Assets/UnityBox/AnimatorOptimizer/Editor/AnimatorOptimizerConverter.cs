@@ -221,8 +221,8 @@ namespace UnityBox.AnimatorOptimizer
             if (report == null || !report.GraphIsValid)
                 return Array.Empty<int>();
             options = options?.Clone() ?? new AnimatorOptimizerOptions();
-            var candidates = report.ConvertibleLayers.Where(layer =>
-                (!options.PreserveMmdCompatibility || layer.Index != 0)).Select(layer => layer.Index).ToList();
+            var candidates = FilterRecommendedSelection(report, report.ConvertibleLayers.Where(layer =>
+                !options.PreserveMmdCompatibility || layer.Index != 0).Select(layer => layer.Index), options);
             if (GetSelectionIssues(report, candidates, options).Count == 0)
                 return candidates;
 
@@ -253,7 +253,23 @@ namespace UnityBox.AnimatorOptimizer
                 if (GetSelectionIssues(report, trial, relaxedCount).Count == 0)
                     selected = trial;
             }
+            selected = FilterRecommendedSelection(report, selected, options);
             return GetSelectionIssues(report, selected, options).Count == 0 ? selected : Array.Empty<int>();
+        }
+
+        private static List<int> FilterRecommendedSelection(AnimatorOptimizerReport report,
+            IEnumerable<int> indices, AnimatorOptimizerOptions options)
+        {
+            var selected = indices.Select(index => report.Layers[index]).ToList();
+            if (!options.RequireAtLeastTwoLayers) return selected.Select(layer => layer.Index).OrderBy(index => index).ToList();
+            // A pair of incompatible singleton groups still produces two layers.
+            // Recommend only ordinary groups that actually remove layer dispatches;
+            // AAP remains an explicit opt-in transformation with its own cost model.
+            return BuildLayerGroups(selected.Where(layer =>
+                    layer.ConversionKind != AnimatorOptimizerConversionKind.AapStateRegister).ToList())
+                .Where(group => group.Reports.Count > 1).SelectMany(group => group.Reports)
+                .Concat(selected.Where(layer => layer.ConversionKind == AnimatorOptimizerConversionKind.AapStateRegister))
+                .Select(layer => layer.Index).OrderBy(index => index).ToList();
         }
 
         private static bool CanRetainUnselectedLayerBehaviour(

@@ -1,0 +1,24 @@
+{
+  "name": "UnityBox.AvatarSecuritySystem.Editor.Tests",
+  "rootNamespace": "UnityBox.AvatarSecuritySystem",
+  "references": [
+    "UnityBox.AvatarSecuritySystem",
+    "UnityBox.AvatarSecuritySystem.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

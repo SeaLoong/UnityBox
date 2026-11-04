@@ -5,12 +5,10 @@ using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using VRC.SDKBase.Editor.BuildPipeline;
+using System;
+using System.IO;
+using UnityEditor.UnityLinker;
 
-#if NDMF_AVAILABLE
-using nadena.dev.ndmf;
-[assembly: ExportsPlugin(typeof(UnityBox.BuildPipelineLogger.BuildPipelineLoggerPlugin))]
-#endif
 
 namespace UnityBox.BuildPipelineLogger
 {
@@ -24,15 +22,19 @@ namespace UnityBox.BuildPipelineLogger
     
     public static class BuildPipelineLoggerSettings
     {
-private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
+        private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
+        private static bool? assetPipeline;
+        private static bool? buildPipeline;
+        private static bool? vrcsdk;
+        private static bool? ndmf;
         
         /// <summary>
         /// Asset Pipeline - 资产导入管线 (AssetPostprocessor)
         /// </summary>
         public static bool AssetPipeline
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "AssetPipeline", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "AssetPipeline", value);
+            get => (assetPipeline ??= EditorPrefs.GetBool(PREF_PREFIX + "AssetPipeline", false));
+            set { assetPipeline = value; EditorPrefs.SetBool(PREF_PREFIX + "AssetPipeline", value); }
         }
         
         /// <summary>
@@ -40,8 +42,8 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool BuildPipeline
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "BuildPipeline", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "BuildPipeline", value);
+            get => (buildPipeline ??= EditorPrefs.GetBool(PREF_PREFIX + "BuildPipeline", false));
+            set { buildPipeline = value; EditorPrefs.SetBool(PREF_PREFIX + "BuildPipeline", value); }
         }
         
         /// <summary>
@@ -49,8 +51,8 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool VRCSDK
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "VRCSDK", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "VRCSDK", value);
+            get => (vrcsdk ??= EditorPrefs.GetBool(PREF_PREFIX + "VRCSDK", false));
+            set { vrcsdk = value; EditorPrefs.SetBool(PREF_PREFIX + "VRCSDK", value); }
         }
         
         /// <summary>
@@ -58,17 +60,124 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         /// </summary>
         public static bool NDMF
         {
-            get => EditorPrefs.GetBool(PREF_PREFIX + "NDMF", false);
-            set => EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value);
+            get => (ndmf ??= EditorPrefs.GetBool(PREF_PREFIX + "NDMF", false));
+            set { ndmf = value; EditorPrefs.SetBool(PREF_PREFIX + "NDMF", value); }
         }
     }
 
-    internal static class BuildPipelineLoggerLog
+    [Serializable]
+    public sealed class BuildPipelineLogEntry
+    {
+        public int sequence;
+        public double elapsed_ms;
+        public string pipeline;
+        public int order;
+        public string marker;
+        public string message;
+    }
+
+    [Serializable]
+    public sealed class BuildPipelineTraceData
+    {
+        public int schema = 1;
+        public string started_utc;
+        public bool completed;
+        public double elapsed_ms;
+        public List<BuildPipelineLogEntry> entries = new List<BuildPipelineLogEntry>();
+    }
+
+    public static class BuildPipelineLoggerTrace
+    {
+        private static BuildPipelineTraceData current = new BuildPipelineTraceData();
+        private static BuildPipelineTraceData lastCompleted;
+        private static long started;
+        public static IReadOnlyList<BuildPipelineLogEntry> Entries => current.entries;
+        public static bool Completed => current.completed;
+        private static double Elapsed => started == 0 ? 0 :
+            (System.Diagnostics.Stopwatch.GetTimestamp() - started) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
+        public static void BeginBuild()
+        {
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+            current = new BuildPipelineTraceData { started_utc = DateTime.UtcNow.ToString("O") };
+        }
+
+        public static void Record(string pipeline, int order, string marker, string message)
+        {
+            if (started == 0 || current.completed) BeginBuild();
+            current.entries.Add(new BuildPipelineLogEntry
+            {
+                sequence = current.entries.Count, elapsed_ms = Elapsed,
+                pipeline = pipeline, order = order, marker = marker, message = message,
+            });
+        }
+
+        public static void EndBuild()
+        {
+            current.elapsed_ms = Elapsed;
+            current.completed = true;
+            lastCompleted = current;
+        }
+
+        public static string ExportJson()
+        {
+            if (!current.completed) current.elapsed_ms = Elapsed;
+            return JsonUtility.ToJson(current, true);
+        }
+
+        public static void Save(string path) => File.WriteAllText(path, ExportJson());
+        public static string ExportLastCompletedJson() => JsonUtility.ToJson(lastCompleted ?? current, true);
+        public static void SaveLastCompleted(string path) => File.WriteAllText(path, ExportLastCompletedJson());
+
+        [MenuItem("Tools/UnityBox/Build Pipeline Logger/Export Last Completed Build...")]
+        private static void ExportLastCompletedBuild()
+        {
+            string path = EditorUtility.SaveFilePanel("Export completed build trace", "", "unitybox-completed-build.json", "json");
+            if (!string.IsNullOrEmpty(path)) SaveLastCompleted(path);
+        }
+
+        [MenuItem("Tools/UnityBox/Build Pipeline Logger/Export Current Trace...")]
+        private static void ExportCurrentTrace()
+        {
+            string path = EditorUtility.SaveFilePanel("Export build trace", "", "unitybox-build-trace.json", "json");
+            if (!string.IsNullOrEmpty(path)) Save(path);
+        }
+    }
+
+    public static class BuildPipelineLoggerLog
     {
         private const string Prefix = "[BPL]";
+        private static readonly HashSet<System.Type> loggedShaderCallbacks = new HashSet<System.Type>();
+        private static bool playerPreparationPending;
+
+        public static void BeginBuild()
+        {
+            playerPreparationPending = false;
+            loggedShaderCallbacks.Clear();
+            BuildPipelineLoggerTrace.BeginBuild();
+        }
+
+        public static void BeginPlayerPreparation()
+        {
+            BeginBuild();
+            playerPreparationPending = true;
+        }
+
+        public static void BeginPlayerBuild()
+        {
+            if (!playerPreparationPending) BeginBuild();
+            playerPreparationPending = false;
+        }
+        public static bool ShouldLogShader(System.Type callbackType) => loggedShaderCallbacks.Add(callbackType);
 
         public static void Log(string pipeline, int order, string message, string tag = null)
         {
+            // Third-party names in these probes are historical order hints; this
+            // callback does not establish that the framework itself ran.
+            if (pipeline == "VRCSDK" &&
+                (message.Contains("VRCFury") || message.Contains("NDMF") ||
+                 message.Contains("RemoveEditorOnly") || message.Contains("RemoveAvatarEditorOnly")))
+                message = "Callback-order sample: " + message;
             var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
             var orderColored = $"<color=#00FF00>Order={order}</color>";
             
@@ -76,6 +185,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
                 ? orderColored
                 : $"<color=#FFFF00>{tag}</color> | {orderColored}";
 
+            BuildPipelineLoggerTrace.Record(pipeline, order, tag, message);
             Debug.Log($"{Prefix} {pipelineColored} | {middle} | {message}");
         }
 
@@ -83,6 +193,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         {
             var pipelineColored = $"<color=#00FFFF>{pipeline}</color>";
             var markerColored = $"<color=#FFFF00>{marker}</color>";
+            BuildPipelineLoggerTrace.Record(pipeline, 0, marker, message);
             Debug.Log($"{Prefix} {pipelineColored} | {markerColored} | {message}");
         }
     }
@@ -104,7 +215,16 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         [MenuItem(MENU_PREFIX + "VRCSDK")]
         private static void ToggleVRCSDK() => BuildPipelineLoggerSettings.VRCSDK = !BuildPipelineLoggerSettings.VRCSDK;
         [MenuItem(MENU_PREFIX + "VRCSDK", true)]
-        private static bool ValidateVRCSDK() { Menu.SetChecked(MENU_PREFIX + "VRCSDK", BuildPipelineLoggerSettings.VRCSDK); return true; }
+        private static bool ValidateVRCSDK()
+        {
+#if UNITYBOX_VRCSDK
+            Menu.SetChecked(MENU_PREFIX + "VRCSDK", BuildPipelineLoggerSettings.VRCSDK);
+            return true;
+#else
+            Menu.SetChecked(MENU_PREFIX + "VRCSDK", false);
+            return false;
+#endif
+        }
         
         [MenuItem(MENU_PREFIX + "NDMF")]
         private static void ToggleNDMF() => BuildPipelineLoggerSettings.NDMF = !BuildPipelineLoggerSettings.NDMF;
@@ -141,6 +261,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         public override int callbackOrder => int.MinValue;
         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
         {
+            BuildPipelineLoggerLog.BeginPlayerPreparation();
             if (BuildPipelineLoggerSettings.BuildPipeline)
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "BuildPlayerProcessor.PrepareForBuild");
         }
@@ -215,6 +336,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         public int callbackOrder => int.MinValue;
         public void OnPreprocessBuild(BuildReport report)
         {
+            BuildPipelineLoggerLog.BeginPlayerBuild();
             if (BuildPipelineLoggerSettings.BuildPipeline)
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IPreprocessBuildWithReport.OnPreprocessBuild", "🚩 PRE");
         }
@@ -516,14 +638,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_MinValue : IPreprocessShaders
     {
         public int callbackOrder => int.MinValue;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "🎨 SHADER");
-                _logged = true;
             }
         }
     }
@@ -531,14 +651,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_N10000 : IPreprocessShaders
     {
         public int callbackOrder => -10000;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ N10000");
-                _logged = true;
             }
         }
     }
@@ -546,14 +664,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Early : IPreprocessShaders
     {
         public int callbackOrder => -100;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◎");
-                _logged = true;
             }
         }
     }
@@ -561,14 +677,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Mid : IPreprocessShaders
     {
         public int callbackOrder => 0;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "○");
-                _logged = true;
             }
         }
     }
@@ -576,14 +690,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_Late : IPreprocessShaders
     {
         public int callbackOrder => 100;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "◉");
-                _logged = true;
             }
         }
     }
@@ -591,14 +703,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_P10000 : IPreprocessShaders
     {
         public int callbackOrder => 10000;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⚑ P10000");
-                _logged = true;
             }
         }
     }
@@ -606,14 +716,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessShadersLogger_MaxValue : IPreprocessShaders
     {
         public int callbackOrder => int.MaxValue;
-        private static bool _logged = false;
         
         public void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessShaders.OnProcessShader Shader: {shader.name}", "⛳ END");
-                _logged = true;
             }
         }
     }
@@ -625,14 +733,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_MinValue : IPreprocessComputeShaders
     {
         public int callbackOrder => int.MinValue;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "🎛 COMPUTE");
-                _logged = true;
             }
         }
     }
@@ -640,14 +746,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_N10000 : IPreprocessComputeShaders
     {
         public int callbackOrder => -10000;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ N10000");
-                _logged = true;
             }
         }
     }
@@ -655,14 +759,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Early : IPreprocessComputeShaders
     {
         public int callbackOrder => -100;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◎");
-                _logged = true;
             }
         }
     }
@@ -670,14 +772,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Mid : IPreprocessComputeShaders
     {
         public int callbackOrder => 0;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "○");
-                _logged = true;
             }
         }
     }
@@ -685,14 +785,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_Late : IPreprocessComputeShaders
     {
         public int callbackOrder => 100;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "◉");
-                _logged = true;
             }
         }
     }
@@ -700,14 +798,12 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_P10000 : IPreprocessComputeShaders
     {
         public int callbackOrder => 10000;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⚑ P10000");
-                _logged = true;
             }
         }
     }
@@ -715,61 +811,29 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     public class PreprocessComputeShadersLogger_MaxValue : IPreprocessComputeShaders
     {
         public int callbackOrder => int.MaxValue;
-        private static bool _logged = false;
         
         public void OnProcessComputeShader(ComputeShader shader, string kernelName, IList<ShaderCompilerData> data)
         {
-            if (!_logged && BuildPipelineLoggerSettings.BuildPipeline)
+            if (BuildPipelineLoggerSettings.BuildPipeline && BuildPipelineLoggerLog.ShouldLogShader(GetType()))
             {
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, $"IPreprocessComputeShaders.OnProcessComputeShader Shader: {shader.name}, Kernel: {kernelName}", "⛳ END");
-                _logged = true;
             }
         }
     }
     
     #endregion
 
-    // IUnityLinkerProcessor 需要 Unity.Build.Pipeline 包，在VRChat项目中可能不可用
-    // 如需测试，请取消注释并添加包引用
-
-    /*
-    #region ==================== IUnityLinkerProcessor ====================
-    
-    public class UnityLinkerLogger_Early : IUnityLinkerProcessor
-    {
-        public int callbackOrder => -100;
-        
-        public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
-        {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◎");
-            return null;
-        }
-    }
-    
-    public class UnityLinkerLogger_Mid : IUnityLinkerProcessor
+    public class UnityLinkerLogger : IUnityLinkerProcessor
     {
         public int callbackOrder => 0;
-        
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "○");
+            if (BuildPipelineLoggerSettings.BuildPipeline)
+                BuildPipelineLoggerLog.Log("BUILD", callbackOrder,
+                    "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "LINKER");
             return null;
         }
     }
-    
-    public class UnityLinkerLogger_Late : IUnityLinkerProcessor
-    {
-        public int callbackOrder => 100;
-        
-        public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
-        {
-            BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IUnityLinkerProcessor.GenerateAdditionalLinkXmlFile", "◉");
-            return null;
-        }
-    }
-    
-    #endregion
-    */
 
     #region ==================== IPostprocessBuildWithReport ====================
     
@@ -840,451 +904,7 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
         {
             if (BuildPipelineLoggerSettings.BuildPipeline)
                 BuildPipelineLoggerLog.Log("BUILD", callbackOrder, "IPostprocessBuildWithReport.OnPostprocessBuild", "⛳ END");
-        }
-    }
-    
-    #endregion
-
-    #region ==================== VRCSDK Callbacks ====================
-    
-    /*
-     * ===================== 已知框架的 callbackOrder 值 =====================
-     * 
-     * 以下是各主要框架在 IVRCSDKPreprocessAvatarCallback 中使用的 callbackOrder 值:
-     * 
-     * int.MinValue      : (无框架占用)
-     * int.MinValue + 1  : VRCFury FailureCheckStart (构建失败检查起点)
-     *                   : VRCFury IsActuallyUploadingHook (检测是否真正上传)
-     *                   : VRCFury WhenBlueprintIdReadyHook (Blueprint ID 就绪回调)
-     * -11000            : NDMF BuildFrameworkPreprocessHook (Resolving → Transforming)
-     * -10000            : VRCFury VrcPreuploadHook (主处理, 调用 VRCFuryBuilder.RunMain)
-     * -1025             : NDMF BuildFrameworkOptimizeHook (Optimizing → Last)
-     * -1024             : VRCFury VrcfRemoveEditorOnlyObjects / VRCSDK RemoveAvatarEditorOnly
-     * 0                 : 默认值
-     * 100               : 常规后处理
-     * int.MaxValue - 100: VRCFury ParameterCompressorHook (参数压缩，几乎最后执行)
-     * int.MaxValue      : VRCFury FailureCheckEnd (构建失败检查终点)
-     *                   : VRCFury VrcfRemoveEditorOnlyComponents (移除 EditorOnly 组件)
-     *                   : MA ReplacementRemoveIEditorOnly (销毁所有 IEditorOnly 组件)
-     * 
-     * VRCFury 的完整 Hook 列表 (按 callbackOrder 排序):
-     *   1. FailureCheckStart          (int.MinValue + 1)  - 构建失败检查起点
-     *   2. IsActuallyUploadingHook    (int.MinValue + 1)  - 检测是否真正上传
-     *   3. WhenBlueprintIdReadyHook   (int.MinValue + 1)  - Blueprint ID 就绪
-     *   4. VrcPreuploadHook           (-10000)            - 主处理入口
-     *   5. VrcfRemoveEditorOnlyObjects(-1024)             - 移除 EditorOnly 对象
-     *   6. ParameterCompressorHook    (int.MaxValue - 100)- 参数压缩
-     *   7. FailureCheckEnd            (int.MaxValue)      - 构建失败检查终点
-     *   8. VrcfRemoveEditorOnlyComponents(int.MaxValue)   - 移除 EditorOnly 组件
-     * 
-     * 本日志记录器在这些关键点的前后都设置了探测器，以便确认执行顺序
-     * ======================================================================
-     */
-    
-    // ==================== IVRCSDKBuildRequestedCallback ====================
-    
-    public class VRCSDKBuildRequestedLogger_MinValue : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => int.MinValue;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "🚩 REQ");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_N10000 : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => -10000;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⚑ N10000");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_Early : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => -100;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "◎");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_Mid : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => 0;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "○");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_Late : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => 100;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "◉");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_P10000 : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => 10000;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⚑ P10000");
-            return true;
-        }
-    }
-    
-    public class VRCSDKBuildRequestedLogger_MaxValue : IVRCSDKBuildRequestedCallback
-    {
-        public int callbackOrder => int.MaxValue;
-        public bool OnBuildRequested(VRCSDKRequestedBuildType requestedBuildType)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKBuildRequestedCallback.OnBuildRequested Type: {requestedBuildType}", "⛳ END");
-            return true;
-        }
-    }
-    
-    // ==================== IVRCSDKPreprocessAvatarCallback 完整阶段覆盖 ====================
-    
-    /// <summary>绝对最早 - int.MinValue</summary>
-    public class VRCSDKPreprocessAvatarLogger_MinValue : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MinValue;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "🚀 PRE");
-            return true;
-        }
-    }
-    
-    /// <summary>VRCFury 早期 Hooks 位置探测 (int.MinValue + 1) - FailureCheckStart / IsActuallyUploadingHook / WhenBlueprintIdReadyHook</summary>
-    public class VRCSDKPreprocessAvatarLogger_VRCFuryEarlyHooks : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MinValue + 1;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "VRCFury FailureCheckStart / IsActuallyUploadingHook / WhenBlueprintIdReadyHook", "★★ VRCFURY-EARLY");
-            return true;
-        }
-    }
-    
-    /// <summary>在 VRCFury 早期 Hooks 之后 (int.MinValue + 2)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterVRCFuryEarlyHooks : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MinValue + 2;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "After VRCFury Early Hooks", "↘ AFTER VRCFURY-EARLY");
-            return true;
-        }
-    }
-    
-    /// <summary>在 NDMF PreprocessHook 之前 (-11001)</summary>
-    public class VRCSDKPreprocessAvatarLogger_BeforeNDMFPreprocess : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -11001;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "Before NDMF PreprocessHook", "↗ BEFORE NDMF-PRE");
-            return true;
-        }
-    }
-    
-    /// <summary>NDMF BuildFrameworkPreprocessHook 位置探测 (-11000)</summary>
-    public class VRCSDKPreprocessAvatarLogger_NDMFPreprocess : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -11000;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "NDMF PreprocessHook (Resolving → Transforming)", "★★ NDMF-PREPROC");
-            return true;
-        }
-    }
-    
-    /// <summary>在 NDMF PreprocessHook 之后、VRCFury 之前 (-10999)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterNDMFPreprocess : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -10999;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "After NDMF PreprocessHook", "↘ AFTER NDMF-PRE");
-            return true;
-        }
-    }
-    
-    /// <summary>在 VRCFury 之前 (-10001)</summary>
-    public class VRCSDKPreprocessAvatarLogger_BeforeVRCFury : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -10001;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "Before VRCFury", "↗ BEFORE VRCFURY");
-            return true;
-        }
-    }
-    
-    /// <summary>VRCFury 位置探测 (-10000)</summary>
-    public class VRCSDKPreprocessAvatarLogger_VRCFury : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -10000;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "VRCFury Hook", "★★ VRCFURY");
-            return true;
-        }
-    }
-    
-    /// <summary>在 VRCFury 之后 (-9999)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterVRCFury : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -9999;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "After VRCFury", "↘ AFTER VRCFURY");
-            return true;
-        }
-    }
-    
-    /// <summary>在 NDMF OptimizeHook 之前 (-1026)</summary>
-    public class VRCSDKPreprocessAvatarLogger_BeforeNDMFOptimize : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -1026;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "Before NDMF OptimizeHook", "↗ BEFORE NDMF-OPT");
-            return true;
-        }
-    }
-    
-    /// <summary>NDMF BuildFrameworkOptimizeHook 位置探测 (-1025)</summary>
-    public class VRCSDKPreprocessAvatarLogger_NDMFOptimize : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -1025;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "NDMF OptimizeHook (Optimizing → Last)", "★★ NDMF-OPT");
-            return true;
-        }
-    }
-    
-    /// <summary>在 RemoveAvatarEditorOnly 之前 / NDMF OptimizeHook 之后 (-1024)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterNDMFOptimize : IVRCSDKPreprocessAvatarCallback
-    {
-        // 注意: -1024 同时被 VRCSDK RemoveAvatarEditorOnly 和 VRCFury VrcfRemoveEditorOnlyObjects 使用
-        // VRCFury 通过 Harmony Patch 移除了原始 RemoveAvatarEditorOnly，替换为自己的 VrcfRemoveEditorOnlyObjects
-        public int callbackOrder => -1024;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "RemoveEditorOnly (VRCFury replaces VRCSDK's implementation)", "★ REMOVE-EDITOR");
-            return true;
-        }
-    }
-    
-    /// <summary>在 RemoveAvatarEditorOnly 之后 (-1023)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterRemoveEditorOnly : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -1023;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "After RemoveAvatarEditorOnly", "↘ AFTER REMOVE-EDITOR");
-            return true;
-        }
-    }
-    
-    /// <summary>经典测试点 - Early (-100)</summary>
-    public class VRCSDKPreprocessAvatarLogger_Early : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -100;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "◎");
-            return true;
-        }
-    }
-    
-    /// <summary>经典测试点 - Mid (0)</summary>
-    public class VRCSDKPreprocessAvatarLogger_Mid : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => 0;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "○");
-            return true;
-        }
-    }
-    
-    /// <summary>经典测试点 - Late (100)</summary>
-    public class VRCSDKPreprocessAvatarLogger_Late : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => 100;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, $"IVRCSDKPreprocessAvatarCallback Avatar: {avatarGameObject.name}", "◉");
-            return true;
-        }
-    }
-    
-    /// <summary>在 VRCFury ParameterCompressorHook 之前 (int.MaxValue - 101)</summary>
-    public class VRCSDKPreprocessAvatarLogger_BeforeParamCompressor : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue - 101;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "Before VRCFury ParameterCompressor", "↗ BEFORE PARAM-COMPRESS");
-            return true;
-        }
-    }
-    
-    /// <summary>VRCFury ParameterCompressorHook 位置探测 (int.MaxValue - 100)</summary>
-    public class VRCSDKPreprocessAvatarLogger_ParamCompressor : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue - 100;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "VRCFury ParameterCompressorHook (参数压缩)", "★★ PARAM-COMPRESS");
-            return true;
-        }
-    }
-    
-    /// <summary>在 VRCFury ParameterCompressorHook 之后 (int.MaxValue - 99)</summary>
-    public class VRCSDKPreprocessAvatarLogger_AfterParamCompressor : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue - 99;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "After VRCFury ParameterCompressor", "↘ AFTER PARAM-COMPRESS");
-            return true;
-        }
-    }
-    
-    /// <summary>在 MaxValue 之前 (int.MaxValue - 1)</summary>
-    public class VRCSDKPreprocessAvatarLogger_BeforeMaxValue : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue - 1;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "Before MaxValue", "↗ BEFORE END");
-            return true;
-        }
-    }
-    
-    /// <summary>绝对最后 - int.MaxValue (VRCFury FailureCheckEnd/VrcfRemoveEditorOnlyComponents, MA RemoveIEditorOnly)</summary>
-    public class VRCSDKPreprocessAvatarLogger_MaxValue : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue;
-        public bool OnPreprocessAvatar(GameObject avatarGameObject)
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "VRCFury Cleanup + MA RemoveIEditorOnly (destroy IEditorOnly)", "★ FINAL-CLEANUP");
-            return true;
-        }
-    }
-    
-    // ==================== IVRCSDKPostprocessAvatarCallback ====================
-    
-    public class VRCSDKPostprocessAvatarLogger_MinValue : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => int.MinValue;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "🚩 POST");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_N10000 : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => -10000;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⚑ N10000");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_Early : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => -100;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "◎");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_Mid : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => 0;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "○");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_Late : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => 100;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "◉");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_P10000 : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => 10000;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⚑ P10000");
-        }
-    }
-    
-    public class VRCSDKPostprocessAvatarLogger_MaxValue : IVRCSDKPostprocessAvatarCallback
-    {
-        public int callbackOrder => int.MaxValue;
-        public void OnPostprocessAvatar()
-        {
-            if (BuildPipelineLoggerSettings.VRCSDK)
-                BuildPipelineLoggerLog.Log("VRCSDK", callbackOrder, "IVRCSDKPostprocessAvatarCallback.OnPostprocessAvatar", "⛳ END");
+            BuildPipelineLoggerTrace.EndBuild();
         }
     }
     
@@ -1594,48 +1214,5 @@ private const string PREF_PREFIX = "UnityBox.BuildPipelineLogger.";
     
     #endregion
 
-    #region ==================== NDMF Plugin ====================
-    
-#if NDMF_AVAILABLE
-    /// <summary>
-    /// NDMF 构建流水线验证插件
-    /// 在每个 BuildPhase 的开始和结束处打印日志
-    /// </summary>
-    public class BuildPipelineLoggerPlugin : Plugin<BuildPipelineLoggerPlugin>
-    {
-public override string QualifiedName => "top.sealoong.unitybox.build-pipeline-logger";
-        public override string DisplayName => "Build Pipeline Logger";
 
-        protected override void Configure()
-        {
-            // NDMF BuildPhase: Resolving -> Generating -> Transforming -> Optimizing -> PlatformFinish
-            
-            InPhase(BuildPhase.Resolving).Run("Logger_Resolving_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Resolving (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Generating).Run("Logger_Generating_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Generating (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Transforming).Run("Logger_Transforming_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Transforming (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-            
-            InPhase(BuildPhase.Optimizing).Run("Logger_Optimizing_Start", ctx =>
-            {
-                if (BuildPipelineLoggerSettings.NDMF)
-                    BuildPipelineLoggerLog.LogRaw("NDMF", "◆ PHASE", $"BuildPhase.Optimizing (Start) Avatar: {ctx.AvatarRootObject.name}");
-            });
-        }
-    }
-#endif
-    
-    #endregion
 }

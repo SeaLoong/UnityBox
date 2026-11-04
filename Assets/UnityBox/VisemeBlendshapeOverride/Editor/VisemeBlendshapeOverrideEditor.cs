@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
 
 namespace UnityBox.VisemeBlendshapeOverride
 {
@@ -34,13 +32,13 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
-
             var component = (VisemeBlendshapeOverrideComponent)target;
             component.EnsureEditorDefaults();
+            serializedObject.Update();
 
-            var descriptor = component.GetComponent<VRCAvatarDescriptor>();
-            var resolvedRenderer = component.ResolveTargetRenderer(descriptor);
+            var defaults = VisemeBlendshapeEditorIntegration.GetDefaults(component);
+            var descriptor = defaults.Blendshapes;
+            var resolvedRenderer = component.ResolveTargetRenderer(defaults.Renderer);
             var blendshapeOptions = GetBlendshapeOptions(resolvedRenderer);
 
             EditorGUILayout.LabelField("Viseme Blendshape Override", EditorStyles.boldLabel);
@@ -67,10 +65,31 @@ namespace UnityBox.VisemeBlendshapeOverride
             DrawValidationMessages(component, descriptor, resolvedRenderer);
 
             serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.Space();
+            EditorGUILayout.HelpBox("Generate a Unity controller asset, then assign it to the root Animator. Drive Viseme (Int 0–14) and Voice (Float 0–1) from your application. The optional VRChat adapter applies these settings during avatar builds.", MessageType.Info);
+            if (GUILayout.Button("Generate Controller Asset"))
+            {
+                if (!VisemeBlendshapeOverrideProcessor.TryCreateBuildPlan(component.gameObject, out var plan,
+                    defaults.Renderer, defaults.Blendshapes)) return;
+                var path = EditorUtility.SaveFilePanelInProject("Generate Viseme Controller", "VisemeController", "controller", "Choose a new controller asset.");
+                if (string.IsNullOrEmpty(path)) return;
+                path = AssetDatabase.GenerateUniqueAssetPath(path);
+                var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
+                try
+                {
+                    VisemeBlendshapeOverrideProcessor.BuildController(controller, plan);
+                    EditorGUIUtility.PingObject(controller);
+                }
+                catch (Exception exception)
+                {
+                    AssetDatabase.DeleteAsset(path);
+                    Debug.LogException(exception);
+                }
+            }
         }
 
         private void DrawBinding(
-            VRCAvatarDescriptor descriptor,
+            IReadOnlyList<string> descriptor,
             IReadOnlyList<string> blendshapeOptions,
             SerializedProperty bindingProperty)
         {
@@ -82,7 +101,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             var voiceMinProperty = bindingProperty.FindPropertyRelative(nameof(VisemeBlendshapeOverrideComponent.VisemeBinding.voiceMin));
             var voiceMaxProperty = bindingProperty.FindPropertyRelative(nameof(VisemeBlendshapeOverrideComponent.VisemeBinding.voiceMax));
 
-            var viseme = (VRC_AvatarDescriptor.Viseme)visemeProperty.intValue;
+            var viseme = (VisemeBlendshapeOverrideComponent.Viseme)visemeProperty.intValue;
             var header = BuildBindingHeader(descriptor, viseme, blendshapeNameProperty);
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField(header, EditorStyles.boldLabel);
@@ -142,16 +161,16 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static void ClampVoiceRange(SerializedProperty minProperty, SerializedProperty maxProperty)
         {
-            minProperty.floatValue = Mathf.Clamp01(minProperty.floatValue);
-            maxProperty.floatValue = Mathf.Clamp01(maxProperty.floatValue);
-
-            if (maxProperty.floatValue <= minProperty.floatValue)
-                maxProperty.floatValue = Mathf.Min(1f, minProperty.floatValue + 0.001f);
+            var min = minProperty.floatValue;
+            var max = maxProperty.floatValue;
+            VisemeBlendshapeOverrideUtils.NormalizeVoiceRange(ref min, ref max);
+            minProperty.floatValue = min;
+            maxProperty.floatValue = max;
         }
 
         private static string BuildBindingHeader(
-            VRCAvatarDescriptor descriptor,
-            VRC_AvatarDescriptor.Viseme viseme,
+            IReadOnlyList<string> descriptor,
+            VisemeBlendshapeOverrideComponent.Viseme viseme,
             SerializedProperty blendshapeNameProperty)
         {
             var selectedBlendshape = ResolveCurrentBlendshapeName(descriptor, viseme, blendshapeNameProperty);
@@ -166,53 +185,41 @@ namespace UnityBox.VisemeBlendshapeOverride
         }
 
         private static void DrawBlendshapePopup(
-            VRCAvatarDescriptor descriptor,
-            VRC_AvatarDescriptor.Viseme viseme,
+            IReadOnlyList<string> descriptor,
+            VisemeBlendshapeOverrideComponent.Viseme viseme,
             IReadOnlyList<string> blendshapeOptions,
             SerializedProperty blendshapeNameProperty)
         {
-            var currentName = ResolveCurrentBlendshapeName(descriptor, viseme, blendshapeNameProperty);
-            var options = new List<string> { "- None -" };
-            var currentIndex = 0;
-
-            if (!string.IsNullOrWhiteSpace(currentName) && !Contains(blendshapeOptions, currentName))
+            var storedName = blendshapeNameProperty.stringValue ?? string.Empty;
+            var options = new List<string> { "- Platform default (if available) -", "- None -" };
+            int currentIndex = string.IsNullOrWhiteSpace(storedName) ? 0 : 1;
+            bool explicitName = !string.IsNullOrWhiteSpace(storedName) &&
+                storedName != VisemeBlendshapeOverrideComponent.NoneBlendshapeValue;
+            bool missing = explicitName && !Contains(blendshapeOptions, storedName);
+            if (missing)
             {
-                options.Add($"<Missing> {currentName}");
-                currentIndex = 1;
+                options.Add($"<Missing> {storedName}");
+                currentIndex = 2;
             }
+            int optionOffset = options.Count;
+            foreach (var option in blendshapeOptions) options.Add(option);
+            if (explicitName && !missing)
+                currentIndex = optionOffset + FindIndex(blendshapeOptions, storedName);
 
-            foreach (var option in blendshapeOptions)
-                options.Add(option);
-
-            if (!string.IsNullOrWhiteSpace(currentName))
-            {
-                var foundIndex = FindIndex(blendshapeOptions, currentName);
-                if (foundIndex >= 0)
-                    currentIndex = options.Count - blendshapeOptions.Count + foundIndex;
-            }
-
-            var nextIndex = EditorGUILayout.Popup("Blendshape", currentIndex, options.ToArray());
+            EditorGUI.BeginChangeCheck();
+            int nextIndex = EditorGUILayout.Popup("Blendshape", currentIndex, options.ToArray());
+            if (!EditorGUI.EndChangeCheck()) return;
             if (nextIndex == 0)
-            {
+                blendshapeNameProperty.stringValue = string.Empty;
+            else if (nextIndex == 1)
                 blendshapeNameProperty.stringValue = VisemeBlendshapeOverrideComponent.NoneBlendshapeValue;
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(currentName) && !Contains(blendshapeOptions, currentName) && nextIndex == 1)
-            {
-                blendshapeNameProperty.stringValue = currentName;
-                return;
-            }
-
-            var optionOffset = options.Count - blendshapeOptions.Count;
-            var selectedIndex = nextIndex - optionOffset;
-            if (selectedIndex >= 0 && selectedIndex < blendshapeOptions.Count)
-                blendshapeNameProperty.stringValue = blendshapeOptions[selectedIndex];
+            else if (nextIndex >= optionOffset)
+                blendshapeNameProperty.stringValue = blendshapeOptions[nextIndex - optionOffset];
         }
 
         private static string ResolveCurrentBlendshapeName(
-            VRCAvatarDescriptor descriptor,
-            VRC_AvatarDescriptor.Viseme viseme,
+            IReadOnlyList<string> descriptor,
+            VisemeBlendshapeOverrideComponent.Viseme viseme,
             SerializedProperty blendshapeNameProperty)
         {
             var storedName = blendshapeNameProperty.stringValue ?? string.Empty;
@@ -223,7 +230,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return storedName;
 
             return descriptor != null
-                ? VisemeBlendshapeOverrideComponent.GetDescriptorBlendshapeName(descriptor, viseme)
+                ? VisemeBlendshapeOverrideComponent.GetDefaultBlendshapeName(descriptor, viseme)
                 : string.Empty;
         }
 
@@ -258,22 +265,16 @@ namespace UnityBox.VisemeBlendshapeOverride
             return FindIndex(values, target) >= 0;
         }
 
-        private static string FormatVisemeName(VRC_AvatarDescriptor.Viseme viseme)
+        private static string FormatVisemeName(VisemeBlendshapeOverrideComponent.Viseme viseme)
         {
             return viseme.ToString().ToLowerInvariant();
         }
 
         private static void DrawValidationMessages(
             VisemeBlendshapeOverrideComponent component,
-            VRCAvatarDescriptor descriptor,
+            IReadOnlyList<string> descriptor,
             SkinnedMeshRenderer resolvedRenderer)
         {
-            if (descriptor == null)
-            {
-                EditorGUILayout.HelpBox("VRCAvatarDescriptor was not found on this object.", MessageType.Error);
-                return;
-            }
-
             if (resolvedRenderer == null)
             {
                 EditorGUILayout.HelpBox("Renderer was not resolved.", MessageType.Error);

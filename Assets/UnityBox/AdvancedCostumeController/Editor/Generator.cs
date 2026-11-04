@@ -42,6 +42,11 @@ namespace UnityBox.AdvancedCostumeController
       List<OutfitData> selectedOutfits,
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData defaultOutfit)
+      => Execute(selectedOutfits, outfitIndexMap, defaultOutfit, true);
+
+    /// <summary>Runs the same complete generation pipeline for scripts and batch tests.</summary>
+    public void Execute(List<OutfitData> selectedOutfits, Dictionary<GameObject, int> outfitIndexMap,
+      OutfitData defaultOutfit, bool showConfirmation)
     {
       if (config.EnableCustomMixer && !config.EnableParts)
       {
@@ -78,9 +83,11 @@ namespace UnityBox.AdvancedCostumeController
       }
 
       var resolvedFolder = config.GetResolvedGeneratedFolder();
-      string controllerPath = Utils.CombineAssetPath(resolvedFolder, config.GetControllerFileName());
-      if (!ShowPreflightDialog(selectedOutfits, defaultOutfit,
-        File.Exists(controllerPath), controllerPath)) return;
+      EnsureGeneratedFolder(resolvedFolder);
+      string buildFolder = AssetDatabase.GenerateUniqueAssetPath(Utils.CombineAssetPath(resolvedFolder, "Build"));
+      string controllerPath = Utils.CombineAssetPath(buildFolder, config.GetControllerFileName());
+      if (showConfirmation && !ShowPreflightDialog(selectedOutfits, defaultOutfit,
+        Utils.FindDirectChild(config.CostumesRoot.transform, ACCConfig.MenuObjectName) != null, controllerPath)) return;
 
       int undoGroup = -1;
       try
@@ -130,20 +137,17 @@ namespace UnityBox.AdvancedCostumeController
         }
 
         EditorUtility.DisplayProgressBar(T("生成中", "Generating"), T("创建动画控制器…", "Creating animator controller…"), 0.7f);
-        // When icon generation is disabled, keep the existing MenuIcons assets.
-        // The menu presentation snapshot restores their references after the
-        // generated menu tree is rebuilt; deleting the folder here would turn
-        // those restored references into Missing assets.
-        PrepareGeneratedFolder(resolvedFolder, preserveMenuIcons: !config.AutoGenerateMenuIcons);
-
-        var controller = animBuilder.CreateController(selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
+        // Each generation keeps its complete asset set for scene Undo and existing references.
+        EnsureGeneratedFolder(buildFolder);
+        var controller = new AnimationBuilder(config, buildFolder).CreateController(
+          selectedOutfits, outfitIndexMap, defaultOutfit, controllerPath);
 
         if (config.AutoGenerateMenuIcons)
         {
           EditorUtility.DisplayProgressBar(T("生成中", "Generating"),
             T("生成菜单图标…", "Generating menu icons…"), 0.9f);
           int iconCount = MenuIconGenerator.Generate(costumesRoot, menuRoot,
-            resolvedFolder, menuIconRequests);
+            buildFolder, menuIconRequests);
           Debug.Log(T($"[ACC] 已生成 {iconCount} 个菜单图标。",
             $"[ACC] Generated {iconCount} menu icons."));
         }
@@ -158,6 +162,23 @@ namespace UnityBox.AdvancedCostumeController
         mergeAnimator.animator = controller;
         ACCEditorUndo.RecordPrefabInstanceModifications(new UnityEngine.Object[] { mergeAnimator });
 
+        var avatarDescriptor = costumesRoot.GetComponentInParent<VRCAvatarDescriptor>();
+        var parameterRoot = avatarDescriptor != null ? avatarDescriptor.gameObject : costumesRoot.transform.root.gameObject;
+        var conflicts = new HashSet<string>(StringComparer.Ordinal);
+        var providedParameters = nadena.dev.ndmf.ParameterInfo.ForUI.GetParametersForObject(parameterRoot,
+          (type, first, second) =>
+          {
+            if (first.Source == rootParams || second.Source == rootParams)
+              conflicts.Add(first.EffectiveName);
+          }).ToArray();
+        var ownConflicts = conflicts.OrderBy(name => name, StringComparer.Ordinal).ToArray();
+        if (ownConflicts.Length > 0)
+          throw new InvalidOperationException("ACC parameter types conflict with existing controls: " + string.Join(", ", ownConflicts));
+        int totalBits = providedParameters.Sum(parameter => parameter.BitUsage);
+        if (totalBits > MaxParameterBits)
+          throw new InvalidOperationException($"Expression parameter budget exceeded: {totalBits}/{MaxParameterBits} bits. Enable compression or reduce selected controls.");
+        Debug.Log($"[ACC] Avatar expression parameter budget: {totalBits}/{MaxParameterBits} bits.");
+        AssetDatabase.SaveAssets();
         EditorUtility.SetDirty(menuRoot);
         EditorUtility.SetDirty(mergeAnimator);
         string completionMessage = T(
@@ -174,6 +195,13 @@ namespace UnityBox.AdvancedCostumeController
             : ""));
         Debug.Log(completionMessage);
       }
+      catch
+      {
+        if (undoGroup >= 0) Undo.RevertAllDownToGroup(undoGroup);
+        undoGroup = -1;
+        if (AssetDatabase.IsValidFolder(buildFolder)) AssetDatabase.DeleteAsset(buildFolder);
+        throw;
+      }
       finally
       {
         if (undoGroup >= 0)
@@ -182,54 +210,10 @@ namespace UnityBox.AdvancedCostumeController
       }
     }
 
-    private static void PrepareGeneratedFolder(string resolvedFolder, bool preserveMenuIcons)
+    private static void EnsureGeneratedFolder(string folder)
     {
-      // 输出目录按 ParamPrefix 隔离，因而可以在重新生成时安全清理旧 Controller 与 Clip，
-      // 避免 AssetDatabase.CreateAsset 因同名旧动画文件而失败。自动图标关闭时保留
-      // MenuIcons，否则菜单展示快照恢复的 Texture2D 引用会因资产被删除而变成 Missing。
-      if (AssetDatabase.IsValidFolder(resolvedFolder))
-      {
-        if (!preserveMenuIcons)
-        {
-          AssetDatabase.DeleteAsset(resolvedFolder);
-        }
-        else
-        {
-          string menuIconFolder = Utils.CombineAssetPath(resolvedFolder, "MenuIcons");
-          foreach (var subfolder in AssetDatabase.GetSubFolders(resolvedFolder))
-          {
-            if (string.Equals(subfolder, menuIconFolder, StringComparison.OrdinalIgnoreCase))
-              continue;
-            AssetDatabase.DeleteAsset(subfolder);
-          }
-
-          string projectRoot = Directory.GetParent(Application.dataPath).FullName;
-          string fullFolder = Path.Combine(projectRoot,
-            resolvedFolder.Replace('/', Path.DirectorySeparatorChar));
-          if (Directory.Exists(fullFolder))
-          {
-            foreach (var file in Directory.GetFiles(fullFolder, "*",
-              SearchOption.TopDirectoryOnly))
-            {
-              if (file.EndsWith(".meta", StringComparison.OrdinalIgnoreCase)) continue;
-              AssetDatabase.DeleteAsset(ToAssetPath(file));
-            }
-          }
-        }
-      }
-
-      Directory.CreateDirectory(resolvedFolder);
+      Directory.CreateDirectory(folder);
       AssetDatabase.Refresh();
-    }
-
-    private static string ToAssetPath(string fullPath)
-    {
-      string normalizedPath = Path.GetFullPath(fullPath).Replace('\\', '/');
-      string projectRoot = Directory.GetParent(Application.dataPath).FullName
-        .Replace('\\', '/');
-      if (normalizedPath.StartsWith(projectRoot + "/", StringComparison.OrdinalIgnoreCase))
-        return normalizedPath.Substring(projectRoot.Length + 1);
-      return normalizedPath;
     }
 
     #region 菜单构建
@@ -248,6 +232,16 @@ namespace UnityBox.AdvancedCostumeController
       AddChoiceParameters(rootParams, config.MainParameterName, mainLayout, defaultIndex);
 
       var costumesRoot = config.CostumesRoot;
+
+      // 先占用所有 OutfitObject 的祖先路径，避免某个服装先生成的组菜单
+      // 被后续服装路径误当成目录复用（例如 Outfit B 与 Outfit C 的路径有前缀关系）。
+      foreach (var outfit in outfits)
+      {
+        var pathSegments = Utils.GetRelativePathSegments(costumesRoot, outfit.OutfitObject);
+        Utils.EnsureSubmenuPathSegments(menuContentRoot,
+          pathSegments.Take(Math.Max(0, pathSegments.Count - 1)),
+          menuPresentation, Utils.OutfitPathSemanticKeyPrefix);
+      }
 
       foreach (var outfit in outfits)
       {
@@ -271,7 +265,9 @@ namespace UnityBox.AdvancedCostumeController
         // 只有单个可选对象且没有部件控制时，才使用扁平菜单。
         if (hasControllableParts || hasMultipleChoices)
         {
-          var outfitSubmenu = Utils.FindOrCreateChild(parentMenu, outfitName);
+          // 该名称可能已被前面的预扫描保留为路径目录。服装组节点必须与目录节点
+          // 分开，不能把后续服装放进另一个服装的选择菜单。
+          var outfitSubmenu = Utils.FindOrCreateUniqueChild(parentMenu, outfitName);
           Utils.EnsureSubmenuOnNode(outfitSubmenu, presentation: menuPresentation);
 
           // 本体和变体开关
@@ -334,16 +330,11 @@ namespace UnityBox.AdvancedCostumeController
     public static ChoiceParameterLayout GetMainChoiceLayout(
       Dictionary<GameObject, int> outfitIndexMap, bool includeCustomMixer,
       bool usesCompression)
-    {
-      return new ChoiceParameterLayout(outfitIndexMap.Count + (includeCustomMixer ? 1 : 0),
-        usesCompression);
-    }
+      => CostumeChoiceResolver.GetMainChoiceLayout(outfitIndexMap, includeCustomMixer, usesCompression);
 
     /// <summary>混搭紧随最后一个服装对象，使用连续的选择值。</summary>
     public static int GetCustomMixerValue(int outfitCount)
-    {
-      return outfitCount;
-    }
+      => CostumeChoiceResolver.GetCustomMixerValue(outfitCount);
 
     public static void AddChoiceParameters(
       ModularAvatarParameters rootParams,
@@ -460,26 +451,12 @@ namespace UnityBox.AdvancedCostumeController
     public static GameObject ResolveDefaultChoiceObject(
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap)
-    {
-      if (defaultOutfit == null) return null;
-      if (defaultOutfit.DefaultChoiceObject != null &&
-          outfitIndexMap.ContainsKey(defaultOutfit.DefaultChoiceObject))
-        return defaultOutfit.DefaultChoiceObject;
-      if (outfitIndexMap.ContainsKey(defaultOutfit.BaseObject))
-        return defaultOutfit.BaseObject;
-
-      return defaultOutfit.GetAllObjects().FirstOrDefault(outfitIndexMap.ContainsKey);
-    }
+      => CostumeChoiceResolver.ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
 
     public static int ResolveDefaultChoiceIndex(
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap)
-    {
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      return defaultChoice != null && outfitIndexMap.TryGetValue(defaultChoice, out var index)
-        ? index
-        : 0;
-    }
+      => CostumeChoiceResolver.ResolveDefaultChoiceIndex(defaultOutfit, outfitIndexMap);
 
     /// <summary>
     /// Mixer 进入时预选默认服装组中与默认版本对应的部件候选，并沿用普通 Parts
@@ -490,25 +467,7 @@ namespace UnityBox.AdvancedCostumeController
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData outfit,
       MixerPartSlot slot)
-    {
-      if (defaultOutfit == null || outfit == null || slot == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
-        return 0;
-
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      int candidateIndex = slot.Candidates.FindIndex(candidate =>
-        candidate.VariantObject == defaultChoice);
-      if (candidateIndex < 0) return 0;
-
-      var normalControl = outfit.GetPartControls().FirstOrDefault(control =>
-        control.Parts != null && control.Parts.Count > 0 &&
-        OutfitData.GetMixerSlotKey(outfit.BaseObject, control) == slot.Key);
-      bool defaultActive = normalControl != null
-        ? normalControl.Parts.All(part => part != null && part.activeSelf)
-        : slot.Candidates[candidateIndex].Control.Parts.All(part =>
-          part != null && part.activeSelf);
-      return defaultActive ? candidateIndex + 1 : 0;
-    }
+      => CostumeChoiceResolver.GetMixerSlotDefaultValue(defaultOutfit, outfitIndexMap, outfit, slot);
 
     /// <summary>
     /// 获取共享部件参数模式下某个服装组的默认整体变体索引。
@@ -518,16 +477,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit,
       Dictionary<GameObject, int> outfitIndexMap,
       OutfitData outfit)
-    {
-      if (outfit == null || defaultOutfit == null ||
-          outfit.OutfitObject != defaultOutfit.OutfitObject)
-        return 0;
-
-      var choices = outfit.GetAllObjects();
-      var defaultChoice = ResolveDefaultChoiceObject(defaultOutfit, outfitIndexMap);
-      int index = choices.IndexOf(defaultChoice);
-      return index >= 0 ? index : 0;
-    }
+      => CostumeChoiceResolver.GetMixerVariantDefaultValue(defaultOutfit, outfitIndexMap, outfit);
 
     private void BuildPartsMenu(
       GameObject menuRoot,
@@ -547,7 +497,7 @@ namespace UnityBox.AdvancedCostumeController
         string partParamName = animBuilder.GetPartParamName(outfit, control);
         bool partDefaultActive = control.Parts.All(part => part.activeSelf);
 
-        var partNode = Utils.FindOrCreateChild(partsMenu, control.Name);
+        var partNode = Utils.FindOrCreateUniqueChild(partsMenu, control.Name);
         var partItem = Utils.CreateMenuItem(partNode);
 
         Utils.ConfigureAsToggle(partItem);
@@ -599,8 +549,8 @@ namespace UnityBox.AdvancedCostumeController
       sb.AppendLine(T($"- 部件数量：{outfits.Sum(o => o.Parts.Count)}", $"- Parts: {outfits.Sum(o => o.Parts.Count)}"));
       sb.AppendLine(T($"- 输出目录：{config.GetResolvedGeneratedFolder()}", $"- Output: {config.GetResolvedGeneratedFolder()}"));
       sb.AppendLine(controllerExists
-        ? T($"- Controller：已存在，继续生成将覆盖 {controllerPath}",
-          $"- Controller: existing file will be overwritten {controllerPath}")
+        ? T($"- Controller：保留旧资产，新结果写入 {controllerPath}",
+          $"- Controller: previous assets are retained; new result {controllerPath}")
         : T($"- Controller：将新建 {controllerPath}",
           $"- Controller: new file will be created {controllerPath}"));
       var defaultChoice = defaultOutfit?.DefaultChoiceObject ??
@@ -955,10 +905,10 @@ namespace UnityBox.AdvancedCostumeController
     private static IEnumerable<OutfitData> GetUniqueMixerOutfits(
       IEnumerable<OutfitData> outfits)
     {
-      var processedOutfitObjects = new HashSet<GameObject>();
+      var processedOutfitBases = new HashSet<GameObject>();
       foreach (var outfit in outfits)
       {
-        if (outfit == null || !processedOutfitObjects.Add(outfit.OutfitObject)) continue;
+        if (outfit == null || !processedOutfitBases.Add(outfit.BaseObject)) continue;
         yield return outfit;
       }
     }

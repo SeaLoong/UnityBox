@@ -9,6 +9,12 @@
   "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [],
-  "versionDefines": [],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.base",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_BASE"
+    }
+  ],
   "noEngineReferences": false
 }

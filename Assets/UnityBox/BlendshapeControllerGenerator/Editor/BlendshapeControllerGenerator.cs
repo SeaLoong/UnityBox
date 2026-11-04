@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using System.Collections.Immutable;
 using UnityEditor.Animations;
 using UnityEngine;
-using nadena.dev.modular_avatar.core;
 
 public class BlendshapeControllerGenerator : EditorWindow
 {
@@ -18,7 +16,7 @@ public class BlendshapeControllerGenerator : EditorWindow
   private GameObject avatarRoot;
   private Vector2 meshListScroll;
   private string blendshapePropertyPrefix = "blendShape.";
-private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGenerator";
+  private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGenerator";
   private string parameterPrefix = "BS_";
   private const string EditorPrefKey_ParameterPrefix = "BlendshapeControllerGenerator.ParameterPrefix";
 
@@ -36,6 +34,10 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
   private float batchBoolOff = 0f;
   private float batchBoolOn = 100f;
   private string controllerName = "";
+  private List<string> generationBuildFolders;
+  private bool installAvatarControls = true;
+  private AnimatorController lastMeshController;
+  public AnimatorController GeneratedController { get; private set; }
 
   private class MeshEntry
   {
@@ -56,7 +58,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
   private string scanFilter = "";
   private bool scanIncludeInactive = true;
 
-[MenuItem("Tools/UnityBox/Blendshape Controller Generator")]
+  [MenuItem("Tools/UnityBox/Blendshape Controller Generator")]
   public static void ShowWindow()
   {
     GetWindow<BlendshapeControllerGenerator>("Blendshape Controller Generator");
@@ -66,9 +68,14 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
   {
     EditorGUILayout.LabelField("Blendshape Controller Generator", EditorStyles.boldLabel);
 
-    avatarRoot = (GameObject)EditorGUILayout.ObjectField("Avatar", avatarRoot, typeof(GameObject), true);
+    avatarRoot = (GameObject)EditorGUILayout.ObjectField("Animation Root", avatarRoot, typeof(GameObject), true);
 
-    EditorGUILayout.HelpBox("Binding path uses the Avatar-to-Target relative path (Target must be a descendant of the Avatar).", MessageType.Info);
+    EditorGUILayout.HelpBox("Bindings are relative to the Animation Root. Targets must be under this root.", MessageType.Info);
+    if (BlendshapeAvatarIntegration.Installer != null)
+      installAvatarControls = EditorGUILayout.Toggle("Install MA Controls", installAvatarControls);
+    EditorGUILayout.HelpBox(!installAvatarControls || BlendshapeAvatarIntegration.Installer == null
+      ? "Unity asset generation: assign the generated controller to an Animator on the Animation Root. Install VRChat Avatars SDK 3.7.3+ and Modular Avatar 1.13+ to also create avatar menus and FX installation."
+      : "Modular Avatar integration active: generation also installs expression menus, parameters and the FX controller on the Animation Root.", MessageType.Info);
 
     EditorGUILayout.BeginHorizontal();
     EditorGUILayout.LabelField("Output Folder", GUILayout.MaxWidth(80));
@@ -78,7 +85,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       var folder = EditorUtility.OpenFolderPanel("Select Output Folder", Application.dataPath, "");
       if (!string.IsNullOrEmpty(folder))
       {
-        if (folder.StartsWith(Application.dataPath))
+        if (folder == Application.dataPath || folder.StartsWith(Application.dataPath + "/", StringComparison.Ordinal))
           outputFolder = "Assets" + folder.Substring(Application.dataPath.Length);
         else
           EditorUtility.DisplayDialog("Invalid folder", "Please select a folder inside this Unity project's Assets folder.", "OK");
@@ -146,10 +153,10 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       }
       EditorGUILayout.EndHorizontal();
 
-      EditorGUILayout.HelpBox("Scan Filter: the filter matches GameObject names under the Avatar. Leave empty for no filtering.", MessageType.Info);
+      EditorGUILayout.HelpBox("Scan Filter: the filter matches GameObject names under the Animation Root. Leave empty for no filtering.", MessageType.Info);
 
       EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.LabelField("Meshes to generate (choose from Avatar or add manually)", EditorStyles.label);
+      EditorGUILayout.LabelField("Meshes to generate (choose from the Animation Root or add manually)", EditorStyles.label);
 
       if (GUILayout.Button("Add", GUILayout.Width(60)))
       {
@@ -258,6 +265,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         if (entry.foldout)
         {
           var names = entry.blendshapeNames;
+          var safeNames = BuildParameterSuffixes(names ?? new List<string>());
           var sels = entry.selected;
           var types = entry.paramTypes;
           var inverts = entry.boolInverts;
@@ -333,7 +341,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
                 if (!Mathf.Approximately(newOff, offs[bi])) offs[bi] = newOff;
                 if (!Mathf.Approximately(newOn, ons[bi])) ons[bi] = newOn;
               }
-              EditorGUILayout.SelectableLabel(parameterPrefix + previewPrefix + SanitizeName(names[bi]), GUILayout.MaxWidth(260), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+              EditorGUILayout.SelectableLabel(parameterPrefix + previewPrefix + safeNames[bi], GUILayout.MaxWidth(260), GUILayout.Height(EditorGUIUtility.singleLineHeight));
 
               EditorGUILayout.EndHorizontal();
             }
@@ -352,7 +360,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
 
     if (avatarRoot == null)
     {
-      EditorGUILayout.HelpBox("Please specify an Avatar (used as the binding root).", MessageType.Error);
+      EditorGUILayout.HelpBox("Please specify an Animation Root.", MessageType.Error);
     }
 
     EditorGUILayout.Space();
@@ -376,17 +384,200 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
           var rel = GetRelativePath(avatarRoot.transform, mr.transform);
           if (rel == null)
           {
-            EditorUtility.DisplayDialog("Invalid Avatar", "One or more selected meshes are not descendants of the Avatar. Ensure Avatar is ancestor of the mesh.", "OK");
+            EditorUtility.DisplayDialog("Invalid Animation Root", "One or more selected meshes are outside the Animation Root. Choose their common ancestor as the root.", "OK");
             return;
           }
         }
         Generate();
       }
     }
+    if (BlendshapeAvatarIntegration.Installer is IBlendshapeAvatarUninstaller uninstaller &&
+        GUILayout.Button("Remove Selected MA Controls"))
+      uninstaller.Uninstall(avatarRoot, meshEntries.Where(entry => entry.enabled && entry.renderer != null)
+        .SelectMany(entry => new[] { GetMeshIdentity(entry.renderer), entry.renderer.name }).Distinct().ToArray());
+    if (GeneratedController != null)
+    {
+      EditorGUILayout.ObjectField("Generated Controller", GeneratedController, typeof(AnimatorController), false);
+      if (GUILayout.Button("Assign to Animation Root Animator")) AssignGeneratedController();
+    }
     EditorGUI.EndDisabledGroup();
   }
 
+  public void AssignGeneratedController()
+  {
+    var animator = avatarRoot.GetComponent<Animator>();
+    if (animator == null) animator = Undo.AddComponent<Animator>(avatarRoot);
+    Undo.RecordObject(animator, "Assign generated blendshape controller");
+    animator.runtimeAnimatorController = GeneratedController;
+    EditorUtility.SetDirty(animator);
+    PrefabUtility.RecordPrefabInstancePropertyModifications(animator);
+  }
+
+  private bool ValidateGeneration(out string error)
+  {
+    error = null;
+    if (avatarRoot == null || EditorUtility.IsPersistent(avatarRoot))
+      error = "Select an Animation Root instance in a scene.";
+    else if (!IsSafeOutputFolder(outputFolder))
+      error = "Output Folder must be a project Assets path without empty, '.' or '..' segments.";
+    else if (string.IsNullOrEmpty(blendshapePropertyPrefix))
+      error = "Blendshape Property Prefix cannot be empty.";
+    else if (float.IsNaN(floatCurveDuration) || float.IsInfinity(floatCurveDuration) || floatCurveDuration <= 0 ||
+      float.IsNaN(floatValueScale) || float.IsInfinity(floatValueScale))
+      error = "Float duration must be positive and all curve settings must be finite.";
+    if (error != null) return false;
+
+    var selectedBindings = new HashSet<(SkinnedMeshRenderer Renderer, string Shape)>();
+    foreach (var entry in meshEntries.Where(entry => entry.enabled))
+    {
+      if (entry.renderer == null || entry.renderer.sharedMesh == null)
+      {
+        error = "Every enabled entry needs a SkinnedMeshRenderer with a mesh.";
+        return false;
+      }
+      if (GetRelativePath(avatarRoot.transform, entry.renderer.transform) == null)
+      {
+        error = "Every selected renderer must be inside the selected Animation Root.";
+        return false;
+      }
+      for (var current = entry.renderer.transform; current != avatarRoot.transform; current = current.parent)
+      {
+        if (current.name.Contains("/") || current.parent.Cast<Transform>().Count(child => child.name == current.name) > 1)
+        {
+          error = "Animation paths require unique sibling names without '/': " + current.name;
+          return false;
+        }
+      }
+      if (entry.blendshapeNames == null || entry.selected == null ||
+          entry.blendshapeNames.Count != entry.selected.Count ||
+          entry.blendshapeNames.Where((name, i) => entry.selected[i])
+            .Any(name => entry.renderer.sharedMesh.GetBlendShapeIndex(name) < 0))
+      {
+        error = "The mesh has changed since scanning. Scan it again before generating.";
+        return false;
+      }
+      foreach (var shape in entry.blendshapeNames.Where((name, index) => entry.selected[index]))
+        if (!selectedBindings.Add((entry.renderer, shape)))
+        {
+          error = "Blendshape selected more than once: " + entry.renderer.name + "/" + shape;
+          return false;
+        }
+      if ((entry.boolOffValues ?? new List<float>()).Concat(entry.boolOnValues ?? new List<float>())
+          .Any(value => float.IsNaN(value) || float.IsInfinity(value)))
+      {
+        error = "Bool Off and On values must be finite.";
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static bool IsSafeOutputFolder(string folder)
+  {
+    if (string.IsNullOrWhiteSpace(folder) || folder.Contains("\\") || folder.Contains(":")) return false;
+    var parts = folder.Split('/');
+    return parts[0] == "Assets" && parts.All(part => !string.IsNullOrWhiteSpace(part) && part != "." && part != "..");
+  }
+
+  private static void EnsureAssetFolder(string path)
+  {
+    var parts = path.Split('/');
+    string current = parts[0];
+    for (int i = 1; i < parts.Length; i++)
+    {
+      string next = current + "/" + parts[i];
+      if (!AssetDatabase.IsValidFolder(next) && string.IsNullOrEmpty(AssetDatabase.CreateFolder(current, parts[i])))
+        throw new IOException("Could not create asset folder: " + next);
+      current = next;
+    }
+  }
+
+  private static string StableHash(string value)
+  {
+    using (var sha = System.Security.Cryptography.SHA256.Create())
+      return BitConverter.ToString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(value)))
+        .Replace("-", "").Substring(0, 12).ToLowerInvariant();
+  }
+
+  private static string GetHierarchyIdentity(Transform target)
+  {
+    var indices = new List<int>();
+    for (var current = target; current != null; current = current.parent)
+      indices.Add(current.GetSiblingIndex());
+    indices.Reverse();
+    return string.Join("/", indices);
+  }
+
+  private static string[] BuildParameterSuffixes(IReadOnlyList<string> names)
+  {
+    // Reserve every original sanitized name before allocating collision suffixes.
+    var reserved = new HashSet<string>(names.Select(SanitizeName), StringComparer.Ordinal);
+    var assigned = new HashSet<string>(StringComparer.Ordinal);
+    var result = new string[names.Count];
+    for (int i = 0; i < names.Count; i++)
+    {
+      string basis = SanitizeName(names[i]);
+      string candidate = basis;
+      if (!assigned.Add(candidate))
+      {
+        int suffix = 2;
+        do { candidate = basis + "_" + suffix++; }
+        while (reserved.Contains(candidate) || !assigned.Add(candidate));
+      }
+      result[i] = candidate;
+    }
+    return result;
+  }
+
   private void Generate()
+  {
+    try
+    {
+      GenerateControllers();
+    }
+    catch (Exception exception)
+    {
+      Debug.LogException(exception);
+      EditorUtility.DisplayDialog("Generation failed", exception.Message, "OK");
+    }
+  }
+
+  /// <summary>Generates every selected renderer as one undoable installation transaction.</summary>
+  /// <returns>True after all renderers complete; false when the user cancels.</returns>
+  public bool GenerateControllers()
+  {
+    if (!ValidateGeneration(out var error)) throw new ArgumentException(error);
+    Undo.IncrementCurrentGroup();
+    int undoGroup = Undo.GetCurrentGroup();
+    Undo.SetCurrentGroupName("Generate blendshape controls");
+    var previousController = GeneratedController;
+    var previousMeshController = lastMeshController;
+    generationBuildFolders = new List<string>();
+    bool completed = false;
+    try
+    {
+      completed = GenerateInternal();
+      return completed;
+    }
+    finally
+    {
+      if (completed)
+        Undo.CollapseUndoOperations(undoGroup);
+      else
+      {
+        Undo.FlushUndoRecordObjects();
+        Undo.RevertAllDownToGroup(undoGroup);
+        GeneratedController = previousController;
+        lastMeshController = previousMeshController;
+        foreach (var buildFolder in generationBuildFolders.AsEnumerable().Reverse())
+          AssetDatabase.DeleteAsset(buildFolder);
+      }
+      generationBuildFolders = null;
+      EditorUtility.ClearProgressBar();
+    }
+  }
+
+  private bool GenerateInternal()
   {
     var usedParams = new HashSet<string>(StringComparer.Ordinal);
     var proposedPrefixes = new List<string>();
@@ -401,6 +592,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       var sels = entry.selected;
       var types = entry.paramTypes;
       if (names == null || sels == null) continue;
+      var safeNames = BuildParameterSuffixes(names);
       if (string.IsNullOrWhiteSpace(proposedPrefixes[mi]))
         proposedPrefixes[mi] = (entry.renderer != null ? entry.renderer.gameObject.name : "mesh") + "_";
 
@@ -411,7 +603,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
-        var pname = parameterPrefix + attemptPrefix + SanitizeName(names[j]);
+        var pname = parameterPrefix + attemptPrefix + safeNames[j];
         if (usedParams.Contains(pname)) { collides = true; break; }
       }
       if (collides)
@@ -424,7 +616,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
           for (int j = 0; j < names.Count; j++)
           {
             if (!sels[j]) continue;
-            var pname = parameterPrefix + attemptPrefix + SanitizeName(names[j]);
+            var pname = parameterPrefix + attemptPrefix + safeNames[j];
             if (usedParams.Contains(pname)) { collides = true; break; }
           }
         } while (collides);
@@ -435,7 +627,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
-        var pname = parameterPrefix + proposedPrefixes[mi] + SanitizeName(names[j]);
+        var pname = parameterPrefix + proposedPrefixes[mi] + safeNames[j];
         usedParams.Add(pname);
       }
     }
@@ -455,7 +647,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       else
       {
         EditorUtility.DisplayDialog("Edit Prefixes", "Please edit the prefixes in the list and press Generate again.", "OK");
-        return;
+        return false;
       }
     }
 
@@ -478,9 +670,10 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
     if (totalClips == 0)
     {
       EditorUtility.DisplayDialog("Nothing to generate", "No blendshape clips selected for export.", "OK");
-      return;
+      return false;
     }
 
+    var generated = new List<AnimatorController>();
     int clipIndex = 0;
     for (int mi = 0; mi < meshEntries.Count; mi++)
     {
@@ -501,9 +694,10 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       {
         EditorUtility.ClearProgressBar();
         Debug.LogWarning("Generation cancelled by user.");
-        return;
+        return false;
       }
 
+      generated.Add(lastMeshController);
       for (int j = 0; j < names.Count; j++)
       {
         if (!sels[j]) continue;
@@ -511,41 +705,42 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         clipIndex += (t == BlendParamType.Bool) ? 2 : 1;
       }
     }
+    if (!installAvatarControls || BlendshapeAvatarIntegration.Installer == null)
+    {
+      string avatarIdentity = SanitizeName(avatarRoot.name) + "_" +
+        StableHash(avatarRoot.scene.path + "/" + GetHierarchyIdentity(avatarRoot.transform));
+      string combinedRoot = outputFolder.TrimEnd('/') + "/" + avatarIdentity + "/Combined";
+      EnsureAssetFolder(combinedRoot);
+      string combinedFolder = AssetDatabase.GenerateUniqueAssetPath(combinedRoot + "/Build");
+      EnsureAssetFolder(combinedFolder);
+      generationBuildFolders?.Add(combinedFolder);
+      GeneratedController = BlendshapeControllerComposer.Combine(generated, combinedFolder + "/Blendshapes.controller");
+      EditorGUIUtility.PingObject(GeneratedController);
+    }
+    else GeneratedController = null;
     EditorUtility.ClearProgressBar();
+    return true;
   }
 
   private bool GenerateForMesh(SkinnedMeshRenderer mr, List<string> names, List<bool> sels, List<BlendParamType> types, List<bool> inverts, List<float> offs, List<float> ons, int clipIndexOffset, int totalClips, string usePrefix)
   {
-    string meshName = mr != null ? mr.gameObject.name : "Mesh";
-    // 在输出目录后追加 Avatar 名称，防止多个 Avatar 生成时互相覆盖
-    string resolvedOutputFolder = avatarRoot != null
-      ? Path.Combine(outputFolder, avatarRoot.name).Replace("\\", "/")
-      : outputFolder;
-    string meshSubFolder = Path.Combine(resolvedOutputFolder, meshName).Replace("\\", "/");
-    string baseControllerNameForFile = string.IsNullOrWhiteSpace(controllerName) ? meshName : Path.GetFileNameWithoutExtension(controllerName);
-    string controllerPath = Path.Combine(meshSubFolder, baseControllerNameForFile + ".controller").Replace("\\", "/");
-    string baseControllerNameForMenu = meshName;
-    string controllerDir = controllerPath.Substring(0, controllerPath.LastIndexOf('/'));
-    if (!AssetDatabase.IsValidFolder(controllerDir))
-    {
-      string[] parts = controllerDir.Split('/');
-      string cur = "Assets";
-      for (int i = 1; i < parts.Length; i++)
-      {
-        string next = cur + "/" + parts[i];
-        if (!AssetDatabase.IsValidFolder(next))
-          AssetDatabase.CreateFolder(cur, parts[i]);
-        cur = next;
-      }
-    }
-
-    if (AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath) != null)
-    {
-      if (!EditorUtility.DisplayDialog("Overwrite?", "Controller already exists. Overwrite?", "Yes", "No"))
-        return false;
-      AssetDatabase.DeleteAsset(controllerPath);
-    }
-
+    var safeNames = BuildParameterSuffixes(names);
+    string meshName = mr.gameObject.name;
+    string computedRelative = GetRelativePath(avatarRoot.transform, mr.transform);
+    string meshIdentity = GetMeshIdentity(mr);
+    string avatarIdentity = SanitizeName(avatarRoot.name) + "_" +
+      StableHash(avatarRoot.scene.path + "/" + GetHierarchyIdentity(avatarRoot.transform));
+    string meshOutputFolder = outputFolder.TrimEnd('/') + "/" + avatarIdentity + "/" + meshIdentity;
+    EnsureAssetFolder(meshOutputFolder);
+    // Build new assets before replacing the scene references. Old assets remain valid
+    // for Undo and a cancelled/failed build cannot corrupt an existing controller.
+    string meshSubFolder = AssetDatabase.GenerateUniqueAssetPath(meshOutputFolder + "/Build");
+    EnsureAssetFolder(meshSubFolder);
+    generationBuildFolders?.Add(meshSubFolder);
+    string fileName = string.IsNullOrWhiteSpace(controllerName)
+      ? SanitizeName(meshName) : SanitizeName(Path.GetFileNameWithoutExtension(controllerName));
+    string controllerPath = meshSubFolder + "/" + fileName + ".controller";
+    string baseControllerNameForMenu = meshIdentity;
     var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
     if (controller.layers.Length > 0)
     {
@@ -554,12 +749,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
 
     string meshPrefix = !string.IsNullOrEmpty(usePrefix) ? usePrefix : (mr != null ? mr.gameObject.name + "_" : "");
 
-    string computedRelative = null;
-    if (avatarRoot != null && mr != null)
-    {
-      computedRelative = GetRelativePath(avatarRoot.transform, mr.transform);
-    }
-    string finalBindingPath = computedRelative ?? "";
+    string finalBindingPath = computedRelative;
 
     int localCount = 0;
     for (int i = 0; i < names.Count; i++)
@@ -570,7 +760,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       bool invert = (inverts != null && inverts.Count == names.Count) ? inverts[i] : false;
       float offVal = (offs != null && offs.Count == names.Count) ? offs[i] : 0f;
       float onVal = (ons != null && ons.Count == names.Count) ? ons[i] : 100f;
-      string safeName = SanitizeName(name);
+      string safeName = safeNames[i];
 
       if (pType == BlendParamType.Float)
       {
@@ -583,7 +773,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         }
         localCount++;
 
-        string clipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + ".anim").Replace("\\", "/");
+        string clipPath = Path.Combine(meshSubFolder, i.ToString("D4") + "_Float.anim").Replace("\\", "/");
 
         var clip = new AnimationClip();
         clip.name = safeName;
@@ -614,6 +804,8 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
 
         var state = stateMachine.AddState(safeName);
         state.motion = clip;
+        state.writeDefaultValues = false;
+        stateMachine.defaultState = state;
         state.timeParameterActive = true;
         state.timeParameter = paramName;
 
@@ -621,6 +813,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         layer.name = safeName;
         layer.defaultWeight = 1f;
         layer.stateMachine = stateMachine;
+        layer.syncedLayerIndex = -1;
 
         controller.AddLayer(layer);
       }
@@ -636,7 +829,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         localCount++;
         string aClipName = invert ? "_On" : "_Off";
         float aValue = invert ? onVal : offVal;
-        string aClipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + aClipName + ".anim").Replace("\\", "/");
+        string aClipPath = Path.Combine(meshSubFolder, i.ToString("D4") + "_False.anim").Replace("\\", "/");
         var aClip = new AnimationClip();
         aClip.name = safeName + aClipName;
         var aBinding = new EditorCurveBinding { path = finalBindingPath, type = typeof(SkinnedMeshRenderer), propertyName = blendshapePropertyPrefix + name };
@@ -654,7 +847,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
         localCount++;
         string bClipName = invert ? "_Off" : "_On";
         float bValue = invert ? offVal : onVal;
-        string bClipPath = Path.Combine(meshSubFolder, meshPrefix + safeName + bClipName + ".anim").Replace("\\", "/");
+        string bClipPath = Path.Combine(meshSubFolder, i.ToString("D4") + "_True.anim").Replace("\\", "/");
         var bClip = new AnimationClip();
         bClip.name = safeName + bClipName;
         var bBinding = new EditorCurveBinding { path = finalBindingPath, type = typeof(SkinnedMeshRenderer), propertyName = blendshapePropertyPrefix + name };
@@ -673,40 +866,53 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
 
         var stateA = stateMachine.AddState(safeName + aClipName);
         stateA.motion = aClip;
+        stateA.writeDefaultValues = false;
         var stateB = stateMachine.AddState(safeName + bClipName);
         stateB.motion = bClip;
+        stateB.writeDefaultValues = false;
 
-        stateMachine.defaultState = invert ? stateB : stateA;
+        stateMachine.defaultState = stateA;
 
-        var toOn = stateMachine.AddAnyStateTransition(invert ? stateA : stateB);
+        var toOn = stateMachine.AddAnyStateTransition(stateB);
         toOn.hasExitTime = false;
         toOn.duration = 0f;
+        toOn.canTransitionToSelf = false;
         toOn.AddCondition(AnimatorConditionMode.If, 0f, paramName);
 
-        var toOff = stateMachine.AddAnyStateTransition(invert ? stateB : stateA);
+        var toOff = stateMachine.AddAnyStateTransition(stateA);
         toOff.hasExitTime = false;
         toOff.duration = 0f;
+        toOff.canTransitionToSelf = false;
         toOff.AddCondition(AnimatorConditionMode.IfNot, 0f, paramName);
 
-        var layer = new AnimatorControllerLayer { name = safeName, defaultWeight = 1f, stateMachine = stateMachine };
+        var layer = new AnimatorControllerLayer { name = safeName, defaultWeight = 1f, stateMachine = stateMachine, syncedLayerIndex = -1 };
         controller.AddLayer(layer);
       }
     }
 
-    try
+    var controls = new List<BlendshapeGeneratedControl>();
+    for (int i = 0; i < names.Count; i++)
     {
-      CreateMAMenu(avatarRoot, baseControllerNameForMenu, controllerPath, meshPrefix, names, sels, types, inverts, offs, ons);
+      if (!sels[i]) continue;
+      controls.Add(new BlendshapeGeneratedControl(names[i], parameterPrefix + meshPrefix + safeNames[i],
+        types != null && types.Count == names.Count && types[i] == BlendParamType.Bool));
     }
-    catch (Exception) { }
+    if (installAvatarControls)
+      BlendshapeAvatarIntegration.Installer?.Install(new BlendshapeGenerationResult(
+        avatarRoot, controller, baseControllerNameForMenu, meshName, controls));
+    lastMeshController = controller;
 
     EditorUtility.SetDirty(controller);
     AssetDatabase.SaveAssets();
     AssetDatabase.Refresh();
 
-    string shownPath = computedRelative != null ? (computedRelative + " (relative to Avatar)") : "(bound to target object)";
+    string shownPath = computedRelative != null ? (computedRelative + " (relative to Animation Root)") : "(bound to target object)";
     Debug.Log("Generated Animator Controller and clips in: " + meshSubFolder + " Binding path used: '" + shownPath + "'");
     return false;
   }
+
+  private string GetMeshIdentity(SkinnedMeshRenderer renderer) =>
+    SanitizeName(renderer.name) + "_" + StableHash(GetRelativePath(avatarRoot.transform, renderer.transform));
 
   private static string GetRelativePath(Transform root, Transform target)
   {
@@ -726,205 +932,8 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
 
   private static string SanitizeName(string s)
   {
-    var arr = s.Select(c => (char.IsLetterOrDigit(c) ? c : '_')).ToArray();
-    return new string(arr);
-  }
-
-  private void CreateMAMenu(GameObject avatarRoot, string baseControllerName, string controllerPath, string meshPrefix, List<string> blendshapeNames, List<bool> selected, List<BlendParamType> types, List<bool> inverts, List<float> offs, List<float> ons)
-  {
-    if (avatarRoot == null) return;
-
-    string topMenuName = "Blendshapes Menu";
-    var existingTop = avatarRoot.transform.Find(topMenuName);
-    GameObject topMenuGO;
-    if (existingTop != null)
-    {
-      topMenuGO = existingTop.gameObject;
-    }
-    else
-    {
-      topMenuGO = new GameObject(topMenuName);
-      Undo.RegisterCreatedObjectUndo(topMenuGO, "Create MA Top Menu Root");
-      topMenuGO.transform.SetParent(avatarRoot.transform, false);
-      topMenuGO.AddComponent<ModularAvatarMenuInstaller>();
-    }
-
-    try
-    {
-      var topItem = topMenuGO.GetComponent<ModularAvatarMenuItem>();
-      if (topItem == null) topItem = topMenuGO.AddComponent<ModularAvatarMenuItem>();
-      try
-      {
-        topItem.label = "Blendshapes";
-        topItem.PortableControl.Type = PortableControlType.SubMenu;
-        topItem.automaticValue = true;
-        topItem.MenuSource = SubmenuSource.Children;
-      }
-      catch { }
-    }
-    catch { }
-
-    var existingController = topMenuGO.transform.Find(baseControllerName);
-    if (existingController != null)
-    {
-      Undo.DestroyObjectImmediate(existingController.gameObject);
-    }
-    var controllerMenuGO = new GameObject(baseControllerName);
-    Undo.RegisterCreatedObjectUndo(controllerMenuGO, "Create Controller Submenu");
-    controllerMenuGO.transform.SetParent(topMenuGO.transform, false);
-
-    var controllerMenuItem = controllerMenuGO.GetComponent<ModularAvatarMenuItem>();
-    if (controllerMenuItem == null) controllerMenuItem = controllerMenuGO.AddComponent<ModularAvatarMenuItem>();
-    try
-    {
-      controllerMenuItem.PortableControl.Type = PortableControlType.SubMenu;
-      controllerMenuItem.automaticValue = true;
-      controllerMenuItem.MenuSource = SubmenuSource.Children;
-    }
-    catch (Exception) { }
-
-    for (int i = 0; i < blendshapeNames.Count; i++)
-    {
-      if (!selected[i]) continue;
-      var fullName = blendshapeNames[i];
-      string safeName = SanitizeName(fullName);
-      string paramName = parameterPrefix + meshPrefix + SanitizeName(fullName);
-      var pType = (types != null && types.Count == blendshapeNames.Count) ? types[i] : BlendParamType.Float;
-      bool invert = (inverts != null && inverts.Count == blendshapeNames.Count) ? inverts[i] : false;
-
-      var parts = fullName.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-      Transform parent = controllerMenuGO.transform;
-      for (int p = 0; p < parts.Length; p++)
-      {
-        var part = parts[p].Trim();
-        if (string.IsNullOrEmpty(part)) continue;
-        var child = parent.Find(part);
-        if (child == null)
-        {
-          var go = new GameObject(part);
-          Undo.RegisterCreatedObjectUndo(go, "Create MA Menu Item");
-          go.transform.SetParent(parent, false);
-          child = go.transform;
-        }
-        var isLeaf = (p == parts.Length - 1);
-        var childGo = child.gameObject;
-        if (!isLeaf)
-        {
-          var midItem = childGo.GetComponent<ModularAvatarMenuItem>();
-          if (midItem == null) midItem = childGo.AddComponent<ModularAvatarMenuItem>();
-          try
-          {
-            midItem.PortableControl.Type = PortableControlType.SubMenu;
-            midItem.automaticValue = true;
-            midItem.MenuSource = SubmenuSource.Children;
-            try { midItem.PortableControl.Parameter = ""; } catch { }
-          }
-          catch { }
-        }
-        parent = child;
-      }
-
-      var item = parent.GetComponent<ModularAvatarMenuItem>();
-      if (item == null) item = parent.gameObject.AddComponent<ModularAvatarMenuItem>();
-      try
-      {
-        try { item.label = parts.LastOrDefault() ?? safeName; } catch { }
-        if (pType == BlendParamType.Float)
-        {
-          item.PortableControl.Type = PortableControlType.RadialPuppet;
-          item.PortableControl.SubParameters = ImmutableList.Create(paramName);
-        }
-        else
-        {
-          item.PortableControl.Type = PortableControlType.Toggle;
-          try { item.PortableControl.Parameter = paramName; } catch { }
-        }
-
-        item.isSaved = true;
-        item.isSynced = true;
-        item.isDefault = false;
-        item.automaticValue = true;
-        item.MenuSource = SubmenuSource.Children;
-      }
-      catch (Exception) { }
-    }
-
-    try
-    {
-      var merge = controllerMenuGO.GetComponent<ModularAvatarMergeAnimator>();
-      if (merge == null) merge = controllerMenuGO.AddComponent<ModularAvatarMergeAnimator>();
-
-      var runtimeController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(controllerPath);
-      if (runtimeController != null)
-      {
-        merge.animator = runtimeController;
-      }
-
-      merge.pathMode = MergeAnimatorPathMode.Relative;
-      merge.mergeAnimatorMode = MergeAnimatorMode.Append;
-
-      if (avatarRoot != null)
-      {
-        try { merge.relativePathRoot.Set(avatarRoot); } catch { }
-      }
-
-      try { merge.matchAvatarWriteDefaults = true; } catch { }
-#if MA_VRCSDK3_AVATARS
-      try
-      {
-        merge.layerType = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor.AnimLayerType.FX;
-      }
-      catch { }
-#else
-      try
-      {
-        var layerTypeProp = merge.GetType().GetField("layerType");
-        if (layerTypeProp != null)
-        {
-          var enumType = layerTypeProp.FieldType;
-          var fxVal = Enum.Parse(enumType, "FX");
-          layerTypeProp.SetValue(merge, fxVal);
-        }
-      }
-      catch { }
-#endif
-    }
-    catch (Exception) { }
-
-    try
-    {
-      var paramsComp = topMenuGO.GetComponent<ModularAvatarParameters>();
-      if (paramsComp == null) paramsComp = topMenuGO.AddComponent<ModularAvatarParameters>();
-
-      var existing = new HashSet<string>(StringComparer.Ordinal);
-      foreach (var pc in paramsComp.parameters)
-      {
-        if (!string.IsNullOrEmpty(pc.nameOrPrefix)) existing.Add(pc.nameOrPrefix);
-      }
-
-      for (int i = 0; i < blendshapeNames.Count; i++)
-      {
-        if (!selected[i]) continue;
-        var fullName = blendshapeNames[i];
-        string paramName = parameterPrefix + meshPrefix + SanitizeName(fullName);
-        if (existing.Contains(paramName)) continue;
-        var pType = (types != null && types.Count == blendshapeNames.Count) ? types[i] : BlendParamType.Float;
-
-        var newPc = new ParameterConfig();
-        newPc.nameOrPrefix = paramName;
-        newPc.remapTo = "";
-        newPc.internalParameter = false;
-        newPc.isPrefix = false;
-        newPc.syncType = (pType == BlendParamType.Bool) ? ParameterSyncType.Bool : ParameterSyncType.Float;
-        newPc.localOnly = false;
-        newPc.defaultValue = 0f;
-        newPc.saved = true;
-        newPc.hasExplicitDefaultValue = false;
-
-        paramsComp.parameters.Add(newPc);
-      }
-    }
-    catch (Exception) { }
+    var arr = (s ?? "").Select(c => (char.IsLetterOrDigit(c) ? c : '_')).ToArray();
+    return arr.Length == 0 ? "Item" : new string(arr);
   }
 
   private static string GetTransformPath(Transform t)
@@ -1021,6 +1030,11 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
       RefreshMeshes();
   }
 
+  private static float ScaleTangent(float tangent, float scale)
+  {
+    return float.IsInfinity(tangent) ? tangent : tangent * scale;
+  }
+
   private static AnimationCurve BuildScaledCurve(AnimationCurve source, float duration, float valueScale)
   {
     if (source == null || source.keys == null || source.keys.Length == 0)
@@ -1033,7 +1047,7 @@ private string outputFolder = "Assets/UnityBox/Generated/BlendshapeControllerGen
     for (int i = 0; i < keys.Length; i++)
     {
       var k = keys[i];
-      var nk = new Keyframe(k.time * duration, k.value * valueScale, k.inTangent * slopeScale, k.outTangent * slopeScale)
+      var nk = new Keyframe(k.time * duration, k.value * valueScale, ScaleTangent(k.inTangent, slopeScale), ScaleTangent(k.outTangent, slopeScale))
       {
         weightedMode = k.weightedMode,
         inWeight = k.inWeight,

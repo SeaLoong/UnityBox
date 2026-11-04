@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityBox.PrefabDiffPatcher
@@ -403,9 +405,10 @@ namespace UnityBox.PrefabDiffPatcher
                     {
                         bool displayValue = aggregate.State == TreeSelectionState.All;
                         EditorGUI.showMixedValue = aggregate.State == TreeSelectionState.Partial;
+                        EditorGUI.BeginChangeCheck();
                         bool next = EditorGUILayout.Toggle(displayValue, GUILayout.Width(18));
                         EditorGUI.showMixedValue = false;
-                        if (next != displayValue || aggregate.State == TreeSelectionState.Partial)
+                        if (EditorGUI.EndChangeCheck())
                         {
                             SetNodeSelectionRecursive(node, next);
                             Repaint();
@@ -553,6 +556,10 @@ namespace UnityBox.PrefabDiffPatcher
 
             try
             {
+                PrefabDiffApplier.ValidateOutputPath(_sourceA, _sourceB, _outputPath);
+                if (File.Exists(_outputPath) && !EditorUtility.DisplayDialog("Replace Output Prefab",
+                    $"将更新已有输出 Prefab（保留 GUID）：\n{_outputPath}\n此资产写入不能通过场景 Undo 撤销。", "Replace", "Cancel"))
+                    return;
                 var asset = PrefabDiffApplier.Apply(_sourceA, _sourceB, selectedPaths, selectedComponents, _outputPath);
                 Selection.activeObject = asset;
                 EditorGUIUtility.PingObject(asset);
@@ -724,14 +731,12 @@ namespace UnityBox.PrefabDiffPatcher
                 return;
 
             if (!string.IsNullOrEmpty(node.Path))
-            {
                 _selectionByPath[node.Path] = selected;
-                foreach (var component in node.ComponentDiffs)
-                {
-                    if (!component.IsSelectable)
-                        continue;
-                    _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = selected;
-                }
+            foreach (var component in node.ComponentDiffs)
+            {
+                if (!component.IsSelectable)
+                    continue;
+                _componentSelectionById[PrefabDiffUtility.MakeComponentSelectionId(node.Path, component.Key)] = selected;
             }
 
             foreach (var child in node.Children)
@@ -746,7 +751,7 @@ namespace UnityBox.PrefabDiffPatcher
         {
             if (node == null)
                 yield break;
-            if (node.Path != string.Empty && node.HasAnyChanges)
+            if (node.HasAnyChanges)
                 yield return node;
             foreach (var child in node.Children)
             {
@@ -989,9 +994,10 @@ namespace UnityBox.PrefabDiffPatcher
             var aggregate = _aggregateProvider(node.Path);
             bool displayValue = aggregate.State == TreeSelectionState.All;
             EditorGUI.showMixedValue = aggregate.State == TreeSelectionState.Partial;
+            EditorGUI.BeginChangeCheck();
             bool nextValue = EditorGUI.Toggle(new Rect(rect.x + 16f, rect.y + 2f, 18f, rect.height - 4f), displayValue);
             EditorGUI.showMixedValue = false;
-            if (nextValue != displayValue || aggregate.State == TreeSelectionState.Partial)
+            if (EditorGUI.EndChangeCheck())
             {
                 _toggleNodeSelection(node, nextValue);
                 _requestRepaint();
@@ -1100,10 +1106,10 @@ namespace UnityBox.PrefabDiffPatcher
         {
             if (rootA == null) throw new ArgumentNullException(nameof(rootA));
             if (rootB == null) throw new ArgumentNullException(nameof(rootB));
-            return BuildNode(rootA, rootB, string.Empty, 0);
+            return BuildNode(rootA, rootB, string.Empty, 0, rootA.transform, rootB.transform);
         }
 
-        private static DiffNode BuildNode(GameObject objectA, GameObject objectB, string path, int depth)
+        private static DiffNode BuildNode(GameObject objectA, GameObject objectB, string path, int depth, Transform rootA, Transform rootB)
         {
             var node = new DiffNode
             {
@@ -1111,7 +1117,7 @@ namespace UnityBox.PrefabDiffPatcher
                 Depth = depth,
                 ExistsInA = objectA != null,
                 ExistsInB = objectB != null,
-                DisplayName = string.IsNullOrEmpty(path) ? "<Root>" : PrefabDiffUtility.GetLastSegment(path)
+                DisplayName = string.IsNullOrEmpty(path) ? "<Root>" : Uri.UnescapeDataString(PrefabDiffUtility.GetLastSegment(path))
             };
 
             if (objectA == null && objectB == null)
@@ -1122,7 +1128,7 @@ namespace UnityBox.PrefabDiffPatcher
                 node.Kind = DiffKind.Added;
                 node.ObjectChanges.Add("仅存在于 B（合并时会新增到结果中）");
                 node.ComponentDiffs.AddRange(BuildAddedOrRemovedComponentDiffs(objectB, DiffKind.Added));
-                PopulateChildrenFromExisting(node, null, objectB, path, depth);
+                PopulateChildrenFromExisting(node, null, objectB, path, depth, rootA, rootB);
                 node.RefreshDerivedFlags();
                 return node;
             }
@@ -1132,14 +1138,15 @@ namespace UnityBox.PrefabDiffPatcher
                 node.Kind = DiffKind.Removed;
                 node.ObjectChanges.Add("仅存在于 A（合并模式下会被保留）");
                 node.ComponentDiffs.AddRange(BuildAddedOrRemovedComponentDiffs(objectA, DiffKind.Removed));
-                PopulateChildrenFromExisting(node, objectA, null, path, depth);
+                PopulateChildrenFromExisting(node, objectA, null, path, depth, rootA, rootB);
                 node.RefreshDerivedFlags();
                 return node;
             }
 
             CompareGameObject(objectA, objectB, node);
-            node.ComponentDiffs.AddRange(CompareComponents(objectA, objectB));
-            CompareChildren(objectA, objectB, node, path, depth);
+            node.ComponentDiffs.AddRange(CompareComponents(objectA, objectB, rootA, rootB));
+            CompareChildren(objectA, objectB, node, path, depth, rootA, rootB);
+            node.RefreshDerivedFlags();
             node.Kind = node.HasDirectChanges || node.Children.Any(child => child.HasAnyChanges)
                 ? DiffKind.Modified
                 : DiffKind.Unchanged;
@@ -1163,7 +1170,7 @@ namespace UnityBox.PrefabDiffPatcher
             }
         }
 
-        private static void CompareChildren(GameObject objectA, GameObject objectB, DiffNode node, string currentPath, int depth)
+        private static void CompareChildren(GameObject objectA, GameObject objectB, DiffNode node, string currentPath, int depth, Transform rootA, Transform rootB)
         {
             var childrenA = PrefabDiffUtility.GetChildMap(objectA.transform);
             var childrenB = PrefabDiffUtility.GetChildMap(objectB.transform);
@@ -1173,11 +1180,11 @@ namespace UnityBox.PrefabDiffPatcher
                 childrenA.TryGetValue(key, out var childA);
                 childrenB.TryGetValue(key, out var childB);
                 var childPath = PrefabDiffUtility.CombinePath(currentPath, key);
-                node.Children.Add(BuildNode(childA != null ? childA.gameObject : null, childB != null ? childB.gameObject : null, childPath, depth + 1));
+                node.Children.Add(BuildNode(childA != null ? childA.gameObject : null, childB != null ? childB.gameObject : null, childPath, depth + 1, rootA, rootB));
             }
         }
 
-        private static void PopulateChildrenFromExisting(DiffNode node, GameObject objectA, GameObject objectB, string currentPath, int depth)
+        private static void PopulateChildrenFromExisting(DiffNode node, GameObject objectA, GameObject objectB, string currentPath, int depth, Transform rootA, Transform rootB)
         {
             var source = objectA != null ? objectA.transform : objectB.transform;
             var children = PrefabDiffUtility.GetChildMap(source);
@@ -1188,7 +1195,7 @@ namespace UnityBox.PrefabDiffPatcher
                     objectA != null ? child.Value.gameObject : null,
                     objectB != null ? child.Value.gameObject : null,
                     childPath,
-                    depth + 1));
+                    depth + 1, rootA, rootB));
             }
         }
 
@@ -1209,7 +1216,7 @@ namespace UnityBox.PrefabDiffPatcher
             return result;
         }
 
-        private static List<ComponentDiff> CompareComponents(GameObject objectA, GameObject objectB)
+        private static List<ComponentDiff> CompareComponents(GameObject objectA, GameObject objectB, Transform rootA, Transform rootB)
         {
             var mapA = PrefabDiffUtility.GetComponentMap(objectA);
             var mapB = PrefabDiffUtility.GetComponentMap(objectB);
@@ -1244,7 +1251,7 @@ namespace UnityBox.PrefabDiffPatcher
                     continue;
                 }
 
-                var propertyChanges = CompareSerializedProperties(componentA, componentB);
+                var propertyChanges = CompareSerializedProperties(componentA, componentB, rootA, rootB);
                 if (propertyChanges.Count == 0)
                     continue;
 
@@ -1259,10 +1266,10 @@ namespace UnityBox.PrefabDiffPatcher
             return result;
         }
 
-        private static List<PropertyChange> CompareSerializedProperties(Component componentA, Component componentB)
+        private static List<PropertyChange> CompareSerializedProperties(Component componentA, Component componentB, Transform rootA, Transform rootB)
         {
-            var mapA = PrefabDiffUtility.ReadSerializedProperties(componentA);
-            var mapB = PrefabDiffUtility.ReadSerializedProperties(componentB);
+            var mapA = PrefabDiffUtility.ReadSerializedProperties(componentA, rootA);
+            var mapB = PrefabDiffUtility.ReadSerializedProperties(componentB, rootB);
             var allPaths = mapA.Keys.Union(mapB.Keys, StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal);
             var changes = new List<PropertyChange>();
             foreach (var propertyPath in allPaths)
@@ -1284,6 +1291,9 @@ namespace UnityBox.PrefabDiffPatcher
 
     internal static class PrefabDiffApplier
     {
+        // Clipboard component pasting rejects NotEditable objects, including HideAndDontSave.
+        private const HideFlags TemporaryCloneHideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
+
         public static GameObject Apply(GameObject sourceA, GameObject sourceB, IReadOnlyList<string> selectedPaths, IReadOnlyList<ComponentSelection> selectedComponents, string outputPath)
         {
             if (sourceA == null) throw new ArgumentNullException(nameof(sourceA));
@@ -1291,24 +1301,55 @@ namespace UnityBox.PrefabDiffPatcher
             if ((selectedPaths == null || selectedPaths.Count == 0) && (selectedComponents == null || selectedComponents.Count == 0))
                 throw new ArgumentException("No selections.");
 
+            ValidateOutputPath(sourceA, sourceB, outputPath);
+            if (sourceA.GetComponentsInChildren<Component>(true).Any(component => component == null) ||
+                sourceB.GetComponentsInChildren<Component>(true).Any(component => component == null))
+                throw new InvalidOperationException("输入包含 Missing Script，请先修复脚本引用，避免输出丢失组件数据。");
             EnsureFolderExists(Path.GetDirectoryName(outputPath)?.Replace('\\', '/'));
 
             var selectionContext = new SelectionContext(selectedPaths, selectedComponents);
-            var workingRoot = ComposeNode(string.Empty, sourceA, sourceB, selectionContext, isRoot: true);
+            foreach (var source in new[] { sourceA, sourceB })
+            {
+                foreach (var node in source.GetComponentsInChildren<Transform>(true))
+                {
+                    selectionContext.ObjectRemap[node.gameObject] = null;
+                    foreach (var component in node.GetComponents<Component>())
+                        if (component != null) selectionContext.ObjectRemap[component] = null;
+                }
+            }
+            GameObject workingRoot = null;
+            var workingScene = EditorSceneManager.NewPreviewScene();
             try
             {
+                // Instantiating the base asset once preserves its Variant/nested Prefab
+                // relationships and avoids repeatedly cloning descendant hierarchies.
+                if (PrefabUtility.IsPartOfPrefabAsset(sourceA) && sourceA.transform.parent == null)
+                {
+                    workingRoot = (GameObject)PrefabUtility.InstantiatePrefab(sourceA, workingScene);
+                    ApplyToPrefabInstance(string.Empty, sourceA, sourceB, workingRoot, selectionContext);
+                }
+                else
+                {
+                    workingRoot = ComposeNode(string.Empty, sourceA, sourceB, selectionContext, isRoot: true);
+                    if (workingRoot != null) SceneManager.MoveGameObjectToScene(workingRoot, workingScene);
+                }
                 if (workingRoot == null)
                     throw new InvalidOperationException("根据当前选择没有可生成的结果对象。");
 
-                RemapReferencesFromSourceRoot(workingRoot, sourceA);
-                RemapReferencesFromSourceRoot(workingRoot, sourceB);
+                RemapReferences(workingRoot, selectionContext.ObjectRemap);
                 ClearHideFlagsRecursively(workingRoot.transform);
+                foreach (var node in workingRoot.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!PrefabUtility.IsPartOfPrefabInstance(node)) continue;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(node.gameObject);
+                    foreach (var component in node.GetComponents<Component>())
+                        if (component != null)
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                }
 
-                var existing = AssetDatabase.LoadAssetAtPath<GameObject>(outputPath);
-                if (existing != null)
-                    AssetDatabase.DeleteAsset(outputPath);
-
-                var asset = PrefabUtility.SaveAsPrefabAsset(workingRoot, outputPath);
+                var asset = PrefabUtility.SaveAsPrefabAsset(workingRoot, outputPath, out bool success);
+                if (!success || asset == null)
+                    throw new InvalidOperationException("Prefab 保存失败，请检查输出路径和文件写入权限。");
                 AssetDatabase.SaveAssets();
                 return asset;
             }
@@ -1316,6 +1357,50 @@ namespace UnityBox.PrefabDiffPatcher
             {
                 if (workingRoot != null)
                     Object.DestroyImmediate(workingRoot);
+                EditorSceneManager.ClosePreviewScene(workingScene);
+            }
+        }
+
+        private static void ApplyToPrefabInstance(string path, GameObject sourceA, GameObject sourceB,
+            GameObject result, SelectionContext context)
+        {
+            if (path.Length != 0 && context.IsObjectSelected(path) && sourceB != null)
+            {
+                result.name = sourceB.name;
+                result.layer = sourceB.layer;
+                result.tag = sourceB.tag;
+                result.SetActive(sourceB.activeSelf);
+                GameObjectUtility.SetStaticEditorFlags(result, GameObjectUtility.GetStaticEditorFlags(sourceB));
+            }
+
+            RegisterNodeRemap(sourceA, result, context.ObjectRemap);
+            RegisterNodeRemap(sourceB, result, context.ObjectRemap);
+            if (sourceA != null && sourceB != null)
+                ApplySelectedComponentsAtNode(result, sourceA, sourceB, path, context);
+
+            var resultChildren = PrefabDiffUtility.GetChildMap(result.transform);
+            foreach (var child in BuildOrderedChildEntries(sourceA?.transform, sourceB?.transform))
+            {
+                string childPath = PrefabDiffUtility.CombinePath(path, child.Key);
+                if (child.ChildA != null)
+                {
+                    var output = resultChildren[child.Key].gameObject;
+                    if (context.HasAnySelectionAtOrBelow(childPath))
+                        ApplyToPrefabInstance(childPath, child.ChildA.gameObject, child.ChildB?.gameObject, output, context);
+                    else
+                    {
+                        foreach (var source in new[] { child.ChildA, child.ChildB })
+                            if (source != null)
+                                foreach (var pair in BuildOldToNewRemap(source.gameObject, output))
+                                    context.ObjectRemap[pair.Key] = pair.Value;
+                    }
+                }
+                else if (context.HasAnySelectionAtOrBelow(childPath))
+                {
+                    var added = ComposeNode(childPath, null, child.ChildB.gameObject, context);
+                    if (added != null)
+                        added.transform.SetParent(result.transform, false);
+                }
             }
         }
 
@@ -1330,44 +1415,73 @@ namespace UnityBox.PrefabDiffPatcher
             if (sourceA == null && sourceB != null && !subtreeSelected && !isRoot)
                 return null;
 
-            var shellSource = ChooseShellSource(sourceA, sourceB, objectSelected);
+            var shellSource = isRoot ? sourceA : ChooseShellSource(sourceA, sourceB, objectSelected);
             if (shellSource == null)
                 return null;
 
             var result = CloneNodeShell(shellSource);
-            result.name = shellSource.name;
-
-            var baselineComponentSource = ChooseBaselineComponentSource(sourceA, sourceB);
-            SyncNonTransformComponents(result, baselineComponentSource);
-
-            if (sourceA != null && sourceB != null)
+            try
             {
-                ApplySelectedComponentsAtNode(result, sourceA, sourceB, path, selectionContext);
-            }
+                result.name = shellSource.name;
+                // Object-shell selection changes GameObject properties only. Transform
+                // is an independently selectable component and otherwise keeps A.
+                if (sourceA != null)
+                    OverwriteComponentFromSource(result.transform, sourceA.transform);
 
-            foreach (var childEntry in BuildOrderedChildEntries(sourceA?.transform, sourceB?.transform))
-            {
-                string childPath = PrefabDiffUtility.CombinePath(path, childEntry.Key);
-                bool childSubtreeSelected = selectionContext.HasAnySelectionAtOrBelow(childPath);
-                GameObject childResult;
+                var baselineComponentSource = ChooseBaselineComponentSource(sourceA, sourceB);
+                SyncNonTransformComponents(result, baselineComponentSource);
+                RegisterNodeRemap(sourceA, result, selectionContext.ObjectRemap);
+                RegisterNodeRemap(sourceB, result, selectionContext.ObjectRemap);
 
-                if (childEntry.ChildA != null && !childSubtreeSelected)
+                if (sourceA != null && sourceB != null)
                 {
-                    childResult = CloneWholeSubtree(childEntry.ChildA.gameObject);
-                }
-                else
-                {
-                    childResult = ComposeNode(childPath, childEntry.ChildA?.gameObject, childEntry.ChildB?.gameObject, selectionContext);
+                    ApplySelectedComponentsAtNode(result, sourceA, sourceB, path, selectionContext);
                 }
 
-                if (childResult == null)
-                    continue;
+                foreach (var childEntry in BuildOrderedChildEntries(sourceA?.transform, sourceB?.transform))
+                {
+                    string childPath = PrefabDiffUtility.CombinePath(path, childEntry.Key);
+                    bool childSubtreeSelected = selectionContext.HasAnySelectionAtOrBelow(childPath);
+                    GameObject childResult;
 
-                childResult.transform.SetParent(result.transform, false);
-                childResult.transform.SetSiblingIndex(result.transform.childCount - 1);
+                    if (childEntry.ChildA != null && !childSubtreeSelected)
+                    {
+                        childResult = CloneWholeSubtree(childEntry.ChildA.gameObject);
+                        foreach (var source in new[] { childEntry.ChildA, childEntry.ChildB })
+                        {
+                            if (source == null) continue;
+                            foreach (var pair in BuildOldToNewRemap(source.gameObject, childResult))
+                                selectionContext.ObjectRemap[pair.Key] = pair.Value;
+                        }
+                    }
+                    else
+                    {
+                        childResult = ComposeNode(childPath, childEntry.ChildA?.gameObject, childEntry.ChildB?.gameObject, selectionContext);
+                    }
+
+                    if (childResult == null)
+                        continue;
+
+                    childResult.transform.SetParent(result.transform, false);
+                    childResult.transform.SetSiblingIndex(result.transform.childCount - 1);
+                }
+
+                return result;
             }
+            catch
+            {
+                Object.DestroyImmediate(result);
+                throw;
+            }
+        }
 
-            return result;
+        private static void RegisterNodeRemap(GameObject source, GameObject result, Dictionary<Object, Object> remap)
+        {
+            if (source == null) return;
+            remap[source] = result;
+            var resultComponents = PrefabDiffUtility.GetComponentMap(result);
+            foreach (var pair in PrefabDiffUtility.GetComponentMap(source))
+                remap[pair.Value] = resultComponents.TryGetValue(pair.Key, out var component) ? component : null;
         }
 
         private static GameObject ChooseShellSource(GameObject sourceA, GameObject sourceB, bool objectSelected)
@@ -1384,11 +1498,11 @@ namespace UnityBox.PrefabDiffPatcher
 
         private static void ApplySelectedComponentsAtNode(GameObject resultNode, GameObject sourceNodeA, GameObject sourceNodeB, string path, SelectionContext selectionContext)
         {
+            var componentsA = sourceNodeA != null ? PrefabDiffUtility.GetComponentMap(sourceNodeA) : new Dictionary<string, Component>(StringComparer.Ordinal);
+            var componentsB = sourceNodeB != null ? PrefabDiffUtility.GetComponentMap(sourceNodeB) : new Dictionary<string, Component>(StringComparer.Ordinal);
+            var resultComponents = PrefabDiffUtility.GetComponentMap(resultNode);
             foreach (var componentKey in selectionContext.GetSelectedComponentKeys(path))
             {
-                var componentsA = sourceNodeA != null ? PrefabDiffUtility.GetComponentMap(sourceNodeA) : new Dictionary<string, Component>(StringComparer.Ordinal);
-                var componentsB = sourceNodeB != null ? PrefabDiffUtility.GetComponentMap(sourceNodeB) : new Dictionary<string, Component>(StringComparer.Ordinal);
-                var resultComponents = PrefabDiffUtility.GetComponentMap(resultNode);
 
                 componentsA.TryGetValue(componentKey, out var componentA);
                 componentsB.TryGetValue(componentKey, out var componentB);
@@ -1396,10 +1510,15 @@ namespace UnityBox.PrefabDiffPatcher
 
                 if (componentA == null && componentB != null)
                 {
+                    // A previously copied component may have added this type through
+                    // RequireComponent. Reuse it instead of trying to paste a duplicate.
                     if (resultComponent == null)
-                        AddComponentFromSource(resultNode, componentB);
+                        PrefabDiffUtility.GetComponentMap(resultNode).TryGetValue(componentKey, out resultComponent);
+                    if (resultComponent == null)
+                        resultComponent = AddComponentFromSource(resultNode, componentB);
                     else
                         OverwriteComponentFromSource(resultComponent, componentB);
+                    selectionContext.ObjectRemap[componentB] = resultComponent;
                     continue;
                 }
 
@@ -1415,9 +1534,10 @@ namespace UnityBox.PrefabDiffPatcher
                 if (componentA != null && componentB != null)
                 {
                     if (resultComponent == null)
-                        AddComponentFromSource(resultNode, componentB);
+                        resultComponent = AddComponentFromSource(resultNode, componentB);
                     else
                         OverwriteComponentFromSource(resultComponent, componentB);
+                    selectionContext.ObjectRemap[componentB] = resultComponent;
                 }
             }
         }
@@ -1428,7 +1548,8 @@ namespace UnityBox.PrefabDiffPatcher
                 return null;
 
             var clone = Object.Instantiate(source);
-            clone.hideFlags = HideFlags.HideAndDontSave;
+            OverwriteComponentFromSource(clone.transform, source.transform);
+            clone.hideFlags = TemporaryCloneHideFlags;
             for (int i = clone.transform.childCount - 1; i >= 0; i--)
             {
                 Object.DestroyImmediate(clone.transform.GetChild(i).gameObject);
@@ -1441,27 +1562,34 @@ namespace UnityBox.PrefabDiffPatcher
             if (source == null)
                 return null;
             var clone = Object.Instantiate(source);
-            clone.hideFlags = HideFlags.HideAndDontSave;
+            clone.name = source.name;
+            OverwriteComponentFromSource(clone.transform, source.transform);
+            clone.hideFlags = TemporaryCloneHideFlags;
             return clone;
         }
 
         private static void SyncNonTransformComponents(GameObject resultNode, GameObject sourceNode)
         {
-            foreach (var component in resultNode.GetComponents<Component>().Reverse())
+            if (sourceNode == null) return;
+            var sourceComponents = PrefabDiffUtility.GetComponentMap(sourceNode);
+            var resultComponents = PrefabDiffUtility.GetComponentMap(resultNode);
+            foreach (var pair in resultComponents.Reverse())
             {
-                if (component == null || component is Transform)
-                    continue;
-                Object.DestroyImmediate(component);
+                if (pair.Value is Transform || sourceComponents.ContainsKey(pair.Key)) continue;
+                Object.DestroyImmediate(pair.Value);
             }
 
-            if (sourceNode == null)
-                return;
-
-            foreach (var component in sourceNode.GetComponents<Component>())
+            foreach (var pair in sourceComponents)
             {
-                if (component == null || component is Transform)
-                    continue;
-                CopyComponentAsNew(component, resultNode);
+                if (pair.Value is Transform) continue;
+                // Reuse existing components, including RequireComponent dependencies.
+                // Restore values from the source after deleting cloned children so
+                // their object references can be remapped once composition completes.
+                var current = PrefabDiffUtility.GetComponentMap(resultNode);
+                if (current.TryGetValue(pair.Key, out var target))
+                    OverwriteComponentFromSource(target, pair.Value);
+                else
+                    CopyComponentAsNew(pair.Value, resultNode);
             }
         }
 
@@ -1502,7 +1630,10 @@ namespace UnityBox.PrefabDiffPatcher
                 throw new InvalidOperationException($"无法把组件粘贴到对象上: {target.name} ({sourceComponent.GetType().Name})");
 
             var after = target.GetComponents<Component>().Where(component => component != null).ToList();
-            return after.Except(before).FirstOrDefault();
+            var copied = after.Except(before).FirstOrDefault(component => component.GetType() == sourceComponent.GetType());
+            if (copied == null)
+                throw new InvalidOperationException($"复制后未找到组件: {sourceComponent.GetType().Name}");
+            return copied;
         }
 
         private static Component AddComponentFromSource(GameObject target, Component sourceComponent)
@@ -1514,8 +1645,23 @@ namespace UnityBox.PrefabDiffPatcher
         {
             if (targetComponent == null || sourceComponent == null)
                 return;
-            if (targetComponent is Transform)
+            if (targetComponent is Transform targetTransform && sourceComponent is Transform sourceTransform)
+            {
+                if (targetTransform.GetType() != sourceTransform.GetType())
+                    throw new InvalidOperationException("Transform 与 RectTransform 之间不能按组件覆写，请选择匹配的对象类型。");
+                targetTransform.localPosition = sourceTransform.localPosition;
+                targetTransform.localRotation = sourceTransform.localRotation;
+                targetTransform.localScale = sourceTransform.localScale;
+                if (targetTransform is RectTransform targetRect && sourceTransform is RectTransform sourceRect)
+                {
+                    targetRect.anchorMin = sourceRect.anchorMin;
+                    targetRect.anchorMax = sourceRect.anchorMax;
+                    targetRect.pivot = sourceRect.pivot;
+                    targetRect.sizeDelta = sourceRect.sizeDelta;
+                    targetRect.anchoredPosition3D = sourceRect.anchoredPosition3D;
+                }
                 return;
+            }
             if (targetComponent.GetType() != sourceComponent.GetType())
                 throw new InvalidOperationException($"组件类型不匹配，无法覆写: {targetComponent.GetType().Name} vs {sourceComponent.GetType().Name}");
 
@@ -1535,7 +1681,7 @@ namespace UnityBox.PrefabDiffPatcher
                 throw new InvalidOperationException($"结果中找不到新增节点的父路径: {parentPath}");
 
             var added = Object.Instantiate(sourceNodeB);
-            added.hideFlags = HideFlags.HideAndDontSave;
+            added.hideFlags = TemporaryCloneHideFlags;
             added.transform.SetParent(parent, false);
             added.transform.SetSiblingIndex(Mathf.Min(sourceNodeB.transform.GetSiblingIndex(), parent.childCount - 1));
             added.name = sourceNodeB.name;
@@ -1567,42 +1713,6 @@ namespace UnityBox.PrefabDiffPatcher
             return map;
         }
 
-        private static void RemapReferencesFromSourceRoot(GameObject workingRoot, GameObject sourceRoot)
-        {
-            foreach (var component in workingRoot.GetComponentsInChildren<Component>(true))
-            {
-                if (component == null)
-                    continue;
-
-                var so = new SerializedObject(component);
-                var iterator = so.GetIterator();
-                bool enterChildren = true;
-                bool changed = false;
-                while (iterator.Next(enterChildren))
-                {
-                    enterChildren = false;
-                    if (!PrefabDiffUtility.IsReferenceProperty(iterator.propertyType))
-                        continue;
-                    if (PrefabDiffUtility.ShouldSkipProperty(iterator.propertyPath))
-                        continue;
-
-                    var current = PrefabDiffUtility.GetReferenceValue(iterator);
-                    if (current == null)
-                        continue;
-
-                    var remapped = PrefabDiffUtility.TryMapObjectReference(current, sourceRoot.transform, workingRoot.transform);
-                    if (remapped != null && remapped != current)
-                    {
-                        PrefabDiffUtility.SetReferenceValue(iterator, remapped);
-                        changed = true;
-                    }
-                }
-
-                if (changed)
-                    so.ApplyModifiedPropertiesWithoutUndo();
-            }
-        }
-
         private static void RemapReferences(GameObject workingRoot, Dictionary<Object, Object> remap)
         {
             if (remap == null || remap.Count == 0)
@@ -1617,9 +1727,12 @@ namespace UnityBox.PrefabDiffPatcher
                 var iterator = so.GetIterator();
                 bool enterChildren = true;
                 bool changed = false;
+                var visitedManagedReferences = new HashSet<long>();
                 while (iterator.Next(enterChildren))
                 {
-                    enterChildren = false;
+                    enterChildren = !PrefabDiffUtility.ShouldSkipProperty(iterator.propertyPath);
+                    if (iterator.propertyType == SerializedPropertyType.ManagedReference &&
+                        !visitedManagedReferences.Add(iterator.managedReferenceId)) enterChildren = false;
                     if (!PrefabDiffUtility.IsReferenceProperty(iterator.propertyType))
                         continue;
                     if (PrefabDiffUtility.ShouldSkipProperty(iterator.propertyPath))
@@ -1631,13 +1744,49 @@ namespace UnityBox.PrefabDiffPatcher
 
                     if (remap.TryGetValue(current, out var replacement) && replacement != current)
                     {
-                        PrefabDiffUtility.SetReferenceValue(iterator, replacement);
+                        PrefabDiffUtility.SetReferenceValue(iterator, replacement == null ? null : replacement);
                         changed = true;
                     }
                 }
 
                 if (changed)
+                {
                     so.ApplyModifiedPropertiesWithoutUndo();
+                    // Rebuild custom serializer caches from the remapped backing fields
+                    // before their next OnBeforeSerialize writes those caches out again.
+                    if (component is ISerializationCallbackReceiver callbacks)
+                        callbacks.OnAfterDeserialize();
+                }
+            }
+        }
+
+        internal static void ValidateOutputPath(GameObject sourceA, GameObject sourceB, string outputPath)
+        {
+            if (string.IsNullOrWhiteSpace(outputPath) || !outputPath.StartsWith("Assets/", StringComparison.Ordinal) ||
+                !outputPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) ||
+                outputPath.Contains('\\') || outputPath.Split('/').Any(segment =>
+                    string.IsNullOrWhiteSpace(segment) || segment == "." || segment == ".." ||
+                    segment.IndexOfAny(new[] { ':', '*', '?', '"', '<', '>', '|' }) >= 0))
+                throw new ArgumentException("输出必须是 Assets 下不含 . 或 .. 的有效 .prefab 路径。");
+
+            // A Variant depends on its base, and both assets and scene inputs may
+            // contain nested Prefabs. Replacing any such source changes the input
+            // graph and can make the saved result depend on itself.
+            if (AssetDatabase.LoadMainAssetAtPath(outputPath) == null) return;
+            var checkedSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var source in new[] { sourceA, sourceB })
+            {
+                if (source == null) continue;
+                foreach (var node in source.GetComponentsInChildren<Transform>(true))
+                {
+                    if (node != source.transform && !PrefabUtility.IsAnyPrefabInstanceRoot(node.gameObject)) continue;
+                    var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(node.gameObject);
+                    if (string.IsNullOrEmpty(prefabPath)) prefabPath = AssetDatabase.GetAssetPath(node.gameObject);
+                    if (string.IsNullOrEmpty(prefabPath) || !checkedSources.Add(prefabPath)) continue;
+                    if (AssetDatabase.GetDependencies(prefabPath, true).Any(dependency =>
+                            string.Equals(outputPath, dependency, StringComparison.OrdinalIgnoreCase)))
+                        throw new InvalidOperationException("输出不能覆盖 A/B、Variant 祖先或嵌套 Prefab 来源，请选择独立输出路径。");
+                }
             }
         }
 
@@ -1689,6 +1838,7 @@ namespace UnityBox.PrefabDiffPatcher
 
         private sealed class SelectionContext
         {
+            public readonly Dictionary<Object, Object> ObjectRemap = new();
             private readonly HashSet<string> _selectedObjectPaths;
             private readonly Dictionary<string, HashSet<string>> _componentKeysByPath;
 
@@ -1748,6 +1898,15 @@ namespace UnityBox.PrefabDiffPatcher
             "m_Script"
         };
 
+        private static string EscapePathSegment(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new InvalidOperationException("请先为层级中的空名称对象命名，再分析或应用差异。");
+            // Only path delimiters need escaping; keep Unicode names readable in the tree.
+            return name.Replace("%", "%25").Replace("/", "%2F")
+                .Replace("[", "%5B").Replace("]", "%5D").Replace("|", "%7C");
+        }
+
         public static Dictionary<string, Transform> GetChildMap(Transform parent)
         {
             var map = new Dictionary<string, Transform>(StringComparer.Ordinal);
@@ -1758,7 +1917,8 @@ namespace UnityBox.PrefabDiffPatcher
                 if (!duplicateCounter.TryGetValue(child.name, out var count))
                     count = 0;
                 duplicateCounter[child.name] = count + 1;
-                var key = count == 0 ? child.name : $"{child.name}[{count}]";
+                var escapedName = EscapePathSegment(child.name);
+                var key = count == 0 ? escapedName : $"{escapedName}[{count}]";
                 map[key] = child;
             }
             return map;
@@ -1866,7 +2026,7 @@ namespace UnityBox.PrefabDiffPatcher
             return map;
         }
 
-        public static Dictionary<string, SerializedValue> ReadSerializedProperties(Component component)
+        public static Dictionary<string, SerializedValue> ReadSerializedProperties(Component component, Transform referenceRoot = null)
         {
             var result = new Dictionary<string, SerializedValue>(StringComparer.Ordinal);
             if (component == null)
@@ -1875,12 +2035,19 @@ namespace UnityBox.PrefabDiffPatcher
             var so = new SerializedObject(component);
             var iterator = so.GetIterator();
             bool enterChildren = true;
+            var visitedManagedReferences = new HashSet<long>();
             while (iterator.Next(enterChildren))
             {
-                enterChildren = false;
+                // Object references are compared through their normalized logical target;
+                // native PPtr children only contain instance IDs. ExposedReference also
+                // carries an exposedName binding key, so its children must remain visible.
+                enterChildren = !ShouldSkipProperty(iterator.propertyPath) &&
+                                iterator.propertyType != SerializedPropertyType.ObjectReference;
+                if (iterator.propertyType == SerializedPropertyType.ManagedReference &&
+                    !visitedManagedReferences.Add(iterator.managedReferenceId)) enterChildren = false;
                 if (ShouldSkipProperty(iterator.propertyPath))
                     continue;
-                result[iterator.propertyPath] = SerializedValue.FromProperty(iterator);
+                result[iterator.propertyPath] = SerializedValue.FromProperty(iterator, referenceRoot);
             }
             return result;
         }
@@ -1978,6 +2145,7 @@ namespace UnityBox.PrefabDiffPatcher
                 }
             }
 
+            expectedName = Uri.UnescapeDataString(expectedName);
             int seen = 0;
             for (int i = 0; i < parent.childCount; i++)
             {
@@ -1991,7 +2159,7 @@ namespace UnityBox.PrefabDiffPatcher
             return null;
         }
 
-        private static string GetRelativePath(Transform root, Transform target)
+        internal static string GetRelativePath(Transform root, Transform target)
         {
             if (root == null || target == null)
                 return null;
@@ -2027,7 +2195,8 @@ namespace UnityBox.PrefabDiffPatcher
                     break;
                 duplicateIndex++;
             }
-            return duplicateIndex == 0 ? child.name : $"{child.name}[{duplicateIndex}]";
+            var escapedName = EscapePathSegment(child.name);
+            return duplicateIndex == 0 ? escapedName : $"{escapedName}[{duplicateIndex}]";
         }
     }
 
@@ -2141,14 +2310,16 @@ namespace UnityBox.PrefabDiffPatcher
     {
         public readonly SerializedPropertyType PropertyType;
         public readonly string Value;
+        private readonly string _comparisonKey;
 
-        public SerializedValue(SerializedPropertyType propertyType, string value)
+        public SerializedValue(SerializedPropertyType propertyType, string value, string comparisonKey = null)
         {
             PropertyType = propertyType;
             Value = value ?? string.Empty;
+            _comparisonKey = comparisonKey ?? Value;
         }
 
-        public static SerializedValue FromProperty(SerializedProperty property)
+        public static SerializedValue FromProperty(SerializedProperty property, Transform referenceRoot = null)
         {
             if (property == null)
                 return default;
@@ -2160,7 +2331,7 @@ namespace UnityBox.PrefabDiffPatcher
                 SerializedPropertyType.Float => property.doubleValue.ToString("R"),
                 SerializedPropertyType.String => property.stringValue ?? string.Empty,
                 SerializedPropertyType.Color => property.colorValue.ToString(),
-                SerializedPropertyType.ObjectReference => DescribeObjectReference(property.objectReferenceValue),
+                SerializedPropertyType.ObjectReference => DescribeObjectReference(property.objectReferenceValue, referenceRoot),
                 SerializedPropertyType.LayerMask => property.intValue.ToString(),
                 SerializedPropertyType.Enum => property.enumValueIndex + ":" + property.enumDisplayNames.ElementAtOrDefault(property.enumValueIndex),
                 SerializedPropertyType.Vector2 => property.vector2Value.ToString(),
@@ -2173,22 +2344,29 @@ namespace UnityBox.PrefabDiffPatcher
                 SerializedPropertyType.Bounds => property.boundsValue.ToString(),
                 SerializedPropertyType.Gradient => property.gradientValue != null ? "Gradient" : "null",
                 SerializedPropertyType.Quaternion => property.quaternionValue.eulerAngles.ToString(),
-                SerializedPropertyType.ExposedReference => DescribeObjectReference(property.exposedReferenceValue),
+                SerializedPropertyType.ExposedReference => DescribeObjectReference(property.exposedReferenceValue, referenceRoot),
                 SerializedPropertyType.FixedBufferSize => property.fixedBufferSize.ToString(),
                 SerializedPropertyType.Vector2Int => property.vector2IntValue.ToString(),
                 SerializedPropertyType.Vector3Int => property.vector3IntValue.ToString(),
                 SerializedPropertyType.RectInt => property.rectIntValue.ToString(),
                 SerializedPropertyType.BoundsInt => property.boundsIntValue.ToString(),
-                SerializedPropertyType.ManagedReference => property.managedReferenceFullTypename + ":" + (property.managedReferenceId.ToString()),
+                SerializedPropertyType.ManagedReference => property.managedReferenceFullTypename,
                 SerializedPropertyType.Hash128 => property.hash128Value.ToString(),
                 _ => property.propertyPath
             };
-            return new SerializedValue(property.propertyType, value);
+            // Native hash compares full curve/gradient data and full precision vectors,
+            // rather than only key counts or rounded ToString() previews. Containers
+            // are compared through their recursively visited child properties.
+            bool useValue = PrefabDiffUtility.IsReferenceProperty(property.propertyType) ||
+                property.propertyType == SerializedPropertyType.Generic ||
+                property.propertyType == SerializedPropertyType.ManagedReference;
+            return new SerializedValue(property.propertyType, value,
+                useValue ? value : property.contentHash.ToString());
         }
 
         public bool Equals(SerializedValue other)
         {
-            return PropertyType == other.PropertyType && string.Equals(Value, other.Value, StringComparison.Ordinal);
+            return PropertyType == other.PropertyType && string.Equals(_comparisonKey, other._comparisonKey, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -2200,7 +2378,7 @@ namespace UnityBox.PrefabDiffPatcher
         {
             unchecked
             {
-                return ((int)PropertyType * 397) ^ (Value != null ? Value.GetHashCode() : 0);
+                return ((int)PropertyType * 397) ^ (_comparisonKey != null ? _comparisonKey.GetHashCode() : 0);
             }
         }
 
@@ -2209,16 +2387,24 @@ namespace UnityBox.PrefabDiffPatcher
             return string.IsNullOrEmpty(Value) ? "<empty>" : Value;
         }
 
-        private static string DescribeObjectReference(Object value)
+        private static string DescribeObjectReference(Object value, Transform referenceRoot)
         {
             if (value == null)
                 return "null";
-            return value switch
+            var transform = value is GameObject go ? go.transform : (value as Component)?.transform;
+            var path = PrefabDiffUtility.GetRelativePath(referenceRoot, transform);
+            if (path != null)
             {
-                GameObject go => $"GameObject:{go.name}",
-                Component component => $"{component.GetType().Name}:{component.gameObject.name}",
-                _ => $"{value.GetType().Name}:{value.name}"
-            };
+                if (value is Component component)
+                {
+                    string key = PrefabDiffUtility.GetComponentMap(component.gameObject)
+                        .First(pair => pair.Value == component).Key;
+                    return "Local:" + path + "|" + key;
+                }
+                return "Local:" + path + "|GameObject";
+            }
+            // Names alone do not identify meshes, materials or same-named scene objects.
+            return $"{value.GetType().Name}:{value.name} [{value.GetInstanceID()}]";
         }
     }
 }

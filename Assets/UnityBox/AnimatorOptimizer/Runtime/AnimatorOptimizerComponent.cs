@@ -70,7 +70,7 @@ namespace UnityBox.AnimatorOptimizer
         [Tooltip("Target Mode 为 Explicit Controller 时指定 Controller；构建必须有可唯一定位的 Avatar 内 Animator 接收结果。离线优化可用工具窗口。")]
         public RuntimeAnimatorController controller;
 
-        [Tooltip("关闭后只处理 layerIndices 中的 Layer；开启后自动处理所有通过安全分析的 Layer。")]
+        [Tooltip("自动选择可实际合并的普通多层组，保留不同 Mask/BlendMode/Tag 的独立单层；关闭后只处理 layerIndices。显式启用的 AAP 按状态寄存器规则处理。")]
         public bool optimizeAllConvertibleLayers = true;
 
         [Tooltip("当 optimizeAllConvertibleLayers 关闭时要处理的 Layer 索引。")]

@@ -554,7 +554,7 @@ namespace UnityBox.AnimatorOptimizer
                 .OrderBy(group => group.FirstIndex)
                 .ToList();
             groups = groups.SelectMany(group => SplitVirtualCandidateGroup(group, layers, bindingsByLayer,
-                completeBindings, options)).ToList();
+                completeBindings, options, includeSingletons: !config.OptimizeAllConvertibleLayers)).ToList();
             var safeGroups = new List<VirtualCandidateGroup>();
             foreach (var group in groups)
             {

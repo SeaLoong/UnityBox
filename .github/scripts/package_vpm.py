@@ -3,7 +3,8 @@
 import argparse
 import json
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile
+import stat
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 ASS_PROBES = {
@@ -38,10 +39,14 @@ def build_package(source, destination):
     source, destination = Path(source), Path(destination)
     package_name = json.loads((source / "package.json").read_text(encoding="utf-8"))["name"]
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with ZipFile(destination, "w", ZIP_DEFLATED) as archive:
+    with ZipFile(destination, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(source.rglob("*")):
             if path.is_file() and include_file(path.relative_to(source).as_posix(), package_name):
-                archive.write(path, path.relative_to(source).as_posix())
+                entry = ZipInfo(path.relative_to(source).as_posix(), date_time=(1980, 1, 1, 0, 0, 0))
+                entry.create_system = 3
+                permissions = 0o755 if path.stat().st_mode & 0o111 else 0o644
+                entry.external_attr = (stat.S_IFREG | permissions) << 16
+                archive.writestr(entry, path.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)
 
 
 if __name__ == "__main__":

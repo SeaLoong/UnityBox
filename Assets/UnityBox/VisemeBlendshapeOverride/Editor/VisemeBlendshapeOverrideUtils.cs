@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
 
 namespace UnityBox.VisemeBlendshapeOverride
 {
@@ -16,7 +13,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         public const string BuiltInVoiceParameter = "Voice";
         public const string GeneratedLayerName = "Viseme Blendshape Override";
         public const string GeneratedAssetPrefix = "VisemeBlendshapeOverride_";
-        internal const string FallbackGeneratedFolderRoot = "Assets/UnityBox/VisemeBlendshapeOverride/Generated";
 
         public static string GetRelativePath(GameObject root, GameObject node)
         {
@@ -56,6 +52,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 stateMachine = stateMachine,
                 blendingMode = AnimatorLayerBlendingMode.Override,
                 iKPass = false,
+                syncedLayerIndex = -1,
             };
         }
 
@@ -115,97 +112,60 @@ namespace UnityBox.VisemeBlendshapeOverride
             EnsureParameter(controller, BuiltInVoiceParameter, AnimatorControllerParameterType.Float, defaultFloat: 0f);
         }
 
-        public static AnimatorController GetExistingFxController(VRCAvatarDescriptor descriptor)
-        {
-            if (descriptor == null || descriptor.baseAnimationLayers == null)
-                return null;
-
-            return descriptor.baseAnimationLayers
-                .FirstOrDefault(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX)
-                .animatorController as AnimatorController;
-        }
-
-        internal static bool IsFallbackGeneratedController(AnimatorController controller)
-        {
-            if (controller == null)
-                return false;
-
-            var path = AssetDatabase.GetAssetPath(controller);
-            return !string.IsNullOrWhiteSpace(path) &&
-                   path.Replace('\\', '/').StartsWith(FallbackGeneratedFolderRoot + "/", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static AnimatorController GetOrCreateFallbackFxController(VRCAvatarDescriptor descriptor, GameObject avatarRoot)
-        {
-            if (descriptor == null || descriptor.baseAnimationLayers == null)
-                return null;
-
-            var layers = descriptor.baseAnimationLayers;
-            var fxIndex = Array.FindIndex(layers, layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX);
-            if (fxIndex < 0)
-                return null;
-
-            var controllerPath = GetFallbackGeneratedControllerPath(avatarRoot);
-            EnsureFolder(Path.GetDirectoryName(controllerPath)?.Replace('\\', '/'));
-
-            var existingController = layers[fxIndex].animatorController as AnimatorController;
-            if (existingController != null)
-            {
-                var path = AssetDatabase.GetAssetPath(existingController);
-                if (!string.Equals(path, controllerPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    existingController = CloneControllerToPath(existingController, controllerPath);
-                    layers[fxIndex].animatorController = existingController;
-                    layers[fxIndex].isDefault = false;
-                    descriptor.baseAnimationLayers = layers;
-                }
-
-                return existingController;
-            }
-
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-            if (controller == null)
-                controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-
-            layers[fxIndex].animatorController = controller;
-            layers[fxIndex].isDefault = false;
-            descriptor.baseAnimationLayers = layers;
-            return controller;
-        }
 
         internal static void CleanupGeneratedContent(AnimatorController controller)
         {
-            if (controller == null)
-                return;
-
-            var changed = false;
-            for (var i = controller.layers.Length - 1; i >= 0; i--)
-            {
-                if (controller.layers[i].name == GeneratedLayerName)
-                {
-                    controller.RemoveLayer(i);
-                    changed = true;
-                }
-            }
+            var removedRoots = controller.layers
+                .Where(layer => layer.name == GeneratedLayerName)
+                .Select(layer => (UnityEngine.Object)layer.stateMachine).ToArray();
+            if (removedRoots.Length == 0) return;
 
             var controllerPath = AssetDatabase.GetAssetPath(controller);
-            if (!string.IsNullOrWhiteSpace(controllerPath))
-            {
-                var generatedAssets = AssetDatabase.LoadAllAssetsAtPath(controllerPath)
-                    .Where(asset => asset != null && asset != controller)
-                    .Where(asset => asset.name.StartsWith(GeneratedAssetPrefix, StringComparison.Ordinal))
-                    .ToArray();
+            var previousAssets = CollectControllerReferences(removedRoots, controllerPath, controller);
+            for (var i = controller.layers.Length - 1; i >= 0; i--)
+                if (controller.layers[i].name == GeneratedLayerName)
+                    controller.RemoveLayer(i);
 
-                foreach (var asset in generatedAssets)
-                {
+            // User layers may intentionally reuse a generated Clip or BlendTree.
+            // Replacing this layer only releases graph objects nobody else owns.
+            previousAssets.ExceptWith(CollectControllerReferences(new UnityEngine.Object[] { controller },
+                controllerPath, controller));
+            // Removing a layer can already release its native graph objects.
+            // Detach every remaining exclusive subasset before destroying roots:
+            // native StateMachine destruction can invalidate its child wrappers.
+            var exclusiveAssets = previousAssets.Where(asset => asset != null &&
+                AssetDatabase.GetAssetPath(asset) == controllerPath).ToArray();
+            foreach (var asset in exclusiveAssets)
+                if (asset != null && AssetDatabase.GetAssetPath(asset) == controllerPath)
                     AssetDatabase.RemoveObjectFromAsset(asset);
+            foreach (var asset in exclusiveAssets)
+                if (asset != null)
                     UnityEngine.Object.DestroyImmediate(asset, true);
-                    changed = true;
+            EditorUtility.SetDirty(controller);
+        }
+
+        private static HashSet<UnityEngine.Object> CollectControllerReferences(
+            IEnumerable<UnityEngine.Object> roots, string controllerPath, AnimatorController controller)
+        {
+            var result = new HashSet<UnityEngine.Object>();
+            var pending = new Stack<UnityEngine.Object>(roots);
+            while (pending.Count > 0)
+            {
+                var asset = pending.Pop();
+                if (asset == null || AssetDatabase.GetAssetPath(asset) != controllerPath || !result.Add(asset))
+                    continue;
+                using (var serialized = new SerializedObject(asset))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var referenced = property.objectReferenceValue;
+                        if (referenced != controller) pending.Push(referenced);
+                    }
                 }
             }
-
-            if (changed)
-                EditorUtility.SetDirty(controller);
+            return result;
         }
 
         internal static void AddSubAsset(AnimatorController controller, UnityEngine.Object asset)
@@ -219,10 +179,8 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (!string.IsNullOrWhiteSpace(assetPath) && !string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            if (AssetDatabase.LoadAllAssetsAtPath(controllerPath).Any(existing => existing == asset))
-                return;
-
-            AssetDatabase.AddObjectToAsset(asset, controllerPath);
+            if (string.IsNullOrWhiteSpace(assetPath))
+                AssetDatabase.AddObjectToAsset(asset, controllerPath);
         }
 
         internal static AnimationClip CreateBlendshapeClip(
@@ -265,10 +223,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             float voiceMin,
             float voiceMax)
         {
-            var clampedMin = Mathf.Clamp01(voiceMin);
-            var clampedMax = Mathf.Clamp01(voiceMax);
-            if (clampedMax <= clampedMin)
-                clampedMax = Mathf.Min(1f, clampedMin + 0.001f);
+            var clampedMin = voiceMin;
+            var clampedMax = voiceMax;
+            NormalizeVoiceRange(ref clampedMin, ref clampedMax);
 
             var tree = new BlendTree
             {
@@ -284,9 +241,20 @@ namespace UnityBox.VisemeBlendshapeOverride
             return tree;
         }
 
+        public static void NormalizeVoiceRange(ref float min, ref float max)
+        {
+            min = float.IsNaN(min) ? 0f : Mathf.Clamp01(min);
+            max = float.IsNaN(max) ? 1f : Mathf.Clamp01(max);
+            if (max <= min)
+            {
+                max = Mathf.Min(1f, min + 0.001f);
+                min = Mathf.Max(0f, max - 0.001f);
+            }
+        }
+
         public static bool ResolveWriteDefaults(
             AnimatorController controller,
-            VRCAvatarDescriptor descriptor,
+            IEnumerable<AnimatorController> relatedControllers,
             VisemeBlendshapeOverrideComponent.WriteDefaultsMode mode)
         {
             switch (mode)
@@ -297,23 +265,10 @@ namespace UnityBox.VisemeBlendshapeOverride
                     return false;
             }
 
-            var controllers = new HashSet<AnimatorController>();
-            if (descriptor != null)
-            {
-                foreach (var layer in descriptor.baseAnimationLayers.Concat(descriptor.specialAnimationLayers))
-                {
-                    if (layer.isDefault)
-                        continue;
-                    if (!(layer.animatorController is AnimatorController referencedController) || referencedController == null)
-                        continue;
-                    if (referencedController.name.StartsWith("vrc_", StringComparison.OrdinalIgnoreCase))
-                        continue;
+            var controllers = new HashSet<AnimatorController>(
+                (relatedControllers ?? Enumerable.Empty<AnimatorController>()).Where(item => item != null));
 
-                    controllers.Add(referencedController);
-                }
-            }
-
-            controllers.Add(controller);
+            if (controller != null) controllers.Add(controller);
 
             foreach (var currentController in controllers)
             {
@@ -395,59 +350,6 @@ namespace UnityBox.VisemeBlendshapeOverride
             }
 
             return false;
-        }
-
-        private static AnimatorController CloneControllerToPath(AnimatorController source, string targetPath)
-        {
-            var sourcePath = AssetDatabase.GetAssetPath(source);
-            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
-                return source;
-
-            EnsureFolder(Path.GetDirectoryName(targetPath)?.Replace('\\', '/'));
-
-            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(targetPath) != null)
-                AssetDatabase.DeleteAsset(targetPath);
-
-            if (!AssetDatabase.CopyAsset(sourcePath, targetPath))
-                throw new InvalidOperationException($"Failed to clone FX controller from '{sourcePath}' to '{targetPath}'.");
-
-            var clonedController = AssetDatabase.LoadAssetAtPath<AnimatorController>(targetPath);
-            if (clonedController == null)
-                throw new InvalidOperationException($"Failed to load cloned FX controller at '{targetPath}'.");
-
-            return clonedController;
-        }
-
-        private static string GetFallbackGeneratedControllerPath(GameObject avatarRoot)
-        {
-            var safeAvatarName = SanitizeAssetName(avatarRoot != null ? avatarRoot.name : "Avatar");
-            return $"{FallbackGeneratedFolderRoot}/{safeAvatarName}/{safeAvatarName}_VisemeBlendshapeOverride.controller";
-        }
-
-        private static string SanitizeAssetName(string rawName)
-        {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = new string(rawName
-                .Select(character => invalidChars.Contains(character) ? '_' : character)
-                .ToArray());
-            return string.IsNullOrWhiteSpace(sanitized) ? "Avatar" : sanitized;
-        }
-
-        private static void EnsureFolder(string folderPath)
-        {
-            if (string.IsNullOrWhiteSpace(folderPath) || AssetDatabase.IsValidFolder(folderPath))
-                return;
-
-            var normalizedPath = folderPath.Replace('\\', '/');
-            var parts = normalizedPath.Split('/');
-            var current = parts[0];
-            for (var i = 1; i < parts.Length; i++)
-            {
-                var next = $"{current}/{parts[i]}";
-                if (!AssetDatabase.IsValidFolder(next))
-                    AssetDatabase.CreateFolder(current, parts[i]);
-                current = next;
-            }
         }
 
     }

@@ -33,9 +33,25 @@ namespace UnityBox.AvatarSecuritySystem
             serializedObject.Update();
             EditorGUILayout.Space(10);
             DrawHeaderSection();
+            if (System.Type.GetType("UnityBox.AvatarSecuritySystem.Editor.Processor, UnityBox.AvatarSecuritySystem.VRChat") == null)
+                EditorGUILayout.HelpBox("Unity configuration and animation tools are available. Avatar upload generation requires the optional VRChat SDK 3.7+ integration.", MessageType.Info);
             EditorGUILayout.Space(10);
             DrawConfigurationSections();
             serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Generate Standalone Unity Controller"))
+            {
+                string path = EditorUtility.SaveFilePanelInProject("Generate ASS Controller", "ASS_Standalone", "controller", "Choose the output controller.");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var controller = StandaloneSecurityBuilder.Build(_target.gameObject, ASSConfigData.FromComponent(_target), path);
+                    var animator = _target.GetComponent<Animator>() ?? Undo.AddComponent<Animator>(_target.gameObject);
+                    Undo.RecordObject(animator, "Assign ASS Controller");
+                    animator.runtimeAnimatorController = controller;
+                    EditorUtility.SetDirty(animator);
+                    Selection.activeObject = controller;
+                }
+            }
         }
         private void DrawHeaderSection()
         {
@@ -147,7 +163,7 @@ namespace UnityBox.AvatarSecuritySystem
         }
         private void DrawPasswordStatus()
         {
-            if (_target.gesturePassword.Count == 0)
+            if (_target.gesturePassword == null || _target.gesturePassword.Count == 0)
             {
                 DrawPasswordEmptyWarning();
             }

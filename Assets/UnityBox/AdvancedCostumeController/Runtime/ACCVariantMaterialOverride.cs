@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITYBOX_VRC_BASE
 using VRC.SDKBase;
+#endif
 
 namespace UnityBox.AdvancedCostumeController
 {
@@ -11,7 +13,10 @@ namespace UnityBox.AdvancedCostumeController
   /// </summary>
   [AddComponentMenu("UnityBox/ACC Variant Material Override")]
   [HelpURL("https://github.com/SeaLoong/UnityBox/blob/master/Assets/UnityBox/AdvancedCostumeController/README.md#accvariantmaterialoverride")]
-  public class ACCVariantMaterialOverride : MonoBehaviour, IEditorOnly
+  public class ACCVariantMaterialOverride : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+    , IEditorOnly
+#endif
   {
     [Serializable]
     public class MaterialReplacement

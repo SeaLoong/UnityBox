@@ -1,13 +1,15 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using System.Collections.Generic;
-using VRC.SDKBase;
 namespace UnityBox.AvatarSecuritySystem
 {
 #if UNITY_EDITOR
     [AddComponentMenu("UnityBox/Avatar Security System (ASS)")]
 #endif
-    public class ASSComponent : MonoBehaviour, IEditorOnly
+    public class ASSComponent : MonoBehaviour
+#if UNITYBOX_VRC_BASE
+        , VRC.SDKBase.IEditorOnly
+#endif
     {
         [Tooltip("#{language.ui_language_tooltip}")]
         public SystemLanguage uiLanguage = SystemLanguage.Unknown;
@@ -33,7 +35,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enabledInPlaymode = false;
         [Tooltip("#{defense.disable_defense_tooltip}")]
-        public bool disableDefense = false;
+        public bool disableDefense = true;
         [Tooltip("#{advanced.disable_objects_tooltip}")]
         public bool disableRootChildren = true;
         [FormerlySerializedAs("hideUI")]
@@ -106,7 +108,7 @@ namespace UnityBox.AvatarSecuritySystem
         public string GetPasswordStrength()
         {
             if (!IsPasswordValid()) return "Invalid";
-            if (gesturePassword.Count == 0) return "Weak";
+            if (gesturePassword == null || gesturePassword.Count == 0) return "Weak";
             int passwordLength = gesturePassword.Count;
             int uniqueGestureCount = new HashSet<int>(gesturePassword).Count;
             if (passwordLength >= 6 && uniqueGestureCount >= 4) return "Strong";
@@ -171,6 +173,7 @@ namespace UnityBox.AvatarSecuritySystem
             disableWarningSound = false;
             disableOverlay = false;
             defaultEnableDefense = false;
+            disableDefense = true;
             lightweightDefense = false;
             enablePlayableLayerObfuscation = true;
             writeDefaultsMode = WriteDefaultsMode.On;

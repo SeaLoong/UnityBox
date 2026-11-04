@@ -81,12 +81,11 @@ Unity 2022 启动会写旧版 HOME 快捷键偏好目录，当前只读挂载会
 
 ## 准备隔离工程
 
-refactor 的七插件和 feature 分支的 AnimatorOptimizer 保持分支独立，测试时组合包源码：
+八个插件都在 `master`，从同一个 checkout 准备测试工程：
 
 ```bash
 python3 scripts/unity/test_project.py prepare \
-  --repo /workspace/unitybox-refactor-review \
-  --source-package /workspace/UnityBox/Assets/UnityBox/AnimatorOptimizer \
+  --repo /workspace/UnityBox \
   --project /workspace/unitybox-setup/unity/projects/review-core \
   --dependency-cache /workspace/unitybox-setup/unity/dependencies \
   --profile core
@@ -95,7 +94,7 @@ python3 scripts/unity/test_project.py prepare \
 每个依赖范围使用新的工程路径。纯 SDK 范围改为 `--profile vrc --offline`；
 完整 MA/NDMF 范围另加 `--dependency nadena.dev.ndmf --dependency nadena.dev.modular-avatar`。
 缓存中存在包与启用该集成是两件事，准备命令决定实际启用范围。
-单包准备可重复传 `--package`。`--source-package` 组合另外一个 checkout 的包。
+省略 `--package` 时准备全部八包；单包准备可重复传 `--package`。
 
 工具按仓库打包筛选规则复制源码、测试与原 metadata；根目录的用户场景留在原处。
 所有权标记 `.unitybox-test-project.json` 记录实际来源、版本、内容哈希和预期程序集。
@@ -151,7 +150,7 @@ Player 另测固定输入下的稳态 `Animator.Update`，与 Editor 生成耗�
 
 ```bash
 python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v
-python3 .github/scripts/test_package_vpm.py
+python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 ```
 
 Python 测试验证准备、依赖、范围筛选、进程退出与证据处理；Unity 测试验证插件行为。
@@ -162,5 +161,5 @@ Python 测试验证准备、依赖、范围筛选、进程退出与证据处理�
 最终证据工具 [capture_evidence.py](../scripts/unity/capture_evidence.py) 核对实际导入的本仓库
 C#/asmdef/asmref 与最终 checkout 字节一致，记录 XML、日志和源码哈希，再生成文档数据。
 依赖范围有重叠，各范围测试数分别列出。
-完成后提交并推送 `refactor` 和 `feat/animator-optimizer`，再核对远端提交 SHA。
+完成后提交并推送 `master`，再核对远端提交 SHA 与 VPM workflow 结果。
 当前环境安装脚本和启动说明通过环境配置草稿保存，发布入口显示的配置版本独立管理。

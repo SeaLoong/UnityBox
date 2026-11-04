@@ -1,515 +1,386 @@
-using UnityEngine;
-using UnityEditor;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase.Editor.BuildPipeline;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-
-#if NDMF_AVAILABLE
-using nadena.dev.ndmf;
-[assembly: ExportsPlugin(typeof(UnityBox.AvatarColliderMonitor.AvatarColliderMonitorPlugin))]
-#endif
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace UnityBox.AvatarColliderMonitor
 {
-  #region NDMF Plugin
-#if NDMF_AVAILABLE
-  public class AvatarColliderMonitorPlugin : Plugin<AvatarColliderMonitorPlugin>
-  {
-public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-monitor";
-    public override string DisplayName => "Avatar Collider Monitor";
-
-    protected override void Configure()
-    {
-      try
-      {
-        // Respect global enabled flag: do not inject phases when monitoring is disabled
-        if (!AvatarColliderMonitor.IsEnabled)
-        {
-          Debug.Log("[Avatar Collider Monitor] NDMF monitoring disabled by user settings; skipping phase registration.");
-          return;
-        }
-
-        // Discover all BuildPhase values via reflection instead of hardcoding
-        var phaseType = typeof(BuildPhase);
-        var phaseFields = phaseType.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
-            .Where(f => f.FieldType == phaseType)
-            .OrderBy(f => ((BuildPhase)f.GetValue(null)).GetHashCode()) // Try to preserve order
-            .ToArray();
-
-        if (phaseFields.Length == 0)
-        {
-          Debug.LogWarning("[Avatar Collider Monitor] No BuildPhase values found");
-          return;
-        }
-
-        Debug.Log($"[Avatar Collider Monitor] NDMF monitoring enabled ({phaseFields.Length} phases)");
-
-        foreach (var phaseField in phaseFields)
-        {
-          var phase = (BuildPhase)phaseField.GetValue(null);
-          var phaseName = phaseField.Name;
-
-          InPhase(phase).Run($"Monitor_{phaseName}_Start", ctx =>
-          {
-            var descriptor = ctx.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
-            if (AvatarColliderMonitor.VerboseLogging)
-              Debug.Log($"[Avatar Collider Monitor] Snapshot at NDMF-{phaseName}-Start");
-            AvatarColliderMonitor.RecordSnapshot(descriptor, $"NDMF-{phaseName}", "Start");
-          });
-
-          InPhase(phase).Run($"Monitor_{phaseName}_End", ctx =>
-          {
-            var descriptor = ctx.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
-            if (AvatarColliderMonitor.VerboseLogging)
-              Debug.Log($"[Avatar Collider Monitor] Snapshot at NDMF-{phaseName}-End");
-            AvatarColliderMonitor.RecordSnapshot(descriptor, $"NDMF-{phaseName}", "End");
-          });
-        }
-      }
-      catch (System.Exception e)
-      {
-        Debug.LogWarning($"[Avatar Collider Monitor] NDMF monitoring setup failed: {e.Message}");
-      }
-    }
-  }
-#endif
-  #endregion
-
-  #region VRChat SDK Callbacks
-  // VRC SDK PreProcess/PostProcess callbacks, works alongside NDMF
-  public class AvatarColliderMonitorPreCallback : IVRCSDKPreprocessAvatarCallback
-  {
-    public int callbackOrder => -10000; // Execute as early as possible
-
-    public bool OnPreprocessAvatar(GameObject avatarGameObject)
-    {
-      var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
-      if (descriptor != null)
-      {
-        if (AvatarColliderMonitor.VerboseLogging)
-          Debug.Log("[Avatar Collider Monitor] Snapshot at VRChatSDK-PreProcess");
-        AvatarColliderMonitor.RecordSnapshot(descriptor, "VRChatSDK", "PreProcess");
-      }
-
-      return true;
-    }
-  }
-
-  public class AvatarColliderMonitorPostCallback : IVRCSDKPostprocessAvatarCallback
-  {
-    public int callbackOrder => 10000; // Execute as late as possible
-
-    public void OnPostprocessAvatar()
-    {
-      var descriptor = GameObject.FindObjectOfType<VRCAvatarDescriptor>();
-      if (descriptor != null)
-      {
-        if (AvatarColliderMonitor.VerboseLogging)
-          Debug.Log("[Avatar Collider Monitor] Snapshot at VRChatSDK-PostProcess");
-        AvatarColliderMonitor.RecordSnapshot(descriptor, "VRChatSDK", "PostProcess");
-      }
-    }
-  }
-  #endregion
-
-  #region VRCFury Hooks
-  // VRCFury monitor - dynamically tracks VRCFury build process via reflection
-  public static class VRCFuryMonitorService
-  {
-    private static bool initialized = false;
-    private static System.Type featureOrderType;
-    private static System.Array allFeatureOrders;
-
-    [InitializeOnLoadMethod]
-    private static void Initialize()
-    {
-      if (!initialized)
-      {
-        // Always subscribe to hierarchy changes immediately
-        EditorApplication.hierarchyChanged += OnHierarchyChanged;
-        Debug.Log("[Avatar Collider Monitor] VRCFury hierarchy monitoring subscribed");
-
-        // Try to discover VRCFury assemblies (may not be loaded yet at Initialize time)
-        TryDiscoverVRCFury();
-
-        initialized = true;
-      }
-    }
-
-    // Lazy discovery of VRCFury assemblies
-    private static void TryDiscoverVRCFury()
-    {
-      try
-      {
-        var allAssemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-        var vrcfuryAssemblies = allAssemblies.Where(a => a.GetName().Name.ToLower().Contains("vrcfury")).ToArray();
-
-        if (vrcfuryAssemblies.Length > 0)
-        {
-          Debug.Log($"[Avatar Collider Monitor] Found {vrcfuryAssemblies.Length} VRCFury assemblies: " +
-                    string.Join(", ", vrcfuryAssemblies.Select(a => a.GetName().Name)));
-
-          var vrcfuryAssembly = allAssemblies.FirstOrDefault(a =>
-              a.GetName().Name.Contains("vrcfury", System.StringComparison.OrdinalIgnoreCase) &&
-              a.GetName().Name.Contains("editor", System.StringComparison.OrdinalIgnoreCase));
-
-          if (vrcfuryAssembly != null)
-          {
-            featureOrderType = vrcfuryAssembly.GetType("VF.Feature.Base.FeatureOrder");
-            if (featureOrderType != null && featureOrderType.IsEnum)
-            {
-              allFeatureOrders = System.Enum.GetValues(featureOrderType);
-              Debug.Log($"[Avatar Collider Monitor] VRCFury FeatureOrder found ({allFeatureOrders.Length} phases)");
-            }
-          }
-        }
-        else
-        {
-          Debug.Log("[Avatar Collider Monitor] No VRCFury assemblies found (may load later)");
-        }
-      }
-      catch (System.Exception e)
-      {
-        Debug.LogWarning($"[Avatar Collider Monitor] VRCFury discovery failed: {e.Message}");
-      }
-    }
-
-    // Allow toggling monitoring at runtime
-    private static bool subscribed = false;
-
-    public static void SetActive(bool active)
-    {
-      // Monitoring state is now checked inside OnHierarchyChanged
-      // This method is kept for compatibility but we always stay subscribed
-    }
-
-    private static VRCAvatarDescriptor lastMonitoredAvatar = null;
-    private static bool isBuildingVRCFury = false;
-    private static int snapshotCount = 0;
-    private static HashSet<string> previousPhases = new HashSet<string>();
-
-    private static void OnHierarchyChanged()
-    {
-      try
-      {
-        // Skip if monitoring is disabled
-        if (!AvatarColliderMonitor.IsEnabled)
-          return;
-
-        // Lazy discover VRCFury if not found yet
-        if (featureOrderType == null)
-        {
-          TryDiscoverVRCFury();
-        }
-
-        // Find all VRCFury components (VF.Component.VRCFury* or VRCFury*)
-        var allMonoBehaviours = GameObject.FindObjectsOfType<MonoBehaviour>();
-        var vrcFuryComponents = allMonoBehaviours
-            .Where(c => c != null && c.GetType().FullName != null)
-            .Where(c =>
-            {
-              var fullName = c.GetType().FullName;
-              return (fullName.Contains("VRCFury") || fullName.StartsWith("VF.Component.VRCFury"))
-                     && !fullName.Contains("Test");
-            })
-            .ToArray();
-
-        // Detect VRCFury build start (any VRCFury component exists + not building yet)
-        if (vrcFuryComponents.Length > 0 && !isBuildingVRCFury)
-        {
-          isBuildingVRCFury = true;
-          snapshotCount = 0;
-          previousPhases.Clear();
-          var go = vrcFuryComponents[0].gameObject;
-          var descriptor = go.GetComponentInParent<VRCAvatarDescriptor>();
-          if (descriptor != null)
-          {
-            lastMonitoredAvatar = descriptor;
-            AvatarColliderMonitor.RecordSnapshot(descriptor, "VRCFury", "BuildStart");
-            snapshotCount++;
-            previousPhases.Add("BuildStart");
-
-            Debug.Log($"[Avatar Collider Monitor] VRCFury build started on '{descriptor.name}' (found {vrcFuryComponents.Length} VRCFury components)");
-          }
-        }
-
-        // Continue monitoring while building - dynamically discover all active VRCFury feature phases
-        if (isBuildingVRCFury && vrcFuryComponents.Length > 0 && lastMonitoredAvatar != null)
-        {
-          var currentPhases = new HashSet<string>();
-
-          // Discover all VRCFury.Feature.* or VF.Feature.* components currently active in the scene
-          foreach (var mb in allMonoBehaviours)
-          {
-            if (mb != null && mb.GetType().FullName != null)
-            {
-              var fullName = mb.GetType().FullName;
-              // Match VF.Feature.* or VRCFury.Feature.* components
-              if ((fullName.Contains("Feature.") && (fullName.StartsWith("VF.") || fullName.StartsWith("VRCFury.")))
-                  && !fullName.Contains("Base"))
-              {
-                // Extract phase name
-                var phaseName = fullName;
-                // Remove namespace prefixes
-                if (phaseName.Contains("Feature."))
-                {
-                  phaseName = phaseName.Substring(phaseName.IndexOf("Feature.") + "Feature.".Length);
-                }
-                // Remove any trailing classes
-                phaseName = phaseName.Split('+')[0];
-                currentPhases.Add(phaseName);
-              }
-            }
-          }
-
-          // Take snapshot for any new phases detected
-          foreach (var phase in currentPhases)
-          {
-            if (!previousPhases.Contains(phase))
-            {
-              AvatarColliderMonitor.RecordSnapshot(lastMonitoredAvatar, "VRCFury", phase);
-              snapshotCount++;
-              previousPhases.Add(phase);
-
-              Debug.Log($"[Avatar Collider Monitor] VRCFury phase detected: {phase}");
-            }
-          }
-        }
-
-        // Detect VRCFury build end (VRCFury components gone + was building)
-        if (vrcFuryComponents.Length == 0 && isBuildingVRCFury && lastMonitoredAvatar != null)
-        {
-          AvatarColliderMonitor.RecordSnapshot(lastMonitoredAvatar, "VRCFury", "BuildComplete");
-          snapshotCount++;
-          previousPhases.Add("BuildComplete");
-
-          Debug.Log($"[Avatar Collider Monitor] VRCFury build completed ({snapshotCount} snapshots, phases: {string.Join(", ", previousPhases)})");
-
-          isBuildingVRCFury = false;
-          lastMonitoredAvatar = null;
-          previousPhases.Clear();
-        }
-      }
-      catch (System.Exception e)
-      {
-        Debug.LogWarning($"[Avatar Collider Monitor] VRCFury monitoring error: {e.Message}\n{e.StackTrace}");
-      }
-    }
-
-    // Get key phase names for UI display
-    public static string[] GetKeyPhases()
-    {
-      if (allFeatureOrders == null || allFeatureOrders.Length == 0)
-        return new string[] { "BuildStart", "BuildComplete" };
-
-      var keyPhases = new List<string> { "BuildStart" };
-
-      var importantPhases = new[] {
-                "AdvancedColliders", "GlobalColliders", "BoundingBoxFix",
-                "CloneAllControllers", "FinalizeController", "Validation"
-            };
-
-      foreach (var phase in allFeatureOrders)
-      {
-        var phaseName = phase.ToString();
-        if (importantPhases.Contains(phaseName))
-        {
-          keyPhases.Add(phaseName);
-        }
-      }
-
-      keyPhases.Add("BuildComplete");
-      return keyPhases.ToArray();
-    }
-  }
-  #endregion
-
-  #region Data Classes
   public class ColliderSnapshot
   {
+    // Retain the existing fields for consumers of recorded snapshots.
     public string phase;
     public string timing;
-    public System.DateTime timestamp;
+    public string avatarName;
+    public int avatarInstanceId;
+    public DateTime timestamp;
+    public string sessionId;
+    public Dictionary<string, Bounds> worldBounds = new Dictionary<string, Bounds>();
     public Dictionary<string, Transform> colliders = new Dictionary<string, Transform>();
+    public Dictionary<string, string> paths = new Dictionary<string, string>();
+    public Dictionary<string, string> configurations = new Dictionary<string, string>();
+    public Dictionary<string, int> transformIds = new Dictionary<string, int>();
+    public Dictionary<string, string> displayNames = new Dictionary<string, string>();
 
-    public string GetColliderPath(string name)
+    public void Add(string key, string label, Transform transform, string configuration, string capturedPath = null)
     {
-      if (!colliders.TryGetValue(name, out var t) || t == null)
-        return "null";
+      colliders[key] = transform;
+      paths[key] = capturedPath ?? CapturePath(transform);
+      configurations[key] = configuration;
+      transformIds[key] = transform != null ? transform.GetInstanceID() : 0;
+      displayNames[key] = label;
+    }
+
+    public string GetColliderPath(string name) => paths.TryGetValue(name, out var path) ? path : "null";
+    public string GetDisplayName(string key) => displayNames.TryGetValue(key, out var name) ? name : key;
+    public IEnumerable<string> KeysComparedTo(ColliderSnapshot previous) =>
+      previous != null && previous.avatarInstanceId == avatarInstanceId && previous.sessionId == sessionId
+        ? paths.Keys.Union(previous.paths.Keys)
+        : paths.Keys;
+
+    public bool HasChangedFrom(ColliderSnapshot previous, string key)
+    {
+      if (previous == null || previous.avatarInstanceId != avatarInstanceId || previous.sessionId != sessionId) return false;
+      return previous.paths.ContainsKey(key) != paths.ContainsKey(key) ||
+        previous.GetColliderPath(key) != GetColliderPath(key) ||
+        Value(previous.transformIds, key) != Value(transformIds, key) ||
+        Value(previous.configurations, key) != Value(configurations, key) ||
+        Value(previous.worldBounds, key) != Value(worldBounds, key);
+    }
+
+    private static T Value<T>(Dictionary<string, T> source, string key) =>
+      source.TryGetValue(key, out var value) ? value : default;
+
+    public static string CapturePath(Transform transform)
+    {
+      if (transform == null) return "null";
       var parts = new List<string>();
-      var current = t;
-      while (current != null)
-      {
-        parts.Insert(0, current.name);
-        current = current.parent;
-      }
+      for (var current = transform; current != null; current = current.parent)
+        parts.Add(current.name);
+      parts.Reverse();
       return string.Join("/", parts);
     }
   }
-  #endregion
 
-  #region Core Monitor
+  public sealed class ColliderSnapshotComparison
+  {
+    public readonly ColliderSnapshot Snapshot;
+    public readonly ColliderSnapshot Previous;
+    public readonly string[] Keys;
+    public readonly HashSet<string> ChangedKeys;
+    public bool HasChanges => ChangedKeys.Count != 0;
+
+    internal ColliderSnapshotComparison(ColliderSnapshot snapshot, ColliderSnapshot previous)
+    {
+      Snapshot = snapshot;
+      Previous = previous;
+      Keys = snapshot.KeysComparedTo(previous).ToArray();
+      ChangedKeys = new HashSet<string>(Keys.Where(key => snapshot.HasChangedFrom(previous, key)));
+    }
+  }
+
+  // Sampling happens when explicitly refreshed, not on each IMGUI Layout/Repaint event.
+  public sealed class ColliderSnapshotPreview
+  {
+    private ColliderSnapshot current;
+    private GameObject root;
+    public void Invalidate() => current = null;
+    public ColliderSnapshot Get(GameObject selected)
+    {
+      if (selected == null) { root = null; current = null; return null; }
+      if (current == null || root != selected)
+      {
+        root = selected;
+        current = AvatarColliderMonitor.CaptureSnapshot(selected, "Preview", "Current");
+      }
+      return current;
+    }
+  }
+
+  public sealed class ColliderChangeCount
+  {
+    public string Key;
+    public string Label;
+    public int Count;
+  }
+
   public static class AvatarColliderMonitor
   {
-    private static List<ColliderSnapshot> snapshots = new List<ColliderSnapshot>();
-    // Collider fields are discovered dynamically from VRCAvatarDescriptor
+    private static readonly List<ColliderSnapshot> snapshots = new List<ColliderSnapshot>();
+    private const int MaximumSnapshots = 1000;
+    private static int revision;
+    private static int comparisonRevision = -1;
+    private static int comparisonCount = -1;
+    private static List<ColliderSnapshotComparison> comparisons = new List<ColliderSnapshotComparison>();
+    private static readonly string CurrentSession = GetSessionId();
+    private static ColliderChangeCount[] changeStatistics = Array.Empty<ColliderChangeCount>();
+    private static int totalChanges;
+    public static int TotalChanges { get { GetHistoryComparisons(); return totalChanges; } }
+    public static IReadOnlyList<ColliderChangeCount> GetChangeStatistics()
+    {
+      GetHistoryComparisons();
+      return changeStatistics;
+    }
 
+    private static string GetSessionId()
+    {
+      const string key = "UnityBox.AvatarColliderMonitor.Session";
+      string value = SessionState.GetString(key, "");
+      if (value.Length == 0) { value = Guid.NewGuid().ToString("N"); SessionState.SetString(key, value); }
+      return value;
+    }
     private const string ENABLED_KEY = "AvatarColliderMonitor_Enabled";
     private const string LOG_CHANGES_KEY = "AvatarColliderMonitor_LogChanges";
     private const string VERBOSE_KEY = "AvatarColliderMonitor_Verbose";
+
+    // Optional adapters add their domain-specific configuration without introducing
+    // SDK types or mandatory SDK assemblies into the Unity-only monitor.
+    public static event Action<GameObject, ColliderSnapshot> CollectAdditionalColliders;
 
     public static bool IsEnabled
     {
       get => EditorPrefs.GetBool(ENABLED_KEY, false);
       set => EditorPrefs.SetBool(ENABLED_KEY, value);
     }
-
     public static bool LogChanges
     {
       get => EditorPrefs.GetBool(LOG_CHANGES_KEY, true);
       set => EditorPrefs.SetBool(LOG_CHANGES_KEY, value);
     }
-
     public static bool VerboseLogging
     {
       get => EditorPrefs.GetBool(VERBOSE_KEY, false);
       set => EditorPrefs.SetBool(VERBOSE_KEY, value);
     }
 
-    // Cache of collider fields (in declaration order)
-    public static FieldInfo[] cachedColliderFields;
-
-    public static FieldInfo[] GetColliderFields()
+    [Serializable]
+    private class UnityColliderConfiguration
     {
-      if (cachedColliderFields != null) return cachedColliderFields;
-      var type = typeof(VRCAvatarDescriptor);
-      var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-          .Where(f => f.Name.StartsWith("collider_"))
-          .OrderBy(f => f.MetadataToken)
-          .ToArray();
-      cachedColliderFields = fields;
-      return cachedColliderFields;
+      public string component;
+      public Matrix4x4 localToWorld;
+      public bool activeInHierarchy;
+      public int layer;
     }
 
-    public static string FieldToKey(FieldInfo f)
+    public static ColliderSnapshot CaptureSnapshot(GameObject root, string phase, string timing)
     {
-      return f.Name.StartsWith("collider_") ? f.Name.Substring("collider_".Length) : f.Name;
-    }
-
-    // Convert keys like "fingerIndexL" -> "Finger Index L"
-    public static string KeyToDisplayName(string key)
-    {
-      if (string.IsNullOrEmpty(key)) return key;
-      // Insert space before uppercase letters and before trailing 'L'/'R' if attached
-      var sb = new System.Text.StringBuilder();
-      for (int i = 0; i < key.Length; i++)
+      if (root == null) return null;
+      var snapshot = new ColliderSnapshot
       {
-        var c = key[i];
-        if (i > 0 && char.IsUpper(c) && !char.IsUpper(key[i - 1])) sb.Append(' ');
-        sb.Append(c);
+        phase = phase, timing = timing, timestamp = DateTime.Now,
+        avatarName = root.name, avatarInstanceId = root.GetInstanceID(), sessionId = CurrentSession
+      };
+      foreach (var component in root.GetComponentsInChildren<Collider>(true))
+        AddUnityCollider(snapshot, component, component.bounds);
+      foreach (var component in root.GetComponentsInChildren<Collider2D>(true))
+        AddUnityCollider(snapshot, component, component.bounds);
+      CollectAdditionalColliders?.Invoke(root, snapshot);
+      return snapshot;
+    }
+
+    private static void AddUnityCollider(ColliderSnapshot snapshot, Component component, Bounds bounds)
+    {
+      var configuration = new UnityColliderConfiguration
+      {
+        component = EditorJsonUtility.ToJson(component),
+        localToWorld = component.transform.localToWorldMatrix,
+        activeInHierarchy = component.gameObject.activeInHierarchy,
+        layer = component.gameObject.layer
+      };
+      string key = "Unity/" + component.GetInstanceID();
+      string path = ColliderSnapshot.CapturePath(component.transform);
+      snapshot.Add(key, component.GetType().Name + " · " + path, component.transform,
+        JsonUtility.ToJson(configuration), path);
+      snapshot.worldBounds[key] = bounds;
+    }
+
+    // Component inputs remain accepted, including descriptors from optional integrations.
+    public static void RecordSnapshot(UnityEngine.Object target, string phase, string timing)
+    {
+      var root = target as GameObject ?? (target as Component)?.gameObject;
+      if (root == null || (!IsEnabled && phase != "Manual")) return;
+      var snapshot = CaptureSnapshot(root, phase, timing);
+      snapshots.Add(snapshot);
+      revision++;
+      if (snapshots.Count > MaximumSnapshots) snapshots.RemoveAt(0);
+      var previous = GetPreviousSnapshot(snapshots.Count - 1);
+      if (LogChanges && previous != null)
+      {
+        var changes = snapshot.KeysComparedTo(previous)
+          .Where(key => snapshot.HasChangedFrom(previous, key))
+          .Select(key => $"  • {snapshot.GetDisplayName(key)}: {previous.GetColliderPath(key)} → {snapshot.GetColliderPath(key)} (reference, path or configuration changed)")
+          .ToList();
+        if (changes.Count > 0)
+          Debug.LogWarning($"[Avatar Collider Monitor] Collider changes detected ({previous.phase}-{previous.timing} → {phase}-{timing}):\n" +
+            string.Join("\n", changes) + "\nCompare the recorded samples to determine whether these changes are intentional.");
       }
-      var s = sb.ToString();
-      // Separate trailing single-letter side marker if present
-      if (s.Length > 1 && (s.EndsWith("L") || s.EndsWith("R")) && s[s.Length - 2] != ' ')
-        s = s.Substring(0, s.Length - 1) + " " + s.Substring(s.Length - 1);
-      // Capitalize first letter
-      return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(s.Replace('_', ' '));
+      if (VerboseLogging) Debug.Log($"[Avatar Collider Monitor] {phase} - {timing}");
     }
 
     public static List<ColliderSnapshot> GetSnapshots() => snapshots;
-    public static void Clear() => snapshots.Clear();
+    public static void Clear() { snapshots.Clear(); revision++; }
 
-    public static void RecordSnapshot(VRCAvatarDescriptor descriptor, string phase, string timing)
+    public static IReadOnlyList<ColliderSnapshotComparison> GetHistoryComparisons()
     {
-      if (descriptor == null || (!IsEnabled && phase != "Manual")) return;
-
-      var snapshot = new ColliderSnapshot
+      if (comparisonRevision == revision && comparisonCount == snapshots.Count) return comparisons;
+      var latest = new Dictionary<(int, string), ColliderSnapshot>();
+      comparisons = new List<ColliderSnapshotComparison>(snapshots.Count);
+      foreach (var snapshot in snapshots)
       {
-        phase = phase,
-        timing = timing,
-        timestamp = System.DateTime.Now
-      };
-
-      // Discover collider fields dynamically and record their transforms in descriptor order
-      var fields = GetColliderFields();
-      foreach (var f in fields)
-      {
-        try
-        {
-          var config = (VRCAvatarDescriptor.ColliderConfig)f.GetValue(descriptor);
-          var t = config.transform;
-          var key = FieldToKey(f);
-          snapshot.colliders[key] = t;
-        }
-        catch
-        {
-          // ignore individual missing fields
-        }
+        var key = (snapshot.avatarInstanceId, snapshot.sessionId);
+        latest.TryGetValue(key, out var previous);
+        comparisons.Add(new ColliderSnapshotComparison(snapshot, previous));
+        latest[key] = snapshot;
       }
-
-      snapshots.Add(snapshot);
-
-      if (snapshots.Count > 1 && LogChanges)
-      {
-        var previous = snapshots[snapshots.Count - 2];
-        var changes = new List<string>();
-
-        var fieldsCheck = GetColliderFields();
-        foreach (var f in fieldsCheck)
+      var counts = new Dictionary<string, ColliderChangeCount>();
+      totalChanges = 0;
+      foreach (var comparison in comparisons)
+        foreach (var key in comparison.ChangedKeys)
         {
-          var name = FieldToKey(f);
-          if (previous.colliders.TryGetValue(name, out var prev) &&
-              snapshot.colliders.TryGetValue(name, out var curr) &&
-              prev != curr)
-          {
-            changes.Add($"  • {name}: {previous.GetColliderPath(name)} → {snapshot.GetColliderPath(name)}");
-          }
+          totalChanges++;
+          if (!counts.TryGetValue(key, out var count))
+            counts[key] = count = new ColliderChangeCount { Key = key,
+              Label = comparison.Snapshot.paths.ContainsKey(key)
+                ? comparison.Snapshot.GetDisplayName(key) : comparison.Previous.GetDisplayName(key) };
+          count.Count++;
         }
+      changeStatistics = counts.Values.OrderByDescending(value => value.Count)
+        .ThenBy(value => value.Key, StringComparer.Ordinal).ToArray();
+      comparisonRevision = revision;
+      comparisonCount = snapshots.Count;
+      return comparisons;
+    }
 
-        if (changes.Count > 0)
-        {
-          Debug.LogWarning($"[Avatar Collider Monitor] ⚠️ Collider changes detected ({previous.phase}-{previous.timing} → {phase}-{timing}):\n" +
-              string.Join("\n", changes) +
-              "\n\n⚠️ WARNING: Collider modifications may affect plugins that depend on specific collider configurations.\n" +
-              "Plugins like DynamicsAdvanceSetter or other collider-dependent tools may not work as expected.\n" +
-              "Consider checking if these changes are intentional.");
-        }
-      }
+    [Serializable] private sealed class HistoryData { public int schema = 1; public List<SnapshotData> snapshots = new List<SnapshotData>(); }
+    [Serializable] private sealed class SnapshotData
+    {
+      public string phase, timing, avatarName, timestamp, sessionId;
+      public int avatarInstanceId;
+      public List<EntryData> entries = new List<EntryData>();
+    }
+    [Serializable] private sealed class EntryData
+    {
+      public string key, path, label, configuration;
+      public int transformId;
+      public Bounds worldBounds;
+      public bool hasBounds;
+    }
 
-      if (VerboseLogging)
+    public static string ExportHistoryJson()
+    {
+      var data = new HistoryData();
+      foreach (var snapshot in snapshots)
       {
-        Debug.Log($"[Avatar Collider Monitor] {phase} - {timing}");
+        var record = new SnapshotData { phase = snapshot.phase, timing = snapshot.timing,
+          avatarName = snapshot.avatarName, avatarInstanceId = snapshot.avatarInstanceId,
+          timestamp = snapshot.timestamp.ToString("O"), sessionId = snapshot.sessionId };
+        foreach (var key in snapshot.paths.Keys)
+          record.entries.Add(new EntryData { key = key, path = snapshot.paths[key],
+            label = snapshot.GetDisplayName(key), configuration = snapshot.configurations[key],
+            transformId = snapshot.transformIds[key],
+            hasBounds = snapshot.worldBounds.TryGetValue(key, out var bounds), worldBounds = bounds });
+        data.snapshots.Add(record);
       }
+      return JsonUtility.ToJson(data, true);
+    }
+
+    public static void ImportHistoryJson(string json, bool append = false)
+    {
+      var data = JsonUtility.FromJson<HistoryData>(json);
+      if (data.schema != 1) throw new ArgumentException("Unsupported collider history schema: " + data.schema);
+      var imported = new List<ColliderSnapshot>(data.snapshots.Count);
+      foreach (var record in data.snapshots)
+      {
+        var snapshot = new ColliderSnapshot { phase = record.phase, timing = record.timing,
+          avatarName = record.avatarName, avatarInstanceId = record.avatarInstanceId,
+          timestamp = DateTime.Parse(record.timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind),
+          sessionId = record.sessionId };
+        foreach (var entry in record.entries)
+        {
+          snapshot.colliders[entry.key] = null;
+          snapshot.paths[entry.key] = entry.path;
+          snapshot.displayNames[entry.key] = entry.label;
+          snapshot.configurations[entry.key] = entry.configuration;
+          snapshot.transformIds[entry.key] = entry.transformId;
+          if (entry.hasBounds) snapshot.worldBounds[entry.key] = entry.worldBounds;
+        }
+        imported.Add(snapshot);
+      }
+      if (!append) snapshots.Clear();
+      snapshots.AddRange(imported);
+      if (snapshots.Count > MaximumSnapshots) snapshots.RemoveRange(0, snapshots.Count - MaximumSnapshots);
+      revision++;
+    }
+    public static ColliderSnapshot GetPreviousSnapshot(int index)
+    {
+      if (index < 0 || index >= snapshots.Count) return null;
+      int rootId = snapshots[index].avatarInstanceId;
+      string sessionId = snapshots[index].sessionId;
+      for (int i = index - 1; i >= 0; i--)
+        if (snapshots[i].avatarInstanceId == rootId && snapshots[i].sessionId == sessionId) return snapshots[i];
+      return null;
     }
   }
-  #endregion
+
+  public class UnityColliderMonitorSceneCallback : IProcessSceneWithReport
+  {
+    public int callbackOrder => int.MaxValue;
+    public void OnProcessScene(Scene scene, BuildReport report)
+    {
+      if (!scene.IsValid() || !AvatarColliderMonitor.IsEnabled) return;
+      foreach (var root in scene.GetRootGameObjects())
+        AvatarColliderMonitor.RecordSnapshot(root, "UnityScene", report != null ? "Build" : "ProcessScene");
+    }
+  }
 
   #region Editor Window
   public class AvatarColliderMonitorWindow : EditorWindow
   {
-[MenuItem("Tools/UnityBox/Avatar Collider Monitor")]
+    [MenuItem("Tools/UnityBox/Avatar Collider Monitor")]
     public static void ShowWindow()
     {
       var window = GetWindow<AvatarColliderMonitorWindow>("Avatar Collider Monitor");
       window.minSize = new Vector2(800, 600);
 
-#if NDMF_AVAILABLE
-      if (AvatarColliderMonitor.VerboseLogging)
-        Debug.Log("[Avatar Collider Monitor] Window opened (NDMF available)");
-#else
-      Debug.LogWarning("[Avatar Collider Monitor] NDMF not available - limited monitoring");
-#endif
     }
 
     private Vector2 scrollPosition;
     private Vector2 previewScrollPosition;
     private Vector2 snapshotsScrollPosition;
+    private Vector2 statisticsScrollPosition;
     private Dictionary<string, bool> foldouts = new Dictionary<string, bool>();
     private bool showOnlyChanges = false;
     private string searchFilter = "";
-    private VRCAvatarDescriptor selectedAvatar = null;
+    private GameObject selectedAvatar = null;
+    private readonly ColliderSnapshotPreview preview = new ColliderSnapshotPreview();
+    private double nextPreviewRefresh;
+    private bool showBounds;
+
+    private void OnEnable()
+    {
+      SceneView.duringSceneGui += DrawBounds;
+      Undo.undoRedoPerformed += InvalidatePreview;
+    }
+    private void OnDisable()
+    {
+      SceneView.duringSceneGui -= DrawBounds;
+      Undo.undoRedoPerformed -= InvalidatePreview;
+    }
+    private void OnHierarchyChange() => InvalidatePreview();
+    private void InvalidatePreview() { preview.Invalidate(); Repaint(); }
+    private void DrawBounds(SceneView view)
+    {
+      if (!showBounds || selectedAvatar == null) return;
+      var snapshot = preview.Get(selectedAvatar);
+      var color = Handles.color;
+      Handles.color = Color.cyan;
+      foreach (var bounds in snapshot.worldBounds.Values)
+        Handles.DrawWireCube(bounds.center, bounds.size);
+      Handles.color = color;
+    }
 
     private void OnGUI()
     {
@@ -534,12 +405,13 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
 
       EditorGUI.BeginChangeCheck();
-      selectedAvatar = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("Avatar", selectedAvatar, typeof(VRCAvatarDescriptor), true);
+      selectedAvatar = (GameObject)EditorGUILayout.ObjectField("Root Object", selectedAvatar, typeof(GameObject), true);
       if (EditorGUI.EndChangeCheck() && selectedAvatar != null)
       {
-        Selection.activeGameObject = selectedAvatar.gameObject;
+        Selection.activeGameObject = selectedAvatar;
       }
 
+      EditorGUI.BeginChangeCheck();
       var isEnabled = EditorGUILayout.Toggle("Enable Monitoring", AvatarColliderMonitor.IsEnabled);
       var logChanges = EditorGUILayout.Toggle("Log Changes", AvatarColliderMonitor.LogChanges);
       var verbose = EditorGUILayout.Toggle("Verbose Logging", AvatarColliderMonitor.VerboseLogging);
@@ -549,8 +421,6 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
         AvatarColliderMonitor.IsEnabled = isEnabled;
         AvatarColliderMonitor.LogChanges = logChanges;
         AvatarColliderMonitor.VerboseLogging = verbose;
-        // Toggle VRCFury monitoring subscription immediately
-        try { VRCFuryMonitorService.SetActive(isEnabled); } catch { }
       }
 
       EditorGUILayout.EndVertical();
@@ -567,6 +437,7 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       {
         if (GUILayout.Button("Refresh", GUILayout.Width(80)))
         {
+          preview.Invalidate();
           Repaint();
         }
         if (GUILayout.Button("Take Snapshot", GUILayout.Width(100)))
@@ -576,21 +447,20 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       }
       EditorGUILayout.EndHorizontal();
 
+      showBounds = EditorGUILayout.Toggle("Scene Bounds", showBounds);
       if (selectedAvatar == null)
       {
-        EditorGUILayout.HelpBox("Select a VRCAvatarDescriptor in Settings to preview colliders", MessageType.Info);
+        EditorGUILayout.HelpBox("Select a root GameObject in Settings to preview Unity colliders and available integrations", MessageType.Info);
       }
       else
       {
         previewScrollPosition = EditorGUILayout.BeginScrollView(previewScrollPosition, GUILayout.Height(325));
 
-        var fields = AvatarColliderMonitor.GetColliderFields();
-        foreach (var f in fields)
+        var currentPreview = preview.Get(selectedAvatar);
+        foreach (var key in currentPreview.paths.Keys)
         {
-          var key = AvatarColliderMonitor.FieldToKey(f);
-          var displayName = AvatarColliderMonitor.KeyToDisplayName(key);
-          var colliderConfig = (VRCAvatarDescriptor.ColliderConfig)f.GetValue(selectedAvatar);
-          var collider = colliderConfig.transform;
+          var displayName = currentPreview.GetDisplayName(key);
+          var collider = currentPreview.colliders[key];
           string value = collider != null ? collider.name : "<null>";
 
           EditorGUILayout.BeginHorizontal();
@@ -627,42 +497,14 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
         return;
       }
 
-      int totalChanges = 0;
-      var changesByCollider = new Dictionary<string, int>();
-
-      // Build display name map from descriptor fields (preserves descriptor order)
-      var colliderFields = AvatarColliderMonitor.GetColliderFields();
-      var colliderDisplayNames = colliderFields.ToDictionary(f => AvatarColliderMonitor.FieldToKey(f), f => AvatarColliderMonitor.KeyToDisplayName(AvatarColliderMonitor.FieldToKey(f)));
-
-      for (int i = 1; i < snapshots.Count; i++)
-      {
-        var prev = snapshots[i - 1];
-        var curr = snapshots[i];
-
-        foreach (var name in colliderDisplayNames.Keys)
-        {
-          if (prev.colliders.TryGetValue(name, out var p) && curr.colliders.TryGetValue(name, out var c) && p != c)
-          {
-            totalChanges++;
-            if (!changesByCollider.ContainsKey(name))
-              changesByCollider[name] = 0;
-            changesByCollider[name]++;
-          }
-        }
-      }
-
-      EditorGUILayout.LabelField($"Total Changes: {totalChanges}");
-
-      if (changesByCollider.Count > 0)
+      EditorGUILayout.LabelField($"Total Changes: {AvatarColliderMonitor.TotalChanges}");
+      var statistics = AvatarColliderMonitor.GetChangeStatistics();
+      if (statistics.Count > 0)
       {
         EditorGUILayout.LabelField("Changes by Collider:", EditorStyles.boldLabel);
-
-        var statsScroll = EditorGUILayout.BeginScrollView(new Vector2(), GUILayout.Height(250));
-        foreach (var kvp in changesByCollider.OrderByDescending(x => x.Value))
-        {
-          var displayName = colliderDisplayNames.ContainsKey(kvp.Key) ? colliderDisplayNames[kvp.Key] : kvp.Key;
-          EditorGUILayout.LabelField($"{displayName}: {kvp.Value}");
-        }
+        statisticsScrollPosition = EditorGUILayout.BeginScrollView(statisticsScrollPosition, GUILayout.Height(250));
+        foreach (var count in statistics)
+          EditorGUILayout.LabelField($"{count.Label}: {count.Count}");
         EditorGUILayout.EndScrollView();
       }
 
@@ -681,6 +523,16 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       GUILayout.FlexibleSpace();
       EditorGUILayout.LabelField($"Total: {snapshots.Count}", EditorStyles.label, GUILayout.Width(100));
 
+      if (GUILayout.Button("Export JSON", GUILayout.Width(100)))
+      {
+        string path = EditorUtility.SaveFilePanel("Export collider history", "", "collider-history.json", "json");
+        if (!string.IsNullOrEmpty(path)) System.IO.File.WriteAllText(path, AvatarColliderMonitor.ExportHistoryJson());
+      }
+      if (GUILayout.Button("Import JSON", GUILayout.Width(100)))
+      {
+        string path = EditorUtility.OpenFilePanel("Import collider history", "", "json");
+        if (!string.IsNullOrEmpty(path)) AvatarColliderMonitor.ImportHistoryJson(System.IO.File.ReadAllText(path));
+      }
       if (GUILayout.Button("Clear", GUILayout.Width(80)))
       {
         if (EditorUtility.DisplayDialog("Clear History", "Clear all monitoring records?", "OK", "Cancel"))
@@ -707,25 +559,12 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
         for (int i = 0; i < snapshots.Count; i++)
         {
           var snapshot = snapshots[i];
-          bool hasChanges = false;
-
-          if (i > 0)
-          {
-            var prev = snapshots[i - 1];
-            foreach (var kvp in snapshot.colliders)
-            {
-              if (prev.colliders.TryGetValue(kvp.Key, out var prevT) && prevT != kvp.Value)
-              {
-                hasChanges = true;
-                break;
-              }
-            }
-          }
+          bool hasChanges = AvatarColliderMonitor.GetHistoryComparisons()[i].HasChanges;
 
           if (showOnlyChanges && !hasChanges && i > 0) continue;
           if (!string.IsNullOrEmpty(searchFilter) &&
-              !snapshot.phase.ToLower().Contains(searchFilter.ToLower()) &&
-              !snapshot.timing.ToLower().Contains(searchFilter.ToLower())) continue;
+              snapshot.phase.IndexOf(searchFilter, StringComparison.OrdinalIgnoreCase) < 0 &&
+              snapshot.timing.IndexOf(searchFilter, StringComparison.OrdinalIgnoreCase) < 0) continue;
 
           DrawSnapshot(snapshot, i, hasChanges);
         }
@@ -760,7 +599,7 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
         labelStyle.onFocused.textColor = new Color(1f, 0.7f, 0.3f);
       }
 
-      var label = $"{icon} #{index:D3} | {snapshot.phase} - {snapshot.timing} | {snapshot.timestamp:HH:mm:ss.fff}";
+      var label = $"{icon} #{index:D3} | {snapshot.avatarName} | {snapshot.phase} - {snapshot.timing} | {snapshot.timestamp:HH:mm:ss.fff}";
 
       foldouts[key] = EditorGUILayout.Foldout(foldouts[key], label, true, labelStyle);
 
@@ -768,30 +607,27 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       {
         EditorGUI.indentLevel++;
 
-        var colliderFields = AvatarColliderMonitor.GetColliderFields();
-        var colliderDisplayNames = colliderFields.ToDictionary(f => AvatarColliderMonitor.FieldToKey(f), f => AvatarColliderMonitor.KeyToDisplayName(AvatarColliderMonitor.FieldToKey(f)));
-
-        foreach (var kvp in snapshot.colliders)
+        var comparison = AvatarColliderMonitor.GetHistoryComparisons()[index];
+        var previous = comparison.Previous;
+        foreach (var colliderKey in comparison.Keys)
         {
-          var isDiff = false;
-          if (index > 0)
-          {
-            var prevSnap = AvatarColliderMonitor.GetSnapshots()[index - 1];
-            isDiff = prevSnap.colliders.TryGetValue(kvp.Key, out var prevT) && prevT != kvp.Value;
-          }
-
-          var displayName = colliderDisplayNames.ContainsKey(kvp.Key) ? colliderDisplayNames[kvp.Key] : kvp.Key;
+          var isDiff = comparison.ChangedKeys.Contains(colliderKey);
+          var displayName = snapshot.paths.ContainsKey(colliderKey)
+            ? snapshot.GetDisplayName(colliderKey)
+            : previous.GetDisplayName(colliderKey) + " (removed)";
 
           if (isDiff)
           {
             GUI.contentColor = new Color(1f, 0.7f, 0.3f);
-            EditorGUILayout.LabelField($"→ {displayName}", snapshot.GetColliderPath(kvp.Key));
+            EditorGUILayout.LabelField($"→ {displayName}", snapshot.GetColliderPath(colliderKey));
             GUI.contentColor = Color.white;
           }
           else
           {
-            EditorGUILayout.LabelField($"  {displayName}", snapshot.GetColliderPath(kvp.Key));
+            EditorGUILayout.LabelField($"  {displayName}", snapshot.GetColliderPath(colliderKey));
           }
+          if (snapshot.configurations.TryGetValue(colliderKey, out var configuration))
+            EditorGUILayout.LabelField("Configuration", configuration, EditorStyles.wordWrappedLabel);
         }
 
         EditorGUI.indentLevel--;
@@ -800,7 +636,15 @@ public override string QualifiedName => "top.sealoong.unitybox.avatar-collider-m
       EditorGUILayout.EndVertical();
     }
 
-    private void OnInspectorUpdate() => Repaint();
+    private void OnInspectorUpdate()
+    {
+      if (EditorApplication.timeSinceStartup >= nextPreviewRefresh)
+      {
+        nextPreviewRefresh = EditorApplication.timeSinceStartup + 0.5;
+        preview.Invalidate();
+      }
+      Repaint();
+    }
   }
   #endregion
 }

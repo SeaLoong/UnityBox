@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 
 import capture_evidence as evidence
 import test_project
@@ -77,6 +78,60 @@ class EvidenceTests(unittest.TestCase):
         xml.write_text(xml.read_text().replace("First.One", "First.Changed"))
         with self.assertRaisesRegex(ValueError, "XML changed"):
             evidence.native_evidence("core", report_path, "functional")
+
+    def test_tooling_counts_come_from_the_successful_command_log(self):
+        log = self.root / "unittest.log"
+        log.write_text("test_scope ... ok\n\nRan 7 tests in 0.05s\n\nOK\n")
+        report = self.root / "tooling.json"
+        check = {"name": "python", "command": ["python3", "-m", "unittest"], "exit_code": 0, "log": str(log)}
+        report.write_text(json.dumps({"checks": [check]}))
+        self.assertEqual(evidence.tooling_evidence(report)["checks"][0]["tests"], 7)
+        check["exit_code"] = 1
+        report.write_text(json.dumps({"checks": [check]}))
+        with self.assertRaisesRegex(ValueError, "Tooling command failed"):
+            evidence.tooling_evidence(report)
+
+    def test_vpm_payload_must_match_source_even_with_a_matching_listing_checksum(self):
+        source, _ = self.add_package("First")
+        repo = source.parents[2]
+        output = self.root / "workflow"
+        site = output / "site"
+        site.mkdir(parents=True)
+        archive = site / "First-1.0.0.zip"
+        listing_path = site / "vpm.json"
+
+        def write_archive(replacement=None):
+            with ZipFile(archive, "w") as zipped:
+                for current in source.iterdir():
+                    data = replacement if current.name == "Behaviour.cs" and replacement is not None else current.read_bytes()
+                    zipped.writestr(current.name, data)
+            listing_path.write_text(json.dumps({"packages": {"First": {"versions": {
+                "1.0.0": {"zipSHA256": evidence.sha256(archive)}}}}}))
+
+        write_archive()
+        (site / "index.html").write_text('<a href="vcc://vpm/addRepo?url=https://example.test/vpm.json">Add</a>')
+        (output / "build.log").write_text("workflow completed")
+        report = output / "report.json"
+        report.write_text(json.dumps({"repo": str(repo), "scope": "Local fixture workflow", "packages": ["First"],
+                                      "checks": ["workflow exit 0"]}))
+        self.assertEqual(evidence.vpm_evidence(report)["package_count"], 1)
+        write_archive(b"different compiled source")
+        with self.assertRaisesRegex(ValueError, "payload differs"):
+            evidence.vpm_evidence(report)
+
+    def test_performance_methods_and_singleton_comparisons_use_the_supplied_measurements(self):
+        def measurement(scenario, median):
+            return {"plugin": "AnimatorOptimizer", "scenario": scenario, "size": 8, "samples": 9,
+                    "median_ms": median, "p95_ms": median * 2}
+        performance = {"editor_runs": [{"scope": "serial", "run_id_utc": "actual-run", "measurements": [
+            measurement("automatic_retained_singleton_groups", 10), measurement("explicit_singleton_conversion", 5)]}],
+            "graphics_runs": [], "player_runs": []}
+        performance["measurement_protocols"] = evidence.measurement_protocols(performance)
+        markdown = evidence.performance_markdown(performance)
+        self.assertIn("共同预热 30 次，各测量函数再预热 30 次", markdown)
+        self.assertIn("自动保留原图 10 ms，显式转换 5 ms，减少 50.0%", markdown)
+        self.assertNotIn("AAP EntryOn", markdown)
+        self.assertEqual(len(performance["measurement_protocols"]), 1)
 
 
 if __name__ == "__main__":

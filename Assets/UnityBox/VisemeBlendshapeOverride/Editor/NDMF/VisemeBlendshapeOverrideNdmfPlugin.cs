@@ -23,10 +23,15 @@ namespace UnityBox.VisemeBlendshapeOverride
         {
             InPhase(BuildPhase.Transforming)
                 .AfterPlugin("nadena.dev.modular-avatar")
-                .WithRequiredExtension(typeof(AnimatorServicesContext), seq => seq.Run("VisemeBlendshapeOverride/Apply", ctx =>
+                .WithCompatibleExtensions(new[] { typeof(AnimatorServicesContext), typeof(VirtualControllerContext) }, seq => seq.Run("VisemeBlendshapeOverride/Apply", ctx =>
                 {
                     VisemeBlendshapeOverrideNdmfProcessor.ProcessAvatar(ctx);
                 }));
+            InPhase(BuildPhase.Optimizing).Run("VisemeBlendshapeOverride/RemoveAuthoringComponents", ctx =>
+            {
+                foreach (var component in ctx.AvatarRootObject.GetComponentsInChildren<VisemeBlendshapeOverrideComponent>(true))
+                    UnityEngine.Object.DestroyImmediate(component);
+            });
         }
     }
 
@@ -37,28 +42,74 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (context == null || context.AvatarRootObject == null)
                 return;
 
-            if (!VisemeBlendshapeOverrideProcessor.TryCreateBuildPlan(context.AvatarRootObject, out var plan))
+            if (!VisemeBlendshapeOverrideVrcProcessor.TryCreateBuildPlan(context.AvatarRootObject, out var plan))
                 return;
 
-            var animatorServices = context.Extension<AnimatorServicesContext>();
+            // Merely installing this plugin must not activate NDMF animator services.
+            // They can enable Descriptor customization even when there is no valid plan.
+            var descriptor = context.AvatarRootObject.GetComponent<VRCAvatarDescriptor>();
+            var animatorServices = GetActiveExtension<AnimatorServicesContext>(context);
+            var ownsAnimatorServices = animatorServices == null;
+            var ownsControllers = GetActiveExtension<VirtualControllerContext>(context) == null;
+            try
+            {
+                if (ownsControllers)
+                    VisemeBlendshapeOverrideVrcUtils.DiscardInactiveLayerAssignments(descriptor);
+                if (ownsAnimatorServices)
+                    animatorServices = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
+                ProcessVirtual(context, plan, descriptor, animatorServices);
+            }
+            finally
+            {
+                try
+                {
+                    if (ownsAnimatorServices)
+                        context.DeactivateExtensionContext<AnimatorServicesContext>();
+                }
+                finally
+                {
+                    if (ownsControllers)
+                        context.DeactivateExtensionContext<VirtualControllerContext>();
+                }
+            }
+        }
+
+        private static T GetActiveExtension<T>(BuildContext context) where T : class, IExtensionContext
+        {
+            // NDMF has no TryGetExtension API; Extension throws if the context is absent.
+            // Activation failures are deliberately not caught by this lookup.
+            try { return context.Extension<T>(); }
+            catch (Exception) { return null; }
+        }
+
+        private static void ProcessVirtual(BuildContext context,
+            VisemeBlendshapeOverrideProcessor.BuildPlan plan, VRCAvatarDescriptor descriptor,
+            AnimatorServicesContext animatorServices)
+        {
+            // NDMF only commits controllers into Descriptor entries that already exist.
+            VisemeBlendshapeOverrideVrcUtils.EnsureFxLayer(descriptor);
             if (!animatorServices.ControllerContext.Controllers.TryGetValue(VRCAvatarDescriptor.AnimLayerType.FX, out var fxController) || fxController == null)
             {
-                Debug.LogWarning($"[Viseme Blendshape Override] Failed to access virtual FX controller for '{plan.AvatarRoot.name}'.");
-                return;
+                fxController = VirtualAnimatorController.Create(
+                    animatorServices.ControllerContext.CloneContext, "Viseme Blendshape Override FX");
+                animatorServices.ControllerContext.Controllers[VRCAvatarDescriptor.AnimLayerType.FX] = fxController;
             }
 
-            fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
             EnsureVirtualVisemeParameter(fxController);
 
             if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 EnsureVirtualVoiceParameter(fxController);
 
-            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config);
-            GenerateVirtualLayer(fxController, plan.RelativePath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
+            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config,
+                animatorServices.ControllerContext.Controllers.Select(entry => entry.Value));
+            fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
+            // The service tracks original virtual paths while other plugins rename/reparent renderers.
+            var virtualPath = animatorServices.ObjectPathRemapper.GetVirtualPathForObject(plan.TargetRenderer.gameObject);
+            GenerateVirtualLayer(fxController, virtualPath, plan.ControlledBlendshapes, plan.ResolvedBindings, useWriteDefaultsOn);
 
-            plan.Descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
-            EditorUtility.SetDirty(plan.Config);
-            EditorUtility.SetDirty(plan.Descriptor);
+            descriptor.lipSync = VRC_AvatarDescriptor.LipSyncStyle.VisemeParameterOnly;
+            UnityEngine.Object.DestroyImmediate(plan.Config);
+            EditorUtility.SetDirty(descriptor);
         }
 
         private static void EnsureVirtualVisemeParameter(VirtualAnimatorController controller)
@@ -80,8 +131,12 @@ namespace UnityBox.VisemeBlendshapeOverride
             float defaultFloat = 0f)
         {
             var parameters = controller.Parameters;
-            if (parameters.TryGetValue(name, out var existingParameter) && existingParameter.type == type)
+            if (parameters.TryGetValue(name, out var existingParameter))
+            {
+                if (existingParameter.type != type)
+                    throw new ArgumentException($"Parameter '{name}' is {existingParameter.type}; the viseme input requires {type}.");
                 return;
+            }
 
             controller.Parameters = parameters.SetItem(name, new AnimatorControllerParameter
             {
@@ -95,7 +150,8 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static bool ResolveVirtualWriteDefaults(
             VirtualAnimatorController controller,
-            VisemeBlendshapeOverrideComponent config)
+            VisemeBlendshapeOverrideComponent config,
+            IEnumerable<VirtualAnimatorController> relatedControllers)
         {
             switch (config.writeDefaultsMode)
             {
@@ -105,7 +161,8 @@ namespace UnityBox.VisemeBlendshapeOverride
                     return false;
             }
 
-            foreach (var layer in controller.Layers)
+            foreach (var current in relatedControllers.Where(item => item != null).Append(controller).Distinct())
+            foreach (var layer in current.Layers)
             {
                 if (layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName)
                     continue;
@@ -279,10 +336,9 @@ namespace UnityBox.VisemeBlendshapeOverride
             float voiceMin,
             float voiceMax)
         {
-            var clampedMin = Mathf.Clamp01(voiceMin);
-            var clampedMax = Mathf.Clamp01(voiceMax);
-            if (clampedMax <= clampedMin)
-                clampedMax = Mathf.Min(1f, clampedMin + 0.001f);
+            var clampedMin = voiceMin;
+            var clampedMax = voiceMax;
+            VisemeBlendshapeOverrideUtils.NormalizeVoiceRange(ref clampedMin, ref clampedMax);
 
             var tree = VirtualBlendTree.Create(name);
             tree.BlendType = BlendTreeType.Simple1D;

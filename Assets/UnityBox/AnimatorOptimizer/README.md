@@ -17,6 +17,14 @@ Unity Animator 的分析、离线转换、图清理和构建优化工具。普�
 
 Avatar 使用流程：添加组件，选择 FX、指定 Animator 或 Explicit Controller，配置需要的转换，执行 SDK 或 NDMF 构建。Playable 目标读取当前自定义层；Animator 与 Explicit 目标使用明确的接收对象。
 
+## 自动选择与运行成本
+
+`master` 同时维护八个 UnityBox 插件。普通“推荐选择”和组件的自动模式按 Mask、BlendMode、状态 Tag 分组合并；只有实际包含两个以上源层的普通组进入自动转换。两个不同 Mask 的单层组即使总计两层，仍保持原状态机，避免生成两层新 BlendTree 却没有减少层调度。
+
+跳过的单层继续参与绑定覆盖顺序检查。若它夹在待合并组之间并控制相同属性，该组合保持原执行顺序；其它独立多层组继续合并。SDK 核心与 NDMF 虚拟图采用同一选择规则。
+
+手动选择保留完整的显式转换能力；离线单层转换关闭 `RequireAtLeastTwoLayers`。AAP 默认关闭，显式开启后按每个源层生成 Update/Output 两层。层数下降和运行成本分别呈现，具体选择结合[实际性能表](../../../Docs/Performance.md)中的原始/转换后数据；单个 Selector、AAP 也有独立的运行成本。
+
 ## 图处理能力
 
 | 场景 | 生成结果 |

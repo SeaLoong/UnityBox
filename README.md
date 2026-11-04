@@ -1,61 +1,79 @@
-# UnityBox · Animator Optimizer
+# UnityBox
 
-`feat/animator-optimizer` 维护 UnityBox 的 Animator Optimizer，基于 `master` 开发。
-它提供普通 Unity Animator 分析、转换、AAP State Register、离线资源处理和可选 SDK/NDMF
-构建集成；参数平台语义、目标和转换方式通过明确配置选择。
+Unity 2022.3 的编辑、动画生成和构建工具集。八个插件在 `master` 统一维护，
+普通 Unity 功能独立运行，VRChat、Modular Avatar 和 NDMF 按需接入。
+同一个 checkout 提供完整源码、手册、测试和可复现的性能流程。
 
-## 源码与手册
+## 工具入口
 
-| 内容 | 开发分支 | 入口 |
-| --- | --- | --- |
-| Animator Optimizer | `feat/animator-optimizer` | [包手册](Assets/UnityBox/AnimatorOptimizer/README.md)、[实现与迁移](Docs/AnimatorOptimizerAudit.md) |
-| ACC、Blendshape、ASS、口型、Prefab、Collider、Logger | `refactor` | [七插件总览](https://github.com/SeaLoong/UnityBox/blob/refactor/README.md)、[变更清单](https://github.com/SeaLoong/UnityBox/blob/refactor/Docs/RefactorChanges.md) |
+| 插件 | 普通 Unity 工作流 | Avatar 集成 | 手册 |
+| --- | --- | --- | --- |
+| Animator Optimizer | Animator 分析、静态层合并、参数选择与 AAP 状态寄存器 | SDK Playable、NDMF 虚拟图与 MA 集成 | [优化器手册](Assets/UnityBox/AnimatorOptimizer/README.md) |
+| Advanced Costume Controller | 服装、变体、Parts、两种 Mixer、材质动画生成 | MA 菜单、FX、图标、骨架与同步参数 | [服装手册](Docs/AdvancedCostumeController.md) |
+| Blendshape Controller Generator | Float/Bool/反向曲线、组合 Controller、Animator 分配 | MA 安装/移除、总参数预算与 Undo | [Blendshape 手册](Docs/BlendshapeControllerGenerator.md) |
+| Viseme Blendshape Override | 15 口型、Voice 曲线、OverrideController、序列化迁移 | Descriptor、SDK 回退、NDMF 虚拟图 | [口型手册](Docs/VisemeBlendshapeOverride.md) |
+| Avatar Security System | 手势保持、密码、超时、解锁、重锁和 Restart 的完整运行时 | SDK 参数/LayerControl、NDMF 构建 | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md) |
+| Prefab Diff Patcher | 属性/组件/子树选择合并、Variant 与嵌套链接、引用重映射 | 共用普通 Unity 入口 | [Prefab 手册](Assets/UnityBox/PrefabDiffPatcher/README.md) |
+| Avatar Collider Monitor | 3D/2D 几何快照、缓存预览、历史 JSON、世界包围盒 | PhysBoneCollider、Descriptor、构建阶段采样 | [碰撞体手册](Assets/UnityBox/AvatarColliderMonitor/README.md) |
+| Build Pipeline Logger | 有序耗时轨迹、Shader 热路径、UnityLinker、JSON 导出 | SDK 与 NDMF 阶段日志 | [日志手册](Assets/UnityBox/BuildPipelineLogger/README.md) |
 
-本分支保留其它七包的基线源码，持续维护的功能和文档位于 `refactor`。八插件验证工程通过
-`--source-package` 直接组合两个 checkout 的源包，源码分支各自提交和推送。
+各包位于 `Assets/UnityBox/<目录>`，清单名称为 `top.sealoong.unitybox.*`。
+普通核心直接使用 Unity；SDK、MA、NDMF 功能按实际安装的包启用。
+程序集和输入服务见 [依赖架构](Docs/DependencyArchitecture.md)。
 
-## 本轮 Animator 工作
+## 安装与升级
 
-- AAP 的寄存器更新与可见输出使用同一次输入决策，处理首帧 Entry 和 Bool/Int 历史状态。
-- NDMF 支持实际虚拟图的 AAP 转换、手动选层和最终提交，保留对应层身份及绑定范围。
-- 转换、复制、保存重载与 Undo/Redo 包含状态机、State、Clip 和 BlendTree 子资产。
-- 真实 Animator 覆盖参数、默认值、Mask、层覆盖、动态时间、Root Exit 和空 Motion 场景。
-- 独立 Linux Player 运行成对的源/转换图，性能阶段测量不同层数的更新成本。
-
-具体入口和参数契约见[包手册](Assets/UnityBox/AnimatorOptimizer/README.md)。
-普通 Unity 直接使用核心；可选 Avatar 测试组合固定 SDK **3.8.2**、MA **1.18**、
-NDMF **1.11**，优化器的 NDMF 入口要求 ≥1.11。
-
-## 测试与性能
-
-八插件组合功能测试已通过：纯 Unity **294/294**、SDK **369/369**、完整 MA/NDMF
-**456/456**，分别执行8、13、19个测试程序集，均退出码0、零失败、零跳过。
-各范围重复核心用例，分别计数；运行标识、原始结果和源指纹见[测试指南](Docs/Testing.md)。
-
-[测试指南](Docs/Testing.md) 提供核心、完整依赖、组合工程、Player、图形模式及串行基准命令。
-[验证结果](Docs/VerificationResults.json) 保存运行和内容指纹；
-[性能报告](Docs/Performance.md)与[测量数据](Docs/PerformanceResults.json)记录输入规模、
-样本、中位数、p95 和环境。共享工具及归档检查分别使用：
-
-```sh
-python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v
-python3 .github/scripts/test_package_vpm.py -v
-```
-
-环境安装、Personal 激活及复用见 [Unity 环境](Docs/UnityEnvironment.md) 和
-[测试 skill](.agents/skills/unitybox-testing/SKILL.md)。配置其它云机器可直接使用
-[安装与测试提示词](Docs/UnityCloudSetupPrompt.md)。原场景和已知 GUID 随源码保留，
-生成器使用独立输出，测试使用 checkout 外的项目。
-
-## 安装与分发
-
-普通 Unity 可通过源码或本地 UPM 安装优化器。Avatar 项目按所选入口安装真实 SDK/NDMF。
-VPM 源与发布入口：
+通过 [VCC / ALCOM](https://sealoong.github.io/UnityBox/) 添加 VPM 源：
 
 ```text
 https://sealoong.github.io/UnityBox/vpm.json
 ```
 
-源码分支对应开发提交，线上 listing 对应发布版本。两个工作分支分别保留开发历史；
-原优化器 rebase 前提交位于远端备份分支。
+源码或本地 UPM 安装直接从 `master` 的 `Assets/UnityBox` 选择所需包。
+源码版本以对应提交和包内 `package.json` 为准，VPM listing 列出已部署的发布产物。
+升级时保留 `.meta` 与场景，重新生成 Controller、菜单和参数安装结果。
+生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
+ASS 组件原 GUID 已从仓库场景恢复，三处原场景引用继续使用同一个脚本身份。
+
+## 功能、构建与性能
+
+八个插件从同一个 `master` checkout 准备纯 Unity、SDK、完整 MA/NDMF 三种隔离工程，
+分别执行功能、图形、Linux Player 和串行性能测试。当前运行标识、通过数、原始结果及
+源码指纹见[测试指南](Docs/Testing.md)和[验证结果](Docs/VerificationResults.json)；
+三个依赖范围重复执行核心用例，分别计数。
+
+当前 `master` 功能验证：纯 Unity **310/310**、SDK **385/385**、完整 MA/NDMF **482/482**，
+分别执行 8、13、19 个测试程序集，全部退出码 0、零跳过。
+独立 Linux Player 的 **13 个场景、4,807 项输出检查**全部通过；图形检查 **1 项**，
+串行性能 **36 项测试、57 条测量**覆盖全部八个插件。
+
+[功能总览](Docs/PluginAudit.md) 列出每个插件的输入、输出和执行场景；
+[变更与迁移](Docs/RefactorChanges.md) 解释修复触发条件、行为变化和生成资产的升级方式。
+[测试指南](Docs/Testing.md) 包含核心、完整依赖、图标渲染、独立 Player 和串行基准命令。
+[性能报告](Docs/Performance.md) 与 [原始测量](Docs/PerformanceResults.json) 记录规模、样本数、
+中位数、p95 和实际运行环境；[验证结果](Docs/VerificationResults.json) 保存各次运行及内容指纹。
+
+测试工具使用真实 Unity **2022.3.22f1**、UTF **1.1.33**、NUnit **1.0.6**。
+Avatar 组合固定 SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。
+现有 Personal 已激活云端 Editor。环境复用见 [Unity 环境](Docs/UnityEnvironment.md) 与
+[测试 skill](.agents/skills/unitybox-testing/SKILL.md)。配置其它云机器可直接复制
+[安装与测试提示词](Docs/UnityCloudSetupPrompt.md)。
+
+## 开发和发布
+
+共享工具要求 Python 3.12：
+
+```sh
+python3 -m unittest discover -s scripts/unity -p 'test_*.py' -v
+python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+```
+
+GitHub Actions 根据 `Assets/UnityBox/*/package.json` 构建包。筛选器保留源码、测试和既有
+metadata，排除 Generated、实验探针和平台 bundle。每个发布包使用自身清单版本，ZIP 的
+时间和权限元数据固定；发布保留已有 listing 条目与原 ZIP。已发布版本的内容保持不可变，
+功能或资源变化通过提升包版本发布。
+推送 `master` 会触发 VPM listing 构建与 GitHub Pages 部署。发布前同步包版本和手册，
+并检查生成 ZIP、listing SHA256 与 VCC 入口。[发布说明](Docs/ReleaseNotes.md)记录当前升级内容。
+原 `refactor`、优化器开发分支及 rebase 前备份保留历史；后续开发从 `master` 继续。
+
 项目采用 [MIT License](LICENSE)。

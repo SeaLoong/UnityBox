@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -59,6 +60,23 @@ class PackageTests(unittest.TestCase):
         self.write("package.json", json.dumps({"name": "example.other"}))
         self.write("Tests/Example.prefab")
         self.assertIn("Tests/Example.prefab", self.entries())
+
+    def test_identical_contents_ignore_source_mtime(self):
+        self.write("Runtime/Component.cs.meta", "guid: 0123456789abcdef0123456789abcdef\n")
+        build_package(self.source, self.output)
+        original = self.output.read_bytes()
+        for path in self.source.rglob("*"):
+            os.utime(path, (1800000000, 1800000000))
+        build_package(self.source, self.output)
+        self.assertEqual(self.output.read_bytes(), original)
+
+    def test_executable_files_keep_execution_in_zip(self):
+        self.write("Tools/run.sh", "#!/bin/sh\nexit 0\n")
+        (self.source / "Tools/run.sh").chmod(0o755)
+        self.entries()
+        with ZipFile(self.output) as archive:
+            self.assertEqual((archive.getinfo("Tools/run.sh").external_attr >> 16) & 0o777, 0o755)
+            self.assertEqual((archive.getinfo("package.json").external_attr >> 16) & 0o777, 0o644)
 
 
 if __name__ == "__main__":

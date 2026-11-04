@@ -5,7 +5,7 @@ description: Refine UnityBox C# code with explicit data contracts, real runtime 
 
 # UnityBox implementation style
 
-Follow the branch and asset workflow in [AGENTS.md](AGENTS.md).
+Maintain the eight plugins together on `master` and follow the asset workflow in [AGENTS.md](AGENTS.md).
 
 - Use surrounding C# conventions and preserve line endings. Editor APIs belong in Editor assemblies;
   serialized components and runtime actions belong in Runtime assemblies.
@@ -24,4 +24,4 @@ Follow the branch and asset workflow in [AGENTS.md](AGENTS.md).
 - Write documentation as supported workflows, concrete examples, migration steps and executed results.
   Close implementation gaps through code and tests, and keep the manuals aligned with those results.
 - Run [the relevant verification commands](Docs/Testing.md), retain genuine artifacts, and commit/push
-  the completed changes on the authorized branch.
+  the completed changes on `master`, preserving current remote work and merge history.

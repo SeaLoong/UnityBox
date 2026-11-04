@@ -752,6 +752,16 @@ namespace UnityBox.AdvancedCostumeController
         GameObject variant,
         GameObject outfitBase)
       {
+        // Analysis must succeed before unpacking or stripping any source content.
+        if (variant == null || outfitBase == null || variant == outfitBase ||
+            CollectMaterialSlotObservations(outfitBase.transform, variant.transform).Count == 0)
+        {
+          Debug.LogWarning(Localization.Text(
+            "[ACC] 没有匹配的材质槽，已取消转换并保留来源对象。",
+            "[ACC] No matching material slots; conversion cancelled and source preserved."));
+          return false;
+        }
+
         const string undoName = "Convert to ACC outfit variant";
         int undoGroup = ACCEditorUndo.Begin(undoName);
         try

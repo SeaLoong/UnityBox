@@ -1,0 +1,23 @@
+{
+  "name": "UnityBox.AvatarColliderMonitor.VRC",
+  "references": [
+    "UnityBox.AvatarColliderMonitor",
+    "VRC.SDK3A",
+    "VRC.SDKBase",
+    "VRC.SDKBase.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "UNITYBOX_VRCSDK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "",
+      "define": "UNITYBOX_VRCSDK"
+    }
+  ]
+}

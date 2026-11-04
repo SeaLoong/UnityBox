@@ -49,17 +49,7 @@ namespace UnityBox.AdvancedCostumeController
     public static T AddComponent<T>(GameObject target, string undoName)
       where T : Component
     {
-      try
-      {
-        return Undo.AddComponent<T>(target);
-      }
-      catch
-      {
-        var created = target.AddComponent<T>();
-        Undo.RegisterCreatedObjectUndo(created, undoName);
-        Undo.RegisterCompleteObjectUndo(created, undoName);
-        return created;
-      }
+      return Undo.AddComponent<T>(target);
     }
 
     public static bool ApplySerializedProperties(

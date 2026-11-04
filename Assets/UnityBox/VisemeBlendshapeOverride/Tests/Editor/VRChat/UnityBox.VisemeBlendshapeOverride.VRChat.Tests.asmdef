@@ -1,0 +1,39 @@
+{
+  "name": "UnityBox.VisemeBlendshapeOverride.VRChat.Tests",
+  "rootNamespace": "UnityBox.VisemeBlendshapeOverride",
+  "references": [
+    "UnityBox.VisemeBlendshapeOverride",
+    "UnityBox.VisemeBlendshapeOverride.Runtime",
+    "UnityBox.VisemeBlendshapeOverride.VRChat",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "VRCSDK3A.dll",
+    "VRCSDKBase.dll",
+    "VRCSDKBase-Editor.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "UNITYBOX_VRC_SDK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "3.7.0",
+      "define": "UNITYBOX_VRC_SDK"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

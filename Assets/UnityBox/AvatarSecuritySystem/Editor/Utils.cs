@@ -4,9 +4,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
-using VRC.SDKBase;
-using VRCAnimatorPlayAudio = VRC.SDK3.Avatars.Components.VRCAnimatorPlayAudio;
 namespace UnityBox.AvatarSecuritySystem.Editor
 {
   public static class Utils
@@ -34,6 +31,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       {
         name = name,
         defaultWeight = defaultWeight,
+        syncedLayerIndex = -1,
         stateMachine = stateMachine
       };
     }
@@ -58,23 +56,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       Debug.LogWarning($"[ASS] Unable to resolve generated FX layer index for '{layer.name}'");
       return -1;
     }
-    /// <summary>
-    /// 在终态把当前 ASS FX 子层权重设为 0。
-    /// </summary>
-    public static void AddDisableSelfLayerControl(AnimatorState finalState,
-      int fxLayerIndex, string debugString)
-    {
-      if (finalState == null || fxLayerIndex < 0)
-        return;
-
-      var control = finalState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
-      control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
-      control.layer = fxLayerIndex;
-      control.goalWeight = 0f;
-      control.blendDuration = 0f;
-      control.debugString = debugString;
-      Debug.Log($"[ASS] Final state '{finalState.name}' disables FX sub-layer index {fxLayerIndex}");
-    }
     public static void AddParameterIfNotExists(AnimatorController controller, string name,
       AnimatorControllerParameterType type, bool defaultBool = false, int defaultInt = 0,
       float defaultFloat = 0f)
@@ -90,7 +71,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         defaultFloat = defaultFloat
       });
     }
-    public static void EnsureBuiltInVRCParameters(
+    public static void EnsureInputParameters(
       AnimatorController controller,
       bool ensureIsLocal = true,
       bool ensureGestureParameters = true)
@@ -214,13 +195,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       if (string.IsNullOrEmpty(controllerPath))
         return;
       string assetPath = AssetDatabase.GetAssetPath(asset);
-      if (!string.IsNullOrEmpty(assetPath))
-      {
-        if (!string.Equals(assetPath, controllerPath, StringComparison.OrdinalIgnoreCase))
-          return;
-        if (AssetDatabase.IsSubAsset(asset) || asset == controller)
-          return;
-      }
+      if (!string.IsNullOrEmpty(assetPath)) return;
       AssetDatabase.AddObjectToAsset(asset, controller);
     }
     public static void AddSubAssets(AnimatorController controller, params UnityEngine.Object[] assets)
@@ -253,6 +228,39 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       AssetDatabase.CreateAsset(newClip, path);
       _emptyClipCache[path] = newClip;
       return newClip;
+    }
+    public static void SaveControllerGraph(AnimatorController controller)
+    {
+      var visited = new HashSet<UnityEngine.Object>();
+      var queue = new Queue<UnityEngine.Object>();
+      foreach (var layer in controller.layers) queue.Enqueue(layer.stateMachine);
+      while (queue.Count != 0)
+      {
+        var current = queue.Dequeue();
+        if (current == null || !visited.Add(current)) continue;
+        AddSubAsset(controller, current);
+        if (current is AnimatorStateMachine machine)
+        {
+          foreach (var state in machine.states) queue.Enqueue(state.state);
+          foreach (var child in machine.stateMachines)
+          {
+            queue.Enqueue(child.stateMachine);
+            foreach (var transition in machine.GetStateMachineTransitions(child.stateMachine)) queue.Enqueue(transition);
+          }
+          foreach (var transition in machine.anyStateTransitions) queue.Enqueue(transition);
+          foreach (var transition in machine.entryTransitions) queue.Enqueue(transition);
+          foreach (var behaviour in machine.behaviours) queue.Enqueue(behaviour);
+        }
+        else if (current is AnimatorState state)
+        {
+          foreach (var transition in state.transitions) queue.Enqueue(transition);
+          foreach (var behaviour in state.behaviours) queue.Enqueue(behaviour);
+          queue.Enqueue(state.motion);
+        }
+        else if (current is BlendTree tree)
+          foreach (var child in tree.children) queue.Enqueue(child.motion);
+      }
+      EditorUtility.SetDirty(controller);
     }
     public static void SaveAndRefresh() => AssetDatabase.SaveAssets();
     public static void LogOptimizationStats(AnimatorController controller, string systemName = "ASS")
@@ -288,42 +296,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
       }
       foreach (var childMachine in sm.stateMachines)
         CountStatesRecursive(childMachine.stateMachine, ref states, ref transitions, ref blendTrees);
-    }
-    public static void AddParameterDriverBehaviour(AnimatorState state, string parameterName, float value, bool localOnly = false)
-    {
-      AddParameterDriverBehaviourInternal(state, new Dictionary<string, float> { { parameterName, value } }, localOnly);
-    }
-    public static void AddMultiParameterDriverBehaviour(AnimatorState state, Dictionary<string, float> parameters, bool localOnly = false)
-    {
-      AddParameterDriverBehaviourInternal(state, parameters, localOnly);
-    }
-    private static void AddParameterDriverBehaviourInternal(AnimatorState state, Dictionary<string, float> parameters, bool localOnly)
-    {
-      var behaviour = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
-      behaviour.localOnly = localOnly;
-      behaviour.parameters = new List<VRC.SDKBase.VRC_AvatarParameterDriver.Parameter>();
-      foreach (var kvp in parameters)
-        behaviour.parameters.Add(new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter
-        {
-          name = kvp.Key,
-          value = kvp.Value,
-          type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set
-        });
-    }
-    private const float PLAY_AUDIO_VOLUME = 0.5f;
-    public static void AddPlayAudioBehaviour(AnimatorState state, string audioSourcePath, AudioClip clip)
-    {
-      if (clip == null) return;
-      var behaviour = state.AddStateMachineBehaviour<VRCAnimatorPlayAudio>();
-      behaviour.SourcePath = audioSourcePath;
-      behaviour.Clips = new AudioClip[] { clip };
-      behaviour.PlayOnEnter = true;
-      behaviour.StopOnEnter = false;
-      behaviour.StopOnExit = false;
-      behaviour.PlayOnExit = false;
-      behaviour.Loop = false;
-      behaviour.Volume = new Vector2(PLAY_AUDIO_VOLUME, PLAY_AUDIO_VOLUME);
-      behaviour.VolumeApplySettings = VRCAnimatorPlayAudio.ApplySettings.ApplyIfStopped;
     }
   }
 }

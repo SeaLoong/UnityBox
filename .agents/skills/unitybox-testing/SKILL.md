@@ -7,8 +7,9 @@ description: Install and activate a real Unity cloud toolchain, execute isolated
 
 Read the checkout's `AGENTS.md`, branch/status, [UnityEnvironment.md](../../../Docs/UnityEnvironment.md)
 and [Testing.md](../../../Docs/Testing.md). Tell the user when applying this skill for the first time.
-The user authorized completing, committing and pushing tested changes on `refactor` and
-`feat/animator-optimizer`; preserve those separate source branches and supplied assets/GUIDs.
+All eight plugins are maintained together on `master`. The user authorized combining the reviewed
+branches, improving the unified implementation, and committing and pushing completed tested changes
+to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote work.
 
 ## Set up the machine
 
@@ -17,8 +18,9 @@ The user authorized completing, committing and pushing tested changes on `refact
   (2022.3.22f1) and `/workspace/unitybox-setup/unity/dependencies` when present.
 - Otherwise run `scripts/unity/install_editor.py`, then `fetch_dependencies.py --profile core`
   and `--profile vrc`. The installers verify the pinned hashes, package graph and Editor modules.
-- Current machine activation succeeded through official Hub with the user's Personal account.
-  Ordinary tests use `--xdg-root /workspace/unitybox-setup/unity/interactive` and keep HOME unchanged.
+- Reuse a machine activation completed through official Hub with the user's Personal account.
+  The retained tests use `--xdg-root /workspace/unitybox-setup/unity/interactive`; keep HOME unchanged.
+  Inspect actual Editor execution when continuing after a machine/session restart.
 - On a new machine, provide an authenticated private desktop for official Hub sign-in. Let the user
   handle credentials/terms. Use official Hub's Licenses and Installs → Locate for the old Editor.
   Keep account data private and close the external relay after the user finishes.
@@ -30,10 +32,10 @@ The user authorized completing, committing and pushing tested changes on `refact
 
 - Keep unique projects/evidence in `/workspace`, outside source checkouts. `/tmp` is scratch space.
 - Use `test_project.py prepare --repo <checkout> --project <new-owned-path> --profile core`.
-  Select packages with repeatable `--package`. Compose another checkout's package with
-  `--source-package <actual-package-directory>`; do not merge branches for testing.
-- Main checkout: `/workspace/UnityBox` on `feat/animator-optimizer`.
-  Seven-plugin checkout: `/workspace/unitybox-refactor-review` on `refactor`.
+  Omit `--package` to include all eight packages, or select a subset with repeatable `--package`.
+  Use a unique owned project path for each source snapshot and dependency scope.
+- Main checkout: `/workspace/UnityBox` on `master`, containing all eight plugins. The old review
+  checkout and feature branches are historical sources; ordinary validation uses the main checkout.
 - Core uses real UTF1.1.33/NUnit1.0.6. SDK-only uses `--profile vrc --offline` with Base/Avatars3.8.2.
   Add `--dependency nadena.dev.ndmf` and `--dependency nadena.dev.modular-avatar` for full integration.
   NDMF1.11 and MA1.18 are cached. VRC embeds actual UGUI and declares AndroidJNI for Oculus code.
@@ -57,7 +59,8 @@ The user authorized completing, committing and pushing tested changes on `refact
    desktop's environment to the subprocess. Check actual rendered pixels and saved icons.
 5. Run `verify_player.py --project <core-project> --xdg-root <activated-root> --timeout 1200`.
    Require actual Linux Player build and execution, expected package providers, nonzero output
-   checks, successful scene stripping and source authoring configuration retention.
+   checks, successful scene stripping, and source authoring configuration retention after reloading
+   the saved scene. BuildPlayer invalidates scene object references obtained before its call.
 6. Stop other Editors before `test_project.py run ... --benchmark`. Require structured records for
    every selected plugin. Preserve sizes, warmups, sample counts, timings and memory-counter meaning.
    Player steady-state Animator.Update and Editor generation measure separate operations.
@@ -67,14 +70,18 @@ The user authorized completing, committing and pushing tested changes on `refact
 
 ## Retain reviewable results and publish the code
 
-- Run Python unittest discovery after harness edits and `.github/scripts/test_package_vpm.py`
-  for package checks. Verify the real VPM workflow's archives, CRC, exact metadata and listing hashes.
-- Use `capture_evidence.py` to compare imported source bytes against final checkouts and record
-  source/XML/log hashes. Store current functional, graphics, Player and performance results in
+- Run Python unittest discovery under `scripts/unity` after harness edits. For packaging and release
+  checks run `python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v`. Verify the real VPM
+  workflow's archives, CRC, exact metadata, immutable version behavior and listing hashes.
+- Use `capture_evidence.py` to compare imported source bytes against the final checkout and record
+  source/XML/log hashes. Pass explicit `--tooling` command/log records and the actual local workflow
+  report via `--vpm`; counts come from successful unittest output, and VPM payloads are checked against
+  current source. Store functional, graphics, Player and performance results in
   Docs/VerificationResults.json, UnityNativeResults.json and PerformanceResults.json.
 - Update workflow manuals and Docs/RefactorChanges.md with concrete changed behavior, migration
   requirements and measured effects. Scope counts overlap; report each scope separately.
-- Commit and push both authorized branches. Inspect current remote tips, preserve remote work,
-  then verify pushed commit SHAs and clean checkouts. Keep the original optimizer backup ref.
-- Update reusable environment start instructions with final remote branches and current commands.
+- Commit and push the authorized `master` changes. Inspect the current remote tip and preserve
+  remote work. Verify the exact pushed commit SHA, clean checkout and VPM workflow result.
+  Keep original branch/backup refs as historical recovery points.
+- Update reusable environment start instructions with the `master` workflow and current commands.
   Configuration draft saving and configuration publishing are separate actions in the environment UI.
