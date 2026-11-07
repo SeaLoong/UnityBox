@@ -146,23 +146,25 @@ python3 scripts/unity/test_project.py run \
 Player 另测固定输入下的稳态 `Animator.Update`，与 Editor 生成耗时分别记录。
 单次功能运行中的时间仅用于排查；汇总性能使用独立串行运行。
 
-## 包导入与源资源保全
+## 包导入、手动迁移与源资源保全
 
-Unity 发布包保留导入资源的 `.meta`，包括脚本、asmdef 及 Editor/Runtime/Tests 目录。
-已有脚本和资源 GUID 在后续发布继续沿用。包更新保留用户项目中的既有身份和源资源；
-需要迁移或恢复时，先列出逐文件差异，由用户明确选定操作目标。
+Unity 发布包保留脚本、asmdef 及 Editor/Runtime/Tests 的 `.meta`，已有发布 GUID 继续沿用。
+正常打开、导入和加载保持源资源；ACC、AO、ASS、Viseme 的六类旧引用通过独立
+`Tools/UnityBox/Component References` 手动处理，矩阵与下载见[组件引用手册](ComponentReferences.md)。
 
-ASS 0.9.1 已移除启动/导入迁移、自动场景重载、修复菜单/API 及组件加载时的参数纠正。
-测试在隔离工程中准备既有配置、旧 Missing Script 引用及 Scene/Prefab，记录文件字节、
-GUID 和字段；启动、导入、打开后再次比较，确认源资源保持原样。构建回归另行检查有效
-时间约束只作用于配置副本，正常 Player/Avatar 构建入口继续生成输出。
-当前执行记录见[ASS 导入安全检查](Verification/ASSImportSafety/README.md)。
+用户选择资源并执行一次迁移即可处理本批可确定引用，无逐项确认。歧义 GUID 一次选择
+类型；未知、重复新旧组件和已打开资源/依赖在报告中跳过，由用户自行关闭需要处理的
+编辑场景。工具不会替用户保存、关闭或重载，不在导入和启动回调中执行。
 
-[ASSUpgrade](Verification/ASSUpgrade/README.md)只归档 0.9.0 已撤回自动迁移的历史复现，
-不再用于当前候选包的升级验收，也不在用户工程中运行。若调查历史改写，保留当前工程
-副本及 `UserSettings/UnityBox/ASSMigration/`，按每轮 `<id>/Assets/...` 逐文件对照。
-这些备份不包含包版本、旧 `.meta` 或后续修改；只有用户明确选择并审阅恢复目标后才写入。
-已经恢复正常的工程不因该历史目录存在而再次恢复或重装依赖。
+在隔离工程中检验真实旧 ZIP/开发快照、手动迁移前后原文件与引用、批次备份和源参数。
+本轮结果单列于[Component References 记录](Verification/ComponentReferences/README.md)。
+构建配置快照规范化与源字段保持分别检查，常规 Player/Avatar 构建仍生成自己的副本。
+
+新的手动工具备份位于 `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`，
+包含本批原字节及存在的对应 metadata。分析不创建备份或旧身份缓存。
+[0.9.1 导入保全](Verification/ASSImportSafety/README.md)及
+[0.9.0 自动迁移历史](Verification/ASSUpgrade/README.md)保留旧执行范围；旧 ASS 备份仍在
+`UserSettings/UnityBox/ASSMigration/`。恢复按所选资源与报告逐文件比较，保留后续编辑。
 
 ## 工具与发布检查
 

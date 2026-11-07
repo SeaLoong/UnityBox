@@ -1,0 +1,148 @@
+{
+  "phase": "legacy",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107",
+    "-executeMethod",
+    "ComponentUpgradeFixture.CreateLegacy",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/legacy-editor.log"
+  ],
+  "inputs": [
+    {
+      "source": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.advanced-costume-controller-0.4.13.zip",
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "version": "0.4.13",
+      "input_kind": "ZIP",
+      "archive_sha256": "aeae1a8c2d5b08c8fd99352559e7e4aed0923aeb7d26a14a7980c371aa485e08",
+      "tree_sha256": "f24b7ab4eeebf00ff06d132ca442e2bb9a857404ebd21bade969ab6c2f4cc896",
+      "original_tree_sha256": "f24b7ab4eeebf00ff06d132ca442e2bb9a857404ebd21bade969ab6c2f4cc896",
+      "excluded_development_test_files": [],
+      "files": 21,
+      "metadata_files": []
+    },
+    {
+      "source": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.7.24",
+      "input_kind": "ZIP",
+      "archive_sha256": "930b7c9d149c2602d84507387398d416fc9f6b805fef6076a9fa0037b976234c",
+      "tree_sha256": "031881f8f6885c2cb35bba3c9c0406c7af50268a8117f3ff415442ba3f1296f5",
+      "original_tree_sha256": "031881f8f6885c2cb35bba3c9c0406c7af50268a8117f3ff415442ba3f1296f5",
+      "excluded_development_test_files": [],
+      "files": 31,
+      "metadata_files": []
+    },
+    {
+      "source": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.viseme-blendshape-override-0.1.14.zip",
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.1.14",
+      "input_kind": "ZIP",
+      "archive_sha256": "97433d1e9f00d1006489e72453a69db65880607d4ee63069ab31cf41b2bbd475",
+      "tree_sha256": "76b316c46f5b3961a30c4694c63b4620a1f46ae3d475d1b0457e4e2a22e02760",
+      "original_tree_sha256": "76b316c46f5b3961a30c4694c63b4620a1f46ae3d475d1b0457e4e2a22e02760",
+      "excluded_development_test_files": [],
+      "files": 10,
+      "metadata_files": []
+    },
+    {
+      "source": "/workspace/unitybox-setup/unity/component-upgrade/ao-legacy-782af0b/Assets/UnityBox/AnimatorOptimizer",
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "version": "0.2.0",
+      "input_kind": "directory snapshot",
+      "archive_sha256": null,
+      "tree_sha256": "74556adbebf3cfc4a760dc7b22677e2b5ad719b7a4f19320e03866a201cdc7fe",
+      "original_tree_sha256": "211827f26372bf7606f8a63bc38d7c2256b70214d36b6c4637de7efd1939318f",
+      "excluded_development_test_files": [
+        "Tests/Editor/AnimatorOptimizerTests.cs",
+        "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs",
+        "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs.meta",
+        "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef",
+        "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef.meta",
+        "Tests/Editor/NDMF.meta",
+        "Tests/Editor/OptimizerIntegrationRegressionTests.cs",
+        "Tests/Editor/OptimizerIntegrationRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerProcessorRegressionTests.cs",
+        "Tests/Editor/OptimizerProcessorRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerSemanticRegressionTests.cs",
+        "Tests/Editor/OptimizerSemanticRegressionTests.cs.meta",
+        "Tests/Editor/UnityBox.AnimatorOptimizer.Tests.asmdef"
+      ],
+      "files": 19,
+      "metadata_files": [],
+      "published": false,
+      "development_source": "unpublished development commit 782af0bf8569fdde6782d420761f38c8f8d6824d; exact git-archive snapshot"
+    }
+  ],
+  "started_at_utc": "2026-11-07T13:10:31.891694+00:00",
+  "exit_code": 0,
+  "result": {
+    "phase": "legacy",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 0,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "backupDirectory": "",
+    "changedAssets": [],
+    "checks": [
+      "actual old package imports created six script GUIDs; no legacy GUID was fabricated",
+      "non-default fields, AudioClip/Material/Renderer/Animator PPtrs, cross-component references, prefab variants/nesting and instance overrides saved",
+      "all component GlobalObjectIDs, asset GUIDs and original bytes recorded"
+    ],
+    "entries": [],
+    "issues": []
+  },
+  "passed": true,
+  "generated_script_metadata": [
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+      "guid": "603b709472c3435e8aa829e7923e44ce",
+      "sha256": "190d32200a81fbd0297fb4a8c1e732b3b6485a35845f5c241beac42e9289e6d1",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCOutfitMarker.cs.meta"
+    },
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+      "guid": "422efa892102e3cd7b035163770c38df",
+      "sha256": "65329e3b367b1ea720e97933b2bc9f60aeb76a67294054012c38f85a9d05f527",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCPartGroupMarker.cs.meta"
+    },
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+      "guid": "123aada18de29c73e9432c8a989d1ab4",
+      "sha256": "23c7346c5f24a46bc5bfab0492753fba0c700a9d98dbf351563483c4a6ed8b2d",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride.cs.meta"
+    },
+    {
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "guid": "7e04a2b4cdc554ad0a2f388c2eda1def",
+      "sha256": "885f38b7904fb6e10379784e9f69c8137b24cb2c71aeeee0f97bcfac20cf5099",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AvatarSecuritySystem.ASSComponent.cs.meta"
+    },
+    {
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "guid": "43574f1c70c86e5cda395735823b9ddf",
+      "sha256": "204d9a3ff3bf6b57fb14146261588c865bc7108ea82bd869ffffd29170995d4e",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent.cs.meta"
+    },
+    {
+      "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+      "guid": "ba387891696ed00c3ab8648aea0b94e8",
+      "sha256": "8f251f5fc1040e7174502696adf06724a28d6dd9c641a3906d451c5c71f2d16c",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent.cs.meta"
+    }
+  ],
+  "finished_at_utc": "2026-11-07T13:12:00.711557+00:00",
+  "fixture_source": {
+    "sha256": "ac73b96b6176ed2548791b8f4eb303f5a39138aa454fbdaa2a8d0b5fdd503745",
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeFixture.cs"
+  },
+  "holder_source": {
+    "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeReferenceHolder.cs"
+  }
+}

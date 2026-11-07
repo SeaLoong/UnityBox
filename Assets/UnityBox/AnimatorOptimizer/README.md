@@ -2,6 +2,21 @@
 
 Unity Animator 的分析、离线转换、图清理和构建优化工具。普通 Unity 项目直接使用核心；VRChat SDK、NDMF 和 Modular Avatar 集成按项目需要安装。
 
+当前版本 **0.3.1**。
+
+## 组件引用与配置副本
+
+`UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent` 的类名、Runtime 程序集和已发布字段
+保持不变，发行脚本 GUID 为 `a157d3d35699dd84abde9e5412bd7017`。早期标为 0.2 的来源是
+开发快照，没有对应的公开旧 VPM ZIP；0.3.0 是带固定身份的公开发布。
+开发快照形成的旧引用使用[Component References](../../../Docs/ComponentReferences.md)手动迁移。
+只安装单包时导入一次
+[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
+在 `Tools/UnityBox/Component References` 选择资源并一次执行整批，无逐项确认。
+
+打开项目或 Inspector 时保留源 `layerIndices`、字符串及预算字段。配置捕获和转换 Options
+在独立副本中做字符串、范围及层索引规范化；实际用户改选层或编辑字段仍通过 Undo 提交。
+
 ## 安装与入口
 
 | 功能 | 依赖 | 入口 |
@@ -107,7 +122,7 @@ SDK 独立入口把源 Controller 或内存图复制到构建目录，处理后�
 
 ## 资产、Undo 与测试
 
-用户场景中 AnimatorOptimizer 组件的脚本 GUID `a157d3d35699dd84abde9e5412bd7017` 已恢复到 Runtime 脚本 metadata；已保存的组件继续解析到原类型。其它缺失的脚本、程序集和目录 metadata 使用稳定 GUID 补齐。
+发行包保留 Runtime 脚本 GUID `a157d3d35699dd84abde9e5412bd7017` 及其它已知 metadata。早期开发快照的失效 GUID 通过手动 Component References 工具连接到项目实际安装的脚本；正常导入不重写场景或 Prefab。
 
 离线复制按所选 Controller 的 localFileID 定位副本，支持同一文件内多个同名 Controller。Animator 图使用具体原生构造器创建，再复制序列化数据与重映射引用；源资产、共享图引用和已知 GUID 保持独立。
 

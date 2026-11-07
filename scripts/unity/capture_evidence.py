@@ -46,6 +46,11 @@ def package_files(root, include):
             and include(p.relative_to(root).as_posix(), name)}
 
 
+def extra_source_files(root, include):
+    return {relative: path for relative, path in test_project.extra_source_files(root, include).items()
+            if not path.name.lower().endswith((".md", ".md.meta"))}
+
+
 def checkout_info(source):
     checkout = next((parent for parent in (source, *source.parents)
                      if (parent / ".git").is_file() or (parent / ".git/HEAD").is_file()), None)
@@ -71,14 +76,16 @@ def source_evidence(project, prepared):
         for path in directory.glob("*.dll"):
             imported.setdefault(path.stem, path)
     require(imported, f"No retained imported assemblies: {project}")
-    packages, assemblies = {}, {}
-    for name, info in sorted(prepared["packages"].items()):
-        if info["origin"] != "local":
-            continue
+    packages, extras, assemblies = {}, {}, {}
+    sources = [("package", name, info, project / "Packages" / name)
+               for name, info in sorted(prepared["packages"].items()) if info["origin"] == "local"]
+    sources += [("extra_source", name, info, project / info["destination"])
+                for name, info in sorted(prepared.get("extra_sources", {}).items())]
+    for kind, name, info, copied in sources:
         source = Path(info["source"]).resolve()
-        copied = project / "Packages" / name
-        current_files = package_files(source, include)
-        copied_files = package_files(copied, include)
+        read_files = package_files if kind == "package" else extra_source_files
+        current_files = read_files(source, include)
+        copied_files = read_files(copied, include)
         added = current_files.keys() - copied_files.keys()
         removed = copied_files.keys() - current_files.keys()
         # Unity generates metadata for legacy source files that have no .meta.
@@ -86,7 +93,7 @@ def source_evidence(project, prepared):
         importer_metadata = sorted(name for name in removed if name.endswith(".meta"))
         removed = removed - set(importer_metadata)
         require(not added and not removed,
-                f"Package file selection changed since preparation: {name}; "
+                f"Source file selection changed since preparation: {name}; "
                 f"added={sorted(added)}, removed={sorted(removed)}")
         files, current_snapshot, formatting = [], [], []
         definitions = {}
@@ -105,7 +112,8 @@ def source_evidence(project, prepared):
                 assembly = test_project.read_json(path)["name"]
                 definitions[path.parent] = assembly
                 if assembly in imported:
-                    assemblies[assembly] = {"package": name, "source_files": [],
+                    require(assembly not in assemblies, f"Multiple source roots claim imported assembly: {assembly}")
+                    assemblies[assembly] = {kind: name, "source_files": [],
                                             "dll": artifact(imported[assembly])}
         for relative in sorted(current_files):
             path = copied_files[relative]
@@ -115,20 +123,24 @@ def source_evidence(project, prepared):
                           if p in definitions), None)
             if owner in assemblies:
                 assemblies[owner]["source_files"].append((relative, sha256(path)))
-        packages[name] = {"version": info["version"], "source": str(source),
-                          **checkout_info(source),
-                          "prepared_tree_sha256": info["sha256"],
-                          "source_snapshot_sha256": fingerprint(current_snapshot),
-                          "imported_snapshot_sha256": fingerprint(files), "file_count": len(files),
-                          "metadata_formatting_only": formatting,
-                          "importer_generated_metadata": importer_metadata}
+        snapshot = {"source": str(source), **checkout_info(source),
+                    "prepared_tree_sha256": info["sha256"],
+                    "source_snapshot_sha256": fingerprint(current_snapshot),
+                    "imported_snapshot_sha256": fingerprint(files), "file_count": len(files),
+                    "metadata_formatting_only": formatting,
+                    "importer_generated_metadata": importer_metadata}
+        if kind == "package":
+            packages[name] = {"version": info["version"], **snapshot}
+        else:
+            extras[name] = {"destination": info["destination"], **snapshot}
     for name, assembly in assemblies.items():
         files = assembly.pop("source_files")
         require(files, f"No local source for imported assembly: {name}")
         assembly.update(source_file_count=len(files), source_sha256=fingerprint(files))
     require(assemblies, f"No imported local assemblies: {project}")
-    return {"packages": packages, "imported_assemblies": assemblies,
+    return {"packages": packages, "extra_sources": extras, "imported_assemblies": assemblies,
             "package_snapshot_matches_current_source": True,
+            "extra_source_snapshot_matches_current_source": True,
             "comparison": "All source/resources and GUIDs match byte-for-byte; folder.meta may differ only in "
                           "trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. "
                           "Each such path retains imported/current/canonical SHA256 values.",
@@ -402,6 +414,8 @@ def measurement_protocols(performance):
          "ACC、Blendshape 参数切换更新", "128 次", "9 组 × 512 次更新"),
         ({("AvatarSecuritySystem", "gesture_graph_generation")},
          "AvatarSecuritySystem 手势判定图生成", "1 次", "7 次；按密码长度检查连续保持状态数、独立层与 WD Off"),
+        ({("ComponentReferenceMigration", "scan_component_references")},
+         "组件引用工具只读扫描", "1 次", "5 次；128/1024/4096 组件，核对识别数量和原文件字节"),
         ({("VisemeBlendshapeOverride", "Resolve15Mappings"), ("VisemeBlendshapeOverride", "BuildPersist15VoiceStates")},
          "Viseme 映射解析 / 持久化控制器重建", "2 次", "21 组 × 25 次解析 / 7 次重建"),
         ({("PrefabDiffPatcher", "analyze_serialized_hierarchy"), ("PrefabDiffPatcher", "apply_prefab_variant")},

@@ -1,6 +1,6 @@
 # Viseme Blendshape Override
 
-当前版本 **0.2.0**，与其它 UnityBox 工具一起维护在 `master`。
+当前版本 **0.2.1**，与其它 UnityBox 工具一起维护在 `master`。
 
 通过 `Viseme` Int（0–14）和可选 `Voice` Float 驱动 SkinnedMeshRenderer 口型。Unity 核心
 负责生成与播放图；VRChat 适配接收 Descriptor 输入；NDMF 适配编辑并提交虚拟 FX。
@@ -15,6 +15,20 @@
 
 包名 `top.sealoong.unitybox.viseme-blendshape-override`。SDK/NDMF 为可选程序集，普通 Unity
 工程直接使用核心。组件 GUID、已公开序列化字段和口型 0–14 的编号保持稳定。
+
+## 组件引用与源配置
+
+`UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent` 保留类名、Runtime
+程序集、已发布字段与固定 GUID `2814d8bd3adc4c539c9d1825545f6316`。0.1.14 的旧 ZIP
+缺少脚本 metadata，旧引用可用[Component References](../../../Docs/ComponentReferences.md)
+手动批量修复。单包用户导入一次
+[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
+在 `Tools/UnityBox/Component References` 选择资源并执行，无逐项确认。
+
+加载、打开 Inspector 和构建计划读取保留原 `bindings`，不自动补齐行或改写源时值。
+构建使用深拷贝配置快照，按旧 Voice 语义和有效值域生成图。缺失行先显示默认值，
+点击 **Edit settings** 才追加该行并记录 Undo；其它原行保持。已有 Missing Script 迁移
+只重连脚本，不重写行字段。
 
 ## 普通 Unity 使用
 
@@ -32,6 +46,10 @@ Voice 模式。每个状态归零其余受控 BlendShape，再输出当前口型
 `syncedLayerIndex=-1`，直接评估自己的15个状态。
 
 ## 生成 API 与已有控制器
+
+只读配置使用 `component.CreateSnapshot()`；它深拷贝 bindings 并在副本排序、补齐和
+规范化。旧 `EnsureBindings`、`EnsureEditorDefaults`、组件自身的 `GetBinding` 保留
+authoring 编辑语义，显式调用可以修改源配置；Editor 脚本调用方为这些操作登记 Undo。
 
 ```csharp
 var copy = VisemeControllerCopy.CreateEditableCopy(
@@ -72,9 +90,9 @@ Descriptor 关闭自定义层时，构建采用其实际生效的默认层，并
 
 ## 数据升级与性能
 
-旧行字段 `overrideGlobalVoiceSettings` 迁移到 Custom Settings；旧 `voiceModulationMode`
-的 Disabled=0、Linear=1 转换到当前行枚举的 Disabled、Linear，保留原阈值和权重。
-当前 Global/Disabled/Linear 格式按原值读取。
+构建快照兼容旧行字段 `overrideGlobalVoiceSettings` 的 Custom Settings 含义，并把旧
+`voiceModulationMode` 的 Disabled=0、Linear=1 解析为当前行的 Disabled、Linear，
+保留阈值与权重；当前 Global/Disabled/Linear 直接读取。源 bindings 在读取后保持原值。
 
 有序的15行映射直接按 ID 查询，构建计划只做一次归一化；生成子资产时直接检查资产路径，
 每个子对象不再重复枚举整个控制器。性能用例分别测量15/150/1500形状 Mesh 的计划解析，
@@ -87,7 +105,7 @@ Descriptor 关闭自定义层时，构建采用其实际生效的默认层，并
 各程序集执行数、运行标识和源码指纹见[验证结果](../../../Docs/VerificationResults.json)。
 实际 Animator 评估15个口型、5个 Voice 数值、正反切换及 WD On/Off/Auto；独立 Player
 探针导出 WD On/Off 的300步、4500个权重检查。NDMF 用例实际提交图，执行 Renderer 改名、
-后续虚拟层编辑和 SDK 去重交接。Prefab 导入测试检查新旧 Voice 格式迁移。
+后续虚拟层编辑和 SDK 去重交接。Prefab 导入与计划测试检查新旧 Voice 语义、快照归一化和原字段保全。
 
 通过 UPM/VPM 安装测试时，把包名加入 manifest 的 `testables`。详细说明见
 [VisemeBlendshapeOverride](../../../Docs/VisemeBlendshapeOverride.md) 和

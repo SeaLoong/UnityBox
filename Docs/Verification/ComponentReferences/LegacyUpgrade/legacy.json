@@ -1,0 +1,18 @@
+{
+    "phase": "legacy",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 0,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "backupDirectory": "",
+    "changedAssets": [],
+    "checks": [
+        "actual old package imports created six script GUIDs; no legacy GUID was fabricated",
+        "non-default fields, AudioClip/Material/Renderer/Animator PPtrs, cross-component references, prefab variants/nesting and instance overrides saved",
+        "all component GlobalObjectIDs, asset GUIDs and original bytes recorded"
+    ],
+    "entries": [],
+    "issues": []
+}

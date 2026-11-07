@@ -1,8 +1,21 @@
 # Changelog
 
+## [0.5.1] - 2026-11-07
+
+### Fixed
+
+- 打开材质变体 Inspector 不再触发延迟初始化；选择外部来源只更新 Editor 临时状态，显式应用/分析/刷新才写入并支持 Undo。
+- 材质槽位暂时无效时保留原存储值；PartGroup 切换到 Exclude 时保留 GroupName。
+- 三种 Runtime 标记的类名、程序集、字段与已发布固定 GUID 保持不变。
+
+### Component references
+
+- 0.4.13 旧 ZIP 缺少 metadata 的随机 GUID 由独立 Component References 工具处理；选资源后一次手动批量迁移，无启动/导入触发和逐项确认。
+- 全八插件引用矩阵、下载和操作见仓库 `Docs/ComponentReferences.md`；真实升级及源字段保全记录见 `Docs/Verification/ComponentReferences/README.md`。
+
 ## [0.5.0] - 2026-11-05
 
-以下为 `master` 当前开发版本的变更；历史版本条目保留当时行为，当前使用方式以 README 和使用手册为准。
+以下条目保留 0.5.0 发布时的行为；当前使用方式以 README 和使用手册为准。
 
 ### Runtime, generation and performance iteration
 

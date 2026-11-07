@@ -16,6 +16,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 from package_vpm import build_package
+from component_tool_artifact import publish_component_tool
 
 
 def read_bytes(location, *, first_listing=False):
@@ -129,16 +130,19 @@ def build_listing(repo, output, repository_url, previous_listing=None):
                "url": repository_url + "/vpm.json", "author": previous.get("author", "SeaLoong"),
                "packages": packages}
     (output / "vpm.json").write_text(json.dumps(listing, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    component_tool = publish_component_tool(repo, output)
+    component_link = ('<p><a href="UnityBox-ComponentReferences.unitypackage">组件引用迁移工具（手动执行）</a></p>'
+                      if component_tool else "")
     listing_url = html.escape(listing["url"], quote=True)
     (output / "index.html").write_text(f'''<!doctype html>
 <html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>UnityBox VPM Repository</title>
 <style>body{{font:18px system-ui;margin:10vh auto;padding:24px;max-width:640px;line-height:1.6}}a{{color:#0969da}}code{{overflow-wrap:anywhere}}</style>
 <h1>UnityBox VPM Repository</h1><p><a href="vcc://vpm/addRepo?url={listing_url}">添加到 VCC / ALCOM</a></p>
-<p>或手动添加 VPM 源地址：<code>{listing_url}</code></p></html>
+<p>或手动添加 VPM 源地址：<code>{listing_url}</code></p>{component_link}</html>
 ''', encoding="utf-8")
     return {"packages": built, "preserved_versions": sum(len(item["versions"]) for item in previous["packages"].values()),
-            "output": str(output)}
+            "output": str(output), "component_reference_tool": component_tool}
 
 
 def main(argv=None):

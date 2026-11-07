@@ -2,6 +2,22 @@
 
 ACC 从指定的**服装根节点（Costumes Root）**扫描服装，生成可在普通 Unity 使用的 Animator Controller 和动画。支持服装变体、部件独立控制、持久部件分组、材质变体和两种混搭模式（Custom Mixer）；安装可选集成后，还可生成 Modular Avatar 菜单、FX 安装和网络参数压缩。
 
+当前版本 **0.5.1**。
+
+## 组件引用与源配置
+
+ACC 的三个 Runtime 标记为 `ACCOutfitMarker`、`ACCPartGroupMarker` 和
+`ACCVariantMaterialOverride`，本轮保留类名、程序集、字段和 0.5.0 起的固定脚本身份。
+0.4.13 旧 ZIP 没有脚本 `.meta`，各项目生成的随机 GUID 可通过
+[Component References 手动工具](../../../Docs/ComponentReferences.md)批量重连。
+VCC/ALCOM 单包安装可导入一次
+[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
+再打开 `Tools/UnityBox/Component References`，选择资源并一次执行迁移，无逐项确认。
+
+打开或绘制 Inspector 保留原字段。材质来源先保存在 Editor 临时状态，显式分析、刷新或
+应用时才提交并记录 Undo；无效材质槽在绘制时保留原值。PartGroup 切到 Exclude 保留
+原 GroupName。新旧同类组件同时存在时由引用工具报告，保留原组件集合。
+
 ## 前置条件
 
 普通动画生成只需 **Unity 2022.3**，包不再强制安装 SDK/MA。需要 Avatar 菜单、骨架安装和同步时，另外安装以下依赖：
@@ -180,12 +196,12 @@ $$
 ACC 的三个组件都使用 Unity Undo：
 
 - `ACCOutfitMarker` 的前缀、后缀和正则格式化字段支持逐次撤销和重做；
-- `ACCPartGroupMarker` 的 `Mode` 和 `Group Name` 修改会作为一次独立编辑记录。切换到 `Exclude` 时自动清空的分组名也包含在同一次记录中；Undo 会先恢复字段，组件不会被立即删除；
+- `ACCPartGroupMarker` 的 `Mode` 和 `Group Name` 修改作为独立编辑记录。切换到 `Exclude` 时保留原分组名；Undo 恢复字段，组件继续保留；
 - `ACCVariantMaterialOverride` 的 `Outfit Base`、全局规则、精准槽位覆盖、刷新和自动分析支持撤销和重做；
 - “保存预览分组到服装”、完整预制件转换和生成操作会分别作为一个可撤销的操作，批量编辑多个对象也会合并为一次记录；
 - 在 Prefab 实例中修改 ACC 组件、菜单项或参数组件时，ACC 会登记 Prefab 覆盖，保存场景后修改不会丢失；
 - 通过 Unity 添加或移除 ACC 组件仍遵循 Unity 自身的组件 Undo 记录。刚添加组件后修改字段时，第一次 Undo 会先撤销字段修改，下一次才撤销组件添加；
-- 材质变体首次打开 Inspector 时的自动初始化也会产生独立记录，必要时可以先撤销自动生成的规则，再撤销组件添加；
+- 材质变体首次打开 Inspector 只显示原配置；显式应用来源、分析或刷新生成的规则形成独立 Undo 记录；
 - 每次生成保留独立 Controller、AnimationClip 和 PNG；重新生成支持一次 Undo/Redo 切换完整菜单、参数和 Controller 引用。生成失败时撤回本次场景操作并删除本次未完成 Build。
 
 ### `ACCVariantMaterialOverride`
@@ -200,9 +216,9 @@ ACC 的三个组件都使用 Unity Undo：
 
 Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质并刷新全局材质列表，即使当前变体已经转换并清空了层级也可以使用；**分析当前对象**才会读取当前变体层级并生成替换规则。
 
-手动分析、拖入来源和菜单转换共用同一套分析逻辑；自动分析也会保留本体的全部 `Source` 条目，未替换项的 `Replacement` 为空。
+显式分析、应用外部来源和菜单转换共用同一套分析逻辑；结果保留本体的全部 `Source` 条目，未替换项的 `Replacement` 为空。
 
-如果当前变体已被转换并清空层级，可在 Inspector 的**外部材质来源**中拖入另一份完整变体重新分析。结果写入当前组件，来源只读；没有匹配槽位时不会清空已有规则。
+如果当前变体已被转换并清空层级，可在 Inspector 的**外部材质来源**选择另一份完整变体。选择先保留为 Editor 临时状态；点击相应的分析/应用操作后，结果写入当前组件并记录 Undo，来源只读；没有匹配槽位时保留已有规则。
 
 如果服装作者提供了两套完整预制件，只需选中要转换的变体并使用 **GameObject > AdvancedCostumeController > 转换成服装变体**。ACC 会从同级对象中自动识别唯一/最佳匹配的 Outfit Base，确认后添加或更新组件并生成最优规则。转换前先检查匹配材质槽位；匹配失败时保留来源对象。转换成功后会清除来源的组件和子对象，只留下材质规则；需要保留完整对照预制件时先复制。场景转换支持 Undo。
 
@@ -256,7 +272,7 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 `UnityBox.AdvancedCostumeController.VRChat` 仅在真实 SDK Avatars >= 3.7 时启用，处理 Avatar 根识别和 Parameter Driver。完整 Avatar 编辑器、MA 扫描适配与`Tests/Editor` 的菜单、压缩、安装、预算、Undo/Redo及真实图标渲染用例还要求 SDK Base/Avatars >= 3.7.3 与 MA >= 1.18。MA 使用的双参数 `VRCConstraintSource` 构造函数从 SDK 3.7.3 才可用；3.7.0～3.7.2 不满足这条集成路径。Runtime 标记始终可用；SDK Base 存在时才实现其真实 `IEditorOnly`，没有替代 SDK 类型。
 
-`Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。原 MonoBehaviour 路径/GUID 保留，迁移文件已有的 `.meta` 同步保留。已有 Avatar 项目继续保留 SDK/MA；普通 Unity 入口不迁移或卸载既有 MA 组件。
+`Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。Runtime MonoBehaviour 的类名、程序集、字段和已发布固定 `.meta` 保留；旧安装的随机 GUID 通过上述手动工具处理。已有 Avatar 项目继续保留 SDK/MA；普通 Unity 入口不迁移或卸载既有 MA 组件。
 
 在 Test Runner 的 EditMode 运行测试；VPM 安装时将本包名加入项目 manifest 的 `testables`。核心套件评估真实 Animator，Avatar 套件运行 MA 安装、预算和压缩参数流，图形套件读取实际渲染图标；各程序集与图形运行结果见[验证结果](../../../Docs/VerificationResults.json)。
 

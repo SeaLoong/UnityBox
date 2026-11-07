@@ -1,0 +1,150 @@
+{
+    "phase": "migrated",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 0,
+    "repairedComponents": 12,
+    "inspectorTargets": 24,
+    "backupDirectory": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/UserSettings/UnityBox/ComponentReferenceMigration/20261107T132321-83226d03d3974c03a8925e35535a6e19",
+    "changedAssets": [
+        "Assets/ComponentUpgradeFixtures/Avatar.unity",
+        "Assets/ComponentUpgradeFixtures/Base.prefab"
+    ],
+    "selectedAssets": [
+        "Assets/ComponentUpgradeFixtures/Base.prefab",
+        "Assets/ComponentUpgradeFixtures/Variant.prefab",
+        "Assets/ComponentUpgradeFixtures/Nested.prefab",
+        "Assets/ComponentUpgradeFixtures/Avatar.unity"
+    ],
+    "readOnlyAssets": [
+        "Assets/ComponentUpgradeFixtures/Duplicate.unity"
+    ],
+    "checks": [
+        "one explicit batch Apply; PartGroup identity override came from actual phase-one MonoScript, not guessed fields",
+        "only confirmed script-GUID spans changed; all fileIDs, references, metadata and other serialized bytes remained identical",
+        "pre-apply exact-byte backups verified; duplicate was scanned read-only outside the batch selection and neither component/file was deleted or rewritten",
+        "all original component GlobalObjectIDs, nested/variant links, instance overrides and serialized field/PPtr values restored",
+        "creating current Inspectors and waiting for deferred callbacks did not initialize or normalize stored configuration"
+    ],
+    "entries": [
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate.unity",
+            "componentFileId": "274963149",
+            "legacyGuid": "603b709472c3435e8aa829e7923e44ce",
+            "targetGuid": "e98f908c5fb14a479a7cc0ce3492a7d5",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "status": "Duplicate",
+            "details": "This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802094",
+            "legacyGuid": "ba387891696ed00c3ab8648aea0b94e8",
+            "targetGuid": "a157d3d35699dd84abde9e5412bd7017",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802095",
+            "legacyGuid": "43574f1c70c86e5cda395735823b9ddf",
+            "targetGuid": "2814d8bd3adc4c539c9d1825545f6316",
+            "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802096",
+            "legacyGuid": "7e04a2b4cdc554ad0a2f388c2eda1def",
+            "targetGuid": "1c51e6a139920bb4ca12700dc82627ff",
+            "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802097",
+            "legacyGuid": "123aada18de29c73e9432c8a989d1ab4",
+            "targetGuid": "a37f4c4e3ea441078fad0c0782ac99a4",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802098",
+            "legacyGuid": "422efa892102e3cd7b035163770c38df",
+            "targetGuid": "594421b5520f47b892549d6e70c660fe",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "componentFileId": "952802099",
+            "legacyGuid": "603b709472c3435e8aa829e7923e44ce",
+            "targetGuid": "e98f908c5fb14a479a7cc0ce3492a7d5",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "7600636401053589473",
+            "legacyGuid": "603b709472c3435e8aa829e7923e44ce",
+            "targetGuid": "e98f908c5fb14a479a7cc0ce3492a7d5",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "4325733768631752593",
+            "legacyGuid": "422efa892102e3cd7b035163770c38df",
+            "targetGuid": "594421b5520f47b892549d6e70c660fe",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "2190376371570102094",
+            "legacyGuid": "123aada18de29c73e9432c8a989d1ab4",
+            "targetGuid": "a37f4c4e3ea441078fad0c0782ac99a4",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "1374559800571100855",
+            "legacyGuid": "7e04a2b4cdc554ad0a2f388c2eda1def",
+            "targetGuid": "1c51e6a139920bb4ca12700dc82627ff",
+            "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "3132889153154697736",
+            "legacyGuid": "43574f1c70c86e5cda395735823b9ddf",
+            "targetGuid": "2814d8bd3adc4c539c9d1825545f6316",
+            "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "componentFileId": "1060665534180723977",
+            "legacyGuid": "ba387891696ed00c3ab8648aea0b94e8",
+            "targetGuid": "a157d3d35699dd84abde9e5412bd7017",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        }
+    ],
+    "issues": []
+}

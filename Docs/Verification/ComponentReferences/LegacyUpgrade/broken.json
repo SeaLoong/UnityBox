@@ -1,0 +1,19 @@
+{
+    "phase": "broken",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 42,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "backupDirectory": "",
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+        "complete current package replacement reproduced Missing Script for all six old component types",
+        "opening/importing did not write old assets; SDK descriptors retained their original type and configuration"
+    ],
+    "entries": [],
+    "issues": []
+}

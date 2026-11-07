@@ -2,6 +2,16 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
+## [0.9.2] - 2026-11-07
+
+### Component references
+
+- 旧 ASS 引用接入独立 Component References Editor 工具，与 ACC 三类标记、AO 和 Viseme 共六类组件统一处理。
+- 选择资源后一次手动执行整批迁移，无逐项确认；歧义 GUID 只选择一次目标类型，未知、重复与打开资源在报告中跳过。
+- 工具不随启动、导入或构建自动运行，不是新增 VPM 包；单包用户可独立导入 `UnityBox-ComponentReferences.unitypackage`。
+- ASS 本身继续保留 0.9.1 的源配置保全、无自动迁移与构建副本规范化；固定 GUID、类名、程序集和字段保持。
+- 操作见仓库 `Docs/ComponentReferences.md`，执行结果见 `Docs/Verification/ComponentReferences/README.md`。
+
 ## [0.9.1] - 2026-11-07
 
 ### Removed
@@ -14,7 +24,7 @@
 - 生成图继续在独立配置副本上规范化时间，源 Scene/Prefab 与序列化字段保留原值。
 - 新组件及用户显式 Reset 使用保持 0.5s、容错 0.3s；自动构建、WD Off、原用户图保留等功能继续使用。
 - 0.9.0 迁移备份保留供逐文件比较，恢复由用户明确选定资源和内容；本版不自动覆盖、恢复或删除。
-- 已有 Missing Script 按组件实际 `m_Script` GUID 定位脚本与包，不再批量替换项目引用。
+- 已有 Missing Script 按组件实际 `m_Script` GUID 定位脚本与包，不再自动批量替换项目引用。
 - Inspector 移除新增顶部自动构建 HelpBox，保留插件介绍与字段说明；锁定选项和手动 Generate 按钮继续移除。
 
 ### Verification

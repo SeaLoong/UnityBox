@@ -240,7 +240,6 @@ namespace UnityBox.AdvancedCostumeController
       }
       else
       {
-        groupNameProp.stringValue = string.Empty;
         EditorGUILayout.HelpBox(Localization.Text(
           "当前对象及其所在自动部件不会生成 ACC 控制。",
           "This object and its containing automatic part will not receive ACC control."),

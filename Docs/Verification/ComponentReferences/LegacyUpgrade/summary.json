@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "captured_at_utc": "2026-11-07T13:28:43.192746+00:00",
+  "phases": {
+    "legacy": "real old package creation with six Unity-generated identities",
+    "broken": "success means reproduction of Missing Script, no automatic source rewrites",
+    "migrated": "one explicit batch Apply in the final phase; no per-component confirmation or automatic startup/import write"
+  },
+  "native_results": "final-source-and-state.json",
+  "duplicate_case": "Duplicate.unity was scanned read-only, not selected for Apply; its old/new components and complete bytes remain unchanged.",
+  "field_comparison": "2080 persistent values including119 parent ObjectReference GlobalObjectIDs per pass.238 old snapshot children beneath ObjectReference properties are transient native Editor implementation IDs, not YAML fileIDs; final comparer excludes only those children and still verifies exact serialized PPtr bytes/fileIDs."
+}

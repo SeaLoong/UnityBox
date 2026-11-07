@@ -185,35 +185,6 @@ namespace UnityBox.AnimatorOptimizer
             layerIndices = new List<int>();
         }
 
-        private void OnValidate()
-        {
-            generatedLayerName = string.IsNullOrWhiteSpace(generatedLayerName)
-                ? "(WD On) AnimatorOptimizer"
-                : generatedLayerName.Trim();
-            weightParameterPrefix = string.IsNullOrWhiteSpace(weightParameterPrefix)
-                ? "AO/LayerWeight"
-                : weightParameterPrefix.Trim();
-
-            if (layerIndices == null)
-                layerIndices = new List<int>();
-
-            maxPriorityCombinations = Mathf.Clamp(maxPriorityCombinations, 16, 4096);
-            maxAapDecisionNodes = Mathf.Clamp(maxAapDecisionNodes, 64, 16384);
-            heuristics &= (HeuristicFlags)31;
-            shortAnimationMaxFrames = Mathf.Clamp(shortAnimationMaxFrames, 1, 10);
-            shortAnimationMaxSeconds = float.IsNaN(shortAnimationMaxSeconds) || float.IsInfinity(shortAnimationMaxSeconds)
-                ? 0.1f : Mathf.Clamp(shortAnimationMaxSeconds, 0.01f, 0.25f);
-            motionTimeSampleCount = Mathf.Clamp(motionTimeSampleCount, 2, 33);
-            if (!Enum.IsDefined(typeof(WriteDefaultsPolicy), writeDefaultsPolicy))
-                writeDefaultsPolicy = WriteDefaultsPolicy.Strict;
-
-            var seen = new HashSet<int>();
-            for (var index = layerIndices.Count - 1; index >= 0; index--)
-            {
-                if (layerIndices[index] < 0 || !seen.Add(layerIndices[index]))
-                    layerIndices.RemoveAt(index);
-            }
-        }
 #endif
     }
 }

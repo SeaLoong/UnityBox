@@ -24,7 +24,9 @@ namespace UnityBox.VisemeBlendshapeOverride
         public sealed class BuildPlan
         {
             public GameObject AvatarRoot;
+            // Source identity is retained only for explicitly consuming the build clone.
             public VisemeBlendshapeOverrideComponent Config;
+            public VisemeBlendshapeOverrideComponent.SettingsSnapshot Settings;
             public SkinnedMeshRenderer TargetRenderer;
             public string RelativePath;
             public List<string> ControlledBlendshapes;
@@ -42,9 +44,8 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (config == null || !config.enabled)
                 return false;
 
-            config.EnsureBindings();
-
-            var targetRenderer = config.ResolveTargetRenderer(defaultRenderer);
+            var settings = config.CreateSnapshot();
+            var targetRenderer = settings.ResolveTargetRenderer(defaultRenderer);
             if (targetRenderer == null)
             {
                 Debug.LogWarning(
@@ -68,7 +69,7 @@ namespace UnityBox.VisemeBlendshapeOverride
                 return false;
             }
 
-            var resolvedBindings = ResolveBindings(config, defaultBlendshapes, targetRenderer);
+            var resolvedBindings = ResolveBindings(settings, defaultBlendshapes, targetRenderer);
             var controlledBlendshapes = resolvedBindings
                 .Select(binding => binding.BlendshapeName)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -86,6 +87,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             {
                 AvatarRoot = avatarRoot,
                 Config = config,
+                Settings = settings,
                 TargetRenderer = targetRenderer,
                 RelativePath = relativePath,
                 ControlledBlendshapes = controlledBlendshapes,
@@ -104,7 +106,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("Assets/", StringComparison.Ordinal))
                 throw new ArgumentException("Save an editable AnimatorController under Assets/ before building.", nameof(controller));
             var useWriteDefaultsOn = VisemeBlendshapeOverrideUtils.ResolveWriteDefaults(
-                controller, relatedControllers, plan.Config.writeDefaultsMode);
+                controller, relatedControllers, plan.Settings.writeDefaultsMode);
             var usesVoice = plan.ResolvedBindings.Any(binding =>
                 binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled);
             RequireParameterType(controller, VisemeBlendshapeOverrideUtils.BuiltInVisemeParameter, AnimatorControllerParameterType.Int);
@@ -128,6 +130,12 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         public static List<ResolvedBinding> ResolveBindings(
             VisemeBlendshapeOverrideComponent config,
+            IReadOnlyList<string> defaultBlendshapes,
+            SkinnedMeshRenderer targetRenderer) =>
+            ResolveBindings(config.CreateSnapshot(), defaultBlendshapes, targetRenderer);
+
+        public static List<ResolvedBinding> ResolveBindings(
+            VisemeBlendshapeOverrideComponent.SettingsSnapshot config,
             IReadOnlyList<string> defaultBlendshapes,
             SkinnedMeshRenderer targetRenderer)
         {

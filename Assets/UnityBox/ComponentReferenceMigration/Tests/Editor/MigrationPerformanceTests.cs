@@ -1,0 +1,130 @@
+#if UNITYBOX_MIGRATION_ASS_TESTS
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
+using Stopwatch = System.Diagnostics.Stopwatch;
+
+namespace UnityBox.ComponentReferenceMigration.Tests
+{
+    public sealed class MigrationPerformanceTests
+    {
+        private const string Ass = "UnityBox.AvatarSecuritySystem.ASSComponent";
+        private const string Legacy = "9a33d08bf9c6479a99c6f5a6a1bf2738";
+        private string folder;
+        private Scene preview;
+
+        [SetUp]
+        public void SetUp()
+        {
+            folder = "Assets/__ComponentReferenceScan_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", folder.Substring(7));
+            preview = EditorSceneManager.NewPreviewScene();
+            Assert.That(AssetDatabase.GUIDToAssetPath(Legacy), Is.Empty);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            EditorSceneManager.ClosePreviewScene(preview);
+            AssetDatabase.DeleteAsset(folder);
+        }
+
+        [TestCase(128)]
+        [TestCase(1024)]
+        [TestCase(4096)]
+        [Category("UnityBoxPerformance")]
+        public void ScanScalesWithTheNumberOfSerializedComponents(int componentCount)
+        {
+            var target = MigrationEngine.GetTargetTypes().Single(item => item.TypeName == Ass);
+            Assert.That(target.Available, Is.True);
+            var componentType = AppDomain.CurrentDomain.GetAssemblies().Select(assembly => assembly.GetType(Ass, false))
+                .First(item => item != null);
+            var root = new GameObject("组件扫描 🙂");
+            SceneManager.MoveGameObjectToScene(root, preview);
+            for (int index = 0; index < componentCount; index++)
+            {
+                var child = new GameObject("配置 " + index);
+                child.transform.SetParent(root.transform, false);
+                child.AddComponent(componentType);
+            }
+            string path = folder + "/Scan_" + componentCount + ".prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            byte[] valid = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            string original = Encoding.UTF8.GetString(valid);
+            string script = "m_Script: {fileID: 11500000, guid: " + target.ScriptGuid + ", type: 3}";
+            Assert.That(Regex.Matches(original, Regex.Escape(script)).Count, Is.EqualTo(componentCount));
+            string legacy = original.Replace(script, "m_Script: {fileID: 11500000, guid: " + Legacy + ", type: 3}")
+                .Replace("  m_Script:", "  # 中文与 emoji 🙂 验证 UTF-8 偏移\n  m_Script:");
+            byte[] before = Encoding.UTF8.GetBytes(legacy);
+            var measurements = new List<double>();
+            long allocated = 0;
+            long allocationProbeBefore = GC.GetAllocatedBytesForCurrentThread();
+            var allocationProbe = new byte[1024];
+            bool allocationAvailable = GC.GetAllocatedBytesForCurrentThread() > allocationProbeBefore;
+            GC.KeepAlive(allocationProbe);
+
+            // Keep the synthetic legacy bytes out of Unity's importer while
+            // measuring the read-only scanner, then restore the valid fixture.
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                File.WriteAllBytes(path, before);
+                for (int sample = -1; sample < 5; sample++)
+                {
+                    long allocationBefore = GC.GetAllocatedBytesForCurrentThread();
+                    var timer = Stopwatch.StartNew();
+                    var plan = MigrationEngine.Scan(new[] { path });
+                    timer.Stop();
+                    if (sample >= 0)
+                    {
+                        measurements.Add(timer.Elapsed.TotalMilliseconds);
+                        allocated += GC.GetAllocatedBytesForCurrentThread() - allocationBefore;
+                    }
+                    Assert.That(plan.ScannedAssets, Is.EqualTo(new[] { path }));
+                    Assert.That(plan.Entries.Count, Is.EqualTo(componentCount));
+                    Assert.That(plan.Entries.All(entry => entry.Status == MigrationStatus.Ready && entry.TypeName == Ass), Is.True);
+                    Assert.That(File.ReadAllBytes(path), Is.EqualTo(before));
+                    Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+                }
+            }
+            finally
+            {
+                File.WriteAllBytes(path, valid);
+                AssetDatabase.StopAssetEditing();
+            }
+            measurements.Sort();
+            Debug.Log("UNITYBOX_BENCHMARK " + JsonUtility.ToJson(new Benchmark
+            {
+                size = componentCount, samples = measurements.Count,
+                min_ms = measurements[0], median_ms = measurements[measurements.Count / 2],
+                p95_ms = measurements[measurements.Count - 1], max_ms = measurements[measurements.Count - 1],
+                allocated_bytes_per_op = allocationAvailable ? allocated / measurements.Count : -1,
+                correctness = componentCount + " component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes",
+            }));
+        }
+
+        [Serializable]
+        private sealed class Benchmark
+        {
+            public string plugin = "ComponentReferenceMigration";
+            public string scenario = "scan_component_references";
+            public int size, samples;
+            public int warmups = 1;
+            public double median_ms, p95_ms, min_ms, max_ms;
+            public long allocated_bytes_per_op;
+            public string correctness;
+        }
+    }
+}
+#endif

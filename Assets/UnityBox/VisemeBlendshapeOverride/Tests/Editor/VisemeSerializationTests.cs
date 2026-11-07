@@ -42,7 +42,7 @@ namespace UnityBox.VisemeBlendshapeOverride.Tests
 
         [TestCase(0, VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Disabled)]
         [TestCase(1, VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Linear)]
-        public void LegacyPrefabVoiceFieldsMigrateToEquivalentCurrentSettings(int legacyMode,
+        public void LegacyPrefabVoiceFieldsResolveInSnapshotsWithoutChangingStoredRows(int legacyMode,
             VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride expected)
         {
             var scene = EditorSceneManager.NewPreviewScene();
@@ -71,7 +71,12 @@ namespace UnityBox.VisemeBlendshapeOverride.Tests
                 File.WriteAllText(path, yaml.Substring(0, rowStart) + row + yaml.Substring(rowEnd));
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
                 var loaded = AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<VisemeBlendshapeOverrideComponent>();
-                var migrated = loaded.GetBinding(VisemeBlendshapeOverrideComponent.Viseme.PP);
+                var stored = loaded.bindings.Find(item => item.viseme == VisemeBlendshapeOverrideComponent.Viseme.PP);
+                var before = EditorJsonUtility.ToJson(loaded);
+                var migrated = loaded.CreateSnapshot().GetBinding(VisemeBlendshapeOverrideComponent.Viseme.PP);
+                Assert.That(stored.voiceMode, Is.EqualTo(VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Global));
+                Assert.That(EditorJsonUtility.ToJson(loaded), Is.EqualTo(before));
+                Assert.That(File.ReadAllText(path), Is.EqualTo(yaml.Substring(0, rowStart) + row + yaml.Substring(rowEnd)));
                 Assert.That(migrated.voiceMode, Is.EqualTo(expected));
                 Assert.That(migrated.useCustomSettings, Is.True);
                 Assert.That(migrated.weight, Is.EqualTo(42f));

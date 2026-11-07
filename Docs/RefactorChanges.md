@@ -11,7 +11,7 @@
 原场景、实验 bundle 与已知 GUID 保留。ASS 固定脚本 GUID
 `1c51e6a139920bb4ca12700dc82627ff` 来自仓库样例场景，关联同名 `ASSComponent`。
 旧发布包未携带脚本 metadata，各安装自行生成的 GUID 并不都与样例相同；
-0.9.0 曾加入自动恢复，0.9.1 已撤回整个迁移实现，资源保全边界见下方 ASS 段落。
+0.9.0 曾加入自动恢复，0.9.1 已撤回；当前六类旧引用通过独立手动工具统一处理。
 
 `master` 的 `Assets/UnityBox.unity` 原样保留用户较新的 temp/refactor 场景，
 对应合并前 `409eb5b` 的 2,924,530 字节内容。优化器旧场景保留在 `53fa22f` 的提交历史中。
@@ -30,10 +30,27 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 各包为原先缺失的脚本、程序集和目录补齐稳定 metadata；新增缺失项按仓库与
 资产路径确定身份，已有 `.meta` 保持原值。新克隆和安装使用仓库 GUID；
-ASS 0.9.1 不扫描或改写旧项目的随机 GUID，也不在组件加载时改写原配置。
+正常打开/导入不改写旧引用；用户选定资源后在 Component References 中一次批量迁移，
+无逐项确认。完整矩阵与操作见[组件引用说明](ComponentReferences.md)。
 
 外部 Editor 扩展按 [程序集映射](DependencyArchitecture.md) 增加 Core、VRC/VRChat 或 MA
 引用。普通 Animator 的参数由项目脚本提供，Avatar 参数由相应平台输入服务提供。
+
+## 六类组件与独立迁移工具
+
+ACC 0.5.1、AO 0.3.1、Viseme 0.2.1 和 ASS 0.9.2 保留原生产组件类、Runtime 程序集、
+已发布字段和固定 GUID。BCG、Collider、Logger、Prefab Patcher 没有自有 Avatar 组件，
+版本和包内容保持。旧包 metadata 缺失与 AO 0.2 开发快照的身份差异统一由
+`Tools/UnityBox/Component References` 手动处理。
+
+工具只写用户选定的资源范围；依赖只读追溯，已打开场景/Prefab Stage 及依赖报告跳过，
+不替用户保存、关闭或重载。一键执行整批可确定引用，不弹逐项确认；同一歧义 GUID
+选择一次目标类型，未知和重复新旧组件保留。写前校验源 SHA 并备份原字节与对应 `.meta`，
+结果位于 `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`。
+
+这套 Editor 工具不新增 VPM 包；单包用户导入一次独立 unitypackage。
+安装、详细操作与备份边界见[组件引用手册](ComponentReferences.md)，
+源参数与真实升级结果见[当前记录](Verification/ComponentReferences/README.md)。
 
 ## Animator Optimizer
 
@@ -44,6 +61,8 @@ ASS 0.9.1 不扫描或改写旧项目的随机 GUID，也不在组件加载时�
 
 普通 Unity 启用 Bool/Int 升级后，输入脚本对应改用 `SetFloat`；需要维持原输入 API 时关闭
 参数升级。AAP 按配置启用，转换成本与控制器结构一起查看[性能报告](Performance.md)。
+0.3.1 将加载时的字符串/层索引/预算纠正移到独立配置与 Options 副本，源字段保留；
+显式改选层或字段编辑仍可 Undo。AO 0.2 是开发快照，未发布公开旧包。
 离线生成、目标选择与输入契约见[优化器手册](../Assets/UnityBox/AnimatorOptimizer/README.md)。
 
 ## Advanced Costume Controller
@@ -62,7 +81,8 @@ Mixer 与材质动画。Avatar 入口进一步安装 MA 菜单、骨架、FX、�
 
 输出目录包括场景/根对象/参数命名空间及独立 Build。参数和菜单经过稳定碰撞处理，
 特殊字符或重复显示名升级后按新名称生成；旧菜单保存值按新的参数表重新确认。
-完整操作见 [服装手册](AdvancedCostumeController.md)。
+0.5.1 的材质变体 Inspector 只在显式应用/分析/刷新时提交，选择外部来源只改临时状态；
+无效材质槽与 Exclude GroupName 保留。完整操作见 [服装手册](AdvancedCostumeController.md)。
 
 ## Blendshape Controller Generator
 
@@ -81,7 +101,8 @@ Bool 反向、同名 Renderer、`Smile` 与 `Smile/Big` 菜单路径、零曲线
 ## Viseme Blendshape Override
 
 生成层显式设置独立同步索引，15 个口型状态按 Viseme/Voice 独立求值。映射支持 Descriptor
-继承、显式 None 与每行自定义 Voice；旧 Voice 字段按原枚举含义迁移到当前序列化结构。
+继承、显式 None 与每行自定义 Voice；旧 Voice 在构建深拷贝快照中按原枚举含义解析，
+0.2.1 的加载、绘制和计划读取保留源 bindings，显式编辑/初始化才提交并支持 Undo。
 
 SDK 对普通 Controller、文件内子 Controller、内存图和 AnimatorOverrideController 建立
 独立可编辑副本；AOC 的有效 Clip 替换和源对象身份被保留。SDK 与 NDMF 的 Auto WD 都按
@@ -97,7 +118,7 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-ASS 0.9.1 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
+ASS 0.9.2 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
 已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
 ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
 
@@ -124,10 +145,11 @@ StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一
 原文件记录，本版不自动恢复、覆盖或删除。需要调查时保留当前工程副本和备份，逐文件
 比较后由用户选择恢复目标；备份不包含脚本 metadata、包版本和后来保存的编辑。
 已有 Missing Script 按组件的 `m_Script` GUID 查找脚本路径和所属包，结合 Console
-首条编译错误处理该引用；当前包不执行项目范围的迁移或批量恢复。
+首条编译错误定位所属类型；需要重连时，使用独立 Component References 一次手动
+处理选定资源，不启动旧 ASS 自动迁移，也不自动恢复备份。
 
 完整说明见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)，
-当前执行范围见[导入安全记录](Verification/ASSImportSafety/README.md)。
+当前执行范围见[组件引用记录](Verification/ComponentReferences/README.md)。
 
 ## Prefab Diff Patcher
 

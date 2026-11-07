@@ -1,0 +1,11 @@
+{
+  "name": "UnityBox.ComponentReferenceMigration.Editor.Tests",
+  "rootNamespace": "UnityBox.ComponentReferenceMigration.Tests",
+  "references": ["UnityBox.ComponentReferenceMigration.Editor"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "versionDefines": [
+    {"name": "top.sealoong.unitybox.avatar-security-system", "expression": "0.7.24", "define": "UNITYBOX_MIGRATION_ASS_TESTS"}
+  ],
+  "autoReferenced": false
+}

@@ -1,0 +1,84 @@
+{
+  "public_legacy_inputs": [
+    {
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "version": "0.4.13",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.advanced-costume-controller-0.4.13.zip",
+      "sha256": "aeae1a8c2d5b08c8fd99352559e7e4aed0923aeb7d26a14a7980c371aa485e08",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.advanced-costume-controller-0.4.13.zip",
+      "published": true
+    },
+    {
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.7.24",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "sha256": "930b7c9d149c2602d84507387398d416fc9f6b805fef6076a9fa0037b976234c",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "published": true
+    },
+    {
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.1.14",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.viseme-blendshape-override-0.1.14.zip",
+      "sha256": "97433d1e9f00d1006489e72453a69db65880607d4ee63069ab31cf41b2bbd475",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.viseme-blendshape-override-0.1.14.zip",
+      "published": true
+    }
+  ],
+  "ao_development_input": {
+    "source": "/workspace/unitybox-setup/unity/component-upgrade/ao-legacy-782af0b/Assets/UnityBox/AnimatorOptimizer",
+    "package": "top.sealoong.unitybox.animator-optimizer",
+    "version": "0.2.0",
+    "input_kind": "directory snapshot",
+    "archive_sha256": null,
+    "tree_sha256": "74556adbebf3cfc4a760dc7b22677e2b5ad719b7a4f19320e03866a201cdc7fe",
+    "original_tree_sha256": "211827f26372bf7606f8a63bc38d7c2256b70214d36b6c4637de7efd1939318f",
+    "excluded_development_test_files": [
+      "Tests/Editor/AnimatorOptimizerTests.cs",
+      "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs",
+      "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs.meta",
+      "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef",
+      "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef.meta",
+      "Tests/Editor/NDMF.meta",
+      "Tests/Editor/OptimizerIntegrationRegressionTests.cs",
+      "Tests/Editor/OptimizerIntegrationRegressionTests.cs.meta",
+      "Tests/Editor/OptimizerProcessorRegressionTests.cs",
+      "Tests/Editor/OptimizerProcessorRegressionTests.cs.meta",
+      "Tests/Editor/OptimizerSemanticRegressionTests.cs",
+      "Tests/Editor/OptimizerSemanticRegressionTests.cs.meta",
+      "Tests/Editor/UnityBox.AnimatorOptimizer.Tests.asmdef"
+    ],
+    "files": 19,
+    "metadata_files": [],
+    "published": false,
+    "development_source": "unpublished development commit 782af0bf8569fdde6782d420761f38c8f8d6824d; exact git-archive snapshot"
+  },
+  "ao_original_git_provenance": "ao-development-source.json",
+  "current_candidate_archives": [
+    {
+      "name": "top.sealoong.unitybox.advanced-costume-controller",
+      "version": "0.5.1",
+      "path": "/workspace/unitybox-setup/unity/component-upgrade/current-packages/top.sealoong.unitybox.advanced-costume-controller-0.5.1.zip",
+      "sha256": "2afeb474b960c3979ed63cb781512f2fc3856bad50006f2f98c5cf1a98b143a3"
+    },
+    {
+      "name": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.9.2",
+      "path": "/workspace/unitybox-setup/unity/component-upgrade/current-packages/top.sealoong.unitybox.avatar-security-system-0.9.2.zip",
+      "sha256": "aa41a917b131bf1fab672ab07cd85f84ba5659043db7d00f77a786f98fe0955b"
+    },
+    {
+      "name": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.2.1",
+      "path": "/workspace/unitybox-setup/unity/component-upgrade/current-packages/top.sealoong.unitybox.viseme-blendshape-override-0.2.1.zip",
+      "sha256": "6486681d17680ac78a6bcf7bbf88d87f1f39563aed5bf483920d4e406f4d2b7c"
+    },
+    {
+      "name": "top.sealoong.unitybox.animator-optimizer",
+      "version": "0.3.1",
+      "path": "/workspace/unitybox-setup/unity/component-upgrade/current-packages/top.sealoong.unitybox.animator-optimizer-0.3.1.zip",
+      "sha256": "60d63867d7bbd3e5b6a89ee9edccb76fbfb3073fce2a2e01ce590e001c05fe4b"
+    }
+  ],
+  "scope": "Three complete published legacy ZIPs; exact unpublished AO development Runtime/Editor source with only development Tests excluded. No Runtime/Editor source or component metadata was edited to create legacy identities."
+}

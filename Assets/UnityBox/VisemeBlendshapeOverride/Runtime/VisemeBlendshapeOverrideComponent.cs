@@ -24,7 +24,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         public const string NoneBlendshapeValue = "__NONE__";
 
         [Serializable]
-        public class VisemeBinding : ISerializationCallbackReceiver
+        public class VisemeBinding
         {
             [HideInInspector]
             public Viseme viseme;
@@ -53,14 +53,16 @@ namespace UnityBox.VisemeBlendshapeOverride
                 Linear,
             }
 
-            public void OnBeforeSerialize() { }
+            public VoiceModeOverride ResolvedVoiceMode => legacyVoiceMode < 0 ? voiceMode
+                : legacyVoiceMode == 0 ? VoiceModeOverride.Disabled
+                : legacyVoiceMode == 1 ? VoiceModeOverride.Linear : VoiceModeOverride.Global;
 
-            public void OnAfterDeserialize()
+            public VisemeBinding CreateSnapshot()
             {
-                if (legacyVoiceMode < 0) return;
-                voiceMode = legacyVoiceMode == 0 ? VoiceModeOverride.Disabled :
-                    legacyVoiceMode == 1 ? VoiceModeOverride.Linear : VoiceModeOverride.Global;
-                legacyVoiceMode = -1;
+                var copy = (VisemeBinding)MemberwiseClone();
+                copy.voiceMode = ResolvedVoiceMode;
+                copy.legacyVoiceMode = -1;
+                return copy;
             }
 
             [Range(0f, 1f)]
@@ -115,7 +117,10 @@ namespace UnityBox.VisemeBlendshapeOverride
             Viseme.nn, Viseme.RR, Viseme.aa, Viseme.E, Viseme.ih, Viseme.oh, Viseme.ou,
         };
 
-        public void EnsureBindings()
+        /// <summary>Explicitly initialize and normalize editable source settings.</summary>
+        public void EnsureBindings() => bindings = NormalizeBindings(bindings);
+
+        private static List<VisemeBinding> NormalizeBindings(List<VisemeBinding> bindings)
         {
             var ordered = bindings != null && bindings.Count == SupportedVisemes.Length;
             if (ordered)
@@ -149,6 +154,55 @@ namespace UnityBox.VisemeBlendshapeOverride
                     binding.voiceMin = Mathf.Max(0f, binding.voiceMax - 0.001f);
                 }
             }
+            return bindings;
+        }
+
+        public sealed class SettingsSnapshot
+        {
+            public SkinnedMeshRenderer targetRenderer;
+            public WriteDefaultsMode writeDefaultsMode;
+            public float globalWeight;
+            public VoiceModulationMode voiceModulationMode;
+            public float voiceMin;
+            public float voiceMax;
+            public List<VisemeBinding> bindings;
+
+            public VisemeBinding GetBinding(Viseme viseme)
+            {
+                int index = (int)viseme;
+                return (uint)index < SupportedVisemes.Length ? bindings[index] : null;
+            }
+
+            public SkinnedMeshRenderer ResolveTargetRenderer(SkinnedMeshRenderer fallback = null) =>
+                targetRenderer != null ? targetRenderer : fallback;
+
+            public string ResolveBlendshapeName(IReadOnlyList<string> defaults, VisemeBinding binding) =>
+                ResolveBlendshapeNameCore(defaults, binding);
+        }
+
+        /// <summary>Resolve effective settings without changing the serialized component or rows.</summary>
+        public SettingsSnapshot CreateSnapshot()
+        {
+            var rows = new List<VisemeBinding>();
+            if (bindings != null)
+                foreach (var binding in bindings)
+                    rows.Add(binding?.CreateSnapshot());
+            var copy = new SettingsSnapshot
+            {
+                targetRenderer = targetRenderer,
+                writeDefaultsMode = writeDefaultsMode,
+                globalWeight = Mathf.Clamp(globalWeight, 0f, 100f),
+                voiceModulationMode = SanitizeVoiceMode(voiceModulationMode),
+                voiceMin = Mathf.Clamp01(voiceMin),
+                voiceMax = Mathf.Clamp01(voiceMax),
+                bindings = NormalizeBindings(rows),
+            };
+            if (copy.voiceMax <= copy.voiceMin)
+            {
+                copy.voiceMax = Mathf.Min(1f, copy.voiceMin + 0.001f);
+                copy.voiceMin = Mathf.Max(0f, copy.voiceMax - 0.001f);
+            }
+            return copy;
         }
 
         public VisemeBinding GetBinding(Viseme viseme)
@@ -165,7 +219,10 @@ namespace UnityBox.VisemeBlendshapeOverride
             return targetRenderer != null ? targetRenderer : fallback;
         }
 
-        public string ResolveBlendshapeName(IReadOnlyList<string> defaults, VisemeBinding binding)
+        public string ResolveBlendshapeName(IReadOnlyList<string> defaults, VisemeBinding binding) =>
+            ResolveBlendshapeNameCore(defaults, binding);
+
+        private static string ResolveBlendshapeNameCore(IReadOnlyList<string> defaults, VisemeBinding binding)
         {
             if (binding == null)
                 return string.Empty;
@@ -203,21 +260,6 @@ namespace UnityBox.VisemeBlendshapeOverride
         private void Reset()
         {
             InitializeEditorDefaults();
-        }
-
-        private void OnValidate()
-        {
-            InitializeEditorDefaults();
-
-            globalWeight = Mathf.Clamp(globalWeight, 0f, 100f);
-            voiceModulationMode = SanitizeVoiceMode(voiceModulationMode);
-            voiceMin = Mathf.Clamp01(voiceMin);
-            voiceMax = Mathf.Clamp01(voiceMax);
-            if (voiceMax <= voiceMin)
-            {
-                voiceMax = Mathf.Min(1f, voiceMin + 0.001f);
-                voiceMin = Mathf.Max(0f, voiceMax - 0.001f);
-            }
         }
 
         public void EnsureEditorDefaults()

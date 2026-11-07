@@ -68,36 +68,44 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
    Delete only rebuildable owned caches when disk space requires it, retaining imported DLLs,
    source snapshots and raw evidence. Check active projects before cleaning their caches.
 
-## Verify import preservation and serialized identity
+## Verify manual migration, import preservation and serialized identity
 
-- Opening a project, importing a package, or loading a Scene/Prefab must preserve source asset bytes,
-  existing script GUIDs, serialized values and the user's editing state. Do not install startup/import
-  migrations or automatic OnValidate corrections of saved configuration.
-- A general feature/fix request does not authorize migration, bulk GUID replacement, backup restoration
-  or rewriting the user's assets. An actual migration/restore requires an explicit user-selected,
-  reviewed operation. Ordinary requested generation and build-copy processing remain separate actions.
-- Ship stable `.meta` files with package assets, scripts, asmdefs and Editor/Runtime/Tests directories;
-  preserve already published identities. Metadata in a new package does not justify rewriting old
-  project references. Run release preflight for missing script/assembly metadata.
-- ASS 0.9.1 removes the entire migration implementation, menu/API and automatic configuration
-  correction. Keep the 0.5-second hold / 0.3-second tolerance defaults for new components and explicit
-  Reset. Normalize a separate captured configuration for generated graphs; preserve source fields.
-- Use isolated owned projects to test startup, force import and opening of existing Scene/Prefab
-  assets, including old missing-script references. Compare before/after bytes, metadata, fileIDs,
-  fields and editing state. Check that no migration directory, identity map or repair write appears.
-  Record actual commands, source fingerprint and results in
-  [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md).
-- [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) is a historical 0.9.0 incident archive,
-  not the current upgrade acceptance workflow. Its synthetic passing cases do not authorize or
-  establish preservation of arbitrary user projects. Never run that old automatic repair in a user's
-  project or substitute the current package into the old runner's automatic-repair assertion.
-- Existing `UserSettings/UnityBox/ASSMigration/<id>/Assets/...` files are pre-write bytes for only the
-  assets edited in that historical run; they omit old package metadata, later edits and callback
-  side effects. Retain current project and backups before comparing individual files. Do not restore
-  them wholesale or interpret `LegacyGuids.json` alone as proof that assets were rewritten.
-- Diagnose a Missing Script from its actual m_Script GUID, script path, owning package and first
-  Console/compiler error. Preserve the working project and address the identified reference or
-  compiler failure directly; keep restore operations tied to user-selected file differences.
+- Opening/importing packages or loading assets preserves source bytes, script GUIDs, serialized fields
+  and editing state. Do not install startup/import migrations or automatic OnValidate corrections.
+  Normalize independent configuration/Options snapshots for generation instead of modifying source.
+- The user authorized a manual component-reference migration on selected resources as one batch,
+  without per-item confirmation. Do not add extra approval steps. Resolve an ambiguous old GUID once
+  for its entire group; unknown/duplicate or open-asset/dependency cases stay in the report.
+- Use [ComponentReferences](../../../Docs/ComponentReferences.md) for the eight-package matrix,
+  six component FQCN/assembly/GUID entries and the manual tool. ACC has three production markers;
+  ASS, Viseme and AO one each. BCG/Collider/Logger/PrefabPatcher have no own Avatar authoring component.
+  AO 0.2 is a development snapshot, not a published legacy VPM ZIP.
+- The shared Editor tool lives in `Assets/UnityBox/ComponentReferenceMigration/Editor` and has no ninth
+  VPM manifest. Full source checkouts include it; VPM-only users import the standalone
+  `https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage` once.
+- `Tools/UnityBox/Component References`: Use Project Selection or drag assets/folders, Analyze read-only,
+  choose any ambiguous old GUID's target once, then Migrate Selected Assets to process the ready batch.
+  Dependency evidence does not expand write scope. Open Scene/PrefabStage and dependencies are
+  skipped; leave saving/closing to the user. Never remove or merge duplicate components automatically.
+- Test all six components with actual old ACC/ASS/Viseme published ZIP imports and the old AO
+  development snapshot. Preserve genuine generated script GUIDs, values, fileIDs, audio/object
+  references and Prefab overrides, then install the current complete packages. Startup/import remain
+  read-only; invoke the manual batch to restore selected eligible references.
+- Check Analyze creates no backup or identity cache. Apply rechecks source evidence SHA and installed
+  target identity, backs up every target before the first write, and only changes fixed-length GUID
+  byte spans. Preserve fileIDs, all other fields/references, BOM/CRLF and project metadata. Existing
+  corresponding metadata is copied to `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`.
+- Cover batch scope, ambiguity mapping, unknown/valid-external/duplicate skipping, open resources and
+  dependencies, changed files since scan, exact backups, idempotence and source configuration preservation.
+  Record native and real-upgrade results in
+  [ComponentReferences verification](../../../Docs/Verification/ComponentReferences/README.md).
+- [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md) and
+  [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) retain historical 0.9.1 import safety
+  and the removed 0.9.0 automatic implementation. Keep the old ASS backup directory separate from the
+  new manual batches. Diagnose any Missing Script by actual m_Script GUID, script path and owning package.
+- Ship stable package metadata and preserve already published ZIP bytes. This release changes only
+  ACC/AO/Viseme/ASS packages; leave BCG/Collider/Logger/PrefabPatcher package files untouched unless
+  their code and versions also change. Central documentation holds their no-component audit findings.
 
 ## Retain reviewable results and publish the code
 

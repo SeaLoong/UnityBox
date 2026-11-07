@@ -1,0 +1,45 @@
+{
+  "inputs": [
+    {
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "version": "0.4.13",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.advanced-costume-controller-0.4.13.zip",
+      "sha256": "aeae1a8c2d5b08c8fd99352559e7e4aed0923aeb7d26a14a7980c371aa485e08",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.advanced-costume-controller-0.4.13.zip",
+      "published": true
+    },
+    {
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.7.24",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "sha256": "930b7c9d149c2602d84507387398d416fc9f6b805fef6076a9fa0037b976234c",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "published": true
+    },
+    {
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.1.14",
+      "zip": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.viseme-blendshape-override-0.1.14.zip",
+      "sha256": "97433d1e9f00d1006489e72453a69db65880607d4ee63069ab31cf41b2bbd475",
+      "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.viseme-blendshape-override-0.1.14.zip",
+      "published": true
+    },
+    {
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "version": "0.2.0",
+      "directory": "/workspace/unitybox-setup/unity/component-upgrade/ao-legacy-782af0b/Assets/UnityBox/AnimatorOptimizer",
+      "development_commit": "782af0bf8569fdde6782d420761f38c8f8d6824d",
+      "tree_sha256": "6570dabe4905957f3fe254bf7de87b1f074610a3b1438174855f3cf6047cdcd1",
+      "published": false,
+      "runtime_component_meta_present": false,
+      "metadata_files": [
+        "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs.meta",
+        "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef.meta",
+        "Tests/Editor/NDMF.meta",
+        "Tests/Editor/OptimizerIntegrationRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerProcessorRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerSemanticRegressionTests.cs.meta"
+      ]
+    }
+  ]
+}

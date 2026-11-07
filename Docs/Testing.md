@@ -10,15 +10,17 @@
 SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具链使用
 共享 XDG `/workspace/unitybox-setup/unity/interactive`；机器授权与 Hub 复用见[环境流程](UnityEnvironment.md)。
 
-ASS 0.9.1 当前检查见[导入安全记录](Verification/ASSImportSafety/README.md)。
-[验证结果](VerificationResults.json)保留 0.9.0 全库基线的功能、程序集、Player、图形和退出码；
+当前六类组件的真实升级、手动迁移和源配置保全检查见
+[Component References 记录](Verification/ComponentReferences/README.md)；
+[ASS 0.9.1 导入安全记录](Verification/ASSImportSafety/README.md)保留上一版范围。
+[验证结果](VerificationResults.json)记录当前八插件及独立工具的功能、程序集、Player、图形和退出码；
 [原生结果](UnityNativeResults.json)保留 NUnit 运行与源内容指纹；
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
 ## 执行结果与归档
 
-[验证结果](VerificationResults.json)记录该次 0.9.0 快照的实际通过数、测试程序集、运行标识、
+[验证结果](VerificationResults.json)记录本轮最终源码的实际通过数、测试程序集、运行标识、
 命令、退出码和源文件指纹。关键 NUnit XML 使用标准 gzip 归档，Player 的构建、执行与
 流水线 JSON 一起保存在 `Docs/Verification/`，索引记录归档路径和 SHA256。
 
@@ -26,12 +28,38 @@ ASS 0.9.1 当前检查见[导入安全记录](Verification/ASSImportSafety/READM
 核心用例，各范围分别计数。历史数据通过原提交和运行标识定位；重新准备工程后按新快照
 执行并生成新结果。
 
-## ASS 0.9.1 导入与配置保全
+## 当前组件引用与源配置检查
 
-当前修复移除自动迁移器、启动/导入扫描、GUID 改写、场景重载及修复菜单/API，并停止
+2026-11-07 最终源码的各范围结果如下，均无失败或跳过：
+
+| 范围 | 实际结果 |
+| --- | --- |
+| 纯 Unity 核心 | 361 项，9 个测试程序集 |
+| SDK | 442 项，14 个测试程序集 |
+| 完整 SDK/MA/NDMF | 541 项，20 个测试程序集 |
+| 图形 | 2 项，包括真实 Inspector 重绘及图标像素 |
+| 串行基准 | 39 项，八插件加独立扫描工具共 60 条测量 |
+| Linux Player | 13 场景、1,557 帧、4,807 次检查；源场景 3 个编辑配置保留 |
+| Python / 发布打包 | 45 / 18 项 |
+
+[组件引用矩阵](ComponentReferences.md)覆盖八个包中的六种自有生产组件，区分真实旧
+ACC/ASS/Viseme 发布 ZIP 与 AO 0.2 开发快照。测试在独立工程保存旧包实际生成的 GUID、
+配置、fileID 和引用，再更新对应完整包；新版本启动/导入仍保持原字节，手动迁移后
+检查脚本连接与全部其它序列化内容。
+
+工具回归检查只读 Analyze、选定范围、依赖追溯不扩写、歧义旧 GUID 一次类型选择、
+一键批量无逐项确认、已打开 Scene/PrefabStage 及依赖跳过、未知/重复保留、源 SHA
+变化检查、全部目标先备份以及 metadata/BOM/CRLF/fileID 保全。
+ACC Inspector 的显式提交与 Undo、AO 配置/Options 副本、Viseme 深拷贝 Voice 解析和
+ASS 时间副本分别检查源字段及原文件。执行命令、数量、退出码和指纹由
+[本轮记录](Verification/ComponentReferences/README.md)逐范围列出。
+
+## ASS 0.9.1 导入与配置保全（历史发布）
+
+该版移除旧 ASS 自动迁移器、启动/导入扫描、GUID 改写、场景重载及修复菜单/API，并停止
 组件加载时的 OnValidate 参数纠正。测试在隔离工程比较导入、打开前后的 Scene/Prefab
 字节、脚本 GUID、既有字段及编辑状态；生成图的规范化只在配置副本中发生。
-执行命令、退出码、用例数和当前源指纹单列于[ASS 导入安全记录](Verification/ASSImportSafety/README.md)。
+该版执行命令、退出码、用例数和源指纹单列于[ASS 导入安全记录](Verification/ASSImportSafety/README.md)。
 
 Missing Script 的排查记录应包括组件实际 `m_Script` GUID、脚本路径、所属包和
 Console 首条编译错误。导入保全测试只对隔离 fixture 操作，原项目资源留在原处。
@@ -51,12 +79,13 @@ Console 首条编译错误。导入保全测试只对隔离 fixture 操作，原
 | Linux Player | 构建和运行成功；13 个场景、1,557 帧、4,807 次输出检查通过；源场景 3 个编辑配置保留 |
 
 全部用例均无失败或跳过。手势输入的 Player 稳态更新中位数为 0.031083 ms；
-不同密码长度的生成成本及其它插件对照见[完整性能报告](Performance.md)。
+该历史快照的生成成本及其它插件对照见[当时的性能报告](https://github.com/SeaLoong/UnityBox/blob/036062df594fe3c1d575d600aec68bc5f79f85be/Docs/Performance.md)。
 
-该快照的实际测试程序集、UTC 运行标识和源码指纹集中于[验证结果](VerificationResults.json)。
+该快照的实际测试程序集、UTC 运行标识和源码指纹集中于[历史验证结果](https://github.com/SeaLoong/UnityBox/blob/036062df594fe3c1d575d600aec68bc5f79f85be/Docs/VerificationResults.json)。
 纯 Unity、SDK、完整 MA/NDMF 各范围重复核心用例，分别计数；图形、Player 和串行性能
 使用独立记录。2026-11-05 的主分支基线结果保存在 `827b865` 提交，0.9.0 结果按其源码
-快照记录，原始 NUnit gzip、Player/构建 JSON 与工具输出保存在 `Docs/Verification/`。
+快照记录，原始 NUnit gzip、Player/构建 JSON 与工具输出保存在该提交的 `Docs/Verification/`；
+当前目录保存本轮记录。
 
 0.9.0 当时的 ASS 检查包括（自动迁移实现现已撤回）：
 

@@ -45,9 +45,10 @@ asmdef。最低版本表达式使用 Unity 支持的普通版本字符串，例�
 ## 序列化与构建
 
 Runtime 配置类型、字段和已知 GUID 保留；实际 SDK Base 可用时继续实现 `IEditorOnly`。
-ASS 0.9.1 维持同名 Runtime 程序集和固定 ASSComponent GUID，移除 0.9.0 的整个自动
-迁移实现和修复菜单/API。启动、打开与导入保留原 Scene/Prefab、脚本身份和已存字段；
-源配置不通过 OnValidate 自动纠正，生成图只规范化独立配置副本。旧备份不自动恢复。
+ACC、AO、ASS 与 Viseme 的六种生产组件保留同名 Runtime 程序集、类和已发布字段，
+现有固定 GUID 继续使用；旧包缺失 metadata 形成的随机身份由独立手动引用工具连接。
+正常启动、打开与导入保留原 Scene/Prefab 和字段；有效值在配置/Options 深拷贝快照中处理。
+组件矩阵与旧公开包/开发快照边界见[Component References](ComponentReferences.md)。
 
 普通 Unity 的 ASS 由实际 Player 构建回调自动生成并移除场景副本中的作者配置，SDK/NDMF
 使用自己的 Avatar 自动构建入口。构建复制源 Controller/AOC，保留用户图与 WD，清理旧
@@ -63,6 +64,17 @@ ASS 层后追加 WD Off 的密码、计时与反馈层。Avatar 对象锁定已�
 
 生成器每次使用独立 Build 目录；安装引用形成 Undo 事务，重新生成、撤销、重做和移除各有
 明确动作。普通核心由项目脚本分配输入，Avatar 适配负责平台菜单和同步参数。
+
+## 独立组件引用工具
+
+`Assets/UnityBox/ComponentReferenceMigration/Editor` 是只依赖 Unity Editor 的共享工具，
+按项目已安装类型解析目标 MonoScript，不增加八个插件之间的 SDK/MA/NDMF 引用，
+也没有第九个 VPM manifest。源码安装随目录导入；单独 VPM 安装使用一次性 unitypackage。
+
+菜单 `Tools/UnityBox/Component References` 只在明确手动执行时写选定范围，一批操作
+无需逐项确认。依赖只读追溯，已打开 Scene/PrefabStage 及它们的依赖报告跳过；
+扫描/执行分别核对源内容与目标脚本身份，原字节和 metadata 备份后才替换脚本 GUID。
+迁移不在启动、导入、移动或构建配置读取回调中执行。
 
 ## 验证组合
 

@@ -80,19 +80,19 @@ namespace UnityBox.AnimatorOptimizer
                 AnimatorPathSegments = GetPathSegments(avatarRoot, animator != null ? animator.gameObject : null),
                 AnimatorComponentIndex = GetComponentIndex(animator),
                 OptimizeAllConvertibleLayers = component.optimizeAllConvertibleLayers,
-                LayerIndices = component.layerIndices != null
-                    ? new List<int>(component.layerIndices)
-                    : new List<int>(),
+                LayerIndices = CaptureLayerIndices(component.layerIndices),
                 UseVrChatParameterSemantics = component.targetMode == AnimatorOptimizerComponent.TargetMode.AvatarPlayableLayer || component.useVrChatParameterSemantics,
                 UpgradeBoolParametersToFloat = component.upgradeBoolParametersToFloat,
                 UpgradeIntParametersToFloat = component.upgradeIntParametersToFloat,
                 AllowFloatConditionApproximation = component.allowFloatConditionApproximation,
-                WriteDefaultsPolicy = component.writeDefaultsPolicy,
+                WriteDefaultsPolicy = Enum.IsDefined(typeof(AnimatorOptimizerComponent.WriteDefaultsPolicy), component.writeDefaultsPolicy)
+                    ? component.writeDefaultsPolicy : AnimatorOptimizerComponent.WriteDefaultsPolicy.Strict,
                 IgnoreTransitionTimingForStaticMotions = component.ignoreTransitionTimingForStaticMotions,
-                Heuristics = component.heuristics,
-                ShortAnimationMaxFrames = component.shortAnimationMaxFrames,
-                ShortAnimationMaxSeconds = component.shortAnimationMaxSeconds,
-                MotionTimeSampleCount = component.motionTimeSampleCount,
+                Heuristics = component.heuristics & AnimatorOptimizerOptions.AggressiveHeuristics,
+                ShortAnimationMaxFrames = Mathf.Clamp(component.shortAnimationMaxFrames, 1, 10),
+                ShortAnimationMaxSeconds = float.IsNaN(component.shortAnimationMaxSeconds) || float.IsInfinity(component.shortAnimationMaxSeconds)
+                    ? 0.1f : Mathf.Clamp(component.shortAnimationMaxSeconds, 0.01f, 0.25f),
+                MotionTimeSampleCount = Mathf.Clamp(component.motionTimeSampleCount, 2, 33),
                 StrictCurveConflicts = component.strictCurveConflicts,
                 MergeLayersWithEquivalentMasks = component.mergeLayersWithEquivalentMasks,
                 ResolveOverridePriorityWithStaticComposite = component.resolveOverridePriorityWithStaticComposite,
@@ -102,13 +102,26 @@ namespace UnityBox.AnimatorOptimizer
                 NormalizeAlwaysOneParameters = component.normalizeAlwaysOneParameters,
                 ExecuteLateOptimization = component.executeLateOptimization,
                 PreserveMmdCompatibility = component.preserveMmdCompatibility,
-                MaxPriorityCombinations = component.maxPriorityCombinations,
-                MaxAapDecisionNodes = component.maxAapDecisionNodes,
+                MaxPriorityCombinations = Mathf.Clamp(component.maxPriorityCombinations, 16, 4096),
+                MaxAapDecisionNodes = Mathf.Clamp(component.maxAapDecisionNodes, 64, 16384),
                 VerboseLogging = component.verboseLogging,
-                GeneratedLayerName = component.generatedLayerName,
-                WeightParameterPrefix = component.weightParameterPrefix,
+                GeneratedLayerName = string.IsNullOrWhiteSpace(component.generatedLayerName)
+                    ? AnimatorOptimizerConverter.GeneratedLayerName : component.generatedLayerName.Trim(),
+                WeightParameterPrefix = string.IsNullOrWhiteSpace(component.weightParameterPrefix)
+                    ? "AO/LayerWeight" : component.weightParameterPrefix.Trim(),
                 SourceObjectName = component.gameObject != null ? component.gameObject.name : string.Empty,
             };
+        }
+
+        private static List<int> CaptureLayerIndices(IReadOnlyList<int> source)
+        {
+            var captured = new List<int>();
+            if (source == null) return captured;
+            var seen = new HashSet<int>();
+            for (var index = source.Count - 1; index >= 0; index--)
+                if (source[index] >= 0 && seen.Add(source[index])) captured.Add(source[index]);
+            captured.Reverse();
+            return captured;
         }
 
         /// <summary>Editor-side configuration snapshot; build processors additionally enforce the selection scope.</summary>
@@ -123,10 +136,10 @@ namespace UnityBox.AnimatorOptimizer
             {
                 GeneratedLayerName = string.IsNullOrWhiteSpace(GeneratedLayerName)
                     ? AnimatorOptimizerConverter.GeneratedLayerName
-                    : GeneratedLayerName,
+                    : GeneratedLayerName.Trim(),
                 WeightParameterPrefix = string.IsNullOrWhiteSpace(WeightParameterPrefix)
                     ? "AO/LayerWeight"
-                    : WeightParameterPrefix,
+                    : WeightParameterPrefix.Trim(),
                 RequireAtLeastTwoLayers = true,
                 StrictCurveConflicts = StrictCurveConflicts,
                 UseVrChatParameterSemantics = UseVrChatParameterSemantics,
@@ -152,7 +165,7 @@ namespace UnityBox.AnimatorOptimizer
                 MaxPriorityCombinations = MaxPriorityCombinations,
                 MaxAapDecisionNodes = MaxAapDecisionNodes,
                 VerboseLogging = VerboseLogging,
-            };
+            }.Clone();
         }
 
         public IEnumerable<int> GetRequestedLayerIndices(AnimatorController controller)

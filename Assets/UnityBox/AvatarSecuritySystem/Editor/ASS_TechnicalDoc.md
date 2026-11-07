@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.1 技术参考
+# Avatar Security System 0.9.2 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -91,12 +91,13 @@ VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立�
 
 ## 导入与源配置边界
 
-0.9.1 移除 `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、场景重载、
+0.9.2 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、场景重载、
 修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
 固定 GUID `1c51e6a139920bb4ca12700dc82627ff`、Runtime 程序集、字段名及类型继续保持。
-0.7.24 未携带 metadata 形成的随机身份在已有项目中原样保留。
+0.7.24 未携带 metadata 形成的随机身份在正常打开/导入时原样保留；显式引用迁移由
+仓库独立的 `ComponentReferenceMigration/Editor` 工具处理，不属于 ASS Runtime 或构建回调。
 
 源 `ASSComponent` 的已存参数直接保留。`ASSConfigData.FromComponent` 与 `Clone` 生成
 独立配置副本，再为生成图规范化时间。普通 Player/Avatar 构建仍通过原入口处理构建副本，
@@ -104,11 +105,20 @@ VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立�
 
 0.9.0 的 `UserSettings/UnityBox/ASSMigration/<id>/Assets/...` 只保存对应轮次的原始
 Scene/Prefab 字节，不包含旧包 metadata 或后续修改；`LegacyGuids.json` 不是恢复日志。
-当前版本不创建迁移目录、不读取这些记录来改写文件，也不执行自动备份恢复。
+ASS 本身不创建旧迁移目录、不读取这些记录改写文件，也不执行自动备份恢复。
 如需调查旧写入，先保存当前项目副本，再逐文件对照备份；恢复目标和内容由用户明确选择。
 
 历史自动迁移的复现数据保留在[0.9.0 归档](../../../../Docs/Verification/ASSUpgrade/README.md)，
 用于追溯该版本的脚本替换、导入和重载行为。当前版本的检查以源资源保全为目标。
+
+## 独立手动引用迁移
+
+`Tools/UnityBox/Component References` 的只读扫描和显式批量执行与 ASS 构建分开。
+用户选定资源后，一次 **Migrate Selected Assets** 处理整批可确定条目；同旧 GUID 的
+歧义只选择一次目标类型，无逐项确认。工具在检查源 SHA/目标脚本、备份本批所有目标
+原字节后写入，只替换脚本 GUID，保留 fileID、配置字段、BOM/换行和项目 metadata。
+已打开 Scene、PrefabStage 及它们的依赖只报告跳过，不保存、关闭或重载。
+完整目录、下载和操作见[组件引用说明](../../../../Docs/ComponentReferences.md)。
 
 ## 验证与界面
 
@@ -116,11 +126,11 @@ Scene/Prefab 字节，不包含旧包 metadata 或后续修改；`LegacyGuids.js
 Restart、WD Off、用户对象缩放保持，以及真实构建场景的自动生成和原图副本。
 导入保全用例检查旧身份的 Scene/Prefab 在导入和打开后字节、GUID、源配置及编辑状态
 保持原状；生成用例分别检查源字段和有效构建配置。当前结果见
-[ASS 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)。
+[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
 SDK/NDMF 用例检查实际 Behaviour、源资产隔离与最终提交；混淆检查覆盖诱饵状态单独
 启用、无 Bool 池及条件参数声明。
 
 Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语言按 Unity 语言选择。
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
-0.9.1 的结果范围单列于导入安全记录。历史身体锁生成样本通过旧提交追溯。
+0.9.2 的组件引用和源配置范围单列于当前组件引用记录。历史身体锁生成样本通过旧提交追溯。

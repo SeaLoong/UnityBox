@@ -4,6 +4,16 @@ ACC 扫描 Costumes Root 下的服装、变体与部件，生成普通 Unity 可
 和 Clip。Avatar 工作流在相同动画核心之上安装 MA 菜单、骨架、FX、同步参数与256×256图标。
 字段和完整操作见[包内手册](../Assets/UnityBox/AdvancedCostumeController/README.md)。
 
+## 0.5.1 组件引用与 Inspector
+
+ACC 三种 Runtime 标记的类名、程序集、字段与固定脚本 GUID 保持。0.4.13 旧 ZIP 没有
+metadata 形成的随机引用，通过[Component References](ComponentReferences.md)手动批量
+重连：选择资源并一次执行，无逐项确认，打开资源及依赖在报告中跳过。
+
+材质变体 Inspector 不在打开时初始化；外部来源选择留在 Editor 临时状态，显式应用、
+分析或刷新才提交并记录 Undo。无效材质槽保留存储值，PartGroup Exclude 保留 GroupName。
+当前升级与源参数保全结果见[本轮记录](Verification/ComponentReferences/README.md)。
+
 ## 工作流
 
 | 入口 | 功能 | 依赖 |

@@ -11,8 +11,9 @@ Maintain the eight plugins together on `master` and follow the asset workflow in
   serialized components and runtime actions belong in Runtime assemblies.
 - Keep serialized field names, script GUIDs, binding paths, parameter defaults, layer order and callback
   contracts stable. Never migrate user assets as an automatic consequence of opening/importing a package.
-  Stored-data migration or backup restoration requires an explicit user-selected reviewed operation;
-  ordinary feature/fix authorization does not imply permission for either action.
+  Manual component migration applies to the user-selected batch in one execution, without per-item
+  approval. Resolve one target type per ambiguous legacy GUID; keep unknown/duplicate and open assets
+  in the report. Restore chosen backups as a separate explicit file operation.
 - Give features clear input and output contracts. Follow the normal path directly; report actual input
   errors with the relevant parameter, object or asset path.
 - Finish a behavior change with meaningful output checks: native Animator evaluation, save/reload,

@@ -143,14 +143,22 @@ namespace UnityBox.AnimatorOptimizer
             var selected = new HashSet<int>();
             for (var index = 0; index < indices.arraySize; index++)
                 selected.Add(indices.GetArrayElementAtIndex(index).intValue);
-            var original = selected.OrderBy(index => index).ToArray();
+            var original = Enumerable.Range(0, indices.arraySize)
+                .Select(index => indices.GetArrayElementAtIndex(index).intValue).ToArray();
+            bool selectionChanged = false;
             using (new EditorGUILayout.HorizontalScope())
             {
                 AnimatorOptimizerEditorStyles.ClippedText($"选择 Layer  ·  {selected.Count}/{layers.Length}", EditorStyles.miniBoldLabel);
                 if (GUILayout.Button("全选", EditorStyles.miniButtonLeft, GUILayout.Width(44f)))
+                {
                     selected = new HashSet<int>(Enumerable.Range(0, layers.Length));
+                    selectionChanged = true;
+                }
                 if (GUILayout.Button("清空", EditorStyles.miniButtonRight, GUILayout.Width(44f)))
+                {
                     selected.Clear();
+                    selectionChanged = true;
+                }
             }
             layerScroll = EditorGUILayout.BeginScrollView(layerScroll, GUILayout.Height(Mathf.Min(180f, layers.Length * 21f + 6f)));
             for (var index = 0; index < layers.Length; index++)
@@ -158,7 +166,9 @@ namespace UnityBox.AnimatorOptimizer
                 var title = $"[{index}]  {layers[index]?.name ?? "<空层>"}";
                 var rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.MinWidth(0f));
                 var content = new GUIContent(AnimatorOptimizerEditorStyles.Ellipsize(title, EditorStyles.label, rect.width - 22f), title);
-                var next = EditorGUI.ToggleLeft(rect, content, selected.Contains(index));
+                bool previous = selected.Contains(index);
+                var next = EditorGUI.ToggleLeft(rect, content, previous);
+                selectionChanged |= next != previous;
                 if (next)
                     selected.Add(index);
                 else
@@ -166,13 +176,13 @@ namespace UnityBox.AnimatorOptimizer
             }
             EditorGUILayout.EndScrollView();
             var ordered = selected.OrderBy(index => index).ToList();
-            if (!original.SequenceEqual(ordered))
+            if (selectionChanged && !original.SequenceEqual(ordered))
             {
                 indices.arraySize = ordered.Count;
                 for (var index = 0; index < ordered.Count; index++)
                     indices.GetArrayElementAtIndex(index).intValue = ordered[index];
             }
-            if (ordered.Any(index => index >= layers.Length))
+            if (ordered.Any(index => index < 0 || index >= layers.Length))
                 EditorGUILayout.HelpBox(AnimatorOptimizerPlatform.Adapter != null
                     ? "存在当前源 Controller 尚未包含的索引；已保留，可能由构建插件生成。"
                     : "存在当前 Controller 不包含的索引；请在离线面板中重新确认所选 Layer。", MessageType.Info);

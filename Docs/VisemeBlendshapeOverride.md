@@ -4,6 +4,17 @@
 `Viseme` Int 与可选 `Voice` Float；VRChat 使用 Descriptor 提供的输入；NDMF 将生成图
 合并到最终 FX。Unity 核心、SDK 适配与 NDMF 适配分别编译。
 
+## 0.2.1 组件引用与配置快照
+
+组件类名、Runtime 程序集、已发布字段与固定 GUID 保持。0.1.14 旧 ZIP 缺少 metadata，
+其随机旧引用使用[Component References](ComponentReferences.md)一次手动批量迁移。
+工具与普通打开/导入分离，未知、重复及已打开资源/依赖只报告跳过。
+
+加载、Inspector 绘制及构建计划读取保留原 bindings。深拷贝配置快照负责补齐有效映射、
+解析旧 Voice 和规范化值域。Inspector 的 **Edit settings** 只添加选中缺失行并记录 Undo；
+旧公开 authoring API 保留显式编辑行为，代码调用方负责 Undo。
+执行结果见[组件引用与源配置记录](Verification/ComponentReferences/README.md)。
+
 ## 安装与入口
 
 | 入口 | 依赖 | 输出 |
@@ -29,7 +40,7 @@ Linear 按 Min/Max 缩放，区间两侧输出端点。
 | 80 | 0.2 / 0.8 | 0.8、1 | 80 |
 
 每行 Custom Settings 可以独立设置 Weight 与 Global/Disabled/Linear。输入范围由
-Inspector 和构建归一化统一处理。15状态始终归零其它受控形状，映射为 None 的状态将这些
+显式编辑与构建快照分别处理，构建读取保留源字段。15状态始终归零其它受控形状，映射为 None 的状态将这些
 形状全部设为0；未纳入映射的形状由其它动画层管理。该组件接收参数输入，音频识别属于
 提供 Viseme/Voice 参数的服务。
 
@@ -38,6 +49,10 @@ Write Defaults 可选 On、Off 或 Auto。Auto 检查 FX 及关联控制器（�
 层，权重1、同步索引-1；这一设置让已有 Base Layer 和口型层分别执行自己的状态图。
 
 ## API 和覆盖控制器
+
+`component.CreateSnapshot()` 提供独立的只读设置。旧 `EnsureBindings`、
+`EnsureEditorDefaults` 和组件 `GetBinding` 是保留兼容的 authoring 编辑 API，显式调用
+可以修改源配置，调用方登记 Undo。构建与 Inspector 显示使用快照，不对源调用这些方法。
 
 `TryCreateBuildPlan(root, out plan)` 解析映射与路径；`BuildController(controller, plan)`
 在传入的 Assets 控制器内重建插件层及其子资产。Viseme 输入类型为 Int，Voice 输入类型
@@ -82,10 +97,10 @@ Face，再增加一个驱动 Transform 的虚拟层；最终提交后实际 Anim
 
 ## 序列化与升级
 
-组件 GUID、公开字段和口型0–14编号保持稳定。旧 `overrideGlobalVoiceSettings` 迁移到
-useCustomSettings；旧行 voiceModulationMode 的 Disabled=0/Linear=1 通过反序列化回调
-转换到当前 Disabled/Linear，阈值和权重保留。当前 Global/Disabled/Linear 直接读取。
-真实 Prefab YAML 导入用例覆盖两种旧值及三种当前值。
+组件 GUID、公开字段和口型0–14编号保持稳定。构建快照按旧
+`overrideGlobalVoiceSettings` 的 useCustomSettings 含义读取；旧行 voiceModulationMode 的
+Disabled=0/Linear=1 在快照解析为当前 Disabled/Linear，阈值、权重及源 bindings 保留。
+当前 Global/Disabled/Linear 直接读取。真实 Prefab YAML 和计划用例覆盖旧/当前语义及源字段。
 
 公开枚举为 `VisemeBlendshapeOverrideComponent.Viseme`；平台调用入口为
 `VisemeBlendshapeOverrideVrcProcessor` / `VisemeBlendshapeOverrideVrcUtils`。

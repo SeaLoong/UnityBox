@@ -25,16 +25,14 @@ namespace UnityBox.VisemeBlendshapeOverride
             _voiceMin = serializedObject.FindProperty(nameof(VisemeBlendshapeOverrideComponent.voiceMin));
             _voiceMax = serializedObject.FindProperty(nameof(VisemeBlendshapeOverrideComponent.voiceMax));
             _bindings = serializedObject.FindProperty(nameof(VisemeBlendshapeOverrideComponent.bindings));
-
-            var component = (VisemeBlendshapeOverrideComponent)target;
-            component.EnsureEditorDefaults();
         }
 
         public override void OnInspectorGUI()
         {
             var component = (VisemeBlendshapeOverrideComponent)target;
-            component.EnsureEditorDefaults();
+            var settings = component.CreateSnapshot();
             serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
 
             var defaults = VisemeBlendshapeEditorIntegration.GetDefaults(component);
             var descriptor = defaults.Blendshapes;
@@ -57,14 +55,19 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (visemesExpanded)
             {
                 EditorGUI.indentLevel++;
-                for (var i = 0; i < _bindings.arraySize; i++)
-                    DrawBinding(descriptor, blendshapeOptions, _bindings.GetArrayElementAtIndex(i));
+                foreach (var viseme in VisemeBlendshapeOverrideComponent.GetSupportedVisemes())
+                {
+                    var stored = FindStoredBinding(_bindings, viseme);
+                    if (stored != null) DrawBinding(descriptor, blendshapeOptions, stored);
+                    else DrawDefaultBinding(component, descriptor, viseme);
+                }
                 EditorGUI.indentLevel--;
             }
 
-            DrawValidationMessages(component, descriptor, resolvedRenderer);
+            DrawValidationMessages(settings, descriptor, resolvedRenderer);
 
-            serializedObject.ApplyModifiedProperties();
+            if (EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
+            else serializedObject.Update();
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox("Generate a Unity controller asset, then assign it to the root Animator. Drive Viseme (Int 0–14) and Voice (Float 0–1) from your application. The optional VRChat adapter applies these settings during avatar builds.", MessageType.Info);
             if (GUILayout.Button("Generate Controller Asset"))
@@ -86,6 +89,46 @@ namespace UnityBox.VisemeBlendshapeOverride
                     Debug.LogException(exception);
                 }
             }
+        }
+
+        private static SerializedProperty FindStoredBinding(SerializedProperty rows,
+            VisemeBlendshapeOverrideComponent.Viseme viseme)
+        {
+            for (int index = 0; index < rows.arraySize; index++)
+            {
+                var row = rows.GetArrayElementAtIndex(index);
+                if (row.FindPropertyRelative("viseme").intValue == (int)viseme) return row;
+            }
+            return null;
+        }
+
+        private void DrawDefaultBinding(VisemeBlendshapeOverrideComponent component,
+            IReadOnlyList<string> defaults, VisemeBlendshapeOverrideComponent.Viseme viseme)
+        {
+            string mapping = VisemeBlendshapeOverrideComponent.GetDefaultBlendshapeName(defaults, viseme);
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField(FormatVisemeName(viseme), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Blendshape", string.IsNullOrEmpty(mapping) ? "- Platform default (if available) -" : mapping);
+            EditorGUILayout.LabelField("Settings", "Using defaults");
+            if (GUILayout.Button("Edit settings"))
+            {
+                serializedObject.ApplyModifiedProperties();
+                AddEditableBinding(component, viseme);
+                serializedObject.Update();
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+        /// <summary>Explicit row creation used by the Inspector; existing rows remain unchanged.</summary>
+        public static void AddEditableBinding(VisemeBlendshapeOverrideComponent component,
+            VisemeBlendshapeOverrideComponent.Viseme viseme)
+        {
+            if (component.bindings != null && component.bindings.Exists(row => row != null && row.viseme == viseme)) return;
+            Undo.RecordObject(component, "Edit viseme settings");
+            component.bindings ??= new List<VisemeBlendshapeOverrideComponent.VisemeBinding>();
+            component.bindings.Add(new VisemeBlendshapeOverrideComponent.VisemeBinding { viseme = viseme });
+            EditorUtility.SetDirty(component);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }
 
         private void DrawBinding(
@@ -113,7 +156,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             {
                 EditorGUI.indentLevel++;
                 DrawSlider("Weight", weightProperty, 0f, 100f);
-                DrawVoiceModeOverride(voiceModeProperty, voiceMinProperty, voiceMaxProperty);
+                DrawVoiceModeOverride(voiceModeProperty, bindingProperty.FindPropertyRelative("legacyVoiceMode"), voiceMinProperty, voiceMaxProperty);
                 EditorGUI.indentLevel--;
             }
 
@@ -126,37 +169,41 @@ namespace UnityBox.VisemeBlendshapeOverride
             SerializedProperty maxProperty)
         {
             EditorGUILayout.PropertyField(modeProperty, new GUIContent("Voice Mode"));
-
             var mode = (VisemeBlendshapeOverrideComponent.VoiceModulationMode)modeProperty.enumValueIndex;
-            if (mode == VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled)
-                return;
-
+            if (mode == VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled) return;
+            EditorGUI.BeginChangeCheck();
             DrawSlider("Voice Min", minProperty, 0f, 1f);
             DrawSlider("Voice Max", maxProperty, 0f, 1f);
-            ClampVoiceRange(minProperty, maxProperty);
+            if (EditorGUI.EndChangeCheck()) ClampVoiceRange(minProperty, maxProperty);
         }
 
         private static void DrawVoiceModeOverride(
             SerializedProperty modeProperty,
+            SerializedProperty legacyModeProperty,
             SerializedProperty minProperty,
             SerializedProperty maxProperty)
         {
-            EditorGUILayout.PropertyField(modeProperty, new GUIContent("Voice Mode"));
-
-            var mode = (VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride)modeProperty.enumValueIndex;
-            switch (mode)
+            int stored = legacyModeProperty.intValue;
+            int current = stored < 0 ? modeProperty.intValue : stored == 0 ? 1 : stored == 1 ? 2 : 0;
+            EditorGUI.BeginChangeCheck();
+            int next = EditorGUILayout.Popup("Voice Mode", current, modeProperty.enumDisplayNames);
+            if (EditorGUI.EndChangeCheck())
             {
-                case VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Linear:
-                    DrawSlider("Voice Min", minProperty, 0f, 1f);
-                    DrawSlider("Voice Max", maxProperty, 0f, 1f);
-                    ClampVoiceRange(minProperty, maxProperty);
-                    break;
+                modeProperty.intValue = next;
+                legacyModeProperty.intValue = -1;
             }
+            if (next != (int)VisemeBlendshapeOverrideComponent.VisemeBinding.VoiceModeOverride.Linear) return;
+            EditorGUI.BeginChangeCheck();
+            DrawSlider("Voice Min", minProperty, 0f, 1f);
+            DrawSlider("Voice Max", maxProperty, 0f, 1f);
+            if (EditorGUI.EndChangeCheck()) ClampVoiceRange(minProperty, maxProperty);
         }
 
         private static void DrawSlider(string label, SerializedProperty property, float min, float max)
         {
-            property.floatValue = EditorGUILayout.Slider(label, property.floatValue, min, max);
+            EditorGUI.BeginChangeCheck();
+            float next = EditorGUILayout.Slider(label, property.floatValue, min, max);
+            if (EditorGUI.EndChangeCheck()) property.floatValue = next;
         }
 
         private static void ClampVoiceRange(SerializedProperty minProperty, SerializedProperty maxProperty)
@@ -271,7 +318,7 @@ namespace UnityBox.VisemeBlendshapeOverride
         }
 
         private static void DrawValidationMessages(
-            VisemeBlendshapeOverrideComponent component,
+            VisemeBlendshapeOverrideComponent.SettingsSnapshot component,
             IReadOnlyList<string> descriptor,
             SkinnedMeshRenderer resolvedRenderer)
         {

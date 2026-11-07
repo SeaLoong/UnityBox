@@ -54,9 +54,9 @@ namespace UnityBox.AdvancedCostumeController
 
     /// <summary>
     /// Hidden editor state used to distinguish a newly added component from a
-    /// user intentionally clearing all replacement rules. The custom Inspector
-    /// performs the initial comparison once and never rebuilds an edited setup
-    /// merely because the Inspector was reopened.
+    /// user intentionally clearing all replacement rules. Explicit analysis or
+    /// refresh actions initialize the comparison; opening the Inspector leaves
+    /// the stored configuration unchanged.
     /// </summary>
     [SerializeField, HideInInspector]
     private bool editorPreviewInitialized;

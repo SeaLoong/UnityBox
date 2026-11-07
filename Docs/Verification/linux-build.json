@@ -1,10 +1,10 @@
 {
   "result": "Succeeded",
-  "output": "/workspace/unitybox-setup/unity/projects/ass09-default03-core-20261107/.unitybox-player-results/20261107T104248-b9103081/UnityBoxPlayer",
+  "output": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/UnityBoxPlayer",
   "total_errors": 0,
   "total_warnings": 4,
   "total_size_bytes": 58547694,
-  "duration_seconds": 54.7343999,
+  "duration_seconds": 32.394474699999996,
   "hook_providers": [
     "BlendshapeRuntimeTests",
     "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests",

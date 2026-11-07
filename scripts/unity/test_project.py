@@ -33,6 +33,8 @@ BUILTINS = ("ai animation assetbundle audio cloth director imageconversion imgui
 # The SDK's Oculus dependency uses Android.Permission even when importing in
 # the Linux Editor. Unity's real module must be present in the VRC fixture.
 VRC_BUILTINS = ("androidjni",)
+EXTRA_SOURCE_MODULE = "ComponentReferenceMigration"
+EXTRA_SOURCE_DESTINATION = Path("Assets/UnityBox") / EXTRA_SOURCE_MODULE
 
 
 def read_json(path):
@@ -74,6 +76,35 @@ def copy_package(source, destination, include_file):
         digest.update(relative.as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
         count += 1
     return {"files": count, "sha256": digest.hexdigest()}
+
+
+def extra_source_files(source, include_file):
+    """Include an Assets module's stable root metadata as well as its contents."""
+    source = Path(source)
+    files = {source.name + "/" + path.relative_to(source).as_posix(): path
+             for path in source.rglob("*") if path.is_file()
+             and include_file(path.relative_to(source).as_posix(), "")}
+    metadata = source.with_name(source.name + ".meta")
+    if metadata.is_file():
+        files[metadata.name] = metadata
+    return files
+
+
+def copy_extra_source(source, destination, include_file):
+    source, destination = Path(source), Path(destination)
+    digest, hashes = hashlib.sha256(), {}
+    for relative, path in sorted(extra_source_files(source, include_file).items()):
+        # The sole parent-level input is the module folder's own .meta.
+        permitted_root = source.parent.resolve() if path == source.with_name(source.name + ".meta") else source.resolve()
+        if not path.resolve().is_relative_to(permitted_root):
+            raise ValueError(f"Extra source contains a file outside its directory: {path}")
+        target = destination.parent / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, target)
+        data = path.read_bytes()
+        digest.update(relative.encode() + b"\0" + data + b"\0")
+        hashes[relative] = hashlib.sha256(data).hexdigest()
+    return {"source": str(source), "files": len(hashes), "sha256": digest.hexdigest(), "file_hashes": hashes}
 
 
 def version_tuple(value):
@@ -152,9 +183,11 @@ def prepare(args):
     repo, project, cache = args.repo.resolve(), args.project.resolve(), args.dependency_cache.resolve()
     if project == repo or project.is_relative_to(repo) or repo.is_relative_to(project):
         raise ValueError("The isolated project must be outside, and must not contain, the source repository.")
+    previous = {}
     if project.exists() and any(project.iterdir()):
         if not (project / MARKER).is_file() or read_json(project / MARKER).get("tool") != "UnityBox.test_project":
             raise ValueError("Refusing to reuse a nonempty directory without the UnityBox ownership marker.")
+        previous = read_json(project / MARKER)
     include_file = load_filter(repo)
     available = {}
     for manifest in sorted((repo / "Assets/UnityBox").glob("*/package.json")):
@@ -239,6 +272,19 @@ def prepare(args):
         copies[name] = {**copy_package(source, packages / name, package_filter),
                         "version": data["version"], "source": str(source), "origin": origin}
         versions[name] = data["version"]
+    extra_sources = {}
+    extra_roots = []
+    module_source = repo / EXTRA_SOURCE_DESTINATION
+    module_destination = project / EXTRA_SOURCE_DESTINATION
+    if module_source.is_dir() or EXTRA_SOURCE_MODULE in previous.get("extra_sources", {}):
+        if module_destination.is_dir():
+            shutil.rmtree(module_destination)
+        module_destination.with_name(module_destination.name + ".meta").unlink(missing_ok=True)
+    if module_source.is_dir():
+        extra_sources[EXTRA_SOURCE_MODULE] = {
+            **copy_extra_source(module_source, module_destination, include_file),
+            "destination": EXTRA_SOURCE_DESTINATION.as_posix()}
+        extra_roots.append(module_destination)
     dependencies = {"com.unity.modules." + name: "1.0.0" for name in BUILTINS}
     if args.profile == "vrc":
         dependencies.update({"com.unity.modules." + name: "1.0.0" for name in VRC_BUILTINS})
@@ -251,10 +297,11 @@ def prepare(args):
     metadata = {"tool": "UnityBox.test_project", "schema": 1, "project_id": uuid.uuid4().hex, "prepared_at": utc_now(),
                 "repo": str(repo), "revision": revision.stdout.strip() if revision.returncode == 0 else None,
                 "profile": args.profile, "packages": copies, "selected_packages": selected,
+                "extra_sources": extra_sources,
                 "ignored_vpm_dependencies": ignored_vpm,
                 "registry_dependencies": {name: version for name, version in registry.items()
                                           if not name.startswith("com.unity.modules.") and name not in sources},
-                "test_assemblies": enabled_test_assemblies([packages / name for name in local_names], versions)}
+                "test_assemblies": enabled_test_assemblies([packages / name for name in local_names] + extra_roots, versions)}
     write_json(project / MARKER, metadata)
     print(json.dumps({"project": str(project), **metadata}, indent=2, ensure_ascii=False))
     return 0

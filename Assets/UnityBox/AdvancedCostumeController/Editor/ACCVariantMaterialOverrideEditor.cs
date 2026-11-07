@@ -17,64 +17,6 @@ namespace UnityBox.AdvancedCostumeController
       private string analysisStatus;
       private MessageType analysisStatusType = MessageType.Info;
 
-      private void OnEnable()
-      {
-        // Unity calls Reset when the component is added, but Reset cannot safely
-        // compare imported Renderer data. Defer one frame so serialized OutfitBase
-        // and the sibling hierarchy are ready, then initialize the preview once.
-        EditorApplication.delayCall += AutoInitializePreview;
-      }
-
-      private void OnDisable()
-      {
-        EditorApplication.delayCall -= AutoInitializePreview;
-      }
-
-      private void AutoInitializePreview()
-      {
-        if (this == null || targets == null) return;
-
-        var pendingMarkers = targets.OfType<ACCVariantMaterialOverride>()
-          .Where(selectedMarker => selectedMarker != null &&
-            !selectedMarker.EditorPreviewInitialized &&
-            selectedMarker.OutfitBase != null &&
-            IsEditableSceneObject(selectedMarker.gameObject))
-          .ToList();
-        if (pendingMarkers.Count == 0) return;
-
-        const string undoName = "Initialize ACC variant material preview";
-        int undoGroup = ACCEditorUndo.Begin(undoName);
-        try
-        {
-          ACCEditorUndo.RecordObjects(pendingMarkers.Cast<Object>(), undoName);
-          foreach (var selectedMarker in pendingMarkers)
-          {
-            // Components created before the one-time initialization flag was
-            // introduced may already contain user-authored rules. Preserve them
-            // rather than treating an old serialized false flag as a new marker.
-            if ((selectedMarker.Replacements?.Count ?? 0) > 0 ||
-                (selectedMarker.RendererOverrides?.Count ?? 0) > 0)
-            {
-              selectedMarker.MarkEditorPreviewInitialized();
-              EditorUtility.SetDirty(selectedMarker);
-              continue;
-            }
-
-            AnalyzeOrPopulate(selectedMarker);
-            selectedMarker.MarkEditorPreviewInitialized();
-            EditorUtility.SetDirty(selectedMarker);
-          }
-          ACCEditorUndo.RecordPrefabInstanceModifications(pendingMarkers.Cast<Object>());
-        }
-        finally
-        {
-          ACCEditorUndo.Complete(undoGroup);
-        }
-
-        serializedObject.Update();
-        Repaint();
-      }
-
       public override void OnInspectorGUI()
       {
         serializedObject.Update();
@@ -195,12 +137,11 @@ namespace UnityBox.AdvancedCostumeController
           EditorStyles.boldLabel);
         EditorGUILayout.BeginHorizontal();
         EditorGUI.BeginChangeCheck();
-        analysisSource = (GameObject)EditorGUILayout.ObjectField(
+        var selectedSource = (GameObject)EditorGUILayout.ObjectField(
           new GUIContent(Localization.Text("来源", "Source")),
           analysisSource, typeof(GameObject), true);
-        bool sourceChanged = EditorGUI.EndChangeCheck();
-        if (sourceChanged)
-          analysisStatus = null;
+        if (EditorGUI.EndChangeCheck())
+          SelectAnalysisSource(selectedSource);
 
         bool validSource = IsValidAnalysisSource(analysisSource);
         bool canApply = validSource && targets.OfType<ACCVariantMaterialOverride>()
@@ -220,19 +161,10 @@ namespace UnityBox.AdvancedCostumeController
           if (GUILayout.Button(Localization.Text("清除", "Clear"),
             GUILayout.Width(58)))
           {
-            analysisSource = null;
-            analysisStatus = null;
+            SelectAnalysisSource(null);
           }
         }
         EditorGUILayout.EndHorizontal();
-
-        if (sourceChanged && analysisSource != null && canApply &&
-            ApplyAnalysisSource(analysisSource))
-        {
-          serializedObject.Update();
-          Repaint();
-          GUIUtility.ExitGUI();
-        }
 
         if (analysisSource != null && !validSource)
         {
@@ -250,6 +182,13 @@ namespace UnityBox.AdvancedCostumeController
 
         if (!string.IsNullOrEmpty(analysisStatus))
           EditorGUILayout.HelpBox(analysisStatus, analysisStatusType);
+      }
+
+      private void SelectAnalysisSource(GameObject source)
+      {
+        analysisSource = source;
+        analysisStatus = null;
+        analysisStatusType = MessageType.Info;
       }
 
       private bool ApplyAnalysisSource(GameObject source)
@@ -447,14 +386,21 @@ namespace UnityBox.AdvancedCostumeController
               : Localization.Text("目标 Renderer 没有材质槽", "Target Renderer has no material slots")
           };
 
+        int originalSlot = slotProperty.intValue;
+        bool hasStoredSlot = hasSlots && originalSlot >= 0 && originalSlot < materials.Length;
+        if (hasSlots && !hasStoredSlot)
+          options = options.Concat(new[]
+          {
+            Localization.Text($"无效槽位：{originalSlot}", $"Missing slot: {originalSlot}")
+          }).ToArray();
+
         using (new EditorGUI.DisabledScope(!hasSlots))
         {
-          int selectedSlot = hasSlots
-            ? Mathf.Clamp(slotProperty.intValue, 0, options.Length - 1)
-            : 0;
+          int selectedSlot = hasStoredSlot ? originalSlot : hasSlots ? options.Length - 1 : 0;
+          EditorGUI.BeginChangeCheck();
           int newSlot = EditorGUILayout.Popup(
             Localization.Text("材质槽位", "Material Slot"), selectedSlot, options);
-          if (hasSlots)
+          if (EditorGUI.EndChangeCheck() && hasSlots && newSlot < materials.Length)
             slotProperty.intValue = newSlot;
         }
       }

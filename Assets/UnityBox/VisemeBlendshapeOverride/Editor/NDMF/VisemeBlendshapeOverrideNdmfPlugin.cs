@@ -100,7 +100,7 @@ namespace UnityBox.VisemeBlendshapeOverride
             if (plan.ResolvedBindings.Any(binding => binding.VoiceModulationMode != VisemeBlendshapeOverrideComponent.VoiceModulationMode.Disabled))
                 EnsureVirtualVoiceParameter(fxController);
 
-            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Config,
+            var useWriteDefaultsOn = ResolveVirtualWriteDefaults(fxController, plan.Settings,
                 animatorServices.ControllerContext.Controllers.Select(entry => entry.Value));
             fxController.RemoveLayers(layer => layer.Name == VisemeBlendshapeOverrideUtils.GeneratedLayerName);
             // The service tracks original virtual paths while other plugins rename/reparent renderers.
@@ -150,7 +150,7 @@ namespace UnityBox.VisemeBlendshapeOverride
 
         private static bool ResolveVirtualWriteDefaults(
             VirtualAnimatorController controller,
-            VisemeBlendshapeOverrideComponent config,
+            VisemeBlendshapeOverrideComponent.SettingsSnapshot config,
             IEnumerable<VirtualAnimatorController> relatedControllers)
         {
             switch (config.writeDefaultsMode)

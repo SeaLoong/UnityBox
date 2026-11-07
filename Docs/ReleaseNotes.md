@@ -1,6 +1,37 @@
 # 发布与升级说明
 
-## 2026-11-07：ASS 0.9.1 撤回自动迁移
+## 2026-11-07：手动组件引用迁移与源配置保全
+
+| 包 | 原版本 | 新版本 |
+| --- | --- | --- |
+| Advanced Costume Controller | 0.5.0 | 0.5.1 |
+| Animator Optimizer | 0.3.0 | 0.3.1 |
+| Viseme Blendshape Override | 0.2.0 | 0.2.1 |
+| Avatar Security System | 0.9.1 | 0.9.2 |
+
+其余四包保持原版本与发布内容。八插件的组件矩阵确认六种自有 Avatar/Prefab 组件，
+类名、Runtime 程序集、已发布字段和固定身份继续保留。旧 ACC/ASS/Viseme 发布 ZIP
+缺少 `.meta`，AO 的相同问题来自早期 0.2 开发快照；AO 0.2 没有公开 VPM ZIP。
+
+新增独立的 `Tools/UnityBox/Component References`：用户选择资源后一次手动批量迁移，
+无逐项确认；歧义旧 GUID 只选择一次目标类型，未知、重复新旧组件及已打开资源/依赖
+只报告跳过。分析不写文件，执行先备份本批原字节并校验源 SHA，再替换失效脚本 GUID，
+保留其它字段、fileID、引用与 metadata，无启动、导入或场景重载触发。
+
+工具源码位于 `Assets/UnityBox/ComponentReferenceMigration/Editor`，不是第九个 VPM 包。
+单包用户导入一次[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)。
+完整操作、备份路径与六类固定身份见[组件引用说明](ComponentReferences.md)，
+原生和真实旧版本回归见[执行记录](Verification/ComponentReferences/README.md)。
+
+- ACC：取消材质变体 Inspector 打开时初始化；外部来源先保留临时选择，显式操作提交并可 Undo。
+  无效材质槽和 Exclude 下的 GroupName 保留源值。
+- AO：源 layerIndices、字符串和预算不在加载时改写，配置/Options 在副本中规范化。
+- Viseme：加载、绘制和构建读取保留源 bindings；旧 Voice 与有效值在深拷贝计划中解析，
+  Inspector 的 Edit settings 只添加选中的缺失行并支持 Undo；旧 authoring API 的显式调用
+  保留编辑语义，调用方负责 Undo。
+- ASS：继续保留无自动迁移、0.5s/0.3s 默认时值与构建副本规范化；旧引用由上述手动工具处理。
+
+## 2026-11-07：ASS 0.9.1 撤回自动迁移（历史发布）
 
 本版完整移除 0.9.0 的自动迁移实现、项目扫描、导入/移动时 GUID 改写、自动场景重载、
 修复菜单和写入 API。打开项目、导入包和加载 Scene/Prefab 时保留源资源及已有配置。
@@ -8,7 +39,7 @@
 默认保持 0.5s、容错 0.3s 保持不变，新组件和显式 Reset 使用这些默认值。
 
 已有 Scene/Prefab 中的 Missing Script 按该组件的 `m_Script` GUID、所属脚本及
-Console 首条编译错误定位，当前版本不执行项目范围的引用替换。
+Console 首条编译错误定位；该版不执行项目范围的引用替换。
 
 Inspector 移除新增的顶部自动构建 HelpBox，恢复插件介绍和字段说明的呈现；
 Avatar 锁定选项与手动 Generate 按钮继续移除。
@@ -55,7 +86,7 @@ Restart 优先。0.9.0 曾在加载时把不满足关系的旧时值规范化，
 | 插件 | 原版本 | 新版本 |
 | --- | --- | --- |
 | Advanced Costume Controller | 0.4.13 | 0.5.0 |
-| Animator Optimizer | 0.2.0 | 0.3.0 |
+| Animator Optimizer | 0.2.0 开发快照 | 0.3.0 首个公开包 |
 | Avatar Collider Monitor | 0.1.0 | 0.2.0 |
 | Avatar Security System | 0.7.24 | 0.8.0 |
 | Blendshape Controller Generator | 0.1.1 | 0.2.0 |
