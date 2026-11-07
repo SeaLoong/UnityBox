@@ -1,10 +1,12 @@
 # 一次确认整项目升级与源配置验证
 
-当前版本为 ACC **0.5.3**、AO **0.3.3**、ASS **0.9.4**、Viseme **0.2.3**。
+`7cd4b40` 验证版本为 ACC **0.5.3**、AO **0.3.3**、ASS **0.9.4**、Viseme **0.2.3**。
 各插件的 Tools 菜单在确认一次后处理整个 Assets，恢复代码仍属于原有 Editor 程序集。
 完整菜单与固定组件身份见[组件引用说明](../../ComponentReferences.md)。
 
-## 当前操作与验证
+ASS0.9.5 沿用这些组件身份与命令；新增音频修复见[专项记录](../ASSAudioUpload/README.md)。
+
+## 操作与验证
 
 `ComponentReferenceUpgrade.Execute(Func<bool>)` 是真实菜单调用路径：取消即结束，确认后执行
 `MigrationEngine.UpgradeProjectAssets()`；无需选择资源、单独分析面板或逐 GUID 指定类型。

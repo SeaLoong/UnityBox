@@ -80,6 +80,26 @@ class PackageTests(unittest.TestCase):
             self.assertEqual((archive.getinfo("Tools/run.sh").external_attr >> 16) & 0o777, 0o755)
             self.assertEqual((archive.getinfo("package.json").external_attr >> 16) & 0o777, 0o644)
 
+    def test_audio_metadata_is_required_and_failure_preserves_the_existing_archive(self):
+        self.entries()
+        original = self.output.read_bytes()
+        for extension in ["mp3", "wav", "ogg", "aif", "aiff"]:
+            with self.subTest(extension=extension):
+                path = self.source / ("Resources/Feedback." + extension)
+                self.write(path.relative_to(self.source), "audio payload")
+                with self.assertRaisesRegex(ValueError, "Resources/Feedback"):
+                    build_package(self.source, self.output)
+                self.assertEqual(self.output.read_bytes(), original)
+                path.unlink()
+
+    def test_audio_guid_and_import_settings_are_preserved_in_the_installed_zip(self):
+        self.write("Resources/Success.mp3", "original audio bytes")
+        metadata = "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nAudioImporter:\n  loadInBackground: 1\n"
+        self.write("Resources/Success.mp3.meta", metadata)
+        result = self.entries()
+        self.assertEqual(result["Resources/Success.mp3"], b"original audio bytes")
+        self.assertEqual(result["Resources/Success.mp3.meta"], metadata.encode())
+
     def test_missing_script_metadata_is_rejected_before_replacing_an_archive(self):
         self.entries()
         original = self.output.read_bytes()

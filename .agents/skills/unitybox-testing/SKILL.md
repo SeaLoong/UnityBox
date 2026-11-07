@@ -71,7 +71,7 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 ## Verify confirmed whole-Assets upgrades and serialized identity
 
 - Ordinary package import/startup preserves source bytes, Runtime GUIDs and stored values. Normalize build copies only.
-- ACC0.5.3, AO0.3.3, ASS0.9.4 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
+- ACC0.5.3, AO0.3.3, ASS0.9.5 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
   Tools/UnityBox/<owner>/Upgrade Component References confirms once, then processes all Assets.
   Owner menus are Advanced Costume Controller, Animator Optimizer, ASS and Viseme Blendshape Override.
   ACC/AO Open actions are siblings; there is no selection window or per-GUID mapping UI.
@@ -94,6 +94,28 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 - Use [ComponentReferences](../../../Docs/ComponentReferences.md) and
   [current evidence](../../../Docs/Verification/ComponentReferences/README.md) for exact commands/results.
 
+
+## Verify ASS audio import and SDK upload validation
+
+- Shipped audio must include stable AudioImporter `.meta` files in the actual release ZIP. ASS0.9.5
+  retains all four MP3 byte streams and enables `loadInBackground`. Check real imported AudioClip
+  flags, loading type, playable samples and source/metadata fingerprints; do not add audio import
+  postprocessors or scan/rewrite unrelated user assets.
+- Preserve option semantics: `disableWarningSound` suppresses only countdown audio; password success
+  audio remains. `disableOverlay` controls the visual overlay independently. Generate actual Controllers
+  for every warning/overlay combination, including both disabled, and inspect final PlayAudio clip references.
+- Call the real SDK `VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder` in assembly `VRC.SDK3A.Editor`,
+  invoking private static `ScanAvatarForAnimatorPlayAudio` with the generated Descriptor. Require an
+  empty result for shipped audio. SDK rejects `DecompressOnLoad && !loadInBackground` as an upload error.
+- Use an owned temporary Assets copy as a positive/negative control: background disabled must return
+  that exact AudioClip; enable background loading and reimport, then require the SDK scan to return empty.
+  Keep source package audio and user resources untouched throughout the control.
+- Run the actual NDMF pass resolver and final commit path, then inspect the committed Descriptor FX
+  Controller's audio references and apply the same real SDK check. Normal package update followed by
+  the regular build regenerates ASS output; source configuration and existing user animations remain.
+- Keep audio patch results and version-specific raw evidence in
+  [ASSAudioUpload](../../../Docs/Verification/ASSAudioUpload/README.md), with actual commands and counts.
+  Retain earlier whole-library and component-upgrade evidence under its original version/source identity.
 
 ## Retain reviewable results and publish the code
 

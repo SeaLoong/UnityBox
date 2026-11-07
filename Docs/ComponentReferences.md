@@ -15,7 +15,7 @@ Scene/Prefab 仍可能引用原 GUID。组件名称相同也需要由 `m_Script`
 | --- | --- | --- | --- |
 | Advanced Costume Controller | `ACCOutfitMarker`、`ACCPartGroupMarker`、`ACCVariantMaterialOverride` | 公开 0.4.13 ZIP 无 `.meta`；0.5.0 起固定身份 | 0.5.3 保留三类及字段；旧引用可手动批量重连；Inspector 仅在显式操作时提交编辑 |
 | Animator Optimizer | `AnimatorOptimizerComponent` | 0.2 是开发快照，未发布旧 VPM ZIP；早期 Runtime 配置脚本未携带 `.meta` | 0.3.3 保留类型、字段和 0.3.0 固定身份；构建规范化独立配置快照 |
-| Avatar Security System | `ASSComponent` | 公开 0.7.24 ZIP 无 `.meta`；0.8.0 起固定身份 | 0.9.4 继续保留字段和固定身份；通过本包自带的手动入口修复旧引用，无启动/导入迁移 |
+| Avatar Security System | `ASSComponent` | 公开 0.7.24 ZIP 无 `.meta`；0.8.0 起固定身份 | 0.9.5 继续保留字段和固定身份；通过本包自带的手动入口修复旧引用，无启动/导入迁移 |
 | Viseme Blendshape Override | `VisemeBlendshapeOverrideComponent` | 公开 0.1.14 ZIP 无 `.meta`；0.2.0 起固定身份 | 0.2.3 保留组件和字段兼容；旧 Voice 与值域在构建快照解析 |
 | Blendshape Controller Generator | 无 | 旧包只有 Editor 窗口及生成逻辑 | 自有组件迁移目录为空；生成的 MA/Animator 组件使用各自原类型 |
 | Avatar Collider Monitor | 无 | EditorWindow、快照与 provider，无自有 Avatar authoring 组件 | 保持 0.2.0，不把用户碰撞体或 SDK 组件归为本插件 |
@@ -53,7 +53,7 @@ ASS 的 `StandaloneSecurityInput`、`AnimatorStateEntryActions` 从 0.8.0 起新
 | --- | --- | --- |
 | ACC 0.5.3 | `Tools/UnityBox/Advanced Costume Controller/Upgrade Component References` | 三种 ACC 标记 |
 | AO 0.3.3 | `Tools/UnityBox/Animator Optimizer/Upgrade Component References` | AnimatorOptimizerComponent |
-| ASS 0.9.4 | `Tools/UnityBox/ASS/Upgrade Component References` | ASSComponent |
+| ASS 0.9.5 | `Tools/UnityBox/ASS/Upgrade Component References` | ASSComponent |
 | Viseme 0.2.3 | `Tools/UnityBox/Viseme Blendshape Override/Upgrade Component References` | VisemeBlendshapeOverrideComponent |
 
 ACC 与 AO 的主面板分别从同组的 **Open** 打开。ASS 与 Viseme 继续在组件 Inspector
@@ -122,11 +122,21 @@ ACC 与 AO 的主面板分别从同组的 **Open** 打开。ASS 与 Viseme 继�
 - **Viseme 0.2.3**：加载和 Inspector 绘制保留原 bindings，不自动补行；构建计划用深拷贝
   快照解析旧 Voice 和有效值。Inspector 的 **Edit settings** 只追加用户选中的缺失行并支持
   Undo；旧公开 authoring API 保留显式编辑语义，脚本调用方负责自己的 Undo。
-- **ASS 0.9.4**：源字段在打开、导入和配置捕获后保持；新组件/显式 Reset 默认保持 0.5s、
+- **ASS 0.9.5**：源字段在打开、导入和配置捕获后保持；新组件/显式 Reset 默认保持 0.5s、
   容错 0.3s，生成图只规范化独立配置副本。普通 Player/Avatar 自动构建继续处理构建副本。
 
 一次 Tools 菜单确认授权处理整个 Assets 内本插件可确认的旧引用。普通打开、导入和
 构建配置读取保持原状；只有这次显式升级流程执行资源写入与必要的干净场景重载。
+
+## ASS 音频资源
+
+0.9.5 为四个自带 MP3 补齐音频导入 metadata 并启用后台加载，源 MP3 内容保持。
+正常更新后构建自动加载这些资源。此修复保留 `ASSComponent` 及其脚本身份，组件引用
+升级菜单继续只处理失效 `m_Script`；不扫描或改写用户其它音频。
+
+关闭警告音只控制倒计时提示，关闭覆盖只控制画面，密码成功音仍然生成。成功音也会被
+SDK 检查，因此两个选项同时关闭也需要正确的导入设置。音频与 SDK 检查记录见
+[音频上传验证](Verification/ASSAudioUpload/README.md)。
 
 ## 验证记录
 

@@ -37,7 +37,7 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 ## 六类组件与包内恢复
 
-ACC 0.5.3、AO 0.3.3、ASS 0.9.4、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
+ACC 0.5.3、AO 0.3.3、ASS 0.9.5、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
 恢复实现在各插件原有 Unity-only Editor 程序集中，随正常插件更新交付。从 `Tools/UnityBox/<插件菜单>/Upgrade Component References` 确认一次后，扫描整个 `Assets`，自动识别并恢复本插件的旧脚本引用。无需选择资源、打开恢复面板或逐 GUID 指定类型。
 
 识别结合明确类型、已知 GUID、完整字段结构与 ACC Outfit/Prefab 来源，不再要求用户逐 GUID 选择。
@@ -113,7 +113,15 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-ASS 0.9.4 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
+0.9.5 为四个自带 MP3 补齐稳定 AudioImporter metadata，启用后台加载，修复 SDK 对
+`Decompress On Load` 且关闭 `Load In Background` 的状态行为音频拒绝上传的问题。
+源 MP3 内容保持，更新后正常构建即可生成当前引用；不扫描或改写用户其它音频。
+“关闭警告音效”仍只关闭倒计时警告音，“关闭覆盖界面”仍只控制画面；成功音仍按
+密码流程生成，因此两个选项同时关闭也需要正确的音频导入设置。自定义音频通过其
+Inspector 或 SDK Fix 配置后台加载。[本次验证](Verification/ASSAudioUpload/README.md)
+覆盖导入、开关组合、真实 SDK 检查和 NDMF 最终图。
+
+ASS 0.9.5 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
 已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
 ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
 
@@ -140,8 +148,8 @@ StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一
 原文件记录，本版不自动恢复、覆盖或删除。需要调查时保留当前工程副本和备份，逐文件
 比较后由用户选择恢复目标；备份不包含脚本 metadata、包版本和后来保存的编辑。
 已有 Missing Script 按组件的 `m_Script` GUID 查找脚本路径和所属包，结合 Console
-首条编译错误定位所属类型；需要重连时，使用所属插件的 Repair Component References 窗口一次手动
-一次确认后升级整个 Assets 的 ASS 引用；不在启动或导入时迁移，不自动恢复旧备份。
+首条编译错误定位所属类型；需要重连时，从 `Tools/UnityBox/ASS/Upgrade Component References`
+确认一次后升级整个 Assets 的 ASS 引用；不在启动或导入时迁移，不自动恢复旧备份。
 
 完整说明见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)，
 当前执行范围见[组件引用记录](Verification/ComponentReferences/README.md)。

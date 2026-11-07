@@ -1,6 +1,6 @@
 # Tools 一次确认整项目升级验证
 
-当前目标版本：ACC0.5.3、AO0.3.3、ASS0.9.4、Viseme0.2.3。
+`7cd4b40` 验证版本：ACC0.5.3、AO0.3.3、ASS0.9.4、Viseme0.2.3。
 [结果索引](summary.json)记录五种当前插件消费者：all、acc、ass、ao、viseme。
 
 | 当前消费者 | 所属插件批次 | 实际替换脚本引用 | Inspector 对象 |

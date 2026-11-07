@@ -1,5 +1,9 @@
 # UnityBox 性能实测
 
+Editor、图形及全库 Player 数据来自 `7cd4b40` 的八插件基线（ASS0.9.4）。
+ASS0.9.5 的音频导入与 SDK 上传校验、专项 Player 记录见
+[音频修复验证](Verification/ASSAudioUpload/README.md)。
+
 使用 Unity 2022.3.22f1、Linux x86-64，在隔离工程中执行。测量与生成物、Animator 输出检查在同一原生测试范围执行。原始数据、运行命令、源码指纹和日志 SHA256 见 [PerformanceResults.json](PerformanceResults.json)。
 
 时间单位为毫秒/次操作；表中的 p95 使用采样序列的 nearest-rank 分位数。Editor 生成耗时包含各测试明确计时的生成/保存操作。ACC 和 Blendshape 的 Editor 更新基准逐帧切换参数；优化器的合并对照与 Player 更新基准使用固定输入。

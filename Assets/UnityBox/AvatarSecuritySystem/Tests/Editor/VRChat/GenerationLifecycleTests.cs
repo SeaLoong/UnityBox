@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -58,6 +60,116 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             string folder = controllerPath.Substring(0, controllerPath.IndexOf("/", Constants.ASSET_FOLDER.Length + 1));
             generatedFolders.Add(folder);
             return controller;
+        }
+
+        private static List<AudioClip> ScanSdkAudioErrors(VRCAvatarDescriptor descriptor)
+        {
+            var builder = Type.GetType(
+                "VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder, VRC.SDK3A.Editor", true);
+            var scanner = builder.GetMethod("ScanAvatarForAnimatorPlayAudio",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(scanner, Is.Not.Null, "The real SDK audio upload validator must be available.");
+            return (List<AudioClip>)scanner.Invoke(null, new object[] { descriptor });
+        }
+
+        private static Dictionary<string, byte[]> PackagedAudioBytes()
+        {
+            var bytes = new Dictionary<string, byte[]>();
+            foreach (string resource in new[] { "PasswordSuccess", "CountdownWarning", "StepSuccess", "InputError" })
+            {
+                var clip = Resources.Load<AudioClip>(resource);
+                Assert.That(clip, Is.Not.Null, resource);
+                string path = AssetDatabase.GetAssetPath(clip);
+                bytes.Add(path, File.ReadAllBytes(path));
+                bytes.Add(path + ".meta", File.ReadAllBytes(path + ".meta"));
+            }
+            return bytes;
+        }
+
+        private static void AssertPackagedAudioUnchanged(Dictionary<string, byte[]> original)
+        {
+            foreach (var item in original)
+                Assert.That(File.ReadAllBytes(item.Key), Is.EqualTo(item.Value), item.Key);
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void GeneratedFeedbackAudioPassesSdkUploadValidationWithIndependentUiOptions(
+            bool disableWarningSound, bool disableOverlay)
+        {
+            var original = PackagedAudioBytes();
+            var avatar = Avatar("Audio upload validation");
+            var config = avatar.GetComponent<ASSComponent>();
+            config.disableWarningSound = disableWarningSound;
+            config.disableOverlay = disableOverlay;
+            var controller = Process(avatar, true);
+            var success = Resources.Load<AudioClip>(Constants.AUDIO_PASSWORD_SUCCESS);
+            var warning = Resources.Load<AudioClip>(Constants.AUDIO_COUNTDOWN_WARNING);
+            var expected = new Dictionary<AudioClip, string> { { success, Constants.GO_AUDIO_SUCCESS } };
+            if (!disableWarningSound) expected.Add(warning, Constants.GO_AUDIO_WARNING);
+            var behaviours = controller.GetBehaviours<VRCAnimatorPlayAudio>();
+            Assert.That(behaviours.Length, Is.EqualTo(expected.Count));
+            Assert.That(behaviours.SelectMany(behaviour => behaviour.Clips), Is.EquivalentTo(expected.Keys));
+            foreach (var behaviour in behaviours)
+            {
+                var clip = behaviour.Clips.Single();
+                Assert.That(clip.loadType, Is.EqualTo(AudioClipLoadType.DecompressOnLoad));
+                Assert.That(clip.loadInBackground, Is.True, clip.name);
+                Assert.That(behaviour.SourcePath, Is.EqualTo(expected[clip]));
+                var target = avatar.transform.Find(behaviour.SourcePath);
+                Assert.That(target, Is.Not.Null, behaviour.SourcePath);
+                var source = target.GetComponent<AudioSource>();
+                Assert.That(source, Is.Not.Null, behaviour.SourcePath);
+                Assert.That(source.playOnAwake, Is.False);
+                Assert.That(source.loop, Is.False);
+            }
+            Assert.That(avatar.transform.Find(Constants.GO_AUDIO_WARNING) != null, Is.EqualTo(!disableWarningSound));
+            Assert.That(avatar.transform.Find(Constants.GO_OVERLAY) != null, Is.EqualTo(!disableOverlay));
+            Assert.That(ScanSdkAudioErrors(avatar.GetComponent<VRCAvatarDescriptor>()), Is.Empty);
+            AssertPackagedAudioUnchanged(original);
+        }
+
+        [Test]
+        public void RealSdkRejectsForegroundDecompressionAndAcceptsTheSameClipAfterBackgroundImport()
+        {
+            var original = PackagedAudioBytes();
+            var avatar = Avatar("Audio importer positive and negative controls");
+            var controller = Process(avatar, true);
+            var descriptor = avatar.GetComponent<VRCAvatarDescriptor>();
+            var success = Resources.Load<AudioClip>(Constants.AUDIO_PASSWORD_SUCCESS);
+            var behaviour = controller.GetBehaviours<VRCAnimatorPlayAudio>()
+                .Single(item => item.Clips.Contains(success));
+            Assert.That(ScanSdkAudioErrors(descriptor), Is.Empty);
+            string folder = "Assets/__ASSAudioImport_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", folder.Substring(7));
+            generatedFolders.Add(folder);
+            string path = folder + "/UploadControl.mp3";
+            File.Copy(AssetDatabase.GetAssetPath(success), path);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            var importer = (AudioImporter)AssetImporter.GetAtPath(path);
+            var settings = importer.defaultSampleSettings;
+            settings.loadType = AudioClipLoadType.DecompressOnLoad;
+            importer.defaultSampleSettings = settings;
+            importer.loadInBackground = false;
+            importer.SaveAndReimport();
+            var control = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            Assert.That(control.loadType, Is.EqualTo(AudioClipLoadType.DecompressOnLoad));
+            Assert.That(control.loadInBackground, Is.False);
+            behaviour.Clips = new[] { control };
+            EditorUtility.SetDirty(behaviour);
+            AssetDatabase.SaveAssets();
+            Assert.That(ScanSdkAudioErrors(descriptor), Is.EqualTo(new[] { control }));
+
+            importer.loadInBackground = true;
+            importer.SaveAndReimport();
+            var reloaded = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            Assert.That(reloaded.loadType, Is.EqualTo(AudioClipLoadType.DecompressOnLoad));
+            Assert.That(reloaded.loadInBackground, Is.True);
+            Assert.That(behaviour.Clips.Single(), Is.EqualTo(reloaded));
+            Assert.That(ScanSdkAudioErrors(descriptor), Is.Empty);
+            AssertPackagedAudioUnchanged(original);
         }
 
         [Test]

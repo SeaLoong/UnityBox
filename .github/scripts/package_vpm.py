@@ -39,11 +39,11 @@ def build_package(source, destination):
     source, destination = Path(source), Path(destination)
     package_name = json.loads((source / "package.json").read_text(encoding="utf-8"))["name"]
     missing = [path.relative_to(source).as_posix() for path in source.rglob("*")
-               if path.is_file() and path.suffix in {".cs", ".asmdef"}
+               if path.is_file() and path.suffix.lower() in {".cs", ".asmdef", ".mp3", ".wav", ".ogg", ".aif", ".aiff"}
                and include_file(path.relative_to(source).as_posix(), package_name)
                and not path.with_name(path.name + ".meta").is_file()]
     if missing:
-        raise ValueError("Unity scripts and assemblies require stable .meta files before publishing: " + ", ".join(sorted(missing)))
+        raise ValueError("Unity scripts, assemblies and audio clips require stable .meta files before publishing: " + ", ".join(sorted(missing)))
     destination.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(destination, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(source.rglob("*")):

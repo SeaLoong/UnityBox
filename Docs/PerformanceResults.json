@@ -2696,5 +2696,186 @@
       "warmup": "1 次",
       "sampling": "5 次；核对实际红绿像素、原材质与 layer"
     }
+  ],
+  "baseline_revision": "7cd4b40cd03aa81c268e8686609b2d60a9601238",
+  "supplementary_player_runs": [
+    {
+      "scope": "ass-audio-linux",
+      "run_id_utc": "20261107T202347-f1ca0e53",
+      "measurements": [
+        {
+          "plugin": "StandalonePlayer",
+          "scenario": "Unity.PlayerSmoke/Basic",
+          "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+          "size": 1,
+          "samples": 11,
+          "animator_layers": 1,
+          "clip_count": 1,
+          "median_ms": 0.027527,
+          "p95_ms": 0.03279000000000001,
+          "min_ms": 0.0095635,
+          "max_ms": 0.03279000000000001,
+          "allocated_bytes_per_op": -1,
+          "controller_memory_bytes": -1
+        },
+        {
+          "plugin": "StandalonePlayer",
+          "scenario": "ASS gesture hold, result, timeout restart and user animation preservation/ASS_StandaloneProbe",
+          "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+          "size": 1,
+          "samples": 11,
+          "animator_layers": 4,
+          "clip_count": 20,
+          "median_ms": 0.0386265,
+          "p95_ms": 0.05117150000000001,
+          "min_ms": 0.034691,
+          "max_ms": 0.05117150000000001,
+          "allocated_bytes_per_op": -1,
+          "controller_memory_bytes": -1
+        }
+      ],
+      "build": {
+        "result": "Succeeded",
+        "output": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/UnityBoxPlayer",
+        "total_errors": 0,
+        "total_warnings": 4,
+        "total_size_bytes": 57729415,
+        "duration_seconds": 45.284614999999995,
+        "hook_providers": [
+          "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+        ],
+        "source_configuration_components": 1
+      },
+      "providers": [
+        "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+      ],
+      "build_command": [
+        "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+        "-batchmode",
+        "-nographics",
+        "-quit",
+        "-projectPath",
+        "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108",
+        "-executeMethod",
+        "UnityBoxPlayerBuilder.Build",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/build.log"
+      ],
+      "player_command": [
+        "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/UnityBoxPlayer",
+        "-batchmode",
+        "-nographics",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/player.log",
+        "-unityboxReport",
+        "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/player.json"
+      ],
+      "scenarios": 2,
+      "checks": 13,
+      "frames": 252,
+      "mono_heap_bytes": 344064,
+      "artifacts": {
+        "report": {
+          "path": "/workspace/unitybox-setup/unity/ass-audio-player-result.json",
+          "bytes": 3360,
+          "sha256": "55e66a7acf9424bfb664953dea5c92e4c979bed89530377be2dc1e5fc65b9c07"
+        },
+        "build.json": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/build.json",
+          "bytes": 444,
+          "sha256": "1e0cce36ab315fed0a4e8b8d1cefec90402e6edfaafd03d564792670b483d682"
+        },
+        "player.json": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/player.json",
+          "bytes": 1518,
+          "sha256": "cdfab7ca88ad0d764d5721afee7bb2d70e00dc34b7e1766f7f7dfa85cf40e054"
+        },
+        "build.log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/build.log",
+          "bytes": 320059,
+          "sha256": "562be5ad728a9ed6475c8ab3b4931f6dcaa0fb934377e7c365c11ba218c94eb0"
+        },
+        "player.log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/.unitybox-player-results/20261107T202347-f1ca0e53/player.log",
+          "bytes": 12166,
+          "sha256": "4882ed43334e472459885b478030ad92333ab476325f73a81ba2dc2d4cdc9a94"
+        }
+      },
+      "archived_artifacts": {
+        "build.json": {
+          "path": "Verification/ASSAudioUpload/ass-audio-linux-build.json",
+          "bytes": 444,
+          "sha256": "1e0cce36ab315fed0a4e8b8d1cefec90402e6edfaafd03d564792670b483d682"
+        },
+        "player.json": {
+          "path": "Verification/ASSAudioUpload/ass-audio-linux-player.json",
+          "bytes": 1518,
+          "sha256": "cdfab7ca88ad0d764d5721afee7bb2d70e00dc34b7e1766f7f7dfa85cf40e054"
+        }
+      },
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.avatar-security-system": {
+            "version": "0.9.5",
+            "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
+            "checkout": "/workspace/UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "7cd4b40cd03aa81c268e8686609b2d60a9601238",
+            "prepared_tree_sha256": "b8a5c3918b7f2eb9341e1af0abf0c9e6596a869281c4201bc80c41155d915623",
+            "source_snapshot_sha256": "6c5f67032c2f885c8f587ab074e56614e0b5e69e6726b80faf3b41e9a3b005b3",
+            "imported_snapshot_sha256": "6c5f67032c2f885c8f587ab074e56614e0b5e69e6726b80faf3b41e9a3b005b3",
+            "file_count": 121,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": [
+              "Resources/Avatar Security System.png.meta",
+              "Resources/Materials/Avatar Security System.mat.meta",
+              "Shaders/DefenseShader.shader.meta",
+              "Shaders/Overlay.shader.meta",
+              "VRC Docs Playable Layers.txt.meta",
+              "package.json.meta"
+            ]
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AvatarSecuritySystem": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "bytes": 199680,
+              "sha256": "1c5c021ce22d3c5f4dc3f092f02346e51628705c807fd40261714c4992851c64"
+            },
+            "source_file_count": 19,
+            "source_sha256": "28fba4b45a2bf4955583929f45c3cea18039bbea634b761fbcf57c7ba5e870ea"
+          },
+          "UnityBox.AvatarSecuritySystem.Runtime": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "bytes": 11264,
+              "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
+            },
+            "source_file_count": 4,
+            "source_sha256": "28d6fd2ccabb1586bf9edbb5ff9a8d8724d232a1fc584ed4005144f499ddbf90"
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-audio-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "bytes": 86016,
+              "sha256": "f6123f8ded801bc9810fb67318ef2ea67933239bec837fdf8af47c0186398987"
+            },
+            "source_file_count": 9,
+            "source_sha256": "5dbb10aae60d29080535edf716963688c27fdef98257d8add2e1f7af5739e290"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+      }
+    }
   ]
 }

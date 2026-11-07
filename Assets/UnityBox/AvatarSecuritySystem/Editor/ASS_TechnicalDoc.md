@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.4 技术参考
+# Avatar Security System 0.9.5 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -89,9 +89,34 @@ VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立�
 `PrepareDecoyParameters` 在参数池没有 Bool 时补齐本地 false 布尔守卫；参数注册按
 实际 Float/Int/Bool 类型处理，避免仅启用诱饵状态时出现未声明或类型不符的条件。
 
+## 音频引用与 SDK 上传校验
+
+`Processor.LoadAudioResources` 和 `StandaloneSecurityBuilder.Build` 在配置副本未指定音频时，
+按 Resources 名称加载 `PasswordSuccess` 与 `CountdownWarning`。
+`VrcAnimatorBehaviourAdapter.AddPlayAudioBehaviour` 将音频放入真实
+`VRCAnimatorPlayAudio.Clips`；原生 Unity 路径使用 `AnimatorStateEntryActions`。
+
+`disableWarningSound` 只让 `Countdown.GenerateAudioLayer` 跳过倒计时警告音层，
+`GesturePassword` 仍为 Success 状态添加成功音。`disableOverlay` 只控制覆盖画面，
+不控制这两种声音。关闭警告音和覆盖画面后，成功音仍参与 SDK 的状态行为扫描。
+
+SDK 的 `VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder.ScanAvatarForAnimatorPlayAudio`
+遍历 Descriptor 的基础动画层，收集 `VRC_AnimatorPlayAudio.Clips` 中满足
+`loadType == DecompressOnLoad && !loadInBackground` 的音频，再注册为 `OnGUIError`，
+阻止构建上传。
+
+0.9.5 为 Resources 下四个 MP3 提供稳定 AudioImporter metadata，保留默认解压加载类型，
+设置 `loadInBackground: 1`；MP3 字节保持。修复随包资源的正常导入生效，后续构建按名称
+加载这些资源并重建 ASS 输出，不需要扫描或改写已有用户资源。
+用户显式指定的音频仍由用户管理导入设置；SDK 检查与 Fix 同样适用于这些音频。
+
+回归使用真实导入的 AudioClip 和生成后的 SDK/NDMF Controller，比较警告音与 Overlay 的
+开关组合；临时音频关闭后台加载时由真实 SDK 扫描拒绝，启用后再扫描通过。
+源码与运行记录见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
+
 ## 导入与源配置边界
 
-0.9.4 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
+0.9.5 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
 旧修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
@@ -140,4 +165,4 @@ SDK/NDMF 用例检查实际 Behaviour、源资产隔离与最终提交；混淆�
 Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语言按 Unity 语言选择。
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
-0.9.4 的组件引用和源配置范围单列于当前组件引用记录。历史身体锁生成样本通过旧提交追溯。
+0.9.4 的组件引用和源配置范围保留于历史组件引用记录；0.9.5 的音频导入和上传校验单列于音频上传记录。历史身体锁生成样本通过旧提交追溯。

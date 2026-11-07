@@ -3,16 +3,16 @@
 Avatar Security System（ASS）提供手势密码验证、倒计时提示、Overlay 和声音反馈，
 并支持 VRChat 防御配置。可以按需要调整密码、计时和反馈选项，通过参数或运行时 API
 读取密码结果。普通 Unity 与 VRChat 分别在各自构建流程生成运行图，原有角色动画
-继续由项目控制。当前版本为 **0.9.4**。
+继续由项目控制。当前版本为 **0.9.5**。
 
 ## 升级与已有项目
 
-0.9.4 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
+0.9.5 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
 加载 Scene/Prefab 时，ASS 不扫描或重写项目中的脚本 GUID、场景、Prefab 与已保存配置。
 组件加载也不再通过 `OnValidate` 自动改写已有时值；生成时只规范化配置副本。
 新组件与用户显式执行 Reset 使用默认保持 0.5s、容错 0.3s。
 
-通过 VCC/ALCOM 完整更新包后，重新启动 Unity 一次，使旧版 Editor 回调完全卸载。
+从仍含旧启动/导入回调的版本通过 VCC/ALCOM 完整更新后，重新启动 Unity 一次，使旧版 Editor 回调完全卸载。
 如果手动覆盖源码，还需移除旧包中已删除的 `Editor/LegacyComponentMigration.cs`、
 `Tests/Editor/LegacyComponentMigrationTests.cs` 及两者的 `.meta`，避免旧代码残留。
 保留 `Runtime/Component.cs.meta` 和用户 Scene/Prefab 及其 metadata。
@@ -106,6 +106,29 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 `Generated/Build_<id>`；SDK 后处理还原原 Descriptor、Controller 和参数，NDMF 输出跟随
 构建结果保留。原 Controller、Clip、BlendTree 及表达式参数保持各自资产身份。
 
+## 音频与上传
+
+0.9.5 为 `PasswordSuccess`、`CountdownWarning`、`StepSuccess` 和 `InputError` 四个自带
+MP3 提供固定的 AudioImporter metadata，并启用 **Load In Background**。默认生成流程使用
+前两种音频；更新包后重新发起正常构建即可，音频内容保持。
+
+VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 且未启用后台加载
+会阻止上传。旧包没有附带上述音频的导入设置，Unity 的默认设置正好触发这一条件。
+
+| 选项 | 关闭的内容 | 仍保留的反馈 |
+| --- | --- | --- |
+| 关闭警告音效 | 倒计时警告音 | 密码成功音、未单独关闭的覆盖界面 |
+| 关闭覆盖界面 | 全屏覆盖画面 | 密码成功音、未单独关闭的倒计时警告音 |
+
+两个选项同时启用时，密码成功音仍然生成，因此它也需要符合 SDK 的音频导入要求。
+本版保留上述开关含义，不新增音频开关。
+
+通过脚本指定自定义音频时，若该音频使用 **Decompress On Load**，请在 AudioClip Inspector
+启用 **Load In Background** 并应用，或使用 SDK 对应错误的 **Fix**。ASS 不扫描或修改其它
+用户音频。组件引用升级菜单处理脚本引用，不用于修改音频设置。
+
+音频导入、实际 SDK 检查及 NDMF 最终输出的记录见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
+
 ## 配置、显示与兼容
 
 - 混淆只启用诱饵状态、关闭诱饵层时，仍声明条件使用的参数；参数池没有 Bool 时
@@ -113,7 +136,7 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 - 0.9.0 移除 Avatar 对象锁定功能和对应选项，生成器仅管理 ASS 自己的反馈对象。
 - 旧 `disableRootChildren`、`writeDefaultsMode` 隐藏保留，用于读取历史序列化数据；
   新图不依据它们生成身体锁定或强制修改用户层的 WD。
-- Overlay 和警告声音独立开关；显式音频引用优先，成功反馈继续按密码流程执行。
+- Overlay 和倒计时警告音使用独立开关；密码成功音保留。显式音频引用优先，导入要求见上文。
 - 空密码在 Avatar 构建中表示跳过 ASS。普通构建同样保留原 Animator，仅移除构建副本的
   空配置；Editor 后端 API 要求至少一位有效密码。
 - Inspector 的英语、简体中文、繁体中文和日语文本随界面语言选择显示，包含保持/容错
@@ -129,8 +152,9 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 修改原文件或自动创建迁移记录；构建副本的时间规范化与源字段保持分别检查。
 SDK 与 NDMF 测试覆盖实际 Behaviour、参数副本、多 Avatar 生命周期和最终提交。
 
-0.9.4 的执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
-[0.9.1 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)保留上版范围。
+0.9.5 的音频上传检查见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
+0.9.4 的历史组件引用执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
+[0.9.1 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)保留该历史版本的范围。
 [测试指南](../../../../Docs/Testing.md)提供重跑命令；[验证结果](../../../../Docs/VerificationResults.json)
 与[性能报告](../../../../Docs/Performance.md)记录对应版本、范围和内容指纹。
 实现与扩展 API 见[技术参考](ASS_TechnicalDoc.md)，历史变化见[CHANGELOG](../CHANGELOG.md)。

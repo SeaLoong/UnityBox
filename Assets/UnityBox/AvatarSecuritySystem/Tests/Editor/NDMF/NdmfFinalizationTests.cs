@@ -58,8 +58,9 @@ namespace UnityBox.AvatarSecuritySystem.Tests
 
     public sealed class NdmfFinalizationTests
     {
-        [Test]
-        public void ScheduledPhysicalGenerationPreservesVirtualEditsBeforeAndAfterFinalCommit()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ScheduledPhysicalGenerationPreservesVirtualEditsBeforeAndAfterFinalCommit(bool disableWarningSound)
         {
             string folder = "Assets/__ASSNdmf_" + Guid.NewGuid().ToString("N");
             AssetDatabase.CreateFolder("Assets", folder.Substring(7));
@@ -85,6 +86,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             descriptor.specialAnimationLayers = Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
             var config = root.AddComponent<ASSComponent>();
             config.disableDefense = config.disableOverlay = config.disableWarningSound = config.disableObfuscation = true;
+            config.disableWarningSound = disableWarningSound;
             config.gesturePassword = new List<int> { 1, 2 };
             var context = new BuildContext(root, folder + "/NdmfAssets");
             string generatedFolder = null;
@@ -109,6 +111,15 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 var final = descriptor.baseAnimationLayers.Single(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX)
                     .animatorController as AnimatorController;
                 Assert.That(final, Is.Not.Null);
+                var feedbackClips = final.GetBehaviours<VRCAnimatorPlayAudio>().SelectMany(item => item.Clips).Distinct().ToArray();
+                Assert.That(feedbackClips.Select(clip => clip.name), Is.EquivalentTo(disableWarningSound
+                    ? new[] { Constants.AUDIO_PASSWORD_SUCCESS }
+                    : new[] { Constants.AUDIO_PASSWORD_SUCCESS, Constants.AUDIO_COUNTDOWN_WARNING }));
+                Assert.That(feedbackClips.All(clip => clip.loadInBackground), Is.True);
+                var sdkBuilder = Type.GetType("VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder, VRC.SDK3A.Editor", true);
+                var sdkScan = sdkBuilder.GetMethod("ScanAvatarForAnimatorPlayAudio", BindingFlags.Static | BindingFlags.NonPublic);
+                Assert.That((List<AudioClip>)sdkScan.Invoke(null, new object[] { descriptor }), Is.Empty);
+
                 Assert.That(final.layers.Count(layer => layer.name == Constants.LAYER_PASSWORD_INPUT), Is.EqualTo(1));
                 Assert.That(final.layers.Count(layer => layer.name == Constants.LAYER_LIFECYCLE), Is.EqualTo(1));
                 Assert.That(final.layers.Any(layer => layer.name == Constants.LAYER_LOCK), Is.False);

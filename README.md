@@ -32,13 +32,18 @@ https://sealoong.github.io/UnityBox/vpm.json
 源码或本地 UPM 安装直接从 `master` 的 `Assets/UnityBox` 选择所需包。
 源码版本以对应提交和包内 `package.json` 为准，VPM listing 列出已部署的发布产物。
 升级时保留 `.meta` 与场景，按各工具入口更新 Controller、菜单和参数安装结果；
-ASS 0.9.4 随正常 Player/Avatar 构建自动生成。
+ASS 0.9.5 随正常 Player/Avatar 构建自动生成。
 生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
-ACC 0.5.3、AO 0.3.3、Viseme 0.2.3 与 ASS 0.9.4 保留已有组件类、程序集与字段，
+ACC 0.5.3、AO 0.3.3、Viseme 0.2.3 与 ASS 0.9.5 保留已有组件类、程序集与字段，
 打开项目、导入和加载资源时保留源文件、GUID 与已存参数。普通 Unity 的 ASS 在正常 Player 构建副本中自动生成，无手动生成步骤。
 本版移除 Avatar 对象锁定，采用连续手势保持、默认保持 0.5s / 容错 0.3s、严格时间关系
 及四语言界面。诱饵状态可独立启用，无 Bool 池时也会补齐条件所用的本地布尔守卫。
 升级和旧迁移记录的保留说明见[ASS 用户指南](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
+
+ASS 0.9.5 为四个自带 MP3 补齐音频导入 metadata 并启用后台加载，修复 VRC SDK
+因状态行为音频导入设置而阻止上传的问题。关闭警告音只关闭倒计时提示，关闭覆盖只控制
+画面，密码成功音仍然保留。更新后正常构建即可；MP3 内容及其它用户音频保持。
+本次导入、SDK 检查与 NDMF 最终输出见[音频上传记录](Docs/Verification/ASSAudioUpload/README.md)。
 
 ## 插件自带的组件恢复
 

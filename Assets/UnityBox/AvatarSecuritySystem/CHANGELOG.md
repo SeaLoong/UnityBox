@@ -2,7 +2,16 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.4] - 2026-11-08
+## [0.9.5] - 2026-11-08
+
+### Fixed
+
+- 为四个自带 MP3 补齐稳定的 AudioImporter metadata 并启用 `Load In Background`，修复默认 `Decompress On Load` 音频被 VRC SDK 的状态行为检查拒绝、阻止上传的问题。音频文件内容保持。
+- 保留现有开关含义：“关闭警告音效”只关闭倒计时警告音，密码成功音仍然生成；“关闭覆盖界面”只控制画面。两者同时关闭时，成功音同样使用正确的后台加载设置。
+- 正常更新后重新发起构建即可生成当前音频引用；不增加启动/导入扫描，不改写用户 Scene/Prefab 或其它音频的导入设置。
+- 音频导入、开关组合、真实 SDK 拒绝/允许对照和 NDMF 最终 Controller 的回归范围见 [音频上传验证](../../../Docs/Verification/ASSAudioUpload/README.md)。
+
+## [0.9.4] - 2026-11-08（历史发布）
 
 ### Component references
 

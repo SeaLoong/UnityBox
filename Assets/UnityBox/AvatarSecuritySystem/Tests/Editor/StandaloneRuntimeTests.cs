@@ -105,6 +105,23 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(source.loop, Is.False);
         }
 
+        [TestCase("CountdownWarning")]
+        [TestCase("PasswordSuccess")]
+        [TestCase("InputError")]
+        [TestCase("StepSuccess")]
+        public void BundledAudioImportsWithBackgroundLoadingAndPlayableSamples(string name)
+        {
+            var clip = Resources.Load<AudioClip>(name);
+            Assert.That(clip, Is.Not.Null);
+            string path = AssetDatabase.GetAssetPath(clip);
+            Assert.That(path, Does.StartWith("Packages/top.sealoong.unitybox.avatar-security-system/Resources/"));
+            Assert.That(((AudioImporter)AssetImporter.GetAtPath(path)).loadInBackground, Is.True);
+            Assert.That(clip.loadInBackground, Is.True);
+            Assert.That(clip.loadType, Is.EqualTo(AudioClipLoadType.DecompressOnLoad));
+            Assert.That(clip.samples, Is.GreaterThan(0));
+            Assert.That(clip.length, Is.GreaterThan(0f));
+        }
+
         [Test]
         public void OriginalSceneComponentGuidResolvesToTheRuntimeConfigurationClass()
         {
