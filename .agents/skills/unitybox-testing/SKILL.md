@@ -97,6 +97,9 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   corresponding metadata is copied to `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`.
 - Cover batch scope, ambiguity mapping, unknown/valid-external/duplicate skipping, open resources and
   dependencies, changed files since scan, exact backups, idempotence and source configuration preservation.
+  Include Prefab Stage dependencies added only in memory: an unsaved nested Prefab and an object asset
+  reference. Run that case graphically with autoSave disabled, compare dirty state and original bytes,
+  and discard only the test fixture's own edits when returning to the main Stage.
   Record native and real-upgrade results in
   [ComponentReferences verification](../../../Docs/Verification/ComponentReferences/README.md).
 - [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md) and

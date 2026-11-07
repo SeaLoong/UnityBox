@@ -7,8 +7,8 @@
   "interaction": "One manual batch; no per-item confirmation. Ambiguous GUID-to-type mapping is chosen once.",
   "verified": {
     "filename": "UnityBox-ComponentReferences.unitypackage",
-    "sha256": "2f859fda3679a2e049af7cf441cab821676558be8084a7ce15a6be9a9d188c67",
-    "bytes": 10813,
+    "sha256": "b55b31f46bdaf042ad37108474d9d02943c6edb541c8866ba17ad2c854dd5088",
+    "bytes": 10865,
     "source_files": [
       {
         "path": "Assets/UnityBox/ComponentReferenceMigration/Editor/ComponentReferenceMigrationWindow.cs",
@@ -17,7 +17,7 @@
       },
       {
         "path": "Assets/UnityBox/ComponentReferenceMigration/Editor/MigrationEngine.cs",
-        "sha256": "5944c4d030f493bdee96b401fbf9c07b747d103920abe2c7da2f87681bca38ee",
+        "sha256": "c3cfb5733145ed6f13952b2b6a84febdc817f72d1f9982ab6d632c904adefaae",
         "metadata_sha256": "e6c201e4c2585919b508da0f792a4f1d19f26cdc5c137093165c7d70262b3586"
       },
       {

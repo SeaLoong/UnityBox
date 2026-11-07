@@ -11,6 +11,12 @@
     "selectedAssets": [],
     "readOnlyAssets": [],
     "checks": [
+        "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCOutfitMarker=",
+        "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCPartGroupMarker=",
+        "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride=",
+        "legacy GUID path after current import: UnityBox.AvatarSecuritySystem.ASSComponent=",
+        "legacy GUID path after current import: UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent=",
+        "legacy GUID path after current import: UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent=",
         "complete current package replacement reproduced Missing Script for all six old component types",
         "opening/importing did not write old assets; SDK descriptors retained their original type and configuration"
     ],

@@ -528,20 +528,26 @@ namespace UnityBox.ComponentReferenceMigration
                 if (!result.Add(path)) return;
                 foreach (string dependency in AssetDatabase.GetDependencies(path, true)) result.Add(dependency);
             };
+            Action<GameObject> includeRoot = root =>
+            {
+                if (root == null) return;
+                foreach (var transform in root.GetComponentsInChildren<Transform>(true))
+                    include(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(transform.gameObject));
+                foreach (Object dependency in EditorUtility.CollectDependencies(new Object[] { root }))
+                    if (dependency != null) include(AssetDatabase.GetAssetPath(dependency));
+            };
             for (int index = 0; index < SceneManager.sceneCount; index++)
             {
                 var scene = SceneManager.GetSceneAt(index);
                 include(scene.path);
-                foreach (var root in scene.GetRootGameObjects())
-                {
-                    foreach (var transform in root.GetComponentsInChildren<Transform>(true))
-                        include(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(transform.gameObject));
-                    foreach (Object dependency in EditorUtility.CollectDependencies(new Object[] { root }))
-                        if (dependency != null) include(AssetDatabase.GetAssetPath(dependency));
-                }
+                foreach (var root in scene.GetRootGameObjects()) includeRoot(root);
             }
             var stage = PrefabStageUtility.GetCurrentPrefabStage();
-            if (stage != null) include(stage.assetPath);
+            if (stage != null)
+            {
+                include(stage.assetPath);
+                includeRoot(stage.prefabContentsRoot);
+            }
             return result;
         }
 

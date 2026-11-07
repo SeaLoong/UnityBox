@@ -164,6 +164,44 @@ def phase(args, name, method, inputs):
     return record
 
 
+def cold_upgrade_import(project, output):
+    """Discard only this owned fixture's rebuildable import cache, retaining warm DLL proof."""
+    state = json.loads((output / 'legacy-state.json').read_text())
+    before = []
+    for item in state['files']:
+        digest = sha((project / item['path']).read_bytes())
+        if digest != item['sha256']:
+            raise ValueError('Legacy asset changed before cold import: ' + item['path'])
+        before.append({'path': item['path'], 'sha256': digest})
+    library = project / 'Library'
+    if library.is_symlink() or library.resolve().parent != project.resolve():
+        raise ValueError('Unexpected fixture Library path')
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    preserved = project / '.unitybox-native-assemblies' / ('warm-before-cold-upgrade-' + stamp)
+    assemblies = library / 'ScriptAssemblies'
+    dlls = []
+    if assemblies.is_dir():
+        shutil.copytree(assemblies, preserved)
+        dlls = [{'path': str(path.relative_to(preserved)), 'sha256': sha(path.read_bytes())}
+                for path in sorted(preserved.rglob('*')) if path.is_file()]
+    existed = library.exists()
+    if existed:
+        shutil.rmtree(library)
+    for item in before:
+        if sha((project / item['path']).read_bytes()) != item['sha256']:
+            raise ValueError('Legacy asset changed while removing owned cache: ' + item['path'])
+    proof = {
+        'recorded_at_utc': datetime.now(timezone.utc).isoformat(),
+        'reason': 'Cold upgrade import checks persisted YAML GUIDs without stale warm import artifacts.',
+        'removed_only': str(library), 'library_existed': existed,
+        'warm_assemblies_preserved_in': str(preserved),
+        'warm_assembly_files': dlls,
+        'warm_assembly_scope': 'Immediately before cold import; may include current-package compilation from retained diagnostics, not claimed to be legacy phase binaries.',
+        'all_original_files_unchanged_before_and_after_cache_removal': before,
+    }
+    (output / 'cold-upgrade-import.json').write_text(json.dumps(proof, indent=2) + '\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--project', type=Path, required=True)
@@ -177,6 +215,7 @@ def main():
     parser.add_argument('--migration-tool', type=Path, help='Standalone tool root containing Editor, or its Editor directory')
     parser.add_argument('--stop-after', choices=('legacy', 'broken', 'migrated'), default='migrated')
     parser.add_argument('--resume-from', choices=('broken', 'migrated'), help='Resume a retained successful phase without recreating its assets')
+    parser.add_argument('--cold-upgrade-import', action='store_true', help='Preserve warm ScriptAssemblies then rebuild only this owned fixture Library before current-package import')
     parser.add_argument('--timeout', type=float, default=1200)
     args = parser.parse_args()
     for name in ('project', 'unity', 'xdg_root'):
@@ -235,15 +274,20 @@ def main():
             raise ValueError('Supply --migration-tool before running the current-package phases')
         if args.resume_from != 'migrated':
             current_inputs = replace(args.project, named(args.current_package), marker)
+            if args.cold_upgrade_import:
+                cold_upgrade_import(args.project, output)
         else:
             previous = json.loads((output / 'broken-run.json').read_text())
             if not previous['passed']:
                 raise ValueError('The previous broken phase did not pass')
             current_inputs = previous['inputs']
-        target = args.project / 'Assets/UnityBoxComponentMigration'
+        target = args.project / 'Assets/UnityBox/ComponentReferenceMigration'
         if target.exists():
-            if args.resume_from is None:
-                raise ValueError('The fresh project already contains a migration tool at ' + str(target))
+            # test_project.prepare installs this tool at the canonical Assets path.
+            # Replace its owned Editor/test copy instead of introducing a duplicate asmdef.
+            existing_assembly = target / 'Editor/UnityBox.ComponentReferenceMigration.Editor.asmdef'
+            if not existing_assembly.is_file() or json.loads(existing_assembly.read_text()).get('name') != 'UnityBox.ComponentReferenceMigration.Editor':
+                raise ValueError('Unexpected content at the owned migration tool target: ' + str(target))
             shutil.rmtree(target)
         if (args.migration_tool / 'Editor').is_dir():
             shutil.copytree(args.migration_tool / 'Editor', target / 'Editor')

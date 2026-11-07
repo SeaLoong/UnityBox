@@ -8,6 +8,8 @@
     "inspectorTargets": 0,
     "backupDirectory": "",
     "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
     "checks": [
         "actual old package imports created six script GUIDs; no legacy GUID was fabricated",
         "non-default fields, AudioClip/Material/Renderer/Animator PPtrs, cross-component references, prefab variants/nesting and instance overrides saved",

@@ -2,184 +2,184 @@
     "types": [
         {
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "guid": "603b709472c3435e8aa829e7923e44ce",
+            "guid": "26a0c632518ec7c43bac6bea96d2e726",
             "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCOutfitMarker.cs",
-            "generatedMetaSha256": "190d32200a81fbd0297fb4a8c1e732b3b6485a35845f5c241beac42e9289e6d1"
+            "generatedMetaSha256": "a9ce27625dc9057216e28cb40874e2e7486958d340c0965c3d90e6fceaec503f"
         },
         {
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "guid": "422efa892102e3cd7b035163770c38df",
+            "guid": "e5402012b2c759a889cde6299deb8e10",
             "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCPartGroupMarker.cs",
-            "generatedMetaSha256": "65329e3b367b1ea720e97933b2bc9f60aeb76a67294054012c38f85a9d05f527"
+            "generatedMetaSha256": "0f2e34ebe2eb02f97562951a8dce7cfe19fac1f8869576d0fab4c50f961b66f9"
         },
         {
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "guid": "123aada18de29c73e9432c8a989d1ab4",
+            "guid": "e4a69f03e5c3ca11fa8a2c5f8fed891b",
             "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCVariantMaterialOverride.cs",
-            "generatedMetaSha256": "23c7346c5f24a46bc5bfab0492753fba0c700a9d98dbf351563483c4a6ed8b2d"
+            "generatedMetaSha256": "ba9f31e1c966ceb5227ed90f61422bfe132fe28bf87190561c9021f4c4e6ec37"
         },
         {
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "guid": "7e04a2b4cdc554ad0a2f388c2eda1def",
+            "guid": "cd11bdbb83db1d7ec906866c56ed220f",
             "scriptPath": "Packages/top.sealoong.unitybox.avatar-security-system/Runtime/Component.cs",
-            "generatedMetaSha256": "885f38b7904fb6e10379784e9f69c8137b24cb2c71aeeee0f97bcfac20cf5099"
+            "generatedMetaSha256": "51abcb9c094c3b34fb90d9d08e013961c12e7c01037e989f45d286850da24982"
         },
         {
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "guid": "43574f1c70c86e5cda395735823b9ddf",
+            "guid": "5772c4e2342d4b0f0a6926950cd25f43",
             "scriptPath": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Runtime/VisemeBlendshapeOverrideComponent.cs",
-            "generatedMetaSha256": "204d9a3ff3bf6b57fb14146261588c865bc7108ea82bd869ffffd29170995d4e"
+            "generatedMetaSha256": "0a008150f693233a2aa0fd0f31e93e6df4531f05efe9812d5d390f9f19c05be7"
         },
         {
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "guid": "ba387891696ed00c3ab8648aea0b94e8",
+            "guid": "4119ae59e2c6c5bd9a4256304dbd23b0",
             "scriptPath": "Packages/top.sealoong.unitybox.animator-optimizer/Runtime/AnimatorOptimizerComponent.cs",
-            "generatedMetaSha256": "8f251f5fc1040e7174502696adf06724a28d6dd9c641a3906d451c5c71f2d16c"
+            "generatedMetaSha256": "a3f4b577506b21f099ccd49d8d4585f4baa90a6406aa8be9a852f541f4035b78"
         }
     ],
     "files": [
         {
             "path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
-            "sha256": "9edac2e2f0921068a2152429c852b6923d34fa0898efe28b6af434f6d0340756",
-            "guid": "e9368a9422f77f2ec8f500cb783f24c1",
+            "sha256": "4483a5f3f18c779ba5b6e71ed592f8efaad4c95e8cf3253e918fec45039f5551",
+            "guid": "41ebf8f8d5c1bd2a4b5bbd9363448428",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
-            "sha256": "7d4f7f2925ccfd237ff08a9ec9181f0519c64616b07f9ca6f3f93e47f969e58e",
-            "guid": "e9368a9422f77f2ec8f500cb783f24c1",
+            "sha256": "2e10e8f9c7b918cd43a913d2e86a24296c97dabd32108de854081469dcab0566",
+            "guid": "41ebf8f8d5c1bd2a4b5bbd9363448428",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Base.prefab",
-            "sha256": "b5e8267524d963c29c71e34d240fd0989462ff7a8c974504b37ff17fb465f7eb",
-            "guid": "9338c5d988116bea68080c0d40647196",
+            "sha256": "0332b0453f10c51c9602c97248bff2747ca9c900d9618bd7f363bf35e78442b8",
+            "guid": "a061f6a054c95674087b351e4aeca8bc",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
-            "sha256": "cc478c4b2682aa22a4c281880a6c89cb2ee1a46fd597b87f2ea2d9c501ab7b34",
-            "guid": "9338c5d988116bea68080c0d40647196",
+            "sha256": "6e61f892fdca0993a63462f3726a38935d498fb1f48f5faf5fba1f51f2368b4b",
+            "guid": "a061f6a054c95674087b351e4aeca8bc",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Duplicate.unity",
-            "sha256": "eeed95682a80b1ce7a8cbbcbc3d1e6a97ab1d2bd8e20700fc14a0ff023caf5c4",
-            "guid": "f45cfdc53daa25682a750d5f465ee4da",
+            "sha256": "84f60647fd4b66238a828b6cb95a23a075bb640b33bed81275b88924be12d8ff",
+            "guid": "9a2b2afa2097f1227ad0afa32526d7e7",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate.unity"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Duplicate.unity.meta",
-            "sha256": "9229e6174a9e34315dccfc76136b3a87d14ee4cd6cf82b624852214d12a7976c",
-            "guid": "f45cfdc53daa25682a750d5f465ee4da",
+            "sha256": "f7ee976429d5f5cc6df520df1f3b92224d210d71bbbcab1315d58376b3af6171",
+            "guid": "9a2b2afa2097f1227ad0afa32526d7e7",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate.unity.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
             "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58",
-            "guid": "35e6e48c688e4728395177d06a8acfd4",
+            "guid": "0c9277858b37818d9b031f93cbc187a8",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
-            "sha256": "dc756da1f483ac1c8fca40665ba517eaff43d3a7d0217d52383db4bc4d56a73c",
-            "guid": "35e6e48c688e4728395177d06a8acfd4",
+            "sha256": "e113f1ea20d73385d4bce14098d0151ae1204fd7bdda14120752a0ec8df4e1bf",
+            "guid": "0c9277858b37818d9b031f93cbc187a8",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
-            "sha256": "1c587d6f1d9278fbe32214b2a69f79fe528bc427dcc99b151b4706bca8f3d3d4",
-            "guid": "506e9084dfb774059b248afc0a41e51a",
+            "sha256": "66304f23874b392f7fb3486bcf65d319a5c0b7c228913adfad92e1caac3c5c76",
+            "guid": "97cd58f1ce0f31983816d51906610dd2",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
-            "sha256": "71b3a4a57724784382c48d8b4e5b973aa8db89b79be4c3a556a0e0a4c2d95c28",
-            "guid": "506e9084dfb774059b248afc0a41e51a",
+            "sha256": "af709e86cc4c5678aad1abe2702c7626ab1c231caa4fdd763aa2ba005d643e0a",
+            "guid": "97cd58f1ce0f31983816d51906610dd2",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Original.mat",
             "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8",
-            "guid": "57c1fc93aecc563d9bf0e81babf576cb",
+            "guid": "61af1ac4870423f39a71364293d77d99",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
-            "sha256": "56ea88832b8272a437a554ca02452a8161e7e7c38f28ea19106d2151fa4584ea",
-            "guid": "57c1fc93aecc563d9bf0e81babf576cb",
+            "sha256": "9dbc354594bd7fdc9eed4e295c09d3d88ea3fc7d0f439c8211507d318245629c",
+            "guid": "61af1ac4870423f39a71364293d77d99",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
             "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30",
-            "guid": "865200f9af9b13f56975c37879fd4741",
+            "guid": "64f498bbbab0f527fbbde73c1fd339bf",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
-            "sha256": "50190d6eaa3b9190b7b752d0e16654b0deed5cbd354e8e946d0db27732c3bb43",
-            "guid": "865200f9af9b13f56975c37879fd4741",
+            "sha256": "47222b217ecb48f7aeb3bfce20305c2843c8cb0e6fba819e16f0c2981c829500",
+            "guid": "64f498bbbab0f527fbbde73c1fd339bf",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Success.wav",
             "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
-            "guid": "eca734e53efe35dbcbf56bdd43a73363",
+            "guid": "0eeef3e69374515afa49fed5c1d1a4ba",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
-            "sha256": "fddb197ac26398a773a19fd22fefff95cec1becd4710b9b5d163637d2c630935",
-            "guid": "eca734e53efe35dbcbf56bdd43a73363",
+            "sha256": "77e18552ab63be9fd45569cfd75dd877784b9ce14b199668edb30b9ff5d645d4",
+            "guid": "0eeef3e69374515afa49fed5c1d1a4ba",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/User.anim",
             "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d",
-            "guid": "d0c928832af5e99458ca9d4b40b128f7",
+            "guid": "6b1d428c71b58cbbba98b3d6e4185cda",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
-            "sha256": "e7776f39036158c87e0b80864b3f21d173ec0cafa32a205767e1c796ba1ab08a",
-            "guid": "d0c928832af5e99458ca9d4b40b128f7",
+            "sha256": "7fd3c4ea6ef8fdc1552e19f400f01080d0c0eaf1f1a0dcdc2f96f457c49b7b49",
+            "guid": "6b1d428c71b58cbbba98b3d6e4185cda",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/User.controller",
-            "sha256": "b503716c4374f5a64575e0bf0452f4c6478edadb2cd7413fec3618b6d0201a29",
-            "guid": "16bd3467a8dfc054f868e97157e671be",
+            "sha256": "37d77824a8d1f603bb60a472f7bce4c2e1bd4cc35d7bee7db5377645bcf4c5a3",
+            "guid": "405272db094c93595aebe2bbaa341146",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
-            "sha256": "f5f0b39ae0527a056a106730732349a0b1f8f49db899df62cc0476250fa849a2",
-            "guid": "16bd3467a8dfc054f868e97157e671be",
+            "sha256": "9ba237202331d68dcfe99d7673d5776e503f0f0880600913f38d8ba2174dc45c",
+            "guid": "405272db094c93595aebe2bbaa341146",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
-            "sha256": "a0e703301b52f0e6e5cad1ed58d100730651584e03cc86bbfdd332a76bbf4d4b",
-            "guid": "69d4f91ca07bb2e179efa83d147bed80",
+            "sha256": "c01ce44d7a82cbad1d188b87758767c5538594ad49706d0adc31cb5ea43b193b",
+            "guid": "29b871963c0b319a7b21c1848d974e94",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
-            "sha256": "0eab3b3defa2b61557cb0954619824237f5d96ea625ccf490f9290b9c9d4cc59",
-            "guid": "69d4f91ca07bb2e179efa83d147bed80",
+            "sha256": "bf3bfabb7656e872134b0f62154732a2c0fcd8358e99851fe4c813c4693a4ffa",
+            "guid": "29b871963c0b319a7b21c1848d974e94",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab.meta"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
             "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
-            "guid": "633e3e37e563de150accdce37d3f2839",
+            "guid": "b7ea39a3f9a00b53aacadd410d1f48fe",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav"
         },
         {
             "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
-            "sha256": "eddbf4671d28692e646227f6aa0ed85ba49b64e739581385ad310bf99219f1db",
-            "guid": "633e3e37e563de150accdce37d3f2839",
+            "sha256": "5df6e0d99db8396a679392ddc1e0fac67e0828fa66bb34330e131917ee993f4b",
+            "guid": "b7ea39a3f9a00b53aacadd410d1f48fe",
             "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav.meta"
         }
     ],
@@ -188,7 +188,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-7600636401053589473-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-8601346095364582340-0",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -371,7 +371,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-4325733768631752593-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-6229444602326309684-0",
             "properties": [
                 {
                     "path": "Mode",
@@ -454,22 +454,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-2190376371570102094-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-6525291127643002155-0",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-5617412899817851636-0"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "22702"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7847605151682801534-0"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -479,32 +469,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -514,17 +484,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-2989223249484801476-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22704"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-6333903717669253506-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -534,32 +494,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -572,7 +512,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-1374559800571100855-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-748677929740228383-0",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -642,32 +582,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -735,22 +655,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-3132889153154697736-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7826668832520567648-0",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-3127784696711486230-0"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22706"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-5549796166739557782-0"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -1433,7 +1343,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-1060665534180723977-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7332287809343052002-0",
             "properties": [
                 {
                     "path": "targetMode",
@@ -1448,32 +1358,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-6937361790755118663-0"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "22684"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7589242306414308691-0"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -1791,7 +1681,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
             "owner": "Base",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-9170478002101400909-0",
+            "globalId": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-1801801783467239447-0",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -1801,92 +1691,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-7600636401053589473-0"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "22686"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-8601346095364582340-0"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-4325733768631752593-0"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "22688"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-6229444602326309684-0"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-2190376371570102094-0"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "22690"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-6525291127643002155-0"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-1374559800571100855-0"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "22692"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-748677929740228383-0"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-3132889153154697736-0"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "22694"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7826668832520567648-0"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-9338c5d988116bea68080c0d40647196-1060665534180723977-0"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "22696"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-a061f6a054c95674087b351e4aeca8bc-7332287809343052002-0"
                 }
             ]
         },
@@ -1894,7 +1724,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-5865095498717250240-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-2653870508957196390-0",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -2077,7 +1907,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-294972790854781616-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-430376636186300566-0",
             "properties": [
                 {
                     "path": "Mode",
@@ -2160,22 +1990,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-2772568605775319663-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-649664227191692937-0",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-8496863699794663381-0"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "22746"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-4567253481998869724-0"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -2185,32 +2005,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -2220,17 +2020,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-1253189768080685285-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22748"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-318880663053990432-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -2240,32 +2030,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -2278,7 +2048,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-3102004990175699862-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-6478912970871413949-0",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -2348,32 +2118,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -2441,22 +2191,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-1397701205887473449-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-4546250012432216258-0",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-1402867286454240823-0"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22744"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-2201901419646465588-0"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -3139,7 +2879,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-3938360964917530664-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-3912479582349988672-0",
             "properties": [
                 {
                     "path": "targetMode",
@@ -3154,32 +2894,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-6366284519588791142-0"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "22726"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-4240148061723141873-0"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -3497,7 +3217,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
             "owner": "Variant",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-5141974870341625964-0",
+            "globalId": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-5371429541834892213-0",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -3507,92 +3227,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-5865095498717250240-0"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "22728"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-2653870508957196390-0"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-294972790854781616-0"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "22730"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-430376636186300566-0"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-2772568605775319663-0"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "22732"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-649664227191692937-0"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-3102004990175699862-0"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "22734"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-6478912970871413949-0"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-1397701205887473449-0"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "22736"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-4546250012432216258-0"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-69d4f91ca07bb2e179efa83d147bed80-3938360964917530664-0"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "22738"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-29b871963c0b319a7b21c1848d974e94-3912479582349988672-0"
                 }
             ]
         },
@@ -3600,7 +3260,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-3785597160582764818-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-5594321835463077314-0",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -3783,7 +3443,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-7060467700908527970-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-7822319887136103730-0",
             "properties": [
                 {
                     "path": "Mode",
@@ -3866,22 +3526,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-4870081913264064957-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6950009800137741101-0",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-1154831647534189575-0"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "22782"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6202956338978285944-0"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -3891,32 +3541,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -3926,17 +3556,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-8396993064099504951-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22804"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-7862039739596633988-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -3946,32 +3566,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -3984,7 +3584,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-5683732799079774276-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-3503464326508679449-0",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -4054,32 +3654,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -4147,22 +3727,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-8541503376473804027-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6224240181056683366-0",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-8546663976695799269-0"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "22806"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-8645168111069117328-0"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -4845,7 +4415,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-6002167635606178810-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6862531767258783460-0",
             "properties": [
                 {
                     "path": "targetMode",
@@ -4860,32 +4430,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-4446657904118012084-0"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "22786"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6030178104342358869-0"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -5203,7 +4753,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
             "owner": "Nested/Base",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-2501700257708585918-0",
+            "globalId": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-2593037158312848913-0",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -5213,92 +4763,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-3785597160582764818-0"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "22788"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-5594321835463077314-0"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-7060467700908527970-0"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "22790"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-7822319887136103730-0"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-4870081913264064957-0"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "22792"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6950009800137741101-0"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-5683732799079774276-0"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "22794"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-3503464326508679449-0"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-8541503376473804027-0"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "22796"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6224240181056683366-0"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-506e9084dfb774059b248afc0a41e51a-6002167635606178810-0"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "22798"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-97cd58f1ce0f31983816d51906610dd2-6862531767258783460-0"
                 }
             ]
         },
@@ -5306,7 +4796,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802099-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401944-0",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -5489,7 +4979,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802098-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401943-0",
             "properties": [
                 {
                     "path": "Mode",
@@ -5572,22 +5062,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802097-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401942-0",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-231823198-0"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "23148"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-1965468475-0"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -5597,32 +5077,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -5632,17 +5092,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-231823199-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "23150"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-1965468476-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -5652,32 +5102,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -5690,7 +5120,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802096-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401941-0",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -5760,32 +5190,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -5853,22 +5263,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802095-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401940-0",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1136064225-0"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "23180"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-1464015225-0"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -6551,7 +5951,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802094-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401939-0",
             "properties": [
                 {
                     "path": "targetMode",
@@ -6566,32 +5966,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802100-0"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "23174"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401945-0"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -6909,7 +6289,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Plain avatar",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802093-0",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401938-0",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -6919,92 +6299,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802099-0"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "23172"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401944-0"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802098-0"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "23170"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401943-0"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802097-0"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "23168"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401942-0"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802096-0"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "23166"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401941-0"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802095-0"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "23164"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401940-0"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-952802094-0"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "23162"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-106401939-0"
                 }
             ]
         },
@@ -7012,7 +6332,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-7600636401053589473-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-8601346095364582340-847570619",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -7195,7 +6515,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-4325733768631752593-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6229444602326309684-847570619",
             "properties": [
                 {
                     "path": "Mode",
@@ -7318,22 +6638,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2190376371570102094-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6525291127643002155-847570619",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5617412899817851636-1436419668"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3332"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7847605151682801534-847570619"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -7343,32 +6653,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -7378,17 +6668,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2989223249484801476-1436419668"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3336"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6333903717669253506-847570619"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -7398,32 +6678,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -7436,7 +6696,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1374559800571100855-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-748677929740228383-847570619",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -7506,32 +6766,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -7599,22 +6839,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3132889153154697736-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7826668832520567648-847570619",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3127784696711486230-1436419668"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3330"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-5549796166739557782-847570619"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -8297,7 +7527,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1060665534180723977-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7332287809343052002-847570619",
             "properties": [
                 {
                     "path": "targetMode",
@@ -8312,32 +7542,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-6937361790755118663-1436419668"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3308"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7589242306414308691-847570619"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -8655,7 +7865,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Prefab instance",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-9170478002101400909-1436419668",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-1801801783467239447-847570619",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -8665,92 +7875,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-7600636401053589473-1436419668"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3310"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-8601346095364582340-847570619"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-4325733768631752593-1436419668"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3312"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6229444602326309684-847570619"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2190376371570102094-1436419668"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3314"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6525291127643002155-847570619"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1374559800571100855-1436419668"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3316"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-748677929740228383-847570619"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3132889153154697736-1436419668"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3318"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7826668832520567648-847570619"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1060665534180723977-1436419668"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3320"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7332287809343052002-847570619"
                 }
             ]
         },
@@ -8758,7 +7908,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5865095498717250240-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-2653870508957196390-1279119172",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -8941,7 +8091,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-294972790854781616-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-430376636186300566-1279119172",
             "properties": [
                 {
                     "path": "Mode",
@@ -9024,22 +8174,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2772568605775319663-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-649664227191692937-1279119172",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-8496863699794663381-808440024"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3260"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-4567253481998869724-1279119172"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -9049,32 +8189,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -9084,17 +8204,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1253189768080685285-808440024"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3264"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-318880663053990432-1279119172"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -9104,32 +8214,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -9142,7 +8232,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3102004990175699862-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6478912970871413949-1279119172",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -9212,32 +8302,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -9305,22 +8375,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1397701205887473449-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-4546250012432216258-1279119172",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1402867286454240823-808440024"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3258"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-2201901419646465588-1279119172"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -10003,7 +9063,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3938360964917530664-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-3912479582349988672-1279119172",
             "properties": [
                 {
                     "path": "targetMode",
@@ -10018,32 +9078,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-6366284519588791142-808440024"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3236"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-4240148061723141873-1279119172"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -10361,7 +9401,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Variant",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5141974870341625964-808440024",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-5371429541834892213-1279119172",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -10371,92 +9411,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5865095498717250240-808440024"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3238"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-2653870508957196390-1279119172"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-294972790854781616-808440024"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3240"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-430376636186300566-1279119172"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2772568605775319663-808440024"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3242"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-649664227191692937-1279119172"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3102004990175699862-808440024"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3244"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6478912970871413949-1279119172"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1397701205887473449-808440024"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3246"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-4546250012432216258-1279119172"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3938360964917530664-808440024"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3248"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-3912479582349988672-1279119172"
                 }
             ]
         },
@@ -10464,7 +9444,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3785597160582764818-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-5594321835463077314-1613118574",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -10647,7 +9627,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-7060467700908527970-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7822319887136103730-1613118574",
             "properties": [
                 {
                     "path": "Mode",
@@ -10730,22 +9710,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-4870081913264064957-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6950009800137741101-1613118574",
             "properties": [
                 {
                     "path": "OutfitBase",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-1154831647534189575-187569471"
-                },
-                {
-                    "path": "OutfitBase.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3298"
-                },
-                {
-                    "path": "OutfitBase.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6202956338978285944-1613118574"
                 },
                 {
                     "path": "Replacements.Array.size",
@@ -10755,32 +9725,12 @@
                 {
                     "path": "Replacements.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "Replacements.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "Replacements.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.size",
@@ -10790,17 +9740,7 @@
                 {
                     "path": "RendererOverrides.Array.data[0].TargetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-8396993064099504951-187569471"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3302"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].TargetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7862039739596633988-1613118574"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].MaterialSlot",
@@ -10810,32 +9750,12 @@
                 {
                     "path": "RendererOverrides.Array.data[0].Source",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-57c1fc93aecc563d9bf0e81babf576cb-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2472"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Source.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-61af1ac4870423f39a71364293d77d99-2100000-0"
                 },
                 {
                     "path": "RendererOverrides.Array.data[0].Replacement",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-865200f9af9b13f56975c37879fd4741-2100000-0"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2474"
-                },
-                {
-                    "path": "RendererOverrides.Array.data[0].Replacement.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-64f498bbbab0f527fbbde73c1fd339bf-2100000-0"
                 },
                 {
                     "path": "editorPreviewInitialized",
@@ -10848,7 +9768,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5683732799079774276-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-3503464326508679449-1613118574",
             "properties": [
                 {
                     "path": "uiLanguage",
@@ -10918,32 +9838,12 @@
                 {
                     "path": "warningBeep",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-633e3e37e563de150accdce37d3f2839-8300000-0"
-                },
-                {
-                    "path": "warningBeep.m_FileID",
-                    "kind": "Integer",
-                    "value": "22638"
-                },
-                {
-                    "path": "warningBeep.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-b7ea39a3f9a00b53aacadd410d1f48fe-8300000-0"
                 },
                 {
                     "path": "successSound",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-1-eca734e53efe35dbcbf56bdd43a73363-8300000-0"
-                },
-                {
-                    "path": "successSound.m_FileID",
-                    "kind": "Integer",
-                    "value": "22640"
-                },
-                {
-                    "path": "successSound.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-1-0eeef3e69374515afa49fed5c1d1a4ba-8300000-0"
                 },
                 {
                     "path": "enabledInPlaymode",
@@ -11011,22 +9911,12 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-8541503376473804027-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6224240181056683366-1613118574",
             "properties": [
                 {
                     "path": "targetRenderer",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-8546663976695799269-187569471"
-                },
-                {
-                    "path": "targetRenderer.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3296"
-                },
-                {
-                    "path": "targetRenderer.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-8645168111069117328-1613118574"
                 },
                 {
                     "path": "writeDefaultsMode",
@@ -11709,7 +10599,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-6002167635606178810-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6862531767258783460-1613118574",
             "properties": [
                 {
                     "path": "targetMode",
@@ -11724,32 +10614,12 @@
                 {
                     "path": "animator",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-4446657904118012084-187569471"
-                },
-                {
-                    "path": "animator.m_FileID",
-                    "kind": "Integer",
-                    "value": "-3274"
-                },
-                {
-                    "path": "animator.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6030178104342358869-1613118574"
                 },
                 {
                     "path": "controller",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-3-16bd3467a8dfc054f868e97157e671be-9100000-0"
-                },
-                {
-                    "path": "controller.m_FileID",
-                    "kind": "Integer",
-                    "value": "-2514"
-                },
-                {
-                    "path": "controller.m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-3-405272db094c93595aebe2bbaa341146-9100000-0"
                 },
                 {
                     "path": "optimizeAllConvertibleLayers",
@@ -12067,7 +10937,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
             "owner": "Nested/Base",
             "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
-            "globalId": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-2501700257708585918-187569471",
+            "globalId": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-2593037158312848913-1613118574",
             "properties": [
                 {
                     "path": "references.Array.size",
@@ -12077,92 +10947,32 @@
                 {
                     "path": "references.Array.data[0]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-3785597160582764818-187569471"
-                },
-                {
-                    "path": "references.Array.data[0].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3276"
-                },
-                {
-                    "path": "references.Array.data[0].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-5594321835463077314-1613118574"
                 },
                 {
                     "path": "references.Array.data[1]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-7060467700908527970-187569471"
-                },
-                {
-                    "path": "references.Array.data[1].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3278"
-                },
-                {
-                    "path": "references.Array.data[1].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-7822319887136103730-1613118574"
                 },
                 {
                     "path": "references.Array.data[2]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-4870081913264064957-187569471"
-                },
-                {
-                    "path": "references.Array.data[2].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3280"
-                },
-                {
-                    "path": "references.Array.data[2].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6950009800137741101-1613118574"
                 },
                 {
                     "path": "references.Array.data[3]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-5683732799079774276-187569471"
-                },
-                {
-                    "path": "references.Array.data[3].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3282"
-                },
-                {
-                    "path": "references.Array.data[3].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-3503464326508679449-1613118574"
                 },
                 {
                     "path": "references.Array.data[4]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-8541503376473804027-187569471"
-                },
-                {
-                    "path": "references.Array.data[4].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3284"
-                },
-                {
-                    "path": "references.Array.data[4].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6224240181056683366-1613118574"
                 },
                 {
                     "path": "references.Array.data[5]",
                     "kind": "ObjectReference",
-                    "value": "GlobalObjectId_V1-2-e9368a9422f77f2ec8f500cb783f24c1-6002167635606178810-187569471"
-                },
-                {
-                    "path": "references.Array.data[5].m_FileID",
-                    "kind": "Integer",
-                    "value": "-3286"
-                },
-                {
-                    "path": "references.Array.data[5].m_PathID",
-                    "kind": "Integer",
-                    "value": "0"
+                    "value": "GlobalObjectId_V1-2-41ebf8f8d5c1bd2a4b5bbd9363448428-6862531767258783460-1613118574"
                 }
             ]
         },
@@ -12170,7 +10980,7 @@
             "asset": "Assets/ComponentUpgradeFixtures/Duplicate.unity",
             "owner": "Duplicate fixture",
             "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-            "globalId": "GlobalObjectId_V1-2-f45cfdc53daa25682a750d5f465ee4da-274963149-0",
+            "globalId": "GlobalObjectId_V1-2-9a2b2afa2097f1227ad0afa32526d7e7-1613118575-0",
             "properties": [
                 {
                     "path": "PartNamePrefixToRemove",
@@ -12316,5 +11126,5 @@
         }
     ],
     "duplicateCurrentBytes": ".unitybox-component-upgrade/duplicate-before-apply.unity",
-    "duplicateNewGlobalId": "GlobalObjectId_V1-2-f45cfdc53daa25682a750d5f465ee4da-274963151-0"
+    "duplicateNewGlobalId": "GlobalObjectId_V1-2-9a2b2afa2097f1227ad0afa32526d7e7-1613118577-0"
 }

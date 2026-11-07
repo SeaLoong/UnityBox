@@ -225,6 +225,77 @@ namespace UnityBox.ComponentReferenceMigration.Tests
                     EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
             }
         }
+
+        [Test]
+        [Category("UnityBoxGraphics")]
+        public void PrefabStageUnsavedNestedPrefabAndObjectDependenciesArePreserved()
+        {
+            Assert.That(PrefabStageUtility.GetCurrentPrefabStage(), Is.Null);
+            string nestedPath = Prefab();
+            AssetDatabase.ImportAsset(nestedPath, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            string hostPath = folder + "/StageHost.prefab";
+            var host = new GameObject("Stage host");
+            SceneManager.MoveGameObjectToScene(host, preview);
+            PrefabUtility.SaveAsPrefabAsset(host, hostPath);
+            Object.DestroyImmediate(host);
+            string meshPath = folder + "/StageOnlyMesh.asset";
+            var mesh = new Mesh { name = "Unsaved stage dependency", vertices = new[] { Vector3.zero, Vector3.right, Vector3.up }, triangles = new[] { 0, 1, 2 } };
+            AssetDatabase.CreateAsset(mesh, meshPath);
+            AssetDatabase.SaveAssets();
+            var paths = new[] { hostPath, nestedPath, meshPath };
+            var original = paths.Concat(paths.Select(path => path + ".meta")).ToDictionary(path => path, File.ReadAllBytes);
+            var beforeOpening = MigrationEngine.Scan(new[] { nestedPath });
+            Assert.That(beforeOpening.Entries.Single().Status, Is.EqualTo(MigrationStatus.Ready));
+            var autoSave = typeof(PrefabStage).GetProperty("autoSave", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var clearDirtiness = typeof(PrefabStage).GetMethod("ClearDirtiness", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.That(autoSave, Is.Not.Null);
+            Assert.That(clearDirtiness, Is.Not.Null);
+            var stage = PrefabStageUtility.OpenPrefab(hostPath);
+            bool previousAutoSave = (bool)autoSave.GetValue(stage);
+            autoSave.SetValue(stage, false);
+            try
+            {
+                var nested = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(nestedPath), stage.scene);
+                nested.transform.SetParent(stage.prefabContentsRoot.transform, false);
+                nested.transform.localPosition = new Vector3(7, 8, 9);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(nested.transform);
+                var filter = stage.prefabContentsRoot.AddComponent<MeshFilter>();
+                filter.sharedMesh = mesh;
+                EditorUtility.SetDirty(filter);
+                EditorSceneManager.MarkSceneDirty(stage.scene);
+                int nestedId = nested.GetInstanceID();
+                int rootId = stage.prefabContentsRoot.GetInstanceID();
+                Assert.That(AssetDatabase.GetDependencies(hostPath, true), Does.Not.Contain(nestedPath));
+                Assert.That(AssetDatabase.GetDependencies(hostPath, true), Does.Not.Contain(meshPath));
+                var openDependencies = (HashSet<string>)typeof(MigrationEngine).GetMethod("OpenAssetDependencies", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+                Assert.That(openDependencies, Does.Contain(nestedPath));
+                Assert.That(openDependencies, Does.Contain(meshPath));
+                var whileEditing = MigrationEngine.Scan(new[] { nestedPath });
+                Assert.That(whileEditing.Entries.Single().Status, Is.EqualTo(MigrationStatus.Skipped));
+                Assert.That(whileEditing.Entries.Single().Details, Does.Contain("Prefab Stage"));
+                var result = MigrationEngine.Apply(beforeOpening);
+                Assert.That(result.RepairedComponents, Is.Zero);
+                Assert.That(result.ChangedAssets, Is.Empty);
+                Assert.That(result.BackupDirectory, Is.Empty);
+                Assert.That(result.Issues.Any(issue => issue.AssetPath == nestedPath && issue.Code == "asset-open"), Is.True);
+                Assert.That(stage.prefabContentsRoot.GetInstanceID(), Is.EqualTo(rootId));
+                Assert.That(nested.GetInstanceID(), Is.EqualTo(nestedId));
+                Assert.That(nested.transform.localPosition, Is.EqualTo(new Vector3(7, 8, 9)));
+                Assert.That(filter.sharedMesh.GetInstanceID(), Is.EqualTo(mesh.GetInstanceID()));
+                Assert.That(stage.scene.isDirty, Is.True);
+                Assert.That((bool)autoSave.GetValue(stage), Is.False);
+                foreach (var file in original) Assert.That(File.ReadAllBytes(file.Key), Is.EqualTo(file.Value), file.Key);
+            }
+            finally
+            {
+                // Discard only this test's unsaved editing context before leaving
+                // the stage; no source prefab is saved and no save dialog opens.
+                clearDirtiness.Invoke(stage, null);
+                autoSave.SetValue(stage, previousAutoSave);
+                StageUtility.GoToMainStage();
+            }
+            foreach (var file in original) Assert.That(File.ReadAllBytes(file.Key), Is.EqualTo(file.Value), file.Key);
+        }
 #endif
     }
 }

@@ -5,11 +5,11 @@
     "-batchmode",
     "-nographics",
     "-projectPath",
-    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107",
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107",
     "-executeMethod",
     "ComponentUpgradeFixture.CreateLegacy",
     "-logFile",
-    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/legacy-editor.log"
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/legacy-editor.log"
   ],
   "inputs": [
     {
@@ -74,10 +74,10 @@
       "files": 19,
       "metadata_files": [],
       "published": false,
-      "development_source": "unpublished development commit 782af0bf8569fdde6782d420761f38c8f8d6824d; exact git-archive snapshot"
+      "development_source": "unpublished development commit 782af0bf8569fdde6782d420761f38c8f8d6824d; exact git-archive Runtime/Editor source; development Tests excluded"
     }
   ],
-  "started_at_utc": "2026-11-07T13:10:31.891694+00:00",
+  "started_at_utc": "2026-11-07T14:05:14.774090+00:00",
   "exit_code": 0,
   "result": {
     "phase": "legacy",
@@ -89,6 +89,8 @@
     "inspectorTargets": 0,
     "backupDirectory": "",
     "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
     "checks": [
       "actual old package imports created six script GUIDs; no legacy GUID was fabricated",
       "non-default fields, AudioClip/Material/Renderer/Animator PPtrs, cross-component references, prefab variants/nesting and instance overrides saved",
@@ -98,51 +100,51 @@
     "issues": []
   },
   "passed": true,
-  "generated_script_metadata": [
-    {
-      "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
-      "guid": "603b709472c3435e8aa829e7923e44ce",
-      "sha256": "190d32200a81fbd0297fb4a8c1e732b3b6485a35845f5c241beac42e9289e6d1",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCOutfitMarker.cs.meta"
-    },
-    {
-      "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
-      "guid": "422efa892102e3cd7b035163770c38df",
-      "sha256": "65329e3b367b1ea720e97933b2bc9f60aeb76a67294054012c38f85a9d05f527",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCPartGroupMarker.cs.meta"
-    },
-    {
-      "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
-      "guid": "123aada18de29c73e9432c8a989d1ab4",
-      "sha256": "23c7346c5f24a46bc5bfab0492753fba0c700a9d98dbf351563483c4a6ed8b2d",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride.cs.meta"
-    },
-    {
-      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
-      "guid": "7e04a2b4cdc554ad0a2f388c2eda1def",
-      "sha256": "885f38b7904fb6e10379784e9f69c8137b24cb2c71aeeee0f97bcfac20cf5099",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AvatarSecuritySystem.ASSComponent.cs.meta"
-    },
-    {
-      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
-      "guid": "43574f1c70c86e5cda395735823b9ddf",
-      "sha256": "204d9a3ff3bf6b57fb14146261588c865bc7108ea82bd869ffffd29170995d4e",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent.cs.meta"
-    },
-    {
-      "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
-      "guid": "ba387891696ed00c3ab8648aea0b94e8",
-      "sha256": "8f251f5fc1040e7174502696adf06724a28d6dd9c641a3906d451c5c71f2d16c",
-      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent.cs.meta"
-    }
-  ],
-  "finished_at_utc": "2026-11-07T13:12:00.711557+00:00",
   "fixture_source": {
-    "sha256": "ac73b96b6176ed2548791b8f4eb303f5a39138aa454fbdaa2a8d0b5fdd503745",
-    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeFixture.cs"
+    "sha256": "c6bf17f577052b16e1424fb5345c0137167245c71c104f79eca4bd36b34e3c4f",
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeFixture.cs"
   },
   "holder_source": {
     "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
-    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeReferenceHolder.cs"
-  }
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/source-snapshots/legacy/ComponentUpgradeReferenceHolder.cs"
+  },
+  "generated_script_metadata": [
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+      "guid": "26a0c632518ec7c43bac6bea96d2e726",
+      "sha256": "a9ce27625dc9057216e28cb40874e2e7486958d340c0965c3d90e6fceaec503f",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCOutfitMarker.cs.meta"
+    },
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+      "guid": "e5402012b2c759a889cde6299deb8e10",
+      "sha256": "0f2e34ebe2eb02f97562951a8dce7cfe19fac1f8869576d0fab4c50f961b66f9",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCPartGroupMarker.cs.meta"
+    },
+    {
+      "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+      "guid": "e4a69f03e5c3ca11fa8a2c5f8fed891b",
+      "sha256": "ba9f31e1c966ceb5227ed90f61422bfe132fe28bf87190561c9021f4c4e6ec37",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride.cs.meta"
+    },
+    {
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "guid": "cd11bdbb83db1d7ec906866c56ed220f",
+      "sha256": "51abcb9c094c3b34fb90d9d08e013961c12e7c01037e989f45d286850da24982",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AvatarSecuritySystem.ASSComponent.cs.meta"
+    },
+    {
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "guid": "5772c4e2342d4b0f0a6926950cd25f43",
+      "sha256": "0a008150f693233a2aa0fd0f31e93e6df4531f05efe9812d5d390f9f19c05be7",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent.cs.meta"
+    },
+    {
+      "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+      "guid": "4119ae59e2c6c5bd9a4256304dbd23b0",
+      "sha256": "a3f4b577506b21f099ccd49d8d4585f4baa90a6406aa8be9a852f541f4035b78",
+      "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/generated-script-metadata/UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent.cs.meta"
+    }
+  ],
+  "finished_at_utc": "2026-11-07T14:06:35.969128+00:00"
 }

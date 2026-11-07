@@ -13,6 +13,11 @@
 没有启动或导入自动写入，也没有逐组件确认。单独的 Duplicate.unity 只读扫描并报告
 旧无效＋新有效的同类组件，不选入批量写入，文件和两份组件都保留。
 
+本次第二阶段使用冷导入：先保留专用工程的 warm ScriptAssemblies，再仅重建其 Library，
+并核对全部 24 个原文件字节不变。保留的只读诊断表明 warm 导入缓存可能继续解析旧引用；
+冷导入直接检验磁盘 YAML 的实际 GUID。具体映射、缓存操作和文件 SHA 写入
+[input-provenance.json](input-provenance.json)，不修改任何原资源。
+
 ## 保存与核对内容
 
 测试创建六种配置：ACC Outfit、Part Group、Variant Material Override、ASS、Viseme、AO。
@@ -20,18 +25,16 @@
 fixture-owned MonoBehaviour 数组。资源覆盖 Base、Variant、嵌套 Prefab、四组场景对象、
 实例属性覆盖和独立的重复组件案例。
 
-- 保存 50 条组件记录、24 个原资源/metadata 文件；所有资产 GUID 和组件 GlobalObjectID 保留。
+- 保存 50 条组件记录、24 个原资源/metadata 文件及 2,108 条属性记录。修复资源中 49 条组件记录逐属性复核；重复案例的 28 个原属性随完整文件字节保留。
 - 每次读取核对 **2,080 个持久化属性**，其中 **119 个父 ObjectReference GlobalObjectID**。
-- 创建 **24 个当前 Inspector**，等待延迟回调后再次核对，原字段与引用保持。
+- 创建 **24 个当前 Inspector**（含 OnEnable），等待延迟回调后再次核对，原字段与引用保持。
 - 写入前备份与原字节一致；更新文件只改变已确认的 `m_Script.guid` 字节跨度，
   所有序列化 fileID、PPtr、配置、换行和其它内容保留。
 - 原 Variant、嵌套关系、实例覆盖及 SDK Descriptor 的类型与配置保持。
 
-旧 fixture 的属性迭代器曾进入 ObjectReference 的 native 实现，记录了 238 个
-`*.m_FileID` / `*.m_PathID` 子值。这些是跨 Editor 进程会变化的内部实例标识，
-不是 YAML 中的持久化 fileID。最终比较器仅排除这些子项，保留父引用 GlobalObjectID，
-并对原始 YAML 的每个 PPtr/fileID 做字节级检查。首次记录没有被删改；各阶段实际执行的
-fixture 源码分别保存在 [source-snapshots](source-snapshots/) 中。
+本次三个阶段从创建时就使用同一份属性迭代器：ObjectReference 只记录父引用的
+GlobalObjectID，不进入 Unity native 内部子项；原 YAML 的 PPtr 和 fileID 另做字节检查。
+各阶段实际执行的 fixture 源码分别保存在 [source-snapshots](source-snapshots/) 中。
 
 ## 输入与身份
 
@@ -85,7 +88,7 @@ python3 "$TASK_ARCHIVE/run_upgrade.py" \
   --expected-legacy-sha "top.sealoong.unitybox.avatar-security-system=$TASK_ASS_OLD_SHA" \
   --expected-legacy-sha "top.sealoong.unitybox.viseme-blendshape-override=$TASK_VISEME_OLD_SHA" \
   --legacy-ao-source 782af0bf8569fdde6782d420761f38c8f8d6824d \
-  --legacy-ao-production-only \
+  --legacy-ao-production-only --cold-upgrade-import \
   --current-package "top.sealoong.unitybox.advanced-costume-controller=$TASK_ACC_CURRENT_ZIP" \
   --current-package "top.sealoong.unitybox.avatar-security-system=$TASK_ASS_CURRENT_ZIP" \
   --current-package "top.sealoong.unitybox.viseme-blendshape-override=$TASK_VISEME_CURRENT_ZIP" \

@@ -64,11 +64,29 @@ public static class ComponentUpgradeFixture
         public int missingScripts, repairedComponents, inspectorTargets;
         public string backupDirectory;
         public List<string> changedAssets = new List<string>();
+        public List<string> selectedAssets = new List<string>();
+        public List<string> readOnlyAssets = new List<string>();
         public List<string> checks = new List<string>();
         public List<EntryRecord> entries = new List<EntryRecord>();
         public List<string> issues = new List<string>();
     }
 
+    const string LegacyCapturePending = "UnityBox.ComponentUpgradeFixture.PendingLegacyCapture";
+    [InitializeOnLoadMethod]
+    static void ResumeLegacyCaptureAfterDomainReload()
+    {
+        if (!SessionState.GetBool(LegacyCapturePending, false)) return;
+        EditorApplication.delayCall += () =>
+        {
+            if (File.Exists(Output + "/legacy-state.json"))
+            {
+                SessionState.EraseBool(LegacyCapturePending);
+                return;
+            }
+            Start("legacy", CaptureLegacy);
+            current.checks.Add("legacy capture resumed after SDK first-import domain reload");
+        };
+    }
     public static void CreateLegacy() => Start("legacy", Create, true);
     public static void VerifyBroken() => Start("broken", Broken);
     public static void ApplyAndVerify() => Start("migrated", Apply);
@@ -89,6 +107,8 @@ public static class ComponentUpgradeFixture
     static void Later(Action action, int wait = 5)
     {
         pending = action; frames = wait;
+        if (current.phase == "legacy" && action == (Action)CaptureLegacy)
+            SessionState.SetBool(LegacyCapturePending, true);
         File.WriteAllText(Output + "/" + current.phase + "-progress.txt", "Waiting for " + action.Method.Name);
         EditorApplication.QueuePlayerLoopUpdate();
     }
@@ -105,6 +125,7 @@ public static class ComponentUpgradeFixture
     {
         foreach (var editor in inspectors) if (editor != null) Object.DestroyImmediate(editor);
         inspectors.Clear();
+        if (current.phase == "legacy") SessionState.EraseBool(LegacyCapturePending);
         current.passed = error == null;
         current.error = error == null ? "" : error.ToString();
         File.WriteAllText(Output + "/" + current.phase + ".json", JsonUtility.ToJson(current, true));
@@ -309,8 +330,10 @@ public static class ComponentUpgradeFixture
         {
             var record = new ComponentRecord { asset = path, owner = OwnerPath(component.transform), type = component.GetType().FullName, globalId = Id(component) };
             var serialized = new SerializedObject(component); var property = serialized.GetIterator();
-            while (property.Next(true))
+            bool enterChildren = true;
+            while (property.Next(enterChildren))
             {
+                enterChildren = property.propertyType != SerializedPropertyType.ObjectReference;
                 if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)) continue;
                 string value = Value(property); if (value != null) record.properties.Add(new PropertyRecord { path = property.propertyPath, kind = property.propertyType.ToString(), value = value });
             }
@@ -393,19 +416,18 @@ public static class ComponentUpgradeFixture
         Require(File.ReadAllBytes(DuplicatePath).SequenceEqual(File.ReadAllBytes(state.duplicateCurrentBytes)), "Duplicate fixture changed before scan");
         var engine = Find("UnityBox.ComponentReferenceMigration.MigrationEngine");
         var overrides = new Dictionary<string, string> { { state.types.Single(value => value.type == Part).guid, Part } };
-        var plan = engine.GetMethod("Scan", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[] { Candidates, overrides });
+        var scan = engine.GetMethod("Scan", BindingFlags.Static | BindingFlags.Public);
+        var duplicatePlan = scan.Invoke(null, new object[] { new[] { DuplicatePath }, overrides });
+        current.readOnlyAssets.Add(DuplicatePath);
+        RecordPlan(duplicatePlan, null);
+        Require(current.entries.Any(value => value.asset == DuplicatePath && value.status == "Duplicate"), "New/old same-type duplicate was not reported");
+        var selected = Candidates.Where(value => value != DuplicatePath).ToArray();
+        current.selectedAssets.AddRange(selected);
+        var plan = scan.Invoke(null, new object[] { selected, overrides });
         AssertFilesUnchanged(state, false);
         var readyTypes = new HashSet<string>();
-        foreach (var entry in (IEnumerable)Get(plan, "Entries"))
-        {
-            var row = new EntryRecord { asset = (string)Get(entry, "AssetPath"), componentFileId = (string)Get(entry, "ComponentFileId"),
-                legacyGuid = (string)Get(entry, "LegacyGuid"), targetGuid = (string)Get(entry, "TargetGuid"), type = (string)Get(entry, "TypeName"),
-                status = Get(entry, "Status").ToString(), details = (string)Get(entry, "Details") };
-            current.entries.Add(row); if (row.status == "Ready") readyTypes.Add(row.type);
-        }
+        RecordPlan(plan, readyTypes);
         Require(Types.All(readyTypes.Contains), "Not every legacy type has a ready migration entry: " + string.Join(",", Types.Where(value => !readyTypes.Contains(value))));
-        Require(current.entries.Any(value => value.asset == DuplicatePath && value.status == "Duplicate"), "New/old same-type duplicate was not reported");
-        foreach (var issue in (IEnumerable)Get(plan, "Issues")) current.issues.Add((string)Get(issue, "Code") + ": " + (string)Get(issue, "Message"));
         var result = engine.GetMethod("Apply", BindingFlags.Static | BindingFlags.Public).Invoke(null, new[] { plan });
         current.repairedComponents = (int)Get(result, "RepairedComponents");
         current.backupDirectory = (string)Get(result, "BackupDirectory");
@@ -427,7 +449,7 @@ public static class ComponentUpgradeFixture
         }
         current.checks.Add("one explicit batch Apply; PartGroup identity override came from actual phase-one MonoScript, not guessed fields");
         current.checks.Add("only confirmed script-GUID spans changed; all fileIDs, references, metadata and other serialized bytes remained identical");
-        current.checks.Add("pre-apply exact-byte backups verified; duplicate entry preserved without deleting or rewriting either component");
+        current.checks.Add("pre-apply exact-byte backups verified; duplicate was scanned read-only outside the batch selection and neither component/file was deleted or rewritten");
         VerifyTypedState(state, false);
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         foreach (var component in scene.GetRootGameObjects().SelectMany(Owned))
@@ -448,6 +470,18 @@ public static class ComponentUpgradeFixture
             current.checks.Add("creating current Inspectors and waiting for deferred callbacks did not initialize or normalize stored configuration");
             Finish();
         }, 8);
+    }
+
+    static void RecordPlan(object plan, HashSet<string> readyTypes)
+    {
+        foreach (var entry in (IEnumerable)Get(plan, "Entries"))
+        {
+            var row = new EntryRecord { asset = (string)Get(entry, "AssetPath"), componentFileId = (string)Get(entry, "ComponentFileId"),
+                legacyGuid = (string)Get(entry, "LegacyGuid"), targetGuid = (string)Get(entry, "TargetGuid"), type = (string)Get(entry, "TypeName"),
+                status = Get(entry, "Status").ToString(), details = (string)Get(entry, "Details") };
+            current.entries.Add(row); if (row.status == "Ready" && readyTypes != null) readyTypes.Add(row.type);
+        }
+        foreach (var issue in (IEnumerable)Get(plan, "Issues")) current.issues.Add((string)Get(issue, "Code") + ": " + (string)Get(issue, "Message"));
     }
 
     static byte[] ReplaceScriptGuids(byte[] bytes, Dictionary<string, string> mapping)
@@ -473,8 +507,14 @@ public static class ComponentUpgradeFixture
                 Require(components.TryGetValue(expected.globalId, out var component), "Component identity changed: " + path + " / " + expected.owner + " / " + expected.type);
                 Require(component.GetType().FullName == expected.type, "Component resolved to wrong type: " + expected.globalId);
                 var serialized = new SerializedObject(component);
+                // Older fixture snapshots entered the native PPtr implementation.
+                // Its m_FileID is an Editor instance ID. The serialized reference
+                // is checked by the parent property's GlobalObjectID and raw YAML.
+                var referencePaths = expected.properties.Where(value => value.kind == "ObjectReference")
+                    .Select(value => value.path + ".").ToArray();
                 foreach (var property in expected.properties)
                 {
+                    if (referencePaths.Any(prefix => property.path.StartsWith(prefix, StringComparison.Ordinal))) continue;
                     var currentProperty = serialized.FindProperty(property.path);
                     Require(currentProperty != null, "Stored field disappeared: " + expected.type + "." + property.path);
                     Require(Value(currentProperty) == property.value, "Stored value/PPtr changed: " + expected.type + "." + property.path + "; expected " + property.value + ", got " + Value(currentProperty));

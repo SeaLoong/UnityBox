@@ -4,7 +4,7 @@
   "editor_runs": [
     {
       "scope": "serial",
-      "run_id_utc": "20261107T134253-351a39f5",
+      "run_id_utc": "20261107T142145-b10c6a73",
       "measurements": [
         {
           "plugin": "AdvancedCostumeController",
@@ -12,10 +12,10 @@
           "correctness": "one outfit choice and two independently controlled parts per outfit",
           "size": 2,
           "samples": 5,
-          "median_ms": 189.9691,
-          "p95_ms": 193.0182,
-          "min_ms": 160.8685,
-          "max_ms": 193.0182,
+          "median_ms": 196.7852,
+          "p95_ms": 220.5728,
+          "min_ms": 185.68120000000002,
+          "max_ms": 220.5728,
           "allocated_bytes_per_op": -1
         },
         {
@@ -24,10 +24,10 @@
           "correctness": "real Animator changes outfit choice while preserving independent part controls",
           "size": 2,
           "samples": 9,
-          "median_ms": 0.0512978515625,
-          "p95_ms": 0.0609244140625,
-          "min_ms": 0.045860546875000005,
-          "max_ms": 0.0609244140625,
+          "median_ms": 0.058077148437500004,
+          "p95_ms": 0.0966763671875,
+          "min_ms": 0.050049414062500006,
+          "max_ms": 0.0966763671875,
           "allocated_bytes_per_op": -1
         },
         {
@@ -36,10 +36,10 @@
           "correctness": "one outfit choice and two independently controlled parts per outfit",
           "size": 8,
           "samples": 5,
-          "median_ms": 497.82410000000004,
-          "p95_ms": 595.8763,
-          "min_ms": 445.72920000000005,
-          "max_ms": 595.8763,
+          "median_ms": 582.9914,
+          "p95_ms": 732.1363,
+          "min_ms": 517.4965,
+          "max_ms": 732.1363,
           "allocated_bytes_per_op": -1
         },
         {
@@ -48,10 +48,10 @@
           "correctness": "real Animator changes outfit choice while preserving independent part controls",
           "size": 8,
           "samples": 9,
-          "median_ms": 0.0857775390625,
-          "p95_ms": 0.1156005859375,
-          "min_ms": 0.0705544921875,
-          "max_ms": 0.1156005859375,
+          "median_ms": 0.08865234375,
+          "p95_ms": 0.1460287109375,
+          "min_ms": 0.0744521484375,
+          "max_ms": 0.1460287109375,
           "allocated_bytes_per_op": -1
         },
         {
@@ -60,10 +60,10 @@
           "correctness": "one outfit choice and two independently controlled parts per outfit",
           "size": 24,
           "samples": 5,
-          "median_ms": 1364.2043,
-          "p95_ms": 1958.624,
-          "min_ms": 1349.1604,
-          "max_ms": 1958.624,
+          "median_ms": 2447.0915,
+          "p95_ms": 3076.5541000000003,
+          "min_ms": 2182.2108000000003,
+          "max_ms": 3076.5541000000003,
           "allocated_bytes_per_op": -1
         },
         {
@@ -72,10 +72,10 @@
           "correctness": "real Animator changes outfit choice while preserving independent part controls",
           "size": 24,
           "samples": 9,
-          "median_ms": 0.0999109375,
-          "p95_ms": 0.1247998046875,
-          "min_ms": 0.09190996093750001,
-          "max_ms": 0.1247998046875,
+          "median_ms": 0.210096484375,
+          "p95_ms": 0.25217656250000003,
+          "min_ms": 0.165916015625,
+          "max_ms": 0.25217656250000003,
           "allocated_bytes_per_op": -1
         },
         {
@@ -83,10 +83,10 @@
           "scenario": "analyze_static_layers",
           "size": 8,
           "samples": 9,
-          "median_ms": 2.6941,
-          "p95_ms": 371.76550000000003,
-          "min_ms": 1.7806000000000002,
-          "max_ms": 371.76550000000003,
+          "median_ms": 4.5760000000000005,
+          "p95_ms": 13.4542,
+          "min_ms": 3.2316000000000003,
+          "max_ms": 13.4542,
           "allocated_bytes_per_op": -1,
           "correctness": "convertible-layer-count-match"
         },
@@ -95,10 +95,10 @@
           "scenario": "analyze_static_layers",
           "size": 32,
           "samples": 9,
-          "median_ms": 11.515,
-          "p95_ms": 36.7575,
-          "min_ms": 7.8106,
-          "max_ms": 36.7575,
+          "median_ms": 18.4589,
+          "p95_ms": 43.528400000000005,
+          "min_ms": 9.677800000000001,
+          "max_ms": 43.528400000000005,
           "allocated_bytes_per_op": -1,
           "correctness": "convertible-layer-count-match"
         },
@@ -107,10 +107,10 @@
           "scenario": "analyze_static_layers",
           "size": 64,
           "samples": 9,
-          "median_ms": 21.7422,
-          "p95_ms": 30.055200000000003,
-          "min_ms": 19.9557,
-          "max_ms": 30.055200000000003,
+          "median_ms": 41.8341,
+          "p95_ms": 52.2796,
+          "min_ms": 32.8515,
+          "max_ms": 52.2796,
           "allocated_bytes_per_op": -1,
           "correctness": "convertible-layer-count-match"
         },
@@ -119,10 +119,10 @@
           "scenario": "automatic_retained_singleton_groups",
           "size": 8,
           "samples": 9,
-          "median_ms": 0.04666133333333333,
-          "p95_ms": 0.07083166666666667,
-          "min_ms": 0.04194233333333334,
-          "max_ms": 0.07083166666666667,
+          "median_ms": 0.058881333333333334,
+          "p95_ms": 0.07645366666666667,
+          "min_ms": 0.05036766666666667,
+          "max_ms": 0.07645366666666667,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -131,10 +131,10 @@
           "scenario": "explicit_singleton_conversion",
           "size": 8,
           "samples": 9,
-          "median_ms": 0.04729733333333334,
-          "p95_ms": 0.05779666666666668,
-          "min_ms": 0.04175366666666667,
-          "max_ms": 0.05779666666666668,
+          "median_ms": 0.08097900000000001,
+          "p95_ms": 0.148102,
+          "min_ms": 0.06158733333333334,
+          "max_ms": 0.148102,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -143,10 +143,10 @@
           "scenario": "automatic_retained_singleton_groups",
           "size": 32,
           "samples": 9,
-          "median_ms": 0.067218,
-          "p95_ms": 0.09723966666666667,
-          "min_ms": 0.054171000000000004,
-          "max_ms": 0.09723966666666667,
+          "median_ms": 0.17943900000000002,
+          "p95_ms": 0.22378,
+          "min_ms": 0.15865233333333334,
+          "max_ms": 0.22378,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -155,10 +155,10 @@
           "scenario": "explicit_singleton_conversion",
           "size": 32,
           "samples": 9,
-          "median_ms": 0.06345666666666668,
-          "p95_ms": 0.079961,
-          "min_ms": 0.057107333333333336,
-          "max_ms": 0.079961,
+          "median_ms": 0.17308033333333334,
+          "p95_ms": 0.18813233333333335,
+          "min_ms": 0.12416400000000001,
+          "max_ms": 0.18813233333333335,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -167,10 +167,10 @@
           "scenario": "animator_update_before_merge",
           "size": 8,
           "samples": 9,
-          "median_ms": 0.04385033333333334,
-          "p95_ms": 0.05001233333333333,
-          "min_ms": 0.04110966666666667,
-          "max_ms": 0.05001233333333333,
+          "median_ms": 0.09477066666666667,
+          "p95_ms": 0.188845,
+          "min_ms": 0.08143333333333333,
+          "max_ms": 0.188845,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -179,10 +179,10 @@
           "scenario": "animator_update_after_merge",
           "size": 8,
           "samples": 9,
-          "median_ms": 0.018201333333333333,
-          "p95_ms": 0.01982,
-          "min_ms": 0.014668666666666667,
-          "max_ms": 0.01982,
+          "median_ms": 0.054217666666666664,
+          "p95_ms": 0.06772833333333333,
+          "min_ms": 0.027336000000000003,
+          "max_ms": 0.06772833333333333,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -191,10 +191,10 @@
           "scenario": "animator_update_before_merge",
           "size": 32,
           "samples": 9,
-          "median_ms": 0.073605,
-          "p95_ms": 0.09987533333333334,
-          "min_ms": 0.05503566666666666,
-          "max_ms": 0.09987533333333334,
+          "median_ms": 0.11810233333333334,
+          "p95_ms": 0.18947833333333336,
+          "min_ms": 0.100391,
+          "max_ms": 0.18947833333333336,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -203,10 +203,10 @@
           "scenario": "animator_update_after_merge",
           "size": 32,
           "samples": 9,
-          "median_ms": 0.03290966666666667,
-          "p95_ms": 0.060611,
-          "min_ms": 0.028376000000000002,
-          "max_ms": 0.060611,
+          "median_ms": 0.037512000000000004,
+          "p95_ms": 0.06427500000000001,
+          "min_ms": 0.031146,
+          "max_ms": 0.06427500000000001,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -215,10 +215,10 @@
           "scenario": "animator_update_before_merge",
           "size": 64,
           "samples": 9,
-          "median_ms": 0.1366976666666667,
-          "p95_ms": 0.28705533333333333,
-          "min_ms": 0.12289000000000001,
-          "max_ms": 0.28705533333333333,
+          "median_ms": 0.21963033333333334,
+          "p95_ms": 0.2938306666666667,
+          "min_ms": 0.19498733333333335,
+          "max_ms": 0.2938306666666667,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -227,10 +227,10 @@
           "scenario": "animator_update_after_merge",
           "size": 64,
           "samples": 9,
-          "median_ms": 0.03453366666666667,
-          "p95_ms": 0.03618233333333334,
-          "min_ms": 0.027755666666666668,
-          "max_ms": 0.03618233333333334,
+          "median_ms": 0.039371,
+          "p95_ms": 0.046983000000000004,
+          "min_ms": 0.031306,
+          "max_ms": 0.046983000000000004,
           "allocated_bytes_per_op": -1,
           "correctness": "native-frame-output-match"
         },
@@ -241,10 +241,10 @@
           "size": 100,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 0.2501,
-          "p95_ms": 8.7667,
-          "min_ms": 0.2325,
-          "max_ms": 8.7667,
+          "median_ms": 0.2354,
+          "p95_ms": 0.4847,
+          "min_ms": 0.2287,
+          "max_ms": 0.4847,
           "allocated_bytes_per_op": -1
         },
         {
@@ -252,51 +252,51 @@
           "scenario": "history_cached_read",
           "correctness": "Cached immutable comparison view reused",
           "size": 100,
-          "samples": 9,
-          "operations_per_sample": 10000,
-          "median_ms": 1.4069999999999999e-05,
-          "p95_ms": 2.369e-05,
-          "min_ms": 1.4050000000000001e-05,
-          "max_ms": 2.369e-05,
-          "allocated_bytes_per_op": -1
-        },
-        {
-          "plugin": "AvatarColliderMonitor",
-          "scenario": "preview_cached_read",
-          "correctness": "No resampling or serialization during cached preview reads",
-          "size": 100,
-          "samples": 9,
-          "operations_per_sample": 10000,
-          "median_ms": 4.9540000000000003e-05,
-          "p95_ms": 8.955e-05,
-          "min_ms": 1.963e-05,
-          "max_ms": 8.955e-05,
-          "allocated_bytes_per_op": -1
-        },
-        {
-          "plugin": "AvatarColliderMonitor",
-          "scenario": "history_recompute_reference",
-          "correctness": "Reference full history scan agrees with cached changes",
-          "size": 1000,
-          "samples": 9,
-          "operations_per_sample": 1,
-          "median_ms": 2.9587,
-          "p95_ms": 9.039,
-          "min_ms": 2.5881,
-          "max_ms": 9.039,
-          "allocated_bytes_per_op": -1
-        },
-        {
-          "plugin": "AvatarColliderMonitor",
-          "scenario": "history_cached_read",
-          "correctness": "Cached immutable comparison view reused",
-          "size": 1000,
           "samples": 9,
           "operations_per_sample": 10000,
           "median_ms": 1.4050000000000001e-05,
-          "p95_ms": 2.3350000000000002e-05,
-          "min_ms": 1.4050000000000001e-05,
-          "max_ms": 2.3350000000000002e-05,
+          "p95_ms": 2.146e-05,
+          "min_ms": 1.404e-05,
+          "max_ms": 2.146e-05,
+          "allocated_bytes_per_op": -1
+        },
+        {
+          "plugin": "AvatarColliderMonitor",
+          "scenario": "preview_cached_read",
+          "correctness": "No resampling or serialization during cached preview reads",
+          "size": 100,
+          "samples": 9,
+          "operations_per_sample": 10000,
+          "median_ms": 2.235e-05,
+          "p95_ms": 0.00011707,
+          "min_ms": 1.886e-05,
+          "max_ms": 0.00011707,
+          "allocated_bytes_per_op": -1
+        },
+        {
+          "plugin": "AvatarColliderMonitor",
+          "scenario": "history_recompute_reference",
+          "correctness": "Reference full history scan agrees with cached changes",
+          "size": 1000,
+          "samples": 9,
+          "operations_per_sample": 1,
+          "median_ms": 3.6233,
+          "p95_ms": 11.4145,
+          "min_ms": 3.2471,
+          "max_ms": 11.4145,
+          "allocated_bytes_per_op": -1
+        },
+        {
+          "plugin": "AvatarColliderMonitor",
+          "scenario": "history_cached_read",
+          "correctness": "Cached immutable comparison view reused",
+          "size": 1000,
+          "samples": 9,
+          "operations_per_sample": 10000,
+          "median_ms": 1.4060000000000001e-05,
+          "p95_ms": 5.474e-05,
+          "min_ms": 1.404e-05,
+          "max_ms": 5.474e-05,
           "allocated_bytes_per_op": -1
         },
         {
@@ -306,10 +306,10 @@
           "size": 1000,
           "samples": 9,
           "operations_per_sample": 10000,
-          "median_ms": 1.894e-05,
-          "p95_ms": 2.575e-05,
-          "min_ms": 1.877e-05,
-          "max_ms": 2.575e-05,
+          "median_ms": 2.113e-05,
+          "p95_ms": 4.451e-05,
+          "min_ms": 1.879e-05,
+          "max_ms": 4.451e-05,
           "allocated_bytes_per_op": -1
         },
         {
@@ -319,10 +319,10 @@
           "size": 32,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 0.717,
-          "p95_ms": 3.9168,
-          "min_ms": 0.5813,
-          "max_ms": 3.9168,
+          "median_ms": 1.445,
+          "p95_ms": 5.1893,
+          "min_ms": 0.6031,
+          "max_ms": 5.1893,
           "allocated_bytes_per_op": -1
         },
         {
@@ -332,10 +332,10 @@
           "size": 256,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 5.2492,
-          "p95_ms": 8.8679,
-          "min_ms": 4.7082,
-          "max_ms": 8.8679,
+          "median_ms": 6.8393,
+          "p95_ms": 22.5589,
+          "min_ms": 5.4376,
+          "max_ms": 22.5589,
           "allocated_bytes_per_op": -1
         },
         {
@@ -345,10 +345,10 @@
           "size": 1024,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 26.9177,
-          "p95_ms": 38.8549,
-          "min_ms": 24.0394,
-          "max_ms": 38.8549,
+          "median_ms": 36.8793,
+          "p95_ms": 64.5088,
+          "min_ms": 29.6152,
+          "max_ms": 64.5088,
           "allocated_bytes_per_op": -1
         },
         {
@@ -356,10 +356,10 @@
           "scenario": "gesture_graph_generation",
           "size": 2,
           "samples": 7,
-          "median_ms": 3.0446,
-          "p95_ms": 4.0113,
-          "min_ms": 2.4425000000000003,
-          "max_ms": 4.0113,
+          "median_ms": 3.6614,
+          "p95_ms": 6.4798,
+          "min_ms": 2.5061,
+          "max_ms": 6.4798,
           "allocated_bytes_per_op": -1,
           "correctness": "one continuous-hold state per password step; WD Off; no avatar lock layer"
         },
@@ -368,10 +368,10 @@
           "scenario": "gesture_graph_generation",
           "size": 8,
           "samples": 7,
-          "median_ms": 21.849700000000002,
-          "p95_ms": 31.412000000000003,
-          "min_ms": 15.324300000000001,
-          "max_ms": 31.412000000000003,
+          "median_ms": 36.748000000000005,
+          "p95_ms": 43.2175,
+          "min_ms": 15.9777,
+          "max_ms": 43.2175,
           "allocated_bytes_per_op": -1,
           "correctness": "one continuous-hold state per password step; WD Off; no avatar lock layer"
         },
@@ -380,10 +380,10 @@
           "scenario": "gesture_graph_generation",
           "size": 32,
           "samples": 7,
-          "median_ms": 365.9565,
-          "p95_ms": 520.9445000000001,
-          "min_ms": 217.43,
-          "max_ms": 520.9445000000001,
+          "median_ms": 537.3589000000001,
+          "p95_ms": 774.6512,
+          "min_ms": 345.4467,
+          "max_ms": 774.6512,
           "allocated_bytes_per_op": -1,
           "correctness": "one continuous-hold state per password step; WD Off; no avatar lock layer"
         },
@@ -393,10 +393,10 @@
           "correctness": "one independent layer, parameter and clip per selected shape",
           "size": 4,
           "samples": 5,
-          "median_ms": 108.62190000000001,
-          "p95_ms": 131.63500000000002,
-          "min_ms": 101.41040000000001,
-          "max_ms": 131.63500000000002,
+          "median_ms": 194.2658,
+          "p95_ms": 218.9393,
+          "min_ms": 180.39860000000002,
+          "max_ms": 218.9393,
           "allocated_bytes_per_op": -1
         },
         {
@@ -405,10 +405,10 @@
           "correctness": "real Animator updates normalized Float input and all generated layers",
           "size": 4,
           "samples": 9,
-          "median_ms": 0.039823046875000004,
-          "p95_ms": 0.045674609375,
-          "min_ms": 0.0369185546875,
-          "max_ms": 0.045674609375,
+          "median_ms": 0.0423361328125,
+          "p95_ms": 0.06945156250000001,
+          "min_ms": 0.033465625,
+          "max_ms": 0.06945156250000001,
           "allocated_bytes_per_op": -1
         },
         {
@@ -417,10 +417,10 @@
           "correctness": "one independent layer, parameter and clip per selected shape",
           "size": 16,
           "samples": 5,
-          "median_ms": 304.3986,
-          "p95_ms": 338.4519,
-          "min_ms": 287.13640000000004,
-          "max_ms": 338.4519,
+          "median_ms": 425.29810000000003,
+          "p95_ms": 580.8541,
+          "min_ms": 386.0297,
+          "max_ms": 580.8541,
           "allocated_bytes_per_op": -1
         },
         {
@@ -429,10 +429,10 @@
           "correctness": "real Animator updates normalized Float input and all generated layers",
           "size": 16,
           "samples": 9,
-          "median_ms": 0.0614373046875,
-          "p95_ms": 0.08889218750000001,
-          "min_ms": 0.0576345703125,
-          "max_ms": 0.08889218750000001,
+          "median_ms": 0.0976107421875,
+          "p95_ms": 0.18991445312500002,
+          "min_ms": 0.07902324218750001,
+          "max_ms": 0.18991445312500002,
           "allocated_bytes_per_op": -1
         },
         {
@@ -441,10 +441,10 @@
           "correctness": "one independent layer, parameter and clip per selected shape",
           "size": 64,
           "samples": 5,
-          "median_ms": 1428.1728,
-          "p95_ms": 1627.8218000000002,
-          "min_ms": 1123.0664000000002,
-          "max_ms": 1627.8218000000002,
+          "median_ms": 1350.5245,
+          "p95_ms": 1450.4039,
+          "min_ms": 1227.9051,
+          "max_ms": 1450.4039,
           "allocated_bytes_per_op": -1
         },
         {
@@ -453,10 +453,10 @@
           "correctness": "real Animator updates normalized Float input and all generated layers",
           "size": 64,
           "samples": 9,
-          "median_ms": 0.149040625,
-          "p95_ms": 0.16169687500000002,
-          "min_ms": 0.1212072265625,
-          "max_ms": 0.16169687500000002,
+          "median_ms": 0.16673515625000002,
+          "p95_ms": 0.20299003906250002,
+          "min_ms": 0.1266763671875,
+          "max_ms": 0.20299003906250002,
           "allocated_bytes_per_op": -1
         },
         {
@@ -466,10 +466,10 @@
           "size": 1000,
           "samples": 9,
           "operations_per_sample": 1000,
-          "median_ms": 0.0002183,
-          "p95_ms": 0.0003827,
-          "min_ms": 0.0002165,
-          "max_ms": 0.0003827,
+          "median_ms": 0.00027150000000000004,
+          "p95_ms": 0.00036009999999999997,
+          "min_ms": 0.00021690000000000001,
+          "max_ms": 0.00036009999999999997,
           "allocated_bytes_per_op": -1
         },
         {
@@ -479,10 +479,10 @@
           "size": 1000,
           "samples": 9,
           "operations_per_sample": 1000,
-          "median_ms": 4e-06,
-          "p95_ms": 4e-06,
-          "min_ms": 3.9e-06,
-          "max_ms": 4e-06,
+          "median_ms": 4.1000000000000006e-06,
+          "p95_ms": 4.2e-06,
+          "min_ms": 3.8e-06,
+          "max_ms": 4.2e-06,
           "allocated_bytes_per_op": -1
         },
         {
@@ -492,10 +492,10 @@
           "size": 10000,
           "samples": 9,
           "operations_per_sample": 10000,
-          "median_ms": 0.00022584,
-          "p95_ms": 0.00025349,
-          "min_ms": 0.00021995,
-          "max_ms": 0.00025349,
+          "median_ms": 0.00028746,
+          "p95_ms": 0.0004243,
+          "min_ms": 0.00022258,
+          "max_ms": 0.0004243,
           "allocated_bytes_per_op": -1
         },
         {
@@ -505,10 +505,10 @@
           "size": 10000,
           "samples": 9,
           "operations_per_sample": 10000,
-          "median_ms": 4.14e-06,
-          "p95_ms": 4.15e-06,
-          "min_ms": 3.73e-06,
-          "max_ms": 4.15e-06,
+          "median_ms": 4.16e-06,
+          "p95_ms": 5.46e-06,
+          "min_ms": 4.15e-06,
+          "max_ms": 5.46e-06,
           "allocated_bytes_per_op": -1
         },
         {
@@ -518,10 +518,10 @@
           "size": 128,
           "samples": 9,
           "operations_per_sample": 128,
-          "median_ms": 0.000215625,
-          "p95_ms": 0.0012265625,
-          "min_ms": 0.000146875,
-          "max_ms": 0.0012265625,
+          "median_ms": 0.00019296875,
+          "p95_ms": 0.0002484375,
+          "min_ms": 0.00015390625,
+          "max_ms": 0.0002484375,
           "allocated_bytes_per_op": -1
         },
         {
@@ -531,10 +531,10 @@
           "size": 128,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 0.2406,
-          "p95_ms": 0.3494,
-          "min_ms": 0.2123,
-          "max_ms": 0.3494,
+          "median_ms": 0.2571,
+          "p95_ms": 0.4225,
+          "min_ms": 0.2229,
+          "max_ms": 0.4225,
           "allocated_bytes_per_op": -1
         },
         {
@@ -544,10 +544,10 @@
           "size": 1024,
           "samples": 9,
           "operations_per_sample": 1024,
-          "median_ms": 0.00020703125,
-          "p95_ms": 0.00308486328125,
-          "min_ms": 0.000156640625,
-          "max_ms": 0.00308486328125,
+          "median_ms": 0.00020771484375,
+          "p95_ms": 0.00035400390625,
+          "min_ms": 0.00012822265625,
+          "max_ms": 0.00035400390625,
           "allocated_bytes_per_op": -1
         },
         {
@@ -557,10 +557,10 @@
           "size": 1024,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 2.0215,
-          "p95_ms": 4.5714,
-          "min_ms": 1.5983,
-          "max_ms": 4.5714,
+          "median_ms": 2.3308,
+          "p95_ms": 6.3819,
+          "min_ms": 1.9222,
+          "max_ms": 6.3819,
           "allocated_bytes_per_op": -1
         },
         {
@@ -569,10 +569,10 @@
           "size": 128,
           "samples": 5,
           "warmups": 1,
-          "median_ms": 79.6564,
-          "p95_ms": 101.9209,
-          "min_ms": 70.8336,
-          "max_ms": 101.9209,
+          "median_ms": 92.6815,
+          "p95_ms": 127.15090000000001,
+          "min_ms": 89.7275,
+          "max_ms": 127.15090000000001,
           "allocated_bytes_per_op": -1,
           "correctness": "128 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
         },
@@ -582,10 +582,10 @@
           "size": 1024,
           "samples": 5,
           "warmups": 1,
-          "median_ms": 1036.0468,
-          "p95_ms": 1772.0534,
-          "min_ms": 702.6935000000001,
-          "max_ms": 1772.0534,
+          "median_ms": 862.4242,
+          "p95_ms": 886.6368,
+          "min_ms": 796.1386,
+          "max_ms": 886.6368,
           "allocated_bytes_per_op": -1,
           "correctness": "1024 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
         },
@@ -595,10 +595,10 @@
           "size": 4096,
           "samples": 5,
           "warmups": 1,
-          "median_ms": 5275.2705000000005,
-          "p95_ms": 6183.1651,
-          "min_ms": 3317.4458,
-          "max_ms": 6183.1651,
+          "median_ms": 3308.0420000000004,
+          "p95_ms": 4415.9267,
+          "min_ms": 2984.2217,
+          "max_ms": 4415.9267,
           "allocated_bytes_per_op": -1,
           "correctness": "4096 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
         },
@@ -609,10 +609,10 @@
           "size": 32,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 19.1321,
-          "p95_ms": 40.587,
-          "min_ms": 17.1832,
-          "max_ms": 40.587,
+          "median_ms": 18.434,
+          "p95_ms": 33.0857,
+          "min_ms": 15.1092,
+          "max_ms": 33.0857,
           "allocated_bytes_per_op": -1
         },
         {
@@ -622,10 +622,10 @@
           "size": 256,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 185.851,
-          "p95_ms": 330.4052,
-          "min_ms": 161.0777,
-          "max_ms": 330.4052,
+          "median_ms": 150.2293,
+          "p95_ms": 208.6382,
+          "min_ms": 133.6806,
+          "max_ms": 208.6382,
           "allocated_bytes_per_op": -1
         },
         {
@@ -635,10 +635,10 @@
           "size": 16,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 85.0126,
-          "p95_ms": 161.0385,
-          "min_ms": 68.6164,
-          "max_ms": 161.0385,
+          "median_ms": 113.9171,
+          "p95_ms": 197.8538,
+          "min_ms": 81.4015,
+          "max_ms": 197.8538,
           "allocated_bytes_per_op": -1
         },
         {
@@ -648,10 +648,10 @@
           "size": 16,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 22.9854,
-          "p95_ms": 33.4473,
-          "min_ms": 18.159,
-          "max_ms": 33.4473,
+          "median_ms": 20.7585,
+          "p95_ms": 22.5581,
+          "min_ms": 16.1827,
+          "max_ms": 22.5581,
           "allocated_bytes_per_op": -1
         },
         {
@@ -661,10 +661,10 @@
           "size": 64,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 442.9328,
-          "p95_ms": 944.957,
-          "min_ms": 301.6253,
-          "max_ms": 944.957,
+          "median_ms": 308.777,
+          "p95_ms": 409.2767,
+          "min_ms": 288.4613,
+          "max_ms": 409.2767,
           "allocated_bytes_per_op": -1
         },
         {
@@ -674,10 +674,10 @@
           "size": 64,
           "samples": 9,
           "operations_per_sample": 1,
-          "median_ms": 41.5799,
-          "p95_ms": 146.5634,
-          "min_ms": 34.0801,
-          "max_ms": 146.5634,
+          "median_ms": 26.6728,
+          "p95_ms": 50.6163,
+          "min_ms": 22.7452,
+          "max_ms": 50.6163,
           "allocated_bytes_per_op": -1
         },
         {
@@ -686,10 +686,10 @@
           "correctness": "15 states,15 transitions,15 voice trees; assets replaced in one controller",
           "size": 1,
           "samples": 7,
-          "median_ms": 180.9103,
-          "p95_ms": 389.8523,
-          "min_ms": 136.22910000000002,
-          "max_ms": 389.8523,
+          "median_ms": 114.6294,
+          "p95_ms": 157.1291,
+          "min_ms": 107.9482,
+          "max_ms": 157.1291,
           "allocated_bytes_per_op": -1
         },
         {
@@ -698,10 +698,10 @@
           "correctness": "15 states,15 transitions,15 voice trees; assets replaced in one controller",
           "size": 5,
           "samples": 7,
-          "median_ms": 312.8605,
-          "p95_ms": 701.2679,
-          "min_ms": 247.48180000000002,
-          "max_ms": 701.2679,
+          "median_ms": 125.39590000000001,
+          "p95_ms": 148.2707,
+          "min_ms": 113.21440000000001,
+          "max_ms": 148.2707,
           "allocated_bytes_per_op": -1
         },
         {
@@ -710,10 +710,10 @@
           "correctness": "15 states,15 transitions,15 voice trees; assets replaced in one controller",
           "size": 15,
           "samples": 7,
-          "median_ms": 289.9065,
-          "p95_ms": 341.5167,
-          "min_ms": 201.31990000000002,
-          "max_ms": 341.5167,
+          "median_ms": 132.4154,
+          "p95_ms": 145.5337,
+          "min_ms": 119.72850000000001,
+          "max_ms": 145.5337,
           "allocated_bytes_per_op": -1
         },
         {
@@ -722,10 +722,10 @@
           "correctness": "15 valid names, renderer-relative paths and voice ranges resolved",
           "size": 15,
           "samples": 21,
-          "median_ms": 0.10084800000000001,
-          "p95_ms": 0.25480800000000003,
-          "min_ms": 0.022396000000000003,
-          "max_ms": 0.8130080000000001,
+          "median_ms": 0.016715999999999998,
+          "p95_ms": 0.027772,
+          "min_ms": 0.013992,
+          "max_ms": 0.028868,
           "allocated_bytes_per_op": -1
         },
         {
@@ -734,10 +734,10 @@
           "correctness": "15 valid names, renderer-relative paths and voice ranges resolved",
           "size": 150,
           "samples": 21,
-          "median_ms": 0.05784000000000001,
-          "p95_ms": 0.139628,
+          "median_ms": 0.024208000000000004,
+          "p95_ms": 0.032756,
           "min_ms": 0.019196,
-          "max_ms": 0.152072,
+          "max_ms": 0.034712,
           "allocated_bytes_per_op": -1
         },
         {
@@ -746,10 +746,10 @@
           "correctness": "15 valid names, renderer-relative paths and voice ranges resolved",
           "size": 1500,
           "samples": 21,
-          "median_ms": 0.20408400000000002,
-          "p95_ms": 0.349144,
-          "min_ms": 0.092128,
-          "max_ms": 0.401092,
+          "median_ms": 0.122048,
+          "p95_ms": 0.19186400000000003,
+          "min_ms": 0.069008,
+          "max_ms": 0.515444,
           "allocated_bytes_per_op": -1
         }
       ],
@@ -773,14 +773,14 @@
         "-batchmode",
         "-nographics",
         "-projectPath",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107",
         "-runTests",
         "-testPlatform",
         "EditMode",
         "-testResults",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-test-results/20261107T134253-351a39f5/results.xml",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-test-results/20261107T142145-b10c6a73/results.xml",
         "-logFile",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-test-results/20261107T134253-351a39f5/unity.log",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-test-results/20261107T142145-b10c6a73/unity.log",
         "-testCategory",
         "UnityBoxPerformance",
         "-assemblyNames",
@@ -788,22 +788,22 @@
       ],
       "artifacts": {
         "report": {
-          "path": "/workspace/unitybox-setup/unity/component-references-benchmark-result.json",
-          "bytes": 29217,
-          "sha256": "65b6109a2e16d17e87957839607f1ad06eeaab0ced802b25d445ef286ea8a2d9"
+          "path": "/workspace/unitybox-setup/unity/component-stage-benchmark-result.json",
+          "bytes": 29086,
+          "sha256": "6b9b4a78853a95ea506045324277c1486a28b1da5939a6ffb217f7eb6f8e1ffe"
         },
         "xml": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-test-results/20261107T134253-351a39f5/results.xml",
-          "bytes": 76414,
-          "sha256": "c42ff52ba72d3e6f03129653b1e0c670bbc0ef4706004b060a161f56ac3fe612"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-test-results/20261107T142145-b10c6a73/results.xml",
+          "bytes": 76215,
+          "sha256": "4063de02b3e69ed7c366f0b72288a7571d6ac6ee001ff4bbdbb915660b1b170a"
         },
         "unity_log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-test-results/20261107T134253-351a39f5/unity.log",
-          "bytes": 1809951,
-          "sha256": "e8935645a3b6d185f6b831984bcdb6e5fd41d62e00a5e7576fb6d826bb12807b"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-test-results/20261107T142145-b10c6a73/unity.log",
+          "bytes": 1808104,
+          "sha256": "2d98a8192e572791bbbe3553a36be2cfef6a84e7ef20cb75e068584f7e603f6b"
         },
         "launcher_log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-test-results/20261107T134253-351a39f5/launcher.log",
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-test-results/20261107T142145-b10c6a73/launcher.log",
           "bytes": 0,
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         }
@@ -811,10 +811,10 @@
       "archived_xml": {
         "path": "Verification/serial-results.xml.gz",
         "compression": "gzip; mtime=0",
-        "bytes": 7320,
-        "sha256": "0383343c9266dc9ef6ca1bd12d3ee1ce64672b9f1d880e8907a2a3eb39cb47fb",
-        "original_xml_sha256": "c42ff52ba72d3e6f03129653b1e0c670bbc0ef4706004b060a161f56ac3fe612",
-        "archived_xml_sha256": "c42ff52ba72d3e6f03129653b1e0c670bbc0ef4706004b060a161f56ac3fe612",
+        "bytes": 7372,
+        "sha256": "e3030b119a0f50354d1bdf4d6327720b6c0ec41c5eb4c6ef3131a991d898bf99",
+        "original_xml_sha256": "4063de02b3e69ed7c366f0b72288a7571d6ac6ee001ff4bbdbb915660b1b170a",
+        "archived_xml_sha256": "4063de02b3e69ed7c366f0b72288a7571d6ac6ee001ff4bbdbb915660b1b170a",
         "removed_metadata": []
       },
       "source_evidence": {
@@ -824,7 +824,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AdvancedCostumeController",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fa8a83d6fbc592bc6819f32a2b82d5276dd4e955748ac81535dfb2b178d15864",
             "source_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
             "imported_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
@@ -841,7 +841,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AnimatorOptimizer",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "2d6480c42bd2cf0c3d568392b12840aac37d62171ac5a3974bf077e30587d2e0",
             "source_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
             "imported_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
@@ -856,7 +856,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarColliderMonitor",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "cf0c08fd9362e2bab0684ab7668d4bda0657e3788e354737bb900b4c82278456",
             "source_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
             "imported_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
@@ -871,7 +871,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "52fdea0e106f4ecb14dff2d1fe4b0e2b088ec36f84e7cc87e1a896981809cdf7",
             "source_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
             "imported_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
@@ -895,7 +895,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BlendshapeControllerGenerator",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ef5e31fe93606ba95059f8ef9d35a876be2f54bdcdedbb5a1e398cd805cab1e9",
             "source_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
             "imported_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
@@ -910,7 +910,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BuildPipelineLogger",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "8c9b1063a319536aa66b5c56d8b8b3ec02993d25f8eacb0c5958cb0011ba84e4",
             "source_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
             "imported_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
@@ -925,7 +925,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/PrefabDiffPatcher",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ccdc4537f236e0115e30f622b18bcc48dc50b1e9a4e3e5110ba2eaa38a5f14a3",
             "source_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
             "imported_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
@@ -940,7 +940,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/VisemeBlendshapeOverride",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fb977fec1e3a44dad75f679b9706739cac8e484d63bfc72c30d4bdb3087a48b9",
             "source_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
             "imported_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
@@ -955,10 +955,10 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/ComponentReferenceMigration",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
-            "prepared_tree_sha256": "cca12907a3863f8aabcab5213694880be870b4ae7f4d443ff7683784abcecc31",
-            "source_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
-            "imported_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
+            "prepared_tree_sha256": "7f2cddf02e0236a00fedefb806c887580890e0194086245e32447239435f9d31",
+            "source_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
+            "imported_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
             "file_count": 16,
             "metadata_formatting_only": [],
             "importer_generated_metadata": []
@@ -968,7 +968,7 @@
           "UnityBox.AdvancedCostumeController.Core": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
               "bytes": 73216,
               "sha256": "3c9ec6c9ec65520ca56ddef3c10baa07cf9eb0d27aa8beca3205e4d5ceeee1b6"
             },
@@ -978,7 +978,7 @@
           "UnityBox.AdvancedCostumeController.Runtime": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
               "bytes": 9216,
               "sha256": "5ea1d6cb9fe782926c305afd610652078671391f4fc08e818ffa9d8e1fbc8eb2"
             },
@@ -988,7 +988,7 @@
           "UnityBox.AdvancedCostumeController.Core.Tests": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
               "bytes": 32768,
               "sha256": "a565c35249cf3bf4b491903c45055bf17a94fbb6d6b42c591ec95ecd53573934"
             },
@@ -998,7 +998,7 @@
           "UnityBox.AnimatorOptimizer": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
               "bytes": 351232,
               "sha256": "3870009640800b7fdc561079b233efd0a7361502c7c8121681372964bde3d94a"
             },
@@ -1008,7 +1008,7 @@
           "UnityBox.AnimatorOptimizer.Runtime": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
               "bytes": 12288,
               "sha256": "094beb7a6d123d8d9dd86a5424013afafbd2374cfcf2002765798f7b3fc7f1bc"
             },
@@ -1018,7 +1018,7 @@
           "UnityBox.AnimatorOptimizer.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
               "bytes": 138240,
               "sha256": "74c673cc15a41471c1f9c2a68bfbc17daf7183589c88610bf1f050644a47fe2b"
             },
@@ -1028,7 +1028,7 @@
           "UnityBox.AnimatorOptimizer.TestFixtures": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
               "bytes": 4608,
               "sha256": "81619d1f78f38af66a90c2dfae846b594538b17049bc71b27f289379f9981508"
             },
@@ -1038,7 +1038,7 @@
           "UnityBox.AvatarColliderMonitor": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
               "bytes": 25600,
               "sha256": "8d77aba1dd2641ca1256560e6f61a18553857b0aa0a18941bf420650a2a53c7e"
             },
@@ -1048,7 +1048,7 @@
           "UnityBox.AvatarColliderMonitor.Tests": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
               "bytes": 19968,
               "sha256": "e452c7923e8eb569b73b2f7ecae2bd4f991902e0ab02212826c6bd2500957584"
             },
@@ -1058,7 +1058,7 @@
           "UnityBox.AvatarSecuritySystem": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
               "bytes": 158208,
               "sha256": "ee1f576492958865e500631835fc3c321d07dd3b411122b21eac96076d6947d8"
             },
@@ -1068,7 +1068,7 @@
           "UnityBox.AvatarSecuritySystem.Runtime": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
               "bytes": 11264,
               "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
             },
@@ -1078,7 +1078,7 @@
           "UnityBox.AvatarSecuritySystem.Editor.Tests": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
               "bytes": 59904,
               "sha256": "fe5ca186efb7bb45e5e85ec2192e2ef519ec5d695c83d1ab4f2a69b28694794a"
             },
@@ -1088,7 +1088,7 @@
           "UnityBox.BlendshapeControllerGenerator": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
               "bytes": 40960,
               "sha256": "ef283a4038a95184a93de73543d1e28a8ba578a23e4521fd35be53ba8c161d05"
             },
@@ -1098,7 +1098,7 @@
           "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
               "bytes": 30720,
               "sha256": "bdf5052cf36819fd57624784ca7607bb3b68fea245ddb272a36d4c98f39a3457"
             },
@@ -1108,7 +1108,7 @@
           "UnityBox.BuildPipelineLogger": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
               "bytes": 32768,
               "sha256": "a4111ff82e862b5ff344c095786668cd2e0f43575da672565d73e495e8768ce9"
             },
@@ -1118,7 +1118,7 @@
           "UnityBox.BuildPipelineLogger.Tests": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
               "bytes": 14336,
               "sha256": "4ddc51a5c3be39e329fcd0d2306223035686ecd6707ccdfd1d041a89fd75a8d7"
             },
@@ -1128,7 +1128,7 @@
           "UnityBox.PrefabDiffPatcher": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
               "bytes": 62976,
               "sha256": "22d174a68f620896fdd6423bdde582de4c75dfe35b700ce70907c0e39d4cc499"
             },
@@ -1138,7 +1138,7 @@
           "UnityBox.PrefabDiffPatcher.Editor.Tests": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
               "bytes": 26112,
               "sha256": "64bfe8491323722c252236a715d97552eef10c8a4174e706ae69a13cbc698c5b"
             },
@@ -1148,7 +1148,7 @@
           "UnityBox.PrefabDiffPatcher.TestFixtures": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
               "bytes": 6144,
               "sha256": "ed939caf3c303e3160b939a46e6824242f48afeca6294a4f72d938394c741dff"
             },
@@ -1158,7 +1158,7 @@
           "UnityBox.VisemeBlendshapeOverride": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
               "bytes": 33280,
               "sha256": "e944b788b305154912cf7087a17eba67d6a59bacd9f6524ad87c12e5a9cf4544"
             },
@@ -1168,7 +1168,7 @@
           "UnityBox.VisemeBlendshapeOverride.Runtime": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
               "bytes": 10752,
               "sha256": "4758f007153cad59b793798f17e566f0784a105e9aec3a7787f72829f1b30f34"
             },
@@ -1178,7 +1178,7 @@
           "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
               "bytes": 38400,
               "sha256": "77781dcccbac13e070318f2abb5e89dc5b3f6a76952a295f18631c7294bffec7"
             },
@@ -1188,22 +1188,22 @@
           "UnityBox.ComponentReferenceMigration.Editor": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
               "bytes": 45056,
-              "sha256": "abeaa282ec9b2c7e4661bf6da4ff7e1bbebf5c9aa8a5d68a5d5a662781311de3"
+              "sha256": "a67f0115f90b003165216671b644f5f2eba2757c7efa9f631a9c591bc13f488e"
             },
             "source_file_count": 3,
-            "source_sha256": "3b4a0fded7376c95d12c83138bdbb511ad7deea7ff5f0e7f06262c8bef2cf57f"
+            "source_sha256": "40b977f0ae8b943b725fccdcb4d02a55fdbd1f23622e3ce7ece6d91242c4d991"
           },
           "UnityBox.ComponentReferenceMigration.Editor.Tests": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
-              "bytes": 21504,
-              "sha256": "f77ad28b97d56b3ac7432bad2fb89d02d531bf3563522fad4818157f4eaf7d12"
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
+              "bytes": 25600,
+              "sha256": "0e460559489cc42e1d4278bd78af421337eaa129e475b5e973eb303ed51eb791"
             },
             "source_file_count": 3,
-            "source_sha256": "8882dfeaa76527e7cc1368e0a131ccc5d72b0babfdbf815342825c571837bd7b"
+            "source_sha256": "75da4c298d46de5675066e510e9b54d54215420dd39234738189fdbd79e1e2d6"
           }
         },
         "package_snapshot_matches_current_source": true,
@@ -1220,8 +1220,8 @@
   ],
   "graphics_runs": [
     {
-      "scope": "icons",
-      "run_id_utc": "20261107T134054-ba1d65a2",
+      "scope": "graphics",
+      "run_id_utc": "20261107T141224-77d4b9ba",
       "measurements": [
         {
           "plugin": "AdvancedCostumeController",
@@ -1229,10 +1229,10 @@
           "correctness": "two256x256RGBA icons show distinct red/green geometry; source material and layer retained",
           "size": 2,
           "samples": 5,
-          "median_ms": 203.30800000000002,
-          "p95_ms": 224.05370000000002,
-          "min_ms": 191.96370000000002,
-          "max_ms": 224.05370000000002,
+          "median_ms": 204.1901,
+          "p95_ms": 224.64690000000002,
+          "min_ms": 186.782,
+          "max_ms": 224.64690000000002,
           "allocated_bytes_per_op": -1
         }
       ],
@@ -1247,14 +1247,14 @@
         "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
         "-batchmode",
         "-projectPath",
-        "/workspace/unitybox-setup/unity/projects/component-references-full-20261107",
+        "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107",
         "-runTests",
         "-testPlatform",
         "EditMode",
         "-testResults",
-        "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/.unitybox-test-results/20261107T134054-ba1d65a2/results.xml",
+        "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/.unitybox-test-results/20261107T141224-77d4b9ba/results.xml",
         "-logFile",
-        "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/.unitybox-test-results/20261107T134054-ba1d65a2/unity.log",
+        "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/.unitybox-test-results/20261107T141224-77d4b9ba/unity.log",
         "-testCategory",
         "UnityBoxGraphics",
         "-assemblyNames",
@@ -1262,33 +1262,33 @@
       ],
       "artifacts": {
         "report": {
-          "path": "/workspace/unitybox-setup/unity/component-references-graphics-result.json",
-          "bytes": 5816,
-          "sha256": "d851f7ed8f68a7862e684255aff5332653e1fa982d828de93b31afe203a24d9f"
+          "path": "/workspace/unitybox-setup/unity/component-stage-graphics-result.json",
+          "bytes": 6036,
+          "sha256": "ca390e24501bc973fcc7e97c84c945ef34cd04d16b8143fd26117df82da2b29b"
         },
         "xml": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/.unitybox-test-results/20261107T134054-ba1d65a2/results.xml",
-          "bytes": 8114,
-          "sha256": "edef1fddc266db275272d35dfa4c87ce920a9728b8a3e5927f6786c2f23b3674"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/.unitybox-test-results/20261107T141224-77d4b9ba/results.xml",
+          "bytes": 11110,
+          "sha256": "60a57074ac992197a621f16e9bd87e3bed6ae56ea69efc7556a5f6110bdb7115"
         },
         "unity_log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/.unitybox-test-results/20261107T134054-ba1d65a2/unity.log",
-          "bytes": 506033,
-          "sha256": "a06953096d1913f84d1a9ea8d678395024793cc87bce3ad3b03ff8b8d5dbae14"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/.unitybox-test-results/20261107T141224-77d4b9ba/unity.log",
+          "bytes": 508388,
+          "sha256": "33025e9d15ebcf491c125feebaeb3dadf863b98f6a6cef13521504e956100bdb"
         },
         "launcher_log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/.unitybox-test-results/20261107T134054-ba1d65a2/launcher.log",
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/.unitybox-test-results/20261107T141224-77d4b9ba/launcher.log",
           "bytes": 0,
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         }
       },
       "archived_xml": {
-        "path": "Verification/icons-results.xml.gz",
+        "path": "Verification/graphics-results.xml.gz",
         "compression": "gzip; mtime=0",
-        "bytes": 1365,
-        "sha256": "5116ccb8366a19e8d37a018149a4ac1c05f328be3eac8ada020889dff0321c7e",
-        "original_xml_sha256": "edef1fddc266db275272d35dfa4c87ce920a9728b8a3e5927f6786c2f23b3674",
-        "archived_xml_sha256": "edef1fddc266db275272d35dfa4c87ce920a9728b8a3e5927f6786c2f23b3674",
+        "bytes": 1612,
+        "sha256": "9627dfddfb1d90562fff7a93765576ca78507fe76355c2ef76aa50ad84f52675",
+        "original_xml_sha256": "60a57074ac992197a621f16e9bd87e3bed6ae56ea69efc7556a5f6110bdb7115",
+        "archived_xml_sha256": "60a57074ac992197a621f16e9bd87e3bed6ae56ea69efc7556a5f6110bdb7115",
         "removed_metadata": []
       },
       "source_evidence": {
@@ -1298,7 +1298,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AdvancedCostumeController",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fa8a83d6fbc592bc6819f32a2b82d5276dd4e955748ac81535dfb2b178d15864",
             "source_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
             "imported_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
@@ -1315,7 +1315,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AnimatorOptimizer",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "2d6480c42bd2cf0c3d568392b12840aac37d62171ac5a3974bf077e30587d2e0",
             "source_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
             "imported_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
@@ -1330,7 +1330,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarColliderMonitor",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "cf0c08fd9362e2bab0684ab7668d4bda0657e3788e354737bb900b4c82278456",
             "source_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
             "imported_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
@@ -1345,7 +1345,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "52fdea0e106f4ecb14dff2d1fe4b0e2b088ec36f84e7cc87e1a896981809cdf7",
             "source_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
             "imported_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
@@ -1369,7 +1369,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BlendshapeControllerGenerator",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ef5e31fe93606ba95059f8ef9d35a876be2f54bdcdedbb5a1e398cd805cab1e9",
             "source_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
             "imported_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
@@ -1384,7 +1384,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BuildPipelineLogger",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "8c9b1063a319536aa66b5c56d8b8b3ec02993d25f8eacb0c5958cb0011ba84e4",
             "source_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
             "imported_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
@@ -1399,7 +1399,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/PrefabDiffPatcher",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ccdc4537f236e0115e30f622b18bcc48dc50b1e9a4e3e5110ba2eaa38a5f14a3",
             "source_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
             "imported_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
@@ -1414,7 +1414,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/VisemeBlendshapeOverride",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fb977fec1e3a44dad75f679b9706739cac8e484d63bfc72c30d4bdb3087a48b9",
             "source_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
             "imported_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
@@ -1429,10 +1429,10 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/ComponentReferenceMigration",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
-            "prepared_tree_sha256": "cca12907a3863f8aabcab5213694880be870b4ae7f4d443ff7683784abcecc31",
-            "source_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
-            "imported_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
+            "prepared_tree_sha256": "7f2cddf02e0236a00fedefb806c887580890e0194086245e32447239435f9d31",
+            "source_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
+            "imported_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
             "file_count": 16,
             "metadata_formatting_only": [],
             "importer_generated_metadata": []
@@ -1442,7 +1442,7 @@
           "UnityBox.AdvancedCostumeController.Core": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
               "bytes": 72704,
               "sha256": "5e3fa74de4b39d22166d23d00880517c74be38f2e834b1937042b2a3e7e71a8d"
             },
@@ -1452,7 +1452,7 @@
           "UnityBox.AdvancedCostumeController": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.dll",
               "bytes": 138752,
               "sha256": "eca700903c54ec4e45bfa7490403ff4980170d875e0da70d56bd1c6e363a3cea"
             },
@@ -1462,7 +1462,7 @@
           "UnityBox.AdvancedCostumeController.VRChat": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.VRChat.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.VRChat.dll",
               "bytes": 6656,
               "sha256": "72123be122ab2b4d3bf97b6cc93a095e1bba4d2e7fa0b0f1c3bd985b414a4898"
             },
@@ -1472,7 +1472,7 @@
           "UnityBox.AdvancedCostumeController.Runtime": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
               "bytes": 9216,
               "sha256": "2600937cf1a0589f3cab83e7bcf820dbf4ccc9be911dbaa0f6e7e43f163065de"
             },
@@ -1482,7 +1482,7 @@
           "UnityBox.AdvancedCostumeController.Core.Tests": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
               "bytes": 32768,
               "sha256": "9b831a46655e67f017f72134bbb870d123703812a45c71ea67bef65f5d7675f7"
             },
@@ -1492,7 +1492,7 @@
           "UnityBox.AdvancedCostumeController.Editor.Tests": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Editor.Tests.dll",
               "bytes": 43008,
               "sha256": "35861eac2cd212f4d154cd613f4afde0efead6df6162d0f4e0ca171ec223044c"
             },
@@ -1502,7 +1502,7 @@
           "UnityBox.AnimatorOptimizer.NDMF": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.NDMF.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.NDMF.dll",
               "bytes": 203776,
               "sha256": "501705e3937d94274d950396722386f7befcc421de634dc79878f6524988cd9d"
             },
@@ -1512,7 +1512,7 @@
           "UnityBox.AnimatorOptimizer": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
               "bytes": 351232,
               "sha256": "296b789026f03e9f31990f0cdb3e853053b109c0fc3fa8fa359f486972b09d86"
             },
@@ -1522,7 +1522,7 @@
           "UnityBox.AnimatorOptimizer.VRC": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.VRC.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.VRC.dll",
               "bytes": 11264,
               "sha256": "383333f1e68c3904b1c38f0d25d2351247c5a29c857e47260132335e214847d8"
             },
@@ -1532,7 +1532,7 @@
           "UnityBox.AnimatorOptimizer.Runtime": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
               "bytes": 12288,
               "sha256": "7dc00990b662ce9d4384c76291501f2252caeadf19929174e94b6935b63d7944"
             },
@@ -1542,7 +1542,7 @@
           "UnityBox.AnimatorOptimizer.ModularAvatar.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.ModularAvatar.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.ModularAvatar.Tests.dll",
               "bytes": 9728,
               "sha256": "03e7e11ae354604e901bd4aae7699f6d2e85a402dbf7871689ae015f7d0e6b2d"
             },
@@ -1552,7 +1552,7 @@
           "UnityBox.AnimatorOptimizer.NDMF.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.NDMF.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.NDMF.Tests.dll",
               "bytes": 40448,
               "sha256": "9fbd700f2a333a7a1dd7bb4c7569110cf6eb51d317ad4a31dd407279620f9f07"
             },
@@ -1562,7 +1562,7 @@
           "UnityBox.AnimatorOptimizer.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
               "bytes": 138240,
               "sha256": "607d2279cf0f0a0803b09a2918829365c6b7fb6dda89329d23226dce7bdafee7"
             },
@@ -1572,7 +1572,7 @@
           "UnityBox.AnimatorOptimizer.VRC.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.VRC.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.VRC.Tests.dll",
               "bytes": 13312,
               "sha256": "c9aa9cdaf8c56cf39eba71354c27317d9e55db11a77a1129b9e77a06c0debbde"
             },
@@ -1582,7 +1582,7 @@
           "UnityBox.AnimatorOptimizer.TestFixtures": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
               "bytes": 5120,
               "sha256": "cd0898c8c16949df1ab791b9d1a2334eae1e2e5209ae5a7dd142bac2b5167766"
             },
@@ -1592,7 +1592,7 @@
           "UnityBox.AvatarColliderMonitor.NDMF": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.NDMF.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.NDMF.dll",
               "bytes": 6656,
               "sha256": "152b67e0b3eb2ef658b7cad10a7fe8789e6dd8782ed9cb1814566a048c7938cb"
             },
@@ -1602,7 +1602,7 @@
           "UnityBox.AvatarColliderMonitor": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
               "bytes": 25600,
               "sha256": "7220b36b4976c97fc0a07ca0740440fce38d7a2ed9c8cb4224a2d66bd6c345c5"
             },
@@ -1612,7 +1612,7 @@
           "UnityBox.AvatarColliderMonitor.VRC": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.VRC.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.VRC.dll",
               "bytes": 8704,
               "sha256": "120abb296cc9cf25be96e1c45dcf9c5042c147287a3aed07c5c27dddb120dadb"
             },
@@ -1622,7 +1622,7 @@
           "UnityBox.AvatarColliderMonitor.Tests": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
               "bytes": 19968,
               "sha256": "a903ef9ef6ddaabbae276ee869cd191bc6845be47d87da701c67517d33fc4175"
             },
@@ -1632,7 +1632,7 @@
           "UnityBox.AvatarColliderMonitor.VRC.Tests": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.VRC.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.VRC.Tests.dll",
               "bytes": 9728,
               "sha256": "fb84601043aa7263c9cc6d2af08f1e7015e6db9d1bba16443ec3624e5bf0701f"
             },
@@ -1642,7 +1642,7 @@
           "UnityBox.AvatarSecuritySystem.NDMF": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.dll",
               "bytes": 7680,
               "sha256": "dfc0bfc935947e76c7742046e6ee567549dab4ecc330d69eba8b4be7d52ab0c5"
             },
@@ -1652,7 +1652,7 @@
           "UnityBox.AvatarSecuritySystem": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
               "bytes": 158208,
               "sha256": "518e2cfc0bf89c0ff53360780a44c305e65e8f38a558e29a260386a87931a3ab"
             },
@@ -1662,7 +1662,7 @@
           "UnityBox.AvatarSecuritySystem.VRChat": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.dll",
               "bytes": 65024,
               "sha256": "3c6f4d0e8f1ef9dfc5af9e8072989d336ffd81c6647af2d555480fd90039c6c7"
             },
@@ -1672,7 +1672,7 @@
           "UnityBox.AvatarSecuritySystem.Runtime": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
               "bytes": 11776,
               "sha256": "598ab12de600f2b81462492e8828c258647c777b39d572f0b6a675615523dabf"
             },
@@ -1682,7 +1682,7 @@
           "UnityBox.AvatarSecuritySystem.NDMF.Tests": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.Tests.dll",
               "bytes": 16896,
               "sha256": "84b220f9f7a966122af7bf28106049421ea4047e757ff0a691fbaab368a4375c"
             },
@@ -1692,7 +1692,7 @@
           "UnityBox.AvatarSecuritySystem.Editor.Tests": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
               "bytes": 59904,
               "sha256": "ba0b354d29c34df85b9730c5b7d6a2c53271682e2c8fe7d8f2f3fb2edf2eef85"
             },
@@ -1702,7 +1702,7 @@
           "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.Tests.dll",
               "bytes": 30720,
               "sha256": "9aa5099a540a8eb951c1410608c34dbc38fb1e2b3d2cc0254a69830b35ff3b73"
             },
@@ -1712,7 +1712,7 @@
           "UnityBox.BlendshapeControllerGenerator": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
               "bytes": 40960,
               "sha256": "d8547e66290ac47c55c8477465ceee87b944c38c2839ffd5e94b5827fdedb2f3"
             },
@@ -1722,7 +1722,7 @@
           "UnityBox.BlendshapeControllerGenerator.ModularAvatar": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.ModularAvatar.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.ModularAvatar.dll",
               "bytes": 15360,
               "sha256": "3a13996d6271647269791e54690cf6bf9ba9cae82eee296fbaa4126481a9b7eb"
             },
@@ -1732,7 +1732,7 @@
           "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
               "bytes": 30720,
               "sha256": "30acfe3f59cbf14b991722bb05e08db768285edfe29575661bc0fab829af7097"
             },
@@ -1742,7 +1742,7 @@
           "UnityBox.BlendshapeControllerGenerator.Tests": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Tests.dll",
               "bytes": 23040,
               "sha256": "0bee5508a96d2a2079b3eaff7122105acf6fa3f3f25bb1c595727f0d15cddbc9"
             },
@@ -1752,7 +1752,7 @@
           "UnityBox.BuildPipelineLogger.NDMF": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.NDMF.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.NDMF.dll",
               "bytes": 7168,
               "sha256": "4d82901eb3b27d1bf75d00d12cb7857e1f31a40193124ef87f244b91ca3fd383"
             },
@@ -1762,7 +1762,7 @@
           "UnityBox.BuildPipelineLogger": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
               "bytes": 32768,
               "sha256": "238bc101213888226bc65134656f77121f0e13586a05d88f362dd752ada9177d"
             },
@@ -1772,7 +1772,7 @@
           "UnityBox.BuildPipelineLogger.VRC": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.VRC.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.VRC.dll",
               "bytes": 16384,
               "sha256": "7367e6770136a784e62af25d32885c08bf0fdaa4492db99ceef03de8d8761087"
             },
@@ -1782,7 +1782,7 @@
           "UnityBox.BuildPipelineLogger.Tests": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
               "bytes": 14336,
               "sha256": "f77b301e1dd7d895f15566d64379c346ec15d0c2dd27ec842fbe1bb0b6995e31"
             },
@@ -1792,7 +1792,7 @@
           "UnityBox.BuildPipelineLogger.VRC.Tests": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.VRC.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.VRC.Tests.dll",
               "bytes": 6656,
               "sha256": "c18e12577dcaae1b9d4eeb35f1387cf48af1ecc33da3808a9274543b863d0650"
             },
@@ -1802,7 +1802,7 @@
           "UnityBox.PrefabDiffPatcher": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
               "bytes": 62976,
               "sha256": "e00e4ae4328fd4175c7f1e68c3474cf8cbca02bf4a59040dc2639da278ed21ec"
             },
@@ -1812,7 +1812,7 @@
           "UnityBox.PrefabDiffPatcher.Editor.Tests": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
               "bytes": 26112,
               "sha256": "33a1c8cec291c5f4a52d103cc0177ca1df8088c3801e96b2ad8bcb87af0783ca"
             },
@@ -1822,7 +1822,7 @@
           "UnityBox.PrefabDiffPatcher.TestFixtures": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
               "bytes": 6144,
               "sha256": "6c3bcbc9a21b1033fc84a00b1034fe08992f7f2c786c9c1eda10097cf1e36185"
             },
@@ -1832,7 +1832,7 @@
           "UnityBox.VisemeBlendshapeOverride.NDMF": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.NDMF.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.NDMF.dll",
               "bytes": 17408,
               "sha256": "2bc216733f9e4e0f108a903fd954233da1b8ef9b6653e8dcd3ab6d6d7c8e4b8a"
             },
@@ -1842,7 +1842,7 @@
           "UnityBox.VisemeBlendshapeOverride": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
               "bytes": 33280,
               "sha256": "6fe7126f764df77072b8b9602273d1e131046c74e519c102fdcbbc7f90cc2950"
             },
@@ -1852,7 +1852,7 @@
           "UnityBox.VisemeBlendshapeOverride.VRChat": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.VRChat.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.VRChat.dll",
               "bytes": 12288,
               "sha256": "b1b3ce9e31c4607532ad3e0315e8cd18d6b0ad6b793fcc6891e21d951529a276"
             },
@@ -1862,7 +1862,7 @@
           "UnityBox.VisemeBlendshapeOverride.Runtime": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
               "bytes": 10752,
               "sha256": "ce31516c5a2d72fa780fbdc54c7640f17ef3098a9dcfb287988878d4e6c07ddf"
             },
@@ -1872,7 +1872,7 @@
           "UnityBox.VisemeBlendshapeOverride.NDMF.Tests": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.NDMF.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.NDMF.Tests.dll",
               "bytes": 17920,
               "sha256": "dc9f526b54204bd240c96e581fe9fab5d70b982ee00dc3a81e2764db376ff8a1"
             },
@@ -1882,7 +1882,7 @@
           "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
               "bytes": 38400,
               "sha256": "77517d70807fab87d1d991e4b45667026d5c8eb4149889406ec0db89d4f947b6"
             },
@@ -1892,7 +1892,7 @@
           "UnityBox.VisemeBlendshapeOverride.VRChat.Tests": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.VRChat.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.VRChat.Tests.dll",
               "bytes": 22528,
               "sha256": "54a6c8f37f148c632456f8b19cc5d3f25f9e9919e0fbcd31cb7b02f4050fbc37"
             },
@@ -1902,22 +1902,22 @@
           "UnityBox.ComponentReferenceMigration.Editor": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
               "bytes": 45056,
-              "sha256": "d151b08a2b917d9a84d87137d04b0bf781a180babcfed25b27aa836c76f37820"
+              "sha256": "bc6de1eff66d1d809c022c43e03a86086980572f7338e6634c8eee3e66b9e04b"
             },
             "source_file_count": 3,
-            "source_sha256": "3b4a0fded7376c95d12c83138bdbb511ad7deea7ff5f0e7f06262c8bef2cf57f"
+            "source_sha256": "40b977f0ae8b943b725fccdcb4d02a55fdbd1f23622e3ce7ece6d91242c4d991"
           },
           "UnityBox.ComponentReferenceMigration.Editor.Tests": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-full-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
-              "bytes": 21504,
-              "sha256": "6d1ab9ca309e57aa485efb909431bbd3dd151143623d016bf45079c41e2d3cdd"
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-full-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
+              "bytes": 25600,
+              "sha256": "e3ef28a231760bdcb3769ffedd9ed36be410b609bb2eee03773dd72360bd899a"
             },
             "source_file_count": 3,
-            "source_sha256": "8882dfeaa76527e7cc1368e0a131ccc5d72b0babfdbf815342825c571837bd7b"
+            "source_sha256": "75da4c298d46de5675066e510e9b54d54215420dd39234738189fdbd79e1e2d6"
           }
         },
         "package_snapshot_matches_current_source": true,
@@ -1933,14 +1933,14 @@
         "Renderer: llvmpipe (LLVM 19.1.7, 256 bits)",
         "Vendor:   Mesa",
         "Version:  4.5 (Core Profile) Mesa 25.0.7-2+deb13u1",
-        "OPENGL LOG: Creating OpenGL 4.5 graphics device ; Context level  <OpenGL 4.5> ; Context handle 1411866080"
+        "OPENGL LOG: Creating OpenGL 4.5 graphics device ; Context level  <OpenGL 4.5> ; Context handle 2036502992"
       ]
     }
   ],
   "player_runs": [
     {
       "scope": "linux",
-      "run_id_utc": "20261107T134157-4d8c739e",
+      "run_id_utc": "20261107T142030-3cf4b5b5",
       "measurements": [
         {
           "plugin": "StandalonePlayer",
@@ -1950,10 +1950,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 1,
-          "median_ms": 0.0242435,
-          "p95_ms": 0.0340145,
-          "min_ms": 0.0075195,
-          "max_ms": 0.0340145,
+          "median_ms": 0.0310115,
+          "p95_ms": 0.041802,
+          "min_ms": 0.021438000000000002,
+          "max_ms": 0.041802,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -1965,10 +1965,10 @@
           "samples": 11,
           "animator_layers": 2,
           "clip_count": 3,
-          "median_ms": 0.038055000000000005,
-          "p95_ms": 0.081738,
-          "min_ms": 0.012999500000000002,
-          "max_ms": 0.081738,
+          "median_ms": 0.037104000000000005,
+          "p95_ms": 0.06771200000000001,
+          "min_ms": 0.020044500000000003,
+          "max_ms": 0.06771200000000001,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -1980,10 +1980,10 @@
           "samples": 11,
           "animator_layers": 4,
           "clip_count": 20,
-          "median_ms": 0.0370845,
-          "p95_ms": 0.0681915,
-          "min_ms": 0.020273500000000003,
-          "max_ms": 0.0681915,
+          "median_ms": 0.0365245,
+          "p95_ms": 0.0929475,
+          "min_ms": 0.030894500000000002,
+          "max_ms": 0.0929475,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -1995,10 +1995,10 @@
           "samples": 11,
           "animator_layers": 3,
           "clip_count": 11,
-          "median_ms": 0.0360105,
-          "p95_ms": 0.09365,
-          "min_ms": 0.0176795,
-          "max_ms": 0.09365,
+          "median_ms": 0.052582500000000004,
+          "p95_ms": 0.1144445,
+          "min_ms": 0.033186,
+          "max_ms": 0.1144445,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2010,10 +2010,10 @@
           "samples": 11,
           "animator_layers": 3,
           "clip_count": 27,
-          "median_ms": 0.048983500000000006,
-          "p95_ms": 0.10358,
-          "min_ms": 0.038474,
-          "max_ms": 0.10358,
+          "median_ms": 0.054145000000000006,
+          "p95_ms": 0.6993300000000001,
+          "min_ms": 0.0406015,
+          "max_ms": 0.6993300000000001,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2025,10 +2025,10 @@
           "samples": 11,
           "animator_layers": 2,
           "clip_count": 30,
-          "median_ms": 0.041539,
-          "p95_ms": 0.059374500000000004,
-          "min_ms": 0.021846,
-          "max_ms": 0.059374500000000004,
+          "median_ms": 0.03597,
+          "p95_ms": 0.067064,
+          "min_ms": 0.024014999999999998,
+          "max_ms": 0.067064,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2040,10 +2040,10 @@
           "samples": 11,
           "animator_layers": 2,
           "clip_count": 30,
-          "median_ms": 0.036097000000000004,
-          "p95_ms": 0.058771500000000004,
-          "min_ms": 0.0218915,
-          "max_ms": 0.058771500000000004,
+          "median_ms": 0.035202,
+          "p95_ms": 0.044526500000000004,
+          "min_ms": 0.0313085,
+          "max_ms": 0.044526500000000004,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2055,10 +2055,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 2,
-          "median_ms": 0.026995,
-          "p95_ms": 0.033481000000000004,
-          "min_ms": 0.0172895,
-          "max_ms": 0.033481000000000004,
+          "median_ms": 0.0316035,
+          "p95_ms": 0.047551500000000003,
+          "min_ms": 0.023719,
+          "max_ms": 0.047551500000000003,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2070,10 +2070,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 2,
-          "median_ms": 0.028657000000000002,
-          "p95_ms": 0.0523555,
-          "min_ms": 0.008381000000000001,
-          "max_ms": 0.0523555,
+          "median_ms": 0.0267435,
+          "p95_ms": 0.046996,
+          "min_ms": 0.018526,
+          "max_ms": 0.046996,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2085,10 +2085,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 2,
-          "median_ms": 0.0288395,
-          "p95_ms": 0.06278450000000001,
-          "min_ms": 0.011461,
-          "max_ms": 0.06278450000000001,
+          "median_ms": 0.014987000000000002,
+          "p95_ms": 0.0343395,
+          "min_ms": 0.0052845,
+          "max_ms": 0.0343395,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2100,10 +2100,10 @@
           "samples": 11,
           "animator_layers": 2,
           "clip_count": 10,
-          "median_ms": 0.043534500000000004,
-          "p95_ms": 0.07224,
-          "min_ms": 0.025586,
-          "max_ms": 0.07224,
+          "median_ms": 0.0383575,
+          "p95_ms": 0.0420065,
+          "min_ms": 0.0275945,
+          "max_ms": 0.0420065,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2115,10 +2115,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 2,
-          "median_ms": 0.0213375,
-          "p95_ms": 0.037486,
-          "min_ms": 0.0095465,
-          "max_ms": 0.037486,
+          "median_ms": 0.026014500000000003,
+          "p95_ms": 0.035463,
+          "min_ms": 0.019393,
+          "max_ms": 0.035463,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2130,10 +2130,10 @@
           "samples": 11,
           "animator_layers": 2,
           "clip_count": 10,
-          "median_ms": 0.0367775,
-          "p95_ms": 0.136767,
-          "min_ms": 0.0070435,
-          "max_ms": 0.136767,
+          "median_ms": 0.0418455,
+          "p95_ms": 0.0618175,
+          "min_ms": 0.029244000000000003,
+          "max_ms": 0.0618175,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2145,10 +2145,10 @@
           "samples": 11,
           "animator_layers": 8,
           "clip_count": 8,
-          "median_ms": 0.049148000000000004,
-          "p95_ms": 0.062198500000000004,
-          "min_ms": 0.043743500000000005,
-          "max_ms": 0.062198500000000004,
+          "median_ms": 0.042743,
+          "p95_ms": 0.050924500000000004,
+          "min_ms": 0.035132500000000004,
+          "max_ms": 0.050924500000000004,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2160,10 +2160,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 1,
-          "median_ms": 0.034117,
-          "p95_ms": 0.052887,
-          "min_ms": 0.013260500000000001,
-          "max_ms": 0.052887,
+          "median_ms": 0.0210045,
+          "p95_ms": 0.031803500000000005,
+          "min_ms": 0.0119135,
+          "max_ms": 0.031803500000000005,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2175,10 +2175,10 @@
           "samples": 11,
           "animator_layers": 32,
           "clip_count": 32,
-          "median_ms": 0.06545150000000001,
-          "p95_ms": 0.1569735,
-          "min_ms": 0.054712500000000004,
-          "max_ms": 0.1569735,
+          "median_ms": 0.084521,
+          "p95_ms": 0.1088415,
+          "min_ms": 0.070843,
+          "max_ms": 0.1088415,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2190,10 +2190,10 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 1,
-          "median_ms": 0.0364415,
-          "p95_ms": 0.053698,
-          "min_ms": 0.010977,
-          "max_ms": 0.053698,
+          "median_ms": 0.0304595,
+          "p95_ms": 0.0644305,
+          "min_ms": 0.01416,
+          "max_ms": 0.0644305,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2205,10 +2205,10 @@
           "samples": 11,
           "animator_layers": 64,
           "clip_count": 64,
-          "median_ms": 0.1073615,
-          "p95_ms": 0.1279835,
-          "min_ms": 0.0992535,
-          "max_ms": 0.1279835,
+          "median_ms": 0.158174,
+          "p95_ms": 0.1837405,
+          "min_ms": 0.13799050000000002,
+          "max_ms": 0.1837405,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         },
@@ -2220,21 +2220,21 @@
           "samples": 11,
           "animator_layers": 1,
           "clip_count": 1,
-          "median_ms": 0.022209500000000004,
-          "p95_ms": 0.029492000000000004,
-          "min_ms": 0.0171465,
-          "max_ms": 0.029492000000000004,
+          "median_ms": 0.0299965,
+          "p95_ms": 0.039524500000000004,
+          "min_ms": 0.021708500000000002,
+          "max_ms": 0.039524500000000004,
           "allocated_bytes_per_op": -1,
           "controller_memory_bytes": -1
         }
       ],
       "build": {
         "result": "Succeeded",
-        "output": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/UnityBoxPlayer",
+        "output": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/UnityBoxPlayer",
         "total_errors": 0,
         "total_warnings": 4,
-        "total_size_bytes": 58547694,
-        "duration_seconds": 32.394474699999996,
+        "total_size_bytes": 58547690,
+        "duration_seconds": 41.563569199999996,
         "hook_providers": [
           "BlendshapeRuntimeTests",
           "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests",
@@ -2257,77 +2257,77 @@
         "-nographics",
         "-quit",
         "-projectPath",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107",
         "-executeMethod",
         "UnityBoxPlayerBuilder.Build",
         "-logFile",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/build.log"
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/build.log"
       ],
       "player_command": [
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/UnityBoxPlayer",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/UnityBoxPlayer",
         "-batchmode",
         "-nographics",
         "-logFile",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/player.log",
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/player.log",
         "-unityboxReport",
-        "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/player.json"
+        "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/player.json"
       ],
       "scenarios": 13,
       "checks": 4807,
       "frames": 1557,
-      "mono_heap_bytes": 1654784,
+      "mono_heap_bytes": 1658880,
       "artifacts": {
         "report": {
-          "path": "/workspace/unitybox-setup/unity/component-references-player-result.json",
-          "bytes": 13839,
-          "sha256": "8f55798b981d6b88f8ca49989fb5969a38d4725bfae9cbf96c646581e4652d1f"
+          "path": "/workspace/unitybox-setup/unity/component-stage-player-result.json",
+          "bytes": 13789,
+          "sha256": "7ffbf16e5b53accaa9335d04f7db468eb1dafaad834206e96cd1da3ce35ae706"
         },
         "build.json": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/build.json",
-          "bytes": 728,
-          "sha256": "e8305fcd94aa7bf821189ba48a7ba04f61bcc622daefc235cf9753a20d0d7286"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/build.json",
+          "bytes": 717,
+          "sha256": "f489900034f5ba0d82e56d24d66f566f7bd5c4cd1b31a87ec50c623b7eb22719"
         },
         "player.json": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/player.json",
-          "bytes": 12021,
-          "sha256": "b5f04f3880d308d3e94a8fc815c149c227e5fb30b25b4cd6d108d9f7703307be"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/player.json",
+          "bytes": 12037,
+          "sha256": "fd5d2f1367eaaeea3ff376e1d52bf2223eaad3dbcc30326d6497fef304cdf4b6"
         },
         "build.log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/build.log",
-          "bytes": 545087,
-          "sha256": "3d6f3b271ef813fda7262b7748e6c0c0bbf65d2309e2f965e65915a9a4865a6b"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/build.log",
+          "bytes": 542093,
+          "sha256": "d43a4f668e82e47b9c963a645ae1960349b6cd6520a4648fcad87f18dbfc00fd"
         },
         "player.log": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/player.log",
-          "bytes": 19373,
-          "sha256": "c3670f891453ca30100dcd57d99f59b500dd6e31f8c013a8a9a905a07de151f4"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/player.log",
+          "bytes": 19356,
+          "sha256": "97bd8a03426c5845f5cc9666a7efe1d2b1d762e6f9225cced670f6fa4351a1c0"
         },
         "pipeline-trace.json": {
-          "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/.unitybox-player-results/20261107T134157-4d8c739e/pipeline-trace.json",
-          "bytes": 12905,
-          "sha256": "9d6f2ca8a9c1d4513faed39daecfc79f4b7c61f32d5118ea873ad4a1d24c7a4d"
+          "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/.unitybox-player-results/20261107T142030-3cf4b5b5/pipeline-trace.json",
+          "bytes": 12936,
+          "sha256": "b3be6da2deacdd2fd8eda8ae64a3475ed65fc0872ede369fdf31f06c5ea02f2e"
         }
       },
       "archived_artifacts": {
         "build.json": {
           "path": "Verification/linux-build.json",
-          "bytes": 691,
-          "sha256": "a50ce74600e6a91e45747386a67c28afa02346e177274e22bbbb230e0a40ea29",
-          "original_sha256": "e8305fcd94aa7bf821189ba48a7ba04f61bcc622daefc235cf9753a20d0d7286",
+          "bytes": 680,
+          "sha256": "dd6160065b9e365dd6171ac18add0857dbb3d997619cc26410e7de7eb19f9b9e",
+          "original_sha256": "f489900034f5ba0d82e56d24d66f566f7bd5c4cd1b31a87ec50c623b7eb22719",
           "removed_fields": []
         },
         "player.json": {
           "path": "Verification/linux-player.json",
-          "bytes": 10346,
-          "sha256": "70a08613e9c1c77c1e6df6edf135ef805b26ead8d5a4327f8eda4e86ffb60c1a",
-          "original_sha256": "b5f04f3880d308d3e94a8fc815c149c227e5fb30b25b4cd6d108d9f7703307be",
+          "bytes": 10362,
+          "sha256": "6c3cee55e501c91b5d7ab995963196f4c35fd6c25959f2170c725e4a846f3460",
+          "original_sha256": "fd5d2f1367eaaeea3ff376e1d52bf2223eaad3dbcc30326d6497fef304cdf4b6",
           "removed_fields": []
         },
         "pipeline-trace.json": {
           "path": "Verification/linux-pipeline-trace.json",
-          "bytes": 10694,
-          "sha256": "e7763a1543de6ad3e34febf23288174801f8a25a8908053232560184f9e352b9",
-          "original_sha256": "9d6f2ca8a9c1d4513faed39daecfc79f4b7c61f32d5118ea873ad4a1d24c7a4d",
+          "bytes": 10725,
+          "sha256": "62072f081e3fce3620342adb617421e2c03816e550ae25181e2073cf2cd6c597",
+          "original_sha256": "b3be6da2deacdd2fd8eda8ae64a3475ed65fc0872ede369fdf31f06c5ea02f2e",
           "removed_fields": []
         }
       },
@@ -2338,7 +2338,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AdvancedCostumeController",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fa8a83d6fbc592bc6819f32a2b82d5276dd4e955748ac81535dfb2b178d15864",
             "source_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
             "imported_snapshot_sha256": "ea0e5e2211b447c44994181d0aa0862dd94dd159aec321cc8de9e4cfd80e0e47",
@@ -2355,7 +2355,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AnimatorOptimizer",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "2d6480c42bd2cf0c3d568392b12840aac37d62171ac5a3974bf077e30587d2e0",
             "source_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
             "imported_snapshot_sha256": "8084295b10322275923e093ebbc75d7f984b92f95c192a4743dac705cbfd326b",
@@ -2370,7 +2370,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarColliderMonitor",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "cf0c08fd9362e2bab0684ab7668d4bda0657e3788e354737bb900b4c82278456",
             "source_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
             "imported_snapshot_sha256": "a7bca97910e747bf3d227fd5b682f5a6a50333f7a6c8bf1339aa1716703f931f",
@@ -2385,7 +2385,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "52fdea0e106f4ecb14dff2d1fe4b0e2b088ec36f84e7cc87e1a896981809cdf7",
             "source_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
             "imported_snapshot_sha256": "d4badfa9f85466617561b46a0b198dfba65e0a049472f6de2cb7a9f1c431c14a",
@@ -2409,7 +2409,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BlendshapeControllerGenerator",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ef5e31fe93606ba95059f8ef9d35a876be2f54bdcdedbb5a1e398cd805cab1e9",
             "source_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
             "imported_snapshot_sha256": "c02816b5425263fab15ff518d1145f1919799ecae3de600988037c268c7f58df",
@@ -2424,7 +2424,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/BuildPipelineLogger",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "8c9b1063a319536aa66b5c56d8b8b3ec02993d25f8eacb0c5958cb0011ba84e4",
             "source_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
             "imported_snapshot_sha256": "2f8c84fb8e9ed502e8881c601c1c4663c3d7d434c231fc0c7d36c67782c59772",
@@ -2439,7 +2439,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/PrefabDiffPatcher",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "ccdc4537f236e0115e30f622b18bcc48dc50b1e9a4e3e5110ba2eaa38a5f14a3",
             "source_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
             "imported_snapshot_sha256": "a1d2d8b73df199f85f86b6cc9c41bb319dd6011686f90210cc44cd3b482b012d",
@@ -2454,7 +2454,7 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/VisemeBlendshapeOverride",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
             "prepared_tree_sha256": "fb977fec1e3a44dad75f679b9706739cac8e484d63bfc72c30d4bdb3087a48b9",
             "source_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
             "imported_snapshot_sha256": "e7d1ef5fddc1fca7ff2245578bf88f8faa2719b6aeef5c7143ae9dd7e99a5889",
@@ -2469,10 +2469,10 @@
             "source": "/workspace/UnityBox/Assets/UnityBox/ComponentReferenceMigration",
             "checkout": "/workspace/UnityBox",
             "branch": "master",
-            "checkout_base_revision": "6cbf6f3f8b4325e5cb39ff1de8a4600c338a2a76",
-            "prepared_tree_sha256": "cca12907a3863f8aabcab5213694880be870b4ae7f4d443ff7683784abcecc31",
-            "source_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
-            "imported_snapshot_sha256": "c17d2614edbc89153cb0f7ff4ad8cd6816da92384225c9c6f6d0ddc2d905d02a",
+            "checkout_base_revision": "e5665bec27d2b08ac9815be99932d7529f382a1d",
+            "prepared_tree_sha256": "7f2cddf02e0236a00fedefb806c887580890e0194086245e32447239435f9d31",
+            "source_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
+            "imported_snapshot_sha256": "44726df1bd9de56baff56aaffc68d411ef395e52faba0e1245be1e97ae29ba1a",
             "file_count": 16,
             "metadata_formatting_only": [],
             "importer_generated_metadata": []
@@ -2482,7 +2482,7 @@
           "UnityBox.AdvancedCostumeController.Core": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
               "bytes": 73216,
               "sha256": "3c9ec6c9ec65520ca56ddef3c10baa07cf9eb0d27aa8beca3205e4d5ceeee1b6"
             },
@@ -2492,7 +2492,7 @@
           "UnityBox.AdvancedCostumeController.Runtime": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
               "bytes": 9216,
               "sha256": "5ea1d6cb9fe782926c305afd610652078671391f4fc08e818ffa9d8e1fbc8eb2"
             },
@@ -2502,7 +2502,7 @@
           "UnityBox.AdvancedCostumeController.Core.Tests": {
             "package": "top.sealoong.unitybox.advanced-costume-controller",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
               "bytes": 32768,
               "sha256": "a565c35249cf3bf4b491903c45055bf17a94fbb6d6b42c591ec95ecd53573934"
             },
@@ -2512,7 +2512,7 @@
           "UnityBox.AnimatorOptimizer": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
               "bytes": 351232,
               "sha256": "3870009640800b7fdc561079b233efd0a7361502c7c8121681372964bde3d94a"
             },
@@ -2522,7 +2522,7 @@
           "UnityBox.AnimatorOptimizer.Runtime": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
               "bytes": 12288,
               "sha256": "094beb7a6d123d8d9dd86a5424013afafbd2374cfcf2002765798f7b3fc7f1bc"
             },
@@ -2532,7 +2532,7 @@
           "UnityBox.AnimatorOptimizer.Tests": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
               "bytes": 138240,
               "sha256": "74c673cc15a41471c1f9c2a68bfbc17daf7183589c88610bf1f050644a47fe2b"
             },
@@ -2542,7 +2542,7 @@
           "UnityBox.AnimatorOptimizer.TestFixtures": {
             "package": "top.sealoong.unitybox.animator-optimizer",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
               "bytes": 4608,
               "sha256": "81619d1f78f38af66a90c2dfae846b594538b17049bc71b27f289379f9981508"
             },
@@ -2552,7 +2552,7 @@
           "UnityBox.AvatarColliderMonitor": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.dll",
               "bytes": 25600,
               "sha256": "8d77aba1dd2641ca1256560e6f61a18553857b0aa0a18941bf420650a2a53c7e"
             },
@@ -2562,7 +2562,7 @@
           "UnityBox.AvatarColliderMonitor.Tests": {
             "package": "top.sealoong.unitybox.avatar-collider-monitor",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarColliderMonitor.Tests.dll",
               "bytes": 19968,
               "sha256": "e452c7923e8eb569b73b2f7ecae2bd4f991902e0ab02212826c6bd2500957584"
             },
@@ -2572,7 +2572,7 @@
           "UnityBox.AvatarSecuritySystem": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
               "bytes": 158208,
               "sha256": "ee1f576492958865e500631835fc3c321d07dd3b411122b21eac96076d6947d8"
             },
@@ -2582,7 +2582,7 @@
           "UnityBox.AvatarSecuritySystem.Runtime": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
               "bytes": 11264,
               "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
             },
@@ -2592,7 +2592,7 @@
           "UnityBox.AvatarSecuritySystem.Editor.Tests": {
             "package": "top.sealoong.unitybox.avatar-security-system",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
               "bytes": 59904,
               "sha256": "fe5ca186efb7bb45e5e85ec2192e2ef519ec5d695c83d1ab4f2a69b28694794a"
             },
@@ -2602,7 +2602,7 @@
           "UnityBox.BlendshapeControllerGenerator": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.dll",
               "bytes": 40960,
               "sha256": "ef283a4038a95184a93de73543d1e28a8ba578a23e4521fd35be53ba8c161d05"
             },
@@ -2612,7 +2612,7 @@
           "UnityBox.BlendshapeControllerGenerator.Core.Tests": {
             "package": "top.sealoong.unitybox.blendshape-controller-generator",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BlendshapeControllerGenerator.Core.Tests.dll",
               "bytes": 30720,
               "sha256": "bdf5052cf36819fd57624784ca7607bb3b68fea245ddb272a36d4c98f39a3457"
             },
@@ -2622,7 +2622,7 @@
           "UnityBox.BuildPipelineLogger": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.dll",
               "bytes": 32768,
               "sha256": "a4111ff82e862b5ff344c095786668cd2e0f43575da672565d73e495e8768ce9"
             },
@@ -2632,7 +2632,7 @@
           "UnityBox.BuildPipelineLogger.Tests": {
             "package": "top.sealoong.unitybox.build-pipeline-logger",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.BuildPipelineLogger.Tests.dll",
               "bytes": 14336,
               "sha256": "4ddc51a5c3be39e329fcd0d2306223035686ecd6707ccdfd1d041a89fd75a8d7"
             },
@@ -2642,7 +2642,7 @@
           "UnityBox.PrefabDiffPatcher": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.dll",
               "bytes": 62976,
               "sha256": "22d174a68f620896fdd6423bdde582de4c75dfe35b700ce70907c0e39d4cc499"
             },
@@ -2652,7 +2652,7 @@
           "UnityBox.PrefabDiffPatcher.Editor.Tests": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.Editor.Tests.dll",
               "bytes": 26112,
               "sha256": "64bfe8491323722c252236a715d97552eef10c8a4174e706ae69a13cbc698c5b"
             },
@@ -2662,7 +2662,7 @@
           "UnityBox.PrefabDiffPatcher.TestFixtures": {
             "package": "top.sealoong.unitybox.prefab-diff-patcher",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.PrefabDiffPatcher.TestFixtures.dll",
               "bytes": 6144,
               "sha256": "ed939caf3c303e3160b939a46e6824242f48afeca6294a4f72d938394c741dff"
             },
@@ -2672,7 +2672,7 @@
           "UnityBox.VisemeBlendshapeOverride": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
               "bytes": 33280,
               "sha256": "e944b788b305154912cf7087a17eba67d6a59bacd9f6524ad87c12e5a9cf4544"
             },
@@ -2682,7 +2682,7 @@
           "UnityBox.VisemeBlendshapeOverride.Runtime": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
               "bytes": 10752,
               "sha256": "4758f007153cad59b793798f17e566f0784a105e9aec3a7787f72829f1b30f34"
             },
@@ -2692,7 +2692,7 @@
           "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
             "package": "top.sealoong.unitybox.viseme-blendshape-override",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
               "bytes": 38400,
               "sha256": "77781dcccbac13e070318f2abb5e89dc5b3f6a76952a295f18631c7294bffec7"
             },
@@ -2702,22 +2702,22 @@
           "UnityBox.ComponentReferenceMigration.Editor": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.dll",
               "bytes": 45056,
-              "sha256": "abeaa282ec9b2c7e4661bf6da4ff7e1bbebf5c9aa8a5d68a5d5a662781311de3"
+              "sha256": "a67f0115f90b003165216671b644f5f2eba2757c7efa9f631a9c591bc13f488e"
             },
             "source_file_count": 3,
-            "source_sha256": "3b4a0fded7376c95d12c83138bdbb511ad7deea7ff5f0e7f06262c8bef2cf57f"
+            "source_sha256": "40b977f0ae8b943b725fccdcb4d02a55fdbd1f23622e3ce7ece6d91242c4d991"
           },
           "UnityBox.ComponentReferenceMigration.Editor.Tests": {
             "extra_source": "ComponentReferenceMigration",
             "dll": {
-              "path": "/workspace/unitybox-setup/unity/projects/component-references-core-final-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
-              "bytes": 21504,
-              "sha256": "f77ad28b97d56b3ac7432bad2fb89d02d531bf3563522fad4818157f4eaf7d12"
+              "path": "/workspace/unitybox-setup/unity/projects/component-stage-core-20261107/Library/ScriptAssemblies/UnityBox.ComponentReferenceMigration.Editor.Tests.dll",
+              "bytes": 25600,
+              "sha256": "0e460559489cc42e1d4278bd78af421337eaa129e475b5e973eb303ed51eb791"
             },
             "source_file_count": 3,
-            "source_sha256": "8882dfeaa76527e7cc1368e0a131ccc5d72b0babfdbf815342825c571837bd7b"
+            "source_sha256": "75da4c298d46de5675066e510e9b54d54215420dd39234738189fdbd79e1e2d6"
           }
         },
         "package_snapshot_matches_current_source": true,

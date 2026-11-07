@@ -71,7 +71,51 @@ public static class ComponentUpgradeFixture
         public List<string> issues = new List<string>();
     }
 
+    const string InitialPhasePending = "UnityBox.ComponentUpgradeFixture.PendingExplicitInitialPhase";
+    static bool initialActionPending;
+    const string LegacyCapturePending = "UnityBox.ComponentUpgradeFixture.PendingLegacyCapture";
+    [InitializeOnLoadMethod]
+    static void ResumeLegacyCaptureAfterDomainReload()
+    {
+        string requested = SessionState.GetString(InitialPhasePending, "");
+        if (requested == "broken" || requested == "migrated")
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (current != null) return;
+                Start(requested, requested == "broken" ? (Action)Broken : Apply);
+                current.checks.Add("explicit initial phase resumed after startup domain reload; token cleared before action");
+            };
+        }
+        if (!SessionState.GetBool(LegacyCapturePending, false)) return;
+        EditorApplication.delayCall += () =>
+        {
+            if (File.Exists(Output + "/legacy-state.json"))
+            {
+                SessionState.EraseBool(LegacyCapturePending);
+                return;
+            }
+            Start("legacy", CaptureLegacy);
+            current.checks.Add("legacy capture resumed after SDK first-import domain reload");
+        };
+    }
     public static void CreateLegacy() => Start("legacy", Create, true);
+    public static void DiagnoseBindings() => Start("diagnostic", () =>
+    {
+        var state = ReadState();
+        foreach (var type in state.types)
+            current.checks.Add(type.type + ": legacyGuid=" + type.guid + "; legacyGuidPath=" + AssetDatabase.GUIDToAssetPath(type.guid) + "; currentScriptPathGuid=" + AssetDatabase.AssetPathToGUID(type.scriptPath));
+        var root = AssetDatabase.LoadAssetAtPath<GameObject>(BasePath);
+        current.checks.Add("Base missing=" + Missing(root));
+        foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (component == null) { current.checks.Add("Base null component"); continue; }
+            var script = MonoScript.FromMonoBehaviour(component);
+            current.checks.Add(component.GetType().FullName + ": " + AssetDatabase.GetAssetPath(script) + "; guid=" + AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(script)));
+        }
+        AssertFilesUnchanged(state);
+        Finish();
+    }, true);
     public static void VerifyBroken() => Start("broken", Broken);
     public static void ApplyAndVerify() => Start("migrated", Apply);
 
@@ -81,6 +125,8 @@ public static class ComponentUpgradeFixture
         current = new Evidence { phase = phase };
         EditorApplication.update += Update;
         EditorSettings.serializationMode = SerializationMode.ForceText;
+        initialActionPending = phase != "legacy";
+        if (initialActionPending) SessionState.SetString(InitialPhasePending, phase);
         if (immediate)
         {
             try { action(); }
@@ -91,6 +137,8 @@ public static class ComponentUpgradeFixture
     static void Later(Action action, int wait = 5)
     {
         pending = action; frames = wait;
+        if (current.phase == "legacy" && action == (Action)CaptureLegacy)
+            SessionState.SetBool(LegacyCapturePending, true);
         File.WriteAllText(Output + "/" + current.phase + "-progress.txt", "Waiting for " + action.Method.Name);
         EditorApplication.QueuePlayerLoopUpdate();
     }
@@ -100,6 +148,11 @@ public static class ComponentUpgradeFixture
         if (--frames > 0) { EditorApplication.QueuePlayerLoopUpdate(); return; }
         var action = pending; pending = null;
         if (action == null) return;
+        if (initialActionPending)
+        {
+            initialActionPending = false;
+            SessionState.EraseString(InitialPhasePending);
+        }
         try { action(); }
         catch (Exception error) { Finish(error); }
     }
@@ -107,6 +160,8 @@ public static class ComponentUpgradeFixture
     {
         foreach (var editor in inspectors) if (editor != null) Object.DestroyImmediate(editor);
         inspectors.Clear();
+        SessionState.EraseString(InitialPhasePending);
+        if (current.phase == "legacy") SessionState.EraseBool(LegacyCapturePending);
         current.passed = error == null;
         current.error = error == null ? "" : error.ToString();
         File.WriteAllText(Output + "/" + current.phase + ".json", JsonUtility.ToJson(current, true));
@@ -311,8 +366,10 @@ public static class ComponentUpgradeFixture
         {
             var record = new ComponentRecord { asset = path, owner = OwnerPath(component.transform), type = component.GetType().FullName, globalId = Id(component) };
             var serialized = new SerializedObject(component); var property = serialized.GetIterator();
-            while (property.Next(true))
+            bool enterChildren = true;
+            while (property.Next(enterChildren))
             {
+                enterChildren = property.propertyType != SerializedPropertyType.ObjectReference;
                 if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)) continue;
                 string value = Value(property); if (value != null) record.properties.Add(new PropertyRecord { path = property.propertyPath, kind = property.propertyType.ToString(), value = value });
             }
@@ -356,6 +413,8 @@ public static class ComponentUpgradeFixture
     static void Broken()
     {
         CloseScenes(); var state = ReadState(); AssertFilesUnchanged(state);
+        foreach (var type in state.types)
+            current.checks.Add("legacy GUID path after current import: " + type.type + "=" + AssetDatabase.GUIDToAssetPath(type.guid));
         foreach (string path in Candidates.Where(value => value != DuplicatePath))
         {
             if (path.EndsWith(".prefab"))
@@ -486,8 +545,14 @@ public static class ComponentUpgradeFixture
                 Require(components.TryGetValue(expected.globalId, out var component), "Component identity changed: " + path + " / " + expected.owner + " / " + expected.type);
                 Require(component.GetType().FullName == expected.type, "Component resolved to wrong type: " + expected.globalId);
                 var serialized = new SerializedObject(component);
+                // Older fixture snapshots entered the native PPtr implementation.
+                // Its m_FileID is an Editor instance ID. The serialized reference
+                // is checked by the parent property's GlobalObjectID and raw YAML.
+                var referencePaths = expected.properties.Where(value => value.kind == "ObjectReference")
+                    .Select(value => value.path + ".").ToArray();
                 foreach (var property in expected.properties)
                 {
+                    if (referencePaths.Any(prefix => property.path.StartsWith(prefix, StringComparison.Ordinal))) continue;
                     var currentProperty = serialized.FindProperty(property.path);
                     Require(currentProperty != null, "Stored field disappeared: " + expected.type + "." + property.path);
                     Require(Value(currentProperty) == property.value, "Stored value/PPtr changed: " + expected.type + "." + property.path + "; expected " + property.value + ", got " + Value(currentProperty));

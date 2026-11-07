@@ -44,7 +44,8 @@ ACC 0.5.1、AO 0.3.1、Viseme 0.2.1 和 ASS 0.9.2 保留原生产组件类、Run
 `Tools/UnityBox/Component References` 手动处理。
 
 工具只写用户选定的资源范围；依赖只读追溯，已打开场景/Prefab Stage 及依赖报告跳过，
-不替用户保存、关闭或重载。一键执行整批可确定引用，不弹逐项确认；同一歧义 GUID
+也包括编辑中尚未保存的新嵌套 Prefab 和对象资源引用，不替用户保存、关闭或重载。
+一键执行整批可确定引用，不弹逐项确认；同一歧义 GUID
 选择一次目标类型，未知和重复新旧组件保留。写前校验源 SHA 并备份原字节与对应 `.meta`，
 结果位于 `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`。
 

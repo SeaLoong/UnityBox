@@ -5,11 +5,11 @@
     "-batchmode",
     "-nographics",
     "-projectPath",
-    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107",
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107",
     "-executeMethod",
     "ComponentUpgradeFixture.VerifyBroken",
     "-logFile",
-    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/broken-editor.log"
+    "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/broken-editor.log"
   ],
   "inputs": [
     {
@@ -258,7 +258,7 @@
       ]
     }
   ],
-  "started_at_utc": "2026-11-07T13:18:57.088655+00:00",
+  "started_at_utc": "2026-11-07T14:16:20.109881+00:00",
   "exit_code": 0,
   "result": {
     "phase": "broken",
@@ -273,6 +273,12 @@
     "selectedAssets": [],
     "readOnlyAssets": [],
     "checks": [
+      "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCOutfitMarker=",
+      "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCPartGroupMarker=",
+      "legacy GUID path after current import: UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride=",
+      "legacy GUID path after current import: UnityBox.AvatarSecuritySystem.ASSComponent=",
+      "legacy GUID path after current import: UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent=",
+      "legacy GUID path after current import: UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent=",
       "complete current package replacement reproduced Missing Script for all six old component types",
       "opening/importing did not write old assets; SDK descriptors retained their original type and configuration"
     ],
@@ -281,12 +287,12 @@
   },
   "passed": true,
   "fixture_source": {
-    "sha256": "00038a86c0f623d773beba011c7d4b97340a4fda583b27420f3929f951b0602e",
-    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeFixture.cs"
+    "sha256": "38cd714409d44a3d24a71ff84e6028416718e136ccf934cfc01bdac2b47d2690",
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeFixture.cs"
   },
   "holder_source": {
     "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
-    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeReferenceHolder.cs"
+    "file": "/workspace/unitybox-setup/unity/projects/component-upgrade-six-final-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeReferenceHolder.cs"
   },
-  "finished_at_utc": "2026-11-07T13:20:27.735537+00:00"
+  "finished_at_utc": "2026-11-07T14:19:04.448337+00:00"
 }

@@ -12,7 +12,7 @@
     },
     {
       "path": "MigrationEngine.cs",
-      "sha256": "5944c4d030f493bdee96b401fbf9c07b747d103920abe2c7da2f87681bca38ee"
+      "sha256": "c3cfb5733145ed6f13952b2b6a84febdc817f72d1f9982ab6d632c904adefaae"
     },
     {
       "path": "MigrationEngine.cs.meta",
@@ -27,8 +27,8 @@
       "sha256": "4e16c1c5354df43922aff8dfde6d37b37f5d749af138deff23ca6311afab13f7"
     }
   ],
-  "engine_sha256": "5944c4d030f493bdee96b401fbf9c07b747d103920abe2c7da2f87681bca38ee",
-  "installer_sha256": "2f859fda3679a2e049af7cf441cab821676558be8084a7ce15a6be9a9d188c67",
+  "engine_sha256": "c3cfb5733145ed6f13952b2b6a84febdc817f72d1f9982ab6d632c904adefaae",
+  "installer_sha256": "b55b31f46bdaf042ad37108474d9d02943c6edb541c8866ba17ad2c854dd5088",
   "changed_assets": [
     "Assets/ComponentUpgradeFixtures/Avatar.unity",
     "Assets/ComponentUpgradeFixtures/Base.prefab"
@@ -36,9 +36,12 @@
   "repaired_components": 12,
   "inspector_targets": 24,
   "component_records": 50,
+  "typed_component_records_compared_per_pass": 49,
+  "captured_property_records": 2108,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 28,
   "original_asset_and_meta_files": 24,
   "persistent_field_comparisons_per_pass": 2080,
   "object_reference_global_ids_per_pass": 119,
-  "transient_native_pptr_child_values_excluded": 238,
+  "transient_native_pptr_child_values_excluded": 0,
   "current_state_retained": true
 }
