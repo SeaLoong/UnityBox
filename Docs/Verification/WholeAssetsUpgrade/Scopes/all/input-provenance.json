@@ -1,0 +1,186 @@
+{
+  "scope": "all",
+  "producer_revision": "e62c741f7921071834924f75cbfd80f1a50a5304",
+  "producer_summary_sha256": null,
+  "original_producer_state_sha256": "775041b95dc600c4a0f28003bb65f9e20304c412e88bac9abc67426d63c3b192",
+  "relocated_without_changing_asset_bytes_or_guids": {
+    "Assets/ComponentUpgradeFixtures/Base.prefab": "Assets/OldCostumes/Base.prefab",
+    "Assets/ComponentUpgradeFixtures/Variant.prefab": "Assets/OtherCollection/Variant.prefab",
+    "Assets/ComponentUpgradeFixtures/Nested.prefab": "Assets/Containers/Nested.prefab",
+    "Assets/ComponentUpgradeFixtures/Avatar.unity": "Assets/Scenes/Avatar.unity"
+  },
+  "restored_files": [
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+      "path": "Assets/Scenes/Avatar.unity",
+      "sha256": "588cc96fc61701a9d23572cd867c49e3a4d597475323299cfeb82bf83b028936"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+      "path": "Assets/Scenes/Avatar.unity.meta",
+      "sha256": "514eb4181599ec3a9ae2f65a81f85d41d71b1b2535d7efcfdd543224ca0b5e64"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+      "path": "Assets/OldCostumes/Base.prefab",
+      "sha256": "16ff8cbde2cf89ce6247c332250f74e36b3593a0953fcd6b490286ba907888f9"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+      "path": "Assets/OldCostumes/Base.prefab.meta",
+      "sha256": "8f2b50996676b9478737178cb90b6699c7ff5f9abe3a21837f98237bbd013810"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+      "sha256": "e043ed10275f347f0fab86a23d07c7671bf0bb1de6c178bf93f8205569fd9bf4"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity.meta",
+      "sha256": "84ca66462da46be5de83b82c53369432f50a8c04549149e5613ac46926ad3a1a"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+      "sha256": "2a29f997bff21265531cef29df8a9ae03a5a9543dd8e294650fb28e0fbe707b7"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta",
+      "sha256": "741940d5fd3abfb24e503c0c889d3b20d0ed6c50e5bfe82f125f1e0f9e042c72"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "sha256": "ff5658a1194194743ab8bd889fb195829ce2c57170303047223838850da4a549"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+      "sha256": "77fccee77aa7459592229ed31f2e6b0b4153f1c85aeb7daa4461bf1854c950a2"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "sha256": "3f26cf878c828fe4a6c170f44b0f23c7d62a8e88a802f87d654fc0fc482409ac"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta",
+      "sha256": "46c72720d22bbc654d858787c0077c22fe72f2483e60240b4ae95cacbdef7a81"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "sha256": "068ad6fc9b6cd35a22491070fbf422276a23c0f04c6078b40d41f5a7189bc063"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+      "path": "Assets/Containers/Nested.prefab",
+      "sha256": "48e57578479dda8d675a42a51c4a0a77884d68ae543253846273be350d76d3f8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+      "path": "Assets/Containers/Nested.prefab.meta",
+      "sha256": "6522e8338ce79e01bd85465223d2b70ec0ecc7ed4b797508ab6da2a393ab3718"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "sha256": "52fbc71f0d3bf5e3011503eae53aa9fbd1b01eb3e415cda4cc0a307af087c4a0"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "sha256": "d01ae378d13eb65c68e6d0db6a0ded80d5b44f3ca743fcaf88b8ac34eddbe8d6"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "sha256": "1702afbd4d69906d44dc810ff1a64b2c80bdd9d822305cd123fdb04ab2bc3788"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "sha256": "52a1e73983ea89592fbfa2730de09a5f4ada58a44c2686e5f6edc4a4ce3b3cd2"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "sha256": "efcb22ad3bad93997920f38f1ce8dabaac13b074bc2221ae84c80a2e277883d7"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "sha256": "acbbba60c8480605bdf8e55355710c8db499b8d8926c369f47a0cb6b8ed7fbc8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+      "path": "Assets/OtherCollection/Variant.prefab",
+      "sha256": "745ed9d3b01a5963709bf07d18c586035d64283b90be735c04c4fa5794c1c533"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+      "path": "Assets/OtherCollection/Variant.prefab.meta",
+      "sha256": "5470a049291ceebd3d132f8e70e1c5ed9549346e3a5b02e9677a652804583852"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "sha256": "6d87c784a9b602d242d4a428a4a465fcea8a31662f324c3b4d1be6c97c5deb1a"
+    }
+  ],
+  "current_zip_inputs": [
+    {
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "version": "0.5.3",
+      "sha256": "71766fce99c9caf33029dda12ba9ce5ee2b9526befb2d1569b2212f20b1c6a0f"
+    },
+    {
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "version": "0.3.3",
+      "sha256": "e52f1c912e5b91acf5a2ca59e35b92a52b8455054c234b39bd91da2847934e8e"
+    },
+    {
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.9.4",
+      "sha256": "a76f095a5f30fa07060e7243c4da39ccce6af1c37383d578d08b6edd58ba13b0"
+    },
+    {
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.2.3",
+      "sha256": "ff30b3baaf01dd14ff8539e11660a91bcad667eb044b5f6082eb2e1cf0c92b85"
+    }
+  ]
+}

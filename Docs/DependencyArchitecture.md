@@ -9,7 +9,7 @@ SDK、Modular Avatar（MA）、NDMF 适配通过各自程序集及真实版本�
 | 插件 | 普通 Unity | 可选平台服务 |
 | --- | --- | --- |
 | Animator Optimizer | 显式 Animator/Controller、参数语义、层合并、AAP 和离线资产 | SDK Playable Controller；NDMF 当前虚拟图和 MA 行为 |
-| ACC | Scanner、服装/Parts/Mixer/材质动画、Unity Assets 窗口 | SDK Driver/Descriptor；MA 菜单、参数、FX、图标与 Setup Outfit |
+| ACC | Scanner、服装/Parts/Mixer/材质动画核心、组件引用升级 | SDK Driver/Descriptor；MA 菜单、参数、FX、图标与 Setup Outfit |
 | Blendshape | Float/Bool、组合 Controller、Animator 分配 | MA 菜单/参数/FX 安装、移除与整 Avatar 预算 |
 | ASS | 自动构建手势/计时/反馈图、保留用户 Animator 与运行输入 | SDK 行为适配、Playable 层；NDMF 构建与完成状态交接 |
 | 口型 | 15 口型、Voice、映射、AOC/Controller 与 Clip 生成 | Descriptor 默认值、SDK 构建、NDMF 虚拟路径与图提交 |
@@ -67,15 +67,14 @@ ASS 层后追加 WD Off 的密码、计时与反馈层。Avatar 对象锁定已�
 
 ## 各插件内置组件恢复
 
-ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 和 ASS 0.9.3 将组件恢复编译在各自现有的
-Unity-only Editor 程序集中，与原插件一起安装和更新。各入口仅识别所属插件的类型，
-不会建立四包之间或对 SDK/MA/NDMF 的额外恢复功能依赖。
+ACC、AO、ASS、Viseme 各自在原有 Unity-only Editor 程序集中提供 `ComponentReferenceUpgrade` 菜单动作，
+无需新依赖或额外程序集。Tools 菜单层级与各插件主入口一致，ACC/AO 的打开动作是 `Open`。
+`Execute(Func<bool>)` 先确认一次，再调用 `UpgradeProjectAssets()` 处理整个 Assets；取消时不扫描或写入。
 
-Project 资源入口为 `Assets/UnityBox/<插件名>/Repair Component References`，打开窗口
-时带入当前选择，原 Tools 插件窗口入口保持。一次手动执行处理选定范围，无逐项确认；
-依赖只读追溯，打开 Scene/PrefabStage 及未保存的新依赖报告跳过。
-扫描/执行核对源内容与目标脚本，原字节与 metadata 全部备份后才替换脚本 GUID。
-备份按各插件目录隔离，迁移不在启动、导入、移动或构建配置读取回调中执行。
+全项目发现流式过滤非 YAML 和无关资产，再按明确身份、所属字段结构、ACC 层级/Prefab 来源与 GUID cohort 识别。
+`Scan(paths)` / `Apply(plan)` 保留为底层 API；普通用户无需提供路径、映射或分析计划。
+干净已保存的编辑上下文在写入前暂挂、之后恢复；dirty/untitled 与其依赖保护不变。
+各包独立备份原文件及 metadata，保留组件身份、字段与其它引用。详见[组件引用说明](ComponentReferences.md)。
 
 ## 验证组合
 

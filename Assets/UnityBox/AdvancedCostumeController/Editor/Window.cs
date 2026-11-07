@@ -50,7 +50,7 @@ namespace UnityBox.AdvancedCostumeController
       new Color32(166, 92, 180, 255)
     };
 
-[MenuItem("Tools/UnityBox/Advanced Costume Controller")]
+    [MenuItem("Tools/UnityBox/Advanced Costume Controller/Open")]
     public static void ShowWindow()
     {
       var window = GetWindow<Window>();

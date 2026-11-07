@@ -23,128 +23,129 @@
 
 ## Editor 基准
 
-运行 `20261107T153452-cfabd428`，范围 `serial`。
+运行 `20261107T172435-8058dcff`，范围 `serial`。
 
 | 插件 / 场景 | 规模 | 样本 | 中位数 ms | p95 ms |
 | --- | ---: | ---: | ---: | ---: |
-| AdvancedCostumeController / `persistent_outfit_parts_generation` | 2 | 5 | 166.8171 | 175.9464 |
-| AdvancedCostumeController / `animator_update` | 2 | 9 | 0.043718 | 0.053419 |
-| AdvancedCostumeController / `persistent_outfit_parts_generation` | 8 | 5 | 475.875 | 553.6489 |
-| AdvancedCostumeController / `animator_update` | 8 | 9 | 0.071258 | 0.079972 |
-| AdvancedCostumeController / `persistent_outfit_parts_generation` | 24 | 5 | 1660.8291 | 2090.6616 |
-| AdvancedCostumeController / `animator_update` | 24 | 9 | 0.161822 | 0.460638 |
-| AnimatorOptimizer / `analyze_static_layers` | 8 | 9 | 7.076 | 51.1092 |
-| AnimatorOptimizer / `analyze_static_layers` | 32 | 9 | 11.0942 | 27.3153 |
-| AnimatorOptimizer / `analyze_static_layers` | 64 | 9 | 27.288 | 123.4776 |
-| AnimatorOptimizer / `automatic_retained_singleton_groups` | 8 | 9 | 0.058313 | 0.074527 |
-| AnimatorOptimizer / `explicit_singleton_conversion` | 8 | 9 | 0.053041 | 0.116052 |
-| AnimatorOptimizer / `automatic_retained_singleton_groups` | 32 | 9 | 0.054549 | 0.069571 |
-| AnimatorOptimizer / `explicit_singleton_conversion` | 32 | 9 | 0.060433 | 0.086422 |
-| AnimatorOptimizer / `animator_update_before_merge` | 8 | 9 | 0.042796 | 0.075528 |
-| AnimatorOptimizer / `animator_update_after_merge` | 8 | 9 | 0.023792 | 0.033404 |
-| AnimatorOptimizer / `animator_update_before_merge` | 32 | 9 | 0.063671 | 0.081064 |
-| AnimatorOptimizer / `animator_update_after_merge` | 32 | 9 | 0.027879 | 0.061055 |
-| AnimatorOptimizer / `animator_update_before_merge` | 64 | 9 | 0.115206 | 0.199466 |
-| AnimatorOptimizer / `animator_update_after_merge` | 64 | 9 | 0.026728 | 0.037028 |
-| AvatarColliderMonitor / `history_recompute_reference` | 100 | 9 | 0.2847 | 0.467 |
-| AvatarColliderMonitor / `history_cached_read` | 100 | 9 | 0.000019 | 0.00003 |
-| AvatarColliderMonitor / `preview_cached_read` | 100 | 9 | 0.000019 | 0.00002 |
-| AvatarColliderMonitor / `history_recompute_reference` | 1000 | 9 | 3.9783 | 15.0999 |
-| AvatarColliderMonitor / `history_cached_read` | 1000 | 9 | 0.000014 | 0.000036 |
-| AvatarColliderMonitor / `preview_cached_read` | 1000 | 9 | 0.000022 | 0.000045 |
-| AvatarColliderMonitor / `capture_3d_colliders` | 32 | 9 | 0.6448 | 0.7472 |
-| AvatarColliderMonitor / `capture_3d_colliders` | 256 | 9 | 6.2077 | 11.452 |
-| AvatarColliderMonitor / `capture_3d_colliders` | 1024 | 9 | 33.4678 | 546.0314 |
-| AvatarSecuritySystem / `scan_component_references` | 128 | 5 | 132.4322 | 186.4349 |
-| AvatarSecuritySystem / `scan_component_references` | 1024 | 5 | 817.4 | 1072.3577 |
-| AvatarSecuritySystem / `scan_component_references` | 4096 | 5 | 2973.8568 | 4179.3896 |
-| AvatarSecuritySystem / `gesture_graph_generation` | 2 | 7 | 4.0882 | 5.7031 |
-| AvatarSecuritySystem / `gesture_graph_generation` | 8 | 7 | 28.1202 | 43.8269 |
-| AvatarSecuritySystem / `gesture_graph_generation` | 32 | 7 | 518.4388 | 1140.4761 |
-| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 4 | 5 | 155.6051 | 188.4145 |
-| BlendshapeControllerGenerator / `animator_update` | 4 | 9 | 0.044199 | 0.049909 |
-| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 16 | 5 | 407.9652 | 772.0845 |
-| BlendshapeControllerGenerator / `animator_update` | 16 | 9 | 0.060396 | 0.07371 |
-| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 64 | 5 | 1740.0221 | 2552.6817 |
-| BlendshapeControllerGenerator / `animator_update` | 64 | 9 | 0.146391 | 0.185801 |
-| BuildPipelineLogger / `editorprefs_setting_read_reference` | 1000 | 9 | 0.000241 | 0.000465 |
-| BuildPipelineLogger / `disabled_shader_callback` | 1000 | 9 | 0.000004 | 0.000004 |
-| BuildPipelineLogger / `editorprefs_setting_read_reference` | 10000 | 9 | 0.00024 | 0.000277 |
-| BuildPipelineLogger / `disabled_shader_callback` | 10000 | 9 | 0.000004 | 0.000014 |
-| BuildPipelineLogger / `record_callback_trace` | 128 | 9 | 0.000226 | 0.001152 |
-| BuildPipelineLogger / `export_callback_trace_json` | 128 | 9 | 0.2843 | 0.4348 |
-| BuildPipelineLogger / `record_callback_trace` | 1024 | 9 | 0.000297 | 0.000669 |
-| BuildPipelineLogger / `export_callback_trace_json` | 1024 | 9 | 2.1253 | 12.7568 |
-| PrefabDiffPatcher / `analyze_serialized_hierarchy` | 32 | 9 | 29.8923 | 59.5475 |
-| PrefabDiffPatcher / `analyze_serialized_hierarchy` | 256 | 9 | 165.5267 | 256.557 |
-| PrefabDiffPatcher / `apply_scene_composition_reference` | 16 | 9 | 89.4626 | 203.2048 |
-| PrefabDiffPatcher / `apply_prefab_variant` | 16 | 9 | 16.2434 | 22.5557 |
-| PrefabDiffPatcher / `apply_scene_composition_reference` | 64 | 9 | 313.059 | 376.8988 |
-| PrefabDiffPatcher / `apply_prefab_variant` | 64 | 9 | 23.3373 | 65.7908 |
-| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 1 | 7 | 102.6773 | 112.2938 |
-| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 5 | 7 | 106.4141 | 123.9878 |
-| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 15 | 7 | 127.158 | 201.4699 |
-| VisemeBlendshapeOverride / `Resolve15Mappings` | 15 | 21 | 0.020348 | 0.02344 |
-| VisemeBlendshapeOverride / `Resolve15Mappings` | 150 | 21 | 0.027228 | 0.03388 |
-| VisemeBlendshapeOverride / `Resolve15Mappings` | 1500 | 21 | 0.095304 | 0.136088 |
+| AdvancedCostumeController / `persistent_outfit_parts_generation` | 2 | 5 | 169.3667 | 270.4517 |
+| AdvancedCostumeController / `animator_update` | 2 | 9 | 0.051187 | 0.056354 |
+| AdvancedCostumeController / `persistent_outfit_parts_generation` | 8 | 5 | 506.9629 | 549.8794 |
+| AdvancedCostumeController / `animator_update` | 8 | 9 | 0.067414 | 0.080179 |
+| AdvancedCostumeController / `persistent_outfit_parts_generation` | 24 | 5 | 1812.0478 | 1962.0566 |
+| AdvancedCostumeController / `animator_update` | 24 | 9 | 0.088889 | 0.194983 |
+| AnimatorOptimizer / `analyze_static_layers` | 8 | 9 | 2.2489 | 5.6786 |
+| AnimatorOptimizer / `analyze_static_layers` | 32 | 9 | 10.6198 | 127.4706 |
+| AnimatorOptimizer / `analyze_static_layers` | 64 | 9 | 19.9104 | 32.3335 |
+| AnimatorOptimizer / `automatic_retained_singleton_groups` | 8 | 9 | 0.061372 | 0.084505 |
+| AnimatorOptimizer / `explicit_singleton_conversion` | 8 | 9 | 0.064907 | 0.10633 |
+| AnimatorOptimizer / `automatic_retained_singleton_groups` | 32 | 9 | 0.087908 | 0.101483 |
+| AnimatorOptimizer / `explicit_singleton_conversion` | 32 | 9 | 0.109777 | 0.302039 |
+| AnimatorOptimizer / `animator_update_before_merge` | 8 | 9 | 0.06562 | 0.699096 |
+| AnimatorOptimizer / `animator_update_after_merge` | 8 | 9 | 0.027528 | 0.037378 |
+| AnimatorOptimizer / `animator_update_before_merge` | 32 | 9 | 0.07034 | 0.100092 |
+| AnimatorOptimizer / `animator_update_after_merge` | 32 | 9 | 0.02945 | 0.040092 |
+| AnimatorOptimizer / `animator_update_before_merge` | 64 | 9 | 0.116517 | 0.147931 |
+| AnimatorOptimizer / `animator_update_after_merge` | 64 | 9 | 0.022294 | 0.029494 |
+| AvatarColliderMonitor / `history_recompute_reference` | 100 | 9 | 0.2368 | 0.264 |
+| AvatarColliderMonitor / `history_cached_read` | 100 | 9 | 0.000014 | 0.000057 |
+| AvatarColliderMonitor / `preview_cached_read` | 100 | 9 | 0.000019 | 0.000023 |
+| AvatarColliderMonitor / `history_recompute_reference` | 1000 | 9 | 3.0403 | 9.5204 |
+| AvatarColliderMonitor / `history_cached_read` | 1000 | 9 | 0.000016 | 0.000142 |
+| AvatarColliderMonitor / `preview_cached_read` | 1000 | 9 | 0.00002 | 0.000032 |
+| AvatarColliderMonitor / `capture_3d_colliders` | 32 | 9 | 0.7108 | 4.4228 |
+| AvatarColliderMonitor / `capture_3d_colliders` | 256 | 9 | 5.6964 | 8.2996 |
+| AvatarColliderMonitor / `capture_3d_colliders` | 1024 | 9 | 29.835 | 41.8645 |
+| AvatarSecuritySystem / `scan_component_references` | 128 | 5 | 89.8569 | 117.2593 |
+| AvatarSecuritySystem / `scan_component_references` | 1024 | 5 | 683.6215 | 764.1582 |
+| AvatarSecuritySystem / `scan_component_references` | 4096 | 5 | 3103.6207 | 6060.7482 |
+| AvatarSecuritySystem / `discover_project_assets` | 1024 | 5 | 380.0913 | 435.2502 |
+| AvatarSecuritySystem / `gesture_graph_generation` | 2 | 7 | 4.4826 | 10.5083 |
+| AvatarSecuritySystem / `gesture_graph_generation` | 8 | 7 | 27.2399 | 32.9163 |
+| AvatarSecuritySystem / `gesture_graph_generation` | 32 | 7 | 433.0616 | 653.3545 |
+| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 4 | 5 | 121.7298 | 124.3057 |
+| BlendshapeControllerGenerator / `animator_update` | 4 | 9 | 0.040475 | 0.045087 |
+| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 16 | 5 | 328.8125 | 358.5056 |
+| BlendshapeControllerGenerator / `animator_update` | 16 | 9 | 0.057681 | 0.096808 |
+| BlendshapeControllerGenerator / `persistent_float_controller_generation` | 64 | 5 | 1557.2506 | 1769.634 |
+| BlendshapeControllerGenerator / `animator_update` | 64 | 9 | 0.205093 | 0.246917 |
+| BuildPipelineLogger / `editorprefs_setting_read_reference` | 1000 | 9 | 0.00022 | 0.000822 |
+| BuildPipelineLogger / `disabled_shader_callback` | 1000 | 9 | 0.000004 | 0.000005 |
+| BuildPipelineLogger / `editorprefs_setting_read_reference` | 10000 | 9 | 0.00025 | 0.000265 |
+| BuildPipelineLogger / `disabled_shader_callback` | 10000 | 9 | 0.000004 | 0.000005 |
+| BuildPipelineLogger / `record_callback_trace` | 128 | 9 | 0.00019 | 0.000292 |
+| BuildPipelineLogger / `export_callback_trace_json` | 128 | 9 | 0.2616 | 0.4666 |
+| BuildPipelineLogger / `record_callback_trace` | 1024 | 9 | 0.000215 | 0.000309 |
+| BuildPipelineLogger / `export_callback_trace_json` | 1024 | 9 | 2.9714 | 28.752 |
+| PrefabDiffPatcher / `analyze_serialized_hierarchy` | 32 | 9 | 15.9971 | 64.059 |
+| PrefabDiffPatcher / `analyze_serialized_hierarchy` | 256 | 9 | 166.2394 | 206.4344 |
+| PrefabDiffPatcher / `apply_scene_composition_reference` | 16 | 9 | 76.7417 | 253.8416 |
+| PrefabDiffPatcher / `apply_prefab_variant` | 16 | 9 | 19.3883 | 77.2043 |
+| PrefabDiffPatcher / `apply_scene_composition_reference` | 64 | 9 | 236.404 | 422.2445 |
+| PrefabDiffPatcher / `apply_prefab_variant` | 64 | 9 | 35.1555 | 73.9144 |
+| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 1 | 7 | 107.8981 | 126.7892 |
+| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 5 | 7 | 127.0965 | 194.328 |
+| VisemeBlendshapeOverride / `BuildPersist15VoiceStates` | 15 | 7 | 140.0467 | 155.2787 |
+| VisemeBlendshapeOverride / `Resolve15Mappings` | 15 | 21 | 0.029148 | 0.079852 |
+| VisemeBlendshapeOverride / `Resolve15Mappings` | 150 | 21 | 0.027212 | 0.220928 |
+| VisemeBlendshapeOverride / `Resolve15Mappings` | 1500 | 21 | 0.096112 | 0.150556 |
 
-8 个独立单层分组：自动保留原图 0.058313 ms，显式转换 0.053041 ms，减少 9.0%。
-32 个独立单层分组：自动保留原图 0.054549 ms，显式转换 0.060433 ms，增加 10.8%。
-8 层合并：中位数 0.042796 → 0.023792 ms，减少 44.4%。
-32 层合并：中位数 0.063671 → 0.027879 ms，减少 56.2%。
-64 层合并：中位数 0.115206 → 0.026728 ms，减少 76.8%。
-100 条 Collider 历史：完整重算中位数 0.2847 ms；读取已缓存的比较视图 0.000019 ms。
-1000 条 Collider 历史：完整重算中位数 3.9783 ms；读取已缓存的比较视图 0.000014 ms。
-Logger 每组 1000 次：直接读取 EditorPrefs 的单次中位数 0.000241 ms，缓存禁用回调 0.000004 ms。
-Logger 每组 10000 次：直接读取 EditorPrefs 的单次中位数 0.00024 ms，缓存禁用回调 0.000004 ms。
+8 个独立单层分组：自动保留原图 0.061372 ms，显式转换 0.064907 ms，增加 5.8%。
+32 个独立单层分组：自动保留原图 0.087908 ms，显式转换 0.109777 ms，增加 24.9%。
+8 层合并：中位数 0.06562 → 0.027528 ms，减少 58.0%。
+32 层合并：中位数 0.07034 → 0.02945 ms，减少 58.1%。
+64 层合并：中位数 0.116517 → 0.022294 ms，减少 80.9%。
+100 条 Collider 历史：完整重算中位数 0.2368 ms；读取已缓存的比较视图 0.000014 ms。
+1000 条 Collider 历史：完整重算中位数 3.0403 ms；读取已缓存的比较视图 0.000016 ms。
+Logger 每组 1000 次：直接读取 EditorPrefs 的单次中位数 0.00022 ms，缓存禁用回调 0.000004 ms。
+Logger 每组 10000 次：直接读取 EditorPrefs 的单次中位数 0.00025 ms，缓存禁用回调 0.000004 ms。
 
 ## 图形输出
 
-运行 `20261107T150726-6d5d8452`，范围 `graphics`。
+运行 `20261107T172232-c6d9886a`，范围 `graphics`。
 
 | 插件 / 场景 | 规模 | 样本 | 中位数 ms | p95 ms |
 | --- | ---: | ---: | ---: | ---: |
-| AdvancedCostumeController / `menu_icon_rendering_256px` | 2 | 5 | 594.5381 | 815.0682 |
+| AdvancedCostumeController / `menu_icon_rendering_256px` | 2 | 5 | 218.9669 | 293.1317 |
 
-图形设备：Renderer: llvmpipe (LLVM 19.1.7, 256 bits)；Vendor:   Mesa；Version:  4.5 (Core Profile) Mesa 25.0.7-2+deb13u1；OPENGL LOG: Creating OpenGL 4.5 graphics device ; Context level  <OpenGL 4.5> ; Context handle -1042536096
+图形设备：Renderer: llvmpipe (LLVM 19.1.7, 256 bits)；Vendor:   Mesa；Version:  4.5 (Core Profile) Mesa 25.0.7-2+deb13u1；OPENGL LOG: Creating OpenGL 4.5 graphics device ; Context level  <OpenGL 4.5> ; Context handle 727499696
 
 ## Linux Player
 
 Player 每个 Animator 先预热 50 次，再采样 11 组，每组 200 次手动更新。输入使用对应功能场景最后一步的状态；逐步切换的正确性在计时前执行。
 
-运行 `20261107T153356-7d615710`，范围 `linux`。
+运行 `20261107T172338-54ebb7a8`，范围 `linux`。
 
 | 插件 / 场景 | 规模 | 样本 | 中位数 ms | p95 ms |
 | --- | ---: | ---: | ---: | ---: |
-| StandalonePlayer / `Unity.PlayerSmoke/Basic` | 1 | 11 | 0.031499 | 0.121478 |
-| StandalonePlayer / `Blendshape Float and inverted Bool across combined renderers/Blendshape` | 1 | 11 | 0.036175 | 0.078357 |
-| StandalonePlayer / `ASS gesture hold, result, timeout restart and user animation preservation/ASS_StandaloneProbe` | 1 | 11 | 0.04206 | 0.04538 |
-| StandalonePlayer / `ACC costume selection, Parts and shared Mixer/ACCShared` | 1 | 11 | 0.044827 | 0.089653 |
-| StandalonePlayer / `ACC costume selection, Parts and independent Mixer/ACCIndependent` | 1 | 11 | 0.049355 | 0.102755 |
-| StandalonePlayer / `Viseme15AndVoiceOff/VisemeProbeOff` | 1 | 11 | 0.033032 | 0.076123 |
-| StandalonePlayer / `Viseme15AndVoiceOn/VisemeProbeOn` | 1 | 11 | 0.0276 | 0.044315 |
-| StandalonePlayer / `AnimatorOptimizer/Bool selector/AO_Selector_Source` | 1 | 11 | 0.026544 | 0.031568 |
-| StandalonePlayer / `AnimatorOptimizer/Bool selector/AO_Selector_Optimized` | 1 | 11 | 0.023276 | 0.033053 |
-| StandalonePlayer / `AnimatorOptimizer/AAP EntryOff/AO_History_Source_EntryOff` | 1 | 11 | 0.023176 | 0.03462 |
-| StandalonePlayer / `AnimatorOptimizer/AAP EntryOff/AO_History_Optimized_EntryOff` | 1 | 11 | 0.027761 | 0.030857 |
-| StandalonePlayer / `AnimatorOptimizer/AAP EntryOn/AO_History_Source_EntryOn` | 1 | 11 | 0.021871 | 0.026427 |
-| StandalonePlayer / `AnimatorOptimizer/AAP EntryOn/AO_History_Optimized_EntryOn` | 1 | 11 | 0.027698 | 0.032305 |
-| StandalonePlayer / `AnimatorOptimizer/layers 8/AO_Layers_Source_8` | 1 | 11 | 0.042292 | 0.045856 |
-| StandalonePlayer / `AnimatorOptimizer/layers 8/AO_Layers_Optimized_8` | 1 | 11 | 0.019336 | 0.022486 |
-| StandalonePlayer / `AnimatorOptimizer/layers 32/AO_Layers_Source_32` | 1 | 11 | 0.058338 | 0.065616 |
-| StandalonePlayer / `AnimatorOptimizer/layers 32/AO_Layers_Optimized_32` | 1 | 11 | 0.012216 | 0.048286 |
-| StandalonePlayer / `AnimatorOptimizer/layers 64/AO_Layers_Source_64` | 1 | 11 | 0.100842 | 0.123137 |
-| StandalonePlayer / `AnimatorOptimizer/layers 64/AO_Layers_Optimized_64` | 1 | 11 | 0.027778 | 0.033271 |
+| StandalonePlayer / `Unity.PlayerSmoke/Basic` | 1 | 11 | 0.028504 | 0.097444 |
+| StandalonePlayer / `Blendshape Float and inverted Bool across combined renderers/Blendshape` | 1 | 11 | 0.031331 | 0.035498 |
+| StandalonePlayer / `ASS gesture hold, result, timeout restart and user animation preservation/ASS_StandaloneProbe` | 1 | 11 | 0.038069 | 0.045437 |
+| StandalonePlayer / `ACC costume selection, Parts and shared Mixer/ACCShared` | 1 | 11 | 0.037955 | 0.057925 |
+| StandalonePlayer / `ACC costume selection, Parts and independent Mixer/ACCIndependent` | 1 | 11 | 0.038093 | 0.044156 |
+| StandalonePlayer / `Viseme15AndVoiceOff/VisemeProbeOff` | 1 | 11 | 0.033781 | 0.04089 |
+| StandalonePlayer / `Viseme15AndVoiceOn/VisemeProbeOn` | 1 | 11 | 0.032283 | 0.067349 |
+| StandalonePlayer / `AnimatorOptimizer/Bool selector/AO_Selector_Source` | 1 | 11 | 0.027305 | 0.035007 |
+| StandalonePlayer / `AnimatorOptimizer/Bool selector/AO_Selector_Optimized` | 1 | 11 | 0.029518 | 0.034734 |
+| StandalonePlayer / `AnimatorOptimizer/AAP EntryOff/AO_History_Source_EntryOff` | 1 | 11 | 0.029053 | 0.040881 |
+| StandalonePlayer / `AnimatorOptimizer/AAP EntryOff/AO_History_Optimized_EntryOff` | 1 | 11 | 0.040065 | 0.051448 |
+| StandalonePlayer / `AnimatorOptimizer/AAP EntryOn/AO_History_Source_EntryOn` | 1 | 11 | 0.029491 | 0.034181 |
+| StandalonePlayer / `AnimatorOptimizer/AAP EntryOn/AO_History_Optimized_EntryOn` | 1 | 11 | 0.041374 | 0.043349 |
+| StandalonePlayer / `AnimatorOptimizer/layers 8/AO_Layers_Source_8` | 1 | 11 | 0.048327 | 0.070286 |
+| StandalonePlayer / `AnimatorOptimizer/layers 8/AO_Layers_Optimized_8` | 1 | 11 | 0.030926 | 0.035466 |
+| StandalonePlayer / `AnimatorOptimizer/layers 32/AO_Layers_Source_32` | 1 | 11 | 0.051244 | 0.06876 |
+| StandalonePlayer / `AnimatorOptimizer/layers 32/AO_Layers_Optimized_32` | 1 | 11 | 0.031225 | 0.036472 |
+| StandalonePlayer / `AnimatorOptimizer/layers 64/AO_Layers_Source_64` | 1 | 11 | 0.092294 | 0.138799 |
+| StandalonePlayer / `AnimatorOptimizer/layers 64/AO_Layers_Optimized_64` | 1 | 11 | 0.032109 | 0.036865 |
 
-功能场景 13 个、输出检查 4807 项；完成后整体托管堆 1,658,880 bytes。
+功能场景 13 个、输出检查 4807 项；完成后整体托管堆 1,679,360 bytes。
 
-Linux 构建耗时 32.040072 秒，产物 58,547,694 bytes，0 个构建错误。
+Linux 构建耗时 27.766235 秒，产物 58,547,698 bytes，0 个构建错误。
 
-Player `AnimatorOptimizer/Bool selector`：1 → 1 层，2 → 2 个 Clip；中位数 0.026544 → 0.023276 ms，减少 12.3%。
-Player `AnimatorOptimizer/AAP EntryOff`：1 → 2 层，2 → 10 个 Clip；中位数 0.023176 → 0.027761 ms，增加 19.8%。
-Player `AnimatorOptimizer/AAP EntryOn`：1 → 2 层，2 → 10 个 Clip；中位数 0.021871 → 0.027698 ms，增加 26.6%。
-Player `AnimatorOptimizer/layers 8`：8 → 1 层，8 → 1 个 Clip；中位数 0.042292 → 0.019336 ms，减少 54.3%。
-Player `AnimatorOptimizer/layers 32`：32 → 1 层，32 → 1 个 Clip；中位数 0.058338 → 0.012216 ms，减少 79.1%。
-Player `AnimatorOptimizer/layers 64`：64 → 1 层，64 → 1 个 Clip；中位数 0.100842 → 0.027778 ms，减少 72.5%。
+Player `AnimatorOptimizer/Bool selector`：1 → 1 层，2 → 2 个 Clip；中位数 0.027305 → 0.029518 ms，增加 8.1%。
+Player `AnimatorOptimizer/AAP EntryOff`：1 → 2 层，2 → 10 个 Clip；中位数 0.029053 → 0.040065 ms，增加 37.9%。
+Player `AnimatorOptimizer/AAP EntryOn`：1 → 2 层，2 → 10 个 Clip；中位数 0.029491 → 0.041374 ms，增加 40.3%。
+Player `AnimatorOptimizer/layers 8`：8 → 1 层，8 → 1 个 Clip；中位数 0.048327 → 0.030926 ms，减少 36.0%。
+Player `AnimatorOptimizer/layers 32`：32 → 1 层，32 → 1 个 Clip；中位数 0.051244 → 0.031225 ms，减少 39.1%。
+Player `AnimatorOptimizer/layers 64`：64 → 1 层，64 → 1 个 Clip；中位数 0.092294 → 0.032109 ms，减少 65.2%。
 
-本次测量中 `AnimatorOptimizer/AAP EntryOff`、`AnimatorOptimizer/AAP EntryOn` 的稳态更新耗时增加。这些场景通过了原始/转换后逐步输入与输出检查；完整对照同时展示功能结果和运行成本，转换范围按控制器结构与运行状态选择。
+本次测量中 `AnimatorOptimizer/Bool selector`、`AnimatorOptimizer/AAP EntryOff`、`AnimatorOptimizer/AAP EntryOn` 的稳态更新耗时增加。这些场景通过了原始/转换后逐步输入与输出检查；完整对照同时展示功能结果和运行成本，转换范围按控制器结构与运行状态选择。

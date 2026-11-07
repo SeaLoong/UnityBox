@@ -1,7 +1,7 @@
 {
   "name": "top.sealoong.unitybox.viseme-blendshape-override",
   "displayName": "Viseme Blendshape Override",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Unity viseme blendshape controller authoring, with optional VRChat SDK and NDMF build adapters.",
   "unity": "2022.3",
   "author": {

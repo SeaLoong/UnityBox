@@ -55,7 +55,8 @@ def render_rule(component):
     fields = ", ".join(csharp_string(value) for value in component["fields"])
     return ("            new Rule { Name = " + csharp_string(component["name"]) + ", Label = "
             + csharp_string(component["label"]) + ", CanonicalGuid = " + csharp_string(component["guid"])
-            + ", Strong = " + str(component["strong"]).lower() + ",\n"
+            + ", Strong = " + str(component["strong"]).lower()
+            + (", ContextType = " + csharp_string(COMPONENTS["Outfit"]["name"]) if component["name"] == COMPONENTS["Part"]["name"] else "") + ",\n"
             + "                Fields = new[] { " + fields + " } },")
 
 
@@ -63,13 +64,13 @@ def owner_tests(owner):
     types = ", ".join(csharp_string(COMPONENTS[key]["name"]) for key in owner["types"])
     peer = COMPONENTS[owner["peer"]]
     return f'''        [Test]
-        public void CatalogAndProjectMenuBelongToThisPlugin()
+        public void CatalogAndToolsMenuBelongToThisPlugin()
         {{
             Assert.That(MigrationEngine.GetTargetTypes().Select(target => target.TypeName),
                 Is.EquivalentTo(new[] {{ {types} }}));
-            var menu = (MenuItem)Attribute.GetCustomAttribute(typeof(ComponentReferenceMigrationWindow)
-                .GetMethod("Open", BindingFlags.Public | BindingFlags.Static), typeof(MenuItem));
-            Assert.That(menu.menuItem, Is.EqualTo("Assets/UnityBox/{owner['display']}/Repair Component References"));
+            var menu = (MenuItem)Attribute.GetCustomAttribute(typeof(ComponentReferenceUpgrade)
+                .GetMethod("RunMenu", BindingFlags.Public | BindingFlags.Static), typeof(MenuItem));
+            Assert.That(menu.menuItem, Is.EqualTo("Tools/UnityBox/{"ASS" if owner["name"] == "AvatarSecuritySystem" else owner["display"]}/Upgrade Component References"));
         }}
 
         [Test]
@@ -109,18 +110,21 @@ def rendered_files():
             "__NAMESPACE__": "UnityBox." + owner["name"] + ".ComponentMigration",
             "__OWNER__": owner["name"], "__DISPLAY__": owner["display"], "__ABBR__": owner["abbr"],
             "__RULES__": "\n".join(render_rule(COMPONENTS[key]) for key in owner["types"]),
-            "__MENU__": "Assets/UnityBox/" + owner["display"] + "/Repair Component References",
+            "__MENU__": "Tools/UnityBox/" + ("ASS" if owner["name"] == "AvatarSecuritySystem" else owner["display"]) + "/Upgrade Component References",
             "__TITLE__": owner["abbr"] + " Component References", "__PRIMARY__": primary["name"],
             "__PRIMARY_FIELDS__": csharp_string(primary["fixture"]),
             "__OWNER_TESTS__": owner_tests(owner),
             "__WEAK_CONSTANT__": ('        private const string Part = "' + COMPONENTS["Part"]["name"] + '";') if owner["name"] == "AdvancedCostumeController" else "",
             "__WEAK_TESTS__": templates["WeakTests.cs.in"] if owner["name"] == "AdvancedCostumeController" else "",
-            "__WEAK_MESSAGE__": "候选 ACC Part Group Marker（Mode / GroupName）；需要一次 GUID 类型映射。 / Candidate only: choose a GUID-to-type mapping before migrating.",
+            "__PROJECT_TESTS__": templates.get("ProjectUpgradeTests.cs.in", "") + "\n",
+            "__WEAK_MESSAGE__": "Mode / GroupName 缺少已证实的 ACC Outfit 上下文，保留该引用。 / No verified ACC Outfit context; this generic schema remains unchanged.",
             "__MAPPING_HELP__": "Mode / GroupName 等通用字段不会被自动猜为 ACC 组件。" if owner["name"] == "AdvancedCostumeController" else "其它插件的未知引用不会作为本插件候选。",
         }
         destinations = [("MigrationEngine.cs.in", root / owner["editor"] / "MigrationEngine.cs"),
                         ("Window.cs.in", root / owner["editor"] / "ComponentReferenceMigrationWindow.cs"),
                         ("Tests.cs.in", root / owner["tests"] / "ComponentMigrationTests.cs")]
+        if "ProjectUpgrade.cs.in" in templates:
+            destinations.append(("ProjectUpgrade.cs.in", root / owner["editor"] / "ProjectUpgrade.cs"))
         if owner["name"] == "AvatarSecuritySystem":
             destinations.append(("Performance.cs.in", root / owner["tests"] / "ComponentMigrationPerformanceTests.cs"))
         for template, path in destinations:

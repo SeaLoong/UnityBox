@@ -9,7 +9,7 @@ Unity 2022.3 的编辑、动画生成和构建工具集。八个插件在 `maste
 | 插件 | 普通 Unity 工作流 | Avatar 集成 | 手册 |
 | --- | --- | --- | --- |
 | Animator Optimizer | Animator 分析、静态层合并、参数选择与 AAP 状态寄存器 | SDK Playable、NDMF 虚拟图与 MA 集成 | [优化器手册](Assets/UnityBox/AnimatorOptimizer/README.md) |
-| Advanced Costume Controller | 服装、变体、Parts、两种 Mixer、材质动画生成 | MA 菜单、FX、图标、骨架与同步参数 | [服装手册](Docs/AdvancedCostumeController.md) |
+| Advanced Costume Controller | 扫描与动画核心、组件引用升级 | 完整换装面板：动画、MA 菜单、FX、图标、骨架与同步参数 | [服装手册](Docs/AdvancedCostumeController.md) |
 | Blendshape Controller Generator | Float/Bool/反向曲线、组合 Controller、Animator 分配 | MA 安装/移除、总参数预算与 Undo | [Blendshape 手册](Docs/BlendshapeControllerGenerator.md) |
 | Viseme Blendshape Override | 15 口型、Voice 曲线、OverrideController、序列化迁移 | Descriptor、SDK 回退、NDMF 虚拟图 | [口型手册](Docs/VisemeBlendshapeOverride.md) |
 | Avatar Security System | 自动构建手势密码、倒计时、反馈与 Restart，保留原 Animator 图 | SDK 参数/LayerControl、NDMF 构建 | [用户手册](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md) |
@@ -32,9 +32,9 @@ https://sealoong.github.io/UnityBox/vpm.json
 源码或本地 UPM 安装直接从 `master` 的 `Assets/UnityBox` 选择所需包。
 源码版本以对应提交和包内 `package.json` 为准，VPM listing 列出已部署的发布产物。
 升级时保留 `.meta` 与场景，按各工具入口更新 Controller、菜单和参数安装结果；
-ASS 0.9.3 随正常 Player/Avatar 构建自动生成。
+ASS 0.9.4 随正常 Player/Avatar 构建自动生成。
 生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
-ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 与 ASS 0.9.3 保留已有组件类、程序集与字段，
+ACC 0.5.3、AO 0.3.3、Viseme 0.2.3 与 ASS 0.9.4 保留已有组件类、程序集与字段，
 打开项目、导入和加载资源时保留源文件、GUID 与已存参数。普通 Unity 的 ASS 在正常 Player 构建副本中自动生成，无手动生成步骤。
 本版移除 Avatar 对象锁定，采用连续手势保持、默认保持 0.5s / 容错 0.3s、严格时间关系
 及四语言界面。诱饵状态可独立启用，无 Bool 池时也会补齐条件所用的本地布尔守卫。
@@ -42,15 +42,12 @@ ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 与 ASS 0.9.3 保留已有组件类、程序
 
 ## 插件自带的组件恢复
 
-全八插件共有六种自有 Avatar/Prefab 组件：ACC 三类、ASS、Viseme 和 AO 各一类。
-BCG、Collider Monitor、Logger 与 Prefab Diff Patcher 没有自有 Avatar authoring 组件。
-类型、固定身份和各包 Project 菜单路径见[组件引用手册](Docs/ComponentReferences.md)。
+ACC、ASS、Viseme 和 AO 随正常插件更新交付自身的组件恢复；其余四个插件没有自有 Avatar authoring 组件。
+菜单与六种固定组件身份见[组件引用手册](Docs/ComponentReferences.md)。
 
-正常更新对应插件后，在 Project 选择资源，使用
-`Assets/UnityBox/<插件名>/Repair Component References` 打开该插件的恢复窗口。
-窗口带入当前选择，只处理本插件组件；可先 Analyze，再一次点击 **Migrate Selected Assets**
-执行整批，无逐项确认。歧义旧 GUID 只选择一次目标类型，打开资源及其依赖、未知和重复
-组件在报告中跳过。恢复功能随原插件的 Unity-only Editor 程序集交付，没有启动/导入迁移回调。
+从 `Tools/UnityBox/<插件菜单>/Upgrade Component References` 确认一次后，扫描整个 `Assets`，自动识别并恢复本插件的旧脚本引用。无需选择资源、打开恢复面板或逐 GUID 指定类型。
+整批写入前备份原件及 metadata。已保存的干净编辑上下文在升级后恢复，未保存编辑及其依赖保留并报告跳过。
+启动或导入包不执行迁移。ACC 的 Open 主面板提供完整 Avatar 换装生成；普通 Controller 面板和输出选项已移除。
 
 ## 功能、构建与性能
 

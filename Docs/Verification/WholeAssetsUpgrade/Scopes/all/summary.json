@@ -1,0 +1,50 @@
+{
+  "scope": "all",
+  "passed": true,
+  "missing_before_upgrade": 42,
+  "repaired_components": 12,
+  "inspector_targets": 24,
+  "batches": [
+    {
+      "owner": "AdvancedCostumeController",
+      "repairs": 6,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    },
+    {
+      "owner": "AvatarSecuritySystem",
+      "repairs": 2,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    },
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "repairs": 2,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    },
+    {
+      "owner": "AnimatorOptimizer",
+      "repairs": 2,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    }
+  ],
+  "comparison_passes": [
+    {
+      "name": "after owner batches",
+      "components": 49,
+      "properties": 2097,
+      "objectReferences": 119,
+      "duplicateCurrentComponents": 4
+    },
+    {
+      "name": "after Inspector OnEnable/deferred callbacks",
+      "components": 49,
+      "properties": 2097,
+      "objectReferences": 119,
+      "duplicateCurrentComponents": 0
+    }
+  ],
+  "native_result": "migrated.json"
+}

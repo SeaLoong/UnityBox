@@ -1,6 +1,26 @@
 # 发布与升级说明
 
-## 2026-11-07：各插件内置组件恢复
+## 2026-11-08：一次确认升级整个 Assets 与 ACC 单入口
+
+| 包 | 原版本 | 新版本 |
+| --- | --- | --- |
+| Advanced Costume Controller | 0.5.2 | 0.5.3 |
+| Animator Optimizer | 0.3.2 | 0.3.3 |
+| Avatar Security System | 0.9.3 | 0.9.4 |
+| Viseme Blendshape Override | 0.2.2 | 0.2.3 |
+
+从 `Tools/UnityBox/<插件菜单>/Upgrade Component References` 确认一次后，扫描整个 `Assets`，自动识别并恢复本插件的旧脚本引用。无需选择资源、打开恢复面板或逐 GUID 指定类型。
+明确类型、已知 GUID 和 ACC 层级/Prefab 来源构成自动识别依据，同 GUID 的其它引用在本批关联。
+原文件与 metadata 先备份；干净已保存的编辑上下文临时刷新后恢复，未保存状态、未知和重复组件保留。
+
+ACC 与 AO 的主窗口入口移到同父菜单的 `Open`。ACC 移除普通 Controller 生成面板与输出选项，
+保留一次完成动画、菜单、参数和 FX 安装的 Avatar 换装流程；缺少 SDK/MA 时提示安装依赖。
+底层算法继续供 Avatar 生成与测试使用，已有生成资产、Runtime GUID、字段及原场景保持。
+
+[当前操作与备份](ComponentReferences.md) · [变更与影响](RefactorChanges.md) · [执行证据](Verification/ComponentReferences/README.md)
+
+
+## 2026-11-07：各插件内置组件恢复（历史发布）
 
 | 包 | 原版本 | 新版本 |
 | --- | --- | --- |

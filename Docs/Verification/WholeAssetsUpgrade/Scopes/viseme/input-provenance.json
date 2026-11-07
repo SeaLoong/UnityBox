@@ -1,0 +1,141 @@
+{
+  "scope": "viseme",
+  "producer_revision": "e62c741f7921071834924f75cbfd80f1a50a5304",
+  "producer_summary_sha256": null,
+  "original_producer_state_sha256": "3af2da32b124e957f1f658ec3e37ef652b28ae604d9da606f55c707223273ca0",
+  "relocated_without_changing_asset_bytes_or_guids": {
+    "Assets/ComponentUpgradeFixtures/Base.prefab": "Assets/OldCostumes/Base.prefab",
+    "Assets/ComponentUpgradeFixtures/Variant.prefab": "Assets/OtherCollection/Variant.prefab",
+    "Assets/ComponentUpgradeFixtures/Nested.prefab": "Assets/Containers/Nested.prefab",
+    "Assets/ComponentUpgradeFixtures/Avatar.unity": "Assets/Scenes/Avatar.unity"
+  },
+  "restored_files": [
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+      "path": "Assets/Scenes/Avatar.unity",
+      "sha256": "8e5a14c83e936a3eae33fbe76dc7ef7e3c93c31c051dde7bf6d2ba1738240d2c"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+      "path": "Assets/Scenes/Avatar.unity.meta",
+      "sha256": "cdde20234543410d87ce9babfc3c1d7cde6b6db93b9389cb310b62e703998c94"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+      "path": "Assets/OldCostumes/Base.prefab",
+      "sha256": "1ac98741c3fbbfbc710e7aca56fddf98c232620ef58f1a4c939735a08e57af7d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+      "path": "Assets/OldCostumes/Base.prefab.meta",
+      "sha256": "b79d5853aeb55eb1fb39fb4a427cdc628a7f116317cc58e975a2a0aa6346f0b6"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "sha256": "765b0c9a3d789465d2525d0a0597f1c6244d098930198bff6c7af4fa713d79c4"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta",
+      "sha256": "0df10af4eeecf625ec45f2cc65c2c98ecb19da14a7f476b81bb5ab9d384b1636"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "sha256": "4bf4cbcbea813c0cb1790ceae05f4e84ca876c0c874bc33380064403c3269080"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+      "path": "Assets/Containers/Nested.prefab",
+      "sha256": "841d6cd4f1211ae7d1d9c3a8ee9390a609a053d14bd75216db1fb3365c4625cb"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+      "path": "Assets/Containers/Nested.prefab.meta",
+      "sha256": "ca34b048d0db1551ac8e9f02cdaa2a63ffc43f11e9ec21a4a2323f4bcc769b37"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "sha256": "8d933ed60662185e5a7637286790865f0aba858582893440f042373949a90271"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "sha256": "f61fce490b6e41628b698c12fa12c4a752c30220222fab86fb8fad6e3d4836bc"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "sha256": "3ebba00e8a05aaef2a50242e6db69c73c8eb78cfbfbedc69f21efb8cc2d0923d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "sha256": "4d0d8cf8691c3f4f1a816f6e837de6942af53cba7088302898fa267d450cc948"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "sha256": "b520f07f3aa793297517e59ac9cf8c867aa1597116ba342ff8b47afe849ce81b"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "sha256": "0f3b2b54c918edf100b9c8790af17da933953c217fd2172f627ab45dc60b521a"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+      "path": "Assets/OtherCollection/Variant.prefab",
+      "sha256": "c7dad2bfdb90e15f440853df61795861c6aa67719c649d372671b254e24c4bee"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+      "path": "Assets/OtherCollection/Variant.prefab.meta",
+      "sha256": "a2d5cacab9ffeb1a4d74c71c3d0560b0b6f81d7a545eca3150187d989343943d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "sha256": "2f992ea0196be067be8303f8e31e82435dff62409915d9c85b0193364d288db4"
+    }
+  ],
+  "current_zip_inputs": [
+    {
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "version": "0.2.3",
+      "sha256": "ff30b3baaf01dd14ff8539e11660a91bcad667eb044b5f6082eb2e1cf0c92b85"
+    }
+  ]
+}

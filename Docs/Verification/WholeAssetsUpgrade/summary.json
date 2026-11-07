@@ -1,0 +1,186 @@
+{
+  "passed": true,
+  "scopes": [
+    {
+      "scope": "all",
+      "passed": true,
+      "missing_before_upgrade": 42,
+      "repaired_components": 12,
+      "inspector_targets": 24,
+      "batches": [
+        {
+          "owner": "AdvancedCostumeController",
+          "repairs": 6,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        },
+        {
+          "owner": "AvatarSecuritySystem",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        },
+        {
+          "owner": "VisemeBlendshapeOverride",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        },
+        {
+          "owner": "AnimatorOptimizer",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        }
+      ],
+      "comparison_passes": [
+        {
+          "name": "after owner batches",
+          "components": 49,
+          "properties": 2097,
+          "objectReferences": 119,
+          "duplicateCurrentComponents": 4
+        },
+        {
+          "name": "after Inspector OnEnable/deferred callbacks",
+          "components": 49,
+          "properties": 2097,
+          "objectReferences": 119,
+          "duplicateCurrentComponents": 0
+        }
+      ],
+      "native_result": "migrated.json"
+    },
+    {
+      "scope": "acc",
+      "passed": true,
+      "missing_before_upgrade": 21,
+      "repaired_components": 6,
+      "inspector_targets": 12,
+      "batches": [
+        {
+          "owner": "AdvancedCostumeController",
+          "repairs": 6,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        }
+      ],
+      "comparison_passes": [
+        {
+          "name": "after owner batches",
+          "components": 28,
+          "properties": 472,
+          "objectReferences": 63,
+          "duplicateCurrentComponents": 1
+        },
+        {
+          "name": "after Inspector OnEnable/deferred callbacks",
+          "components": 28,
+          "properties": 472,
+          "objectReferences": 63,
+          "duplicateCurrentComponents": 0
+        }
+      ],
+      "native_result": "migrated.json"
+    },
+    {
+      "scope": "ass",
+      "passed": true,
+      "missing_before_upgrade": 7,
+      "repaired_components": 2,
+      "inspector_targets": 4,
+      "batches": [
+        {
+          "owner": "AvatarSecuritySystem",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        }
+      ],
+      "comparison_passes": [
+        {
+          "name": "after owner batches",
+          "components": 14,
+          "properties": 203,
+          "objectReferences": 21,
+          "duplicateCurrentComponents": 1
+        },
+        {
+          "name": "after Inspector OnEnable/deferred callbacks",
+          "components": 14,
+          "properties": 203,
+          "objectReferences": 21,
+          "duplicateCurrentComponents": 0
+        }
+      ],
+      "native_result": "migrated.json"
+    },
+    {
+      "scope": "ao",
+      "passed": true,
+      "missing_before_upgrade": 7,
+      "repaired_components": 2,
+      "inspector_targets": 4,
+      "batches": [
+        {
+          "owner": "AnimatorOptimizer",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        }
+      ],
+      "comparison_passes": [
+        {
+          "name": "after owner batches",
+          "components": 14,
+          "properties": 477,
+          "objectReferences": 21,
+          "duplicateCurrentComponents": 1
+        },
+        {
+          "name": "after Inspector OnEnable/deferred callbacks",
+          "components": 14,
+          "properties": 477,
+          "objectReferences": 21,
+          "duplicateCurrentComponents": 0
+        }
+      ],
+      "native_result": "migrated.json"
+    },
+    {
+      "scope": "viseme",
+      "passed": true,
+      "missing_before_upgrade": 7,
+      "repaired_components": 2,
+      "inspector_targets": 4,
+      "batches": [
+        {
+          "owner": "VisemeBlendshapeOverride",
+          "repairs": 2,
+          "confirmations": 1,
+          "cancellation_checks": 1
+        }
+      ],
+      "comparison_passes": [
+        {
+          "name": "after owner batches",
+          "components": 14,
+          "properties": 966,
+          "objectReferences": 14,
+          "duplicateCurrentComponents": 1
+        },
+        {
+          "name": "after Inspector OnEnable/deferred callbacks",
+          "components": 14,
+          "properties": 966,
+          "objectReferences": 14,
+          "duplicateCurrentComponents": 0
+        }
+      ],
+      "native_result": "migrated.json"
+    }
+  ],
+  "producer_archive": "../ComponentReferences/LegacyUpgrade",
+  "producer_revision": "e62c741f7921071834924f75cbfd80f1a50a5304",
+  "scope": "Current-only ZIP consumers replay genuine immutable old-package resources without selecting upgrade paths or supplying GUID mappings"
+}

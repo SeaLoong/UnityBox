@@ -12,10 +12,9 @@ Maintain the eight plugins together on `master` and follow the asset workflow in
 - Keep serialized field names, script GUIDs, binding paths, parameter defaults, layer order and callback
   contracts stable. Never migrate user assets as an automatic consequence of opening/importing a package.
   Component recovery ships inside each owner plugin and its existing Unity-only Editor assembly,
-  with a Project asset menu for that owner. Keep normal updates self-contained.
-  Manual component migration applies to the user-selected batch in one execution, without per-item
-  approval. Resolve one target type per ambiguous legacy GUID; keep unknown/duplicate and open assets
-  in the report. Restore chosen backups as a separate explicit file operation.
+  with a plugin Tools action. One explicit confirmation upgrades that owner's recognized references
+  across Assets without selection or per-GUID approval. Restore clean saved editing contexts and
+  preserve unsaved states/dependencies. Keep unknown/duplicate components and byte-exact backups.
 - Give features clear input and output contracts. Follow the normal path directly; report actual input
   errors with the relevant parameter, object or asset path.
 - Finish a behavior change with meaningful output checks: native Animator evaluation, save/reload,

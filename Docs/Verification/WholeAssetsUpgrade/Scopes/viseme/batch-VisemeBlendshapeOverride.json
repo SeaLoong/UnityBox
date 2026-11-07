@@ -1,0 +1,38 @@
+{
+    "createdUtc": "2026-11-07T17:29:09.6015670Z",
+    "files": [
+        {
+            "path": "Assets/OldCostumes/Base.prefab",
+            "beforeSha256": "1ac98741c3fbbfbc710e7aca56fddf98c232620ef58f1a4c939735a08e57af7d",
+            "afterSha256": "9867d2ddaed1e06264e542a47125da45e87031b7c7750ef70fd080a1dbd5a181",
+            "components": [
+                {
+                    "fileId": "2938843381393141779",
+                    "oldGuid": "0cdaf0bd855ea04c79a51618845ae28d",
+                    "newGuid": "2814d8bd3adc4c539c9d1825545f6316",
+                    "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent"
+                }
+            ]
+        },
+        {
+            "path": "Assets/Scenes/Avatar.unity",
+            "beforeSha256": "8e5a14c83e936a3eae33fbe76dc7ef7e3c93c31c051dde7bf6d2ba1738240d2c",
+            "afterSha256": "bfbd7e2ba7cb7dabe1066deadaf393d229a94e69f99be1414e537deeec480500",
+            "components": [
+                {
+                    "fileId": "479452799",
+                    "oldGuid": "0cdaf0bd855ea04c79a51618845ae28d",
+                    "newGuid": "2814d8bd3adc4c539c9d1825545f6316",
+                    "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent"
+                }
+            ]
+        }
+    ],
+    "skipped": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+            "code": "component-duplicate",
+            "message": "fileID 802365137, GUID 0cdaf0bd855ea04c79a51618845ae28d: This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        }
+    ]
+}

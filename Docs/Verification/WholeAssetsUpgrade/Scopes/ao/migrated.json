@@ -1,0 +1,364 @@
+{
+    "phase": "migrated",
+    "scope": "ao",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 2,
+    "inspectorTargets": 4,
+    "changedAssets": [
+        "Assets/OldCostumes/Base.prefab",
+        "Assets/Scenes/Avatar.unity"
+    ],
+    "selectedAssets": [
+        "Assets (menu command, no selection restriction)"
+    ],
+    "readOnlyAssets": [
+        "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity"
+    ],
+    "checks": [
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "Current-only cold import reproduced genuine historical GUID failures from immutable producer resources",
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "one confirmation through the exact Tools action per owner; automatic whole-Assets upgrade without resource selection or GUID overrides",
+        "every batch preserved peer legacy GUID bytes, used an owner-local exact pre-write backup, and changed only its confirmed m_Script GUID spans",
+        "whole-Assets duplicate cases were reported and preserved; no old/current component was deleted or merged",
+        "all typed component identities, fields, parent ObjectReference GlobalObjectIDs, variant/nested/instance overrides and SDK descriptor configuration preserved",
+        "creating current Inspectors and waiting for deferred callbacks did not initialize or normalize source configuration"
+    ],
+    "entries": [
+        {
+            "owner": "AnimatorOptimizer",
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+            "componentFileId": "1814869688",
+            "legacyGuid": "e5a07ba03c6adf697bf43981f89b53d1",
+            "targetGuid": "a157d3d35699dd84abde9e5412bd7017",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "status": "Duplicate",
+            "details": "This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        },
+        {
+            "owner": "AnimatorOptimizer",
+            "asset": "Assets/OldCostumes/Base.prefab",
+            "componentFileId": "3565009668314722242",
+            "legacyGuid": "e5a07ba03c6adf697bf43981f89b53d1",
+            "targetGuid": "a157d3d35699dd84abde9e5412bd7017",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        },
+        {
+            "owner": "AnimatorOptimizer",
+            "asset": "Assets/Scenes/Avatar.unity",
+            "componentFileId": "447383159",
+            "legacyGuid": "e5a07ba03c6adf697bf43981f89b53d1",
+            "targetGuid": "a157d3d35699dd84abde9e5412bd7017",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "status": "Ready",
+            "details": "Recognized legacy component reference."
+        }
+    ],
+    "issues": [],
+    "nativeOwners": [
+        {
+            "owner": "AnimatorOptimizer",
+            "package": "top.sealoong.unitybox.animator-optimizer",
+            "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AnimatorOptimizer",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/whole-assets-replay-ao-20261108/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+            "assemblySha256": "0c68535c085e4014320ca0df7fa7c7655b0bccbfdc35f17ef380ec5d086f054d",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "3e5366c4e4104b2661ef5182f5735e623d6578b8e6d8b55624bea7762f1f7e67"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "9a3ad79db16114e9aaee6b949735dc8de4eda0ce9af5e70162b085a7d3bf685b"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ProjectUpgrade.cs",
+                    "sha256": "2ef8d66a4ef5463266e6b5d484993ffa9a00f778256910d0162007e4f882af28"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ProjectUpgrade.cs.meta",
+                    "sha256": "456f0b19a984863ed2f3407bd93c96da241b0a7d78646474853bf728f6667ae9"
+                }
+            ]
+        },
+        {
+            "owner": "AnimatorOptimizer",
+            "package": "top.sealoong.unitybox.animator-optimizer",
+            "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AnimatorOptimizer",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/whole-assets-replay-ao-20261108/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+            "assemblySha256": "0c68535c085e4014320ca0df7fa7c7655b0bccbfdc35f17ef380ec5d086f054d",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "3e5366c4e4104b2661ef5182f5735e623d6578b8e6d8b55624bea7762f1f7e67"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "9a3ad79db16114e9aaee6b949735dc8de4eda0ce9af5e70162b085a7d3bf685b"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ProjectUpgrade.cs",
+                    "sha256": "2ef8d66a4ef5463266e6b5d484993ffa9a00f778256910d0162007e4f882af28"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ProjectUpgrade.cs.meta",
+                    "sha256": "456f0b19a984863ed2f3407bd93c96da241b0a7d78646474853bf728f6667ae9"
+                }
+            ]
+        }
+    ],
+    "batches": [
+        {
+            "owner": "AnimatorOptimizer",
+            "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+            "backupDirectory": "/workspace/unitybox-setup/unity/projects/whole-assets-replay-ao-20261108/UserSettings/UnityBox/AnimatorOptimizer/ComponentReferenceMigration/20261107T172821-3295832f80044d38abcaf7f89cfc6da3",
+            "applyInvocations": 1,
+            "repairedComponents": 2,
+            "confirmationInvocations": 1,
+            "cancellationInvocations": 1,
+            "changedAssets": [
+                "Assets/OldCostumes/Base.prefab",
+                "Assets/Scenes/Avatar.unity"
+            ],
+            "readyTypes": [
+                "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent"
+            ],
+            "foreignLegacyGuidsPreserved": [],
+            "beforeFiles": [
+                {
+                    "path": "Assets/Scenes/Avatar.unity",
+                    "sha256": "afece8c27807e51d15e6cd677859d326940dc4ce4dfc8c99d78a33073f131372"
+                },
+                {
+                    "path": "Assets/Scenes/Avatar.unity.meta",
+                    "sha256": "330b5d662a9a328aaf59c947e89fdcee5ee70c569bc0b05e9d1d64982f3b9793"
+                },
+                {
+                    "path": "Assets/OldCostumes/Base.prefab",
+                    "sha256": "425aa39d8ec4847e935f23c92312cedca33346ada279da98d9b15f207604e93a"
+                },
+                {
+                    "path": "Assets/OldCostumes/Base.prefab.meta",
+                    "sha256": "b93f58f3a6f42c200773aff17a8726f2a86c9c11b63331d1d9b36869c3850876"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+                    "sha256": "4f00c1d2b1c4bed8f75a5d37c9749f27bbb240092195704373b41acd2730380f"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta",
+                    "sha256": "0db0357ccbc81e374b367df1ac32f6e7912d6adbb5e959335bdefdc7e2930fac"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+                    "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+                    "sha256": "12f2c5823d0dd0e53970d83e80d0e0a1240436fe2a28a32768ce92129d5afd4e"
+                },
+                {
+                    "path": "Assets/Containers/Nested.prefab",
+                    "sha256": "22350da74c44958535ffe140a4dc06156e2cf95a83cb143ad77db8913972a3bb"
+                },
+                {
+                    "path": "Assets/Containers/Nested.prefab.meta",
+                    "sha256": "f8d93dab2632993408b1bc9c2186189c92d1c117dce47f0f16432397f88c2e73"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+                    "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+                    "sha256": "e5af4266643498a32937f291299f8d5d4f36458c8201a83603475af3fb3be0a6"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+                    "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+                    "sha256": "24812a073512adb3a414f7680f6b273ae911c8d2b185c56b0ba7b0495e176def"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+                    "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+                    "sha256": "e21bebb0752663cd93b1a7c8d1bb47a43d2887e24009e7bb226b50d5692fec98"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.anim",
+                    "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+                    "sha256": "159ed4463705d31939623d04ebb65b11b30833e6d2a2f8e1f33f4ceb8de37e2a"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.controller",
+                    "sha256": "dca5ea1a5d64ec3e3666cb9fc74378e897752f369967c097e7f7d783346ebbbf"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+                    "sha256": "c4f0dd3535a7d38948b4897924a6401d485e5ebc31eb86f3b33f3cea82dcc326"
+                },
+                {
+                    "path": "Assets/OtherCollection/Variant.prefab",
+                    "sha256": "78a75bb3d2ac553c51e8aabaaa9aec7f8365a68c2328358149723a0aeb4baa2c"
+                },
+                {
+                    "path": "Assets/OtherCollection/Variant.prefab.meta",
+                    "sha256": "1bf3cba049d7f85b665e20f152f5e40d5e608e5a9bfb55c2af2057cee8178b4d"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+                    "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+                    "sha256": "fc16afb68fc7e26bab57f33107dc165fbd5f109bf6f3927c7bc7802b5717a653"
+                }
+            ],
+            "afterFiles": [
+                {
+                    "path": "Assets/Scenes/Avatar.unity",
+                    "sha256": "c7cac3eecdf44beecb71572525db875c206f583e6a61ff39d4ec692cba2533fe"
+                },
+                {
+                    "path": "Assets/Scenes/Avatar.unity.meta",
+                    "sha256": "330b5d662a9a328aaf59c947e89fdcee5ee70c569bc0b05e9d1d64982f3b9793"
+                },
+                {
+                    "path": "Assets/OldCostumes/Base.prefab",
+                    "sha256": "108f3494dc4c6b11da3a8e87c14989bd3ee1b3153f6959d91f9fef452cd79d28"
+                },
+                {
+                    "path": "Assets/OldCostumes/Base.prefab.meta",
+                    "sha256": "b93f58f3a6f42c200773aff17a8726f2a86c9c11b63331d1d9b36869c3850876"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+                    "sha256": "4f00c1d2b1c4bed8f75a5d37c9749f27bbb240092195704373b41acd2730380f"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta",
+                    "sha256": "0db0357ccbc81e374b367df1ac32f6e7912d6adbb5e959335bdefdc7e2930fac"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+                    "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+                    "sha256": "12f2c5823d0dd0e53970d83e80d0e0a1240436fe2a28a32768ce92129d5afd4e"
+                },
+                {
+                    "path": "Assets/Containers/Nested.prefab",
+                    "sha256": "22350da74c44958535ffe140a4dc06156e2cf95a83cb143ad77db8913972a3bb"
+                },
+                {
+                    "path": "Assets/Containers/Nested.prefab.meta",
+                    "sha256": "f8d93dab2632993408b1bc9c2186189c92d1c117dce47f0f16432397f88c2e73"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+                    "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+                    "sha256": "e5af4266643498a32937f291299f8d5d4f36458c8201a83603475af3fb3be0a6"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+                    "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+                    "sha256": "24812a073512adb3a414f7680f6b273ae911c8d2b185c56b0ba7b0495e176def"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+                    "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+                    "sha256": "e21bebb0752663cd93b1a7c8d1bb47a43d2887e24009e7bb226b50d5692fec98"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.anim",
+                    "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+                    "sha256": "159ed4463705d31939623d04ebb65b11b30833e6d2a2f8e1f33f4ceb8de37e2a"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.controller",
+                    "sha256": "dca5ea1a5d64ec3e3666cb9fc74378e897752f369967c097e7f7d783346ebbbf"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+                    "sha256": "c4f0dd3535a7d38948b4897924a6401d485e5ebc31eb86f3b33f3cea82dcc326"
+                },
+                {
+                    "path": "Assets/OtherCollection/Variant.prefab",
+                    "sha256": "78a75bb3d2ac553c51e8aabaaa9aec7f8365a68c2328358149723a0aeb4baa2c"
+                },
+                {
+                    "path": "Assets/OtherCollection/Variant.prefab.meta",
+                    "sha256": "1bf3cba049d7f85b665e20f152f5e40d5e608e5a9bfb55c2af2057cee8178b4d"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+                    "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+                },
+                {
+                    "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+                    "sha256": "fc16afb68fc7e26bab57f33107dc165fbd5f109bf6f3927c7bc7802b5717a653"
+                }
+            ]
+        }
+    ],
+    "comparisonPasses": [
+        {
+            "name": "after owner batches",
+            "components": 14,
+            "properties": 477,
+            "objectReferences": 21,
+            "duplicateCurrentComponents": 1
+        },
+        {
+            "name": "after Inspector OnEnable/deferred callbacks",
+            "components": 14,
+            "properties": 477,
+            "objectReferences": 21,
+            "duplicateCurrentComponents": 0
+        }
+    ]
+}

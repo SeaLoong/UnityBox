@@ -29,7 +29,7 @@
 
    若 Hub 登录弹窗一闪即退，检查脱敏后的 TLS/DBus/协议回调错误。只读 HOME 的 NSS 数据库不能取得平台代理 CA 时，使用签名发行版提供的 p11-kit 系统信任模块，仅为 Hub/浏览器进程配置相应库搜索路径，让 NSS 读取系统信任库。验证正常 HTTPS 成功、自签证书被拒绝；保持 TLS 校验，不使用忽略证书开关。容器共享内存导致黑窗时，为自有 Xvfb 关闭 MIT-SHM，并让 x11vnc 使用 `-noshm`。将这些启动步骤保存成脚本，认证内容留在私有目录。
 
-4. **分开准备真实依赖范围。** 测试工程放在源码 checkout 外，使用新目录和脚本所有权标记；测试场景由 fixture 创建，用户场景保持原样。打开、导入或加载资源不得自动迁移 GUID、重写场景/Prefab 或纠正已存配置；组件恢复随 ACC/AO/ASS/Viseme 各自正常插件更新交付，在所属插件原 Unity-only Editor 程序集中运行；使用 Project 的 `Assets/UnityBox/<插件名>/Repair Component References` 入口，用户选定资源后一次手动执行整批，无逐项确认，打开和导入不触发迁移。构建在配置和场景副本中处理所需的有效值。先执行普通 Unity 核心，再执行 SDK 回退、完整 MA/NDMF 集成。八个插件都从当前 `master` checkout 准备；将 `TASK_REPO` 设为其实际路径：
+4. **分开准备真实依赖范围。** 测试工程放在源码 checkout 外，使用新目录和脚本所有权标记；测试场景由 fixture 创建，用户场景保持原样。打开、导入或加载资源不得自动迁移 GUID、重写场景/Prefab 或纠正已存配置；组件恢复随 ACC/AO/ASS/Viseme 各自正常插件更新交付，在所属插件原 Unity-only Editor 程序集中运行；使用所属插件 Tools 的 `Upgrade Component References` 入口，一次确认后自动升级整个 Assets 的所属组件引用；恢复干净已保存编辑上下文、保留未保存编辑及其依赖，打开和导入不触发迁移。构建在配置和场景副本中处理所需的有效值。先执行普通 Unity 核心，再执行 SDK 回退、完整 MA/NDMF 集成。八个插件都从当前 `master` checkout 准备；将 `TASK_REPO` 设为其实际路径：
 
    ```bash
    python3 scripts/unity/test_project.py prepare \

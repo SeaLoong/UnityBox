@@ -87,11 +87,11 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
     }
 
     /// <summary>Explicit, user-invoked reference repair. No startup or asset-import callbacks.</summary>
-    public static class MigrationEngine
+    public static partial class MigrationEngine
     {
         private sealed class Rule
         {
-            public string Name, Label, CanonicalGuid;
+            public string Name, Label, CanonicalGuid, ContextType;
             public string[] Fields;
             public bool Strong;
         }
@@ -105,6 +105,77 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
         private static readonly Regex Documents = new Regex(@"^--- !u!(?<kind>\d+) &(?<id>-?\d+)(?<stripped> stripped)?\r?\n.*?(?=^--- !u!|\z)", RegexOptions.Multiline | RegexOptions.Singleline);
         private static readonly Regex Script = new Regex(@"^  m_Script: \{fileID: 11500000, guid: (?<guid>[a-fA-F0-9]{32}), type: 3\}", RegexOptions.Multiline);
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
+
+        // Project-wide discovery streams unrelated files rather than retaining their YAML.
+        // Explicit Scan(paths) still reports every unknown component in those requested assets.
+        internal static List<string> ProjectAssetCandidates()
+        {
+            var guids = new HashSet<string>(Rules.Select(rule => rule.CanonicalGuid), StringComparer.OrdinalIgnoreCase);
+            foreach (var target in ResolveTargets().Where(target => target.Available)) guids.Add(target.ScriptGuid);
+            return ProjectAssetPaths().Where(path => ProjectSignatureMatches(path, guids, true)).ToList();
+        }
+
+        internal static MigrationPlan ScanProjectAssets(IEnumerable<string> candidates = null)
+        {
+            var selected = new HashSet<string>(candidates ?? ProjectAssetCandidates(), StringComparer.Ordinal);
+            var plan = Scan(selected);
+            var guids = new HashSet<string>(plan.entries.Where(entry => entry.TypeName.Length > 0)
+                .Select(entry => entry.LegacyGuid), StringComparer.OrdinalIgnoreCase);
+            if (guids.Count > 0)
+            {
+                bool expanded = false;
+                foreach (string path in ProjectAssetPaths())
+                    if (!selected.Contains(path) && ProjectSignatureMatches(path, guids, false))
+                        expanded |= selected.Add(path);
+                if (expanded) plan = Scan(selected);
+            }
+            // Whole-project repair reports this plugin's identified components only.
+            // Generic field names alone are not an identity and create no foreign-script log spam.
+            plan.entries.RemoveAll(entry => entry.TypeName.Length == 0);
+            return plan;
+        }
+
+        private static IEnumerable<string> ProjectAssetPaths() => Directory.EnumerateFiles("Assets", "*", SearchOption.AllDirectories)
+            .Select(path => path.Replace('\\', '/')).Where(IsAsset).OrderBy(path => path, StringComparer.Ordinal);
+
+        private static bool ProjectSignatureMatches(string path, HashSet<string> guids, bool includeSchema)
+        {
+            using (var stream = File.OpenRead(path))
+            {
+                var header = new byte[8];
+                int count = stream.Read(header, 0, header.Length);
+                int start = count >= 3 && header[0] == 0xEF && header[1] == 0xBB && header[2] == 0xBF ? 3 : 0;
+                if (count < start + 5 || Encoding.ASCII.GetString(header, start, 5) != "%YAML") return false;
+                stream.Position = 0;
+                using (var reader = new StreamReader(stream, Utf8, true))
+                {
+                    string line = reader.ReadLine();
+                    if (line == null || !line.TrimStart('\uFEFF').StartsWith("%YAML", StringComparison.Ordinal)) return false;
+                    var fields = new HashSet<string>(StringComparer.Ordinal);
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (line.StartsWith("--- !u!", StringComparison.Ordinal)) fields.Clear();
+                        if (line.StartsWith("  m_Script:", StringComparison.Ordinal))
+                        {
+                            var match = Regex.Match(line, @"\bguid: ([a-fA-F0-9]{32})");
+                            if (match.Success && guids.Contains(match.Groups[1].Value)) return true;
+                        }
+                        if (!includeSchema) continue;
+                        if (line.StartsWith("  m_EditorClassIdentifier:", StringComparison.Ordinal))
+                        {
+                            string identifier = line.Substring(line.IndexOf(':') + 1).Trim().Trim('"', '\'');
+                            if (Rules.Any(rule => IdentifierMatches(identifier, rule.Name))) return true;
+                        }
+                        if (line.Length <= 3 || line[0] != ' ' || line[1] != ' ' || line[2] == ' ') continue;
+                        int colon = line.IndexOf(':', 2);
+                        if (colon <= 2) continue;
+                        fields.Add(line.Substring(2, colon - 2));
+                        if (Rules.Any(rule => rule.Fields.All(fields.Contains))) return true;
+                    }
+                    return false;
+                }
+            }
+        }
 
         public static IReadOnlyList<MigrationTarget> GetTargetTypes() => ResolveTargets();
 
@@ -129,7 +200,15 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
             foreach (var file in plan.evidence.Values.ToArray())
             foreach (var document in file.Documents.Where(item => item.Kind == "114" && item.Guid != null && !item.Stripped))
             {
-                string proof = Identify(document, overrides, null);
+                string proof = Identify(document, overrides, null, plan);
+                if (proof == null) continue;
+                if (!proofs.TryGetValue(document.Guid, out var names)) proofs[document.Guid] = names = new HashSet<string>();
+                names.Add(proof);
+            }
+            foreach (var file in plan.evidence.Values.ToArray())
+            foreach (var document in file.Documents.Where(item => item.Kind == "114" && item.Guid != null && !item.Stripped))
+            {
+                string proof = Identify(document, overrides, proofs, plan);
                 if (proof == null) continue;
                 if (!proofs.TryGetValue(document.Guid, out var names)) proofs[document.Guid] = names = new HashSet<string>();
                 names.Add(proof);
@@ -153,7 +232,7 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
                         }
                         continue;
                     }
-                    string type = Identify(document, overrides, proofs);
+                    string type = Identify(document, overrides, proofs, plan);
                     if (type == null && document.Stripped)
                         type = IdentifySource(document, overrides, proofs, plan, new HashSet<string>());
                     var target = plan.targets.FirstOrDefault(item => item.TypeName == type);
@@ -170,7 +249,7 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
                         Status = type == null ? (candidates.Any(rule => !rule.Strong) ? MigrationStatus.Ambiguous : MigrationStatus.Skipped)
                             : target == null || !target.Available ? MigrationStatus.Unavailable : MigrationStatus.Ready,
                         Details = type == null && candidates.Any(rule => !rule.Strong)
-                            ? "候选 ACC Part Group Marker（Mode / GroupName）；需要一次 GUID 类型映射。 / Candidate only: choose a GUID-to-type mapping before migrating."
+                            ? "Mode / GroupName 缺少已证实的 ACC Outfit 上下文，保留该引用。 / No verified ACC Outfit context; this generic schema remains unchanged."
                             : type == null ? "This reference is not identified as an Viseme Blendshape Override component; other plugin references remain unchanged."
                             : target == null || !target.Available ? "The target component script is not installed or has no compiled type." : "Recognized legacy component reference."
                     };
@@ -360,12 +439,12 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
         private static string ResolvedType(string guid)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path) || !string.Equals(AssetDatabase.AssetPathToGUID(path), guid, StringComparison.OrdinalIgnoreCase)) return null;
             var script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
             return script == null ? null : script.GetClass()?.FullName;
         }
 
-        private static string Identify(Document document, Dictionary<string, string> overrides, Dictionary<string, HashSet<string>> proofs)
+        private static string Identify(Document document, Dictionary<string, string> overrides, Dictionary<string, HashSet<string>> proofs, MigrationPlan plan = null)
         {
             if (document.Identifier.Length > 0)
             {
@@ -373,6 +452,8 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
                 return explicitTypes.Length == 1 ? explicitTypes[0].Name : null;
             }
             if (overrides.TryGetValue(document.Guid, out string specified)) return specified;
+            var known = Rules.FirstOrDefault(rule => string.Equals(rule.CanonicalGuid, document.Guid, StringComparison.OrdinalIgnoreCase));
+            if (known != null) return known.Name;
             if (proofs != null && proofs.TryGetValue(document.Guid, out var names) && names.Count == 1)
             {
                 string name = names.Single();
@@ -380,7 +461,53 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
                 if (document.Stripped || rule.Fields.All(document.Fields.Contains)) return name;
             }
             var candidates = Rules.Where(rule => rule.Strong && rule.Fields.All(document.Fields.Contains)).ToArray();
-            return candidates.Length == 1 ? candidates[0].Name : null;
+            if (candidates.Length == 1) return candidates[0].Name;
+            if (plan != null)
+                foreach (var rule in Rules.Where(item => !item.Strong && item.ContextType != null))
+                    if (MatchesContextSchema(document, rule) && HasContext(document, rule.ContextType, overrides, proofs, plan))
+                        return rule.Name;
+            return null;
+        }
+
+        private static bool MatchesContextSchema(Document document, Rule rule)
+        {
+            if (string.IsNullOrEmpty(document.GameObjectId) || document.GameObjectId == "0") return false;
+            var fields = document.Fields.Where(field => !field.StartsWith("m_", StringComparison.Ordinal));
+            return new HashSet<string>(fields, StringComparer.Ordinal).SetEquals(rule.Fields)
+                && (Scalar(document.Text, "Mode").Trim() == "0" || Scalar(document.Text, "Mode").Trim() == "1");
+        }
+
+        private static bool HasContext(Document document, string type, Dictionary<string, string> overrides,
+            Dictionary<string, HashSet<string>> proofs, MigrationPlan plan)
+        {
+            if (!document.File.Objects.TryGetValue(document.GameObjectId ?? "", out var root)) return false;
+            var pending = new Stack<Document>();
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            pending.Push(root);
+            while (pending.Count > 0)
+            {
+                var gameObject = pending.Pop();
+                if (!visited.Add(gameObject.File.Path + "|" + gameObject.Id)) continue;
+                foreach (var component in gameObject.File.Documents.Where(item => item.Kind == "114"
+                    && item.Guid != null && item.GameObjectId == gameObject.Id))
+                {
+                    string existing = ResolvedType(component.Guid);
+                    if (existing == type || (existing == null && Identify(component, overrides, proofs) == type)) return true;
+                }
+                var source = Source(gameObject, plan);
+                if (source != null && source.Kind == "1") pending.Push(source);
+                var transform = gameObject.File.Documents.FirstOrDefault(item => (item.Kind == "4" || item.Kind == "224")
+                    && item.GameObjectId == gameObject.Id);
+                if (transform == null) continue;
+                string parentId = ReferenceId(transform.Text, "m_Father");
+                var parent = gameObject.File.Documents.FirstOrDefault(item => item.Id == parentId);
+                if (parent != null && gameObject.File.Objects.TryGetValue(parent.GameObjectId ?? "", out var parentObject))
+                    pending.Push(parentObject);
+                var transformSource = Source(transform, plan);
+                if (transformSource != null && transformSource.File.Objects.TryGetValue(transformSource.GameObjectId ?? "", out var sourceObject))
+                    pending.Push(sourceObject);
+            }
+            return false;
         }
 
         private static bool IdentifierMatches(string identifier, string name) => identifier == name
@@ -393,7 +520,7 @@ namespace UnityBox.VisemeBlendshapeOverride.ComponentMigration
             if (source == null || source.Guid == null || !visited.Add(source.File.Path + "|" + source.Id)) return null;
             string existing = ResolvedType(source.Guid);
             if (existing != null) return Rules.Any(rule => rule.Name == existing) ? existing : null;
-            return Identify(source, overrides, proofs) ?? (source.Stripped ? IdentifySource(source, overrides, proofs, plan, visited) : null);
+            return Identify(source, overrides, proofs, plan) ?? (source.Stripped ? IdentifySource(source, overrides, proofs, plan, visited) : null);
         }
 
         private static Document Source(Document document, MigrationPlan plan)

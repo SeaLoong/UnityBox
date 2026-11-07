@@ -68,51 +68,32 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
    Delete only rebuildable owned caches when disk space requires it, retaining imported DLLs,
    source snapshots and raw evidence. Check active projects before cleaning their caches.
 
-## Verify package-owned recovery, import preservation and serialized identity
+## Verify confirmed whole-Assets upgrades and serialized identity
 
-- Opening/importing packages or loading assets preserves source bytes, script GUIDs, serialized fields
-  and editing state. Do not install startup/import migrations or automatic OnValidate corrections.
-  Normalize independent configuration/Options snapshots for generation instead of modifying source.
-- Component recovery ships with ACC0.5.2, AO0.3.2, Viseme0.2.2 and ASS0.9.3 inside each owner's existing
-  Unity-only Editor assembly. Normal plugin installation/update delivers the feature; do not add an
-  installer, dependency package or extra source-module copy to make recovery available.
-- Project context menus use `Assets/UnityBox/<owner>/Repair Component References`; owners are
-  `Advanced Costume Controller`, `Animator Optimizer`, `Avatar Security System` and
-  `Viseme Blendshape Override`. Preserve the old Tools plugin-window leaf. Opening the owner window
-  prepopulates Project selection and only exposes that owner's audited component types.
-- The user authorized one manual batch over selected resources, without per-item confirmation.
-  Resolve an ambiguous legacy GUID once for its group; ACC Mode/GroupName is a weak candidate even
-  when one type is listed. Unknown/duplicate or open-asset/dependency cases remain in the report.
-- Use [ComponentReferences](../../../Docs/ComponentReferences.md) for the eight-package matrix and
-  six component FQCN/assembly/GUID entries. ACC has three production markers; AO, ASS and Viseme
-  one each. BCG/Collider/Logger/PrefabPatcher have no own Avatar authoring component. AO0.2 is a
-  development snapshot, not a published legacy VPM ZIP.
-- Prepare five independent consumers with normal package preparation: ACC only, AO only, ASS only,
-  Viseme only and all four together. Use `--package` for the sole owner, or repeat it four times for
-  the combined case. Compile and execute using only that consumer's declared dependencies and source.
-  Do not seed the old standalone directory, an extra asmdef, test assembly or installer as a workaround.
-  Package recovery must remain available even when the repository's obsolete module is absent.
-- In each consumer, verify its exact Project menu, owner-only targets, read-only Analyze and one
-  Migrate Selected Assets batch. No startup/import action writes files. Test genuine old ACC/ASS/Viseme
-  ZIP imports and the AO development snapshot, retaining generated old GUIDs and serialized values.
-- Apply rechecks source evidence SHA and installed target identity, backs up every target before the
-  first write, and changes only fixed-length GUID byte spans. Preserve fileIDs, fields, references,
-  BOM/CRLF and project metadata. Copy existing metadata with the batch to
-  `UserSettings/UnityBox/<AdvancedCostumeController|AnimatorOptimizer|AvatarSecuritySystem|VisemeBlendshapeOverride>/ComponentReferenceMigration/<id>/Assets/...`.
-- Keep dependency evidence read-only and write only selected paths. Skip loaded Scene/PrefabStage
-  and their dependencies without saving, closing or reloading. Cover unsaved nested Prefab and object
-  references added in Prefab Mode with autoSave disabled; compare dirty state, object identities and
-  original bytes. Discard only the test fixture's own edits when leaving its Stage.
-- Cover ambiguity mapping, valid-external/unknown/duplicate handling, changed files since scan,
-  exact backups, idempotence and owner source configuration preservation. Record five-consumer,
-  native and real-upgrade evidence in
-  [ComponentReferences verification](../../../Docs/Verification/ComponentReferences/README.md).
-- [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md) and
-  [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) retain historical 0.9.1 import safety
-  and the removed 0.9.0 automatic implementation. Preserve old global/ASS backup folders separately
-  from the new owner-specific batches. Diagnose Missing Script by actual GUID, path and owning package.
-- Preserve published ZIP bytes. Only the four component-bearing packages change in this release;
-  keep BCG/Collider/Logger/PrefabPatcher package files unchanged unless they receive code/version changes.
+- Ordinary package import/startup preserves source bytes, Runtime GUIDs and stored values. Normalize build copies only.
+- ACC0.5.3, AO0.3.3, ASS0.9.4 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
+  Tools/UnityBox/<owner>/Upgrade Component References confirms once, then processes all Assets.
+  Owner menus are Advanced Costume Controller, Animator Optimizer, ASS and Viseme Blendshape Override.
+  ACC/AO Open actions are siblings; there is no selection window or per-GUID mapping UI.
+- Test the exact ComponentReferenceUpgrade.Execute(Func<bool>) route: cancel before discovery/I/O,
+  or confirm once then call UpgradeProjectAssets. Prove unrelated current Selection does not constrain scope.
+- Identify known class names/GUIDs directly; confirm ACC Part Group from exact schema, enum and Outfit/Prefab
+  ancestry, then associate the same GUID elsewhere. Generic foreign Mode/GroupName fields stay unchanged.
+- Back up the complete batch before the first write; only replace supported invalid script GUID spans.
+  Preserve fileIDs, fields, object references, asset metadata, UTF-8/BOM/CRLF and duplicate components.
+  Per-owner backup root is UserSettings/UnityBox/<PluginFolder>/ComponentReferenceMigration/<id>/Assets.
+- Test clean saved Scene/Prefab Stage suspension/restoration, selection and active scene restoration;
+  preserve dirty/untitled contexts, unsaved edits and their dependencies without saving or reloading them.
+  Scan(paths)/Apply(plan) remain lower-level APIs with their original open-resource protection.
+- Validate the new command with actual old-derived resources in different Assets folders, per-owner and
+  combined consumers, no legacy GUID overrides, no extra installer/module. Retain producer/source/ZIP/DLL
+  identities and byte comparisons. Mark previous selected-resource evidence as its actual historical version.
+- ACC exposes one Open command for complete Avatar generation; without SDK/MA it explains required
+  integrations. No standalone Controller window or output selector. Keep the reusable animation core,
+  native Animator/Player coverage, existing generated assets and Avatar settings.
+- Use [ComponentReferences](../../../Docs/ComponentReferences.md) and
+  [current evidence](../../../Docs/Verification/ComponentReferences/README.md) for exact commands/results.
+
 
 ## Retain reviewable results and publish the code
 

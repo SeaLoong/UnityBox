@@ -1,0 +1,141 @@
+{
+  "scope": "ass",
+  "producer_revision": "e62c741f7921071834924f75cbfd80f1a50a5304",
+  "producer_summary_sha256": null,
+  "original_producer_state_sha256": "05199ad2764a5635ab57644fcc545a98f7f170e92c0b812ebe23943696fbaff8",
+  "relocated_without_changing_asset_bytes_or_guids": {
+    "Assets/ComponentUpgradeFixtures/Base.prefab": "Assets/OldCostumes/Base.prefab",
+    "Assets/ComponentUpgradeFixtures/Variant.prefab": "Assets/OtherCollection/Variant.prefab",
+    "Assets/ComponentUpgradeFixtures/Nested.prefab": "Assets/Containers/Nested.prefab",
+    "Assets/ComponentUpgradeFixtures/Avatar.unity": "Assets/Scenes/Avatar.unity"
+  },
+  "restored_files": [
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+      "path": "Assets/Scenes/Avatar.unity",
+      "sha256": "44e736827af288caa8763ac305bf257411dd31b5128406bd1d4e571a515744c7"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+      "path": "Assets/Scenes/Avatar.unity.meta",
+      "sha256": "865ea5feb55dbd1eb19a7c276a6f9b1a508664df95f3070a717a9a4c2a0ae8d2"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+      "path": "Assets/OldCostumes/Base.prefab",
+      "sha256": "c4a2a582d2fe39be78f878abfaac9f223d848704c6e78d39b50cdd27f9b9934c"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+      "path": "Assets/OldCostumes/Base.prefab.meta",
+      "sha256": "8421cba332ef502e70d9a385bc007f67637f45c72e9803ca7f9b6fd9c361304b"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "sha256": "6df2884024ad075d4087661180695b2bfb5d6ad91ce289f41c0c4d7704dd4d97"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+      "sha256": "f0e95bb92dc0af8aeb4951766170d6db8408bc41fb6786332e92a1d9a13b29c4"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "sha256": "de1e1aa92245cd7eb292fc1ad8b23213fa6b4b21b0902c722c9a265b57f3717a"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+      "path": "Assets/Containers/Nested.prefab",
+      "sha256": "486a74212f721c53e0bacbd08e1c9306a97240475740d5d03f5567d89626b080"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+      "path": "Assets/Containers/Nested.prefab.meta",
+      "sha256": "96381932601380ff359e05b36c336ee7835f71b691da40008791d47cfe757808"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "sha256": "04f4e4f25cfb5d13df2fde431497532a3871a502169b922a5a0362df99fcfc61"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "sha256": "00d7857fbb61c734629d12cc9c4a32956b219daf95575519e95f7ea0d2c4d7c1"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "sha256": "9b07b1e1f8e342435e99e527c8c9937c06d5f2a07079d8d7a262579cded752a8"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "sha256": "c692db5f8c32d0382be142d823c1d99dd338bd21d882d1f8394ccd5ebb193d2e"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "sha256": "2458f7bf60f4af5158dbb136159161f89bb5d55bda7ff693da5967c0d89d246f"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "sha256": "12cbc2b561f7bd3ba6fed5dec20e3e5c3cc2119ed3dedb5c0129142651f9ce8c"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+      "path": "Assets/OtherCollection/Variant.prefab",
+      "sha256": "5fabcb7634d980ec6c361b941075583a93af39a0731e75543c42cdee83794f32"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+      "path": "Assets/OtherCollection/Variant.prefab.meta",
+      "sha256": "af3afce9ff2be76d81a171fef5bf97e37c3f5ae81ce1d56e20744063c16bdc8e"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "original_path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "sha256": "c9497abe851bc88e5bc96498d6a7f973322aa0106f3d3a0200a7cfa84e14645b"
+    }
+  ],
+  "current_zip_inputs": [
+    {
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.9.4",
+      "sha256": "a76f095a5f30fa07060e7243c4da39ccce6af1c37383d578d08b6edd58ba13b0"
+    }
+  ]
+}

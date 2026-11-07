@@ -11,6 +11,13 @@ SPEC = importlib.util.spec_from_file_location("embed_component_migration", Path(
 embed = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(embed)
 
+MENUS = {
+    "AdvancedCostumeController": "Tools/UnityBox/Advanced Costume Controller/Upgrade Component References",
+    "AnimatorOptimizer": "Tools/UnityBox/Animator Optimizer/Upgrade Component References",
+    "AvatarSecuritySystem": "Tools/UnityBox/ASS/Upgrade Component References",
+    "VisemeBlendshapeOverride": "Tools/UnityBox/Viseme Blendshape Override/Upgrade Component References",
+}
+
 
 class EmbeddedMigrationTests(unittest.TestCase):
     def setUp(self):
@@ -20,13 +27,13 @@ class EmbeddedMigrationTests(unittest.TestCase):
 
     def test_catalogs_namespaces_menus_and_backups_are_owned_by_each_plugin(self):
         files = embed.rendered_files()
-        self.assertEqual(len(files), 13)
+        self.assertGreaterEqual(len(files), 13)
         all_types = {item["name"] for item in embed.COMPONENTS.values()}
         for owner in embed.OWNERS:
             with self.subTest(owner=owner["name"]):
                 root = Path("Assets/UnityBox") / owner["name"]
                 engine = files[root / owner["editor"] / "MigrationEngine.cs"]
-                window = files[root / owner["editor"] / "ComponentReferenceMigrationWindow.cs"]
+                action = files[root / owner["editor"] / "ComponentReferenceMigrationWindow.cs"]
                 owned_types = {embed.COMPONENTS[key]["name"] for key in owner["types"]}
                 for name in owned_types:
                     self.assertIn('Name = "' + name + '"', engine)
@@ -35,11 +42,47 @@ class EmbeddedMigrationTests(unittest.TestCase):
                 self.assertEqual(engine.count("new Rule {"), len(owned_types))
                 self.assertIn("namespace UnityBox." + owner["name"] + ".ComponentMigration", engine)
                 self.assertIn("UserSettings/UnityBox/" + owner["name"] + "/ComponentReferenceMigration/", engine)
-                self.assertIn('[MenuItem("Assets/UnityBox/' + owner["display"] + '/Repair Component References")]', window)
-                self.assertIn('GetWindow<ComponentReferenceMigrationWindow>("' + owner["abbr"] + ' Component References")', window)
-                self.assertIn("window.UseProjectSelection();", window)
-                self.assertNotIn("UnityBox.ComponentReferenceMigration", engine + window)
-                self.assertNotRegex(engine + window, r"\[InitializeOnLoad|AssetPostprocessor|OnValidate\(")
+                self.assertIn('[MenuItem("' + MENUS[owner["name"]] + '")]', action)
+                self.assertNotIn("UnityBox.ComponentReferenceMigration", engine + action)
+                self.assertNotRegex(engine + action, r"\[InitializeOnLoad|AssetPostprocessor|OnValidate\(")
+
+    def test_project_upgrade_is_one_manual_action_without_a_recovery_window_or_selection(self):
+        files = embed.rendered_files()
+        for owner in embed.OWNERS:
+            with self.subTest(owner=owner["name"]):
+                root = Path("Assets/UnityBox") / owner["name"]
+                action = files[root / owner["editor"] / "ComponentReferenceMigrationWindow.cs"]
+                engine = files[root / owner["editor"] / "MigrationEngine.cs"]
+                production = "\n".join(text for path, text in files.items() if path.parent == root / owner["editor"])
+                self.assertIn("public static class ComponentReferenceUpgrade", action)
+                self.assertRegex(action, r"public static void RunMenu\s*\(")
+                self.assertRegex(action, r"Execute\s*\(\s*Func<bool>\s+\w+")
+                self.assertEqual(action.count("[MenuItem("), 1)
+                self.assertEqual(action.count("EditorUtility.DisplayDialog("), 1)
+                self.assertIn("MigrationEngine.UpgradeProjectAssets()", action)
+                self.assertNotRegex(action, r"GetWindow\s*<|UseProjectSelection|Selection\.|OnGUI\s*\(")
+                self.assertNotIn("Assets/UnityBox/", action)
+                self.assertRegex(production, r"public static MigrationResult UpgradeProjectAssets\s*\(\s*\)")
+                self.assertRegex(engine, r"public static MigrationPlan Scan\s*\(")
+                self.assertRegex(engine, r"public static MigrationResult Apply\s*\(")
+
+    def test_existing_generated_source_and_asset_identity_paths_are_retained(self):
+        paths = set(embed.rendered_files())
+        expected = set()
+        for owner in embed.OWNERS:
+            root = Path("Assets/UnityBox") / owner["name"]
+            expected.update(root / owner["editor"] / name for name in (
+                "MigrationEngine.cs", "ComponentReferenceMigrationWindow.cs"))
+            expected.add(root / owner["tests"] / "ComponentMigrationTests.cs")
+        expected.add(Path("Assets/UnityBox/AvatarSecuritySystem/Tests/Editor/ComponentMigration/ComponentMigrationPerformanceTests.cs"))
+        self.assertTrue(expected.issubset(paths), "Every previously delivered source keeps its stable Unity asset path")
+        allowed_additions = {
+            Path("Assets/UnityBox") / owner["name"] / owner["editor"] / "ProjectUpgrade.cs"
+            for owner in embed.OWNERS
+        }
+        self.assertTrue((paths - expected).issubset(allowed_additions))
+        metadata = embed.metadata_paths(paths)
+        self.assertEqual(set(metadata), {Path(str(path) + ".meta") for path in paths | {path.parent for path in paths}})
 
     def test_generated_sources_use_existing_package_assemblies_without_new_packages_or_asmdefs(self):
         actual_repo = Path(__file__).resolve().parents[2]

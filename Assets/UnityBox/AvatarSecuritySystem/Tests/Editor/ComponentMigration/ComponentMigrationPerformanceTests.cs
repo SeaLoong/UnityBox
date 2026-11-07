@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
@@ -111,6 +112,67 @@ namespace UnityBox.AvatarSecuritySystem.ComponentMigration.Tests
                 p95_ms = measurements[measurements.Count - 1], max_ms = measurements[measurements.Count - 1],
                 allocated_bytes_per_op = allocationAvailable ? allocated / measurements.Count : -1,
                 correctness = componentCount + " component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes",
+            }));
+        }
+
+        [Test]
+        [Category("UnityBoxPerformance")]
+        public void WholeAssetsDiscoveryStreams1024UnrelatedAssetsWithoutRetainingTheirDocuments()
+        {
+            const int unrelatedCount = 1024;
+            byte[] unrelated = Encoding.UTF8.GetBytes("%YAML 1.1\n--- !u!1 &100\nGameObject:\n  m_Name: Unrelated discovery fixture\n  unrelatedSetting: 1\n");
+            var paths = Enumerable.Range(0, unrelatedCount).Select(index => folder + "/Unrelated_" + index + ".asset").ToArray();
+            var root = new GameObject("Project discovery owner fixture");
+            SceneManager.MoveGameObjectToScene(root, preview);
+            root.AddComponent(AppDomain.CurrentDomain.GetAssemblies().Select(assembly => assembly.GetType(Ass, false)).First(type => type != null));
+            string ownerPath = folder + "/Owner.prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, ownerPath);
+            Object.DestroyImmediate(root);
+            byte[] valid = File.ReadAllBytes(ownerPath);
+            byte[] metadata = File.ReadAllBytes(ownerPath + ".meta");
+            string target = MigrationEngine.GetTargetTypes().Single(item => item.TypeName == Ass).ScriptGuid;
+            byte[] legacy = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(valid).Replace("guid: " + target, "guid: " + Legacy));
+            var measurements = new List<double>();
+            long allocations = 0;
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                foreach (string path in paths) File.WriteAllBytes(path, unrelated);
+                File.WriteAllBytes(ownerPath, legacy);
+                for (int sample = -1; sample < 5; sample++)
+                {
+                    long before = GC.GetAllocatedBytesForCurrentThread();
+                    var timer = Stopwatch.StartNew();
+                    var plan = (MigrationPlan)typeof(MigrationEngine).GetMethod("ScanProjectAssets", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { null });
+                    timer.Stop();
+                    if (sample >= 0)
+                    {
+                        measurements.Add(timer.Elapsed.TotalMilliseconds);
+                        allocations += GC.GetAllocatedBytesForCurrentThread() - before;
+                    }
+                    Assert.That(plan.Entries.Single(entry => entry.AssetPath == ownerPath).TypeName, Is.EqualTo(Ass));
+                    Assert.That(plan.ScannedAssets.Intersect(paths), Is.Empty);
+                    var evidence = (System.Collections.IDictionary)typeof(MigrationPlan).GetField("evidence", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(plan);
+                    Assert.That(evidence.Keys.Cast<string>().Intersect(paths), Is.Empty);
+                    Assert.That(File.ReadAllBytes(ownerPath), Is.EqualTo(legacy));
+                    Assert.That(File.ReadAllBytes(ownerPath + ".meta"), Is.EqualTo(metadata));
+                }
+                foreach (string path in paths) Assert.That(File.ReadAllBytes(path), Is.EqualTo(unrelated));
+            }
+            finally
+            {
+                foreach (string path in paths) File.Delete(path);
+                File.WriteAllBytes(ownerPath, valid);
+                AssetDatabase.StopAssetEditing();
+            }
+            measurements.Sort();
+            Debug.Log("UNITYBOX_BENCHMARK " + JsonUtility.ToJson(new Benchmark
+            {
+                scenario = "discover_project_assets", size = unrelatedCount, samples = measurements.Count,
+                min_ms = measurements[0], median_ms = measurements[measurements.Count / 2],
+                p95_ms = measurements[measurements.Count - 1], max_ms = measurements[measurements.Count - 1],
+                allocated_bytes_per_op = allocations / measurements.Count,
+                correctness = "1024 unrelated YAML assets excluded from retained evidence; owner discovered; source and metadata bytes unchanged",
             }));
         }
 

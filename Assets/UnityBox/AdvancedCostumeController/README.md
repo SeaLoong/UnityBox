@@ -1,19 +1,19 @@
 # Advanced Costume Controller（ACC）
 
-ACC 从指定的**服装根节点（Costumes Root）**扫描服装，生成可在普通 Unity 使用的 Animator Controller 和动画。支持服装变体、部件独立控制、持久部件分组、材质变体和两种混搭模式（Custom Mixer）；安装可选集成后，还可生成 Modular Avatar 菜单、FX 安装和网络参数压缩。
+ACC 从指定的**服装根节点（Costumes Root）**扫描服装，为 VRChat Avatar 生成动画、Modular Avatar 菜单、参数和 FX 安装。支持服装变体、部件独立控制、持久部件分组、材质变体、两种混搭模式（Custom Mixer）、网络参数压缩及自动菜单图标。
 
-当前版本 **0.5.2**。
+当前版本 **0.5.3**。
 
 ## 组件引用与源配置
 
 ACC 的三个 Runtime 标记为 `ACCOutfitMarker`、`ACCPartGroupMarker` 和
 `ACCVariantMaterialOverride`，本轮保留类名、程序集、字段和 0.5.0 起的固定脚本身份。
-0.4.13 旧 ZIP 没有脚本 `.meta`，各项目生成的随机 GUID 可使用本包自带的恢复功能
-批量重连。正常更新 ACC 后，在 Project 选择资源，打开
-`Assets/UnityBox/Advanced Costume Controller/Repair Component References`。
-窗口带入当前选择，只处理三种 ACC 标记；点击 **Migrate Selected Assets** 一次执行整批，
-无逐项确认。`Mode` / `GroupName` 弱候选按旧 GUID 选择一次类型。
-范围、备份与跳过规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
+0.4.13 旧 ZIP 没有脚本 `.meta`，各项目生成的随机 GUID 可使用本包自带的升级命令重连。
+点击 `Tools/UnityBox/Advanced Costume Controller/Upgrade Component References`，确认一次后
+扫描整个 Assets，自动处理能确定身份的三种 ACC 标记，备份原文件并输出 Console 汇总。
+无需选择资源或逐 GUID 选类型。Part Group 结合完整 schema、有效 Mode 及核实的
+Outfit/Prefab 来源识别；未知引用保持原状，报告列出已识别类型的重复组件。升级只在用户点击并确认后执行。
+范围、场景状态与备份规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
 
 打开或绘制 Inspector 保留原字段。材质来源先保存在 Editor 临时状态，显式分析、刷新或
 应用时才提交并记录 Undo；无效材质槽在绘制时保留原值。PartGroup 切到 Exclude 保留
@@ -21,7 +21,7 @@ ACC 的三个 Runtime 标记为 `ACCOutfitMarker`、`ACCPartGroupMarker` 和
 
 ## 前置条件
 
-普通动画生成只需 **Unity 2022.3**，包不再强制安装 SDK/MA。需要 Avatar 菜单、骨架安装和同步时，另外安装以下依赖：
+ACC 换装面板需要以下依赖；组件引用升级命令与底层动画算法只依赖 Unity，可在安装 SDK/MA 前使用：
 
 - Unity 2022.3、VRChat SDK Base/Avatars 3.7.3 或更高版本；
 - Modular Avatar **1.18.0 或更高版本**；
@@ -29,29 +29,30 @@ ACC 的三个 Runtime 标记为 `ACCOutfitMarker`、`ACCPartGroupMarker` 和
 
 完整使用手册与开发说明见 [Docs/AdvancedCostumeController.md](../../../Docs/AdvancedCostumeController.md)。
 
-## 普通 Unity 动画生成
+## 打开主面板
 
-1. 打开 **Tools > UnityBox > Advanced Costume Controller (Unity Assets)**。缺少 SDK/MA 时，原来的 **Advanced Costume Controller** 菜单也打开此窗口。
-2. 设置场景内的 **Costumes Root**、参数前缀和 `Assets/...` 输出目录，点击 **Scan / Refresh**。没有独立骨架时，在服装根对象添加 **ACC Outfit Marker**；三个 ACC 标记在普通 Unity 同样可用。
-3. 勾选服装组，按需开启 **Parts Control**、**Custom Mixer** 和独立混搭参数，指定默认服装或变体后点击 **Generate Unity Assets**。
-4. 将输出 Controller 赋给 **Costumes Root 上的 Animator**，通过项目自己的 UI 或脚本驱动参数。选择值从 0 连续编号；Animator 中的选择、部件和混搭参数使用 Float，以供 BlendTree 读取。
+打开 **Tools > UnityBox > Advanced Costume Controller > Open**，配置服装后生成完整的
+Avatar 换装功能：动画、菜单、参数与 FX 安装在一次流程中完成。缺少 SDK/MA 时，该入口
+提示所需依赖；通过 VCC 安装后即可打开面板。
 
-此入口与 Avatar 工作流共用完整 Scanner、模型和 AnimationBuilder，包括部件/Mixer 与材质替换曲线。普通窗口提供服装组选择；更细的临时部件/变体选择可通过共享 `OutfitData` 模型传给 `UnityCostumeGenerator.Generate`，或使用完整 Avatar 窗口。材质替换规则可在 `ACCVariantMaterialOverride` 上编辑，自动对比转换 Inspector 仍属于 Avatar 集成。
-
-普通窗口默认输出到 `Assets/UnityBox/Generated/AdvancedCostumeControllerUnity`，与 Avatar 默认目录分开。每次生成保留旧资产，在场景/所属层级根/参数命名空间下创建新的 `Build` 子目录。此入口不会自动分配场景 Animator、安装 MA 菜单或执行 Setup Outfit。没有 SDK 时网络压缩不可用；已安装真实 SDK 时可生成 Parameter Driver，但表达式参数同步仍需 Avatar 工作流安装。普通游戏控制器应保持压缩关闭。
+普通 Controller 生成面板及输出选项已移除。底层 Scanner、模型和动画生成算法继续供
+Avatar 工作流和原生测试调用，已有生成资产及场景引用保留。
 
 ## Avatar 工作流快速开始
 
-1. 打开 **Tools > UnityBox > Advanced Costume Controller**。
-2. 选择服装根节点，点击**刷新预览**。
-3. 勾选要生成的服装、本体/变体和部件。
-4. 按需启用**部件控制**、**混搭**（可选使用独立部件参数）和**参数压缩**。
-5. 可选启用**自动生成菜单图标**。
-6. 查看预览区域的参数占用与压缩层数，点击**生成**并确认摘要。
+1. 打开 **Tools > UnityBox > Advanced Costume Controller > Open**。
+2. 选择 Costumes Root，刷新预览并勾选服装、本体/变体和部件。
+3. 按需启用部件控制、Custom Mixer、独立混搭参数、网络压缩和自动菜单图标。
+4. 查看参数占用与压缩层数，点击生成并确认本次生成摘要。
 
-**默认服装或变体**可以直接拖入某套服装本体、对象变体或材质变体；对象移出 `Costumes Root` 后该输入会自动清空。生成时会优先使用指定且已启用的对象作为普通服装选择和混搭的初始版本；留空或指定对象未启用时，使用预览中第一个启用对象所属服装组和对象/变体。
+**默认服装或变体**可以拖入服装本体、对象变体或材质变体；对象移出 Costumes Root 后
+该输入清空。生成优先采用已启用的指定对象；没有有效指定对象时使用预览中第一个启用项。
 
-ACC 会在服装根节点下复用或创建唯一的 `ACC_Menu`。除根菜单外，生成项默认保持空 Label，由 MA 直接显示其对象名称。服装与部件沿用实际对象名；ACC 自己生成的默认节点使用当前语言的对象名，例如“部件 / 混搭”和“Parts / Custom Mix”；混搭启用项对应显示为“启用混搭 / Enable Custom Mix”，填写 **Custom Mixer Name** 后则使用“启用 + 自定义名称”。重新生成时，ACC 会重建菜单控制逻辑，但会保留已有 ACC 子菜单项的图标和自定义名称；若用户把 Label 改成不同于节点名的自定义文本，则会跨重新生成保留，即使编辑器语言切换导致默认节点名变化。不会复用旧 `Parameter`、`Value`、子参数或菜单来源。ACC 创建的 `ModularAvatarMenuInstaller`、`ModularAvatarMenuItem`、`ModularAvatarMergeAnimator` 和 `ModularAvatarParameters` 都位于 `ACC_Menu`；参数只会按精确名称更新或移除 ACC 自己的声明，不会修改无关的手工 MA 参数。生成的 Controller、AnimationClip 和自动图标按场景、Avatar 与参数前缀隔离，每次写入新的 `Build[ n]`。旧结果继续保留，重新生成后可用 Undo 恢复原 Controller 和图标引用；关闭**自动生成菜单图标**时沿用已有图标。
+ACC 在服装根下复用或创建 `ACC_Menu`，生成项沿用实际对象名和本地化默认节点名。
+重新生成保留既有图标与自定义 Label，并按本次参数表重建控制逻辑。MA MenuInstaller、
+MenuItem、MergeAnimator 和 Parameters 位于该菜单根，只更新 ACC 的声明。
+Controller、Clip 和图标按场景、Avatar 与参数前缀写入独立 Build；旧结果保留供 Undo
+恢复原引用，关闭自动图标时沿用既有图标。
 
 ## Avatar 工作流配置项
 
@@ -269,11 +270,11 @@ Inspector 中的**刷新本体材质**只读取 `OutfitBase` 的 Renderer 材质
 
 含空格、标点等字符的旧参数名及输出目录可能改变。更新后重新 Generate，并检查原有自定义参数引用；VRChat 保存的相关菜单选择可能重置。旧目录不会自动迁移或删除，确认无引用后再清理。
 
-`UnityBox.AdvancedCostumeController.Core` 包含真实扫描、完整动画生成、模型、选择算法、命名/路径及普通 Unity 窗口；原 Avatar 生成器调用同一实现。`Tests/Core/Editor` 覆盖规则、扫描、真实资产、真实 Animator 的 Parts 与两种 Mixer。Standalone Player 探针运行普通选择、Mixer 与返回选择序列。性能场景测量2/8/24套服装的资产生成与逐帧 Animator.Update，详见 [性能记录](../../../Docs/Performance.md)。
+`UnityBox.AdvancedCostumeController.Core` 包含真实扫描、完整动画生成、模型、选择算法、命名/路径及组件引用升级。完整 Avatar 面板调用这一核心；普通 Controller 生成面板已移除。`Tests/Core/Editor` 覆盖规则、扫描、真实资产、真实 Animator 的 Parts 与两种 Mixer。Standalone Player 探针运行普通选择、Mixer 与返回选择序列。性能场景测量2/8/24套服装的资产生成与逐帧 Animator.Update，详见 [性能记录](../../../Docs/Performance.md)。
 
 `UnityBox.AdvancedCostumeController.VRChat` 仅在真实 SDK Avatars >= 3.7 时启用，处理 Avatar 根识别和 Parameter Driver。完整 Avatar 编辑器、MA 扫描适配与`Tests/Editor` 的菜单、压缩、安装、预算、Undo/Redo及真实图标渲染用例还要求 SDK Base/Avatars >= 3.7.3 与 MA >= 1.18。MA 使用的双参数 `VRCConstraintSource` 构造函数从 SDK 3.7.3 才可用；3.7.0～3.7.2 不满足这条集成路径。Runtime 标记始终可用；SDK Base 存在时才实现其真实 `IEditorOnly`，没有替代 SDK 类型。
 
-`Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。Runtime MonoBehaviour 的类名、程序集、字段和已发布固定 `.meta` 保留；旧安装的随机 GUID 通过上述手动工具处理。已有 Avatar 项目继续保留 SDK/MA；普通 Unity 入口不迁移或卸载既有 MA 组件。
+`Models`、`Scanner`、`AnimationBuilder`、`Localization` 和 `ChoiceParameterLayout` 的公开类型移到 Core；外部自定义 asmdef 如直接使用这些类型，需要添加 `UnityBox.AdvancedCostumeController.Core` 引用。Runtime MonoBehaviour 的类名、程序集、字段和已发布固定 `.meta` 保留；旧安装的随机 GUID 通过上述手动工具处理。已有 Avatar 项目继续保留 SDK/MA；移除普通 Controller 面板不会删除已有输出或 MA 组件。
 
 在 Test Runner 的 EditMode 运行测试；VPM 安装时将本包名加入项目 manifest 的 `testables`。核心套件评估真实 Animator，Avatar 套件运行 MA 安装、预算和压缩参数流，图形套件读取实际渲染图标；各程序集与图形运行结果见[验证结果](../../../Docs/VerificationResults.json)。
 

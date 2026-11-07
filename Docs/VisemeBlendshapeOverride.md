@@ -4,12 +4,12 @@
 `Viseme` Int 与可选 `Voice` Float；VRChat 使用 Descriptor 提供的输入；NDMF 将生成图
 合并到最终 FX。Unity 核心、SDK 适配与 NDMF 适配分别编译。
 
-## 0.2.2 组件引用与配置快照
+## 0.2.3 组件引用与配置快照
 
 组件类名、Runtime 程序集、已发布字段与固定 GUID 保持。0.1.14 旧 ZIP 缺少 metadata，
 其随机旧引用使用本包内的
-`Assets/UnityBox/Viseme Blendshape Override/Repair Component References` 一次手动批量恢复。
-窗口带入 Project 选择，只处理本插件组件；未知、重复及打开资源/依赖只报告跳过。
+`Tools/UnityBox/Viseme Blendshape Override/Upgrade Component References` 一次手动批量恢复。
+确认一次后自动处理整个 Assets 的本插件组件；未保存编辑、未知与重复组件保留并报告。
 菜单、范围和备份见[组件引用手册](ComponentReferences.md)。
 
 加载、Inspector 绘制及构建计划读取保留原 bindings。深拷贝配置快照负责补齐有效映射、

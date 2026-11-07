@@ -1,0 +1,38 @@
+{
+    "createdUtc": "2026-11-07T17:28:21.1578710Z",
+    "files": [
+        {
+            "path": "Assets/OldCostumes/Base.prefab",
+            "beforeSha256": "425aa39d8ec4847e935f23c92312cedca33346ada279da98d9b15f207604e93a",
+            "afterSha256": "108f3494dc4c6b11da3a8e87c14989bd3ee1b3153f6959d91f9fef452cd79d28",
+            "components": [
+                {
+                    "fileId": "3565009668314722242",
+                    "oldGuid": "e5a07ba03c6adf697bf43981f89b53d1",
+                    "newGuid": "a157d3d35699dd84abde9e5412bd7017",
+                    "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent"
+                }
+            ]
+        },
+        {
+            "path": "Assets/Scenes/Avatar.unity",
+            "beforeSha256": "afece8c27807e51d15e6cd677859d326940dc4ce4dfc8c99d78a33073f131372",
+            "afterSha256": "c7cac3eecdf44beecb71572525db875c206f583e6a61ff39d4ec692cba2533fe",
+            "components": [
+                {
+                    "fileId": "447383159",
+                    "oldGuid": "e5a07ba03c6adf697bf43981f89b53d1",
+                    "newGuid": "a157d3d35699dd84abde9e5412bd7017",
+                    "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent"
+                }
+            ]
+        }
+    ],
+    "skipped": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+            "code": "component-duplicate",
+            "message": "fileID 1814869688, GUID e5a07ba03c6adf697bf43981f89b53d1: This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        }
+    ]
+}

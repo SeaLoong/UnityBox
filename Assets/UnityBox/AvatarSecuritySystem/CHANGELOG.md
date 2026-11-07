@@ -2,7 +2,16 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.3] - 2026-11-07
+## [0.9.4] - 2026-11-08
+
+### Component references
+
+- 升级入口改为 `Tools/UnityBox/ASS/Upgrade Component References`：一次确认后扫描整个 Assets，自动匹配 ASSComponent，全部备份后重连并输出报告与 Console 汇总。
+- 移除资源选择恢复窗口；无需选择资源、逐 GUID 指定类型或再次确认。未知、其它插件及重复组件保留并报告。
+- 显式全项目升级针对相关资源暂时卸载干净且已保存的 Scene/Prefab Stage，执行后恢复；dirty、未命名场景及它们的依赖保留并跳过，不自动保存。
+- 配置仍在组件 Inspector；无启动、导入或移动回调迁移，自动构建与源配置副本边界保持。
+
+## [0.9.3] - 2026-11-07（历史发布）
 
 ### Component references
 

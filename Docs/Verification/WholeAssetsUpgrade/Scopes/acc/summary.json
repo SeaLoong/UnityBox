@@ -1,0 +1,32 @@
+{
+  "scope": "acc",
+  "passed": true,
+  "missing_before_upgrade": 21,
+  "repaired_components": 6,
+  "inspector_targets": 12,
+  "batches": [
+    {
+      "owner": "AdvancedCostumeController",
+      "repairs": 6,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    }
+  ],
+  "comparison_passes": [
+    {
+      "name": "after owner batches",
+      "components": 28,
+      "properties": 472,
+      "objectReferences": 63,
+      "duplicateCurrentComponents": 1
+    },
+    {
+      "name": "after Inspector OnEnable/deferred callbacks",
+      "components": 28,
+      "properties": 472,
+      "objectReferences": 63,
+      "duplicateCurrentComponents": 0
+    }
+  ],
+  "native_result": "migrated.json"
+}

@@ -1,15 +1,15 @@
 # Advanced Costume Controller
 
-ACC 扫描 Costumes Root 下的服装、变体与部件，生成普通 Unity 可用的 Animator Controller
-和 Clip。Avatar 工作流在相同动画核心之上安装 MA 菜单、骨架、FX、同步参数与256×256图标。
+ACC 扫描 Costumes Root 下的服装、变体与部件，一次生成动画、Avatar 菜单、同步参数、
+FX、骨架与图标，完成 VRChat 换装配置。
 字段和完整操作见[包内手册](../Assets/UnityBox/AdvancedCostumeController/README.md)。
 
-## 0.5.2 组件引用与 Inspector
+## 0.5.3 组件引用与 Inspector
 
 ACC 三种 Runtime 标记的类名、程序集、字段与固定脚本 GUID 保持。0.4.13 旧 ZIP 没有
 metadata 形成的随机引用通过本包的
-`Assets/UnityBox/Advanced Costume Controller/Repair Component References` 手动批量重连。
-窗口带入 Project 选择，只处理三种 ACC 标记；一次执行无逐项确认，打开资源及依赖跳过。
+`Tools/UnityBox/Advanced Costume Controller/Upgrade Component References` 手动批量重连。
+菜单确认一次后处理整个 Assets，自动识别三种 ACC 标记；未保存编辑和依赖保留。
 完整操作与本包备份目录见[组件引用手册](ComponentReferences.md)。
 
 材质变体 Inspector 不在打开时初始化；外部来源选择留在 Editor 临时状态，显式应用、
@@ -20,18 +20,18 @@ metadata 形成的随机引用通过本包的
 
 | 入口 | 功能 | 依赖 |
 | --- | --- | --- |
-| Tools > UnityBox > Advanced Costume Controller (Unity Assets) | 扫描、Controller/Clip、Parts、两种 Mixer、材质曲线 | Unity2022.3 |
-| Tools > UnityBox > Advanced Costume Controller | MA 菜单、Setup Outfit、FX、参数压缩和图标 | SDK Base/Avatars≥3.7.3、MA≥1.18 |
+| Tools > UnityBox > Advanced Costume Controller > Open | 完整 Avatar 换装生成 | Unity2022.3、SDK Base/Avatars≥3.7.3、MA≥1.18 |
+| Tools > UnityBox > Advanced Costume Controller > Upgrade Component References | 一次确认升级整个 Assets 的 ACC 旧引用 | Unity2022.3 |
 
 1. 选择 Costumes Root，设置参数前缀与 `Assets/...` 输出目录，刷新服装预览。
 2. 使用 `ACCOutfitMarker` 显式声明服装；配置本体、变体、部件与持久分组。
 3. 按需启用 Parts Control、Custom Mixer、独立混搭参数和默认服装/变体。
-4. 普通 Unity 生成后将 Controller 分配给 Costumes Root 上的 Animator，通过 Float 参数
-   驱动选择与部件。Avatar 入口直接安装 MA 菜单、同步参数和 FX。
+4. 点击生成，安装 MA 菜单、同步参数和 FX，按选项生成图标并配置服装骨架。
 
-普通 Unity 入口和 Avatar 入口共用 `Scanner`、`OutfitData`、`AnimationBuilder` 和选择
-算法。脚本可调用 `UnityCostumeGenerator.Generate(config, selectedOutfits)`；完整 Avatar
-批处理可调用 `Generator.Execute(outfits, indexMap, defaultOutfit, false)`。
+主面板仅提供完整 Avatar 生成；缺少 SDK/MA 时提示安装依赖。普通 Controller 面板和输出
+选项已移除，已有输出资产保留。`Scanner`、`OutfitData`、`AnimationBuilder` 等核心算法
+独立于 SDK，继续供 Avatar 生成和原生测试使用。批处理可调用
+`Generator.Execute(outfits, indexMap, defaultOutfit, false)`。
 
 ## Parts 与 Mixer
 
@@ -42,8 +42,8 @@ metadata 形成的随机引用通过本包的
 临时分组可保存为 `ACCPartGroupMarker`。材质规则由 `ACCVariantMaterialOverride`
 提供，全局替换与 Renderer 槽位替换共同参与动画和图标，精准槽位规则优先。
 
-Animator 使用 Float 读取离散选择，Avatar 表达式使用 Bool、Int或压缩位。普通 Unity
-脚本使用 SetFloat；Avatar 的离散输入由平台参数服务提供。每个 ACC 实例使用独立前缀。
+Animator 使用 Float 读取离散选择，Avatar 表达式使用 Bool、Int或压缩位；
+Avatar 的离散输入由平台参数服务提供。每个 ACC 实例使用独立前缀。
 
 ## 参数压缩与预算
 
@@ -57,7 +57,7 @@ Animator 使用 Float 读取离散选择，Avatar 表达式使用 Bool、Int或�
 
 ## 生成资产和 Undo
 
-两种入口都在场景、根身份与前缀命名空间下创建新的 `Build[ n]`。Avatar Build 同时包含
+每次生成在场景、根身份与前缀命名空间下创建新的 `Build[ n]`，同时包含
 Controller、Animations 和本次自动图标。旧 Build 持续保留，因此重新生成后的场景 Undo
 可恢复旧 Controller、菜单、参数与图标引用，Redo 再切回新结果。
 

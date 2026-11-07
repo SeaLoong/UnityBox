@@ -1,0 +1,5756 @@
+{
+  "scope": "viseme",
+  "types": [
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "guid": "0cdaf0bd855ea04c79a51618845ae28d",
+      "scriptPath": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Runtime/VisemeBlendshapeOverrideComponent.cs",
+      "generatedMetaSha256": "e5411cc8ef5544f929b14eaeb299c71553c1a2b7f61ff920f676be86ab59584b"
+    }
+  ],
+  "files": [
+    {
+      "path": "Assets/Scenes/Avatar.unity",
+      "sha256": "8e5a14c83e936a3eae33fbe76dc7ef7e3c93c31c051dde7bf6d2ba1738240d2c",
+      "guid": "dc2be90b0f86ef2bda0d5e9184224871",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity"
+    },
+    {
+      "path": "Assets/Scenes/Avatar.unity.meta",
+      "sha256": "cdde20234543410d87ce9babfc3c1d7cde6b6db93b9389cb310b62e703998c94",
+      "guid": "dc2be90b0f86ef2bda0d5e9184224871",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity.meta"
+    },
+    {
+      "path": "Assets/OldCostumes/Base.prefab",
+      "sha256": "1ac98741c3fbbfbc710e7aca56fddf98c232620ef58f1a4c939735a08e57af7d",
+      "guid": "ef659808d16924d5c886128af5f6d1ca",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab"
+    },
+    {
+      "path": "Assets/OldCostumes/Base.prefab.meta",
+      "sha256": "b79d5853aeb55eb1fb39fb4a427cdc628a7f116317cc58e975a2a0aa6346f0b6",
+      "guid": "ef659808d16924d5c886128af5f6d1ca",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "sha256": "95f99f7ab71b205896671cc3b1d6eca32001dde2301c8ee09a4568613cf0857c",
+      "guid": "fd12583f4f8219b8a8fe9c43b89de67e",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta",
+      "sha256": "0df10af4eeecf625ec45f2cc65c2c98ecb19da14a7f476b81bb5ab9d384b1636",
+      "guid": "fd12583f4f8219b8a8fe9c43b89de67e",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58",
+      "guid": "5f2fa648b63ef4c859c8fc18bb51f0f0",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "sha256": "4bf4cbcbea813c0cb1790ceae05f4e84ca876c0c874bc33380064403c3269080",
+      "guid": "5f2fa648b63ef4c859c8fc18bb51f0f0",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset.meta"
+    },
+    {
+      "path": "Assets/Containers/Nested.prefab",
+      "sha256": "841d6cd4f1211ae7d1d9c3a8ee9390a609a053d14bd75216db1fb3365c4625cb",
+      "guid": "f5a89ee9adf60d791a15bcb647ed5dbe",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab"
+    },
+    {
+      "path": "Assets/Containers/Nested.prefab.meta",
+      "sha256": "ca34b048d0db1551ac8e9f02cdaa2a63ffc43f11e9ec21a4a2323f4bcc769b37",
+      "guid": "f5a89ee9adf60d791a15bcb647ed5dbe",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8",
+      "guid": "e54640b436c6ff45eb13f3f79f3671ce",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "sha256": "8d933ed60662185e5a7637286790865f0aba858582893440f042373949a90271",
+      "guid": "e54640b436c6ff45eb13f3f79f3671ce",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30",
+      "guid": "218f3fcb61efc074ca3f4b906657708e",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "sha256": "f61fce490b6e41628b698c12fa12c4a752c30220222fab86fb8fad6e3d4836bc",
+      "guid": "218f3fcb61efc074ca3f4b906657708e",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+      "guid": "67902807d0e1b278b95ef3c91c85c7c3",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "sha256": "3ebba00e8a05aaef2a50242e6db69c73c8eb78cfbfbedc69f21efb8cc2d0923d",
+      "guid": "67902807d0e1b278b95ef3c91c85c7c3",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d",
+      "guid": "968ec55dbf03041f989985a02f6e4546",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "sha256": "4d0d8cf8691c3f4f1a816f6e837de6942af53cba7088302898fa267d450cc948",
+      "guid": "968ec55dbf03041f989985a02f6e4546",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "sha256": "b520f07f3aa793297517e59ac9cf8c867aa1597116ba342ff8b47afe849ce81b",
+      "guid": "e620697110a57d3278278d3e7939bc57",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "sha256": "0f3b2b54c918edf100b9c8790af17da933953c217fd2172f627ab45dc60b521a",
+      "guid": "e620697110a57d3278278d3e7939bc57",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller.meta"
+    },
+    {
+      "path": "Assets/OtherCollection/Variant.prefab",
+      "sha256": "c7dad2bfdb90e15f440853df61795861c6aa67719c649d372671b254e24c4bee",
+      "guid": "4123c67700f0b5393a4b5e5770c543c2",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab"
+    },
+    {
+      "path": "Assets/OtherCollection/Variant.prefab.meta",
+      "sha256": "a2d5cacab9ffeb1a4d74c71c3d0560b0b6f81d7a545eca3150187d989343943d",
+      "guid": "4123c67700f0b5393a4b5e5770c543c2",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+      "guid": "18f25dc506981d38cb3b5a0e9b541ce3",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "sha256": "2f992ea0196be067be8303f8e31e82435dff62409915d9c85b0193364d288db4",
+      "guid": "18f25dc506981d38cb3b5a0e9b541ce3",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav.meta"
+    }
+  ],
+  "components": [
+    {
+      "asset": "Assets/OldCostumes/Base.prefab",
+      "owner": "Base",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-1-ef659808d16924d5c886128af5f6d1ca-2938843381393141779-0",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-ef659808d16924d5c886128af5f6d1ca-4142425234521224780-0"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "42"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OldCostumes/Base.prefab",
+      "owner": "Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-ef659808d16924d5c886128af5f6d1ca-4232377448617844094-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-ef659808d16924d5c886128af5f6d1ca-2938843381393141779-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OtherCollection/Variant.prefab",
+      "owner": "Variant",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-1-4123c67700f0b5393a4b5e5770c543c2-737187168473085108-0",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4123c67700f0b5393a4b5e5770c543c2-1985810785550611179-0"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "31"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OtherCollection/Variant.prefab",
+      "owner": "Variant",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-4123c67700f0b5393a4b5e5770c543c2-1751813889556732377-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4123c67700f0b5393a4b5e5770c543c2-737187168473085108-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Containers/Nested.prefab",
+      "owner": "Nested/Base",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-1-f5a89ee9adf60d791a15bcb647ed5dbe-1017644666226880870-0",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-f5a89ee9adf60d791a15bcb647ed5dbe-2282025246937872185-0"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "42"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Containers/Nested.prefab",
+      "owner": "Nested/Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-f5a89ee9adf60d791a15bcb647ed5dbe-2047964442104798219-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-f5a89ee9adf60d791a15bcb647ed5dbe-1017644666226880870-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Plain avatar",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-479452799-0",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-721516193-0"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "42"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Plain avatar",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-479452798-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-479452799-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Prefab instance",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-2938843381393141779-865513943",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-4142425234521224780-865513943"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "27"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Prefab instance",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-4232377448617844094-865513943",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-2938843381393141779-865513943"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Variant",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-737187168473085108-1136487308",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-1985810785550611179-1136487308"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "31"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Variant",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-1751813889556732377-1136487308",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-737187168473085108-1136487308"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Nested/Base",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-1017644666226880870-802365136",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-2282025246937872185-802365136"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "42"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0.2"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "0.8"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": "Legacy PP"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[0]",
+          "kind": "Integer",
+          "value": "76"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[1]",
+          "kind": "Integer",
+          "value": "101"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[2]",
+          "kind": "Integer",
+          "value": "103"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[3]",
+          "kind": "Integer",
+          "value": "97"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[4]",
+          "kind": "Integer",
+          "value": "99"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[5]",
+          "kind": "Integer",
+          "value": "121"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[6]",
+          "kind": "Integer",
+          "value": "32"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[7]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.data[8]",
+          "kind": "Integer",
+          "value": "80"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "37"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "0.7"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Nested/Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-2047964442104798219-802365136",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-dc2be90b0f86ef2bda0d5e9184224871-1017644666226880870-802365136"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "owner": "Duplicate VisemeBlendshapeOverride",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "globalId": "GlobalObjectId_V1-2-fd12583f4f8219b8a8fe9c43b89de67e-802365137-0",
+      "properties": [
+        {
+          "path": "targetRenderer",
+          "kind": "ObjectReference",
+          "value": "null"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "globalWeight",
+          "kind": "Float",
+          "value": "13.5"
+        },
+        {
+          "path": "voiceModulationMode",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.size",
+          "kind": "ArraySize",
+          "value": "15"
+        },
+        {
+          "path": "bindings.Array.data[0].viseme",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[0].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[0].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[0].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].viseme",
+          "kind": "Enum",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[1].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[1].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[1].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[1].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[2].viseme",
+          "kind": "Enum",
+          "value": "2"
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[2].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[2].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[2].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[3].viseme",
+          "kind": "Enum",
+          "value": "3"
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[3].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[3].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[3].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[4].viseme",
+          "kind": "Enum",
+          "value": "4"
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[4].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[4].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[4].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[5].viseme",
+          "kind": "Enum",
+          "value": "5"
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[5].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[5].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[5].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[6].viseme",
+          "kind": "Enum",
+          "value": "6"
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[6].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[6].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[6].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[7].viseme",
+          "kind": "Enum",
+          "value": "7"
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[7].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[7].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[7].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[8].viseme",
+          "kind": "Enum",
+          "value": "8"
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[8].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[8].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[8].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[9].viseme",
+          "kind": "Enum",
+          "value": "9"
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[9].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[9].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[9].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[10].viseme",
+          "kind": "Enum",
+          "value": "10"
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[10].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[10].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[10].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[11].viseme",
+          "kind": "Enum",
+          "value": "11"
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[11].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[11].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[11].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[12].viseme",
+          "kind": "Enum",
+          "value": "12"
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[12].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[12].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[12].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[13].viseme",
+          "kind": "Enum",
+          "value": "13"
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[13].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[13].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[13].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        },
+        {
+          "path": "bindings.Array.data[14].viseme",
+          "kind": "Enum",
+          "value": "14"
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName",
+          "kind": "String",
+          "value": ""
+        },
+        {
+          "path": "bindings.Array.data[14].blendshapeName.Array.size",
+          "kind": "ArraySize",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].useCustomSettings",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "bindings.Array.data[14].weight",
+          "kind": "Float",
+          "value": "100"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMode",
+          "kind": "Enum",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMin",
+          "kind": "Float",
+          "value": "0"
+        },
+        {
+          "path": "bindings.Array.data[14].voiceMax",
+          "kind": "Float",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "duplicates": [
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "type": "UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent",
+      "currentBytes": ".unitybox-component-upgrade/duplicate-before-apply-VisemeBlendshapeOverride.unity",
+      "newGlobalId": "GlobalObjectId_V1-2-fd12583f4f8219b8a8fe9c43b89de67e-802365139-0",
+      "markerField": "globalWeight",
+      "markerValue": "58.5"
+    }
+  ]
+}

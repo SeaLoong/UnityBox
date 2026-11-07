@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.3 技术参考
+# Avatar Security System 0.9.4 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -91,13 +91,13 @@ VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立�
 
 ## 导入与源配置边界
 
-0.9.3 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、场景重载、
+0.9.4 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
 旧修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
 固定 GUID `1c51e6a139920bb4ca12700dc82627ff`、Runtime 程序集、字段名及类型继续保持。
 0.7.24 未携带 metadata 形成的随机身份在正常打开/导入时原样保留；显式引用迁移由
-本包 Unity-only Editor 程序集内的恢复窗口处理，与 Runtime 和构建回调分开。
+本包 Unity-only Editor 程序集内的显式升级命令处理，与 Runtime 和构建回调分开。
 
 源 `ASSComponent` 的已存参数直接保留。`ASSConfigData.FromComponent` 与 `Clone` 生成
 独立配置副本，再为生成图规范化时间。普通 Player/Avatar 构建仍通过原入口处理构建副本，
@@ -111,18 +111,21 @@ ASS 本身不创建旧迁移目录、不读取这些记录改写文件，也不�
 历史自动迁移的复现数据保留在[0.9.0 归档](../../../../Docs/Verification/ASSUpgrade/README.md)，
 用于追溯该版本的脚本替换、导入和重载行为。当前版本的检查以源资源保全为目标。
 
-## 包内手动引用恢复
+## Tools 全项目升级
 
-Project 资源菜单 `Assets/UnityBox/Avatar Security System/Repair Component References`
-打开 ASS 自带的恢复窗口，并带入当前选择。窗口与引擎位于本包现有 Unity-only Editor
-程序集中，只处理 ASSComponent。正常插件更新即交付该功能，原 Tools 插件窗口入口保留。
+`Tools/UnityBox/ASS/Upgrade Component References` 点击后仅确认一次，随后
+`UpgradeProjectAssets` 扫描整个 Assets 并自动匹配所属的 ASSComponent，先备份再重连，
+输出批次报告和 Console 汇总。普通配置仍在组件 Inspector，没有单独恢复窗口。
 
-用户选定资源后，一次 **Migrate Selected Assets** 处理整批可确定引用；同旧 GUID 的歧义
-只选择一次目标类型，无逐项确认。写入前检查源 SHA、目标脚本并备份本批全部原字节，
-只替换脚本 GUID，保留 fileID、字段、BOM/换行与项目 metadata。
-已打开 Scene、PrefabStage 及它们的依赖（包括未保存的新引用）报告跳过，不保存、关闭或重载。
-备份位于 `UserSettings/UnityBox/AvatarSecuritySystem/ComponentReferenceMigration/<id>/Assets/...`。
-完整操作与其它插件入口见[组件引用说明](../../../../Docs/ComponentReferences.md)。
+该高层流程必要时暂时卸载干净已保存 Scene/干净 Prefab Stage，完成后恢复编辑场景；
+dirty、未命名场景及它们的依赖保持并跳过，不自动保存。启动、导入与移动不触发升级。
+底层 `Scan(paths)` / `Apply(plan)` 仍保留脚本和隔离测试用途，按传入范围工作并保留打开
+资源保护；它们不是普通用户所需的选择资源界面。
+
+源 SHA、目标身份核对和本批全部备份完成后才替换失效 GUID，保留 fileID、其它字段、
+BOM/换行与项目 metadata。备份位于
+`UserSettings/UnityBox/AvatarSecuritySystem/ComponentReferenceMigration/<id>/Assets/...`。
+其它插件的 Tools 命令和匹配规则见[组件引用说明](../../../../Docs/ComponentReferences.md)。
 
 ## 验证与界面
 
@@ -137,4 +140,4 @@ SDK/NDMF 用例检查实际 Behaviour、源资产隔离与最终提交；混淆�
 Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语言按 Unity 语言选择。
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
-0.9.3 的组件引用和源配置范围单列于当前组件引用记录。历史身体锁生成样本通过旧提交追溯。
+0.9.4 的组件引用和源配置范围单列于当前组件引用记录。历史身体锁生成样本通过旧提交追溯。

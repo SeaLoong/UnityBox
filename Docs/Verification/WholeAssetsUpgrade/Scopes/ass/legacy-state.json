@@ -1,0 +1,1436 @@
+{
+  "scope": "ass",
+  "types": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "guid": "7cae09ca94feaa4b3be30bf1e5a2604d",
+      "scriptPath": "Packages/top.sealoong.unitybox.avatar-security-system/Runtime/Component.cs",
+      "generatedMetaSha256": "4d50022929f875a39fdafcc09efa40fe471a60b97240a05c3d77d61f0f0cba49"
+    }
+  ],
+  "files": [
+    {
+      "path": "Assets/Scenes/Avatar.unity",
+      "sha256": "44e736827af288caa8763ac305bf257411dd31b5128406bd1d4e571a515744c7",
+      "guid": "1b5601227a5cea4bba6b8f73fc13e1d5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity"
+    },
+    {
+      "path": "Assets/Scenes/Avatar.unity.meta",
+      "sha256": "865ea5feb55dbd1eb19a7c276a6f9b1a508664df95f3070a717a9a4c2a0ae8d2",
+      "guid": "1b5601227a5cea4bba6b8f73fc13e1d5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity.meta"
+    },
+    {
+      "path": "Assets/OldCostumes/Base.prefab",
+      "sha256": "c4a2a582d2fe39be78f878abfaac9f223d848704c6e78d39b50cdd27f9b9934c",
+      "guid": "077672138c06753478bc233e56a6e001",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab"
+    },
+    {
+      "path": "Assets/OldCostumes/Base.prefab.meta",
+      "sha256": "8421cba332ef502e70d9a385bc007f67637f45c72e9803ca7f9b6fd9c361304b",
+      "guid": "077672138c06753478bc233e56a6e001",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "sha256": "2d3eb854b74f82f189e1eba3221a03e42cdfc15d7fbb8d6117e4a717afcb6021",
+      "guid": "aad3265ccfcf62aaa8e051f2a69a3151",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+      "sha256": "f0e95bb92dc0af8aeb4951766170d6db8408bc41fb6786332e92a1d9a13b29c4",
+      "guid": "aad3265ccfcf62aaa8e051f2a69a3151",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+      "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58",
+      "guid": "9812c89ce576a2952aa83c4505e36ada",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+      "sha256": "de1e1aa92245cd7eb292fc1ad8b23213fa6b4b21b0902c722c9a265b57f3717a",
+      "guid": "9812c89ce576a2952aa83c4505e36ada",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset.meta"
+    },
+    {
+      "path": "Assets/Containers/Nested.prefab",
+      "sha256": "486a74212f721c53e0bacbd08e1c9306a97240475740d5d03f5567d89626b080",
+      "guid": "ba527fe4d472c5c31911583d07efc147",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab"
+    },
+    {
+      "path": "Assets/Containers/Nested.prefab.meta",
+      "sha256": "96381932601380ff359e05b36c336ee7835f71b691da40008791d47cfe757808",
+      "guid": "ba527fe4d472c5c31911583d07efc147",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+      "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8",
+      "guid": "f30da56f6e9c5ce67b94f7bf7bc95de5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+      "sha256": "04f4e4f25cfb5d13df2fde431497532a3871a502169b922a5a0362df99fcfc61",
+      "guid": "f30da56f6e9c5ce67b94f7bf7bc95de5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+      "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30",
+      "guid": "78be13654b126b3b7b71c029c44beec5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+      "sha256": "00d7857fbb61c734629d12cc9c4a32956b219daf95575519e95f7ea0d2c4d7c1",
+      "guid": "78be13654b126b3b7b71c029c44beec5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+      "guid": "4d1c39550dc405e7b86b4f9c0528006f",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+      "sha256": "9b07b1e1f8e342435e99e527c8c9937c06d5f2a07079d8d7a262579cded752a8",
+      "guid": "4d1c39550dc405e7b86b4f9c0528006f",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.anim",
+      "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d",
+      "guid": "5688a2381cdaf478e9b8e5302a760fd4",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+      "sha256": "c692db5f8c32d0382be142d823c1d99dd338bd21d882d1f8394ccd5ebb193d2e",
+      "guid": "5688a2381cdaf478e9b8e5302a760fd4",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.controller",
+      "sha256": "2458f7bf60f4af5158dbb136159161f89bb5d55bda7ff693da5967c0d89d246f",
+      "guid": "416a59d1d4a37df1fab730d6543ac99c",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+      "sha256": "12cbc2b561f7bd3ba6fed5dec20e3e5c3cc2119ed3dedb5c0129142651f9ce8c",
+      "guid": "416a59d1d4a37df1fab730d6543ac99c",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller.meta"
+    },
+    {
+      "path": "Assets/OtherCollection/Variant.prefab",
+      "sha256": "5fabcb7634d980ec6c361b941075583a93af39a0731e75543c42cdee83794f32",
+      "guid": "3f757c78b5b02f419a7a73096de28810",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab"
+    },
+    {
+      "path": "Assets/OtherCollection/Variant.prefab.meta",
+      "sha256": "af3afce9ff2be76d81a171fef5bf97e37c3f5ae81ce1d56e20744063c16bdc8e",
+      "guid": "3f757c78b5b02f419a7a73096de28810",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab.meta"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+      "guid": "520665d339d9c91c58d26bda1e8265f5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav"
+    },
+    {
+      "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+      "sha256": "c9497abe851bc88e5bc96498d6a7f973322aa0106f3d3a0200a7cfa84e14645b",
+      "guid": "520665d339d9c91c58d26bda1e8265f5",
+      "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav.meta"
+    }
+  ],
+  "components": [
+    {
+      "asset": "Assets/OldCostumes/Base.prefab",
+      "owner": "Base",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-1-077672138c06753478bc233e56a6e001-1550414618175054310-0",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "17.5"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OldCostumes/Base.prefab",
+      "owner": "Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-077672138c06753478bc233e56a6e001-445802569100406476-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-077672138c06753478bc233e56a6e001-1550414618175054310-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OtherCollection/Variant.prefab",
+      "owner": "Variant",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-1-3f757c78b5b02f419a7a73096de28810-226010869930204632-0",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "21"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/OtherCollection/Variant.prefab",
+      "owner": "Variant",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-3f757c78b5b02f419a7a73096de28810-1191502552392995570-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-3f757c78b5b02f419a7a73096de28810-226010869930204632-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Containers/Nested.prefab",
+      "owner": "Nested/Base",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-1-ba527fe4d472c5c31911583d07efc147-6987385501927509703-0",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "17.5"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Containers/Nested.prefab",
+      "owner": "Nested/Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-1-ba527fe4d472c5c31911583d07efc147-8310211024549609965-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-ba527fe4d472c5c31911583d07efc147-6987385501927509703-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Plain avatar",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-794510284-0",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "17.5"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Plain avatar",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-794510283-0",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-794510284-0"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Prefab instance",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-1550414618175054310-1582808074",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "24"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Prefab instance",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-445802569100406476-1582808074",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-1550414618175054310-1582808074"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Variant",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-226010869930204632-1537914597",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "21"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Variant",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-1191502552392995570-1537914597",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-226010869930204632-1537914597"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Nested/Base",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-6987385501927509703-1766099594",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "5"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "7"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "0"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "6"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[4]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "17.5"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "1.9"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.22"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.44"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "2.8"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-520665d339d9c91c58d26bda1e8265f5-8300000-0"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-1-4d1c39550dc405e7b86b4f9c0528006f-8300000-0"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/Scenes/Avatar.unity",
+      "owner": "Nested/Base",
+      "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+      "globalId": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-8310211024549609965-1766099594",
+      "properties": [
+        {
+          "path": "references.Array.size",
+          "kind": "ArraySize",
+          "value": "1"
+        },
+        {
+          "path": "references.Array.data[0]",
+          "kind": "ObjectReference",
+          "value": "GlobalObjectId_V1-2-1b5601227a5cea4bba6b8f73fc13e1d5-6987385501927509703-1766099594"
+        }
+      ]
+    },
+    {
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "owner": "Duplicate AvatarSecuritySystem",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "globalId": "GlobalObjectId_V1-2-aad3265ccfcf62aaa8e051f2a69a3151-1955835287-0",
+      "properties": [
+        {
+          "path": "uiLanguage",
+          "kind": "Enum",
+          "value": "43"
+        },
+        {
+          "path": "gesturePassword.Array.size",
+          "kind": "ArraySize",
+          "value": "4"
+        },
+        {
+          "path": "gesturePassword.Array.data[0]",
+          "kind": "Integer",
+          "value": "1"
+        },
+        {
+          "path": "gesturePassword.Array.data[1]",
+          "kind": "Integer",
+          "value": "2"
+        },
+        {
+          "path": "gesturePassword.Array.data[2]",
+          "kind": "Integer",
+          "value": "3"
+        },
+        {
+          "path": "gesturePassword.Array.data[3]",
+          "kind": "Integer",
+          "value": "4"
+        },
+        {
+          "path": "useRightHand",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "countdownDuration",
+          "kind": "Float",
+          "value": "13.5"
+        },
+        {
+          "path": "warningThreshold",
+          "kind": "Float",
+          "value": "6.75"
+        },
+        {
+          "path": "gestureHoldTime",
+          "kind": "Float",
+          "value": "0.15"
+        },
+        {
+          "path": "gestureErrorTolerance",
+          "kind": "Float",
+          "value": "0.3"
+        },
+        {
+          "path": "gestureMaxHoldTime",
+          "kind": "Float",
+          "value": "3"
+        },
+        {
+          "path": "warningBeep",
+          "kind": "ObjectReference",
+          "value": "null"
+        },
+        {
+          "path": "successSound",
+          "kind": "ObjectReference",
+          "value": "null"
+        },
+        {
+          "path": "enabledInPlaymode",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableRootChildren",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "disableOverlay",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableWarningSound",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "defaultEnableDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "lightweightDefense",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "disableObfuscation",
+          "kind": "Boolean",
+          "value": "false"
+        },
+        {
+          "path": "enablePlayableLayerObfuscation",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyLayers",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "enableDecoyStates",
+          "kind": "Boolean",
+          "value": "true"
+        },
+        {
+          "path": "writeDefaultsMode",
+          "kind": "Enum",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "duplicates": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "type": "UnityBox.AvatarSecuritySystem.ASSComponent",
+      "currentBytes": ".unitybox-component-upgrade/duplicate-before-apply-AvatarSecuritySystem.unity",
+      "newGlobalId": "GlobalObjectId_V1-2-aad3265ccfcf62aaa8e051f2a69a3151-1955835289-0",
+      "markerField": "countdownDuration",
+      "markerValue": "58.5"
+    }
+  ]
+}

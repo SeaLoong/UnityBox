@@ -1,0 +1,32 @@
+{
+  "scope": "ass",
+  "passed": true,
+  "missing_before_upgrade": 7,
+  "repaired_components": 2,
+  "inspector_targets": 4,
+  "batches": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "repairs": 2,
+      "confirmations": 1,
+      "cancellation_checks": 1
+    }
+  ],
+  "comparison_passes": [
+    {
+      "name": "after owner batches",
+      "components": 14,
+      "properties": 203,
+      "objectReferences": 21,
+      "duplicateCurrentComponents": 1
+    },
+    {
+      "name": "after Inspector OnEnable/deferred callbacks",
+      "components": 14,
+      "properties": 203,
+      "objectReferences": 21,
+      "duplicateCurrentComponents": 0
+    }
+  ],
+  "native_result": "migrated.json"
+}

@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.5.2] - 2026-11-07
+## [0.5.3] - 2026-11-08
+
+### Changed
+
+- 组件升级改为 `Tools/UnityBox/Advanced Costume Controller/Upgrade Component References`：一次确认后自动扫描整个 Assets、备份并修复能确定身份的三种 ACC 标记，Console 显示报告；无需选择资源、打开恢复面板或逐 GUID 指定类型。
+- Part Group 通过完整 schema、有效 Mode 与已核实的 Outfit/Prefab 来源识别，再关联同旧 GUID 的引用；未知及其它类型保持原状，已识别类型的重复组件保留并报告。
+- 显式升级针对相关资源暂时卸载干净且已保存的 Scene/Prefab Stage，完成后恢复；dirty、未命名场景与它们的依赖保留并跳过，不自动保存。
+- 主面板统一为 `Tools/UnityBox/Advanced Costume Controller/Open`，一次完成 Avatar 动画、菜单、参数和 FX 安装；缺少 SDK/MA 时提示安装依赖。
+- 移除普通 Controller 生成面板、Unity Assets 菜单与输出选项。保留底层动画算法、原 Avatar 配置和已有生成资产。
+
+## [0.5.2] - 2026-11-07（历史发布）
 
 ### Component references
 

@@ -2,17 +2,17 @@
 
 Unity Animator 的分析、离线转换、图清理和构建优化工具。普通 Unity 项目直接使用核心；VRChat SDK、NDMF 和 Modular Avatar 集成按项目需要安装。
 
-当前版本 **0.3.2**。
+当前版本 **0.3.3**。
 
 ## 组件引用与配置副本
 
 `UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent` 的类名、Runtime 程序集和已发布字段
 保持不变，发行脚本 GUID 为 `a157d3d35699dd84abde9e5412bd7017`。早期标为 0.2 的来源是
 开发快照，没有对应的公开旧 VPM ZIP；0.3.0 是带固定身份的公开发布。
-本包自带开发快照旧引用的手动恢复功能。正常更新后，在 Project 选择资源，打开
-`Assets/UnityBox/Animator Optimizer/Repair Component References`。窗口带入当前选择，
-只处理 AnimatorOptimizerComponent；点击 **Migrate Selected Assets** 一次执行整批，
-无逐项确认。范围、备份与跳过规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
+本包自带开发快照旧引用的升级命令。点击
+`Tools/UnityBox/Animator Optimizer/Upgrade Component References`，确认一次后扫描整个 Assets，
+自动匹配本插件配置、备份原文件并报告结果。无需选择资源、单独恢复面板或逐 GUID 映射。
+窗口、引用范围、场景状态与备份规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
 
 打开项目或 Inspector 时保留源 `layerIndices`、字符串及预算字段。配置捕获和转换 Options
 在独立副本中做字符串、范围及层索引规范化；实际用户改选层或编辑字段仍通过 Undo 提交。
@@ -21,7 +21,7 @@ Unity Animator 的分析、离线转换、图清理和构建优化工具。普�
 
 | 功能 | 依赖 | 入口 |
 | --- | --- | --- |
-| 分析、离线保存副本、原地转换、AAP 运算 API | Unity 2022.3 | `Tools/UnityBox/Animator Optimizer` |
+| 分析、离线保存副本、原地转换、AAP 运算 API | Unity 2022.3 | `Tools/UnityBox/Animator Optimizer/Open` |
 | Avatar 构建、Descriptor/LayerControl 适配 | SDK Base/Avatars ≥3.7 | Avatar 根对象的 Animator Optimizer 组件 |
 | 虚拟图构建、手动选层、AAP | 上述 SDK + NDMF ≥1.11 | NDMF Resolving / Optimizing / PlatformFinish |
 | MMD Behaviour 兼容测试 | MA 1.18、NDMF 1.11、SDK ≥3.7.3 | 可选 MA 测试程序集 |
@@ -144,9 +144,9 @@ python3 scripts/unity/test_project.py run \
 
 程序集按 Runtime、核心 Editor、可选 VRC、可选 NDMF 分离。测试对应核心、VRC、NDMF、MA 四个装配；仅 Editor+UTF 启用的 MonoScript fixture 注册程序集提供真实 Behaviour，不进入 Player。
 
-## 0.3.2 组件恢复
+## 0.3.3 组件升级
 
-恢复功能随本包现有 Unity-only Editor 程序集交付；Project 入口只处理 AO 自有配置，
-四包共同安装时各自窗口、类型范围和备份目录保持独立。
+主面板从 `Tools/UnityBox/Animator Optimizer/Open` 打开，组件升级为同组菜单命令。
+一次确认处理整个 Assets 中已确认属于 AO 的失效引用；原类型、字段与发行 GUID 保持。
+干净且已保存的编辑场景可由升级流程暂时卸载并恢复，dirty/untitled 及依赖保留并跳过。
 批次备份为 `UserSettings/UnityBox/AnimatorOptimizer/ComponentReferenceMigration/<id>/Assets/...`。
-源配置快照、手动批量与编辑依赖保护见[组件引用说明](../../../Docs/ComponentReferences.md)。

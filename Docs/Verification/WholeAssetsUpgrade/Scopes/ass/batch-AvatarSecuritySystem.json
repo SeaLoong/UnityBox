@@ -1,0 +1,38 @@
+{
+    "createdUtc": "2026-11-07T17:28:31.5344680Z",
+    "files": [
+        {
+            "path": "Assets/OldCostumes/Base.prefab",
+            "beforeSha256": "c4a2a582d2fe39be78f878abfaac9f223d848704c6e78d39b50cdd27f9b9934c",
+            "afterSha256": "24cb200edfb7627214e624ce2669c64a6865a2a34d44493d8778eef63b25e200",
+            "components": [
+                {
+                    "fileId": "1550414618175054310",
+                    "oldGuid": "7cae09ca94feaa4b3be30bf1e5a2604d",
+                    "newGuid": "1c51e6a139920bb4ca12700dc82627ff",
+                    "type": "UnityBox.AvatarSecuritySystem.ASSComponent"
+                }
+            ]
+        },
+        {
+            "path": "Assets/Scenes/Avatar.unity",
+            "beforeSha256": "44e736827af288caa8763ac305bf257411dd31b5128406bd1d4e571a515744c7",
+            "afterSha256": "1512dd9bfdb1fe31e8cf32a006c55dbd5b3ef9fc279a80983c48c627d284847c",
+            "components": [
+                {
+                    "fileId": "794510284",
+                    "oldGuid": "7cae09ca94feaa4b3be30bf1e5a2604d",
+                    "newGuid": "1c51e6a139920bb4ca12700dc82627ff",
+                    "type": "UnityBox.AvatarSecuritySystem.ASSComponent"
+                }
+            ]
+        }
+    ],
+    "skipped": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+            "code": "component-duplicate",
+            "message": "fileID 1955835287, GUID 7cae09ca94feaa4b3be30bf1e5a2604d: This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        }
+    ]
+}

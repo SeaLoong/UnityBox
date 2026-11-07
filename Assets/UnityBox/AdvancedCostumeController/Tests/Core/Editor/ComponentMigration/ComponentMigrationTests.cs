@@ -87,13 +87,13 @@ namespace UnityBox.AdvancedCostumeController.ComponentMigration.Tests
         }
 
         [Test]
-        public void CatalogAndProjectMenuBelongToThisPlugin()
+        public void CatalogAndToolsMenuBelongToThisPlugin()
         {
             Assert.That(MigrationEngine.GetTargetTypes().Select(target => target.TypeName),
                 Is.EquivalentTo(new[] { "UnityBox.AdvancedCostumeController.ACCOutfitMarker", "UnityBox.AdvancedCostumeController.ACCPartGroupMarker", "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride" }));
-            var menu = (MenuItem)Attribute.GetCustomAttribute(typeof(ComponentReferenceMigrationWindow)
-                .GetMethod("Open", BindingFlags.Public | BindingFlags.Static), typeof(MenuItem));
-            Assert.That(menu.menuItem, Is.EqualTo("Assets/UnityBox/Advanced Costume Controller/Repair Component References"));
+            var menu = (MenuItem)Attribute.GetCustomAttribute(typeof(ComponentReferenceUpgrade)
+                .GetMethod("RunMenu", BindingFlags.Public | BindingFlags.Static), typeof(MenuItem));
+            Assert.That(menu.menuItem, Is.EqualTo("Tools/UnityBox/Advanced Costume Controller/Upgrade Component References"));
         }
 
         [Test]
@@ -121,6 +121,192 @@ namespace UnityBox.AdvancedCostumeController.ComponentMigration.Tests
 
 
         [Test]
+        public void WholeProjectUpgradeRestoresCleanSavedSceneAndKeepsUnrelatedDirtySceneInstances()
+        {
+            string path = Prefab();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            string scenePath = folder + "/CleanUpgradeScene.unity";
+            var previousScenes = EditorSceneManager.GetSceneManagerSetup();
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            try
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path), scene);
+                Assert.That(EditorSceneManager.SaveScene(scene, scenePath), Is.True);
+                byte[] savedScene = File.ReadAllBytes(scenePath);
+                byte[] savedMetadata = File.ReadAllBytes(scenePath + ".meta");
+                var dirty = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                var unsaved = new GameObject("Unrelated unsaved object");
+                SceneManager.MoveGameObjectToScene(unsaved, dirty);
+                unsaved.transform.localPosition = new Vector3(3, 6, 9);
+                EditorSceneManager.MarkSceneDirty(dirty);
+                int unsavedId = unsaved.GetInstanceID();
+                int dirtyHandle = dirty.handle;
+                SceneManager.SetActiveScene(scene);
+                Selection.activeObject = instance;
+                Assert.That(scene.isDirty, Is.False);
+
+                var result = MigrationEngine.UpgradeProjectAssets();
+
+                Assert.That(result.ChangedAssets, Does.Contain(path));
+                var restored = SceneManager.GetSceneByPath(scenePath);
+                Assert.That(restored.isLoaded, Is.True);
+                Assert.That(restored.isDirty, Is.False);
+                Assert.That(SceneManager.GetActiveScene().path, Is.EqualTo(scenePath));
+                var restoredInstance = restored.GetRootGameObjects().Single();
+                Assert.That(restoredInstance.GetComponent(PrimaryComponentType()), Is.Not.Null);
+                Assert.That(Selection.activeGameObject, Is.EqualTo(restoredInstance));
+                Assert.That(dirty.handle, Is.EqualTo(dirtyHandle));
+                Assert.That(dirty.isLoaded, Is.True);
+                Assert.That(dirty.isDirty, Is.True);
+                Assert.That(unsaved.GetInstanceID(), Is.EqualTo(unsavedId));
+                Assert.That(unsaved.transform.localPosition, Is.EqualTo(new Vector3(3, 6, 9)));
+                Assert.That(File.ReadAllBytes(scenePath), Is.EqualTo(savedScene));
+                Assert.That(File.ReadAllBytes(scenePath + ".meta"), Is.EqualTo(savedMetadata));
+            }
+            finally
+            {
+                Selection.objects = Array.Empty<Object>();
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                if (previousScenes.Length > 0 && previousScenes.All(item => !string.IsNullOrEmpty(item.path)))
+                    EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+            }
+        }
+
+        [Test]
+        public void WholeProjectUpgradeKeepsDirtySceneDependencyAndUnsavedSelectionUntouched()
+        {
+            string path = Prefab();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            byte[] original = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            var previousScenes = EditorSceneManager.GetSceneManagerSetup();
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            try
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path), scene);
+                instance.transform.localPosition = new Vector3(11, 12, 13);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
+                EditorSceneManager.MarkSceneDirty(scene);
+                Selection.activeObject = instance;
+                int id = instance.GetInstanceID();
+                int handle = scene.handle;
+
+                var result = MigrationEngine.UpgradeProjectAssets();
+
+                Assert.That(result.ChangedAssets, Does.Not.Contain(path));
+                Assert.That(scene.handle, Is.EqualTo(handle));
+                Assert.That(scene.isLoaded, Is.True);
+                Assert.That(scene.isDirty, Is.True);
+                Assert.That(instance.GetInstanceID(), Is.EqualTo(id));
+                Assert.That(instance.transform.localPosition, Is.EqualTo(new Vector3(11, 12, 13)));
+                Assert.That(Selection.activeGameObject, Is.EqualTo(instance));
+                Assert.That(File.ReadAllBytes(path), Is.EqualTo(original));
+                Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+                Assert.That(result.Issues.Any(issue => issue.AssetPath == path && issue.Code == "component-skipped"), Is.True);
+            }
+            finally
+            {
+                Selection.objects = Array.Empty<Object>();
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                if (previousScenes.Length > 0 && previousScenes.All(item => !string.IsNullOrEmpty(item.path)))
+                    EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+            }
+        }
+
+        [Test]
+        [Category("UnityBoxGraphics")]
+        public void WholeProjectUpgradeReopensCleanPrefabStageWithResolvedComponentAndSelection()
+        {
+            Assert.That(PrefabStageUtility.GetCurrentPrefabStage(), Is.Null);
+            string path = Prefab();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            var autoSave = typeof(PrefabStage).GetProperty("autoSave", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var clearDirtiness = typeof(PrefabStage).GetMethod("ClearDirtiness", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var stage = PrefabStageUtility.OpenPrefab(path);
+            bool previousAutoSave = (bool)autoSave.GetValue(stage);
+            autoSave.SetValue(stage, false);
+            try
+            {
+                Selection.activeObject = stage.prefabContentsRoot;
+                Assert.That(stage.scene.isDirty, Is.False);
+                var result = MigrationEngine.UpgradeProjectAssets();
+                var restored = PrefabStageUtility.GetCurrentPrefabStage();
+                Assert.That(result.ChangedAssets, Does.Contain(path));
+                Assert.That(restored, Is.Not.Null);
+                Assert.That(restored.assetPath, Is.EqualTo(path));
+                Assert.That(restored.scene.isDirty, Is.False);
+                Assert.That(restored.prefabContentsRoot.GetComponent(PrimaryComponentType()), Is.Not.Null);
+                Assert.That(Selection.activeGameObject, Is.EqualTo(restored.prefabContentsRoot));
+                Assert.That((bool)autoSave.GetValue(restored), Is.False);
+                Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+            }
+            finally
+            {
+                var current = PrefabStageUtility.GetCurrentPrefabStage();
+                if (current != null)
+                {
+                    clearDirtiness.Invoke(current, null);
+                    autoSave.SetValue(current, previousAutoSave);
+                    StageUtility.GoToMainStage();
+                }
+                Selection.objects = Array.Empty<Object>();
+            }
+        }
+
+        private static Type PrimaryComponentType() => AppDomain.CurrentDomain.GetAssemblies()
+            .Select(assembly => assembly.GetType(Primary, false)).First(type => type != null);
+
+
+        [Test]
+        public void CancelledProjectUpgradeAsksOnceAndHasNoProjectSideEffects()
+        {
+            string path = Prefab();
+            byte[] source = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            string backupRoot = "UserSettings/UnityBox/AdvancedCostumeController/ComponentReferenceMigration";
+            string[] backups = Directory.Exists(backupRoot) ? Directory.GetFiles(backupRoot, "*", SearchOption.AllDirectories) : Array.Empty<string>();
+            int confirmations = 0;
+            var result = ComponentReferenceUpgrade.Execute(() => { confirmations++; return false; });
+            Assert.That(confirmations, Is.EqualTo(1));
+            Assert.That(result, Is.Null);
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(source));
+            Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+            Assert.That(Directory.Exists(backupRoot) ? Directory.GetFiles(backupRoot, "*", SearchOption.AllDirectories) : Array.Empty<string>(), Is.EqualTo(backups));
+        }
+
+        [Test]
+        public void WholeAssetsDiscoveryFindsUnselectedOwnerAssetsAndIgnoresBinaryAndUnrelatedYaml()
+        {
+            string path = Prefab();
+            byte[] source = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            string unrelated = folder + "/Unrelated.asset";
+            string binary = folder + "/Binary.asset";
+            byte[] foreign = Encoding.UTF8.GetBytes("%YAML 1.1\n--- !u!114 &100\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: 884dd8b64ee14fb4b3dce05230ebc86b, type: 3}\n  unrelatedSetting: 10\n");
+            File.WriteAllBytes(unrelated, foreign);
+            byte[] binaryBytes = new byte[] { 0, 255, 128, 200, 0, 1, 2, 3, 4 };
+            File.WriteAllBytes(binary, binaryBytes);
+            var previous = Selection.objects;
+            try
+            {
+                Selection.objects = Array.Empty<Object>();
+                var candidates = (List<string>)typeof(MigrationEngine).GetMethod("ProjectAssetCandidates", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+                Assert.That(candidates, Does.Contain(path));
+                Assert.That(candidates, Does.Not.Contain(unrelated));
+                Assert.That(candidates, Does.Not.Contain(binary));
+                var plan = (MigrationPlan)typeof(MigrationEngine).GetMethod("ScanProjectAssets", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { null });
+                Assert.That(plan.Entries.Any(entry => entry.AssetPath == path && entry.TypeName == Primary), Is.True);
+                Assert.That(plan.Entries.Any(entry => entry.AssetPath == unrelated || entry.AssetPath == binary), Is.False);
+                Assert.That(File.ReadAllBytes(path), Is.EqualTo(source));
+                Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+                Assert.That(File.ReadAllBytes(unrelated), Is.EqualTo(foreign));
+                Assert.That(File.ReadAllBytes(binary), Is.EqualTo(binaryBytes));
+            }
+            finally { Selection.objects = previous; }
+        }
+
+        [Test]
         public void GenericPartGroupFieldsRequireExplicitIdentity()
         {
             string path = Prefab("  Mode: 0\n  GroupName: Unrelated controls\n");
@@ -129,7 +315,7 @@ namespace UnityBox.AdvancedCostumeController.ComponentMigration.Tests
             Assert.That(plan.Entries.Single().GameObjectName, Is.EqualTo(Path.GetFileNameWithoutExtension(path)));
             Assert.That(plan.Entries.Single().SerializedFields, Is.EquivalentTo(new[] { "Mode", "GroupName" }));
             Assert.That(plan.Entries.Single().CandidateTypes, Does.Contain("ACC / Part Group Marker"));
-            Assert.That(plan.Entries.Single().Details, Does.Contain("需要一次 GUID 类型映射"));
+            Assert.That(plan.Entries.Single().Details, Does.Contain("缺少已证实的 ACC Outfit 上下文"));
             Assert.That(MigrationEngine.Apply(plan).ChangedAssets, Is.Empty);
             var mapped = MigrationEngine.Scan(new[] { path }, new Dictionary<string, string> { { Legacy, Part } });
             Assert.That(mapped.Entries.Single().TypeName, Is.EqualTo(Part));
@@ -145,6 +331,63 @@ namespace UnityBox.AdvancedCostumeController.ComponentMigration.Tests
             Assert.That(entry.TypeName, Is.EqualTo(Part));
         }
 
+        [Test]
+        public void VerifiedOutfitAncestorIdentifiesPartGuidAndRepairsItsOtherInstances()
+        {
+            string partGuid = "572c4e39b8c84fc59b6f3f3a99005766";
+            string context = OutfitWithPart(partGuid);
+            string other = Prefab("  Mode: 1\n  GroupName: Separate instance of proven script\n");
+            File.WriteAllText(other, File.ReadAllText(other).Replace(Legacy, partGuid));
+            byte[] original = File.ReadAllBytes(context);
+            byte[] otherOriginal = File.ReadAllBytes(other);
+            var plan = MigrationEngine.Scan(new[] { context, other });
+            Assert.That(plan.Entries.Count, Is.EqualTo(3));
+            Assert.That(plan.Entries.All(entry => entry.Status == MigrationStatus.Ready), Is.True);
+            Assert.That(plan.Entries.Count(entry => entry.TypeName == Part), Is.EqualTo(2));
+            var result = MigrationEngine.Apply(plan);
+            Assert.That(result.RepairedComponents, Is.EqualTo(3));
+            string outfitTarget = plan.TargetTypes.Single(target => target.TypeName == Primary).ScriptGuid;
+            string partTarget = plan.TargetTypes.Single(target => target.TypeName == Part).ScriptGuid;
+            Assert.That(File.ReadAllBytes(context), Is.EqualTo(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(original)
+                .Replace("guid: " + Legacy, "guid: " + outfitTarget).Replace("guid: " + partGuid, "guid: " + partTarget))));
+            Assert.That(File.ReadAllBytes(other), Is.EqualTo(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(otherOriginal)
+                .Replace("guid: " + partGuid, "guid: " + partTarget))));
+        }
+
+        [TestCase("  Mode: 2\n  GroupName: Invalid enum\n")]
+        [TestCase("  Mode: 0\n  GroupName: Generic extra schema\n  OtherFeature: 1\n")]
+        public void OutfitContextDoesNotPromoteUnsupportedPartSchemas(string fields)
+        {
+            string path = OutfitWithPart("572c4e39b8c84fc59b6f3f3a99005766");
+            string yaml = File.ReadAllText(path);
+            yaml = Regex.Replace(yaml, @"(?m)^  Mode: [^\n]*\n  GroupName: [^\n]*\n", fields);
+            File.WriteAllText(path, yaml);
+            var plan = MigrationEngine.Scan(new[] { path });
+            Assert.That(plan.Entries.Single(entry => entry.LegacyGuid == "572c4e39b8c84fc59b6f3f3a99005766").TypeName, Is.Empty);
+        }
+
+        private string OutfitWithPart(string partLegacy)
+        {
+            var types = MigrationEngine.GetTargetTypes().ToDictionary(target => target.TypeName);
+            Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(assembly => assembly.GetType(name, false)).First(type => type != null);
+            var root = new GameObject("Outfit parent");
+            SceneManager.MoveGameObjectToScene(root, preview);
+            root.AddComponent(Find(Primary));
+            var child = new GameObject("Part child");
+            child.transform.SetParent(root.transform, false);
+            var part = child.AddComponent(Find(Part));
+            var serialized = new SerializedObject(part);
+            serialized.FindProperty("Mode").intValue = 0;
+            serialized.FindProperty("GroupName").stringValue = "Clothes";
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            string path = folder + "/Context_" + Guid.NewGuid().ToString("N") + ".prefab";
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            string yaml = File.ReadAllText(path).Replace("guid: " + types[Primary].ScriptGuid, "guid: " + Legacy)
+                .Replace("guid: " + types[Part].ScriptGuid, "guid: " + partLegacy);
+            File.WriteAllText(path, yaml);
+            return path;
+        }
 
         [Test]
         public void ForeignClassIdentifiersRemainUnchangedEvenWithMatchingFieldsAndOverrides()
@@ -313,6 +556,9 @@ namespace UnityBox.AdvancedCostumeController.ComponentMigration.Tests
                 Assert.That(result.ChangedAssets, Is.Empty);
                 Assert.That(result.BackupDirectory, Is.Empty);
                 Assert.That(result.Issues.Any(issue => issue.AssetPath == nestedPath && issue.Code == "asset-open"), Is.True);
+                var wholeProject = MigrationEngine.UpgradeProjectAssets();
+                Assert.That(wholeProject.ChangedAssets, Does.Not.Contain(nestedPath));
+                Assert.That(PrefabStageUtility.GetCurrentPrefabStage(), Is.SameAs(stage));
                 Assert.That(stage.prefabContentsRoot.GetInstanceID(), Is.EqualTo(rootId));
                 Assert.That(nested.GetInstanceID(), Is.EqualTo(nestedId));
                 Assert.That(nested.transform.localPosition, Is.EqualTo(new Vector3(7, 8, 9)));

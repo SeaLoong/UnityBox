@@ -2,12 +2,12 @@
 
 八个插件已统一在 `master` 维护；优化器与其余插件使用同一个 checkout 准备隔离测试工程。本页记录优化器的实现、输入契约和真实运行流程。
 
-## 0.3.2 源配置与组件身份
+## 0.3.3 源配置与组件身份
 
 AnimatorOptimizerComponent 保留 Runtime 类名、程序集、已发布字段与固定 GUID。
 0.2 是早期开发快照，未发布公开旧 ZIP；其随机 GUID 可通过
-本包内 `Assets/UnityBox/Animator Optimizer/Repair Component References` 手动批量处理，
-窗口带入 Project 选择，只处理 AO 配置。完整范围与备份见[组件引用说明](ComponentReferences.md)。
+本包内 `Tools/UnityBox/Animator Optimizer/Upgrade Component References` 手动批量处理，
+一次确认后自动处理整个 Assets 的 AO 配置。完整范围与备份见[组件引用说明](ComponentReferences.md)。
 
 移除加载时对源层索引、字符串和预算的纠正。ConfigData 与 Options 建立独立副本再
 规范化，原组件和调用方输入保持；Inspector 只有用户明确改选层或字段才提交并记录 Undo。

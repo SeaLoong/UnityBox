@@ -45,7 +45,7 @@ namespace UnityBox.AnimatorOptimizer
         private bool CanConvert => Controller != null && report != null && !pending && !issuesDirty &&
             (selected.Count > 0 || synchronizedGroups.Count > 0) && issues.Count == 0 && !EditorApplication.isPlayingOrWillChangePlaymode;
 
-        [MenuItem("Tools/UnityBox/Animator Optimizer")]
+        [MenuItem("Tools/UnityBox/Animator Optimizer/Open")]
         public static AnimatorOptimizerWindow ShowWindow()
         {
             var window = GetWindow<AnimatorOptimizerWindow>("Animator Optimizer");

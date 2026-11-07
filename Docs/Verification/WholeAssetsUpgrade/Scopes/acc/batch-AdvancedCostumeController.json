@@ -1,0 +1,62 @@
+{
+    "createdUtc": "2026-11-07T17:22:13.7457390Z",
+    "files": [
+        {
+            "path": "Assets/OldCostumes/Base.prefab",
+            "beforeSha256": "597c56a2f4177bbdb43e62f1c3ba10bb3d01655195a7ed55467443c71b441ee9",
+            "afterSha256": "6954707e7ccdf26ad24aeec105230a61496ee10f2f88bab1c4710438c32e533b",
+            "components": [
+                {
+                    "fileId": "6115244611863457161",
+                    "oldGuid": "942bd1d3ea679811aafe8d89e33f4147",
+                    "newGuid": "e98f908c5fb14a479a7cc0ce3492a7d5",
+                    "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker"
+                },
+                {
+                    "fileId": "2090057104456655644",
+                    "oldGuid": "f088b44ae26ad2efeb3a7d1a9f939827",
+                    "newGuid": "594421b5520f47b892549d6e70c660fe",
+                    "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker"
+                },
+                {
+                    "fileId": "6826322668657853559",
+                    "oldGuid": "75cca7a80e715f913bf81250fd83c5e3",
+                    "newGuid": "a37f4c4e3ea441078fad0c0782ac99a4",
+                    "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride"
+                }
+            ]
+        },
+        {
+            "path": "Assets/Scenes/Avatar.unity",
+            "beforeSha256": "fd2d0ad860f4d166e7e00079d598a5151705ec2c1d375198f43c49ea8635cb63",
+            "afterSha256": "b5698d91346e07f3ad4b41138cd697ee1b2b9be80ce49b6386ae886de46164f3",
+            "components": [
+                {
+                    "fileId": "812547502",
+                    "oldGuid": "75cca7a80e715f913bf81250fd83c5e3",
+                    "newGuid": "a37f4c4e3ea441078fad0c0782ac99a4",
+                    "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride"
+                },
+                {
+                    "fileId": "812547503",
+                    "oldGuid": "f088b44ae26ad2efeb3a7d1a9f939827",
+                    "newGuid": "594421b5520f47b892549d6e70c660fe",
+                    "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker"
+                },
+                {
+                    "fileId": "812547504",
+                    "oldGuid": "942bd1d3ea679811aafe8d89e33f4147",
+                    "newGuid": "e98f908c5fb14a479a7cc0ce3492a7d5",
+                    "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker"
+                }
+            ]
+        }
+    ],
+    "skipped": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+            "code": "component-duplicate",
+            "message": "fileID 511714067, GUID 942bd1d3ea679811aafe8d89e33f4147: This GameObject already contains a valid component of the same type. Neither component is deleted or merged."
+        }
+    ]
+}

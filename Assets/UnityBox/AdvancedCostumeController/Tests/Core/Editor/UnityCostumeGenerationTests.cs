@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -137,6 +138,23 @@ namespace UnityBox.AdvancedCostumeController.Tests
       Outfit("Same");
       Assert.Throws<ArgumentException>(() => UnityCostumeGenerator.Generate(config));
       Assert.That(AssetDatabase.IsValidFolder(folder), Is.False);
+    }
+
+    [Test]
+    public void OnlyOnePrimaryAccMenuIsAvailableAndThereIsNoSeparateUnityAssetsEntry()
+    {
+      var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(assembly =>
+        assembly.GetName().Name == "UnityBox.AdvancedCostumeController.Core" ||
+        assembly.GetName().Name == "UnityBox.AdvancedCostumeController");
+      var menus = assemblies.SelectMany(assembly => assembly.GetTypes())
+        .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
+        .SelectMany(method => method.GetCustomAttributes(typeof(MenuItem), false).Cast<MenuItem>())
+        .Select(menu => menu.menuItem).ToArray();
+      Assert.That(menus.Count(path => path == "Tools/UnityBox/Advanced Costume Controller/Open"), Is.EqualTo(1));
+      Assert.That(menus, Does.Not.Contain("Tools/UnityBox/Advanced Costume Controller"));
+      Assert.That(menus, Does.Not.Contain("Tools/UnityBox/Advanced Costume Controller (Unity Assets)"));
+      Assert.That(assemblies.SelectMany(assembly => assembly.GetTypes())
+        .Any(type => type.Name == "UnityCostumeWindow"), Is.False);
     }
 
     private GameObject Outfit(string name)

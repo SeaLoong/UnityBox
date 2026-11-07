@@ -1,10 +1,10 @@
 {
   "result": "Succeeded",
-  "output": "/workspace/unitybox-setup/unity/projects/owner-migration-core-20261107/.unitybox-player-results/20261107T153356-7d615710/UnityBoxPlayer",
+  "output": "/workspace/unitybox-setup/unity/projects/whole-assets-core-20261108/.unitybox-player-results/20261107T172338-54ebb7a8/UnityBoxPlayer",
   "total_errors": 0,
   "total_warnings": 4,
-  "total_size_bytes": 58547694,
-  "duration_seconds": 32.0400722,
+  "total_size_bytes": 58547698,
+  "duration_seconds": 27.766235299999998,
   "hook_providers": [
     "BlendshapeRuntimeTests",
     "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests",

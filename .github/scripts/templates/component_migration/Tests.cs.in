@@ -86,6 +86,55 @@ __WEAK_CONSTANT__
         }
 
 __OWNER_TESTS__
+__PROJECT_TESTS__
+        [Test]
+        public void CancelledProjectUpgradeAsksOnceAndHasNoProjectSideEffects()
+        {
+            string path = Prefab();
+            byte[] source = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            string backupRoot = "UserSettings/UnityBox/__OWNER__/ComponentReferenceMigration";
+            string[] backups = Directory.Exists(backupRoot) ? Directory.GetFiles(backupRoot, "*", SearchOption.AllDirectories) : Array.Empty<string>();
+            int confirmations = 0;
+            var result = ComponentReferenceUpgrade.Execute(() => { confirmations++; return false; });
+            Assert.That(confirmations, Is.EqualTo(1));
+            Assert.That(result, Is.Null);
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(source));
+            Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+            Assert.That(Directory.Exists(backupRoot) ? Directory.GetFiles(backupRoot, "*", SearchOption.AllDirectories) : Array.Empty<string>(), Is.EqualTo(backups));
+        }
+
+        [Test]
+        public void WholeAssetsDiscoveryFindsUnselectedOwnerAssetsAndIgnoresBinaryAndUnrelatedYaml()
+        {
+            string path = Prefab();
+            byte[] source = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            string unrelated = folder + "/Unrelated.asset";
+            string binary = folder + "/Binary.asset";
+            byte[] foreign = Encoding.UTF8.GetBytes("%YAML 1.1\n--- !u!114 &100\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: 884dd8b64ee14fb4b3dce05230ebc86b, type: 3}\n  unrelatedSetting: 10\n");
+            File.WriteAllBytes(unrelated, foreign);
+            byte[] binaryBytes = new byte[] { 0, 255, 128, 200, 0, 1, 2, 3, 4 };
+            File.WriteAllBytes(binary, binaryBytes);
+            var previous = Selection.objects;
+            try
+            {
+                Selection.objects = Array.Empty<Object>();
+                var candidates = (List<string>)typeof(MigrationEngine).GetMethod("ProjectAssetCandidates", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+                Assert.That(candidates, Does.Contain(path));
+                Assert.That(candidates, Does.Not.Contain(unrelated));
+                Assert.That(candidates, Does.Not.Contain(binary));
+                var plan = (MigrationPlan)typeof(MigrationEngine).GetMethod("ScanProjectAssets", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { null });
+                Assert.That(plan.Entries.Any(entry => entry.AssetPath == path && entry.TypeName == Primary), Is.True);
+                Assert.That(plan.Entries.Any(entry => entry.AssetPath == unrelated || entry.AssetPath == binary), Is.False);
+                Assert.That(File.ReadAllBytes(path), Is.EqualTo(source));
+                Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+                Assert.That(File.ReadAllBytes(unrelated), Is.EqualTo(foreign));
+                Assert.That(File.ReadAllBytes(binary), Is.EqualTo(binaryBytes));
+            }
+            finally { Selection.objects = previous; }
+        }
+
 __WEAK_TESTS__
         [Test]
         public void ForeignClassIdentifiersRemainUnchangedEvenWithMatchingFieldsAndOverrides()
@@ -254,6 +303,9 @@ __WEAK_TESTS__
                 Assert.That(result.ChangedAssets, Is.Empty);
                 Assert.That(result.BackupDirectory, Is.Empty);
                 Assert.That(result.Issues.Any(issue => issue.AssetPath == nestedPath && issue.Code == "asset-open"), Is.True);
+                var wholeProject = MigrationEngine.UpgradeProjectAssets();
+                Assert.That(wholeProject.ChangedAssets, Does.Not.Contain(nestedPath));
+                Assert.That(PrefabStageUtility.GetCurrentPrefabStage(), Is.SameAs(stage));
                 Assert.That(stage.prefabContentsRoot.GetInstanceID(), Is.EqualTo(rootId));
                 Assert.That(nested.GetInstanceID(), Is.EqualTo(nestedId));
                 Assert.That(nested.transform.localPosition, Is.EqualTo(new Vector3(7, 8, 9)));
