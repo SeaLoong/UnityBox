@@ -1,6 +1,15 @@
 # Changelog
 
-## [0.5.1] - 2026-11-07
+## [0.5.2] - 2026-11-07
+
+### Component references
+
+- 组件恢复随 ACC 正常更新交付，编译在原 Unity-only Core Editor 程序集中，只处理三种 ACC 标记。
+- Project 资源入口：`Assets/UnityBox/Advanced Costume Controller/Repair Component References`，打开时带入当前选择；一次手动执行整批，无逐项确认。
+- ACC Part Group 的 Mode/GroupName 弱候选按旧 GUID 选择一次类型；重复组件、打开资源和未保存编辑依赖报告跳过。
+- 本包批次备份位于 `UserSettings/UnityBox/AdvancedCostumeController/ComponentReferenceMigration/<id>/Assets/...`，原 Tools 窗口入口和生产组件身份保持。
+
+## [0.5.1] - 2026-11-07（历史发布）
 
 ### Fixed
 
@@ -11,7 +20,7 @@
 ### Component references
 
 - 0.4.13 旧 ZIP 缺少 metadata 的随机 GUID 由独立 Component References 工具处理；选资源后一次手动批量迁移，无启动/导入触发和逐项确认。
-- 全八插件引用矩阵、下载和操作见仓库 `Docs/ComponentReferences.md`；真实升级及源字段保全记录见 `Docs/Verification/ComponentReferences/README.md`。
+- 全八插件引用矩阵与当前操作见仓库 `Docs/ComponentReferences.md`；真实升级及源字段保全记录见 `Docs/Verification/ComponentReferences/README.md`。
 
 ## [0.5.0] - 2026-11-05
 

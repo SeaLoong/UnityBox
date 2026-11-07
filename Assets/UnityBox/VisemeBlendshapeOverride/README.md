@@ -1,6 +1,6 @@
 # Viseme Blendshape Override
 
-当前版本 **0.2.1**，与其它 UnityBox 工具一起维护在 `master`。
+当前版本 **0.2.2**，与其它 UnityBox 工具一起维护在 `master`。
 
 通过 `Viseme` Int（0–14）和可选 `Voice` Float 驱动 SkinnedMeshRenderer 口型。Unity 核心
 负责生成与播放图；VRChat 适配接收 Descriptor 输入；NDMF 适配编辑并提交虚拟 FX。
@@ -20,10 +20,11 @@
 
 `UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent` 保留类名、Runtime
 程序集、已发布字段与固定 GUID `2814d8bd3adc4c539c9d1825545f6316`。0.1.14 的旧 ZIP
-缺少脚本 metadata，旧引用可用[Component References](../../../Docs/ComponentReferences.md)
-手动批量修复。单包用户导入一次
-[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
-在 `Tools/UnityBox/Component References` 选择资源并执行，无逐项确认。
+缺少脚本 metadata，旧引用使用本包自带的恢复功能手动处理。正常更新后，在 Project
+选择资源，打开 `Assets/UnityBox/Viseme Blendshape Override/Repair Component References`。
+窗口带入当前选择，只处理 VisemeBlendshapeOverrideComponent；点击
+**Migrate Selected Assets** 一次执行整批，无逐项确认。
+范围、备份与跳过规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
 
 加载、打开 Inspector 和构建计划读取保留原 `bindings`，不自动补齐行或改写源时值。
 构建使用深拷贝配置快照，按旧 Voice 语义和有效值域生成图。缺失行先显示默认值，
@@ -117,3 +118,10 @@ Descriptor 关闭自定义层时，构建采用其实际生效的默认层，并
 BlendTree 或其它子图继续保留；同名前缀的无关资产也不会被删除。专属的旧生成状态、
 转场和 Motion 在生成新层前回收，连续生成保持资源数量稳定。测试覆盖保存重导入后的
 共享动画原生输出，以及相同前缀用户资产的保留。
+
+## 0.2.2 组件恢复
+
+恢复功能随本包现有 Unity-only Editor 程序集交付，只处理本插件配置；原 Tools 窗口入口、
+组件类/字段和固定 GUID 保持。迁移批次备份位于
+`UserSettings/UnityBox/VisemeBlendshapeOverride/ComponentReferenceMigration/<id>/Assets/...`。
+选择资源后一次手动执行整批，打开资源及未保存依赖、未知和重复组件保留并报告。

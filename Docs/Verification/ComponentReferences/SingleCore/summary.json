@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "scope": "Focused recovery-only cases; complete all-plugin functional suites are recorded separately",
+  "consumers": [
+    {
+      "owner": "acc",
+      "passed": true,
+      "tests": 13,
+      "report": "acc.json",
+      "test_filter": "ComponentMigration.Tests"
+    },
+    {
+      "owner": "ao",
+      "passed": true,
+      "tests": 11,
+      "report": "ao.json",
+      "test_filter": "ComponentMigration.Tests"
+    },
+    {
+      "owner": "ass",
+      "passed": true,
+      "tests": 11,
+      "report": "ass.json",
+      "test_filter": "ComponentMigration.Tests"
+    },
+    {
+      "owner": "viseme",
+      "passed": true,
+      "tests": 11,
+      "report": "viseme.json",
+      "test_filter": "ComponentMigration.Tests"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "scope": "ass",
+  "owners": [
+    "AvatarSecuritySystem"
+  ],
+  "embedded_sources_match_current_zips_and_checkout": true,
+  "compiled_owner_engines": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "engineType": "UnityBox.AvatarSecuritySystem.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AvatarSecuritySystem",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+      "assemblySha256": "eacb34512df600f5923e7a6c5afd1fcae1e07daeb4b0961f9eef7b36b15424a3",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+        }
+      ]
+    }
+  ],
+  "native_evidence_joins": {
+    "phase_results_equal_run_records": true,
+    "current_run_inputs_equal_frozen_plugin_zips": true,
+    "installed_complete_plugin_payloads_equal_frozen_zips": true,
+    "owner_batch_hash_chain_continuous": true,
+    "final_disk_files_equal_native_final_batch_hashes": true
+  },
+  "legacy_script_identities": 1,
+  "original_asset_and_meta_files": 24,
+  "captured_component_records": 15,
+  "captured_property_records": 229,
+  "typed_component_records_compared_per_pass": 14,
+  "persistent_field_comparisons_per_pass": 203,
+  "object_reference_global_ids_per_pass": 21,
+  "read_only_duplicate_cases": 1,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 26,
+  "transient_native_pptr_child_values_excluded": 0,
+  "read_only_duplicate_legacy_documents": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "legacy_guid": "7cae09ca94feaa4b3be30bf1e5a2604d",
+      "original_component_document_sha256": "01823210f1e3c6c1e1567fdd11dae39794a0691959d96db9621b7e177fc79acb",
+      "bytes": 919,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    }
+  ],
+  "explicit_owner_batch_calls": 1,
+  "repaired_components": 2,
+  "inspector_targets": 4,
+  "missing_scripts_reproduced": 7,
+  "changed_assets": [
+    "Assets/ComponentUpgradeFixtures/Avatar.unity",
+    "Assets/ComponentUpgradeFixtures/Base.prefab"
+  ],
+  "current_state_retained": true
+}

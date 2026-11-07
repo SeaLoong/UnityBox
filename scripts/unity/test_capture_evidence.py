@@ -38,75 +38,50 @@ class EvidenceTests(unittest.TestCase):
         (backup / (name + ".Runtime.dll")).write_bytes(b"retained actual-DLL fixture")
         return source, copied
 
-    def add_extra_source(self):
-        name = test_project.EXTRA_SOURCE_MODULE
-        source = self.root / "checkout-module" / test_project.EXTRA_SOURCE_DESTINATION
-        copied = self.project / test_project.EXTRA_SOURCE_DESTINATION
-        for relative in ("Editor/Module.cs", "Tests/Editor/ModuleTests.cs"):
-            path = source / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text("// independent module source\n")
-            path.with_name(path.name + ".meta").write_text("fileFormatVersion: 2\nguid: module-source-guid\n")
-        for relative, assembly in (("Editor/Module.asmdef", "Fixture.Module.Editor"),
-                                   ("Tests/Editor/ModuleTests.asmdef", "Fixture.Module.Tests")):
-            path = source / relative
-            path.write_text(json.dumps({"name": assembly}))
-            path.with_name(path.name + ".meta").write_text("fileFormatVersion: 2\nguid: module-assembly-guid\n")
-            retained = self.project / ".unitybox-native-assemblies"
-            retained.mkdir(exist_ok=True)
-            (retained / (assembly + ".dll")).write_bytes(b"retained DLL fixture for source ownership")
-        source.with_name(source.name + ".meta").write_text(
-            "fileFormatVersion: 2\nguid: module-root-guid\nfolderAsset: yes\nDefaultImporter:\n  userData:\n")
-        copied_info = test_project.copy_extra_source(source, copied, lambda *args: True)
-        self.metadata.setdefault("extra_sources", {})[name] = {
-            **copied_info, "destination": test_project.EXTRA_SOURCE_DESTINATION.as_posix()}
-        return source, copied
-
-    def test_extra_source_assemblies_record_their_real_module_ownership_and_source_hashes(self):
-        self.add_package("First")
-        source, copied = self.add_extra_source()
+    def test_embedded_migration_sources_and_tests_belong_to_the_selected_package(self):
+        source, copied = self.add_package("First")
+        for root in (source, copied):
+            for relative, assembly in (("Editor", "First.Editor"), ("Tests/Editor", "First.Tests")):
+                folder = root / relative
+                folder.mkdir(parents=True)
+                (folder / "ReferenceMigration.cs").write_text("// plugin-owned reference migration\n")
+                (folder / "ReferenceMigration.cs.meta").write_text("guid: embedded-source-guid\n")
+                (folder / "Assembly.asmdef").write_text(json.dumps({"name": assembly}))
+                (self.project / ".unitybox-native-assemblies" / (assembly + ".dll")).write_bytes(b"retained DLL fixture")
         result = evidence.source_evidence(self.project, self.metadata)
         self.assertEqual(set(result["packages"]), {"First"})
-        self.assertEqual(set(result["extra_sources"]), {test_project.EXTRA_SOURCE_MODULE})
-        self.assertEqual(set(result["imported_assemblies"]), {"First.Runtime", "Fixture.Module.Editor", "Fixture.Module.Tests"})
-        for assembly in ("Fixture.Module.Editor", "Fixture.Module.Tests"):
+        self.assertNotIn("extra_sources", result)
+        self.assertNotIn("extra_source_snapshot_matches_current_source", result)
+        self.assertEqual(set(result["imported_assemblies"]), {"First.Runtime", "First.Editor", "First.Tests"})
+        for assembly in ("First.Editor", "First.Tests"):
             record = result["imported_assemblies"][assembly]
-            self.assertEqual(record["extra_source"], test_project.EXTRA_SOURCE_MODULE)
-            self.assertNotIn("package", record)
+            self.assertEqual(record["package"], "First")
             self.assertEqual(record["source_file_count"], 2)
             self.assertTrue(Path(record["dll"]["path"]).is_file())
-        expected = [(test_project.EXTRA_SOURCE_MODULE + "/Editor/" + name, evidence.sha256(copied / "Editor" / name))
-                    for name in ("Module.cs", "Module.asmdef")]
-        self.assertEqual(result["imported_assemblies"]["Fixture.Module.Editor"]["source_sha256"], evidence.fingerprint(expected))
-        self.assertTrue(result["extra_source_snapshot_matches_current_source"])
-        self.assertEqual(result["extra_sources"][test_project.EXTRA_SOURCE_MODULE]["source"], str(source))
+        expected = [("Editor/" + name, evidence.sha256(copied / "Editor" / name))
+                    for name in ("ReferenceMigration.cs", "Assembly.asmdef")]
+        self.assertEqual(result["imported_assemblies"]["First.Editor"]["source_sha256"], evidence.fingerprint(expected))
 
-    def test_extra_source_code_and_root_guid_changes_invalidate_evidence(self):
-        source, _ = self.add_extra_source()
-        for path in (source / "Editor/Module.cs", source.with_name(source.name + ".meta")):
-            with self.subTest(path=path.name):
-                original = path.read_bytes()
-                path.write_bytes(original.replace(b"module-root-guid", b"changed-root-guid") + b"// changed\n")
-                with self.assertRaisesRegex(ValueError, "Source changed since preparation"):
-                    evidence.source_evidence(self.project, self.metadata)
-                path.write_bytes(original)
-
-    def test_extra_source_files_added_after_preparation_invalidate_evidence(self):
-        source, _ = self.add_extra_source()
-        (source / "Editor/NewWindow.cs").write_text("// new executable source\n")
-        with self.assertRaisesRegex(ValueError, "NewWindow.cs"):
-            evidence.source_evidence(self.project, self.metadata)
-
-    def test_extra_source_markdown_and_folder_metadata_formatting_follow_package_policy(self):
-        source, copied = self.add_extra_source()
-        (source / "README.md").write_text("current instructions\n")
-        (copied / "README.md").write_text("instructions at preparation\n")
-        metadata = copied.with_name(copied.name + ".meta")
-        metadata.write_text(metadata.read_text().replace("  userData:\n", "  userData: \n"))
+    def test_unselected_sibling_and_obsolete_module_sources_are_not_evidence_inputs(self):
+        source, _ = self.add_package("First")
+        for name in ("Second", "ComponentReferenceMigration", "Shared"):
+            sibling = source.parent / name / "Editor"
+            sibling.mkdir(parents=True)
+            (sibling / "Foreign.cs").write_text("// not selected\n")
+            (sibling / "Foreign.asmdef").write_text(json.dumps({"name": name + ".Editor"}))
+            (self.project / ".unitybox-native-assemblies" / (name + ".Editor.dll")).write_bytes(b"unselected DLL fixture")
         result = evidence.source_evidence(self.project, self.metadata)
-        module = result["extra_sources"][test_project.EXTRA_SOURCE_MODULE]
-        self.assertEqual([item["path"] for item in module["metadata_formatting_only"]], [test_project.EXTRA_SOURCE_MODULE + ".meta"])
-        self.assertNotEqual(module["source_snapshot_sha256"], module["imported_snapshot_sha256"])
+        self.assertEqual(set(result["packages"]), {"First"})
+        self.assertEqual(set(result["imported_assemblies"]), {"First.Runtime"})
+        self.assertNotIn("extra_sources", result)
+
+    def test_two_packages_cannot_claim_the_same_imported_assembly(self):
+        self.add_package("First")
+        source, copied = self.add_package("Second")
+        for root in (source, copied):
+            (root / "Runtime.asmdef").write_text(json.dumps({"name": "First.Runtime"}))
+        with self.assertRaisesRegex(ValueError, "Multiple source roots claim imported assembly"):
+            evidence.source_evidence(self.project, self.metadata)
 
     def test_cross_checkout_snapshot_accepts_markdown_updates_and_records_unity_metadata(self):
         self.add_package("First")
@@ -202,6 +177,18 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn("自动保留原图 10 ms，显式转换 5 ms，减少 50.0%", markdown)
         self.assertNotIn("AAP EntryOn", markdown)
         self.assertEqual(len(performance["measurement_protocols"]), 1)
+
+    def test_reference_scan_protocol_is_owned_by_the_ass_plugin(self):
+        measurement = {"plugin": "AvatarSecuritySystem", "scenario": "scan_component_references",
+                       "size": 128, "samples": 5, "median_ms": 1, "p95_ms": 2}
+        performance = {"editor_runs": [{"measurements": [measurement]}], "graphics_runs": []}
+        protocols = evidence.measurement_protocols(performance)
+        self.assertEqual(len(protocols), 1)
+        self.assertIn("AvatarSecuritySystem", protocols[0]["workload"])
+        self.assertIn("只读扫描", protocols[0]["workload"])
+        self.assertIn("128/1024/4096", protocols[0]["sampling"])
+        measurement["plugin"] = "ComponentReferenceMigration"
+        self.assertEqual(evidence.measurement_protocols(performance), [])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "scope": "acc",
+  "owners": [
+    "AdvancedCostumeController"
+  ],
+  "embedded_sources_match_current_zips_and_checkout": true,
+  "compiled_owner_engines": [
+    {
+      "owner": "AdvancedCostumeController",
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "engineType": "UnityBox.AdvancedCostumeController.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AdvancedCostumeController.Core",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-acc-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+      "assemblySha256": "eb6a26a3cb86404df62d4433a99238a601f06b7a1d4c4d8ea3ba6dc84ed6220e",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "f624e7b8d19fd9b94e3a2368326688715759c2e7ef67625bd9889e807fa308e1"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "ced75848d9b8d6e06d2970c70a7f653d3a0c70351a36ab74e031017737d10211"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "7386a3bc7a909cfac5acbe91df2e8fa8b6789f62c8a56f0a3873eeef662c7227"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4168550819133630d36bbbc474d94f82a66419ec496f3c5101a4bfb761af515a"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "f624e7b8d19fd9b94e3a2368326688715759c2e7ef67625bd9889e807fa308e1"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "ced75848d9b8d6e06d2970c70a7f653d3a0c70351a36ab74e031017737d10211"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "7386a3bc7a909cfac5acbe91df2e8fa8b6789f62c8a56f0a3873eeef662c7227"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4168550819133630d36bbbc474d94f82a66419ec496f3c5101a4bfb761af515a"
+        }
+      ]
+    }
+  ],
+  "legacy_script_identities": 3,
+  "original_asset_and_meta_files": 24,
+  "captured_component_records": 29,
+  "captured_property_records": 499,
+  "typed_component_records_compared_per_pass": 28,
+  "persistent_field_comparisons_per_pass": 472,
+  "object_reference_global_ids_per_pass": 63,
+  "read_only_duplicate_cases": 1,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 27,
+  "transient_native_pptr_child_values_excluded": 0,
+  "read_only_duplicate_legacy_documents": [
+    {
+      "owner": "AdvancedCostumeController",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+      "legacy_guid": "942bd1d3ea679811aafe8d89e33f4147",
+      "original_component_document_sha256": "a45cf27dfa3bef51b22cfdd816bfd9312a6f7f0ebe893edc1c73996410be1fcf",
+      "bytes": 484,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    }
+  ],
+  "explicit_owner_batch_calls": 1,
+  "repaired_components": 6,
+  "inspector_targets": 12,
+  "missing_scripts_reproduced": 21,
+  "changed_assets": [
+    "Assets/ComponentUpgradeFixtures/Avatar.unity",
+    "Assets/ComponentUpgradeFixtures/Base.prefab"
+  ],
+  "current_state_retained": true,
+  "native_evidence_joins": {
+    "phase_results_equal_run_records": true,
+    "current_run_inputs_equal_frozen_plugin_zips": true,
+    "installed_complete_plugin_payloads_equal_frozen_zips": true,
+    "owner_batch_hash_chain_continuous": true,
+    "final_disk_files_equal_native_final_batch_hashes": true
+  }
+}

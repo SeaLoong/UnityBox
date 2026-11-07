@@ -1,0 +1,193 @@
+{
+  "phase": "broken",
+  "scope": "ass",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107",
+    "-executeMethod",
+    "ComponentUpgradeFixture.VerifyBroken",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/.unitybox-component-upgrade/broken-editor.log"
+  ],
+  "inputs": [
+    {
+      "source": "/workspace/unitybox-setup/unity/owner-migration-current-packages/top.sealoong.unitybox.avatar-security-system-0.9.3.zip",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "owner": "AvatarSecuritySystem",
+      "version": "0.9.3",
+      "input_kind": "ZIP",
+      "archive_sha256": "2a7506b7cb6bda43919b542bfe1ce6ca8179fd97fc2054fa87be1afd26a5f138",
+      "zip_crc_checked": true,
+      "tree_sha256": "5094761d6546e0fc05ac2195bce8c2c440c33dc2777299f896735868e2d807a0",
+      "original_tree_sha256": "5094761d6546e0fc05ac2195bce8c2c440c33dc2777299f896735868e2d807a0",
+      "excluded_development_test_files": [],
+      "files": 118,
+      "metadata_files": [
+        "Editor/ASSConfigData.cs.meta",
+        "Editor/AnimatorLifecycle.cs.meta",
+        "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+        "Editor/ComponentMigration/MigrationEngine.cs.meta",
+        "Editor/ComponentMigration.meta",
+        "Editor/Constants.cs.meta",
+        "Editor/ControllerGraphCopy.cs.meta",
+        "Editor/Countdown.cs.meta",
+        "Editor/Feedback.cs.meta",
+        "Editor/GesturePassword.cs.meta",
+        "Editor/I18n.cs.meta",
+        "Editor/IAnimatorBehaviourAdapter.cs.meta",
+        "Editor/Inspector.cs.meta",
+        "Editor/NDMF/NDMFPlugin.cs.meta",
+        "Editor/NDMF/UnityBox.AvatarSecuritySystem.NDMF.asmdef.meta",
+        "Editor/NDMF.meta",
+        "Editor/Obfuscator.cs.meta",
+        "Editor/StandaloneConfigurationStripper.cs.meta",
+        "Editor/StandaloneSecurityBuilder.cs.meta",
+        "Editor/UnityAnimatorBehaviourAdapter.cs.meta",
+        "Editor/UnityBox.AvatarSecuritySystem.asmdef.meta",
+        "Editor/Utils.cs.meta",
+        "Editor/VRChat/ConfigCaptureProcessor.cs.meta",
+        "Editor/VRChat/ConfigurationStripper.cs.meta",
+        "Editor/VRChat/Defense.cs.meta",
+        "Editor/VRChat/PlayableObfuscationProcessor.cs.meta",
+        "Editor/VRChat/Processor.cs.meta",
+        "Editor/VRChat/UnityBox.AvatarSecuritySystem.VRChat.asmdef.meta",
+        "Editor/VRChat/VrcAnimatorBehaviourAdapter.cs.meta",
+        "Editor/VRChat/VrcPlayableControllers.cs.meta",
+        "Editor/VRChat.meta",
+        "Editor.meta",
+        "Resources/Materials.meta",
+        "Resources.meta",
+        "Runtime/AnimatorStateEntryActions.cs.meta",
+        "Runtime/Component.cs.meta",
+        "Runtime/StandaloneSecurityInput.cs.meta",
+        "Runtime/UnityBox.AvatarSecuritySystem.Runtime.asmdef.meta",
+        "Runtime.meta",
+        "Shaders.meta",
+        "Tests/Editor/AnimationCoreTests.cs.meta",
+        "Tests/Editor/AssetImportSafetyTests.cs.meta",
+        "Tests/Editor/ComponentMigration/ComponentMigrationPerformanceTests.cs.meta",
+        "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs.meta",
+        "Tests/Editor/ComponentMigration.meta",
+        "Tests/Editor/GestureTimingTests.cs.meta",
+        "Tests/Editor/LocalizationTests.cs.meta",
+        "Tests/Editor/NDMF/NdmfFinalizationTests.cs.meta",
+        "Tests/Editor/NDMF/UnityBox.AvatarSecuritySystem.NDMF.Tests.asmdef.meta",
+        "Tests/Editor/NDMF.meta",
+        "Tests/Editor/StandaloneBuildTests.cs.meta",
+        "Tests/Editor/StandaloneRuntimeTests.cs.meta",
+        "Tests/Editor/UnityBox.AvatarSecuritySystem.Editor.Tests.asmdef.meta",
+        "Tests/Editor/VRChat/BuildAssetIsolationTests.cs.meta",
+        "Tests/Editor/VRChat/GenerationLifecycleTests.cs.meta",
+        "Tests/Editor/VRChat/UnityBox.AvatarSecuritySystem.VRChat.Tests.asmdef.meta",
+        "Tests/Editor/VRChat.meta",
+        "Tests/Editor.meta",
+        "Tests.meta"
+      ],
+      "dependencies": {},
+      "vpmDependencies": {},
+      "embedded_migration_namespace": "UnityBox.AvatarSecuritySystem.ComponentMigration",
+      "migration_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883",
+          "declares_engine": false
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc",
+          "declares_engine": true
+        },
+        {
+          "path": "Tests/Editor/ComponentMigration/ComponentMigrationPerformanceTests.cs",
+          "sha256": "3156e28d370f2d39d29f1ee8137d6116169f10e8e0926df0756260eb486c3c95",
+          "declares_engine": false
+        },
+        {
+          "path": "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs",
+          "sha256": "eb67197a4092462f9764aaccaafec389f2c871cb1d13f59885ef192f90440074",
+          "declares_engine": false
+        }
+      ]
+    }
+  ],
+  "project_package_isolation": {
+    "passed": true,
+    "selected_unitybox_packages": [
+      "top.sealoong.unitybox.avatar-security-system"
+    ],
+    "installed_unitybox_packages": {
+      "top.sealoong.unitybox.avatar-security-system": {
+        "version": "0.9.3",
+        "path": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/Packages/top.sealoong.unitybox.avatar-security-system"
+      }
+    },
+    "shared_migration_source_present": false,
+    "shared_migration_assembly_present": false
+  },
+  "config_sha256": "28671e0e9949342027823911424aca4c705e959fb837e0b1eefb0df8f4394f53",
+  "started_at_utc": "2026-11-07T15:20:36.433133+00:00",
+  "exit_code": 0,
+  "result": {
+    "phase": "broken",
+    "scope": "ass",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+      "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+      "legacy GUID path after current package import: UnityBox.AvatarSecuritySystem.ASSComponent=",
+      "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+      {
+        "owner": "AvatarSecuritySystem",
+        "package": "top.sealoong.unitybox.avatar-security-system",
+        "engineType": "UnityBox.AvatarSecuritySystem.ComponentMigration.MigrationEngine",
+        "assembly": "UnityBox.AvatarSecuritySystem",
+        "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+        "assemblySha256": "eacb34512df600f5923e7a6c5afd1fcae1e07daeb4b0961f9eef7b36b15424a3",
+        "sourceFiles": [
+          {
+            "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+            "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+            "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs",
+            "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs.meta",
+            "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+          }
+        ]
+      }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+  },
+  "passed": true,
+  "fixture_source": {
+    "sha256": "8249e486679cda878e0d16c2feeac99f5408a480ae8d1ccc72ce7cff2e5d836c",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeFixture.cs"
+  },
+  "holder_source": {
+    "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeReferenceHolder.cs"
+  },
+  "finished_at_utc": "2026-11-07T15:24:04.926539+00:00"
+}

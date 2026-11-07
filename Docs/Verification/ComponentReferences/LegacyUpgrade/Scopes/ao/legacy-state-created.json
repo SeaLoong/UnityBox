@@ -1,0 +1,2996 @@
+{
+    "scope": "ao",
+    "types": [
+        {
+            "owner": "AnimatorOptimizer",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "guid": "e5a07ba03c6adf697bf43981f89b53d1",
+            "scriptPath": "Packages/top.sealoong.unitybox.animator-optimizer/Runtime/AnimatorOptimizerComponent.cs",
+            "generatedMetaSha256": "7ecfc0a2155f6b3a7a4832fd9d6e36f0b8d526e3fe356ba1bb0639f03e2476a1"
+        }
+    ],
+    "files": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "sha256": "afece8c27807e51d15e6cd677859d326940dc4ce4dfc8c99d78a33073f131372",
+            "guid": "818d35989997aedfc8f57b7414af2fa1",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+            "sha256": "330b5d662a9a328aaf59c947e89fdcee5ee70c569bc0b05e9d1d64982f3b9793",
+            "guid": "818d35989997aedfc8f57b7414af2fa1",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "sha256": "425aa39d8ec4847e935f23c92312cedca33346ada279da98d9b15f207604e93a",
+            "guid": "15f52cc7f1b49ed04a5e8c3faff55722",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+            "sha256": "b93f58f3a6f42c200773aff17a8726f2a86c9c11b63331d1d9b36869c3850876",
+            "guid": "15f52cc7f1b49ed04a5e8c3faff55722",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+            "sha256": "e1866b40f7cc3e3311feb3881b131ae2042605fbd1ef1edea6189669fdec7f9b",
+            "guid": "a20b183244675d935bef2e922ed0f6bb",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta",
+            "sha256": "0db0357ccbc81e374b367df1ac32f6e7912d6adbb5e959335bdefdc7e2930fac",
+            "guid": "a20b183244675d935bef2e922ed0f6bb",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+            "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58",
+            "guid": "78c572f628866007eb376494103ca1ae",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+            "sha256": "12f2c5823d0dd0e53970d83e80d0e0a1240436fe2a28a32768ce92129d5afd4e",
+            "guid": "78c572f628866007eb376494103ca1ae",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "sha256": "22350da74c44958535ffe140a4dc06156e2cf95a83cb143ad77db8913972a3bb",
+            "guid": "495c3f76e95399f35b7415136e79ca92",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+            "sha256": "f8d93dab2632993408b1bc9c2186189c92d1c117dce47f0f16432397f88c2e73",
+            "guid": "495c3f76e95399f35b7415136e79ca92",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+            "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8",
+            "guid": "ab53533ef0342a31b987249d61e57608",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+            "sha256": "e5af4266643498a32937f291299f8d5d4f36458c8201a83603475af3fb3be0a6",
+            "guid": "ab53533ef0342a31b987249d61e57608",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+            "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30",
+            "guid": "ddbffb0ac04526c8e8e0ccd4149bf9da",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+            "sha256": "24812a073512adb3a414f7680f6b273ae911c8d2b185c56b0ba7b0495e176def",
+            "guid": "ddbffb0ac04526c8e8e0ccd4149bf9da",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+            "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+            "guid": "e43c4a6930fbd51869053e14c1967303",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+            "sha256": "e21bebb0752663cd93b1a7c8d1bb47a43d2887e24009e7bb226b50d5692fec98",
+            "guid": "e43c4a6930fbd51869053e14c1967303",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.anim",
+            "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d",
+            "guid": "16449bbdb6de5297e957ad4c4a74b338",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+            "sha256": "159ed4463705d31939623d04ebb65b11b30833e6d2a2f8e1f33f4ceb8de37e2a",
+            "guid": "16449bbdb6de5297e957ad4c4a74b338",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.controller",
+            "sha256": "dca5ea1a5d64ec3e3666cb9fc74378e897752f369967c097e7f7d783346ebbbf",
+            "guid": "dc0cbdc4400df0f48a5aa5f8f1781804",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+            "sha256": "c4f0dd3535a7d38948b4897924a6401d485e5ebc31eb86f3b33f3cea82dcc326",
+            "guid": "dc0cbdc4400df0f48a5aa5f8f1781804",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "sha256": "78a75bb3d2ac553c51e8aabaaa9aec7f8365a68c2328358149723a0aeb4baa2c",
+            "guid": "dd59b90874f13a0d69463afed93dfd41",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+            "sha256": "1bf3cba049d7f85b665e20f152f5e40d5e608e5a9bfb55c2af2057cee8178b4d",
+            "guid": "dd59b90874f13a0d69463afed93dfd41",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+            "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+            "guid": "7e26930844070fceca8eec7b0880a3c3",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+            "sha256": "fc16afb68fc7e26bab57f33107dc165fbd5f109bf6f3927c7bc7802b5717a653",
+            "guid": "7e26930844070fceca8eec7b0880a3c3",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav.meta"
+        }
+    ],
+    "components": [
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-1-15f52cc7f1b49ed04a5e8c3faff55722-3565009668314722242-0",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-15f52cc7f1b49ed04a5e8c3faff55722-5478410437986426155-0"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Legacy AO Preserve"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "18"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "80"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-15f52cc7f1b49ed04a5e8c3faff55722-4684778289156513862-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-15f52cc7f1b49ed04a5e8c3faff55722-3565009668314722242-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-1-dd59b90874f13a0d69463afed93dfd41-8351676337212973271-0",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-dd59b90874f13a0d69463afed93dfd41-1051961335700460094-0"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Variant AO override"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "19"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "86"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-dd59b90874f13a0d69463afed93dfd41-260581021312151379-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-dd59b90874f13a0d69463afed93dfd41-8351676337212973271-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-1-495c3f76e95399f35b7415136e79ca92-6679311425377968020-0",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-495c3f76e95399f35b7415136e79ca92-2436414935310200189-0"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Legacy AO Preserve"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "18"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "80"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-495c3f76e95399f35b7415136e79ca92-3227803530392047632-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-495c3f76e95399f35b7415136e79ca92-6679311425377968020-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-447383159-0",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-447383160-0"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Legacy AO Preserve"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "18"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "80"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-447383158-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-447383159-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-3565009668314722242-451867388",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-5478410437986426155-451867388"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Scene AO override"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "17"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-4684778289156513862-451867388",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-3565009668314722242-451867388"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-8351676337212973271-1777918136",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-1051961335700460094-1777918136"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Variant AO override"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "19"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "86"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-260581021312151379-1777918136",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-8351676337212973271-1777918136"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-6679311425377968020-1814869687",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "2"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-2436414935310200189-1814869687"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-dc0cbdc4400df0f48a5aa5f8f1781804-9100000-0"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "layerIndices.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "3"
+                },
+                {
+                    "path": "layerIndices.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "1"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "128"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Legacy AO Preserve"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "18"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "80"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "LegacyAO/Weight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "15"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-3227803530392047632-1814869687",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-818d35989997aedfc8f57b7414af2fa1-6679311425377968020-1814869687"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+            "owner": "Duplicate AnimatorOptimizer",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "globalId": "GlobalObjectId_V1-2-a20b183244675d935bef2e922ed0f6bb-1814869688-0",
+            "properties": [
+                {
+                    "path": "targetMode",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "playableLayer",
+                    "kind": "Enum",
+                    "value": "4"
+                },
+                {
+                    "path": "animator",
+                    "kind": "ObjectReference",
+                    "value": "null"
+                },
+                {
+                    "path": "controller",
+                    "kind": "ObjectReference",
+                    "value": "null"
+                },
+                {
+                    "path": "optimizeAllConvertibleLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "layerIndices.Array.size",
+                    "kind": "ArraySize",
+                    "value": "0"
+                },
+                {
+                    "path": "upgradeBoolParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "upgradeIntParametersToFloat",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "allowFloatConditionApproximation",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "writeDefaultsPolicy",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "ignoreTransitionTimingForStaticMotions",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "heuristics",
+                    "kind": "Enum",
+                    "value": "0"
+                },
+                {
+                    "path": "shortAnimationMaxFrames",
+                    "kind": "Integer",
+                    "value": "5"
+                },
+                {
+                    "path": "shortAnimationMaxSeconds",
+                    "kind": "Float",
+                    "value": "0.1"
+                },
+                {
+                    "path": "motionTimeSampleCount",
+                    "kind": "Integer",
+                    "value": "9"
+                },
+                {
+                    "path": "strictCurveConflicts",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeLayersWithEquivalentMasks",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "resolveOverridePriorityWithStaticComposite",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "mergeSynchronizedStateMachines",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "enableAapStateRegisterOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxAapDecisionNodes",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "removeEffectivelyEmptyLayers",
+                    "kind": "Boolean",
+                    "value": "true"
+                },
+                {
+                    "path": "normalizeAlwaysOneParameters",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "executeLateOptimization",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "preserveMmdCompatibility",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "maxPriorityCombinations",
+                    "kind": "Integer",
+                    "value": "4096"
+                },
+                {
+                    "path": "verboseLogging",
+                    "kind": "Boolean",
+                    "value": "false"
+                },
+                {
+                    "path": "generatedLayerName",
+                    "kind": "String",
+                    "value": "Old duplicate value"
+                },
+                {
+                    "path": "generatedLayerName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "19"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "112"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "generatedLayerName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix",
+                    "kind": "String",
+                    "value": "AO/LayerWeight"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.size",
+                    "kind": "ArraySize",
+                    "value": "14"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "65"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "47"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "87"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "104"
+                },
+                {
+                    "path": "weightParameterPrefix.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "116"
+                }
+            ]
+        }
+    ],
+    "duplicates": [
+        {
+            "owner": "AnimatorOptimizer",
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+            "type": "UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent",
+            "currentBytes": "",
+            "newGlobalId": "",
+            "markerField": "",
+            "markerValue": ""
+        }
+    ]
+}

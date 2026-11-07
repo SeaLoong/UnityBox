@@ -1,0 +1,153 @@
+{
+  "owner": "ass",
+  "scope_kind": "Focused plugin-owned migration cases in a one-plugin Unity-only consumer",
+  "passed": true,
+  "test_filter": "ComponentMigration.Tests",
+  "run": {
+    "run_id": "20261107T145651-21bace29",
+    "project_id": "eb16851458cf44dcb0ed78b93254bc28",
+    "command": [
+      "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+      "-batchmode",
+      "-nographics",
+      "-projectPath",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107",
+      "-runTests",
+      "-testPlatform",
+      "EditMode",
+      "-testResults",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107/.unitybox-test-results/20261107T145651-21bace29/results.xml",
+      "-logFile",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107/.unitybox-test-results/20261107T145651-21bace29/unity.log",
+      "-testFilter",
+      "ComponentMigration.Tests",
+      "-testCategory",
+      "!UnityBoxPerformance;!UnityBoxGraphics",
+      "-assemblyNames",
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ],
+    "profile": "core",
+    "ignored_vpm_dependencies": {},
+    "package_versions": {
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.test-framework": "1.1.33",
+      "top.sealoong.unitybox.avatar-security-system": "0.9.3"
+    },
+    "started_at": "2026-11-07T14:56:51.405675+00:00",
+    "started_epoch": 1794063411.4056869,
+    "timeout_seconds": 1200.0,
+    "expected_assemblies": [],
+    "timed_out": false,
+    "exit_code": 0,
+    "selected_assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ],
+    "xdg_root": "/workspace/unitybox-setup/unity/interactive",
+    "test_filter": "ComponentMigration.Tests",
+    "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+    "benchmark": false,
+    "graphics": false,
+    "machine": {
+      "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+      "cpu_count": 5
+    },
+    "finished_at": "2026-11-07T14:57:18.680162+00:00"
+  },
+  "tests": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "source_evidence": {
+    "packages": {
+      "top.sealoong.unitybox.avatar-security-system": {
+        "version": "0.9.3",
+        "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
+        "checkout": "/workspace/UnityBox",
+        "branch": "master",
+        "checkout_base_revision": "31122c6aa6faa916fab31f628bdd3a977270c303",
+        "prepared_tree_sha256": "a395b3a377022fbf84d8d62427455e95b5996840ef2eed03b7ef873f79356c8a",
+        "source_snapshot_sha256": "0139dc203f98998677af9b0b2fe183f3c35258d738fbdcd86ed7b636cc227261",
+        "imported_snapshot_sha256": "0139dc203f98998677af9b0b2fe183f3c35258d738fbdcd86ed7b636cc227261",
+        "file_count": 115,
+        "metadata_formatting_only": [],
+        "importer_generated_metadata": [
+          "Resources/Avatar Security System.png.meta",
+          "Resources/CountdownWarning.mp3.meta",
+          "Resources/InputError.mp3.meta",
+          "Resources/Materials/Avatar Security System.mat.meta",
+          "Resources/PasswordSuccess.mp3.meta",
+          "Resources/StepSuccess.mp3.meta",
+          "Shaders/DefenseShader.shader.meta",
+          "Shaders/Overlay.shader.meta",
+          "VRC Docs Playable Layers.txt.meta",
+          "package.json.meta"
+        ]
+      }
+    },
+    "imported_assemblies": {
+      "UnityBox.AvatarSecuritySystem": {
+        "package": "top.sealoong.unitybox.avatar-security-system",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+          "bytes": 193536,
+          "sha256": "6d3666df01a6d06f80f2246c9832079b8d6d85def7104929df0fc9c281a2de83"
+        },
+        "source_file_count": 18,
+        "source_sha256": "6c2bf19c0e3b808d8d1d856471b976dba937025bbe5fce0616c6fe312cdf8349"
+      },
+      "UnityBox.AvatarSecuritySystem.Runtime": {
+        "package": "top.sealoong.unitybox.avatar-security-system",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+          "bytes": 11264,
+          "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
+        },
+        "source_file_count": 4,
+        "source_sha256": "28d6fd2ccabb1586bf9edbb5ff9a8d8724d232a1fc584ed4005144f499ddbf90"
+      },
+      "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+        "package": "top.sealoong.unitybox.avatar-security-system",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ass-core-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+          "bytes": 76800,
+          "sha256": "65e8d4afbfb495c614f90ffd094a90dc5206ca21759386922c33911a5cdd9ea6"
+        },
+        "source_file_count": 9,
+        "source_sha256": "40c79f7638a2e87836226e6b12e13e3e242cbb783ee4145317ba875413f48b20"
+      }
+    },
+    "package_snapshot_matches_current_source": true,
+    "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+    "snapshot_excludes": [
+      "*.md",
+      "*.md.meta"
+    ],
+    "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+  },
+  "archived_xml": {
+    "path": "ass-results.xml.gz",
+    "sha256": "9985cbc5a1edb9fec30f7ecf9fb36e3a37238c21ec6543cf7b3cb36c9e6c2e81",
+    "original_xml_sha256": "ee16e199e9dc8b8d12092b3a8d2221e142643fc73b3216e16780b04280532499",
+    "removed_metadata": []
+  }
+}

@@ -1,7 +1,0 @@
-{
-  "name": "UnityBox.ComponentReferenceMigration.Editor",
-  "rootNamespace": "UnityBox.ComponentReferenceMigration",
-  "references": [],
-  "includePlatforms": ["Editor"],
-  "autoReferenced": true
-}

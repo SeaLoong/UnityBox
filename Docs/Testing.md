@@ -13,7 +13,7 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 当前六类组件的真实升级、手动迁移和源配置保全检查见
 [Component References 记录](Verification/ComponentReferences/README.md)；
 [ASS 0.9.1 导入安全记录](Verification/ASSImportSafety/README.md)保留上一版范围。
-[验证结果](VerificationResults.json)记录当前八插件及独立工具的功能、程序集、Player、图形和退出码；
+[验证结果](VerificationResults.json)记录当前插件的功能、程序集、Player、图形和退出码；
 [原生结果](UnityNativeResults.json)保留 NUnit 运行与源内容指纹；
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
@@ -28,31 +28,41 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 核心用例，各范围分别计数。历史数据通过原提交和运行标识定位；重新准备工程后按新快照
 执行并生成新结果。
 
-## 当前组件引用与源配置检查
+## 当前包内恢复与源配置检查
 
-2026-11-07 最终源码的各范围结果如下，均无失败或跳过：
+ACC 0.5.2、AO 0.3.2、Viseme 0.2.2、ASS 0.9.3 分别将恢复功能放入原有 Unity-only
+Editor 程序集。原生消费验证分五种：ACC 单装、AO 单装、ASS 单装、Viseme 单装和
+四包共同安装。使用正常 `--package` 准备流程，每个工程只包含所选包及实际依赖，
+不复制旧独立模块、额外恢复程序集或安装包。
 
-| 范围 | 实际结果 |
-| --- | --- |
-| 纯 Unity 核心 | 361 项，9 个测试程序集 |
-| SDK | 442 项，14 个测试程序集 |
-| 完整 SDK/MA/NDMF | 541 项，20 个测试程序集 |
-| 图形 | 3 项，包括真实 Inspector 重绘、图标像素及 Prefab Stage 未保存依赖 |
-| 串行基准 | 39 项，八插件加独立扫描工具共 60 条测量 |
-| Linux Player | 13 场景、1,557 帧、4,807 次检查；源场景 3 个编辑配置保留 |
-| Python / 发布打包 | 45 / 18 项 |
+检查各包 Project 菜单、带入选择、只处理所属类型、只读 Analyze 与一次手动整批执行，
+并覆盖单包可用及四包同装的类型/程序集身份。完整命令、用例数、退出码和源指纹见
+[当前验证记录](Verification/ComponentReferences/README.md)，全库各范围结果见
+[验证索引](VerificationResults.json)。
 
-[组件引用矩阵](ComponentReferences.md)覆盖八个包中的六种自有生产组件，区分真实旧
-ACC/ASS/Viseme 发布 ZIP 与 AO 0.2 开发快照。测试在独立工程保存旧包实际生成的 GUID、
-配置、fileID 和引用，再更新对应完整包；新版本启动/导入仍保持原字节，手动迁移后
-检查脚本连接与全部其它序列化内容。
+| 功能范围 | 实际通过数 | 测试程序集 |
+| --- | ---: | ---: |
+| 纯 Unity 核心 | 397 | 8 |
+| SDK | 478 | 13 |
+| 完整 SDK/MA/NDMF | 577 | 19 |
+| 图形 | 6 | 5 |
+| 无 SDK 单装 ACC 恢复 | 13 | 1 |
+| 无 SDK 单装 AO / ASS / Viseme 恢复 | 各 11 | 各 1 |
+| 串行基准 | 39 项，60 条测量 | 8 |
+| Linux Player | 13 场景，4,807 次检查 | — |
+| Python / 发布打包 | 44 / 19 项 | — |
 
-工具回归检查只读 Analyze、选定范围、依赖追溯不扩写、歧义旧 GUID 一次类型选择、
-一键批量无逐项确认、已打开 Scene/PrefabStage 及依赖跳过、未知/重复保留、源 SHA
-变化检查、全部目标先备份以及 metadata/BOM/CRLF/fileID 保全。
-ACC Inspector 的显式提交与 Undo、AO 配置/Options 副本、Viseme 深拷贝 Voice 解析和
-ASS 时间副本分别检查源字段及原文件。执行命令、数量、退出码和指纹由
-[本轮记录](Verification/ComponentReferences/README.md)逐范围列出。
+各范围分别执行并计数，核心和恢复用例会在不同安装组合中重复运行。
+
+[组件引用矩阵](ComponentReferences.md)覆盖六种生产组件，区分真实 ACC/ASS/Viseme
+旧 ZIP 与 AO 0.2 开发快照。真实升级先保存旧包实际生成的 GUID、配置、fileID 和引用，
+再更新所属完整包；启动/导入保持原字节，随后手动调用包内恢复来重连选定资源。
+
+回归检查范围内批量、依赖不扩写、ACC 弱 GUID 一次类型选择、未知/重复保留、源 SHA
+变化、全部目标先备份以及 metadata/BOM/CRLF/fileID 保全。已打开 Scene/PrefabStage
+与未保存的新依赖报告跳过；图形用例检查编辑状态、对象身份和原文件字节。
+ACC Inspector 提交与 Undo、AO 配置/Options 副本、Viseme Voice 深拷贝解析和 ASS 时间
+副本分别检查源字段。Player、图形及性能按各自实际记录的版本和范围读取。
 
 ## ASS 0.9.1 导入与配置保全（历史发布）
 

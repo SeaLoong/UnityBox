@@ -1,0 +1,25 @@
+        [Test]
+        public void GenericPartGroupFieldsRequireExplicitIdentity()
+        {
+            string path = Prefab("  Mode: 0\n  GroupName: Unrelated controls\n");
+            var plan = MigrationEngine.Scan(new[] { path });
+            Assert.That(plan.Entries.Single().Status, Is.EqualTo(MigrationStatus.Ambiguous));
+            Assert.That(plan.Entries.Single().GameObjectName, Is.EqualTo(Path.GetFileNameWithoutExtension(path)));
+            Assert.That(plan.Entries.Single().SerializedFields, Is.EquivalentTo(new[] { "Mode", "GroupName" }));
+            Assert.That(plan.Entries.Single().CandidateTypes, Does.Contain("ACC / Part Group Marker"));
+            Assert.That(plan.Entries.Single().Details, Does.Contain("需要一次 GUID 类型映射"));
+            Assert.That(MigrationEngine.Apply(plan).ChangedAssets, Is.Empty);
+            var mapped = MigrationEngine.Scan(new[] { path }, new Dictionary<string, string> { { Legacy, Part } });
+            Assert.That(mapped.Entries.Single().TypeName, Is.EqualTo(Part));
+            Assert.That(mapped.Entries.Single().Status, Is.EqualTo(mapped.TargetTypes.Single(target => target.TypeName == Part).Available
+                ? MigrationStatus.Ready : MigrationStatus.Unavailable));
+        }
+
+        [Test]
+        public void ExactClassIdentifierSuppliesPartGroupIdentity()
+        {
+            string path = Prefab("  Mode: 1\n  GroupName: Excluded\n", "UnityBox.AdvancedCostumeController.Runtime::" + Part);
+            var entry = MigrationEngine.Scan(new[] { path }).Entries.Single();
+            Assert.That(entry.TypeName, Is.EqualTo(Part));
+        }
+

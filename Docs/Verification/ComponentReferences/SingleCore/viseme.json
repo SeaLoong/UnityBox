@@ -1,0 +1,142 @@
+{
+  "owner": "viseme",
+  "scope_kind": "Focused plugin-owned migration cases in a one-plugin Unity-only consumer",
+  "passed": true,
+  "test_filter": "ComponentMigration.Tests",
+  "run": {
+    "run_id": "20261107T145719-6aef20dd",
+    "project_id": "1dd52d0c1daa4eccaab377ac2f18727c",
+    "command": [
+      "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+      "-batchmode",
+      "-nographics",
+      "-projectPath",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107",
+      "-runTests",
+      "-testPlatform",
+      "EditMode",
+      "-testResults",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107/.unitybox-test-results/20261107T145719-6aef20dd/results.xml",
+      "-logFile",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107/.unitybox-test-results/20261107T145719-6aef20dd/unity.log",
+      "-testFilter",
+      "ComponentMigration.Tests",
+      "-testCategory",
+      "!UnityBoxPerformance;!UnityBoxGraphics",
+      "-assemblyNames",
+      "UnityBox.VisemeBlendshapeOverride.Editor.Tests"
+    ],
+    "profile": "core",
+    "ignored_vpm_dependencies": {},
+    "package_versions": {
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.test-framework": "1.1.33",
+      "top.sealoong.unitybox.viseme-blendshape-override": "0.2.2"
+    },
+    "started_at": "2026-11-07T14:57:19.205192+00:00",
+    "started_epoch": 1794063439.205203,
+    "timeout_seconds": 1200.0,
+    "expected_assemblies": [],
+    "timed_out": false,
+    "exit_code": 0,
+    "selected_assemblies": [
+      "UnityBox.VisemeBlendshapeOverride.Editor.Tests"
+    ],
+    "xdg_root": "/workspace/unitybox-setup/unity/interactive",
+    "test_filter": "ComponentMigration.Tests",
+    "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+    "benchmark": false,
+    "graphics": false,
+    "machine": {
+      "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+      "cpu_count": 5
+    },
+    "finished_at": "2026-11-07T14:57:43.019152+00:00"
+  },
+  "tests": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.VisemeBlendshapeOverride.Editor.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "source_evidence": {
+    "packages": {
+      "top.sealoong.unitybox.viseme-blendshape-override": {
+        "version": "0.2.2",
+        "source": "/workspace/UnityBox/Assets/UnityBox/VisemeBlendshapeOverride",
+        "checkout": "/workspace/UnityBox",
+        "branch": "master",
+        "checkout_base_revision": "31122c6aa6faa916fab31f628bdd3a977270c303",
+        "prepared_tree_sha256": "a044ad7691db0a21dd4c3bfd45c06d206db9327f13b51fdcdec9a189d492deb2",
+        "source_snapshot_sha256": "f4971b2956958623ee95b63ed70bfe152f097d0b50819ed080e1df6c73252ae3",
+        "imported_snapshot_sha256": "f4971b2956958623ee95b63ed70bfe152f097d0b50819ed080e1df6c73252ae3",
+        "file_count": 70,
+        "metadata_formatting_only": [],
+        "importer_generated_metadata": []
+      }
+    },
+    "imported_assemblies": {
+      "UnityBox.VisemeBlendshapeOverride": {
+        "package": "top.sealoong.unitybox.viseme-blendshape-override",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+          "bytes": 69632,
+          "sha256": "29088e31d9dca09d887e00dfed3c05e0085d67dbc40d81f67f817b9c7b737288"
+        },
+        "source_file_count": 9,
+        "source_sha256": "c4a2cfc2359d8621e1193b2aee2470f5f9d7b06b2f15b2262ec48231c69ae4ad"
+      },
+      "UnityBox.VisemeBlendshapeOverride.Runtime": {
+        "package": "top.sealoong.unitybox.viseme-blendshape-override",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Runtime.dll",
+          "bytes": 10752,
+          "sha256": "4758f007153cad59b793798f17e566f0784a105e9aec3a7787f72829f1b30f34"
+        },
+        "source_file_count": 2,
+        "source_sha256": "e9904b506cd0bdb401c8eb2c0a0d0a37b499563ac22cf32c51f468d77eb0d08f"
+      },
+      "UnityBox.VisemeBlendshapeOverride.Editor.Tests": {
+        "package": "top.sealoong.unitybox.viseme-blendshape-override",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-viseme-core-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.Editor.Tests.dll",
+          "bytes": 52736,
+          "sha256": "c7de30ea12162e542ce5b6ab47b3f2e24325544dd9bc2bfef27c77c4ff4150e4"
+        },
+        "source_file_count": 8,
+        "source_sha256": "bf9f70759bbc288e1dd022d83db86f90c5396a5f0ce14bec9ce60242ace66489"
+      }
+    },
+    "package_snapshot_matches_current_source": true,
+    "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+    "snapshot_excludes": [
+      "*.md",
+      "*.md.meta"
+    ],
+    "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+  },
+  "archived_xml": {
+    "path": "viseme-results.xml.gz",
+    "sha256": "5e9164035fdd793fd41dce419c188a57ee17229fb1f338b1d241acfc3e67ab0b",
+    "original_xml_sha256": "bf9c11a10480ea6850f1d0b749f164b28cbc3de4cc20e36878498d92e63955c1",
+    "removed_metadata": []
+  }
+}

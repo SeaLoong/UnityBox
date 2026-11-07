@@ -2,8 +2,8 @@
 
 这里保存的是 **0.9.0 已撤回实现**在合成工程中的三阶段复现记录。0.9.1 已完整移除该
 迁移器、启动/导入触发、旧 ASS 修复菜单/API 和加载时参数纠正；
-[0.9.1 导入安全记录](../ASSImportSafety/README.md)保留对应检查。当前六类组件使用独立
-手动工具，操作见[组件引用手册](../../ComponentReferences.md)，结果见
+[0.9.1 导入安全记录](../ASSImportSafety/README.md)保留对应检查。当前六类组件由所属
+插件自带的手动入口恢复，操作见[组件引用手册](../../ComponentReferences.md)，结果见
 [本轮记录](../ComponentReferences/README.md)。本归档只用于旧版本追溯。
 
 ## 历史行为与边界

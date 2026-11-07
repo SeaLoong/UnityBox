@@ -10,6 +10,9 @@
 - Opening/importing packages and loading Scene/Prefab assets preserve source bytes, GUIDs, stored
   values and editing state. Do not add startup/import migration, automatic scene reloads or OnValidate
   corrections of stored configuration; normalize independent build/configuration copies instead.
+- Each affected plugin ships its own manual component recovery inside its existing Unity-only Editor
+  assembly. Deliver it through normal plugin updates; do not require a standalone installer, shared
+  migration package or extra source-module bootstrap. Each Project menu handles only its owner types.
 - The user explicitly authorized manual component-reference migration in a selected batch, without
   per-item confirmation. One manual execute covers all unambiguous edits in that batch. Resolve an
   ambiguous legacy GUID once for its entire group; report unknown/duplicate or open-asset/dependency

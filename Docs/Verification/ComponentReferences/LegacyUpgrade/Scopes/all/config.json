@@ -1,0 +1,9 @@
+{
+  "scope": "all",
+  "owners": [
+    "AdvancedCostumeController",
+    "AvatarSecuritySystem",
+    "VisemeBlendshapeOverride",
+    "AnimatorOptimizer"
+  ]
+}

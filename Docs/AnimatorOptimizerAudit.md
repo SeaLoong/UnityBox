@@ -2,11 +2,12 @@
 
 八个插件已统一在 `master` 维护；优化器与其余插件使用同一个 checkout 准备隔离测试工程。本页记录优化器的实现、输入契约和真实运行流程。
 
-## 0.3.1 源配置与组件身份
+## 0.3.2 源配置与组件身份
 
 AnimatorOptimizerComponent 保留 Runtime 类名、程序集、已发布字段与固定 GUID。
 0.2 是早期开发快照，未发布公开旧 ZIP；其随机 GUID 可通过
-[Component References](ComponentReferences.md)手动批量处理。
+本包内 `Assets/UnityBox/Animator Optimizer/Repair Component References` 手动批量处理，
+窗口带入 Project 选择，只处理 AO 配置。完整范围与备份见[组件引用说明](ComponentReferences.md)。
 
 移除加载时对源层索引、字符串和预算的纠正。ConfigData 与 Options 建立独立副本再
 规范化，原组件和调用方输入保持；Inspector 只有用户明确改选层或字段才提交并记录 Undo。
@@ -78,7 +79,7 @@ Editor 基准使用 8、32、64 层，先预热再采集 9 次样本，报告每
 - 无历史图合并到决策 BlendTree；历史图启用 StateRegister；包含时间、回调、Trigger、IK 或独立同步状态的图保留原生状态机执行。
 - 动态 Clip 按时间基准合并，Mask 与 BlendMode 保持分组顺序。空层清理保留首层、AAP 和实际 Behaviour。
 - Explicit Controller 由明确接收 Animator 使用；Playable 来自实际自定义层。SDK 生成副本在构建后恢复原引用，NDMF 使用按需服务生命周期。
-- 离线复制按 localFileID 选定 Controller，Undo/Redo 包含生成子资产。用户场景与已有脚本 metadata 保持原内容；缺失的 Runtime 组件 metadata 按用户场景中的 GUID `a157d3d35699dd84abde9e5412bd7017` 恢复。
+- 离线复制按 localFileID 选定 Controller，Undo/Redo 包含生成子资产。用户场景与已有脚本 metadata 保持原内容；发行脚本固定 GUID 为 `a157d3d35699dd84abde9e5412bd7017`，旧开发快照的失效引用通过本包手动恢复入口处理。
 
 ## 运行入口
 

@@ -1,0 +1,841 @@
+{
+  "scope": "ass",
+  "legacy_inputs": [
+    {
+      "source": "/workspace/unitybox-setup/unity/ass09-published-verified/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "owner": "AvatarSecuritySystem",
+      "version": "0.7.24",
+      "input_kind": "ZIP",
+      "archive_sha256": "930b7c9d149c2602d84507387398d416fc9f6b805fef6076a9fa0037b976234c",
+      "zip_crc_checked": true,
+      "tree_sha256": "031881f8f6885c2cb35bba3c9c0406c7af50268a8117f3ff415442ba3f1296f5",
+      "original_tree_sha256": "031881f8f6885c2cb35bba3c9c0406c7af50268a8117f3ff415442ba3f1296f5",
+      "excluded_development_test_files": [],
+      "files": 31,
+      "metadata_files": [],
+      "dependencies": {},
+      "vpmDependencies": {
+        "com.vrchat.avatars": ">=3.7.0"
+      },
+      "embedded_migration_namespace": "UnityBox.AvatarSecuritySystem.ComponentMigration",
+      "migration_source_files": []
+    }
+  ],
+  "current_plugin_zip_inputs": [
+    {
+      "owner": "AvatarSecuritySystem",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "version": "0.9.3",
+      "path": "/workspace/unitybox-setup/unity/owner-migration-current-packages/top.sealoong.unitybox.avatar-security-system-0.9.3.zip",
+      "sha256": "2a7506b7cb6bda43919b542bfe1ce6ca8179fd97fc2054fa87be1afd26a5f138"
+    }
+  ],
+  "unity_project_profile": "vrc",
+  "unity_project_dependencies": {
+    "com.unity.burst": {
+      "files": 499,
+      "sha256": "db6ffbeac17e8b822dbd000db549ef57ce0a1f42c331b038d34345685d53e167",
+      "version": "1.8.7",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.burst",
+      "origin": "cache"
+    },
+    "com.unity.collections": {
+      "files": 398,
+      "sha256": "688c8865474bb87b2586f06a13c69346f365d9184e36f71a965fe131740964a8",
+      "version": "2.1.4",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.collections",
+      "origin": "cache"
+    },
+    "com.unity.ext.nunit": {
+      "files": 14,
+      "sha256": "e7c9e0de0e4b3ba1b180554e3c644e525c023402da8f14a982d06af2c253006e",
+      "version": "1.0.6",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.ext.nunit",
+      "origin": "cache"
+    },
+    "com.unity.mathematics": {
+      "files": 366,
+      "sha256": "1d706017517837f269b0236515f87664e1c4d1194294e84d7904de29978eded9",
+      "version": "1.2.6",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.mathematics",
+      "origin": "cache"
+    },
+    "com.unity.nuget.mono-cecil": {
+      "files": 27,
+      "sha256": "2605b3d419e82f4b167b26334d38dc06b1687ffd4339a5f3c946de8da6a1b3b8",
+      "version": "1.11.4",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.nuget.mono-cecil",
+      "origin": "cache"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "files": 28,
+      "sha256": "0908f6b2e69e1bc8d253b02e78724867a9b355e9a0fbdc9c41266ac341104cab",
+      "version": "3.2.1",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.nuget.newtonsoft-json",
+      "origin": "cache"
+    },
+    "com.unity.postprocessing": {
+      "files": 624,
+      "sha256": "bc54203995ac7fb7881b484c21b6b79dd947e39e14c89fcbe9830e4efdc91e25",
+      "version": "3.2.2",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.postprocessing",
+      "origin": "cache"
+    },
+    "com.unity.test-framework": {
+      "files": 669,
+      "sha256": "7d02e47ec74ecd60a39fd0fa3a5cc7f5b71ef9ac0b967a59b1d4edfd4839ca9e",
+      "version": "1.1.33",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.test-framework",
+      "origin": "cache"
+    },
+    "com.unity.timeline": {
+      "files": 1598,
+      "sha256": "755c5cab635205d88698385dc8384044eedfdb8fe08fd9222c1f0484a93cd90c",
+      "version": "1.7.6",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.timeline",
+      "origin": "cache"
+    },
+    "com.unity.ugui": {
+      "files": 693,
+      "sha256": "e281f5090d035144e5ebc9f33acbc30cbd50e0724e192401941682be05ec225f",
+      "version": "1.0.0",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.ugui",
+      "origin": "cache"
+    },
+    "com.unity.xr.legacyinputhelpers": {
+      "files": 102,
+      "sha256": "55a5bf97e69ac1627fb2b15b48df77e30b1b1ce7bba022b1dac516accc644c84",
+      "version": "2.1.7",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.xr.legacyinputhelpers",
+      "origin": "cache"
+    },
+    "com.unity.xr.management": {
+      "files": 186,
+      "sha256": "bd390c742b2701c200f3f95fe7108582279880b09cb3b864fdb4ea5aeffe2b11",
+      "version": "4.3.3",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.xr.management",
+      "origin": "cache"
+    },
+    "com.unity.xr.oculus": {
+      "files": 86,
+      "sha256": "7abaff9bc3296fdc297a499b60c3a370033d42f30ef3e44093baaacd21a98425",
+      "version": "4.0.0",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.unity.xr.oculus",
+      "origin": "cache"
+    },
+    "com.vrchat.avatars": {
+      "files": 466,
+      "sha256": "8bf8ea1020af07c3aef22576ba3274ed7beb7a1d87c6c28a08c1421b49514718",
+      "version": "3.8.2",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.vrchat.avatars",
+      "origin": "cache"
+    },
+    "com.vrchat.base": {
+      "files": 1089,
+      "sha256": "33ef988061420ac7fa9474b3b4f4d0389a913c37ef8cb7ff655a37460a96f980",
+      "version": "3.8.2",
+      "source": "/workspace/unitybox-setup/unity/dependencies/com.vrchat.base",
+      "origin": "cache"
+    },
+    "nadena.dev.modular-avatar": {
+      "files": 786,
+      "sha256": "737bfb3541bbcac6575dc8e1df68293b713a39f9f249ae86aaafa1244a72eb34",
+      "version": "1.18.0",
+      "source": "/workspace/unitybox-setup/unity/dependencies/nadena.dev.modular-avatar",
+      "origin": "cache"
+    },
+    "nadena.dev.ndmf": {
+      "files": 526,
+      "sha256": "da15a1af36288cc42e66fe5647f02f157e5e247e66df1f8016ee23160472c686",
+      "version": "1.11.0",
+      "source": "/workspace/unitybox-setup/unity/dependencies/nadena.dev.ndmf",
+      "origin": "cache"
+    }
+  },
+  "cold_upgrade_import": {
+    "recorded_at_utc": "2026-11-07T15:20:36.341696+00:00",
+    "reason": "Cold upgrade import checks persisted YAML GUIDs without stale warm import artifacts.",
+    "removed_only": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/Library",
+    "library_existed": true,
+    "warm_assemblies_preserved_in": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/.unitybox-native-assemblies/warm-before-cold-upgrade-20261107T152035177744Z",
+    "warm_assembly_files": [
+      {
+        "path": "Assembly-CSharp-Editor.dll",
+        "sha256": "94b72fd84cea651338c5f75508f4b45112d4d10d343137d95b73f071eee8e3e9"
+      },
+      {
+        "path": "Assembly-CSharp-Editor.pdb",
+        "sha256": "4ecd54eb50f72531c8119307224e4e0757515531da603fda00e0cbdc1a7bac76"
+      },
+      {
+        "path": "Assembly-CSharp.dll",
+        "sha256": "25a1af6f4c24db6e97c33b7d9958fc776933b5fce6bbb13fd7226086be1d4aa7"
+      },
+      {
+        "path": "Assembly-CSharp.pdb",
+        "sha256": "cb51f960a7b192ab87a3b55c9c66643bed7722c0d4377ac76d9627183a36dd92"
+      },
+      {
+        "path": "DocCodeExamples.dll",
+        "sha256": "7b6be4498982b0cf52ba875cb87d08ad5582860359c3d5895b37da381ee4fe11"
+      },
+      {
+        "path": "DocCodeExamples.pdb",
+        "sha256": "a4a51f328dcc7836e31f9d05f256fa36a390c19cb313749d9c9e78511cd6e830"
+      },
+      {
+        "path": "OverloadedFunctionPointers.dll",
+        "sha256": "6d01b77b5bf3a542ade38fe1fb9fafa2e5ee08d30f8ecd9d1251eb5a8fa158d5"
+      },
+      {
+        "path": "OverloadedFunctionPointers.pdb",
+        "sha256": "6810552ff11569293c8e19034902d3acdac261e952d6f3cb9ae741d360d16c8d"
+      },
+      {
+        "path": "SeparateAssembly.dll",
+        "sha256": "249fbe92ce193aceec9e6be628c39e05188732c6a3dde180f7e8e83ae509d7eb"
+      },
+      {
+        "path": "SeparateAssembly.pdb",
+        "sha256": "b28367b826b8bab1173cda404eb12d7b0f716d160396d787336313349622bc13"
+      },
+      {
+        "path": "UniTask.Addressables.dll",
+        "sha256": "bf5c662000be283560163aa3e43d56450d64aba9ec611ee923c2220562b3a134"
+      },
+      {
+        "path": "UniTask.Addressables.pdb",
+        "sha256": "c455a6bd3caec04c19dce22e6941e5fa12aeedfca346fd8e74bf45c9d4a6c533"
+      },
+      {
+        "path": "UniTask.DOTween.dll",
+        "sha256": "85cb5d16c944be32592f4c65a20de4f8ba44c5f510cb435af286e0306167ba57"
+      },
+      {
+        "path": "UniTask.DOTween.pdb",
+        "sha256": "e8b77f8e8baaaf3087008c75d66c3446a75ac1da6b8494218c37e4b241989786"
+      },
+      {
+        "path": "UniTask.Editor.dll",
+        "sha256": "266ced3c54727dbd03698c8f6f4e99f98218cd909f018f64e21dfda39928d6a1"
+      },
+      {
+        "path": "UniTask.Editor.pdb",
+        "sha256": "360d97b38ce2a7f8f2bb9763ca7adce58c284a971f95f8c8eb43ddd77a4af536"
+      },
+      {
+        "path": "UniTask.Linq.dll",
+        "sha256": "ed9f5eda3d2a033983b8de6bed1a85cf350f5a87dda406f07aa306994749e1a1"
+      },
+      {
+        "path": "UniTask.Linq.pdb",
+        "sha256": "1335c6902c31619b968df42d9d4cca8aebd3075a51dc48623c56b73c69604d81"
+      },
+      {
+        "path": "UniTask.TextMeshPro.dll",
+        "sha256": "e626242ecafab87478755cf7932f3ab047e1c808af4506262e73e71ae486842e"
+      },
+      {
+        "path": "UniTask.TextMeshPro.pdb",
+        "sha256": "ac2aa33b192f6dbd81f88b487f7a65338d813d4a0c53076578e664b39b12f13e"
+      },
+      {
+        "path": "UniTask.dll",
+        "sha256": "f885e62a41ba90913ee2230c59e404fc1d256ad7feb7b2d689a2c4bcd36ff64e"
+      },
+      {
+        "path": "UniTask.pdb",
+        "sha256": "b8f2aed0271f0f40cee81f27258ad779ca579ed5ed0cd0a042946c150cf71805"
+      },
+      {
+        "path": "Unity.Burst.CodeGen.dll",
+        "sha256": "d3da16c98f3937943ef6977a5a9911c2077db616da5ba5720052a174c5197e05"
+      },
+      {
+        "path": "Unity.Burst.CodeGen.pdb",
+        "sha256": "0ef86ea1569f907393226bf09743a4f3501378d6dc4a85e00fc5a54b1b665a3b"
+      },
+      {
+        "path": "Unity.Burst.Editor.Tests.dll",
+        "sha256": "ac13c3d41a09fb7f5541ec1d847828aa35e35552b45c037acf53cfc44aacabb3"
+      },
+      {
+        "path": "Unity.Burst.Editor.Tests.pdb",
+        "sha256": "1bf8e8ed1489d070157ddc96e45d54e1228db50d9297adde17551697087c1c73"
+      },
+      {
+        "path": "Unity.Burst.Editor.dll",
+        "sha256": "1c636647aa628642496831c9435a0cba21e808a9727812e92966929e35bce5c4"
+      },
+      {
+        "path": "Unity.Burst.Editor.pdb",
+        "sha256": "c488e68d7417fea6aa4ef42b47983a4ab0a8cec1f874235af496bd0dee1e9c29"
+      },
+      {
+        "path": "Unity.Burst.Tests.UnitTests.dll",
+        "sha256": "0dbeef638ba721a2c8098f2d1552c77888dd8ff33f62703ada987703a7e8d933"
+      },
+      {
+        "path": "Unity.Burst.Tests.UnitTests.pdb",
+        "sha256": "0c7622e25c4e39ddf9afc74ecd01a5765a236f943bbf97aa0fb873b497bd97fe"
+      },
+      {
+        "path": "Unity.Burst.dll",
+        "sha256": "79e52f7d01759ddbcee9605d161e331d6247f80417c2d37eba4eba5a055464c8"
+      },
+      {
+        "path": "Unity.Burst.pdb",
+        "sha256": "ef9cf82111e2222ca257ea3113084ee982e20fa3afecaa2446703778c02d927c"
+      },
+      {
+        "path": "Unity.Collections.BurstCompatibilityGen.dll",
+        "sha256": "f15730d0fe8786bbfb2925db04d5b4acccfe1cb4a04118007e78559aadff70f5"
+      },
+      {
+        "path": "Unity.Collections.BurstCompatibilityGen.pdb",
+        "sha256": "d69e5b04f2b8fae73caf66544ff3bc1970d17041d87413d181d3047f721d49be"
+      },
+      {
+        "path": "Unity.Collections.CodeGen.dll",
+        "sha256": "34c0a9699066195cb087fd1d4f4125320121fcba5f832dacaaeb974dfdcc4dbb"
+      },
+      {
+        "path": "Unity.Collections.CodeGen.pdb",
+        "sha256": "58cd517e0bd0cd12fa1fb1e1406c85d9829cf27f74098386c0aacd26d829cef9"
+      },
+      {
+        "path": "Unity.Collections.DocCodeSamples.dll",
+        "sha256": "65ea6da314836793ecee739905f3de3b9059c944ebed6fcad4a4c026a7dbf03c"
+      },
+      {
+        "path": "Unity.Collections.DocCodeSamples.pdb",
+        "sha256": "0c303b8592dfaf0cee55a1d7e21bcd82818c67ea83f9b30a970ba385b4ba394d"
+      },
+      {
+        "path": "Unity.Collections.Editor.dll",
+        "sha256": "3b09bc207e71d88ab7fb0d4f5e81fa34d86bede326613cadb7afdc2fdd26134c"
+      },
+      {
+        "path": "Unity.Collections.Editor.pdb",
+        "sha256": "4e241441aa8ed6a87a08515f76e1c3dbb4d321d5ea1b5dba8757edd13f4bb1e0"
+      },
+      {
+        "path": "Unity.Collections.Tests.dll",
+        "sha256": "fbd5a06680e566546673c641396feb3e5a0a69992e829c78d452ba0ac6bce2bd"
+      },
+      {
+        "path": "Unity.Collections.Tests.pdb",
+        "sha256": "e41d518a0ae8198189ce063fc8f727f88843f9d845ef274fd31d669750764e82"
+      },
+      {
+        "path": "Unity.Collections.dll",
+        "sha256": "3485dbcbad965722a9c76ae7693fcda1da5b89e1975aeba1f3affb9f6e84b5dc"
+      },
+      {
+        "path": "Unity.Collections.pdb",
+        "sha256": "994df3820f02a143450cdee5f9b00315112625a0ec390b03ae8f0ec7dc7236a9"
+      },
+      {
+        "path": "Unity.Mathematics.Editor.dll",
+        "sha256": "8849e5b181521877f1b2dcb75564dae9ead124b4101548c144b246703ef0b9cc"
+      },
+      {
+        "path": "Unity.Mathematics.Editor.pdb",
+        "sha256": "76a76d877db1a44a2cad3fb4185eb1dad32246173c46790a22021feb4d879ae2"
+      },
+      {
+        "path": "Unity.Mathematics.Tests.dll",
+        "sha256": "c0fe7205e34ada272edfd241a879a7702903227323e56f6a8439f73f1e0f5dd7"
+      },
+      {
+        "path": "Unity.Mathematics.Tests.pdb",
+        "sha256": "0a92a1c019d7b91201f1ae9c3f902dc1118c6858774ee93c6e1f51bf62e5bfe0"
+      },
+      {
+        "path": "Unity.Mathematics.dll",
+        "sha256": "03a05da613af9c35f230c683718f3ff474b3f0b8d25329491027c9e20ef33e89"
+      },
+      {
+        "path": "Unity.Mathematics.pdb",
+        "sha256": "d5541ab8e8f1f174e79843074e394f4bb95450cd5d1769f0abb70914239d81d4"
+      },
+      {
+        "path": "Unity.Nuget.Mono-Cecil.dll",
+        "sha256": "8785e6306a0a9f0d46fb565c4db6107904cf1c50ff198a73ad28b8281a2ca93d"
+      },
+      {
+        "path": "Unity.Nuget.Mono-Cecil.pdb",
+        "sha256": "576f2a55bea6edf6f098a2abc027a01c9ce95bc1b6f42b7a8bf2c459e39366ca"
+      },
+      {
+        "path": "Unity.Postprocessing.Editor.Tests.dll",
+        "sha256": "7fa714f147e5b222a8da26917d91c847836c52e65382ff19bc25e01cf3073993"
+      },
+      {
+        "path": "Unity.Postprocessing.Editor.Tests.pdb",
+        "sha256": "8b85a5524beb57a31b5d3da9cca1a5374e9efb8ed86be5554c877ac3c9bc665f"
+      },
+      {
+        "path": "Unity.Postprocessing.Editor.dll",
+        "sha256": "b36b168ce2fc649f7cbd943bc069e9414e1274963b312ab92e5c2e73b34633f2"
+      },
+      {
+        "path": "Unity.Postprocessing.Editor.pdb",
+        "sha256": "8f6c2a0ec536542596c73c743b9bb6714a3143e53130c5b05ccb07901ba19827"
+      },
+      {
+        "path": "Unity.Postprocessing.Runtime.Tests.dll",
+        "sha256": "ffb91f9689742fd3cc2ec3c956453f7534d38b29e160212d5fad45703deaa464"
+      },
+      {
+        "path": "Unity.Postprocessing.Runtime.Tests.pdb",
+        "sha256": "0b87c22b76d9bb07ff3a1b9b3e272ea39aa2ea588d4b93b1214c2c76e9c8fe1e"
+      },
+      {
+        "path": "Unity.Postprocessing.Runtime.dll",
+        "sha256": "9afd9b0f3442b6730c8ea283a08140f655837464e1d2eb03d2711ae0142e1bf2"
+      },
+      {
+        "path": "Unity.Postprocessing.Runtime.pdb",
+        "sha256": "e69a27047cefae28b113de07695e7fe6197d4db35ac00423c8f29fa301141464"
+      },
+      {
+        "path": "Unity.Timeline.Editor.dll",
+        "sha256": "c7d1e6d346a6bfbb4a78242187002a983402df583580816039b481774e1d7d42"
+      },
+      {
+        "path": "Unity.Timeline.Editor.pdb",
+        "sha256": "1391850b108f2961c3a46f01c5c0be58130564e3ac96abd070427455669d9af3"
+      },
+      {
+        "path": "Unity.Timeline.dll",
+        "sha256": "50c34f8737a399ddb05f7838551b7b01a347a82ab48614d911d3e09918eefd41"
+      },
+      {
+        "path": "Unity.Timeline.pdb",
+        "sha256": "e53ad1fd0cf541af58696e2791bc28b27ba87cb425a775151658c918a884bc3e"
+      },
+      {
+        "path": "Unity.XR.Management.Editor.dll",
+        "sha256": "437aa945a1a74564d685541a5c4f7516a951a56ed8dde9b52d47e6243f229c7b"
+      },
+      {
+        "path": "Unity.XR.Management.Editor.pdb",
+        "sha256": "7d96c38b794c204de96ef28160632f687acac348dd1c0aca78b9c771706ce2fa"
+      },
+      {
+        "path": "Unity.XR.Management.EditorTests.dll",
+        "sha256": "4ea82d2f9d05cc376d1cec184ea4ca55c0b146b0110b3818b39dff37414dbe3e"
+      },
+      {
+        "path": "Unity.XR.Management.EditorTests.pdb",
+        "sha256": "b95bd76659bbe45e24cf093381d6455c90b59536e2e11720103c8e95a4792eb9"
+      },
+      {
+        "path": "Unity.XR.Management.TestPackage.Editor.dll",
+        "sha256": "049fa442dba8d0ca454d76d723019cedea4aa275f2a156efe0b886b7b5434a8d"
+      },
+      {
+        "path": "Unity.XR.Management.TestPackage.Editor.pdb",
+        "sha256": "fd4c0d7b171258fa8b6ccaa57ff0f72e2d79549269979b226977d4cf4390e971"
+      },
+      {
+        "path": "Unity.XR.Management.TestPackage.dll",
+        "sha256": "4e51fb9f5f320ea0c55834156f604982d7c89c97f2fb79ae99d244d086ff74d3"
+      },
+      {
+        "path": "Unity.XR.Management.TestPackage.pdb",
+        "sha256": "4227781f2a456016b821a3784c5e82034eeff0fc0ea1deb7d80f84ef5a03873a"
+      },
+      {
+        "path": "Unity.XR.Management.Tests.Standalone.dll",
+        "sha256": "bac5c33334a8d5aef4cdb5a33a75ad576c85f740db1ca34dd14a380ba7f6a0a9"
+      },
+      {
+        "path": "Unity.XR.Management.Tests.Standalone.pdb",
+        "sha256": "8de88c4510c00c9ceaff63c5e23204f3af9e4a43acca718b796cee4b0834263f"
+      },
+      {
+        "path": "Unity.XR.Management.Tests.dll",
+        "sha256": "8d34358923d6155a4cc5ba0bdaf5113b9a9f892fe85a2d98bb3cb24a6459731f"
+      },
+      {
+        "path": "Unity.XR.Management.Tests.pdb",
+        "sha256": "05bf5f8777b9518d0f7229a9bff962d2240c7dd4572acffeda44e97c33c83fe7"
+      },
+      {
+        "path": "Unity.XR.Management.dll",
+        "sha256": "d25242efdd06996a3036d080e7455fd3d3641ff9db1af90b6dbb72ea57523f44"
+      },
+      {
+        "path": "Unity.XR.Management.pdb",
+        "sha256": "601d4f94d8f5e3698594b0af36ff8cb59c00c1de919536df5c23cda5038db9a0"
+      },
+      {
+        "path": "Unity.XR.Oculus.Editor.dll",
+        "sha256": "05a820dbbb1ecc594fd8bf961be01ae230ff6e13ec826ef794872ed8517c5bbd"
+      },
+      {
+        "path": "Unity.XR.Oculus.Editor.pdb",
+        "sha256": "1b275d2e857142c1870e9d45bee8d0d6c7a1bd87b6eb03109a66fd474d6bfbe5"
+      },
+      {
+        "path": "Unity.XR.Oculus.dll",
+        "sha256": "432b6c32771a7a0d39179134cea702ff50b6749ffabc9d737fb2a101d30ada5b"
+      },
+      {
+        "path": "Unity.XR.Oculus.pdb",
+        "sha256": "d478f36b5dcc04dba5566a3018bc0c2951796a1a02cbf7c9e2e6ae1984cc8290"
+      },
+      {
+        "path": "Unity.XR.TestSupport.dll",
+        "sha256": "d358a4f439d3930aa029b8dc9cdae6663a6581b9e327f1be4f7c1ca8c30fab4d"
+      },
+      {
+        "path": "Unity.XR.TestSupport.pdb",
+        "sha256": "5fa03b4df35354d50a1d8f1ff16e14ce0074fc7751bbc291c0cc80e078085136"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.NDMF.dll",
+        "sha256": "beadaebcfb67f57bf2a7d0f897de51733cf1b17fade51d8c2bc750fcd2a1c2f9"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.NDMF.pdb",
+        "sha256": "3648fd8ececaa20d9ac061536b11cd2968904b9b22b161db0d7264c63876269c"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.Runtime.dll",
+        "sha256": "26ffbe6bf5fd56fa88104c10a07d30ef764d40967e286e962c5a0707568a7570"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.Runtime.pdb",
+        "sha256": "78b7e74c7ef8f363ff249a989ea59ecc7b6fde5c36b9647c0436c01409d52005"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.dll",
+        "sha256": "e02920a672dc07915319cc737af63a0645c53ea87544259034751fb38e4ef85c"
+      },
+      {
+        "path": "UnityBox.AvatarSecuritySystem.pdb",
+        "sha256": "a4dc95db8f3e368c32ed80fe3ce41959f37831a38c8284d693fb9dad20b352dc"
+      },
+      {
+        "path": "UnityEditor.SpatialTracking.dll",
+        "sha256": "dcfa398895ef0c1cdbd5e44396772d5ece5f2212622a955feb993fb7746aef87"
+      },
+      {
+        "path": "UnityEditor.SpatialTracking.pdb",
+        "sha256": "7a04882d471b5fce22f7c895015ea602e156d4ba80b2329469785c21056e88df"
+      },
+      {
+        "path": "UnityEditor.TestRunner.dll",
+        "sha256": "209e6461eb204f70ecc511e2cda73191183ab2eeefc8672d693958cc8776fe36"
+      },
+      {
+        "path": "UnityEditor.TestRunner.pdb",
+        "sha256": "78d771a2b007a9e293d2e65982595dfdbae3bd18197bf640981d7061350f2a1c"
+      },
+      {
+        "path": "UnityEditor.UI.EditorTests.dll",
+        "sha256": "62361ec48d712dbedef60c3c11019048b2079cb5e7f2116f3c1f08b690e2153e"
+      },
+      {
+        "path": "UnityEditor.UI.EditorTests.pdb",
+        "sha256": "197ce8f6c9c5db70a3b2ac004b2494af054badf611ae8b9ea713f50bd8bbfc8b"
+      },
+      {
+        "path": "UnityEditor.UI.dll",
+        "sha256": "856ecf41c7750f76c98c297cb4e0d79e8ced06a6baeb3ddc5d79597359f91cef"
+      },
+      {
+        "path": "UnityEditor.UI.pdb",
+        "sha256": "a7196eec218ef709f6add03169274dc2854b6344fbba7f0f6abe09da0cabb97a"
+      },
+      {
+        "path": "UnityEditor.XR.LegacyInputHelpers.Tests.dll",
+        "sha256": "553e0394074ea460e365a25a4180f6e812486c55987027032f9d6a3000574529"
+      },
+      {
+        "path": "UnityEditor.XR.LegacyInputHelpers.Tests.pdb",
+        "sha256": "d00cfc43bb8f75dbd171d0822e2b7ece4647df549345acac29e6348206d7f2bb"
+      },
+      {
+        "path": "UnityEditor.XR.LegacyInputHelpers.dll",
+        "sha256": "8079ff142f5a6074d4897b4dbb57474aabe31881de0c38018a5956c78a649f16"
+      },
+      {
+        "path": "UnityEditor.XR.LegacyInputHelpers.pdb",
+        "sha256": "3b0a4839a8af01a9e5321efe62fe680b828d352682585f0784769dac2ebe154c"
+      },
+      {
+        "path": "UnityEngine.SpatialTracking.Tests.dll",
+        "sha256": "0107f56c1fdb8524735ac68deb37c800b6e05013056085c7c5c633fb16c960b2"
+      },
+      {
+        "path": "UnityEngine.SpatialTracking.Tests.pdb",
+        "sha256": "f8d9751d257c2c3e72bac8505eca036cf8ed4fa9d5fd5d86cd70852a3bdd1fc9"
+      },
+      {
+        "path": "UnityEngine.SpatialTracking.dll",
+        "sha256": "bf96ace8476053a81728cc5cf8bc59d7ae8ebd8ba350b515fb0ae2414208a5d3"
+      },
+      {
+        "path": "UnityEngine.SpatialTracking.pdb",
+        "sha256": "dfb4636c4683ea161cb95affcad07fedfdeec15ec059ca483a35e9717d60555b"
+      },
+      {
+        "path": "UnityEngine.TestRunner.dll",
+        "sha256": "e0117c9e31975b3e193b77dd93bca920381ad6290591c2f54fde4afaaca067bb"
+      },
+      {
+        "path": "UnityEngine.TestRunner.pdb",
+        "sha256": "b13a997ceb0cd9addb601faae8d259e2d07173fb65d290de4586ae8852f7c7a4"
+      },
+      {
+        "path": "UnityEngine.UI.Tests.dll",
+        "sha256": "551e23adc5f4abe1e2529b4a585a3f6faea7c2866459c7e7f5c573932bd10c1d"
+      },
+      {
+        "path": "UnityEngine.UI.Tests.pdb",
+        "sha256": "f371d37c306392e0ec4c9829578b7de82bf2d76e00c4cc84eb4f71652e67c806"
+      },
+      {
+        "path": "UnityEngine.UI.dll",
+        "sha256": "2ce400aed602075816d5a919a7596e9694101fac8e171b71d064c0d1c012a342"
+      },
+      {
+        "path": "UnityEngine.UI.pdb",
+        "sha256": "0e9e222e5c511b62a3361f11a1606172cd081a62f6c344f7968c8fa9a95ad4ad"
+      },
+      {
+        "path": "UnityEngine.XR.LegacyInputHelpers.dll",
+        "sha256": "17e951b046286b8e6731e451a2cee8c7a39e8d7a319ec03d3667826509f8c95c"
+      },
+      {
+        "path": "UnityEngine.XR.LegacyInputHelpers.pdb",
+        "sha256": "c3d5d840218a433fcdb7cefd1cd891c51b8e204aac08a0b37b07a4b0d50bf2ce"
+      },
+      {
+        "path": "VRC.ExampleCentral.Editor.dll",
+        "sha256": "806cd2532a5732e08b84686dcb471dbeb3e84a1775b5664dfec2ccbf2de5849a"
+      },
+      {
+        "path": "VRC.ExampleCentral.Editor.pdb",
+        "sha256": "d99815aaa9bd513fc4d2204b1a656f3617f82975dba12844171dd112282beb10"
+      },
+      {
+        "path": "VRC.SDK3A.Editor.dll",
+        "sha256": "688fb6e1b6f4ac550787b4b7f700f45220affdb97486332af90809f58003c20f"
+      },
+      {
+        "path": "VRC.SDK3A.Editor.pdb",
+        "sha256": "b371036c7e06208519a9243e00f11504046ec5428442f9a6fa66444730279d11"
+      },
+      {
+        "path": "VRC.SDK3A.dll",
+        "sha256": "6e57fea214dd5a216c86a7ecc36000ae8434ac4952bc93f4ae9830e6f39bcd88"
+      },
+      {
+        "path": "VRC.SDK3A.pdb",
+        "sha256": "47646dad9a195dd1ebca48486bf852c42c63a489740f34108eb5282dea87a3ac"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.BuildPipeline.dll",
+        "sha256": "07f563ff4c0d766f5d7b07875167ecae1890121fee45d45368f367e6ccee7b62"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.BuildPipeline.pdb",
+        "sha256": "55604314ba873024a9c2b59f7ec3acf67b18fbbadae3fe34fc73224f45686141"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.ShaderStripping.dll",
+        "sha256": "aab1c94a2ad57c3d287f18f30ed30effd657d4ecf368db30d0fb8ce9394df891"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.ShaderStripping.pdb",
+        "sha256": "92a06608e5b49d27a9689542c002b43a1208c2e713b2d1fa196a69e353bff35a"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.dll",
+        "sha256": "9695a28fd9e1a05dd97823ca953970b124a87f10205abd33e5a29c701a0f5ead"
+      },
+      {
+        "path": "VRC.SDKBase.Editor.pdb",
+        "sha256": "79c441a9478d41518e03be0cba40314f2a5efae43553c61588be59b0e412a978"
+      },
+      {
+        "path": "VRC.SDKBase.dll",
+        "sha256": "8b40ba22d4f36341a9e5137d5096f03b1dbc3e48a4c3f565417d5f499c25ee3e"
+      },
+      {
+        "path": "VRC.SDKBase.pdb",
+        "sha256": "cb8bfcf76ccadb01e3fd21152806df3c9bc0e5591a96684b28da1923e3884410"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.core.dll",
+        "sha256": "1d0315b8c24cca8a8cb7d3d13edb16475c4eefce6bfe97ae599bd3ce761034d4"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.core.editor.dll",
+        "sha256": "4d082f493f14666c6e8df696001bb86271494f240e802ae24902f54ceda1566b"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.core.editor.pdb",
+        "sha256": "8bd51fc0ec0b0c4fe22122019dc718096a65d92f13d2df0b531417529a6045d6"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.core.pdb",
+        "sha256": "0cbc6fca0514be040be24b2155225b1163d2aeb01d63fd716f80f27476a85c07"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.fit-preview.dll",
+        "sha256": "e27b240347aee2d16f18f81b5ed245b8706998dfbed67b2d0e2389669fb9e2d1"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.fit-preview.pdb",
+        "sha256": "8ba34b4506e9947892c3298f3f12237eab118703693c37c36b02ffe4fb71693b"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.harmony-patches.dll",
+        "sha256": "3a093b7220b811e5a549bdd55d1b69640af2ec66727886b8fe2ddc5c40c149dd"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.harmony-patches.pdb",
+        "sha256": "fc19db4a10cc262eeecbb8de7292d484d7b3d5d985755017d0839244b8e4b4c3"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.param-introspection.dll",
+        "sha256": "7ee5decbc0aff313e0491477c077bd011eb9a92e1a3d604adab67562009c6b82"
+      },
+      {
+        "path": "nadena.dev.modular-avatar.param-introspection.pdb",
+        "sha256": "be26e048c1aea121a000158929a0709972d83aa46099657e294fef33d6e3e611"
+      },
+      {
+        "path": "nadena.dev.ndmf.dll",
+        "sha256": "1cb37f486b9e52165ebfdc54c40862121df0156e6cbb03191b32ae45c25630b4"
+      },
+      {
+        "path": "nadena.dev.ndmf.pdb",
+        "sha256": "9b992e380f476f1e4f8e20c7ccf681fd4fa7faf9da2bf7ec4fef19a7359a36c4"
+      },
+      {
+        "path": "nadena.dev.ndmf.runtime.dll",
+        "sha256": "26b3a30ef4c4f5dd95099f50ee833c25da59207c80db20666f71ac7392c3a318"
+      },
+      {
+        "path": "nadena.dev.ndmf.runtime.pdb",
+        "sha256": "7ed70c04d0ed31b187c6eae5c126f59b6dc90db81f79dcca7752d4884c45912d"
+      },
+      {
+        "path": "nadena.dev.ndmf.vrchat.dll",
+        "sha256": "a61ce6236c275526ef6c9d068e2f9a5f6a2aa490318305b7662980dfb46d2833"
+      },
+      {
+        "path": "nadena.dev.ndmf.vrchat.pdb",
+        "sha256": "9f0c22c3be535420e75a943bf03e33c3633b91b388d031c51ef85b5a18aaf0e1"
+      }
+    ],
+    "warm_assembly_scope": "Immediately before cold import; original phase-one binaries are separately preserved in legacy-run.json.legacy_assemblies.",
+    "all_original_files_unchanged_before_and_after_cache_removal": [
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+        "sha256": "44e736827af288caa8763ac305bf257411dd31b5128406bd1d4e571a515744c7"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+        "sha256": "865ea5feb55dbd1eb19a7c276a6f9b1a508664df95f3070a717a9a4c2a0ae8d2"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+        "sha256": "c4a2a582d2fe39be78f878abfaac9f223d848704c6e78d39b50cdd27f9b9934c"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+        "sha256": "8421cba332ef502e70d9a385bc007f67637f45c72e9803ca7f9b6fd9c361304b"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+        "sha256": "2d3eb854b74f82f189e1eba3221a03e42cdfc15d7fbb8d6117e4a717afcb6021"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity.meta",
+        "sha256": "f0e95bb92dc0af8aeb4951766170d6db8408bc41fb6786332e92a1d9a13b29c4"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+        "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+        "sha256": "de1e1aa92245cd7eb292fc1ad8b23213fa6b4b21b0902c722c9a265b57f3717a"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+        "sha256": "486a74212f721c53e0bacbd08e1c9306a97240475740d5d03f5567d89626b080"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+        "sha256": "96381932601380ff359e05b36c336ee7835f71b691da40008791d47cfe757808"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+        "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+        "sha256": "04f4e4f25cfb5d13df2fde431497532a3871a502169b922a5a0362df99fcfc61"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+        "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+        "sha256": "00d7857fbb61c734629d12cc9c4a32956b219daf95575519e95f7ea0d2c4d7c1"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+        "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+        "sha256": "9b07b1e1f8e342435e99e527c8c9937c06d5f2a07079d8d7a262579cded752a8"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/User.anim",
+        "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+        "sha256": "c692db5f8c32d0382be142d823c1d99dd338bd21d882d1f8394ccd5ebb193d2e"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/User.controller",
+        "sha256": "2458f7bf60f4af5158dbb136159161f89bb5d55bda7ff693da5967c0d89d246f"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+        "sha256": "12cbc2b561f7bd3ba6fed5dec20e3e5c3cc2119ed3dedb5c0129142651f9ce8c"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+        "sha256": "5fabcb7634d980ec6c361b941075583a93af39a0731e75543c42cdee83794f32"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+        "sha256": "af3afce9ff2be76d81a171fef5bf97e37c3f5ae81ce1d56e20744063c16bdc8e"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+        "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+      },
+      {
+        "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+        "sha256": "c9497abe851bc88e5bc96498d6a7f973322aa0106f3d3a0200a7cfa84e14645b"
+      }
+    ]
+  },
+  "installation": "Only the selected plugin ZIP updates; each migration API/source is inside its owner package."
+}

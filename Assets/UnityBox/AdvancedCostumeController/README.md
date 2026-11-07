@@ -2,17 +2,18 @@
 
 ACC 从指定的**服装根节点（Costumes Root）**扫描服装，生成可在普通 Unity 使用的 Animator Controller 和动画。支持服装变体、部件独立控制、持久部件分组、材质变体和两种混搭模式（Custom Mixer）；安装可选集成后，还可生成 Modular Avatar 菜单、FX 安装和网络参数压缩。
 
-当前版本 **0.5.1**。
+当前版本 **0.5.2**。
 
 ## 组件引用与源配置
 
 ACC 的三个 Runtime 标记为 `ACCOutfitMarker`、`ACCPartGroupMarker` 和
 `ACCVariantMaterialOverride`，本轮保留类名、程序集、字段和 0.5.0 起的固定脚本身份。
-0.4.13 旧 ZIP 没有脚本 `.meta`，各项目生成的随机 GUID 可通过
-[Component References 手动工具](../../../Docs/ComponentReferences.md)批量重连。
-VCC/ALCOM 单包安装可导入一次
-[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
-再打开 `Tools/UnityBox/Component References`，选择资源并一次执行迁移，无逐项确认。
+0.4.13 旧 ZIP 没有脚本 `.meta`，各项目生成的随机 GUID 可使用本包自带的恢复功能
+批量重连。正常更新 ACC 后，在 Project 选择资源，打开
+`Assets/UnityBox/Advanced Costume Controller/Repair Component References`。
+窗口带入当前选择，只处理三种 ACC 标记；点击 **Migrate Selected Assets** 一次执行整批，
+无逐项确认。`Mode` / `GroupName` 弱候选按旧 GUID 选择一次类型。
+范围、备份与跳过规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
 
 打开或绘制 Inspector 保留原字段。材质来源先保存在 Editor 临时状态，显式分析、刷新或
 应用时才提交并记录 Undo；无效材质槽在绘制时保留原值。PartGroup 切到 Exclude 保留

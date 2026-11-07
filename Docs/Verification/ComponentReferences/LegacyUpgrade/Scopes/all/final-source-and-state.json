@@ -1,0 +1,253 @@
+{
+  "passed": true,
+  "scope": "all",
+  "owners": [
+    "AdvancedCostumeController",
+    "AnimatorOptimizer",
+    "AvatarSecuritySystem",
+    "VisemeBlendshapeOverride"
+  ],
+  "embedded_sources_match_current_zips_and_checkout": true,
+  "compiled_owner_engines": [
+    {
+      "owner": "AdvancedCostumeController",
+      "package": "top.sealoong.unitybox.advanced-costume-controller",
+      "engineType": "UnityBox.AdvancedCostumeController.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AdvancedCostumeController.Core",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+      "assemblySha256": "eb6a26a3cb86404df62d4433a99238a601f06b7a1d4c4d8ea3ba6dc84ed6220e",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "f624e7b8d19fd9b94e3a2368326688715759c2e7ef67625bd9889e807fa308e1"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "ced75848d9b8d6e06d2970c70a7f653d3a0c70351a36ab74e031017737d10211"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "7386a3bc7a909cfac5acbe91df2e8fa8b6789f62c8a56f0a3873eeef662c7227"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4168550819133630d36bbbc474d94f82a66419ec496f3c5101a4bfb761af515a"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "f624e7b8d19fd9b94e3a2368326688715759c2e7ef67625bd9889e807fa308e1"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "ced75848d9b8d6e06d2970c70a7f653d3a0c70351a36ab74e031017737d10211"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "7386a3bc7a909cfac5acbe91df2e8fa8b6789f62c8a56f0a3873eeef662c7227"
+        },
+        {
+          "path": "Core/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4168550819133630d36bbbc474d94f82a66419ec496f3c5101a4bfb761af515a"
+        }
+      ]
+    },
+    {
+      "owner": "AvatarSecuritySystem",
+      "package": "top.sealoong.unitybox.avatar-security-system",
+      "engineType": "UnityBox.AvatarSecuritySystem.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AvatarSecuritySystem",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+      "assemblySha256": "eacb34512df600f5923e7a6c5afd1fcae1e07daeb4b0961f9eef7b36b15424a3",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+        }
+      ]
+    },
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "engineType": "UnityBox.VisemeBlendshapeOverride.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.VisemeBlendshapeOverride",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+      "assemblySha256": "565763ab7c8f0724e99b3b47d3c8a3e02d18764399b2375f44ae64e7824bc13a",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+        }
+      ]
+    },
+    {
+      "owner": "AnimatorOptimizer",
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AnimatorOptimizer",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+      "assemblySha256": "8776fb1b2c70bdfa37bc803d0332e3f4e3fdeb063852b5407646d9d92892ac2e",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+        }
+      ]
+    }
+  ],
+  "legacy_script_identities": 6,
+  "original_asset_and_meta_files": 30,
+  "captured_component_records": 53,
+  "captured_property_records": 2341,
+  "typed_component_records_compared_per_pass": 49,
+  "persistent_field_comparisons_per_pass": 2097,
+  "object_reference_global_ids_per_pass": 119,
+  "read_only_duplicate_cases": 4,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 244,
+  "transient_native_pptr_child_values_excluded": 0,
+  "explicit_owner_batch_calls": 4,
+  "repaired_components": 12,
+  "inspector_targets": 24,
+  "missing_scripts_reproduced": 42,
+  "changed_assets": [
+    "Assets/ComponentUpgradeFixtures/Avatar.unity",
+    "Assets/ComponentUpgradeFixtures/Base.prefab"
+  ],
+  "current_state_retained": true,
+  "read_only_duplicate_legacy_documents": [
+    {
+      "owner": "AdvancedCostumeController",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+      "legacy_guid": "d5693caefede59af092dbf9b2832d970",
+      "original_component_document_sha256": "c674040e7126076537c7f74b058d1a263c55b90deee25d9b014599b1bd962e00",
+      "bytes": 486,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    },
+    {
+      "owner": "AvatarSecuritySystem",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AvatarSecuritySystem.unity",
+      "legacy_guid": "e9ccba79500f6b71096d0043dd35cf8a",
+      "original_component_document_sha256": "8842c21f9a3cdfbece980efbec2cd7f676edbcfd190df51543a3a740bcfdd763",
+      "bytes": 919,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    },
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "legacy_guid": "80f3f008e2ff4ea8c97b8a4471640337",
+      "original_component_document_sha256": "dab45cbd6e4786e5ca5a65b80ae2f3588a4f5a4ae50d9010fe3e5a0178ca44bb",
+      "bytes": 2378,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    },
+    {
+      "owner": "AnimatorOptimizer",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+      "legacy_guid": "53b2d1da6a7139de7937ae548a5cff19",
+      "original_component_document_sha256": "936ca4b4c13934fb2037753701d42eb5feaec81f9b2222c1bc3b96b2c8c19f63",
+      "bytes": 1248,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    }
+  ],
+  "native_evidence_joins": {
+    "phase_results_equal_run_records": true,
+    "current_run_inputs_equal_frozen_plugin_zips": true,
+    "installed_complete_plugin_payloads_equal_frozen_zips": true,
+    "owner_batch_hash_chain_continuous": true,
+    "final_disk_files_equal_native_final_batch_hashes": true
+  }
+}

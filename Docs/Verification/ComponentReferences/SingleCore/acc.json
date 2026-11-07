@@ -1,0 +1,146 @@
+{
+  "owner": "acc",
+  "scope_kind": "Focused plugin-owned migration cases in a one-plugin Unity-only consumer",
+  "passed": true,
+  "test_filter": "ComponentMigration.Tests",
+  "run": {
+    "run_id": "20261107T145556-b380dc3a",
+    "project_id": "787d3852e17446eb8c0cedadc8f765b9",
+    "command": [
+      "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+      "-batchmode",
+      "-nographics",
+      "-projectPath",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107",
+      "-runTests",
+      "-testPlatform",
+      "EditMode",
+      "-testResults",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107/.unitybox-test-results/20261107T145556-b380dc3a/results.xml",
+      "-logFile",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107/.unitybox-test-results/20261107T145556-b380dc3a/unity.log",
+      "-testFilter",
+      "ComponentMigration.Tests",
+      "-testCategory",
+      "!UnityBoxPerformance;!UnityBoxGraphics",
+      "-assemblyNames",
+      "UnityBox.AdvancedCostumeController.Core.Tests"
+    ],
+    "profile": "core",
+    "ignored_vpm_dependencies": {},
+    "package_versions": {
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.test-framework": "1.1.33",
+      "top.sealoong.unitybox.advanced-costume-controller": "0.5.2"
+    },
+    "started_at": "2026-11-07T14:55:56.401182+00:00",
+    "started_epoch": 1794063356.4011931,
+    "timeout_seconds": 1200.0,
+    "expected_assemblies": [],
+    "timed_out": false,
+    "exit_code": 0,
+    "selected_assemblies": [
+      "UnityBox.AdvancedCostumeController.Core.Tests"
+    ],
+    "xdg_root": "/workspace/unitybox-setup/unity/interactive",
+    "test_filter": "ComponentMigration.Tests",
+    "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+    "benchmark": false,
+    "graphics": false,
+    "machine": {
+      "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+      "cpu_count": 5
+    },
+    "finished_at": "2026-11-07T14:56:27.491414+00:00"
+  },
+  "tests": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.AdvancedCostumeController.Core.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.AdvancedCostumeController.Core.Tests": {
+        "total": 13,
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "source_evidence": {
+    "packages": {
+      "top.sealoong.unitybox.advanced-costume-controller": {
+        "version": "0.5.2",
+        "source": "/workspace/UnityBox/Assets/UnityBox/AdvancedCostumeController",
+        "checkout": "/workspace/UnityBox",
+        "branch": "master",
+        "checkout_base_revision": "31122c6aa6faa916fab31f628bdd3a977270c303",
+        "prepared_tree_sha256": "7b1bf60f46f7475b7caf6862b447a3de6fed8fe62b071da25f241f5a40f064d0",
+        "source_snapshot_sha256": "e78cb7fd97c3189750cac07cd5f9f87bf00404cbc97551e4edfee93e110346fa",
+        "imported_snapshot_sha256": "e78cb7fd97c3189750cac07cd5f9f87bf00404cbc97551e4edfee93e110346fa",
+        "file_count": 105,
+        "metadata_formatting_only": [],
+        "importer_generated_metadata": [
+          "Resources/OutlineBlank2.png.meta",
+          "Resources/OutlineClothing2.png.meta",
+          "package.json.meta"
+        ]
+      }
+    },
+    "imported_assemblies": {
+      "UnityBox.AdvancedCostumeController.Core": {
+        "package": "top.sealoong.unitybox.advanced-costume-controller",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+          "bytes": 109568,
+          "sha256": "8624a3f3223f5e6eda9e4d90ee9bca52125938968c3165039c96e6dcce46087c"
+        },
+        "source_file_count": 17,
+        "source_sha256": "96b36e47ae17d78e62a579c79a5844efd89b465514e55a27ee7428d5ffdebcd8"
+      },
+      "UnityBox.AdvancedCostumeController.Runtime": {
+        "package": "top.sealoong.unitybox.advanced-costume-controller",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Runtime.dll",
+          "bytes": 9216,
+          "sha256": "5ea1d6cb9fe782926c305afd610652078671391f4fc08e818ffa9d8e1fbc8eb2"
+        },
+        "source_file_count": 4,
+        "source_sha256": "e62f6a2d4853e98b2b3503ff032d8f59423838b87ad88bc232a866d7e68e9e7b"
+      },
+      "UnityBox.AdvancedCostumeController.Core.Tests": {
+        "package": "top.sealoong.unitybox.advanced-costume-controller",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-acc-core-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.Tests.dll",
+          "bytes": 49152,
+          "sha256": "beebc61c2d8f06cb906b8a0e73cb6d3d3c2b401536cd29e8d1b1eb502d62fdc8"
+        },
+        "source_file_count": 6,
+        "source_sha256": "bd128b609cca9c3998b267d19e7e3c1fa609577036c4282807c593fdd8912f10"
+      }
+    },
+    "package_snapshot_matches_current_source": true,
+    "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+    "snapshot_excludes": [
+      "*.md",
+      "*.md.meta"
+    ],
+    "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+  },
+  "archived_xml": {
+    "path": "acc-results.xml.gz",
+    "sha256": "ad58ada757de82e859ecc412a560d3d5dca3cf0ed0bf8c2c2a7d2a7c9ab33c7e",
+    "original_xml_sha256": "ac9d2a7d8719195cfb5d6ae9e84be867d80090f0df9af817714d0351dde7a471",
+    "removed_metadata": []
+  }
+}

@@ -1,0 +1,50 @@
+{
+    "phase": "broken",
+    "scope": "viseme",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "legacy GUID path after current package import: UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent=",
+        "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+        {
+            "owner": "VisemeBlendshapeOverride",
+            "package": "top.sealoong.unitybox.viseme-blendshape-override",
+            "engineType": "UnityBox.VisemeBlendshapeOverride.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.VisemeBlendshapeOverride",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+            "assemblySha256": "565763ab7c8f0724e99b3b47d3c8a3e02d18764399b2375f44ae64e7824bc13a",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+                }
+            ]
+        }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+}

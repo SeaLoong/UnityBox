@@ -1,0 +1,185 @@
+{
+  "phase": "broken",
+  "scope": "ao",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107",
+    "-executeMethod",
+    "ComponentUpgradeFixture.VerifyBroken",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/.unitybox-component-upgrade/broken-editor.log"
+  ],
+  "inputs": [
+    {
+      "source": "/workspace/unitybox-setup/unity/owner-migration-current-packages/top.sealoong.unitybox.animator-optimizer-0.3.2.zip",
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "owner": "AnimatorOptimizer",
+      "version": "0.3.2",
+      "input_kind": "ZIP",
+      "archive_sha256": "f20b599afcee804b280ec4ac791a5e9eaabf2c4c39ea13b09bad870cd7dfe953",
+      "zip_crc_checked": true,
+      "tree_sha256": "2da5ab4f4ca9ce0ede0fa5682a97c60ad01c94ece1c14baa611dd1c014cbe9bd",
+      "original_tree_sha256": "2da5ab4f4ca9ce0ede0fa5682a97c60ad01c94ece1c14baa611dd1c014cbe9bd",
+      "excluded_development_test_files": [],
+      "files": 101,
+      "metadata_files": [
+        "Editor/AnimatorOptimizerAapBuilder.cs.meta",
+        "Editor/AnimatorOptimizerAapProgram.cs.meta",
+        "Editor/AnimatorOptimizerAnalysis.cs.meta",
+        "Editor/AnimatorOptimizerConverter.cs.meta",
+        "Editor/AnimatorOptimizerEditor.cs.meta",
+        "Editor/AnimatorOptimizerEditorStyles.cs.meta",
+        "Editor/AnimatorOptimizerHeuristics.cs.meta",
+        "Editor/AnimatorOptimizerPlatform.cs.meta",
+        "Editor/AnimatorOptimizerProcessor.cs.meta",
+        "Editor/AnimatorOptimizerSceneBuildProcessor.cs.meta",
+        "Editor/AnimatorOptimizerSynchronizedLayers.cs.meta",
+        "Editor/AnimatorOptimizerWindow.cs.meta",
+        "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+        "Editor/ComponentMigration/MigrationEngine.cs.meta",
+        "Editor/ComponentMigration.meta",
+        "Editor/NDMF/AnimatorOptimizerAapVirtualBridge.cs.meta",
+        "Editor/NDMF/AnimatorOptimizerHeuristicVirtualPlans.cs.meta",
+        "Editor/NDMF/AnimatorOptimizerNdmfPlugin.cs.meta",
+        "Editor/NDMF/AnimatorOptimizerSynchronizedVirtualLayers.cs.meta",
+        "Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.asmdef.meta",
+        "Editor/NDMF.meta",
+        "Editor/UnityBox.AnimatorOptimizer.asmdef.meta",
+        "Editor/VRC/AnimatorOptimizerVrcBuildIntegration.cs.meta",
+        "Editor/VRC/AnimatorOptimizerVrcPlatformAdapter.cs.meta",
+        "Editor/VRC/UnityBox.AnimatorOptimizer.VRC.asmdef.meta",
+        "Editor/VRC.meta",
+        "Editor.meta",
+        "Runtime/AnimatorOptimizerComponent.cs.meta",
+        "Runtime/UnityBox.AnimatorOptimizer.Runtime.asmdef.meta",
+        "Runtime.meta",
+        "Tests/Editor/AnimatorOptimizerTests.cs.meta",
+        "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs.meta",
+        "Tests/Editor/ComponentMigration.meta",
+        "Tests/Editor/ModularAvatar/AnimatorOptimizerModularAvatarTests.cs.meta",
+        "Tests/Editor/ModularAvatar/UnityBox.AnimatorOptimizer.ModularAvatar.Tests.asmdef.meta",
+        "Tests/Editor/ModularAvatar.meta",
+        "Tests/Editor/NDMF/OptimizerVirtualRegressionTests.cs.meta",
+        "Tests/Editor/NDMF/UnityBox.AnimatorOptimizer.NDMF.Tests.asmdef.meta",
+        "Tests/Editor/NDMF.meta",
+        "Tests/Editor/OptimizerConfigurationPreservationTests.cs.meta",
+        "Tests/Editor/OptimizerIntegrationRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerParameterSemanticsTests.cs.meta",
+        "Tests/Editor/OptimizerProcessorRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerRuntimeAndPerformanceTests.cs.meta",
+        "Tests/Editor/OptimizerSemanticRegressionTests.cs.meta",
+        "Tests/Editor/OptimizerStandaloneIntegrationTests.cs.meta",
+        "Tests/Editor/UnityBox.AnimatorOptimizer.Tests.asmdef.meta",
+        "Tests/Editor/VRC/AnimatorOptimizerVrcIntegrationTests.cs.meta",
+        "Tests/Editor/VRC/UnityBox.AnimatorOptimizer.VRC.Tests.asmdef.meta",
+        "Tests/Editor/VRC.meta",
+        "Tests/Editor.meta",
+        "Tests/Fixtures/Runtime/AnimatorOptimizerTestMarkerBehaviour.cs.meta",
+        "Tests/Fixtures/Runtime/UnityBox.AnimatorOptimizer.TestFixtures.asmdef.meta",
+        "Tests/Fixtures/Runtime.meta",
+        "Tests/Fixtures.meta",
+        "Tests.meta"
+      ],
+      "dependencies": {},
+      "vpmDependencies": {},
+      "embedded_migration_namespace": "UnityBox.AnimatorOptimizer.ComponentMigration",
+      "migration_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb",
+          "declares_engine": false
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a",
+          "declares_engine": true
+        },
+        {
+          "path": "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs",
+          "sha256": "e873c810de16d2d843c4c925dc4be027cf7b108d11b8a290879a182f37139db8",
+          "declares_engine": false
+        }
+      ]
+    }
+  ],
+  "project_package_isolation": {
+    "passed": true,
+    "selected_unitybox_packages": [
+      "top.sealoong.unitybox.animator-optimizer"
+    ],
+    "installed_unitybox_packages": {
+      "top.sealoong.unitybox.animator-optimizer": {
+        "version": "0.3.2",
+        "path": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/Packages/top.sealoong.unitybox.animator-optimizer"
+      }
+    },
+    "shared_migration_source_present": false,
+    "shared_migration_assembly_present": false
+  },
+  "config_sha256": "75a884a14b62e2a410ab49c50eaa322625deaf223d40233c3ab8e2a8697d4773",
+  "started_at_utc": "2026-11-07T15:21:40.423715+00:00",
+  "exit_code": 0,
+  "result": {
+    "phase": "broken",
+    "scope": "ao",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+      "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+      "legacy GUID path after current package import: UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent=",
+      "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+      {
+        "owner": "AnimatorOptimizer",
+        "package": "top.sealoong.unitybox.animator-optimizer",
+        "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+        "assembly": "UnityBox.AnimatorOptimizer",
+        "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+        "assemblySha256": "8776fb1b2c70bdfa37bc803d0332e3f4e3fdeb063852b5407646d9d92892ac2e",
+        "sourceFiles": [
+          {
+            "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+            "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+            "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+            "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+            "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+          }
+        ]
+      }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+  },
+  "passed": true,
+  "fixture_source": {
+    "sha256": "8249e486679cda878e0d16c2feeac99f5408a480ae8d1ccc72ce7cff2e5d836c",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeFixture.cs"
+  },
+  "holder_source": {
+    "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeReferenceHolder.cs"
+  },
+  "finished_at_utc": "2026-11-07T15:24:51.857220+00:00"
+}

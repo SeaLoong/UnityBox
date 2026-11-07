@@ -68,47 +68,51 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
    Delete only rebuildable owned caches when disk space requires it, retaining imported DLLs,
    source snapshots and raw evidence. Check active projects before cleaning their caches.
 
-## Verify manual migration, import preservation and serialized identity
+## Verify package-owned recovery, import preservation and serialized identity
 
 - Opening/importing packages or loading assets preserves source bytes, script GUIDs, serialized fields
   and editing state. Do not install startup/import migrations or automatic OnValidate corrections.
   Normalize independent configuration/Options snapshots for generation instead of modifying source.
-- The user authorized a manual component-reference migration on selected resources as one batch,
-  without per-item confirmation. Do not add extra approval steps. Resolve an ambiguous old GUID once
-  for its entire group; unknown/duplicate or open-asset/dependency cases stay in the report.
-- Use [ComponentReferences](../../../Docs/ComponentReferences.md) for the eight-package matrix,
-  six component FQCN/assembly/GUID entries and the manual tool. ACC has three production markers;
-  ASS, Viseme and AO one each. BCG/Collider/Logger/PrefabPatcher have no own Avatar authoring component.
-  AO 0.2 is a development snapshot, not a published legacy VPM ZIP.
-- The shared Editor tool lives in `Assets/UnityBox/ComponentReferenceMigration/Editor` and has no ninth
-  VPM manifest. Full source checkouts include it; VPM-only users import the standalone
-  `https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage` once.
-- `Tools/UnityBox/Component References`: Use Project Selection or drag assets/folders, Analyze read-only,
-  choose any ambiguous old GUID's target once, then Migrate Selected Assets to process the ready batch.
-  Dependency evidence does not expand write scope. Open Scene/PrefabStage and dependencies are
-  skipped; leave saving/closing to the user. Never remove or merge duplicate components automatically.
-- Test all six components with actual old ACC/ASS/Viseme published ZIP imports and the old AO
-  development snapshot. Preserve genuine generated script GUIDs, values, fileIDs, audio/object
-  references and Prefab overrides, then install the current complete packages. Startup/import remain
-  read-only; invoke the manual batch to restore selected eligible references.
-- Check Analyze creates no backup or identity cache. Apply rechecks source evidence SHA and installed
-  target identity, backs up every target before the first write, and only changes fixed-length GUID
-  byte spans. Preserve fileIDs, all other fields/references, BOM/CRLF and project metadata. Existing
-  corresponding metadata is copied to `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`.
-- Cover batch scope, ambiguity mapping, unknown/valid-external/duplicate skipping, open resources and
-  dependencies, changed files since scan, exact backups, idempotence and source configuration preservation.
-  Include Prefab Stage dependencies added only in memory: an unsaved nested Prefab and an object asset
-  reference. Run that case graphically with autoSave disabled, compare dirty state and original bytes,
-  and discard only the test fixture's own edits when returning to the main Stage.
-  Record native and real-upgrade results in
+- Component recovery ships with ACC0.5.2, AO0.3.2, Viseme0.2.2 and ASS0.9.3 inside each owner's existing
+  Unity-only Editor assembly. Normal plugin installation/update delivers the feature; do not add an
+  installer, dependency package or extra source-module copy to make recovery available.
+- Project context menus use `Assets/UnityBox/<owner>/Repair Component References`; owners are
+  `Advanced Costume Controller`, `Animator Optimizer`, `Avatar Security System` and
+  `Viseme Blendshape Override`. Preserve the old Tools plugin-window leaf. Opening the owner window
+  prepopulates Project selection and only exposes that owner's audited component types.
+- The user authorized one manual batch over selected resources, without per-item confirmation.
+  Resolve an ambiguous legacy GUID once for its group; ACC Mode/GroupName is a weak candidate even
+  when one type is listed. Unknown/duplicate or open-asset/dependency cases remain in the report.
+- Use [ComponentReferences](../../../Docs/ComponentReferences.md) for the eight-package matrix and
+  six component FQCN/assembly/GUID entries. ACC has three production markers; AO, ASS and Viseme
+  one each. BCG/Collider/Logger/PrefabPatcher have no own Avatar authoring component. AO0.2 is a
+  development snapshot, not a published legacy VPM ZIP.
+- Prepare five independent consumers with normal package preparation: ACC only, AO only, ASS only,
+  Viseme only and all four together. Use `--package` for the sole owner, or repeat it four times for
+  the combined case. Compile and execute using only that consumer's declared dependencies and source.
+  Do not seed the old standalone directory, an extra asmdef, test assembly or installer as a workaround.
+  Package recovery must remain available even when the repository's obsolete module is absent.
+- In each consumer, verify its exact Project menu, owner-only targets, read-only Analyze and one
+  Migrate Selected Assets batch. No startup/import action writes files. Test genuine old ACC/ASS/Viseme
+  ZIP imports and the AO development snapshot, retaining generated old GUIDs and serialized values.
+- Apply rechecks source evidence SHA and installed target identity, backs up every target before the
+  first write, and changes only fixed-length GUID byte spans. Preserve fileIDs, fields, references,
+  BOM/CRLF and project metadata. Copy existing metadata with the batch to
+  `UserSettings/UnityBox/<AdvancedCostumeController|AnimatorOptimizer|AvatarSecuritySystem|VisemeBlendshapeOverride>/ComponentReferenceMigration/<id>/Assets/...`.
+- Keep dependency evidence read-only and write only selected paths. Skip loaded Scene/PrefabStage
+  and their dependencies without saving, closing or reloading. Cover unsaved nested Prefab and object
+  references added in Prefab Mode with autoSave disabled; compare dirty state, object identities and
+  original bytes. Discard only the test fixture's own edits when leaving its Stage.
+- Cover ambiguity mapping, valid-external/unknown/duplicate handling, changed files since scan,
+  exact backups, idempotence and owner source configuration preservation. Record five-consumer,
+  native and real-upgrade evidence in
   [ComponentReferences verification](../../../Docs/Verification/ComponentReferences/README.md).
 - [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md) and
   [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) retain historical 0.9.1 import safety
-  and the removed 0.9.0 automatic implementation. Keep the old ASS backup directory separate from the
-  new manual batches. Diagnose any Missing Script by actual m_Script GUID, script path and owning package.
-- Ship stable package metadata and preserve already published ZIP bytes. This release changes only
-  ACC/AO/Viseme/ASS packages; leave BCG/Collider/Logger/PrefabPatcher package files untouched unless
-  their code and versions also change. Central documentation holds their no-component audit findings.
+  and the removed 0.9.0 automatic implementation. Preserve old global/ASS backup folders separately
+  from the new owner-specific batches. Diagnose Missing Script by actual GUID, path and owning package.
+- Preserve published ZIP bytes. Only the four component-bearing packages change in this release;
+  keep BCG/Collider/Logger/PrefabPatcher package files unchanged unless they receive code/version changes.
 
 ## Retain reviewable results and publish the code
 

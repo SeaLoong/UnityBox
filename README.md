@@ -32,37 +32,36 @@ https://sealoong.github.io/UnityBox/vpm.json
 源码或本地 UPM 安装直接从 `master` 的 `Assets/UnityBox` 选择所需包。
 源码版本以对应提交和包内 `package.json` 为准，VPM listing 列出已部署的发布产物。
 升级时保留 `.meta` 与场景，按各工具入口更新 Controller、菜单和参数安装结果；
-ASS 0.9.2 随正常 Player/Avatar 构建自动生成。
+ASS 0.9.3 随正常 Player/Avatar 构建自动生成。
 生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
-ACC 0.5.1、AO 0.3.1、Viseme 0.2.1 与 ASS 0.9.2 保留已有组件类、程序集与字段，
+ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 与 ASS 0.9.3 保留已有组件类、程序集与字段，
 打开项目、导入和加载资源时保留源文件、GUID 与已存参数。普通 Unity 的 ASS 在正常 Player 构建副本中自动生成，无手动生成步骤。
 本版移除 Avatar 对象锁定，采用连续手势保持、默认保持 0.5s / 容错 0.3s、严格时间关系
 及四语言界面。诱饵状态可独立启用，无 Bool 池时也会补齐条件所用的本地布尔守卫。
 升级和旧迁移记录的保留说明见[ASS 用户指南](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
 
-## 组件引用工具
+## 插件自带的组件恢复
 
 全八插件共有六种自有 Avatar/Prefab 组件：ACC 三类、ASS、Viseme 和 AO 各一类。
 BCG、Collider Monitor、Logger 与 Prefab Diff Patcher 没有自有 Avatar authoring 组件。
-类型、程序集、固定 GUID 与旧包来源见[组件引用矩阵](Docs/ComponentReferences.md)。
+类型、固定身份和各包 Project 菜单路径见[组件引用手册](Docs/ComponentReferences.md)。
 
-打开 `Tools/UnityBox/Component References`，选择需要处理的资源并点击
-**Migrate Selected Assets**，一次批量处理可确定的旧引用，无逐项确认。
-歧义旧 GUID 只选择一次目标类型；已打开资源及其依赖、未知和重复组件只报告跳过。
-工具没有启动/导入自动迁移回调。VCC/ALCOM 单包用户可独立导入一次
-[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)；
-它是共享 Editor 工具，不是第九个 VPM 包。
+正常更新对应插件后，在 Project 选择资源，使用
+`Assets/UnityBox/<插件名>/Repair Component References` 打开该插件的恢复窗口。
+窗口带入当前选择，只处理本插件组件；可先 Analyze，再一次点击 **Migrate Selected Assets**
+执行整批，无逐项确认。歧义旧 GUID 只选择一次目标类型，打开资源及其依赖、未知和重复
+组件在报告中跳过。恢复功能随原插件的 Unity-only Editor 程序集交付，没有启动/导入迁移回调。
 
 ## 功能、构建与性能
 
 八个插件从同一个 `master` checkout 准备纯 Unity、SDK、完整 MA/NDMF 三种隔离工程，
 分别执行功能、图形、Linux Player 和串行性能测试。执行范围、运行标识与源码指纹见
-[测试指南](Docs/Testing.md)；[验证结果](Docs/VerificationResults.json)记录当前全库与独立工具的执行结果；
+[测试指南](Docs/Testing.md)；[验证结果](Docs/VerificationResults.json)记录当前插件的执行结果；
 三个依赖范围重复执行核心用例，分别计数。
 
 本轮全六种组件引用与源配置保全检查单列于[当前记录](Docs/Verification/ComponentReferences/README.md)。
 0.9.0 的自动构建、连续保持、WD Off、Player 和串行测量保留为对应发布快照的基线；
-历史 ASS 自动迁移已于 0.9.1 移除；当前引用修复统一由独立手动工具执行。
+历史 ASS 自动迁移已于 0.9.1 移除；当前引用修复由各插件自带的手动入口执行。
 
 [功能总览](Docs/PluginAudit.md) 列出每个插件的输入、输出和执行场景；
 [变更与迁移](Docs/RefactorChanges.md) 解释修复触发条件、行为变化和生成资产的升级方式。

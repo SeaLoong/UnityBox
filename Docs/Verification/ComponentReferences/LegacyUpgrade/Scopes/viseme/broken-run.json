@@ -1,0 +1,170 @@
+{
+  "phase": "broken",
+  "scope": "viseme",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107",
+    "-executeMethod",
+    "ComponentUpgradeFixture.VerifyBroken",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/.unitybox-component-upgrade/broken-editor.log"
+  ],
+  "inputs": [
+    {
+      "source": "/workspace/unitybox-setup/unity/owner-migration-current-packages/top.sealoong.unitybox.viseme-blendshape-override-0.2.2.zip",
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "owner": "VisemeBlendshapeOverride",
+      "version": "0.2.2",
+      "input_kind": "ZIP",
+      "archive_sha256": "96160b18b33f2db0dffb24b2d0b9909bf10bdf1ebffe423525fd072b99adb00a",
+      "zip_crc_checked": true,
+      "tree_sha256": "ee2e14945808d62e59c3e4b3a76c87f8fedb6aa865823f9a530f66f4a7e11785",
+      "original_tree_sha256": "ee2e14945808d62e59c3e4b3a76c87f8fedb6aa865823f9a530f66f4a7e11785",
+      "excluded_development_test_files": [],
+      "files": 72,
+      "metadata_files": [
+        "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+        "Editor/ComponentMigration/MigrationEngine.cs.meta",
+        "Editor/ComponentMigration.meta",
+        "Editor/NDMF/UnityBox.VisemeBlendshapeOverride.NDMF.asmdef.meta",
+        "Editor/NDMF/VisemeBlendshapeOverrideNdmfPlugin.cs.meta",
+        "Editor/NDMF.meta",
+        "Editor/UnityBox.VisemeBlendshapeOverride.asmdef.meta",
+        "Editor/VRChat/UnityBox.VisemeBlendshapeOverride.VRChat.asmdef.meta",
+        "Editor/VRChat/VisemeBlendshapeOverrideVrcDefaults.cs.meta",
+        "Editor/VRChat/VisemeBlendshapeOverrideVrcProcessor.cs.meta",
+        "Editor/VRChat/VisemeBlendshapeOverrideVrcUtils.cs.meta",
+        "Editor/VRChat.meta",
+        "Editor/VisemeBlendshapeEditorIntegration.cs.meta",
+        "Editor/VisemeBlendshapeOverrideEditor.cs.meta",
+        "Editor/VisemeBlendshapeOverrideProcessor.cs.meta",
+        "Editor/VisemeBlendshapeOverrideUtils.cs.meta",
+        "Editor/VisemeControllerCopy.cs.meta",
+        "Editor/VisemeSceneBuildProcessor.cs.meta",
+        "Editor.meta",
+        "README.md.meta",
+        "Runtime/UnityBox.VisemeBlendshapeOverride.Runtime.asmdef.meta",
+        "Runtime/VisemeBlendshapeOverrideComponent.cs.meta",
+        "Runtime.meta",
+        "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs.meta",
+        "Tests/Editor/ComponentMigration.meta",
+        "Tests/Editor/NDMF/UnityBox.VisemeBlendshapeOverride.NDMF.Tests.asmdef.meta",
+        "Tests/Editor/NDMF/VisemeNdmfRegressionTests.cs.meta",
+        "Tests/Editor/NDMF.meta",
+        "Tests/Editor/UnityBox.VisemeBlendshapeOverride.Editor.Tests.asmdef.meta",
+        "Tests/Editor/VRChat/UnityBox.VisemeBlendshapeOverride.VRChat.Tests.asmdef.meta",
+        "Tests/Editor/VRChat/VisemeRegressionTests.cs.meta",
+        "Tests/Editor/VRChat.meta",
+        "Tests/Editor/VisemeAnimatorEvaluationTests.cs.meta",
+        "Tests/Editor/VisemeControllerCopyTests.cs.meta",
+        "Tests/Editor/VisemeCoreTests.cs.meta",
+        "Tests/Editor/VisemePerformanceTests.cs.meta",
+        "Tests/Editor/VisemeSerializationTests.cs.meta",
+        "Tests/Editor/VisemeSourcePreservationTests.cs.meta",
+        "Tests/Editor.meta",
+        "Tests.meta",
+        "package.json.meta"
+      ],
+      "dependencies": {},
+      "vpmDependencies": {},
+      "embedded_migration_namespace": "UnityBox.VisemeBlendshapeOverride.ComponentMigration",
+      "migration_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b",
+          "declares_engine": false
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe",
+          "declares_engine": true
+        },
+        {
+          "path": "Tests/Editor/ComponentMigration/ComponentMigrationTests.cs",
+          "sha256": "b6bf4b7c72d574cc53cd637d5f4391d4b2f6b30e79364efd305692325ba5ae8c",
+          "declares_engine": false
+        }
+      ]
+    }
+  ],
+  "project_package_isolation": {
+    "passed": true,
+    "selected_unitybox_packages": [
+      "top.sealoong.unitybox.viseme-blendshape-override"
+    ],
+    "installed_unitybox_packages": {
+      "top.sealoong.unitybox.viseme-blendshape-override": {
+        "version": "0.2.2",
+        "path": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/Packages/top.sealoong.unitybox.viseme-blendshape-override"
+      }
+    },
+    "shared_migration_source_present": false,
+    "shared_migration_assembly_present": false
+  },
+  "config_sha256": "905b6654ef9eea80befbf52f0d0f969cbafa8de0a2a40b9b3300c46c61f300c7",
+  "started_at_utc": "2026-11-07T15:30:36.158740+00:00",
+  "exit_code": 0,
+  "result": {
+    "phase": "broken",
+    "scope": "viseme",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+      "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+      "legacy GUID path after current package import: UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent=",
+      "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+      {
+        "owner": "VisemeBlendshapeOverride",
+        "package": "top.sealoong.unitybox.viseme-blendshape-override",
+        "engineType": "UnityBox.VisemeBlendshapeOverride.ComponentMigration.MigrationEngine",
+        "assembly": "UnityBox.VisemeBlendshapeOverride",
+        "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+        "assemblySha256": "565763ab7c8f0724e99b3b47d3c8a3e02d18764399b2375f44ae64e7824bc13a",
+        "sourceFiles": [
+          {
+            "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+            "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+            "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs",
+            "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+          },
+          {
+            "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs.meta",
+            "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+          }
+        ]
+      }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+  },
+  "passed": true,
+  "fixture_source": {
+    "sha256": "8249e486679cda878e0d16c2feeac99f5408a480ae8d1ccc72ce7cff2e5d836c",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeFixture.cs"
+  },
+  "holder_source": {
+    "sha256": "b5e865ff762288e0d6d90c9d9af7a6c7ba5a74b9aab31bbe38f83c79f425c86b",
+    "file": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/.unitybox-component-upgrade/source-snapshots/broken/ComponentUpgradeReferenceHolder.cs"
+  },
+  "finished_at_utc": "2026-11-07T15:32:38.274627+00:00"
+}

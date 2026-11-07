@@ -2,17 +2,17 @@
 
 Unity Animator 的分析、离线转换、图清理和构建优化工具。普通 Unity 项目直接使用核心；VRChat SDK、NDMF 和 Modular Avatar 集成按项目需要安装。
 
-当前版本 **0.3.1**。
+当前版本 **0.3.2**。
 
 ## 组件引用与配置副本
 
 `UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent` 的类名、Runtime 程序集和已发布字段
 保持不变，发行脚本 GUID 为 `a157d3d35699dd84abde9e5412bd7017`。早期标为 0.2 的来源是
 开发快照，没有对应的公开旧 VPM ZIP；0.3.0 是带固定身份的公开发布。
-开发快照形成的旧引用使用[Component References](../../../Docs/ComponentReferences.md)手动迁移。
-只安装单包时导入一次
-[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
-在 `Tools/UnityBox/Component References` 选择资源并一次执行整批，无逐项确认。
+本包自带开发快照旧引用的手动恢复功能。正常更新后，在 Project 选择资源，打开
+`Assets/UnityBox/Animator Optimizer/Repair Component References`。窗口带入当前选择，
+只处理 AnimatorOptimizerComponent；点击 **Migrate Selected Assets** 一次执行整批，
+无逐项确认。范围、备份与跳过规则见[组件引用手册](../../../Docs/ComponentReferences.md)。
 
 打开项目或 Inspector 时保留源 `layerIndices`、字符串及预算字段。配置捕获和转换 Options
 在独立副本中做字符串、范围及层索引规范化；实际用户改选层或编辑字段仍通过 Undo 提交。
@@ -122,7 +122,7 @@ SDK 独立入口把源 Controller 或内存图复制到构建目录，处理后�
 
 ## 资产、Undo 与测试
 
-发行包保留 Runtime 脚本 GUID `a157d3d35699dd84abde9e5412bd7017` 及其它已知 metadata。早期开发快照的失效 GUID 通过手动 Component References 工具连接到项目实际安装的脚本；正常导入不重写场景或 Prefab。
+发行包保留 Runtime 脚本 GUID `a157d3d35699dd84abde9e5412bd7017` 及其它已知 metadata。早期开发快照的失效 GUID 通过本包的手动恢复入口连接到项目实际安装的脚本；正常导入不重写场景或 Prefab。
 
 离线复制按所选 Controller 的 localFileID 定位副本，支持同一文件内多个同名 Controller。Animator 图使用具体原生构造器创建，再复制序列化数据与重映射引用；源资产、共享图引用和已知 GUID 保持独立。
 
@@ -143,3 +143,10 @@ python3 scripts/unity/test_project.py run \
 ```
 
 程序集按 Runtime、核心 Editor、可选 VRC、可选 NDMF 分离。测试对应核心、VRC、NDMF、MA 四个装配；仅 Editor+UTF 启用的 MonoScript fixture 注册程序集提供真实 Behaviour，不进入 Player。
+
+## 0.3.2 组件恢复
+
+恢复功能随本包现有 Unity-only Editor 程序集交付；Project 入口只处理 AO 自有配置，
+四包共同安装时各自窗口、类型范围和备份目录保持独立。
+批次备份为 `UserSettings/UnityBox/AnimatorOptimizer/ComponentReferenceMigration/<id>/Assets/...`。
+源配置快照、手动批量与编辑依赖保护见[组件引用说明](../../../Docs/ComponentReferences.md)。

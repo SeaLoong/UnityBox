@@ -146,25 +146,27 @@ python3 scripts/unity/test_project.py run \
 Player 另测固定输入下的稳态 `Animator.Update`，与 Editor 生成耗时分别记录。
 单次功能运行中的时间仅用于排查；汇总性能使用独立串行运行。
 
-## 包导入、手动迁移与源资源保全
+## 包导入、包内恢复与源资源保全
 
 Unity 发布包保留脚本、asmdef 及 Editor/Runtime/Tests 的 `.meta`，已有发布 GUID 继续沿用。
-正常打开、导入和加载保持源资源；ACC、AO、ASS、Viseme 的六类旧引用通过独立
-`Tools/UnityBox/Component References` 手动处理，矩阵与下载见[组件引用手册](ComponentReferences.md)。
+正常打开、导入和加载保持源资源。ACC 0.5.2、AO 0.3.2、Viseme 0.2.2、ASS 0.9.3
+在各自现有 Unity-only Editor 程序集中内置组件恢复，正常安装/更新对应插件即可使用。
+入口和类型矩阵见[组件引用手册](ComponentReferences.md)。
 
-用户选择资源并执行一次迁移即可处理本批可确定引用，无逐项确认。歧义 GUID 一次选择
-类型；未知、重复新旧组件和已打开资源/依赖在报告中跳过，由用户自行关闭需要处理的
-编辑场景。工具不会替用户保存、关闭或重载，不在导入和启动回调中执行。
+在 Project 选择资源，打开 `Assets/UnityBox/<插件名>/Repair Component References`。
+窗口带入选择，只处理所属插件类型；可 Analyze，再一次手动执行整批，无逐项确认。
+歧义 GUID 一次选择类型，未知、重复和打开资源/依赖（包括未保存的新引用）报告跳过。
+用户自行保存、关闭需处理的编辑场景；窗口不替用户保存、关闭或重载。
 
-在隔离工程中检验真实旧 ZIP/开发快照、手动迁移前后原文件与引用、批次备份和源参数。
-本轮结果单列于[Component References 记录](Verification/ComponentReferences/README.md)。
-构建配置快照规范化与源字段保持分别检查，常规 Player/Avatar 构建仍生成自己的副本。
+隔离验证分 ACC、AO、ASS、Viseme 单装及四包共同安装五种消费工程，并覆盖真实旧
+ZIP/开发快照、批量范围、源字节与配置。执行记录见
+[组件引用验证](Verification/ComponentReferences/README.md)。
 
-新的手动工具备份位于 `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`，
-包含本批原字节及存在的对应 metadata。分析不创建备份或旧身份缓存。
+各包备份位于 `UserSettings/UnityBox/<插件目录>/ComponentReferenceMigration/<id>/Assets/...`，
+写前保存本批全部原字节与现有 metadata；分析不创建备份或旧身份缓存。
 [0.9.1 导入保全](Verification/ASSImportSafety/README.md)及
-[0.9.0 自动迁移历史](Verification/ASSUpgrade/README.md)保留旧执行范围；旧 ASS 备份仍在
-`UserSettings/UnityBox/ASSMigration/`。恢复按所选资源与报告逐文件比较，保留后续编辑。
+[0.9.0 自动迁移历史](Verification/ASSUpgrade/README.md)保留各自旧执行范围。
+旧共用目录及旧 ASSMigration 备份继续保留，恢复按所选文件与报告比较。
 
 ## 工具与发布检查
 

@@ -1,0 +1,154 @@
+{
+  "owner": "ao",
+  "scope_kind": "Focused plugin-owned migration cases in a one-plugin Unity-only consumer",
+  "passed": true,
+  "test_filter": "ComponentMigration.Tests",
+  "run": {
+    "run_id": "20261107T145627-64b84bd8",
+    "project_id": "8418a2efb9d44ae28221daf7d9e14616",
+    "command": [
+      "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+      "-batchmode",
+      "-nographics",
+      "-projectPath",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107",
+      "-runTests",
+      "-testPlatform",
+      "EditMode",
+      "-testResults",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/.unitybox-test-results/20261107T145627-64b84bd8/results.xml",
+      "-logFile",
+      "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/.unitybox-test-results/20261107T145627-64b84bd8/unity.log",
+      "-testFilter",
+      "ComponentMigration.Tests",
+      "-testCategory",
+      "!UnityBoxPerformance;!UnityBoxGraphics",
+      "-assemblyNames",
+      "UnityBox.AnimatorOptimizer.Tests"
+    ],
+    "profile": "core",
+    "ignored_vpm_dependencies": {},
+    "package_versions": {
+      "com.unity.ext.nunit": "1.0.6",
+      "com.unity.test-framework": "1.1.33",
+      "top.sealoong.unitybox.animator-optimizer": "0.3.2"
+    },
+    "started_at": "2026-11-07T14:56:27.961422+00:00",
+    "started_epoch": 1794063387.9614334,
+    "timeout_seconds": 1200.0,
+    "expected_assemblies": [],
+    "timed_out": false,
+    "exit_code": 0,
+    "selected_assemblies": [
+      "UnityBox.AnimatorOptimizer.Tests"
+    ],
+    "xdg_root": "/workspace/unitybox-setup/unity/interactive",
+    "test_filter": "ComponentMigration.Tests",
+    "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+    "benchmark": false,
+    "graphics": false,
+    "machine": {
+      "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+      "cpu_count": 5
+    },
+    "finished_at": "2026-11-07T14:56:50.882484+00:00"
+  },
+  "tests": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.AnimatorOptimizer.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.AnimatorOptimizer.Tests": {
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "source_evidence": {
+    "packages": {
+      "top.sealoong.unitybox.animator-optimizer": {
+        "version": "0.3.2",
+        "source": "/workspace/UnityBox/Assets/UnityBox/AnimatorOptimizer",
+        "checkout": "/workspace/UnityBox",
+        "branch": "master",
+        "checkout_base_revision": "31122c6aa6faa916fab31f628bdd3a977270c303",
+        "prepared_tree_sha256": "efe3c4d1afe2d9747f4a3933c0fa0cb8340efda766396a5337fdcc5800cf9d76",
+        "source_snapshot_sha256": "87d66e51b7092b64880d203882b3a6a0fb19438f26ba1d7478a00754978c146f",
+        "imported_snapshot_sha256": "87d66e51b7092b64880d203882b3a6a0fb19438f26ba1d7478a00754978c146f",
+        "file_count": 100,
+        "metadata_formatting_only": [],
+        "importer_generated_metadata": [
+          "package.json.meta"
+        ]
+      }
+    },
+    "imported_assemblies": {
+      "UnityBox.AnimatorOptimizer": {
+        "package": "top.sealoong.unitybox.animator-optimizer",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+          "bytes": 385536,
+          "sha256": "465228ca33abfc3b271694806a78df6df663c4326e989e9c8bf8fdfa4c3b4725"
+        },
+        "source_file_count": 15,
+        "source_sha256": "501f20fa041815735752ada6e96d902e4f7cdcb3162a661ba75a96ebd0c27c0c"
+      },
+      "UnityBox.AnimatorOptimizer.Runtime": {
+        "package": "top.sealoong.unitybox.animator-optimizer",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Runtime.dll",
+          "bytes": 12288,
+          "sha256": "094beb7a6d123d8d9dd86a5424013afafbd2374cfcf2002765798f7b3fc7f1bc"
+        },
+        "source_file_count": 2,
+        "source_sha256": "715029c43dc01d43e249ed9b4e2fe6181a1f337e06ba92ccf79edf4f2fae890c"
+      },
+      "UnityBox.AnimatorOptimizer.Tests": {
+        "package": "top.sealoong.unitybox.animator-optimizer",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.Tests.dll",
+          "bytes": 153600,
+          "sha256": "d99d0497bf912542af69df4bf0807bcf4c4b0c9fd92445eb1591e0689dcc4290"
+        },
+        "source_file_count": 10,
+        "source_sha256": "1a7cfbe54975f645377a21efb0e3723a1f6093bbe33f7490081c550a6a3c5627"
+      },
+      "UnityBox.AnimatorOptimizer.TestFixtures": {
+        "package": "top.sealoong.unitybox.animator-optimizer",
+        "dll": {
+          "path": "/workspace/unitybox-setup/unity/projects/owner-migration-single-ao-core-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.TestFixtures.dll",
+          "bytes": 4608,
+          "sha256": "81619d1f78f38af66a90c2dfae846b594538b17049bc71b27f289379f9981508"
+        },
+        "source_file_count": 2,
+        "source_sha256": "e8e75e385487f3a2887634261669da06835adcaa95b3f4dceb9c69ddb7c7a1ab"
+      }
+    },
+    "package_snapshot_matches_current_source": true,
+    "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+    "snapshot_excludes": [
+      "*.md",
+      "*.md.meta"
+    ],
+    "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+  },
+  "archived_xml": {
+    "path": "ao-results.xml.gz",
+    "sha256": "0b6604aaa6423517938274570e3ab068c2f25c89d40092d2459942093522ae98",
+    "original_xml_sha256": "2399c3c4911bd2cb308795f5bc7cd1a07e6b759cd4b2b3a6dde490a11732077c",
+    "removed_metadata": []
+  }
+}

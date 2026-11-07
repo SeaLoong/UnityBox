@@ -1,0 +1,133 @@
+{
+    "phase": "broken",
+    "scope": "all",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 42,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "legacy GUID path after current package import: UnityBox.AdvancedCostumeController.ACCOutfitMarker=",
+        "legacy GUID path after current package import: UnityBox.AdvancedCostumeController.ACCPartGroupMarker=",
+        "legacy GUID path after current package import: UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride=",
+        "legacy GUID path after current package import: UnityBox.AvatarSecuritySystem.ASSComponent=",
+        "legacy GUID path after current package import: UnityBox.VisemeBlendshapeOverride.VisemeBlendshapeOverrideComponent=",
+        "legacy GUID path after current package import: UnityBox.AnimatorOptimizer.AnimatorOptimizerComponent=",
+        "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+        {
+            "owner": "AdvancedCostumeController",
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "engineType": "UnityBox.AdvancedCostumeController.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AdvancedCostumeController.Core",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AdvancedCostumeController.Core.dll",
+            "assemblySha256": "eb6a26a3cb86404df62d4433a99238a601f06b7a1d4c4d8ea3ba6dc84ed6220e",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "f624e7b8d19fd9b94e3a2368326688715759c2e7ef67625bd9889e807fa308e1"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "ced75848d9b8d6e06d2970c70a7f653d3a0c70351a36ab74e031017737d10211"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "7386a3bc7a909cfac5acbe91df2e8fa8b6789f62c8a56f0a3873eeef662c7227"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.advanced-costume-controller/Core/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "4168550819133630d36bbbc474d94f82a66419ec496f3c5101a4bfb761af515a"
+                }
+            ]
+        },
+        {
+            "owner": "AvatarSecuritySystem",
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "engineType": "UnityBox.AvatarSecuritySystem.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AvatarSecuritySystem",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+            "assemblySha256": "eacb34512df600f5923e7a6c5afd1fcae1e07daeb4b0961f9eef7b36b15424a3",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+                }
+            ]
+        },
+        {
+            "owner": "VisemeBlendshapeOverride",
+            "package": "top.sealoong.unitybox.viseme-blendshape-override",
+            "engineType": "UnityBox.VisemeBlendshapeOverride.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.VisemeBlendshapeOverride",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+            "assemblySha256": "565763ab7c8f0724e99b3b47d3c8a3e02d18764399b2375f44ae64e7824bc13a",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+                }
+            ]
+        },
+        {
+            "owner": "AnimatorOptimizer",
+            "package": "top.sealoong.unitybox.animator-optimizer",
+            "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AnimatorOptimizer",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-all-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+            "assemblySha256": "8776fb1b2c70bdfa37bc803d0332e3f4e3fdeb063852b5407646d9d92892ac2e",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+                }
+            ]
+        }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+}

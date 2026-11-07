@@ -1,0 +1,25 @@
+{
+    "phase": "legacy",
+    "scope": "ass",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 0,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+        "legacy capture resumed after SDK first-import domain reload",
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "actual selected old package imports generated 1 script identities; no legacy GUID was invented",
+        "non-default fields, AudioClip/Material/Renderer/Animator PPtrs, variant/nested/instance overrides and per-owner duplicate scenes saved",
+        "all component GlobalObjectIDs, asset GUIDs and original bytes recorded"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [],
+    "batches": [],
+    "comparisonPasses": []
+}

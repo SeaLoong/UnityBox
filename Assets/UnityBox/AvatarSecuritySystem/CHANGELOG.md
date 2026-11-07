@@ -2,13 +2,22 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.2] - 2026-11-07
+## [0.9.3] - 2026-11-07
+
+### Component references
+
+- ASS 正常插件更新内置组件恢复，位于原 Unity-only Editor 程序集中，只处理 ASSComponent。
+- Project 入口为 `Assets/UnityBox/Avatar Security System/Repair Component References`，预填当前资源选择；一次手动执行整批，无逐项确认。
+- 源 GUID、字段与 fileID 保留；源 SHA/目标身份核对和全部备份后才替换失效 GUID，打开资源及未保存依赖继续跳过。
+- 本包备份位于 `UserSettings/UnityBox/AvatarSecuritySystem/ComponentReferenceMigration/<id>/Assets/...`，无启动/导入回调；原 Tools 窗口入口保持。
+
+## [0.9.2] - 2026-11-07（历史发布）
 
 ### Component references
 
 - 旧 ASS 引用接入独立 Component References Editor 工具，与 ACC 三类标记、AO 和 Viseme 共六类组件统一处理。
 - 选择资源后一次手动执行整批迁移，无逐项确认；歧义 GUID 只选择一次目标类型，未知、重复与打开资源在报告中跳过。
-- 工具不随启动、导入或构建自动运行，不是新增 VPM 包；单包用户可独立导入 `UnityBox-ComponentReferences.unitypackage`。
+- 当时的工具使用独立安装包分发；0.9.3 起由 ASS 包内恢复入口交付。该旧实现无启动、导入或构建自动迁移。
 - ASS 本身继续保留 0.9.1 的源配置保全、无自动迁移与构建副本规范化；固定 GUID、类名、程序集和字段保持。
 - 操作见仓库 `Docs/ComponentReferences.md`，执行结果见 `Docs/Verification/ComponentReferences/README.md`。
 

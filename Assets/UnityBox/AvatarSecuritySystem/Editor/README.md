@@ -3,11 +3,11 @@
 Avatar Security System（ASS）提供手势密码验证、倒计时提示、Overlay 和声音反馈，
 并支持 VRChat 防御配置。可以按需要调整密码、计时和反馈选项，通过参数或运行时 API
 读取密码结果。普通 Unity 与 VRChat 分别在各自构建流程生成运行图，原有角色动画
-继续由项目控制。当前版本为 **0.9.2**。
+继续由项目控制。当前版本为 **0.9.3**。
 
 ## 升级与已有项目
 
-0.9.2 延续 0.9.1 对旧自动迁移、ASS 修复菜单和写入 API 的移除。打开项目、安装或导入包、
+0.9.3 保持移除旧自动迁移回调，提供本包自带的显式组件恢复入口。打开项目、安装或导入包、
 加载 Scene/Prefab 时，ASS 不扫描或重写项目中的脚本 GUID、场景、Prefab 与已保存配置。
 组件加载也不再通过 `OnValidate` 自动改写已有时值；生成时只规范化配置副本。
 新组件与用户显式执行 Reset 使用默认保持 0.5s、容错 0.3s。
@@ -38,14 +38,17 @@ Unity 第三方包需要保存导入资源的 `.meta`，官方[包布局说明](
 
 ## 手动修复组件引用
 
-旧 ASS 引用与 ACC、Animator Optimizer、Viseme 一起使用独立的
-[Component References 工具](../../../../Docs/ComponentReferences.md)。VCC/ALCOM 单包用户
-导入一次[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)，
-打开 `Tools/UnityBox/Component References`，选择资源后点击 **Migrate Selected Assets**
-即可批量处理已确定的旧引用，无逐项确认。歧义旧 GUID 只选择一次目标类型；已打开资源
-及其依赖、未知和重复组件在报告中跳过。工具不随项目启动或资源导入执行。
+正常更新 ASS 后，在 Project 窗口选择需要处理的资源，打开
+`Assets/UnityBox/Avatar Security System/Repair Component References`。
+恢复窗口带入当前选择，只识别 ASSComponent。可先 **Analyze**，再点击
+**Migrate Selected Assets** 一次批量处理可确定的旧引用，无逐项确认。
+歧义旧 GUID 只选择一次目标类型；打开资源及其依赖、未知和重复组件在报告中跳过。
+打开窗口、启动项目和资源导入不触发写入。
 
-当前全六类组件升级与源配置检查见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
+本包备份保存在
+`UserSettings/UnityBox/AvatarSecuritySystem/ComponentReferenceMigration/<id>/Assets/...`。
+完整范围与操作见[组件引用手册](../../../../Docs/ComponentReferences.md)，
+单包/共同安装及真实旧版本检查见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
 
 ## 普通 Unity 自动构建
 
@@ -127,10 +130,10 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 修改原文件或自动创建迁移记录；构建副本的时间规范化与源字段保持分别检查。
 SDK 与 NDMF 测试覆盖实际 Behaviour、参数副本、多 Avatar 生命周期和最终提交。
 
-0.9.2 的执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
+0.9.3 的执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
 [0.9.1 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)保留上版范围。
-[测试指南](../../../../Docs/Testing.md)提供重跑命令；[全库基线结果](../../../../Docs/VerificationResults.json)
-及[性能报告](../../../../Docs/Performance.md)保留 0.9.0 对应快照的生成和 Animator 更新测量。
+[测试指南](../../../../Docs/Testing.md)提供重跑命令；[验证结果](../../../../Docs/VerificationResults.json)
+与[性能报告](../../../../Docs/Performance.md)记录对应版本、范围和内容指纹。
 实现与扩展 API 见[技术参考](ASS_TechnicalDoc.md)，历史变化见[CHANGELOG](../CHANGELOG.md)。
 正式包保留功能测试，排除仓库路径探针与实验 Bundle。
 

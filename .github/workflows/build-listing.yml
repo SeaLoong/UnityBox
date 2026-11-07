@@ -30,6 +30,7 @@ jobs:
       - name: Build VPM Listing
         run: |
           set -euo pipefail
+          python3 .github/scripts/embed_component_migration.py --check
           python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
           python3 .github/scripts/build_vpm_listing.py --repo . --output _site
 

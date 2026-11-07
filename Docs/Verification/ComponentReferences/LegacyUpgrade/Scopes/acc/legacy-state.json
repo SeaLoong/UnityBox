@@ -1,0 +1,2912 @@
+{
+    "scope": "acc",
+    "types": [
+        {
+            "owner": "AdvancedCostumeController",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "guid": "942bd1d3ea679811aafe8d89e33f4147",
+            "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCOutfitMarker.cs",
+            "generatedMetaSha256": "ca06c51b6a2f22d62268bd30f4b7319443097c91f4663f9e5ddbfccef706f120"
+        },
+        {
+            "owner": "AdvancedCostumeController",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "guid": "f088b44ae26ad2efeb3a7d1a9f939827",
+            "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCPartGroupMarker.cs",
+            "generatedMetaSha256": "254f48f6f00ac94386ab2c3719620d32a1b1200d6118f8303d07d7d12ad63d4b"
+        },
+        {
+            "owner": "AdvancedCostumeController",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "guid": "75cca7a80e715f913bf81250fd83c5e3",
+            "scriptPath": "Packages/top.sealoong.unitybox.advanced-costume-controller/Runtime/ACCVariantMaterialOverride.cs",
+            "generatedMetaSha256": "f80cc1eb86852618a56f43a95ddcd5fd4937bb3492a9fc8ff9c5c1d00a87b8eb"
+        }
+    ],
+    "files": [
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "sha256": "fd2d0ad860f4d166e7e00079d598a5151705ec2c1d375198f43c49ea8635cb63",
+            "guid": "97020cc2bb889262bb32376a24c98bb0",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Avatar.unity.meta",
+            "sha256": "cd913e123dcb9f695bee72ed9c8c9dbbeaf681501a2e7d859e0234254868d9bd",
+            "guid": "97020cc2bb889262bb32376a24c98bb0",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Avatar.unity.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "sha256": "597c56a2f4177bbdb43e62f1c3ba10bb3d01655195a7ed55467443c71b441ee9",
+            "guid": "b5f6715aa56def5a0a9cf50a423a638a",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Base.prefab.meta",
+            "sha256": "7385ec10113fe9c13a69640c85acce4be8db0c6211fd5e23180e58e0ef260b0c",
+            "guid": "b5f6715aa56def5a0a9cf50a423a638a",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Base.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+            "sha256": "97ce273099a2fb51b314dd95561b063707b35131ef54083f1340214b4e13e224",
+            "guid": "2d6c7f9fb4e763c5aa12cc2e8efb6dbc",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity.meta",
+            "sha256": "7a125269d5d6d24abf7a9f217a4f9ead0d5d10689e838eec3e4b9029c40d6b65",
+            "guid": "2d6c7f9fb4e763c5aa12cc2e8efb6dbc",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Mesh.asset",
+            "sha256": "019182966ca9698a255a13513cb659e8faacf5c66364aed79de9a7afd681de58",
+            "guid": "fd7771daf629b3039a0712251ee3f2ee",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Mesh.asset.meta",
+            "sha256": "03580694280f6621bdf7409ee9d7c0933881a08cb17bbcf140b4332f6e30470c",
+            "guid": "fd7771daf629b3039a0712251ee3f2ee",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Mesh.asset.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "sha256": "ae9ec3be7e5d2e905df5cbd9265a7be5fc20ea18cd650d63e883985455c7a868",
+            "guid": "70808795ed932824fa3b0a35766bd714",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Nested.prefab.meta",
+            "sha256": "e2cc6c3fa1a16191405e246cd5f3663bc73cfda42b8c0215f400d16e3a066fb6",
+            "guid": "70808795ed932824fa3b0a35766bd714",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Nested.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Original.mat",
+            "sha256": "190cb225c1c9de80f0e24c9577e8212989b1afa4ca59381d0e1ef5fd788699d8",
+            "guid": "3f805eeda52cbc2cdb5a82702e3052b1",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Original.mat.meta",
+            "sha256": "a11d206eceec5bc4106df8eb1a09da841495b027c26cf6579a2936902b580588",
+            "guid": "3f805eeda52cbc2cdb5a82702e3052b1",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Original.mat.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Replacement.mat",
+            "sha256": "8ab8047201f3235e8ff8d3e1d065890cbdd7da1ff1458f41902ee3172291ca30",
+            "guid": "7ac9278aa1d01b75291a76beb1f5fd58",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Replacement.mat.meta",
+            "sha256": "85e807ceaf2211a261b403769bb0d15c5824c0e6b0c63133a8b2eaaa35a041db",
+            "guid": "7ac9278aa1d01b75291a76beb1f5fd58",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Replacement.mat.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Success.wav",
+            "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+            "guid": "8b0f306321ce80f0cb63915855365b5e",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Success.wav.meta",
+            "sha256": "a215d4f7483a18dc541bcb6f418ac7b65a556e1b5f46ea89307517891f20c186",
+            "guid": "8b0f306321ce80f0cb63915855365b5e",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Success.wav.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.anim",
+            "sha256": "e6bc0658690bc536973aaa1f5cd4e39c391761c255d7714e276d1f811e64f33d",
+            "guid": "c46cc705ef26bf21db14ff12338f0e3d",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.anim.meta",
+            "sha256": "f66cde729ceb901a7c94e52c2b022d1978ed5122b8b420677f37084ae65ecbe6",
+            "guid": "c46cc705ef26bf21db14ff12338f0e3d",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.anim.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.controller",
+            "sha256": "4d062649231444bef8506e8bbc2f9341c69eaf193c02aa65c46b8ddaa608fb5c",
+            "guid": "8ef48d5c1d118c003ae160bc6a5c09fd",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/User.controller.meta",
+            "sha256": "59567fa3d77edc7d126a7ceee0e749487ec097302034a0d50ee50b8d1f3c8691",
+            "guid": "8ef48d5c1d118c003ae160bc6a5c09fd",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/User.controller.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "sha256": "5d30cfade56437997f90a98f227e6f9bb28b91a83e752dc798f78dfd21c87acd",
+            "guid": "59a7dbfe76b692903b008acd1a652a81",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Variant.prefab.meta",
+            "sha256": "b3a3ce6b9e49d70c687b9737ac76c0898562f2936e6fd8f972578058fee7d07c",
+            "guid": "59a7dbfe76b692903b008acd1a652a81",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Variant.prefab.meta"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Warning.wav",
+            "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+            "guid": "b69ca1cc684ca348baaaed8ce67df368",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav"
+        },
+        {
+            "path": "Assets/ComponentUpgradeFixtures/Warning.wav.meta",
+            "sha256": "4a4088bb192a651e97749421e50b03153101e9d8adc5a4c6347e78e514f1fac7",
+            "guid": "b69ca1cc684ca348baaaed8ce67df368",
+            "original": ".unitybox-component-upgrade/original/Assets/ComponentUpgradeFixtures/Warning.wav.meta"
+        }
+    ],
+    "components": [
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-6115244611863457161-0",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-2090057104456655644-0",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "12"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-6826322668657853559-0",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-2530149845105507833-0"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-8128371695186745128-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Base.prefab",
+            "owner": "Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-3234731759391024806-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-6115244611863457161-0"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-2090057104456655644-0"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-b5f6715aa56def5a0a9cf50a423a638a-6826322668657853559-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-826570690746069635-0",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-4802096031929908246-0",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Variant stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "20"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "86"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[19]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-80747542791936893-0",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-8987428773440840435-0"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-3416228563297699874-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Variant.prefab",
+            "owner": "Variant",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-8304976772373952940-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-826570690746069635-0"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-4802096031929908246-0"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-59a7dbfe76b692903b008acd1a652a81-80747542791936893-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-6613549723536404187-0",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-1302918122181795918-0",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "12"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-5885715092489062181-0",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-3173171991045668523-0"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-9212249378411582586-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Nested.prefab",
+            "owner": "Nested/Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-2590037732983449076-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-6613549723536404187-0"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-1302918122181795918-0"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-1-70808795ed932824fa3b0a35766bd714-5885715092489062181-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547504-0",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547503-0",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "12"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547502-0",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-795430919-0"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-795430920-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Plain avatar",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547501-0",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547504-0"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547503-0"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-812547502-0"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6115244611863457161-416532771",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-2090057104456655644-416532771",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Scene override group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "20"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "GroupName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[19]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6826322668657853559-416532771",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-2530149845105507833-416532771"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-8128371695186745128-416532771"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Prefab instance",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-3234731759391024806-416532771",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6115244611863457161-416532771"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-2090057104456655644-416532771"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6826322668657853559-416532771"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-826570690746069635-423427064",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-4802096031929908246-423427064",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Variant stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "20"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "86"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "110"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "115"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[19]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-80747542791936893-423427064",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-8987428773440840435-423427064"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-3416228563297699874-423427064"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Variant",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-8304976772373952940-423427064",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-826570690746069635-423427064"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-4802096031929908246-423427064"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-80747542791936893-423427064"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6613549723536404187-511714066",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Legacy_"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "7"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": "_Tail"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "5"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "84"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": "^Legacy_(.*)$"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "13"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "94"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "76"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "121"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "95"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "40"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "46"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "42"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "41"
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": "$1"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "2"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "36"
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "49"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCPartGroupMarker",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-1302918122181795918-511714066",
+            "properties": [
+                {
+                    "path": "Mode",
+                    "kind": "Enum",
+                    "value": "1"
+                },
+                {
+                    "path": "GroupName",
+                    "kind": "String",
+                    "value": "Stored group"
+                },
+                {
+                    "path": "GroupName.Array.size",
+                    "kind": "ArraySize",
+                    "value": "12"
+                },
+                {
+                    "path": "GroupName.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "83"
+                },
+                {
+                    "path": "GroupName.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "GroupName.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "GroupName.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "GroupName.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "GroupName.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "103"
+                },
+                {
+                    "path": "GroupName.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "114"
+                },
+                {
+                    "path": "GroupName.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "111"
+                },
+                {
+                    "path": "GroupName.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "GroupName.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "112"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.AdvancedCostumeController.ACCVariantMaterialOverride",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-5885715092489062181-511714066",
+            "properties": [
+                {
+                    "path": "OutfitBase",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-3173171991045668523-511714066"
+                },
+                {
+                    "path": "Replacements.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "Replacements.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.size",
+                    "kind": "ArraySize",
+                    "value": "1"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].TargetRenderer",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-9212249378411582586-511714066"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].MaterialSlot",
+                    "kind": "Integer",
+                    "value": "0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Source",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-3f805eeda52cbc2cdb5a82702e3052b1-2100000-0"
+                },
+                {
+                    "path": "RendererOverrides.Array.data[0].Replacement",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-3-7ac9278aa1d01b75291a76beb1f5fd58-2100000-0"
+                },
+                {
+                    "path": "editorPreviewInitialized",
+                    "kind": "Boolean",
+                    "value": "false"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Avatar.unity",
+            "owner": "Nested/Base",
+            "type": "UnityBox.ComponentUpgradeFixtureRuntime.ComponentUpgradeReferenceHolder",
+            "globalId": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-2590037732983449076-511714066",
+            "properties": [
+                {
+                    "path": "references.Array.size",
+                    "kind": "ArraySize",
+                    "value": "3"
+                },
+                {
+                    "path": "references.Array.data[0]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-6613549723536404187-511714066"
+                },
+                {
+                    "path": "references.Array.data[1]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-1302918122181795918-511714066"
+                },
+                {
+                    "path": "references.Array.data[2]",
+                    "kind": "ObjectReference",
+                    "value": "GlobalObjectId_V1-2-97020cc2bb889262bb32376a24c98bb0-5885715092489062181-511714066"
+                }
+            ]
+        },
+        {
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+            "owner": "Duplicate AdvancedCostumeController",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "globalId": "GlobalObjectId_V1-2-2d6c7f9fb4e763c5aa12cc2e8efb6dbc-511714067-0",
+            "properties": [
+                {
+                    "path": "PartNamePrefixToRemove",
+                    "kind": "String",
+                    "value": "Old duplicate value"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "19"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[0]",
+                    "kind": "Integer",
+                    "value": "79"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[1]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[2]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[3]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[4]",
+                    "kind": "Integer",
+                    "value": "100"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[5]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[6]",
+                    "kind": "Integer",
+                    "value": "112"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[7]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[8]",
+                    "kind": "Integer",
+                    "value": "105"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[9]",
+                    "kind": "Integer",
+                    "value": "99"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[10]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[11]",
+                    "kind": "Integer",
+                    "value": "116"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[12]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[13]",
+                    "kind": "Integer",
+                    "value": "32"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[14]",
+                    "kind": "Integer",
+                    "value": "118"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[15]",
+                    "kind": "Integer",
+                    "value": "97"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[16]",
+                    "kind": "Integer",
+                    "value": "108"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[17]",
+                    "kind": "Integer",
+                    "value": "117"
+                },
+                {
+                    "path": "PartNamePrefixToRemove.Array.data[18]",
+                    "kind": "Integer",
+                    "value": "101"
+                },
+                {
+                    "path": "PartNameSuffixToRemove",
+                    "kind": "String",
+                    "value": ""
+                },
+                {
+                    "path": "PartNameSuffixToRemove.Array.size",
+                    "kind": "ArraySize",
+                    "value": "0"
+                },
+                {
+                    "path": "PartNameRegexPattern",
+                    "kind": "String",
+                    "value": ""
+                },
+                {
+                    "path": "PartNameRegexPattern.Array.size",
+                    "kind": "ArraySize",
+                    "value": "0"
+                },
+                {
+                    "path": "PartNameRegexReplacement",
+                    "kind": "String",
+                    "value": ""
+                },
+                {
+                    "path": "PartNameRegexReplacement.Array.size",
+                    "kind": "ArraySize",
+                    "value": "0"
+                }
+            ]
+        }
+    ],
+    "duplicates": [
+        {
+            "owner": "AdvancedCostumeController",
+            "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AdvancedCostumeController.unity",
+            "type": "UnityBox.AdvancedCostumeController.ACCOutfitMarker",
+            "currentBytes": ".unitybox-component-upgrade/duplicate-before-apply-AdvancedCostumeController.unity",
+            "newGlobalId": "GlobalObjectId_V1-2-2d6c7f9fb4e763c5aa12cc2e8efb6dbc-511714069-0",
+            "markerField": "PartNamePrefixToRemove",
+            "markerValue": "New duplicate value"
+        }
+    ]
+}

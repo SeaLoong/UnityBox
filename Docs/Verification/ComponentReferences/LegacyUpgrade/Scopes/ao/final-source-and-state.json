@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "scope": "ao",
+  "owners": [
+    "AnimatorOptimizer"
+  ],
+  "embedded_sources_match_current_zips_and_checkout": true,
+  "compiled_owner_engines": [
+    {
+      "owner": "AnimatorOptimizer",
+      "package": "top.sealoong.unitybox.animator-optimizer",
+      "engineType": "UnityBox.AnimatorOptimizer.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.AnimatorOptimizer",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ao-20261107/Library/ScriptAssemblies/UnityBox.AnimatorOptimizer.dll",
+      "assemblySha256": "8776fb1b2c70bdfa37bc803d0332e3f4e3fdeb063852b5407646d9d92892ac2e",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.animator-optimizer/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "1ad7e8f5191966f74bd24bfd8c61a0de6042ff26874e2c58fd64ce2f2d335afb"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "3b66c51e4e0a375c68f9d123acc1626fa15b8fef91bd37e3446b447937360462"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "edbe98802a70b5dd4aceb5ecd3d133560ce00f388671a299e1ecf2fdd16af65a"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "99a1bd3c7f7f694d93c9eb2dcf2578a10025cbf3c2f369aad5da20b594852359"
+        }
+      ]
+    }
+  ],
+  "native_evidence_joins": {
+    "phase_results_equal_run_records": true,
+    "current_run_inputs_equal_frozen_plugin_zips": true,
+    "installed_complete_plugin_payloads_equal_frozen_zips": true,
+    "owner_batch_hash_chain_continuous": true,
+    "final_disk_files_equal_native_final_batch_hashes": true
+  },
+  "legacy_script_identities": 1,
+  "original_asset_and_meta_files": 24,
+  "captured_component_records": 15,
+  "captured_property_records": 541,
+  "typed_component_records_compared_per_pass": 14,
+  "persistent_field_comparisons_per_pass": 477,
+  "object_reference_global_ids_per_pass": 21,
+  "read_only_duplicate_cases": 1,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 64,
+  "transient_native_pptr_child_values_excluded": 0,
+  "read_only_duplicate_legacy_documents": [
+    {
+      "owner": "AnimatorOptimizer",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-AnimatorOptimizer.unity",
+      "legacy_guid": "e5a07ba03c6adf697bf43981f89b53d1",
+      "original_component_document_sha256": "fade582d928f6a7a1c4c1437bee95234249cb265a22ba8ae2071a9f8eea32123",
+      "bytes": 1248,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    }
+  ],
+  "explicit_owner_batch_calls": 1,
+  "repaired_components": 2,
+  "inspector_targets": 4,
+  "missing_scripts_reproduced": 7,
+  "changed_assets": [
+    "Assets/ComponentUpgradeFixtures/Avatar.unity",
+    "Assets/ComponentUpgradeFixtures/Base.prefab"
+  ],
+  "current_state_retained": true
+}

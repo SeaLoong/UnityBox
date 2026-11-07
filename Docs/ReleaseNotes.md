@@ -1,6 +1,30 @@
 # 发布与升级说明
 
-## 2026-11-07：手动组件引用迁移与源配置保全
+## 2026-11-07：各插件内置组件恢复
+
+| 包 | 原版本 | 新版本 |
+| --- | --- | --- |
+| Advanced Costume Controller | 0.5.1 | 0.5.2 |
+| Animator Optimizer | 0.3.1 | 0.3.2 |
+| Viseme Blendshape Override | 0.2.1 | 0.2.2 |
+| Avatar Security System | 0.9.2 | 0.9.3 |
+
+四个插件随正常更新内置手动组件恢复，编译在各自现有的 Unity-only Editor 程序集中。
+在 Project 选择资源，通过 `Assets/UnityBox/<插件名>/Repair Component References` 打开
+对应窗口，选择会自动带入；原 Tools 插件窗口入口保持。
+
+每个窗口只处理所属插件的三种或一种组件。可先 Analyze，再一次执行
+**Migrate Selected Assets**，无需逐项确认。ACC 的 Mode/GroupName 弱候选按旧 GUID
+选择一次类型；重复、未知与打开资源/依赖（含未保存新引用）报告跳过。
+源 SHA、目标脚本核对与本批全部备份完成后才改失效 GUID，不触发自动场景重载。
+备份按各插件目录隔离，原字段、fileID、metadata、BOM 和换行保持。
+
+菜单、范围和备份路径见[组件引用手册](ComponentReferences.md)。单包四组合、四包共同
+安装及真实旧版本的检查见[验证记录](Verification/ComponentReferences/README.md)。
+六种生产组件的类名、Runtime 程序集、字段和固定 GUID 保持，其余四个无自有组件的包
+继续保留原版本与发布内容。
+
+## 2026-11-07：手动组件引用迁移与源配置保全（历史发布）
 
 | 包 | 原版本 | 新版本 |
 | --- | --- | --- |
@@ -13,14 +37,13 @@
 类名、Runtime 程序集、已发布字段和固定身份继续保留。旧 ACC/ASS/Viseme 发布 ZIP
 缺少 `.meta`，AO 的相同问题来自早期 0.2 开发快照；AO 0.2 没有公开 VPM ZIP。
 
-新增独立的 `Tools/UnityBox/Component References`：用户选择资源后一次手动批量迁移，
+该次发布曾提供共用的 Component References 窗口：用户选择资源后一次手动批量迁移，
 无逐项确认；歧义旧 GUID 只选择一次目标类型，未知、重复新旧组件及已打开资源/依赖
 只报告跳过。分析不写文件，执行先备份本批原字节并校验源 SHA，再替换失效脚本 GUID，
 保留其它字段、fileID、引用与 metadata，无启动、导入或场景重载触发。
 
-工具源码位于 `Assets/UnityBox/ComponentReferenceMigration/Editor`，不是第九个 VPM 包。
-单包用户导入一次[ComponentReferences.unitypackage](https://sealoong.github.io/UnityBox/UnityBox-ComponentReferences.unitypackage)。
-完整操作、备份路径与六类固定身份见[组件引用说明](ComponentReferences.md)，
+该次发布使用过独立安装包；当前版本已改为对应插件内置的恢复入口。
+当前操作、备份路径与六类固定身份见[组件引用说明](ComponentReferences.md)，
 原生和真实旧版本回归见[执行记录](Verification/ComponentReferences/README.md)。
 
 - ACC：取消材质变体 Inspector 打开时初始化；外部来源先保留临时选择，显式操作提交并可 Undo。

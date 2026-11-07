@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "scope": "viseme",
+  "owners": [
+    "VisemeBlendshapeOverride"
+  ],
+  "embedded_sources_match_current_zips_and_checkout": true,
+  "compiled_owner_engines": [
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "package": "top.sealoong.unitybox.viseme-blendshape-override",
+      "engineType": "UnityBox.VisemeBlendshapeOverride.ComponentMigration.MigrationEngine",
+      "assembly": "UnityBox.VisemeBlendshapeOverride",
+      "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-viseme-20261107/Library/ScriptAssemblies/UnityBox.VisemeBlendshapeOverride.dll",
+      "assemblySha256": "565763ab7c8f0724e99b3b47d3c8a3e02d18764399b2375f44ae64e7824bc13a",
+      "sourceFiles": [
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+        },
+        {
+          "path": "Packages/top.sealoong.unitybox.viseme-blendshape-override/Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+        }
+      ],
+      "source_matches_current_zip_and_checkout": true,
+      "verified_package_source_files": [
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+          "sha256": "81503ef6c09c00be8bac54bb11406f4410b1f2802782e303a9dccce923fc288b"
+        },
+        {
+          "path": "Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+          "sha256": "96c4589149395c958158907b61951399b3bffbf723db06a851b8eddc1207044c"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs",
+          "sha256": "76fbeeda6039e24ed52ec89024333ffe958e62ca360c199627b7cb7fed54cdfe"
+        },
+        {
+          "path": "Editor/ComponentMigration/MigrationEngine.cs.meta",
+          "sha256": "4174ed3c593f5c9341b81d28f1ad63011860530f22296fe621f2358872d41403"
+        }
+      ]
+    }
+  ],
+  "native_evidence_joins": {
+    "phase_results_equal_run_records": true,
+    "current_run_inputs_equal_frozen_plugin_zips": true,
+    "installed_complete_plugin_payloads_equal_frozen_zips": true,
+    "owner_batch_hash_chain_continuous": true,
+    "final_disk_files_equal_native_final_batch_hashes": true
+  },
+  "legacy_script_identities": 1,
+  "original_asset_and_meta_files": 24,
+  "captured_component_records": 15,
+  "captured_property_records": 1093,
+  "typed_component_records_compared_per_pass": 14,
+  "persistent_field_comparisons_per_pass": 966,
+  "object_reference_global_ids_per_pass": 14,
+  "read_only_duplicate_cases": 1,
+  "read_only_duplicate_properties_preserved_in_raw_bytes": 127,
+  "transient_native_pptr_child_values_excluded": 0,
+  "read_only_duplicate_legacy_documents": [
+    {
+      "owner": "VisemeBlendshapeOverride",
+      "asset": "Assets/ComponentUpgradeFixtures/Duplicate-VisemeBlendshapeOverride.unity",
+      "legacy_guid": "0cdaf0bd855ea04c79a51618845ae28d",
+      "original_component_document_sha256": "7b41860b76d0a348c3e55dce4ccf23d6e2cecac2beb03547db38ca4123343481",
+      "bytes": 2376,
+      "unchanged_when_current_component_added_and_after_owner_batches": true
+    }
+  ],
+  "explicit_owner_batch_calls": 1,
+  "repaired_components": 2,
+  "inspector_targets": 4,
+  "missing_scripts_reproduced": 7,
+  "changed_assets": [
+    "Assets/ComponentUpgradeFixtures/Avatar.unity",
+    "Assets/ComponentUpgradeFixtures/Base.prefab"
+  ],
+  "current_state_retained": true
+}

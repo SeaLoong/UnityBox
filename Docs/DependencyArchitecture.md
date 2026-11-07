@@ -46,7 +46,7 @@ asmdef。最低版本表达式使用 Unity 支持的普通版本字符串，例�
 
 Runtime 配置类型、字段和已知 GUID 保留；实际 SDK Base 可用时继续实现 `IEditorOnly`。
 ACC、AO、ASS 与 Viseme 的六种生产组件保留同名 Runtime 程序集、类和已发布字段，
-现有固定 GUID 继续使用；旧包缺失 metadata 形成的随机身份由独立手动引用工具连接。
+现有固定 GUID 继续使用；旧包缺失 metadata 形成的随机身份由对应插件的包内手动恢复入口连接。
 正常启动、打开与导入保留原 Scene/Prefab 和字段；有效值在配置/Options 深拷贝快照中处理。
 组件矩阵与旧公开包/开发快照边界见[Component References](ComponentReferences.md)。
 
@@ -65,16 +65,17 @@ ASS 层后追加 WD Off 的密码、计时与反馈层。Avatar 对象锁定已�
 生成器每次使用独立 Build 目录；安装引用形成 Undo 事务，重新生成、撤销、重做和移除各有
 明确动作。普通核心由项目脚本分配输入，Avatar 适配负责平台菜单和同步参数。
 
-## 独立组件引用工具
+## 各插件内置组件恢复
 
-`Assets/UnityBox/ComponentReferenceMigration/Editor` 是只依赖 Unity Editor 的共享工具，
-按项目已安装类型解析目标 MonoScript，不增加八个插件之间的 SDK/MA/NDMF 引用，
-也没有第九个 VPM manifest。源码安装随目录导入；单独 VPM 安装使用一次性 unitypackage。
+ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 和 ASS 0.9.3 将组件恢复编译在各自现有的
+Unity-only Editor 程序集中，与原插件一起安装和更新。各入口仅识别所属插件的类型，
+不会建立四包之间或对 SDK/MA/NDMF 的额外恢复功能依赖。
 
-菜单 `Tools/UnityBox/Component References` 只在明确手动执行时写选定范围，一批操作
-无需逐项确认。依赖只读追溯，已打开 Scene/PrefabStage 及它们的依赖报告跳过；
-扫描/执行分别核对源内容与目标脚本身份，原字节和 metadata 备份后才替换脚本 GUID。
-迁移不在启动、导入、移动或构建配置读取回调中执行。
+Project 资源入口为 `Assets/UnityBox/<插件名>/Repair Component References`，打开窗口
+时带入当前选择，原 Tools 插件窗口入口保持。一次手动执行处理选定范围，无逐项确认；
+依赖只读追溯，打开 Scene/PrefabStage 及未保存的新依赖报告跳过。
+扫描/执行核对源内容与目标脚本，原字节与 metadata 全部备份后才替换脚本 GUID。
+备份按各插件目录隔离，迁移不在启动、导入、移动或构建配置读取回调中执行。
 
 ## 验证组合
 

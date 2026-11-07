@@ -10,7 +10,7 @@
 | ACC | 服装/变体、Parts、共享/独立 Mixer、材质、图标、同步压缩、MA 安装 | 原生 Animator 切换可见对象；本地编码/远端解码图和 Driver 写入值；生成与重新生成的 Undo/Redo；真实图标像素 |
 | Blendshape | Float/Bool/反向、多个 Renderer 的组合 Controller、Animator 分配、MA 安装/移除 | 原生 Animator 权重；组合后绑定和参数类型；整 Avatar 参数预算；安装、移除、重新生成的 Undo |
 | 口型 | 15 口型、Voice、Auto/On/Off WD、OverrideController、旧字段迁移 | 多口型与音量组合的逐帧权重；SDK/AOC 与 NDMF 关联图策略；最终提交后的 Controller、重命名路径及后续处理 |
-| ASS | 0.9.2 自动构建、连续手势、超时、反馈、Restart 与源配置保全 | 连续保持/快速遍历/重复位释放；自动构建副本保留用户图和 WD；ASS 新状态 WD Off、Avatar 对象缩放保持；打开/导入保留原 GUID、字段和 Prefab；SDK/NDMF 交接 |
+| ASS | 0.9.3 自动构建、连续手势、超时、反馈、Restart 与源配置保全 | 连续保持/快速遍历/重复位释放；自动构建副本保留用户图和 WD；ASS 新状态 WD Off、Avatar 对象缩放保持；打开/导入保留原 GUID、字段和 Prefab；SDK/NDMF 交接 |
 | Prefab | 属性、组件和子树选择；Variant 与嵌套 Prefab；布局、托管引用和自定义序列化 | 保存重载后的实际 Prefab 类型、嵌套源路径、组件与引用；数组/循环/共享引用；活动用户场景与 dirty 状态 |
 | Collider | 3D/2D 与 PhysBoneCollider 快照、几何变化、缓存预览、历史 JSON、包围盒 | 多根对象和跨会话身份；同一 Mesh 引用重新烘焙后的几何差异；禁用/非活动对象；历史恢复和阶段采样 |
 | Logger | Unity 导入/构建、SDK/NDMF、真实 Linker、Shader 去重和耗时轨迹 | 多次构建独立序号和时间；当前/最后完成轨迹 JSON；实际 Player 构建中的 Linker 与场景回调 |
@@ -22,17 +22,17 @@ BCG、Collider Monitor、Logger 和 Prefab Patcher 无自有 Avatar authoring �
 Unity/SDK/MA 组件继续使用原身份。类、程序集、字段及旧版本来源见
 [全八插件矩阵](ComponentReferences.md)。AO 0.2 属于开发快照，没有公开旧 VPM ZIP。
 
-引用工具 `Tools/UnityBox/Component References` 由用户选资源后一次手动批量执行，
-无逐项确认；歧义 GUID 只选择一次类型，未知、重复及打开资源/依赖报告跳过。
-ACC 0.5.1、AO 0.3.1、Viseme 0.2.1、ASS 0.9.2 分别保留 Inspector/配置读取的源字段，
-把有效值规范化限定于构建快照或用户显式提交。工具不作为第九个 VPM 包分发。
+ACC 0.5.2、AO 0.3.2、Viseme 0.2.2、ASS 0.9.3 各自内置手动组件恢复，Project 入口为
+`Assets/UnityBox/<插件名>/Repair Component References`，只处理所属插件类型。
+选定资源后一次执行整批，无逐项确认；歧义 GUID 只选择一次类型，未知、重复及打开
+资源/依赖报告跳过。各包保留 Inspector/配置读取的源字段，生成时使用独立有效值快照。
 
 ## 共同运行语义
 
 服装、Blendshape、口型和 ASS 生成层显式设置 `syncedLayerIndex=-1`，因此每层独立求值。
 旧实现的 C# 默认值 0 会把后续层同步到基础层；原生 Animator 回归覆盖这些层的独立输出。
 
-ASS 0.9.2 在正常 Player 构建的场景副本中自动调用后端，并配置 StandaloneSecurityInput；
+ASS 0.9.3 在正常 Player 构建的场景副本中自动调用后端，并配置 StandaloneSecurityInput；
 源 Controller/AOC 与用户状态保持独立，ASS 新状态为 WD Off，原身体锁功能和选项移除。
 输入以连续正确保持计时，默认 0.5s/0.3s 且保持严格大于容错；错误中断重计，快速
 遍历不累积，重复位先释放，超时和 Restart 优先。API 使用 IsPasswordCorrect 查询结果。

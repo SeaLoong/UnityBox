@@ -11,7 +11,7 @@
 原场景、实验 bundle 与已知 GUID 保留。ASS 固定脚本 GUID
 `1c51e6a139920bb4ca12700dc82627ff` 来自仓库样例场景，关联同名 `ASSComponent`。
 旧发布包未携带脚本 metadata，各安装自行生成的 GUID 并不都与样例相同；
-0.9.0 曾加入自动恢复，0.9.1 已撤回；当前六类旧引用通过独立手动工具统一处理。
+0.9.0 曾加入自动恢复，0.9.1 已撤回；当前六类旧引用通过所属插件的包内手动入口处理。
 
 `master` 的 `Assets/UnityBox.unity` 原样保留用户较新的 temp/refactor 场景，
 对应合并前 `409eb5b` 的 2,924,530 字节内容。优化器旧场景保留在 `53fa22f` 的提交历史中。
@@ -30,28 +30,29 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 各包为原先缺失的脚本、程序集和目录补齐稳定 metadata；新增缺失项按仓库与
 资产路径确定身份，已有 `.meta` 保持原值。新克隆和安装使用仓库 GUID；
-正常打开/导入不改写旧引用；用户选定资源后在 Component References 中一次批量迁移，
+正常打开/导入不改写旧引用；用户选定资源后在对应插件的恢复窗口中一次批量迁移，
 无逐项确认。完整矩阵与操作见[组件引用说明](ComponentReferences.md)。
 
 外部 Editor 扩展按 [程序集映射](DependencyArchitecture.md) 增加 Core、VRC/VRChat 或 MA
 引用。普通 Animator 的参数由项目脚本提供，Avatar 参数由相应平台输入服务提供。
 
-## 六类组件与独立迁移工具
+## 六类组件与包内恢复
 
-ACC 0.5.1、AO 0.3.1、Viseme 0.2.1 和 ASS 0.9.2 保留原生产组件类、Runtime 程序集、
+ACC 0.5.2、AO 0.3.2、Viseme 0.2.2 和 ASS 0.9.3 保留原生产组件类、Runtime 程序集、
 已发布字段和固定 GUID。BCG、Collider、Logger、Prefab Patcher 没有自有 Avatar 组件，
-版本和包内容保持。旧包 metadata 缺失与 AO 0.2 开发快照的身份差异统一由
-`Tools/UnityBox/Component References` 手动处理。
+版本和包内容保持。旧包 metadata 与 AO 0.2 开发快照的身份差异通过各包自带入口处理：
+`Assets/UnityBox/<插件名>/Repair Component References`。
 
-工具只写用户选定的资源范围；依赖只读追溯，已打开场景/Prefab Stage 及依赖报告跳过，
-也包括编辑中尚未保存的新嵌套 Prefab 和对象资源引用，不替用户保存、关闭或重载。
-一键执行整批可确定引用，不弹逐项确认；同一歧义 GUID
-选择一次目标类型，未知和重复新旧组件保留。写前校验源 SHA 并备份原字节与对应 `.meta`，
-结果位于 `UserSettings/UnityBox/ComponentReferenceMigration/<id>/Assets/...`。
+恢复窗口编译在所属插件原有 Unity-only Editor 程序集中，带入 Project 当前选择，只处理
+所属插件的三种或一种组件。原 Tools 插件窗口入口保持。
+一次手动操作处理整批可确定引用，无逐项确认；同一歧义 GUID 选择一次目标类型。
+依赖只读追溯，打开场景/Prefab Stage 及它们的依赖（含未保存引用）报告跳过，不替用户
+保存、关闭或重载；未知和重复组件保留。
 
-这套 Editor 工具不新增 VPM 包；单包用户导入一次独立 unitypackage。
-安装、详细操作与备份边界见[组件引用手册](ComponentReferences.md)，
-源参数与真实升级结果见[当前记录](Verification/ComponentReferences/README.md)。
+源 SHA 和目标身份核对、全部备份后才替换脚本 GUID，备份按包隔离为
+`UserSettings/UnityBox/<插件目录>/ComponentReferenceMigration/<id>/Assets/...`。
+完整菜单与目录见[组件引用手册](ComponentReferences.md)，
+单包/共同安装和真实升级结果见[当前记录](Verification/ComponentReferences/README.md)。
 
 ## Animator Optimizer
 
@@ -119,7 +120,7 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-ASS 0.9.2 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
+ASS 0.9.3 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
 已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
 ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
 
@@ -146,7 +147,7 @@ StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一
 原文件记录，本版不自动恢复、覆盖或删除。需要调查时保留当前工程副本和备份，逐文件
 比较后由用户选择恢复目标；备份不包含脚本 metadata、包版本和后来保存的编辑。
 已有 Missing Script 按组件的 `m_Script` GUID 查找脚本路径和所属包，结合 Console
-首条编译错误定位所属类型；需要重连时，使用独立 Component References 一次手动
+首条编译错误定位所属类型；需要重连时，使用所属插件的 Repair Component References 窗口一次手动
 处理选定资源，不启动旧 ASS 自动迁移，也不自动恢复备份。
 
 完整说明见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)，

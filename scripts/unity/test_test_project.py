@@ -1,11 +1,9 @@
 """Tests for the Python harness only; these do not simulate passing Unity tests."""
 import contextlib
-import hashlib
 import importlib.util
 import io
 import json
 from pathlib import Path
-import shutil
 import tempfile
 import time
 import unittest
@@ -120,79 +118,66 @@ class PreparationTests(unittest.TestCase):
             return runner.main(["prepare", "--repo", str(self.repo), "--project", str(self.project),
                                 "--dependency-cache", str(self.cache), *extra])
 
-    def extra_module(self):
-        root = self.repo / runner.EXTRA_SOURCE_DESTINATION
-        (root / "Editor").mkdir(parents=True)
-        (root / "Tests/Editor").mkdir(parents=True)
-        (root / "Editor/Module.cs").write_text("// independent Editor source\n")
-        (root / "Tests/Editor/ModuleTests.cs").write_text("// independent test source\n")
-        runner.write_json(root / "Editor/Module.asmdef", {"name": "Fixture.Module.Editor", "includePlatforms": ["Editor"]})
-        runner.write_json(root / "Tests/Editor/ModuleTests.asmdef", {"name": "Fixture.Module.Tests",
-                          "optionalUnityReferences": ["TestAssemblies"], "includePlatforms": ["Editor"]})
-        for path in [root, *root.rglob("*")]:
-            text = "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\n"
-            if path.is_dir():
-                text += "folderAsset: yes\nDefaultImporter:\n  userData:\n"
-            path.with_name(path.name + ".meta").write_text(text)
-        return root
+    def package_test_assembly(self, package, assembly, constraint=None):
+        tests = package / "Tests/Editor"
+        tests.mkdir(parents=True, exist_ok=True)
+        (tests / "ReferenceMigrationTests.cs").write_text("// tests embedded in the selected plugin\n")
+        data = {"name": assembly, "optionalUnityReferences": ["TestAssemblies"], "includePlatforms": ["Editor"]}
+        if constraint:
+            data.update(defineConstraints=["NEW_ASS"], versionDefines=[{
+                "name": "top.sealoong.unitybox.avatar-security-system", "expression": "2.0.0", "define": "NEW_ASS"}])
+        runner.write_json(tests / (assembly + ".asmdef"), data)
 
-    def test_extra_module_is_copied_with_metadata_hashes_and_test_scope_without_a_package(self):
-        source = self.extra_module()
-        self.assertEqual(self.prepare(), 0)
+    def test_selected_plugin_uses_only_its_embedded_sources_and_tests(self):
+        self.package_test_assembly(self.package, "Fixture.Ass.Tests")
+        editor = self.package / "Editor"
+        editor.mkdir()
+        (editor / "ReferenceMigration.cs").write_text("// this plugin owns its migration code\n")
+        for name in ("AdvancedCostumeController", "ComponentReferenceMigration", "Shared"):
+            foreign = self.repo / "Assets/UnityBox" / name
+            (foreign / "Editor").mkdir(parents=True)
+            (foreign / "Editor/ForeignSource.cs").write_text("// must not enter a selected-plugin project\n")
+            foreign.with_name(name + ".meta").write_text("guid: foreign-folder\n")
+            self.package_test_assembly(foreign, "Fixture." + name + ".Tests")
+            if name == "AdvancedCostumeController":
+                runner.write_json(foreign / "package.json", {"name": "fixture.acc", "version": "1.0.0"})
+        self.assertEqual(self.prepare("--package", "AvatarSecuritySystem"), 0)
         marker = runner.read_json(self.project / runner.MARKER)
-        module = marker["extra_sources"][runner.EXTRA_SOURCE_MODULE]
-        self.assertEqual(module["source"], str(source))
-        self.assertEqual(module["destination"], runner.EXTRA_SOURCE_DESTINATION.as_posix())
-        expected = runner.extra_source_files(source, runner.load_filter(self.repo))
-        self.assertEqual(module["files"], len(expected))
-        self.assertEqual(module["file_hashes"], {relative: hashlib.sha256(path.read_bytes()).hexdigest()
-                                               for relative, path in expected.items()})
-        for relative, path in expected.items():
-            self.assertEqual((self.project / runner.EXTRA_SOURCE_DESTINATION.parent / relative).read_bytes(), path.read_bytes())
-        self.assertEqual(marker["test_assemblies"], ["Fixture.Module.Tests"])
+        self.assertNotIn("extra_sources", marker)
         self.assertEqual(marker["selected_packages"], ["top.sealoong.unitybox.avatar-security-system"])
-        self.assertNotIn(runner.EXTRA_SOURCE_MODULE, marker["packages"])
+        self.assertEqual(set(marker["packages"]), {"top.sealoong.unitybox.avatar-security-system",
+                                                  "com.unity.test-framework", "com.unity.ext.nunit"})
+        self.assertEqual(marker["test_assemblies"], ["Fixture.Ass.Tests"])
+        copied = self.project / "Packages/top.sealoong.unitybox.avatar-security-system"
+        self.assertEqual((copied / "Editor/ReferenceMigration.cs").read_bytes(), (editor / "ReferenceMigration.cs").read_bytes())
+        self.assertEqual((copied / "Tests/Editor/ReferenceMigrationTests.cs").read_bytes(),
+                         (self.package / "Tests/Editor/ReferenceMigrationTests.cs").read_bytes())
+        self.assertEqual(list((self.project / "Assets").rglob("*")), [])
+        self.assertFalse((self.project / "Packages/fixture.acc").exists())
         manifest = runner.read_json(self.project / "Packages/manifest.json")
         self.assertEqual(manifest["testables"], ["top.sealoong.unitybox.avatar-security-system"])
 
-    def test_repo_without_module_keeps_original_assets_and_package_scope(self):
+    def test_empty_assets_and_source_scene_are_preserved_without_extra_module_metadata(self):
         self.assertEqual(self.prepare(), 0)
         marker = runner.read_json(self.project / runner.MARKER)
-        self.assertEqual(marker["extra_sources"], {})
-        self.assertFalse((self.project / runner.EXTRA_SOURCE_DESTINATION).exists())
+        self.assertNotIn("extra_sources", marker)
+        self.assertEqual(list((self.project / "Assets").rglob("*")), [])
         self.assertEqual(marker["test_assemblies"], [])
         self.assertEqual(set(marker["packages"]), {"top.sealoong.unitybox.avatar-security-system",
                                                   "com.unity.test-framework", "com.unity.ext.nunit"})
         self.assertEqual((self.repo / "UserScene.unity").read_text(), "keep original scene")
 
-    def test_module_test_constraints_use_the_installed_package_versions(self):
-        source = self.extra_module()
-        runner.write_json(source / "Tests/Editor/Conditional.asmdef", {"name": "Fixture.Module.Versioned.Tests",
-                          "optionalUnityReferences": ["TestAssemblies"], "defineConstraints": ["NEW_ASS"],
-                          "versionDefines": [{"name": "top.sealoong.unitybox.avatar-security-system",
-                                              "expression": "2.0.0", "define": "NEW_ASS"}]})
-        self.assertEqual(self.prepare(), 0)
-        self.assertEqual(runner.read_json(self.project / runner.MARKER)["test_assemblies"], ["Fixture.Module.Tests"])
+    def test_embedded_test_constraints_use_the_selected_package_version(self):
+        self.package_test_assembly(self.package, "Fixture.Ass.Tests")
+        self.package_test_assembly(self.package, "Fixture.Ass.Versioned.Tests", constraint=True)
+        self.assertEqual(self.prepare("--package", "AvatarSecuritySystem"), 0)
+        self.assertEqual(runner.read_json(self.project / runner.MARKER)["test_assemblies"], ["Fixture.Ass.Tests"])
         manifest = runner.read_json(self.package / "package.json")
         manifest["version"] = "2.0.0"
         runner.write_json(self.package / "package.json", manifest)
-        self.assertEqual(self.prepare(), 0)
+        self.assertEqual(self.prepare("--package", "AvatarSecuritySystem"), 0)
         self.assertEqual(runner.read_json(self.project / runner.MARKER)["test_assemblies"],
-                         ["Fixture.Module.Tests", "Fixture.Module.Versioned.Tests"])
-
-    def test_repreparing_an_owned_project_removes_only_the_previously_copied_module(self):
-        source = self.extra_module()
-        self.assertEqual(self.prepare(), 0)
-        unrelated = self.project / "Assets/OtherFixture.cs"
-        unrelated.write_text("// retain unrelated fixture\n")
-        shutil.rmtree(source)
-        source.with_name(source.name + ".meta").unlink()
-        self.assertEqual(self.prepare(), 0)
-        target = self.project / runner.EXTRA_SOURCE_DESTINATION
-        self.assertFalse(target.exists())
-        self.assertFalse(target.with_name(target.name + ".meta").exists())
-        self.assertEqual(unrelated.read_text(), "// retain unrelated fixture\n")
-        self.assertEqual(runner.read_json(self.project / runner.MARKER)["extra_sources"], {})
+                         ["Fixture.Ass.Tests", "Fixture.Ass.Versioned.Tests"])
 
     def test_packaging_filter_preserves_tests_and_source_scene(self):
         for relative in ("Tests/Editor/Regression.cs", "Tests/Legacy.unity", "Tests/Bundles/old.asset",

@@ -1,0 +1,50 @@
+{
+    "phase": "broken",
+    "scope": "ass",
+    "error": "",
+    "unity": "2022.3.22f1",
+    "passed": true,
+    "missingScripts": 7,
+    "repairedComponents": 0,
+    "inspectorTargets": 0,
+    "changedAssets": [],
+    "selectedAssets": [],
+    "readOnlyAssets": [],
+    "checks": [
+        "only selected UnityBox plugins are installed; migration source/API is embedded in each current plugin package",
+        "legacy GUID path after current package import: UnityBox.AvatarSecuritySystem.ASSComponent=",
+        "updating only selected plugin ZIPs reproduced Missing Script; importing/opening retained original YAML, metadata and SDK descriptor configuration"
+    ],
+    "entries": [],
+    "issues": [],
+    "nativeOwners": [
+        {
+            "owner": "AvatarSecuritySystem",
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "engineType": "UnityBox.AvatarSecuritySystem.ComponentMigration.MigrationEngine",
+            "assembly": "UnityBox.AvatarSecuritySystem",
+            "assemblyPath": "/workspace/unitybox-setup/unity/projects/owner-upgrade-ass-20261107/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+            "assemblySha256": "eacb34512df600f5923e7a6c5afd1fcae1e07daeb4b0961f9eef7b36b15424a3",
+            "sourceFiles": [
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs",
+                    "sha256": "1c01e1a17a0a02393677ce14acf068688020e109c839f378e42af3fbd7469883"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/ComponentReferenceMigrationWindow.cs.meta",
+                    "sha256": "4233c29fdc1d72f6888277f28c2a6f580452696ac29be6bbf5ecc7a41077c28f"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs",
+                    "sha256": "a68d91f4b2698b244f0abe938919ee0751b7cd83688f3d73e80f81dfa84298cc"
+                },
+                {
+                    "path": "Packages/top.sealoong.unitybox.avatar-security-system/Editor/ComponentMigration/MigrationEngine.cs.meta",
+                    "sha256": "25a21088a4b4347d68d28d1e4d8823e69b3ca528a56e9d54d0e990cac2184cfa"
+                }
+            ]
+        }
+    ],
+    "batches": [],
+    "comparisonPasses": []
+}

@@ -1,106 +1,53 @@
-# 六种配置组件的真实旧包升级记录
+# 插件包内手动恢复的真实升级记录
 
-本记录来自独立合成工程，不载入用户工程。完整结果见 [summary.json](summary.json)、
-[三阶段记录](three-stage-summary.json)和[最终源码与状态指纹](final-source-and-state.json)。
+五个独立合成消费者工程覆盖 ACC、ASS、Viseme、AO 单独安装，以及四插件共存。每个当前阶段只更新对应插件 ZIP；手动恢复 API 随插件安装。
 
-| 阶段 | 实际输入与操作 | 结果 |
-| --- | --- | --- |
-| 旧版创建 | 完整公开 ACC 0.4.13、ASS 0.7.24、Viseme 0.1.14 ZIP，以及明确的未发布 AO 0.2 开发源 | 六种配置的真实 MonoScript GUID、原字节和对象身份已记录 |
-| 故障复现 | 完整换入 ACC 0.5.1、ASS 0.9.2、Viseme 0.2.1、AO 0.3.1 候选 ZIP；只打开和导入 | 复现 42 处 Missing Script，原文件保持；SDK Descriptor 仍有效 |
-| 手动迁移 | 明确选择 Base/Variant/Nested/MainScene 四个资源，执行一次批量 Apply | 修复 12 个引用，仅写入 Base.prefab 和 Avatar.unity；其它选中资源通过原 Prefab 来源恢复 |
+本轮当前包：ACC 0.5.2、ASS 0.9.3、Viseme 0.2.2、AO 0.3.2。
 
-第二阶段的 `passed: true` 表示成功复现预期故障。第三阶段是显式 API 操作，
-没有启动或导入自动写入，也没有逐组件确认。单独的 Duplicate.unity 只读扫描并报告
-旧无效＋新有效的同类组件，不选入批量写入，文件和两份组件都保留。
+| 消费者 | 类型数 | 复现 Missing | 显式批量调用 | 修复引用 | 每次属性/PPtr 核对 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| [acc](Scopes/acc/three-stage-summary.json) | 3 | 21 | 1 | 6 | 472 / 63 |
+| [ass](Scopes/ass/three-stage-summary.json) | 1 | 7 | 1 | 2 | 203 / 21 |
+| [viseme](Scopes/viseme/three-stage-summary.json) | 1 | 7 | 1 | 2 | 966 / 14 |
+| [ao](Scopes/ao/three-stage-summary.json) | 1 | 7 | 1 | 2 | 477 / 21 |
+| [all](Scopes/all/three-stage-summary.json) | 6 | 42 | 4 | 12 | 2097 / 119 |
 
-本次第二阶段使用冷导入：先保留专用工程的 warm ScriptAssemblies，再仅重建其 Library，
-并核对全部 24 个原文件字节不变。保留的只读诊断表明 warm 导入缓存可能继续解析旧引用；
-冷导入直接检验磁盘 YAML 的实际 GUID。具体映射、缓存操作和文件 SHA 写入
-[input-provenance.json](input-provenance.json)，不修改任何原资源。
+第二阶段 `passed: true` 表示成功复现预期 Missing Script。第三阶段每个已安装插件显式执行一次批量 Scan→Apply；四插件共存时分别调用四个所属 API。各批仅处理自身类型，并核对其它插件的旧 GUID 字节保持。
 
-## 保存与核对内容
+资源覆盖 Base Prefab、Variant、嵌套 Prefab、四组场景对象、实例覆盖、非默认配置和 Material/Renderer/Animator/AudioClip 引用。每个插件另有旧无效＋新有效同类组件案例，只读扫描后保持完整字节和两份组件。
 
-测试创建六种配置：ACC Outfit、Part Group、Variant Material Override、ASS、Viseme、AO。
-它们含非默认字段、Material/Renderer/Animator/AudioClip 引用及一个引用全部配置的
-fixture-owned MonoBehaviour 数组。资源覆盖 Base、Variant、嵌套 Prefab、四组场景对象、
-实例属性覆盖和独立的重复组件案例。
+每批备份与该插件执行前的实际文件一致；后一插件的备份包含前面已完成的 GUID 修复。最终文件只改变确认的 `m_Script.guid` 跨度，资产 GUID、组件 GlobalObjectID、序列化 fileID/PPtr、字段、换行与其它字节保持。
 
-- 保存 50 条组件记录、24 个原资源/metadata 文件及 2,108 条属性记录。修复资源中 49 条组件记录逐属性复核；重复案例的 28 个原属性随完整文件字节保留。
-- 每次读取核对 **2,080 个持久化属性**，其中 **119 个父 ObjectReference GlobalObjectID**。
-- 创建 **24 个当前 Inspector**（含 OnEnable），等待延迟回调后再次核对，原字段与引用保持。
-- 写入前备份与原字节一致；更新文件只改变已确认的 `m_Script.guid` 字节跨度，
-  所有序列化 fileID、PPtr、配置、换行和其它内容保留。
-- 原 Variant、嵌套关系、实例覆盖及 SDK Descriptor 的类型与配置保持。
+重复案例的旧 MonoBehaviour YAML 文档还逐字节对照最初创建、显式添加新组件后及最终状态，原配置文档完整保留。
 
-本次三个阶段从创建时就使用同一份属性迭代器：ObjectReference 只记录父引用的
-GlobalObjectID，不进入 Unity native 内部子项；原 YAML 的 PPtr 和 fileID 另做字节检查。
-各阶段实际执行的 fixture 源码分别保存在 [source-snapshots](source-snapshots/) 中。
+原字段在全部批次后和 Inspector OnEnable/延迟回调后各核对一次。ObjectReference 只记录父 GlobalObjectID；原 YAML 的 PPtr/fileID另做字节核对。实际数量由各 scope 的 `migrated.json.comparisonPasses` 给出。
 
-## 输入与身份
+公开旧版为 ACC 0.4.13、ASS 0.7.24、Viseme 0.1.14 完整 ZIP，导入前核对 CRC/SHA256。AO 使用未发布开发提交 `782af0bf8569fdde6782d420761f38c8f8d6824d` 的精确 Runtime/Editor 源，仅排除旧开发 Tests；来源和排除列表完整记录。
 
-[input-provenance.json](input-provenance.json)列出三个公开旧 ZIP 的 URL、CRC/SHA 核对来源、
-当前候选归档 SHA，以及 AO 的原树和实际测试输入树身份。
-AO 使用 [782af0bf8569fdde6782d420761f38c8f8d6824d](https://github.com/SeaLoong/UnityBox/tree/782af0bf8569fdde6782d420761f38c8f8d6824d/Assets/UnityBox/AnimatorOptimizer)
-的精确 Git 源；[开发源证明](ao-development-source.json)记录其原文件。
-该版本没有公开发行 ZIP。本轮保留全部原 Runtime/Editor 代码和 metadata，
-仅排除旧开发 Tests：其中重复的 TestRunner 引用会触发当前 Unity 的 asmdef 校验，
-不属于生产组件导入或本轮迁移范围。排除清单保存在 [legacy-run.json](legacy-run.json)。
+第一阶段即保存原状态、Unity 实际生成的脚本/helper metadata、旧 DLL 指纹和原资源字节。当前阶段仅重建专用工程 Library，并逐项核对原资产/meta 保持；冷导入检验实际磁盘 GUID。
 
-[generated-script-metadata](generated-script-metadata/)保存 Unity 实际生成的六个旧脚本身份；
-[legacy-state.json](legacy-state.json)记录其配置与对象身份。这些旧 GUID 仅属于本合成工程，
-不是适用于所有项目的固定旧值。Part Group 的显式类型映射来自本阶段确认的真实脚本，
-没有仅凭 `Mode/GroupName` 字段猜测。
+每个 `Scopes/<scope>/` 保存原生三阶段结果、命令、来源、原始创建状态、每阶段实际 fixture 源、生成 metadata、gzip 原文件/最终文件/逐插件备份及源码指纹。源码指纹同时匹配实际编译包、当前 ZIP 和 checkout。Editor/launcher 日志与原生 DLL 保留在专用测试工作区。
 
-## 归档文件
+## 复现
 
-- [legacy.json](legacy.json)、[broken.json](broken.json)、[migrated.json](migrated.json)保存原生断言结果；
-  对应 `*-run.json` 保留实际命令、退出码、输入和各阶段源码 SHA。
-- `original/`、`post/`、`backup-original/` 使用标准 gzip（mtime=0）保存合成原文件、
-  最终文件和实际备份；解压后可直接比较 GUID 跨度。
-- [duplicate-before-apply.unity.gz](duplicate-before-apply.unity.gz)是显式添加新组件后的重复案例基线。
-- [ComponentUpgradeFixture.cs](ComponentUpgradeFixture.cs)、
-  [ComponentUpgradeReferenceHolder.cs](ComponentUpgradeReferenceHolder.cs)与
-  [run_upgrade.py](run_upgrade.py)是最终可复用工具；[sha256.json](sha256.json)索引本归档文件。
-
-原始 Editor/launcher 日志和失败诊断留在测试工作区。本归档没有登录信息、许可证内容或
-完整启动日志。JSON 内工作区绝对路径用于说明当时来源；本目录中的归档采用相对路径。
-
-## 复现命令
-
-在已配置真实 Unity 2022.3.22f1、SDK 3.8.2、MA 1.18、NDMF 1.11 的机器执行，
-将下列 `TASK_*` 变量设置为本机实际路径。工程必须放在源码 checkout 之外的新目录。
+先用仓库 `scripts/unity/test_project.py prepare --profile vrc` 准备专用消费者工程，`--package` 只选择该 scope 的插件；添加真实 SDK、MA、NDMF 依赖。然后执行本目录运行器：
 
 ```bash
 python3 "$TASK_REPO/scripts/unity/test_project.py" prepare \
   --repo "$TASK_REPO" --project "$TASK_PROJECT" --profile vrc --offline \
-  --dependency-cache "$TASK_DEPENDENCY_CACHE" \
-  --package AdvancedCostumeController --package AvatarSecuritySystem \
-  --package VisemeBlendshapeOverride --package AnimatorOptimizer \
+  --dependency-cache "$TASK_DEPENDENCY_CACHE" --package AdvancedCostumeController \
   --dependency nadena.dev.ndmf --dependency nadena.dev.modular-avatar
 
-python3 "$TASK_ARCHIVE/run_upgrade.py" \
+python3 "$TASK_ARCHIVE/run_upgrade.py" --scope acc \
   --project "$TASK_PROJECT" --unity "$TASK_UNITY" --xdg-root "$TASK_XDG" \
   --legacy-package "top.sealoong.unitybox.advanced-costume-controller=$TASK_ACC_OLD_ZIP" \
-  --legacy-package "top.sealoong.unitybox.avatar-security-system=$TASK_ASS_OLD_ZIP" \
-  --legacy-package "top.sealoong.unitybox.viseme-blendshape-override=$TASK_VISEME_OLD_ZIP" \
-  --legacy-package "top.sealoong.unitybox.animator-optimizer=$TASK_AO_OLD_SOURCE" \
   --expected-legacy-sha "top.sealoong.unitybox.advanced-costume-controller=$TASK_ACC_OLD_SHA" \
-  --expected-legacy-sha "top.sealoong.unitybox.avatar-security-system=$TASK_ASS_OLD_SHA" \
-  --expected-legacy-sha "top.sealoong.unitybox.viseme-blendshape-override=$TASK_VISEME_OLD_SHA" \
-  --legacy-ao-source 782af0bf8569fdde6782d420761f38c8f8d6824d \
-  --legacy-ao-production-only --cold-upgrade-import \
   --current-package "top.sealoong.unitybox.advanced-costume-controller=$TASK_ACC_CURRENT_ZIP" \
-  --current-package "top.sealoong.unitybox.avatar-security-system=$TASK_ASS_CURRENT_ZIP" \
-  --current-package "top.sealoong.unitybox.viseme-blendshape-override=$TASK_VISEME_CURRENT_ZIP" \
-  --current-package "top.sealoong.unitybox.animator-optimizer=$TASK_AO_CURRENT_ZIP" \
-  --migration-tool "$TASK_MIGRATION_TOOL"
+  --cold-upgrade-import
 ```
 
-旧 ZIP 来源及 SHA 见 `input-provenance.json`；当前 ZIP 用仓库发布打包器生成。
-`TASK_AO_OLD_SOURCE` 指精确开发提交中的 AnimatorOptimizer 包目录，保留原 metadata。
-`TASK_ARCHIVE` 指本归档目录；`TASK_MIGRATION_TOOL` 指独立工具根目录或其 Editor 目录。
-运行器只关闭专用集成工程的 package testables，不通过旧开发 Test Runner 来执行此 fixture。
+其它单插件使用 `--scope ass`、`viseme`、`ao` 并替换对应输入；共存使用 `--scope all` 并提供全部四包。AO 添加 `--legacy-ao-source 782af0bf8569fdde6782d420761f38c8f8d6824d --legacy-ao-production-only`。旧 ZIP URL/SHA、当前 ZIP 身份及 AO 源证明见 [input-provenance.json](input-provenance.json)。
 
-可加 `--stop-after legacy` 或 `--stop-after broken` 暂停；使用同一工程及
-`--resume-from broken` / `--resume-from migrated` 继续。每阶段独立启动 Editor，
-断言完成后自行退出，不传提前截断延迟回调的 `-quit`。
+可用 `--stop-after legacy` 暂停，再以同一 scope、当前 ZIP 输入和 `--resume-from broken --cold-upgrade-import` 继续。每阶段断言完成后自行退出。
+
+[summary.json](summary.json)汇总完成结果；[sha256.json](sha256.json)索引全部归档文件。
