@@ -2,7 +2,20 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.6] - 2026-11-08
+## [0.9.7] - 2026-11-08
+
+### Fixed
+
+- Inspector 在提交时间编辑时限制保持时间至少比容错长 0.01s，并同步约束最大等待；默认保持 0.5s、容错 0.3s。旧非法值打开和绘制时保留，使用显式“修正时间”提交并支持 Undo/Redo。
+- 词池与 Clip/状态名称映射保持 0.9.6 原样；本次只修复时间 UI 约束和混淆开关对应的实际输出。
+- 普通 Unity 与 SDK 构建共用本包原 Editor 程序集中的 `ObfuscationGraph`，普通 Unity 的诱饵层、诱饵状态选项现在生成对应内容。启用的诱饵图稳定分配诱饵 Clip，条件参数与 WD On 策略一致。
+- 普通 Unity 对已分配的生成 Controller 再次构建时，按持久化的 ASS 层标记清理旧输出，反复生成不叠加；关闭混淆或诱饵后重建会移除旧诱饵，用户层保留。
+- 元数据曲线路径选择 Avatar 中不存在的专属根，避免命中真实对象。源 Controller、Scene/Prefab、脚本 GUID 及音频设置保留。
+- 保留 Contact 兼容保护：含 Contact 的 Avatar 跳过第三方 Playable 图改名，ASS 自有名称与诱饵继续混淆。完整 Playable 混淆在 VRC SDK 晚期回调处理，单独 NDMF bake/preview 不增加全图改名。
+- 混淆只作用于构建副本；更新后正常构建重新生成即可。
+- 时间 UI、保存重载后的诱饵输出与构建路径记录见[时间与混淆验证](../../../Docs/Verification/ASSTimingObfuscation/README.md)。
+
+## [0.9.6] - 2026-11-08（历史发布）
 
 ### Fixed
 

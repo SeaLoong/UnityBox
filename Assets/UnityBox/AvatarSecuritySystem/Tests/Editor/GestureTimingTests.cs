@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -208,6 +209,74 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 Assert.That(component.writeDefaultsMode, Is.EqualTo(ASSComponent.WriteDefaultsMode.Off), "The retired option is retained as data and never controls new states.");
             }
             finally { PrefabUtility.UnloadPrefabContents(loaded); }
+        }
+
+        [TestCase("gestureHoldTime", 0.1f, 0.31f, 0.3f, 1f)]
+        [TestCase("gestureErrorTolerance", 0.8f, 0.5f, 0.49f, 1.04f)]
+        [TestCase("gestureMaxHoldTime", 0.1f, 0.5f, 0.3f, 1f)]
+        [TestCase("gestureHoldTime", 0.95f, 0.95f, 0.3f, 1.3f)]
+        [TestCase("gestureErrorTolerance", -1f, 0.5f, 0f, 1f)]
+        [TestCase("gestureHoldTime", 5f, 1f, 0.3f, 1.35f)]
+        public void InspectorTimingEditsApplyDependentLimitsAsOneUndoableEdit(string property,
+            float value, float expectedHold, float expectedTolerance, float expectedMaximum)
+        {
+            var component = root.AddComponent<ASSComponent>();
+            float initialMaximum = property == "gestureMaxHoldTime" ? 3f : 1f;
+            component.gestureMaxHoldTime = initialMaximum;
+            var previousLanguage = I18n.GetCurrentLanguage();
+            var inspector = UnityEditor.Editor.CreateEditor(component);
+            try
+            {
+                inspector.serializedObject.Update();
+                Undo.IncrementCurrentGroup();
+                typeof(Inspector).GetMethod("ApplyGestureTimingEdit", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(inspector, new object[] { property, value });
+                Assert.That(inspector.serializedObject.ApplyModifiedProperties(), Is.True);
+                Undo.FlushUndoRecordObjects();
+                AssertTiming(component, expectedHold, expectedTolerance, expectedMaximum);
+                Assert.That(component.gestureHoldTime - component.gestureErrorTolerance, Is.GreaterThanOrEqualTo(0.00999f));
+                Undo.PerformUndo();
+                AssertTiming(component, 0.5f, 0.3f, initialMaximum);
+                Undo.PerformRedo();
+                AssertTiming(component, expectedHold, expectedTolerance, expectedMaximum);
+            }
+            finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
+        }
+
+        [Test]
+        public void InspectorExplicitTimingCorrectionRepairsLegacyValuesAndCanUndoToTheOriginalData()
+        {
+            var component = root.AddComponent<ASSComponent>();
+            component.gestureHoldTime = 0.15f;
+            component.gestureErrorTolerance = 0.3f;
+            component.gestureMaxHoldTime = 0.1f;
+            var previousLanguage = I18n.GetCurrentLanguage();
+            var inspector = UnityEditor.Editor.CreateEditor(component);
+            try
+            {
+                inspector.serializedObject.Update();
+                Assert.That((bool)typeof(Inspector).GetMethod("StoredGestureTimesNeedCorrection",
+                    BindingFlags.Instance | BindingFlags.NonPublic).Invoke(inspector, null), Is.True);
+                AssertTiming(component, 0.15f, 0.3f, 0.1f);
+                Undo.IncrementCurrentGroup();
+                typeof(Inspector).GetMethod("CorrectGestureTimes", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(inspector, null);
+                Assert.That(inspector.serializedObject.ApplyModifiedProperties(), Is.True);
+                Undo.FlushUndoRecordObjects();
+                AssertTiming(component, 0.15f, 0.14f, 1f);
+                Undo.PerformUndo();
+                AssertTiming(component, 0.15f, 0.3f, 0.1f);
+                Undo.PerformRedo();
+                AssertTiming(component, 0.15f, 0.14f, 1f);
+            }
+            finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
+        }
+
+        private static void AssertTiming(ASSComponent component, float hold, float tolerance, float maximum)
+        {
+            Assert.That(component.gestureHoldTime, Is.EqualTo(hold).Within(0.000001f));
+            Assert.That(component.gestureErrorTolerance, Is.EqualTo(tolerance).Within(0.000001f));
+            Assert.That(component.gestureMaxHoldTime, Is.EqualTo(maximum).Within(0.000001f));
         }
 
         [Test]

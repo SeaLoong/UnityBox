@@ -3054,6 +3054,184 @@
         ],
         "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
       }
+    },
+    {
+      "scope": "ass-obfuscation-linux",
+      "run_id_utc": "20261107T223630-f62f542a",
+      "measurements": [
+        {
+          "plugin": "StandalonePlayer",
+          "scenario": "Unity.PlayerSmoke/Basic",
+          "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+          "size": 1,
+          "samples": 11,
+          "animator_layers": 1,
+          "clip_count": 1,
+          "median_ms": 0.035477,
+          "p95_ms": 0.0830485,
+          "min_ms": 0.033743,
+          "max_ms": 0.0830485,
+          "allocated_bytes_per_op": -1,
+          "controller_memory_bytes": -1
+        },
+        {
+          "plugin": "StandalonePlayer",
+          "scenario": "ASS gesture hold, result, timeout restart and user animation preservation/ASS_StandaloneProbe",
+          "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+          "size": 1,
+          "samples": 11,
+          "animator_layers": 4,
+          "clip_count": 20,
+          "median_ms": 0.0385805,
+          "p95_ms": 0.048794500000000005,
+          "min_ms": 0.035259500000000006,
+          "max_ms": 0.048794500000000005,
+          "allocated_bytes_per_op": -1,
+          "controller_memory_bytes": -1
+        }
+      ],
+      "build": {
+        "result": "Succeeded",
+        "output": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/UnityBoxPlayer",
+        "total_errors": 0,
+        "total_warnings": 1,
+        "total_size_bytes": 57797051,
+        "duration_seconds": 9.0905854,
+        "hook_providers": [
+          "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+        ],
+        "source_configuration_components": 1
+      },
+      "providers": [
+        "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+      ],
+      "build_command": [
+        "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+        "-batchmode",
+        "-nographics",
+        "-quit",
+        "-projectPath",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108",
+        "-executeMethod",
+        "UnityBoxPlayerBuilder.Build",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/build.log"
+      ],
+      "player_command": [
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/UnityBoxPlayer",
+        "-batchmode",
+        "-nographics",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/player.log",
+        "-unityboxReport",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/player.json"
+      ],
+      "scenarios": 2,
+      "checks": 13,
+      "frames": 252,
+      "mono_heap_bytes": 348160,
+      "artifacts": {
+        "report": {
+          "path": "/workspace/unitybox-setup/unity/ass-obfuscation-player-result.json",
+          "bytes": 3380,
+          "sha256": "4d4b54e79223ad21945da1cd4828afde2e0c444102c9cb042be16a6ad70d9320"
+        },
+        "build.json": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/build.json",
+          "bytes": 441,
+          "sha256": "aa449aaee849a8b37200bbf4adc0d7044dff4f357d8977c7e45cfe1aab39fc42"
+        },
+        "player.json": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/player.json",
+          "bytes": 1511,
+          "sha256": "f8a287e0ab0d215f14f2fffa6907a6b24b304afab9dcf4274dd83289c7fc0d4d"
+        },
+        "build.log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/build.log",
+          "bytes": 318283,
+          "sha256": "6829f4a0d2dda2ee6a8e0f68fe240aa3f2483958e8f514361e1ed77c4c19203f"
+        },
+        "player.log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-player-results/20261107T223630-f62f542a/player.log",
+          "bytes": 12146,
+          "sha256": "e3a72137ec19f18da1aa0180f8a3c44d2f34187f3cfc484ba8db4f60c9c5deb9"
+        }
+      },
+      "archived_artifacts": {
+        "build.json": {
+          "path": "Verification/ASSTimingObfuscation/ass-obfuscation-linux-build.json",
+          "bytes": 441,
+          "sha256": "aa449aaee849a8b37200bbf4adc0d7044dff4f357d8977c7e45cfe1aab39fc42"
+        },
+        "player.json": {
+          "path": "Verification/ASSTimingObfuscation/ass-obfuscation-linux-player.json",
+          "bytes": 1511,
+          "sha256": "f8a287e0ab0d215f14f2fffa6907a6b24b304afab9dcf4274dd83289c7fc0d4d"
+        }
+      },
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.avatar-security-system": {
+            "version": "0.9.7",
+            "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
+            "checkout": "/workspace/UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "c4a4e2614178b2918fb7b1027554f91ebb34c936",
+            "prepared_tree_sha256": "a9d7ec4fe8c94a20fc2b042edeca56f6496df84249c250d0d564470ba6728002",
+            "source_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "imported_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "file_count": 133,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": [
+              "Resources/Avatar Security System.png.meta",
+              "Resources/Materials/Avatar Security System.mat.meta",
+              "Shaders/DefenseShader.shader.meta",
+              "Shaders/Overlay.shader.meta",
+              "VRC Docs Playable Layers.txt.meta",
+              "package.json.meta"
+            ]
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AvatarSecuritySystem": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "bytes": 207360,
+              "sha256": "dd93275f29897d241933ac31f21eb0cf60fc7fce2f2db898ebcdc05243715676"
+            },
+            "source_file_count": 20,
+            "source_sha256": "06245cc8231bb681198c68718dd3077f55c448ea879e4b5f4237c02e0afe6f54"
+          },
+          "UnityBox.AvatarSecuritySystem.Runtime": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "bytes": 11264,
+              "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
+            },
+            "source_file_count": 4,
+            "source_sha256": "28d6fd2ccabb1586bf9edbb5ff9a8d8724d232a1fc584ed4005144f499ddbf90"
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "bytes": 110080,
+              "sha256": "8bb26694b441b92909ec34e1df5285813623fc535edb13b50ec46b994887ff69"
+            },
+            "source_file_count": 12,
+            "source_sha256": "ad966bdae2213fcafc1845b731f2c4647a0e7a36484404497b45d6518972867c"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+      }
     }
   ],
   "supplementary_editor_runs": [
@@ -3270,6 +3448,421 @@
         "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
       },
       "graphics_device": []
+    },
+    {
+      "scope": "ass-obfuscation-serial",
+      "run_id_utc": "20261107T223653-5ba64367",
+      "measurements": [
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "scan_component_references",
+          "size": 128,
+          "samples": 5,
+          "warmups": 1,
+          "median_ms": 68.0159,
+          "p95_ms": 70.0511,
+          "min_ms": 66.8211,
+          "max_ms": 70.0511,
+          "allocated_bytes_per_op": -1,
+          "correctness": "128 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "scan_component_references",
+          "size": 1024,
+          "samples": 5,
+          "warmups": 1,
+          "median_ms": 609.7899,
+          "p95_ms": 631.2080000000001,
+          "min_ms": 578.8068000000001,
+          "max_ms": 631.2080000000001,
+          "allocated_bytes_per_op": -1,
+          "correctness": "1024 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "scan_component_references",
+          "size": 4096,
+          "samples": 5,
+          "warmups": 1,
+          "median_ms": 2680.7437,
+          "p95_ms": 2931.0184,
+          "min_ms": 2579.1962000000003,
+          "max_ms": 2931.0184,
+          "allocated_bytes_per_op": -1,
+          "correctness": "4096 component identities; source and metadata bytes unchanged; UTF-8 Chinese and emoji prefixes"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "discover_project_assets",
+          "size": 1024,
+          "samples": 5,
+          "warmups": 1,
+          "median_ms": 154.72410000000002,
+          "p95_ms": 247.55630000000002,
+          "min_ms": 150.72910000000002,
+          "max_ms": 247.55630000000002,
+          "allocated_bytes_per_op": -1,
+          "correctness": "1024 unrelated YAML assets excluded from retained evidence; owner discovered; source and metadata bytes unchanged"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "animator_idle_without_decoys",
+          "size": 20,
+          "samples": 9,
+          "warmups": 30,
+          "animator_layers": 4,
+          "state_count": 20,
+          "updates_per_sample": 300,
+          "median_ms": 0.04981633333333334,
+          "p95_ms": 0.08516066666666668,
+          "min_ms": 0.04255433333333334,
+          "max_ms": 0.08516066666666668,
+          "allocated_bytes_per_op": -1,
+          "correctness": "Remote idle states remain active; user Light intensity stays 2.5; source assets unchanged"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "animator_idle_with_decoys",
+          "size": 49,
+          "samples": 9,
+          "warmups": 30,
+          "animator_layers": 5,
+          "state_count": 49,
+          "updates_per_sample": 300,
+          "median_ms": 0.04514933333333333,
+          "p95_ms": 0.047252333333333334,
+          "min_ms": 0.043261,
+          "max_ms": 0.047252333333333334,
+          "allocated_bytes_per_op": -1,
+          "correctness": "Remote idle states remain active; user Light intensity stays 2.5; source assets unchanged"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "gesture_graph_generation",
+          "size": 2,
+          "samples": 7,
+          "median_ms": 2.5349,
+          "p95_ms": 2.6248,
+          "min_ms": 2.1553,
+          "max_ms": 2.6248,
+          "allocated_bytes_per_op": -1,
+          "correctness": "one continuous-hold state per password step; WD On; no avatar lock layer"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "gesture_graph_generation",
+          "size": 8,
+          "samples": 7,
+          "median_ms": 12.062100000000001,
+          "p95_ms": 17.889300000000002,
+          "min_ms": 7.992,
+          "max_ms": 17.889300000000002,
+          "allocated_bytes_per_op": -1,
+          "correctness": "one continuous-hold state per password step; WD On; no avatar lock layer"
+        },
+        {
+          "plugin": "AvatarSecuritySystem",
+          "scenario": "gesture_graph_generation",
+          "size": 32,
+          "samples": 7,
+          "median_ms": 355.84590000000003,
+          "p95_ms": 636.4255,
+          "min_ms": 171.0248,
+          "max_ms": 636.4255,
+          "allocated_bytes_per_op": -1,
+          "correctness": "one continuous-hold state per password step; WD On; no avatar lock layer"
+        }
+      ],
+      "machine": {
+        "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+        "cpu_count": 5
+      },
+      "measured_plugins": [
+        "AvatarSecuritySystem"
+      ],
+      "command": [
+        "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+        "-batchmode",
+        "-nographics",
+        "-projectPath",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108",
+        "-runTests",
+        "-testPlatform",
+        "EditMode",
+        "-testResults",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-test-results/20261107T223653-5ba64367/results.xml",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-test-results/20261107T223653-5ba64367/unity.log",
+        "-testCategory",
+        "UnityBoxPerformance",
+        "-assemblyNames",
+        "UnityBox.AvatarSecuritySystem.Editor.Tests"
+      ],
+      "artifacts": {
+        "report": {
+          "path": "/workspace/unitybox-setup/unity/ass-obfuscation-benchmark-result.json",
+          "bytes": 6551,
+          "sha256": "6040be39f4f78c35fdbcb1a9f99dc3bad8d831ec567a81783d1eff7ad9c62155"
+        },
+        "xml": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-test-results/20261107T223653-5ba64367/results.xml",
+          "bytes": 16599,
+          "sha256": "c3daed115e4e23eee36514cb1865dae51bfed4fad01aae06eef20994ff7c7cf9"
+        },
+        "unity_log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-test-results/20261107T223653-5ba64367/unity.log",
+          "bytes": 335481,
+          "sha256": "4fd63e388ed50fcb1fc2e492997caab1ba4a42765e0f09b537a3c0215786c3d3"
+        },
+        "launcher_log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/.unitybox-test-results/20261107T223653-5ba64367/launcher.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "archived_xml": {
+        "path": "Verification/ASSTimingObfuscation/ass-obfuscation-serial-results.xml.gz",
+        "compression": "gzip; mtime=0",
+        "bytes": 2756,
+        "sha256": "f83389ea98f2de977d55afd67dcb4a53e4422aa5949b072168068a4247b8a25a",
+        "original_xml_sha256": "c3daed115e4e23eee36514cb1865dae51bfed4fad01aae06eef20994ff7c7cf9",
+        "archived_xml_sha256": "c3daed115e4e23eee36514cb1865dae51bfed4fad01aae06eef20994ff7c7cf9",
+        "removed_metadata": []
+      },
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.avatar-security-system": {
+            "version": "0.9.7",
+            "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
+            "checkout": "/workspace/UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "c4a4e2614178b2918fb7b1027554f91ebb34c936",
+            "prepared_tree_sha256": "a9d7ec4fe8c94a20fc2b042edeca56f6496df84249c250d0d564470ba6728002",
+            "source_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "imported_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "file_count": 133,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": [
+              "Resources/Avatar Security System.png.meta",
+              "Resources/Materials/Avatar Security System.mat.meta",
+              "Shaders/DefenseShader.shader.meta",
+              "Shaders/Overlay.shader.meta",
+              "VRC Docs Playable Layers.txt.meta",
+              "package.json.meta"
+            ]
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AvatarSecuritySystem": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "bytes": 207360,
+              "sha256": "dd93275f29897d241933ac31f21eb0cf60fc7fce2f2db898ebcdc05243715676"
+            },
+            "source_file_count": 20,
+            "source_sha256": "06245cc8231bb681198c68718dd3077f55c448ea879e4b5f4237c02e0afe6f54"
+          },
+          "UnityBox.AvatarSecuritySystem.Runtime": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "bytes": 11264,
+              "sha256": "bc7bf2634546bd62cef1afb12f3511b56850467b3989b64daba1eab45280c644"
+            },
+            "source_file_count": 4,
+            "source_sha256": "28d6fd2ccabb1586bf9edbb5ff9a8d8724d232a1fc584ed4005144f499ddbf90"
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-core-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "bytes": 110080,
+              "sha256": "8bb26694b441b92909ec34e1df5285813623fc535edb13b50ec46b994887ff69"
+            },
+            "source_file_count": 12,
+            "source_sha256": "ad966bdae2213fcafc1845b731f2c4647a0e7a36484404497b45d6518972867c"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+      },
+      "graphics_device": []
+    }
+  ],
+  "supplementary_graphics_runs": [
+    {
+      "scope": "ass-obfuscation-graphics",
+      "run_id_utc": "20261107T223554-d9e80aca",
+      "measurements": [],
+      "machine": {
+        "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+        "cpu_count": 5
+      },
+      "measured_plugins": [],
+      "command": [
+        "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108",
+        "-runTests",
+        "-testPlatform",
+        "EditMode",
+        "-testResults",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/.unitybox-test-results/20261107T223554-d9e80aca/results.xml",
+        "-logFile",
+        "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/.unitybox-test-results/20261107T223554-d9e80aca/unity.log",
+        "-testCategory",
+        "UnityBoxGraphics",
+        "-assemblyNames",
+        "UnityBox.AvatarSecuritySystem.Editor.Tests;UnityBox.AvatarSecuritySystem.NDMF.Tests;UnityBox.AvatarSecuritySystem.VRChat.Tests"
+      ],
+      "artifacts": {
+        "report": {
+          "path": "/workspace/unitybox-setup/unity/ass-obfuscation-graphics-result.json",
+          "bytes": 3291,
+          "sha256": "72a272ff595e2ef182832e3aac2fb038201c0d86e5404208090a704b042c102c"
+        },
+        "xml": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/.unitybox-test-results/20261107T223554-d9e80aca/results.xml",
+          "bytes": 6687,
+          "sha256": "530ae631f56c3d10b2595d4db0a1313b341e70db5c3a413df3b9bfb50835db46"
+        },
+        "unity_log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/.unitybox-test-results/20261107T223554-d9e80aca/unity.log",
+          "bytes": 225545,
+          "sha256": "35c6eea7c3b7d1d64ea98417124149a60781068bdac7fb2d3b0e8e8c938e62dc"
+        },
+        "launcher_log": {
+          "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/.unitybox-test-results/20261107T223554-d9e80aca/launcher.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "archived_xml": {
+        "path": "Verification/ASSTimingObfuscation/ass-obfuscation-graphics-results.xml.gz",
+        "compression": "gzip; mtime=0",
+        "bytes": 1101,
+        "sha256": "cfa369eb62f7084bb5cd507c3591e61f51f8bda407ef018331a3cd1f3d590ed6",
+        "original_xml_sha256": "530ae631f56c3d10b2595d4db0a1313b341e70db5c3a413df3b9bfb50835db46",
+        "archived_xml_sha256": "530ae631f56c3d10b2595d4db0a1313b341e70db5c3a413df3b9bfb50835db46",
+        "removed_metadata": []
+      },
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.avatar-security-system": {
+            "version": "0.9.7",
+            "source": "/workspace/UnityBox/Assets/UnityBox/AvatarSecuritySystem",
+            "checkout": "/workspace/UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "c4a4e2614178b2918fb7b1027554f91ebb34c936",
+            "prepared_tree_sha256": "a9d7ec4fe8c94a20fc2b042edeca56f6496df84249c250d0d564470ba6728002",
+            "source_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "imported_snapshot_sha256": "cddd972e47f299f4e3c307b3f862e3245045d35a5aa56d50845938597fb9d2cb",
+            "file_count": 133,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": [
+              "Resources/Avatar Security System.png.meta",
+              "Resources/Materials/Avatar Security System.mat.meta",
+              "Shaders/DefenseShader.shader.meta",
+              "Shaders/Overlay.shader.meta",
+              "VRC Docs Playable Layers.txt.meta",
+              "package.json.meta"
+            ]
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AvatarSecuritySystem.NDMF": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.dll",
+              "bytes": 7680,
+              "sha256": "fbd4a21b541fe48fc2d74153b9362f2ec026246a27a8a77950a7a4ccbf3a65f7"
+            },
+            "source_file_count": 2,
+            "source_sha256": "2902c548e1afc089c97d12178df38f8f752a148b726228fb59bf1aad71ec6b4e"
+          },
+          "UnityBox.AvatarSecuritySystem": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.dll",
+              "bytes": 207360,
+              "sha256": "47c959040173b6623212be241666dc511624639dea502ffbfc2755c9560f3549"
+            },
+            "source_file_count": 20,
+            "source_sha256": "06245cc8231bb681198c68718dd3077f55c448ea879e4b5f4237c02e0afe6f54"
+          },
+          "UnityBox.AvatarSecuritySystem.VRChat": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.dll",
+              "bytes": 60416,
+              "sha256": "6d4d4d9c68bc70cac3b9e1fb8e8ad1c84caa0494a2de240564d5efd863f4dbe3"
+            },
+            "source_file_count": 8,
+            "source_sha256": "294233ccbc56d04422bcb0f5faa1d50402e7696a07e7ef2eab8a112381314b63"
+          },
+          "UnityBox.AvatarSecuritySystem.Runtime": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Runtime.dll",
+              "bytes": 11776,
+              "sha256": "598ab12de600f2b81462492e8828c258647c777b39d572f0b6a675615523dabf"
+            },
+            "source_file_count": 4,
+            "source_sha256": "28d6fd2ccabb1586bf9edbb5ff9a8d8724d232a1fc584ed4005144f499ddbf90"
+          },
+          "UnityBox.AvatarSecuritySystem.NDMF.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.NDMF.Tests.dll",
+              "bytes": 29696,
+              "sha256": "5853aaf432346b415a2fb2fa8006bd0327c86d7a46f7b4c6424acafbbdd8f66d"
+            },
+            "source_file_count": 3,
+            "source_sha256": "9fccc5257cf7646666cc6a87292eaa8d5d5ba0b7401b3b5acfe227cade5d2fc2"
+          },
+          "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.Editor.Tests.dll",
+              "bytes": 110080,
+              "sha256": "3965070aaa9e87d35b63e51a48ad9cc358cb839b5e43ae3c8dd7be59f6cf65e1"
+            },
+            "source_file_count": 12,
+            "source_sha256": "ad966bdae2213fcafc1845b731f2c4647a0e7a36484404497b45d6518972867c"
+          },
+          "UnityBox.AvatarSecuritySystem.VRChat.Tests": {
+            "package": "top.sealoong.unitybox.avatar-security-system",
+            "dll": {
+              "path": "/workspace/unitybox-setup/unity/projects/ass-obfuscation-full-20261108/Library/ScriptAssemblies/UnityBox.AvatarSecuritySystem.VRChat.Tests.dll",
+              "bytes": 41472,
+              "sha256": "05ae1e32d99d682880a4b08e76962e29ae3d2723cbd4606f464ee4e438f6f265"
+            },
+            "source_file_count": 4,
+            "source_sha256": "2ba20665758613bf5489fd4768809dae259b38a4f963d90a9e31c6322faabe5b"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All selected package source/resources and GUIDs match byte-for-byte; folder.meta may differ only in trailing spaces on empty userData/assetBundleName/assetBundleVariant scalars. Each such path retains imported/current/canonical SHA256 values.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON"
+      },
+      "graphics_device": [
+        "Renderer: llvmpipe (LLVM 19.1.7, 256 bits)",
+        "Vendor:   Mesa",
+        "Version:  4.5 (Core Profile) Mesa 25.0.7-2+deb13u1",
+        "OPENGL LOG: Creating OpenGL 4.5 graphics device ; Context level  <OpenGL 4.5> ; Context handle -242378896"
+      ]
     }
   ]
 }

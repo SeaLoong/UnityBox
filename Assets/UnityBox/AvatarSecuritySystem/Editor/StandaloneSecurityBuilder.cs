@@ -55,6 +55,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var countdown = new Countdown(controller, root, config, adapter);
             countdown.Generate();
             countdown.GenerateAudioLayer();
+            ObfuscationGraph.Generate(controller, root);
             AnimatorLifecycle.Generate(controller, adapter, adapter);
             var input = root.GetComponent<StandaloneSecurityInput>() ?? root.AddComponent<StandaloneSecurityInput>();
             input.passwordParameter = Constants.PARAM_PASSWORD_CORRECT;
@@ -77,6 +78,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 (key: "LAYER_DEFENSE", clean: "ASS_Defense"),
             };
             var kept = controller.layers.Where(layer => !Constants.IsASSManagedLayerName(layer.name)
+                && !ObfuscationGraph.IsGeneratedDecoyLayer(layer)
                 && !names.Any(name => layer.name == Obfuscator.GetObfuscatedLayerNameForCleanup(name.key, name.clean, avatarName))).ToArray();
             controller.layers = kept;
         }

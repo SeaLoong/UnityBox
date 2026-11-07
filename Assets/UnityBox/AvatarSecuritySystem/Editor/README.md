@@ -3,11 +3,11 @@
 Avatar Security System（ASS）提供手势密码验证、倒计时提示、Overlay 和声音反馈，
 并支持 VRChat 防御配置。可以按需要调整密码、计时和反馈选项，通过参数或运行时 API
 读取密码结果。普通 Unity 与 VRChat 分别在各自构建流程生成运行图，原有角色动画
-继续由项目控制。当前版本为 **0.9.6**。
+继续由项目控制。当前版本为 **0.9.7**。
 
 ## 升级与已有项目
 
-0.9.6 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
+0.9.7 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
 加载 Scene/Prefab 时，ASS 不扫描或重写项目中的脚本 GUID、场景、Prefab 与已保存配置。
 组件加载也不再通过 `OnValidate` 自动改写已有时值；生成时只规范化配置副本。
 新组件与用户显式执行 Reset 使用默认保持 0.5s、容错 0.3s。
@@ -93,9 +93,16 @@ On，不按原 FX 的模式匹配，也不增加选择项。用户已有状态�
 
 ## 连续保持与防快速遍历
 
-默认 `gestureHoldTime=0.5s`、`gestureErrorTolerance=0.3s`。保持时间必须严格大于容错时间；
-生成器在独立配置副本中应用时间规则；已保存字段在打开、导入和加载时保持原值。
-例如保存的 0.15s / 0.3s 在构建副本中使用 0.15s / 0.14s，源组件仍保留原设置。
+默认 `gestureHoldTime=0.5s`、`gestureErrorTolerance=0.3s`。保持时间必须比容错至少长 **0.01s**。
+0.9.7 的 Inspector 使用延迟数值输入，按 Enter 或离开输入框提交：
+
+- 编辑保持时间时，下限为当前容错加 0.01s，合法范围为 0.05–1s。
+- 编辑容错时，上限为当前保持时间减 0.01s，下限为 0。
+- 最大等待同步限制为 `max(1s, hold+tolerance+0.05s)` 至 10s。
+
+旧非法配置打开和绘制时显示原值及提示，点击 **修正时间** 才提交；编辑和修正均支持
+Undo/Redo。生成器继续在独立配置副本中应用时间规则。例如保存的 0.15s / 0.3s 在构建副本中
+使用 0.15s / 0.14s，打开 Inspector 不改写源组件；显式编辑或修正后保存新的合法设置。
 
 每一位都必须连续保持正确姿势达到保持时长。切到错误姿势会中断当前计时，恢复正确
 姿势后从零重新累计；容错窗口到期会清除当前序列进度。连续快速轮换 0–7 不会累计为
@@ -151,6 +158,35 @@ VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 
 
 音频导入、实际 SDK 检查及 NDMF 最终输出的记录见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
 
+## 混淆开关与构建输出
+
+混淆在正常构建产生的独立副本中生效，源 Avatar 与原 Controller 名称保持。
+检查生成的 Build 输出或最终 Avatar Controller，可看到实际名称、诱饵层和状态；
+在原项目层级中查看源对象不会触发重命名。
+
+| 选项 | 构建输出 |
+| --- | --- |
+| 禁用混淆 | 保留清晰名称，不生成混淆诱饵 |
+| 诱饵层 | 增加独立诱饵图和条件参数 |
+| 诱饵状态 | 在 ASS 功能层注入假状态，可独立于诱饵层启用 |
+| 混淆全部 Playable Layer | 在晚期 SDK 回调处理最终 Playable 副本；Contact 兼容保护适用 |
+
+普通 Unity 与 SDK 使用同一 `ObfuscationGraph` 实现，普通 Unity 的诱饵开关同样产生输出。
+元数据绑定使用 Avatar 中不存在的专属根，避免动画误控制真实对象；所有新增状态保持 WD On。
+
+普通 Unity 已分配生成的 Controller 后再次生成，会先识别并清理旧 ASS 层和诱饵层，
+再按当前选项重建。反复生成不叠加；关闭混淆或诱饵后重建也会移除旧诱饵，用户层保持。
+
+词池和 Clip/状态名称映射保持 0.9.6 原样。本次修复普通 Unity 诱饵开关的实际输出，
+并让启用的诱饵图稳定分配诱饵 Clip；未调整词表或增加新的字面标识。
+
+含 Contact 的 Avatar 保留第三方 Playable 图的原名，以维持 VRCFury 等接触器图的兼容性；
+ASS 自有图、参数名称和诱饵仍会生成混淆输出。单独执行 NDMF bake/preview 时没有晚期 SDK
+回调，完整 Playable 改名留到正常 VRC SDK 构建；预览阶段不额外改写第三方全图。
+
+时间 UI 和最终诱饵输出的检查范围见
+[时间与混淆验证](../../../../Docs/Verification/ASSTimingObfuscation/README.md)。
+
 ## 配置、显示与兼容
 
 - 混淆只启用诱饵状态、关闭诱饵层时，仍声明条件使用的参数；参数池没有 Bool 时
@@ -175,7 +211,8 @@ VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 
 修改原文件或自动创建迁移记录；构建副本的时间规范化与源字段保持分别检查。
 SDK 与 NDMF 测试覆盖实际 Behaviour、参数副本、多 Avatar 生命周期和最终提交。
 
-0.9.6 的生成状态与表情复位见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
+0.9.7 的时间编辑、诱饵输出与构建路径见[时间与混淆验证](../../../../Docs/Verification/ASSTimingObfuscation/README.md)。
+0.9.6 的历史生成状态与表情复位见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 0.9.5 的音频上传检查见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
 0.9.4 的历史组件引用执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
 [0.9.1 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)保留该历史版本的范围。

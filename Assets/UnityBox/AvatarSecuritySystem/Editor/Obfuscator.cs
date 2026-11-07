@@ -1026,7 +1026,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             for (int i = 0; i < fakeCount; i++)
             {
-                bool useInstructional = (PseudoInt(ref rng, 0, 2) == 0)
+                bool useInstructional = (i == 0 || PseudoInt(ref rng, 0, 2) == 0)
                     && instructionalIdx < instructionalNames.Length
                     && instructionalClips != null && instructionalClips.Count > 0;
                 string stateName;

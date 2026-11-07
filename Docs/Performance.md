@@ -1,6 +1,20 @@
 # UnityBox 性能实测
 
-ASS0.9.6 的 WD On、当前串行基准与 Player 结果见
+ASS0.9.7 的诱饵开关 Animator.Update 对照与当前串行测量见
+[时间/混淆验证](Verification/ASSTimingObfuscation/README.md)。
+
+本版独立串行性能范围通过8项测试，记录9条测量。
+诱饵对照使用同一 ASS 图、固定远端输入，预热30次，9组×300次 Animator.Update；
+每组核对 Light 输出与默认状态，源资源保持。
+
+| Animator.Update 对照 | 层数 | 状态数 | 中位数 ms | p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| animator_idle_without_decoys | 4 | 20 | 0.049816 | 0.085161 |
+| animator_idle_with_decoys | 5 | 49 | 0.045149 | 0.047252 |
+
+这些数据对应上述固定图和输入，启用诱饵会增加图规模；其它 Avatar 的耗时随层数、状态和动画变化。
+
+ASS0.9.6 的 WD On、该版串行基准与 Player 结果见
 [WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。
 
 Editor、图形及全库 Player 数据来自 `7cd4b40` 的八插件基线（ASS0.9.4）。

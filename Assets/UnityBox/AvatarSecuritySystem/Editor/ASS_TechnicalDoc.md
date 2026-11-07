@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.6 技术参考
+# Avatar Security System 0.9.7 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -18,7 +18,8 @@ ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命�
 | UnityAnimatorBehaviourAdapter.cs | 生成原生 StateMachineBehaviour |
 | VRChat/VrcAnimatorBehaviourAdapter.cs | 生成真实 SDK Behaviour |
 | ControllerGraphCopy.cs | 可编辑 Controller 副本、Override 展开和引用重映射 |
-| Obfuscator.cs / VRChat/Processor.cs | 名称映射、每 Avatar 输出与 SDK 原引用还原 |
+| Obfuscator.cs / ObfuscationGraph.cs | 既有名称映射与 Unity/SDK 共用诱饵图 |
+| VRChat/Processor.cs | 每 Avatar 输出、Playable 晚期混淆与 SDK 原引用还原 |
 | NDMF/NDMFPlugin.cs | Resolving 捕获与 PlatformFinish 生成 |
 
 核心 Editor/Runtime 只引用 Unity。SDK Base/Avatars ≥3.7.0、NDMF ≥1.8 通过可选装配接入。
@@ -44,6 +45,9 @@ root.GetComponent<Animator>().runtimeAnimatorController = result;
 后端复制配置列表，并强制普通 Unity 的遗留主动负载关闭。已有 Controller/AOC 使用
 `ControllerGraphCopy` 建立独立可编辑副本，保留用户状态、Clip 身份语义及原 WD 设置，
 随后清除已识别的 ASS 层（包含遗留 ASS_Lock）并生成密码、计时、声音和生命周期层。
+生成层的 `defaultState.tag` 持久保存 ASS 所属标记，副本清理按该标记识别旧层，
+不依赖当前混淆或诱饵开关。已分配生成结果后再次 Build 不叠加；关闭相应选项后重建
+会移除旧诱饵，用户层继续保留。
 缺少 Animator 或输入组件时由构建场景处理器创建；普通图的 IsLocal 默认 true。
 
 0.9.6 新生成的 ASS 状态统一 WD On，层同步索引为 -1。该规则覆盖密码、计时、音频、
@@ -67,10 +71,14 @@ Light 复用和激活流程。`disableRootChildren` 与 `writeDefaultsMode` 仅�
 ## 手势时间契约
 
 默认 hold=0.5s、tolerance=0.3s、maximum=3s。`ASSComponent.NormalizeGestureTimes`
-仅在生成所用配置副本中提供时间规则：hold 在 0.05–1s；tolerance 在 0 至
-hold−0.01s；maximum 位于 max(1s, hold+tolerance+0.05s) 至 10s。
-实际生成图的保持时间严格大于容错窗口；组件加载、打开 Inspector 和资源导入保留已存字段。
-`OnValidate` 不再自动纠正源配置；默认值由新组件和用户显式 Reset 提供。
+提供共享规则：hold 在 0.05–1s；tolerance 在 0 至 hold−0.01s；maximum 位于
+max(1s, hold+tolerance+0.05s) 至 10s。构建始终规范化独立配置副本。
+
+Inspector 使用延迟数值输入，只在提交编辑时写入：修改 hold 会保留有效 tolerance，并将
+hold 限制到至少 tolerance+0.01；修改 tolerance 会限制到 hold−0.01；随后按共享规则
+更新 maximum。写入通过 SerializedObject 提交并加入 Undo；旧非法值绘制时保留，显式
+“修正时间”按钮才提交规范值。组件加载、打开 Inspector 和资源导入保留已存字段，
+`OnValidate` 不纠正源配置；新组件和用户显式 Reset 提供默认值。
 
 每一步的 Holding 只在正确手势连续成立时累计时间。错误姿势先进入 Interrupted，
 短暂恢复也会重新进入 Holding 并从零计时；超过容错窗口返回序列入口。
@@ -106,9 +114,21 @@ SDK 路径为每个 Avatar 分配 Generated/Build_<id>，记录原 Playable Cont
 自定义开关，后处理还原原引用并按该输出归属清理。NDMF 使用当前 pass 的配置、名称
 映射和结果归属，上下游服务在实际提交边界交接，最终输出随构建结果保留。
 
-VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立于诱饵层开关。
+Unity 与 SDK 的 `ObfuscationGraph` 共用诱饵参数、Clip、独立层和 ASS 功能层假状态生成。
 `PrepareDecoyParameters` 在参数池没有 Bool 时补齐本地 false 布尔守卫；参数注册按
-实际 Float/Int/Bool 类型处理，避免仅启用诱饵状态时出现未声明或类型不符的条件。
+实际 Float/Int/Bool 类型处理，独立于诱饵层开关。StandaloneSecurityBuilder 也调用同一入口，
+因此普通 Unity 的两个诱饵选项形成实际输出。
+
+词池以及 `GetInstructionalClipNames` / `GetInstructionalStateNames` 的既有名称映射
+保持 0.9.6 原样。本次保证启用的诱饵图稳定分配诱饵 Clip，并验证开关对应的实际生成结果。
+
+元数据 Clip 的专属根在当前 Avatar 中选择不存在的路径；绑定仍为未解析的元数据路径，
+不会创建或启用用户已有对象。
+
+完整 Playable 混淆在 `PlayableObfuscationProcessor` 的晚期 SDK 回调运行，使用当前 Avatar
+的捕获上下文。Contact Avatar 跳过第三方 Playable 图改名，ASS 自有混淆和诱饵继续生效；
+这一分支保留接触器图的兼容语义。单独 NDMF bake/preview 不额外执行全图改名，正常 SDK
+构建在 NDMF 结果提交后进入该晚期回调。源 Controller 与源 Avatar 名称保持。
 
 ## 音频引用与 SDK 上传校验
 
@@ -137,7 +157,7 @@ SDK 的 `VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder.ScanAvatarForAnimatorP
 
 ## 导入与源配置边界
 
-0.9.6 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
+0.9.7 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
 旧修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
@@ -187,5 +207,6 @@ Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语�
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
 0.9.4 的组件引用和源配置范围保留于历史组件引用记录；0.9.5 的音频导入和上传校验单列于音频上传记录。
-0.9.6 的 WD On、表情复位与生成后输出见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
+0.9.7 的时间 UI、Undo/源数据保全与最终混淆输出见[时间与混淆验证](../../../../Docs/Verification/ASSTimingObfuscation/README.md)。
+0.9.6 的历史 WD On、表情复位与生成后输出见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 历史 WD Off 和身体锁生成样本通过其原版本、提交及归档追溯。

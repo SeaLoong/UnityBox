@@ -18,9 +18,27 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
+## ASS 0.9.7 时间 UI 与混淆输出
+
+当前执行见[时间与混淆验证](Verification/ASSTimingObfuscation/README.md)：提交时间约束与Undo、
+旧值绘制保全、Standalone/SDK/NDMF的真实诱饵开关、Contact保护、最终回调、图形和运行输出。
+词池保持0.9.6原样。
+
+## ASS 0.9.7 专项执行结果
+
+| ASS 专项范围 | 实际结果 |
+| --- | --- |
+| ass-obfuscation-core | 102/102 通过，1 个测试程序集 |
+| ass-obfuscation-sdk | 145/145 通过，2 个测试程序集 |
+| ass-obfuscation-full | 150/150 通过，3 个测试程序集 |
+| ass-obfuscation-graphics | 3/3 通过，1 个测试程序集 |
+| ass-obfuscation-serial | 8/8 通过，1 个测试程序集 |
+| Linux Player | 2 个场景、252 帧、13 次输出检查通过；源配置 1 个保留 |
+| 打包工具 | 23/23 通过；8 个当前 ZIP 与源码及 metadata 一致 |
+
 ## ASS 0.9.6 WD On 与表情复位
 
-当前专项记录见[ASS WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。全部新状态固定
+该版专项记录见[ASS WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。全部新状态固定
 On，不匹配原 FX；原用户状态及源资源保留。回归覆盖表情85→空 Neutral复位、原 Off 图保持、
 显式归零、NDMF最终图、密码/超时/Restart、实际Player与串行性能。
 
@@ -77,7 +95,7 @@ On，不匹配原 FX；原用户状态及源资源保留。回归覆盖表情85�
 
 ## 当前整项目升级与源配置检查
 
-ACC0.5.3、AO0.3.3、ASS0.9.6、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
+ACC0.5.3、AO0.3.3、ASS0.9.7、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
 自动匹配所属组件；取消时不扫描或写入。恢复使用原有 Editor 程序集，测试不注入额外模块。
 检查无选区限制、自动类型/GUID关联、陌生/重复组件保留、全部备份与 GUID 字节跨度。
 干净已保存 Scene/Prefab Stage 在操作后恢复；未保存编辑及依赖保持。

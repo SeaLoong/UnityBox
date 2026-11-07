@@ -192,10 +192,60 @@ namespace UnityBox.AvatarSecuritySystem
         private void DrawGestureRecognitionSection()
         {
             EditorGUILayout.LabelField(T("gesture.config"), EditorStyles.boldLabel);
-            DrawProperty("gestureHoldTime", "gesture.hold_time");
-            DrawProperty("gestureMaxHoldTime", "gesture.max_hold_time");
-            DrawProperty("gestureErrorTolerance", "gesture.error_tolerance");
+            DrawGestureTimingField("gestureHoldTime", "gesture.hold_time");
+            DrawGestureTimingField("gestureMaxHoldTime", "gesture.max_hold_time");
+            DrawGestureTimingField("gestureErrorTolerance", "gesture.error_tolerance");
+            if (StoredGestureTimesNeedCorrection())
+            {
+                EditorGUILayout.HelpBox(T("gesture.invalid_stored_times"), MessageType.Warning);
+                if (GUILayout.Button(T("gesture.correct_times"))) CorrectGestureTimes();
+            }
             EditorGUILayout.HelpBox(T("gesture.continuous_hold_help"), MessageType.Info);
+        }
+        private void DrawGestureTimingField(string propertyName, string labelKey)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            EditorGUI.BeginChangeCheck();
+            GUI.SetNextControlName(propertyName);
+            float value = EditorGUILayout.DelayedFloatField(
+                new GUIContent(T(labelKey), ExpandTokens(property.tooltip)), property.floatValue);
+            if (EditorGUI.EndChangeCheck()) ApplyGestureTimingEdit(propertyName, value);
+        }
+        private void ApplyGestureTimingEdit(string propertyName, float value)
+        {
+            var hold = serializedObject.FindProperty("gestureHoldTime");
+            var tolerance = serializedObject.FindProperty("gestureErrorTolerance");
+            if (propertyName == "gestureHoldTime")
+            {
+                float retainedTolerance = Mathf.Clamp(tolerance.floatValue, 0f, 0.99f);
+                value = Mathf.Clamp(value, Mathf.Max(0.05f, retainedTolerance + 0.01f), 1f);
+            }
+            else if (propertyName == "gestureErrorTolerance")
+                value = Mathf.Clamp(value, 0f, Mathf.Clamp(hold.floatValue, 0.05f, 1f) - 0.01f);
+            serializedObject.FindProperty(propertyName).floatValue = value;
+            CorrectGestureTimes();
+        }
+        private bool StoredGestureTimesNeedCorrection()
+        {
+            float hold = serializedObject.FindProperty("gestureHoldTime").floatValue;
+            float tolerance = serializedObject.FindProperty("gestureErrorTolerance").floatValue;
+            float maximum = serializedObject.FindProperty("gestureMaxHoldTime").floatValue;
+            float normalizedHold = hold, normalizedTolerance = tolerance, normalizedMaximum = maximum;
+            ASSComponent.NormalizeGestureTimes(ref normalizedHold, ref normalizedTolerance, ref normalizedMaximum);
+            return hold != normalizedHold || tolerance != normalizedTolerance || maximum != normalizedMaximum;
+        }
+        private void CorrectGestureTimes()
+        {
+            var hold = serializedObject.FindProperty("gestureHoldTime");
+            var tolerance = serializedObject.FindProperty("gestureErrorTolerance");
+            var maximum = serializedObject.FindProperty("gestureMaxHoldTime");
+            float normalizedHold = hold.floatValue, normalizedTolerance = tolerance.floatValue,
+                normalizedMaximum = maximum.floatValue;
+            ASSComponent.NormalizeGestureTimes(ref normalizedHold, ref normalizedTolerance, ref normalizedMaximum);
+            Undo.SetCurrentGroupName(T("gesture.edit_times"));
+            hold.floatValue = normalizedHold;
+            tolerance.floatValue = normalizedTolerance;
+            maximum.floatValue = normalizedMaximum;
         }
         private void DrawCountdownSection()
         {
