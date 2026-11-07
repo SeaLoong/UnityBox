@@ -82,7 +82,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 var component = loaded.GetComponent<ASSComponent>();
                 AssertStoredConfiguration(component);
                 var config = ASSConfigData.FromComponent(component);
-                Assert.That(config.gestureErrorTolerance, Is.EqualTo(0.14f).Within(0.00001f));
+                Assert.That(config.gestureErrorTolerance, Is.EqualTo(0.15f).Within(0.00001f));
                 Assert.That(config.gestureMaxHoldTime, Is.EqualTo(1f));
                 Assert.That(config.warningThreshold, Is.EqualTo(6f));
                 Assert.That(config.disableDefense, Is.False);

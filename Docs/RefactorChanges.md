@@ -37,7 +37,7 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 ## 六类组件与包内恢复
 
-ACC 0.5.3、AO 0.3.3、ASS 0.9.7、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
+ACC 0.5.3、AO 0.3.3、ASS 0.9.8、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
 恢复实现在各插件原有 Unity-only Editor 程序集中，随正常插件更新交付。从 `Tools/UnityBox/<插件菜单>/Upgrade Component References` 确认一次后，扫描整个 `Assets`，自动识别并恢复本插件的旧脚本引用。无需选择资源、打开恢复面板或逐 GUID 指定类型。
 
 识别结合明确类型、已知 GUID、完整字段结构与 ACC Outfit/Prefab 来源，不再要求用户逐 GUID 选择。
@@ -113,11 +113,11 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-0.9.7 的 Inspector 时间编辑使用延迟提交：保持至少比容错长0.01s，容错上限为保持减0.01s，
+0.9.8 的 Inspector 时间编辑使用延迟提交：保持不短于容错，允许相等；容错上限为保持时间，
 最大保持/等待随依赖关系调整。旧非法配置在绘制时保留原值，显式“修正时间”或编辑才提交，
 并支持 Undo/Redo；默认保持0.5s、容错0.3s。
 
-词池和命名映射保持0.9.6原样，本次仅修复 UI 时间约束与混淆开关输出。
+词池和命名映射保持0.9.6原样；0.9.7 的混淆开关修复继续使用。
 SDK 与普通 Unity 共用 ASS 内部 `ObfuscationGraph`，普通 Unity 的诱饵开关实际应用。
 元数据绑定选择不存在的专属路径；原源图和真实对象保持。
 普通 Unity 已分配生成 Controller 后再次 Build，会通过持久化的 ASS 专属默认状态 tag 识别并清理旧 ASS 层，
@@ -135,7 +135,7 @@ ASS 自有图与诱饵继续混淆；完整 NDMF 上传的最终 Playable 改名
 Inspector 或 SDK Fix 配置后台加载。[本次验证](Verification/ASSAudioUpload/README.md)
 覆盖导入、开关组合、真实 SDK 检查和 NDMF 最终图。
 
-ASS 0.9.7 提供密码结果、计时、Overlay、声音和 Restart，全部新生成状态统一 WD On。
+ASS 0.9.8 提供密码结果、计时、Overlay、声音和 Restart，全部新生成状态统一 WD On。
 范围包含密码、计时、音频、生命周期、防御、混淆、诱饵和 ASS 新建的默认 Idle。
 不匹配原 FX、不增加 WD 模式选项，用户已有层和状态的 On/Off 保留。历史隐藏
 `writeDefaultsMode` 值继续保留，不控制新图生成；`disableRootChildren` 不恢复旧身体锁定。
@@ -151,7 +151,10 @@ Unity 忽略，导致超时后 Restart 清除了 TimeUp 却无法再次计时。
 超时 Overlay 和音频对象关闭。回归覆盖两轮超时、重启及进度和声音恢复。
 
 普通密码、计时和音频曲线绑定 ASS 反馈对象。启用防御模式且存在可复用 Light 时，
-沿用既有的 Avatar 灯光复用及父节点激活逻辑；本次调整其生成状态的 WD。
+沿用既有的 Avatar 灯光复用及父节点激活逻辑；0.9.6 已将其新生成状态统一为 WD On。
+0.9.8 未改动防御生成代码或负载参数。现有计划只生成一个粒子系统，按已有用量和网格预算
+限制容量，PhysX/Cloth 输出关闭。源 Avatar 面板、构建副本和运行时粒子数量属于不同统计范围，
+不能因所有项目未达到上限而判定构建接入失效；初始 inactive 也不等于静态统计排除。
 
 普通 Unity 保存角色配置后正常构建 Player 即可：构建场景副本自动复制原 Controller/AOC、
 清除旧 ASS 生成层（包含遗留锁层）、加入手势/计时/反馈图、配置 Animator 和运行时输入，
@@ -159,10 +162,12 @@ Unity 忽略，导致超时后 Restart 清除了 TimeUp 却无法再次计时。
 不再有手动生成按钮；源场景与 Controller 继续用于
 编辑。SDK 与 NDMF 沿用 Avatar 的自动构建和结果交接，原资产在各自生命周期中还原。
 
-默认 hold=0.5s、tolerance=0.3s，Inspector 显式编辑与生成副本均保持 hold 严格大于 tolerance。
+默认 hold=0.5s、tolerance=0.3s，Inspector 显式编辑与生成副本均保持 hold≥tolerance。
+0.9.8 移除旧0.01s间隔；例如0.3s/0.3s原值可直接用于生成，旧0.15s/0.3s副本规范化为0.15s/0.15s。
+相等时间的实际输出与源配置保全见[相等时间验证](Verification/ASSTimingEquality/README.md)。
 每位必须连续正确保持；中断重计、容错过期清序列、重复相邻位先换姿势释放，超时与
 Restart 优先处理。未编辑的旧非法值继续保存在源组件中；构建副本中的 0.15s/0.3s
-使用 0.15s/0.14s，打开、加载和导入不自动改值。
+使用 0.15s/0.15s，打开、加载和导入不自动改值。
 StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一结果的兼容别名。
 界面与校验说明同步英语、简体、繁体、日语。
 仅启用诱饵状态而关闭诱饵层时，条件参数仍先注册；没有 Bool 参数池时补齐本地布尔

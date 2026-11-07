@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.7 技术参考
+# Avatar Security System 0.9.8 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -71,11 +71,11 @@ Light 复用和激活流程。`disableRootChildren` 与 `writeDefaultsMode` 仅�
 ## 手势时间契约
 
 默认 hold=0.5s、tolerance=0.3s、maximum=3s。`ASSComponent.NormalizeGestureTimes`
-提供共享规则：hold 在 0.05–1s；tolerance 在 0 至 hold−0.01s；maximum 位于
+提供共享规则：hold 在 0.05–1s；tolerance 在 0 至 hold；maximum 位于
 max(1s, hold+tolerance+0.05s) 至 10s。构建始终规范化独立配置副本。
 
 Inspector 使用延迟数值输入，只在提交编辑时写入：修改 hold 会保留有效 tolerance，并将
-hold 限制到至少 tolerance+0.01；修改 tolerance 会限制到 hold−0.01；随后按共享规则
+hold 限制到至少 tolerance；修改 tolerance 会限制到 hold；随后按共享规则
 更新 maximum。写入通过 SerializedObject 提交并加入 Undo；旧非法值绘制时保留，显式
 “修正时间”按钮才提交规范值。组件加载、打开 Inspector 和资源导入保留已存字段，
 `OnValidate` 不纠正源配置；新组件和用户显式 Reset 提供默认值。
@@ -120,7 +120,7 @@ Unity 与 SDK 的 `ObfuscationGraph` 共用诱饵参数、Clip、独立层和 AS
 因此普通 Unity 的两个诱饵选项形成实际输出。
 
 词池以及 `GetInstructionalClipNames` / `GetInstructionalStateNames` 的既有名称映射
-保持 0.9.6 原样。本次保证启用的诱饵图稳定分配诱饵 Clip，并验证开关对应的实际生成结果。
+保持 0.9.6 原样。0.9.7 已保证启用的诱饵图稳定分配诱饵 Clip，并验证开关对应的实际生成结果。
 
 元数据 Clip 的专属根在当前 Avatar 中选择不存在的路径；绑定仍为未解析的元数据路径，
 不会创建或启用用户已有对象。
@@ -129,6 +129,18 @@ Unity 与 SDK 的 `ObfuscationGraph` 共用诱饵参数、Clip、独立层和 AS
 的捕获上下文。Contact Avatar 跳过第三方 Playable 图改名，ASS 自有混淆和诱饵继续生效；
 这一分支保留接触器图的兼容语义。单独 NDMF bake/preview 不额外执行全图改名，正常 SDK
 构建在 NDMF 结果提交后进入该晚期回调。源 Controller 与源 Avatar 名称保持。
+
+## 防御生成与统计范围
+
+当前 `Defense` 的计划只安排一个粒子系统，并关闭 PhysX/Cloth 输出。粒子容量由已有用量与
+网格预算共同限制；系统数量、最大粒子容量和运行时存活数量是不同统计。其余类别不随粒子
+容量同步增加，也不存在把每项性能统计都填至上限的契约。
+
+SDK/NDMF 仍在构建副本执行现有生成接入。比较 Avatar 面板数据与上传结果时，须保持同一
+对象阶段：源 Avatar 统计与生成后的副本不同。真实SDK3.8.2普通粒子统计中，关闭子对象仍计入
+系统数量与最大容量，停止发射时实时粒子数为0。只在独立副本添加组件不改变源对象统计。
+数据、初始化与调用见[SDK统计记录](../../../../Docs/Verification/ASSTimingEquality/README.md)。
+0.9.8 的修改范围是时间相等边界，防御代码和负载参数保留。
 
 ## 音频引用与 SDK 上传校验
 
@@ -157,7 +169,7 @@ SDK 的 `VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder.ScanAvatarForAnimatorP
 
 ## 导入与源配置边界
 
-0.9.7 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
+0.9.8 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
 旧修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
@@ -207,6 +219,7 @@ Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语�
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
 0.9.4 的组件引用和源配置范围保留于历史组件引用记录；0.9.5 的音频导入和上传校验单列于音频上传记录。
+0.9.8 允许 hold=tolerance；共享规范化、Inspector 和原生 Animator 的相等边界见[相等时间验证](../../../../Docs/Verification/ASSTimingEquality/README.md)。
 0.9.7 的时间 UI、Undo/源数据保全与最终混淆输出见[时间与混淆验证](../../../../Docs/Verification/ASSTimingObfuscation/README.md)。
 0.9.6 的历史 WD On、表情复位与生成后输出见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 历史 WD Off 和身体锁生成样本通过其原版本、提交及归档追溯。

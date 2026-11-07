@@ -1,9 +1,20 @@
 # UnityBox 性能实测
 
-ASS0.9.7 的诱饵开关 Animator.Update 对照与当前串行测量见
+ASS0.9.8 允许保持时间等于容错时间；本版独立串行范围通过8项测试，记录9条测量，Player2场景252帧13次输出检查通过。
+[相等时间验证](Verification/ASSTimingEquality/README.md)记录当前源码、命令及原始结果。
+本轮保留防御生成器及负载参数；下表测量普通ASS Animator固定远端输入。
+
+| Animator.Update 对照 | 层数 | 状态数 | 中位数 ms | p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| animator_idle_without_decoys | 4 | 20 | 0.077396 | 0.172139 |
+| animator_idle_with_decoys | 5 | 49 | 0.078089 | 0.225259 |
+
+预热30次，9组×300次更新；每组检查Light输出与默认状态。数据对应该固定图与输入。
+
+ASS0.9.7 的诱饵开关 Animator.Update 对照与该版串行测量见
 [时间/混淆验证](Verification/ASSTimingObfuscation/README.md)。
 
-本版独立串行性能范围通过8项测试，记录9条测量。
+该版独立串行性能范围通过8项测试，记录9条测量。
 诱饵对照使用同一 ASS 图、固定远端输入，预热30次，9组×300次 Animator.Update；
 每组核对 Light 输出与默认状态，源资源保持。
 

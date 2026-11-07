@@ -71,7 +71,7 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 ## Verify confirmed whole-Assets upgrades and serialized identity
 
 - Ordinary package import/startup preserves source bytes, Runtime GUIDs and stored values. Normalize build copies only.
-- ACC0.5.3, AO0.3.3, ASS0.9.7 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
+- ACC0.5.3, AO0.3.3, ASS0.9.8 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
   Tools/UnityBox/<owner>/Upgrade Component References confirms once, then processes all Assets.
   Owner menus are Advanced Costume Controller, Animator Optimizer, ASS and Viseme Blendshape Override.
   ACC/AO Open actions are siblings; there is no selection window or per-GUID mapping UI.
@@ -97,9 +97,11 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 
 ## Verify ASS time editing and obfuscation output
 
-- ASS0.9.7 Inspector commits delayed numeric edits with hold at least tolerance+0.01s,
-  tolerance at most hold-0.01s, and maximum at least max(1s,hold+tolerance+0.05s). Preserve
+- ASS0.9.8 Inspector commits delayed numeric edits with hold at least tolerance (equality allowed),
+  tolerance at most hold, and maximum at least max(1s,hold+tolerance+0.05s). Preserve
   default0.5/0.3 values. Verify real SerializedObject edits and Undo/Redo, not copied arithmetic.
+  Equal0.3/0.3 values must survive normalization; test actual Animator hold/interruption behavior
+  at60/90/120Hz, including short repeated partial holds that must restart after a wrong gesture.
 - Open and repaint an Inspector containing legacy invalid values; compare stored fields, dirty state,
   Prefab/source bytes and metadata. Drawing must preserve values. Exercise the explicit correction
   action separately, and require a real editor window for graphics/event checks.
@@ -107,7 +109,7 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   and decoy-state options, declared condition parameters, all-new-state WD On, and source graph bytes.
   Standalone and SDK paths share ObfuscationGraph in the existing Unity-only Editor assembly.
 - Keep the original0.9.6 word pools and Clip/state naming mappings unchanged. This update covers
-  time editing and actual obfuscation-option output only. Verify decoy Clip assignment and serialized
+  time equality; retain the0.9.7 obfuscation-option output fixes. Verify decoy Clip assignment and serialized
   save/reload results without requiring new literal labels or changes to the vocabulary.
 - Check metadata paths use a root absent from the actual Avatar, including a deliberate prefix
   collision control; generated metadata curves must not animate existing user objects.
@@ -115,8 +117,14 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   inspect the final renamed copy and preserved source/output behavior. With Contacts, preserve the
   third-party Playable names while retaining ASS-owned obfuscation/decoys. Keep the compatibility guard.
   A manual NDMF bake/preview has no late SDK callback and must not acquire an extra whole-graph rename.
-- Store versioned records under [ASSTimingObfuscation](../../../Docs/Verification/ASSTimingObfuscation/README.md).
-  Keep earlier WD/audio evidence tied to its original version and source fingerprint.
+- Store current timing-equality records under [ASSTimingEquality](../../../Docs/Verification/ASSTimingEquality/README.md).
+  Keep [0.9.7 time/obfuscation](../../../Docs/Verification/ASSTimingObfuscation/README.md) and
+  earlier WD/audio evidence tied to their original versions and source fingerprints.
+
+## Check SDK particle statistic categories
+
+- In batchmode call `AvatarPerformanceStats.Initialize()` before `AvatarPerformance.CalculatePerformanceStats`, matching SDK EnvConfig.LoadEditorResources. Use ordinary tiny stopped particle systems, never a resource-exhaustion payload.
+- Record particleSystemCount, particleTotalCount and live particleCount separately; compare active/inactive and source/isolated-clone scans. SDK3.8.2 includes inactive children in the observed static counters. Preserve source fields and archive the probe and actual result with the versioned evidence.
 
 ## Verify ASS WD On generation and facial reset
 

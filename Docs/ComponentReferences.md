@@ -15,7 +15,7 @@ Scene/Prefab 仍可能引用原 GUID。组件名称相同也需要由 `m_Script`
 | --- | --- | --- | --- |
 | Advanced Costume Controller | `ACCOutfitMarker`、`ACCPartGroupMarker`、`ACCVariantMaterialOverride` | 公开 0.4.13 ZIP 无 `.meta`；0.5.0 起固定身份 | 0.5.3 保留三类及字段；旧引用可手动批量重连；Inspector 仅在显式操作时提交编辑 |
 | Animator Optimizer | `AnimatorOptimizerComponent` | 0.2 是开发快照，未发布旧 VPM ZIP；早期 Runtime 配置脚本未携带 `.meta` | 0.3.3 保留类型、字段和 0.3.0 固定身份；构建规范化独立配置快照 |
-| Avatar Security System | `ASSComponent` | 公开 0.7.24 ZIP 无 `.meta`；0.8.0 起固定身份 | 0.9.7 继续保留字段和固定身份；通过本包自带的手动入口修复旧引用，无启动/导入迁移 |
+| Avatar Security System | `ASSComponent` | 公开 0.7.24 ZIP 无 `.meta`；0.8.0 起固定身份 | 0.9.8 继续保留字段和固定身份；通过本包自带的手动入口修复旧引用，无启动/导入迁移 |
 | Viseme Blendshape Override | `VisemeBlendshapeOverrideComponent` | 公开 0.1.14 ZIP 无 `.meta`；0.2.0 起固定身份 | 0.2.3 保留组件和字段兼容；旧 Voice 与值域在构建快照解析 |
 | Blendshape Controller Generator | 无 | 旧包只有 Editor 窗口及生成逻辑 | 自有组件迁移目录为空；生成的 MA/Animator 组件使用各自原类型 |
 | Avatar Collider Monitor | 无 | EditorWindow、快照与 provider，无自有 Avatar authoring 组件 | 保持 0.2.0，不把用户碰撞体或 SDK 组件归为本插件 |
@@ -53,7 +53,7 @@ ASS 的 `StandaloneSecurityInput`、`AnimatorStateEntryActions` 从 0.8.0 起新
 | --- | --- | --- |
 | ACC 0.5.3 | `Tools/UnityBox/Advanced Costume Controller/Upgrade Component References` | 三种 ACC 标记 |
 | AO 0.3.3 | `Tools/UnityBox/Animator Optimizer/Upgrade Component References` | AnimatorOptimizerComponent |
-| ASS 0.9.7 | `Tools/UnityBox/ASS/Upgrade Component References` | ASSComponent |
+| ASS 0.9.8 | `Tools/UnityBox/ASS/Upgrade Component References` | ASSComponent |
 | Viseme 0.2.3 | `Tools/UnityBox/Viseme Blendshape Override/Upgrade Component References` | VisemeBlendshapeOverrideComponent |
 
 ACC 与 AO 的主面板分别从同组的 **Open** 打开。ASS 与 Viseme 继续在组件 Inspector
@@ -122,8 +122,9 @@ ACC 与 AO 的主面板分别从同组的 **Open** 打开。ASS 与 Viseme 继�
 - **Viseme 0.2.3**：加载和 Inspector 绘制保留原 bindings，不自动补行；构建计划用深拷贝
   快照解析旧 Voice 和有效值。Inspector 的 **Edit settings** 只追加用户选中的缺失行并支持
   Undo；旧公开 authoring API 保留显式编辑语义，脚本调用方负责自己的 Undo。
-- **ASS 0.9.7**：源字段在打开、导入和配置捕获后保持；新组件/显式 Reset 默认保持 0.5s、
-  容错 0.3s。Inspector 提交时间编辑时保证保持至少比容错长0.01s，并约束最大等待；
+- **ASS 0.9.8**：源字段在打开、导入和配置捕获后保持；新组件/显式 Reset 默认保持 0.5s、
+  容错 0.3s。Inspector 提交时间编辑时保证保持不短于容错，允许相等，并约束最大等待；
+  0.3s/0.3s 属于合法配置，生成时保留；旧0.15s/0.3s构建副本规范化为0.15s/0.15s。
   旧非法值只在显式编辑或“修正时间”时提交并支持 Undo/Redo。生成继续规范化独立副本。全部新生成状态统一 WD On，原用户状态 WD
   保留；历史隐藏 `writeDefaultsMode` 值不决定生成模式，不增加原 FX 匹配选项。
   普通 Player/Avatar 自动构建继续处理构建副本；TimeUp→Release 使用有效 TimeUp 条件，
@@ -135,7 +136,7 @@ ACC 与 AO 的主面板分别从同组的 **Open** 打开。ASS 与 Viseme 继�
 
 ## ASS 混淆与资源身份
 
-词池和命名映射保持0.9.6原样，本次仅修复 UI 时间约束与混淆开关输出。
+词池和命名映射保持0.9.6原样，0.9.8 只放宽时间相等边界；现有混淆开关修复继续使用。
 SDK 与普通 Unity 共用 ASS 现有 Editor 程序集内的诱饵生成，绑定使用不存在的元数据路径。
 混淆只作用于构建副本，原 Controller、Clip 和对象身份保持；不通过组件升级命令改写名称。
 Contact 保护继续保留第三方 Playable 图名，ASS 自有图与诱饵照常生成。完整 NDMF 上传

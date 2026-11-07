@@ -1,0 +1,16 @@
+{
+  "README.md": "c78378e45ee1746533650562592433570b96f6aaf795a506b8b17e92d9fc4ee2",
+  "ass-equal-core-results.xml.gz": "a4eaeef6c0c0ee7ba2d51e7d3a2947b8b27241bab89882cc1a1de6a7d0814efb",
+  "ass-equal-full-results.xml.gz": "a8c06a8e3e441d4b09214bba70974c521c53af38db121db9352964cd4cac27a6",
+  "ass-equal-graphics-results.xml.gz": "d9e93d447433a45d9277e8261baa87bc2726d04f709970db395fe4dcd934b879",
+  "ass-equal-linux-build.json": "cb1ca3aad52f746454dd3e14738bdf912d064d26dbd57b55f171820eef63bb7f",
+  "ass-equal-linux-player.json": "20ba13fe68e9d9dc0f5d06c307cbd7bf9d977c5b5264ba26ee6ceff22b4031c6",
+  "ass-equal-sdk-results.xml.gz": "3896c8d5e3a3a360487fbc09df17d0809fd529bc7469ba10e8523774bc340629",
+  "ass-equal-serial-results.xml.gz": "13e8d2765c7ac64c9538b32ac8a77ae0044dd8b0e17509d23ae9c00328b29317",
+  "capture-ass-equal.py": "c52ca68816b0b5742b52ddf103ccfd9f0fa32711ea5ab7a85b0ce5ed3ec35738",
+  "evidence.json": "5942da976489e0e51c24553869f60de78ac64cb4dccf764b01015c3e12ea5f8d",
+  "packaging-tests.log": "bd4dc7b24658c1df4c938b69d73376c0acad94965cb4bd73616dbb684a299b16",
+  "stats-audit/AvatarParticleStatsAudit.cs": "92b8b9f269411992de913d2acd76c17fd2ce78a212c9597edb3c9310a11960eb",
+  "stats-audit/result.json": "57aa8308a4696f259736a8c859e4525862bcd2856d44e71708a88cb131e5239f",
+  "stats-audit/run.json": "f40e84242f5c6c4ebf9295766776864a0de8f9d5be14d6f73dd3293be0499e4c"
+}

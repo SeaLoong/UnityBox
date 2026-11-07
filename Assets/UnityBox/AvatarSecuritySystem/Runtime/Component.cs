@@ -24,7 +24,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Range(0.05f, 1f)]
         [Tooltip("#{gesture.hold_time_tooltip}")]
         public float gestureHoldTime = 0.5f;
-        [Range(0f, 0.99f)]
+        [Range(0f, 1f)]
         [Tooltip("#{gesture.error_tolerance_tooltip}")]
         public float gestureErrorTolerance = 0.3f;
         [Range(1f, 10f)]
@@ -120,7 +120,7 @@ namespace UnityBox.AvatarSecuritySystem
         public static void NormalizeGestureTimes(ref float hold, ref float tolerance, ref float maximum)
         {
             hold = Mathf.Clamp(hold, 0.05f, 1f);
-            tolerance = Mathf.Clamp(tolerance, 0f, hold - 0.01f);
+            tolerance = Mathf.Clamp(tolerance, 0f, hold);
             maximum = Mathf.Clamp(maximum, Mathf.Max(1f, hold + tolerance + 0.05f), 10f);
         }
 #if UNITY_EDITOR

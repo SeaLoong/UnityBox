@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-11-07T22:57:24.602447+00:00",
+  "completed_utc": "2026-11-07T22:57:55.997560+00:00",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-quit",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/ass-equal-sdk-20261108",
+    "-executeMethod",
+    "AvatarParticleStatsAudit.Execute",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/ass-equal-stats-audit/unity.log"
+  ],
+  "exit_code": 0,
+  "project": "/workspace/unitybox-setup/unity/projects/ass-equal-sdk-20261108",
+  "source_cs_sha256": "92b8b9f269411992de913d2acd76c17fd2ce78a212c9597edb3c9310a11960eb",
+  "result_sha256": "57aa8308a4696f259736a8c859e4525862bcd2856d44e71708a88cb131e5239f",
+  "unity_log_sha256": "7a9104a3b3eb71f614f811ddfed1f2bd6c68d8174a5f178e0a3325c843959add",
+  "launcher_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "no_defense_payload_execution": true
+}

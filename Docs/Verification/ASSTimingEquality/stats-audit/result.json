@@ -1,0 +1,90 @@
+{
+    "passed": true,
+    "unity_version": "2022.3.22f1",
+    "sdk_stats_assembly": "VRCSDKBase, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "api": "new AvatarPerformanceStats(false); AvatarPerformance.CalculatePerformanceStats(root.name, root, stats, false)",
+    "platform": "Desktop (isMobilePlatform=false)",
+    "initialization": "AvatarPerformanceStats.Initialize(), matching SDK EnvConfig.LoadEditorResources (EnvConfig.cs:1267)",
+    "setup": "Two ordinary stopped systems, capacities 7 and 11; emission and playOnAwake disabled. Clone adds one stopped system of capacity 3. No simulation, Defense, shaders, animation or build callbacks.",
+    "observations": [
+        {
+            "scenario": "all-active",
+            "root": "Ordinary source avatar",
+            "sdk_particle_system_count": 2,
+            "sdk_total_combined_max_particle_count": 18,
+            "components_including_inactive": 2,
+            "components_active_in_hierarchy": 2,
+            "declared_capacity_including_inactive": 18,
+            "live_particles_including_inactive": 0
+        },
+        {
+            "scenario": "one-child-inactive",
+            "root": "Ordinary source avatar",
+            "sdk_particle_system_count": 2,
+            "sdk_total_combined_max_particle_count": 18,
+            "components_including_inactive": 2,
+            "components_active_in_hierarchy": 1,
+            "declared_capacity_including_inactive": 18,
+            "live_particles_including_inactive": 0
+        },
+        {
+            "scenario": "source-root-only-after-clone",
+            "root": "Ordinary source avatar",
+            "sdk_particle_system_count": 2,
+            "sdk_total_combined_max_particle_count": 18,
+            "components_including_inactive": 2,
+            "components_active_in_hierarchy": 2,
+            "declared_capacity_including_inactive": 18,
+            "live_particles_including_inactive": 0
+        },
+        {
+            "scenario": "isolated-clone-with-additional-system",
+            "root": "Isolated ordinary clone",
+            "sdk_particle_system_count": 3,
+            "sdk_total_combined_max_particle_count": 21,
+            "components_including_inactive": 3,
+            "components_active_in_hierarchy": 3,
+            "declared_capacity_including_inactive": 21,
+            "live_particles_including_inactive": 0
+        }
+    ],
+    "source_before": [
+        {
+            "name": "First ordinary system",
+            "max_particles": 7,
+            "active_self": true,
+            "emission_enabled": false,
+            "play_on_awake": false,
+            "live_particles": 0
+        },
+        {
+            "name": "Second ordinary system",
+            "max_particles": 11,
+            "active_self": true,
+            "emission_enabled": false,
+            "play_on_awake": false,
+            "live_particles": 0
+        }
+    ],
+    "source_after": [
+        {
+            "name": "First ordinary system",
+            "max_particles": 7,
+            "active_self": true,
+            "emission_enabled": false,
+            "play_on_awake": false,
+            "live_particles": 0
+        },
+        {
+            "name": "Second ordinary system",
+            "max_particles": 11,
+            "active_self": true,
+            "emission_enabled": false,
+            "play_on_awake": false,
+            "live_particles": 0
+        }
+    ],
+    "source_fields_unchanged": true,
+    "source_statistics_unchanged_after_clone": true,
+    "failure": ""
+}

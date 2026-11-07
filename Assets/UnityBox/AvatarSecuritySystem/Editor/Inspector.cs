@@ -217,11 +217,11 @@ namespace UnityBox.AvatarSecuritySystem
             var tolerance = serializedObject.FindProperty("gestureErrorTolerance");
             if (propertyName == "gestureHoldTime")
             {
-                float retainedTolerance = Mathf.Clamp(tolerance.floatValue, 0f, 0.99f);
-                value = Mathf.Clamp(value, Mathf.Max(0.05f, retainedTolerance + 0.01f), 1f);
+                float retainedTolerance = Mathf.Clamp(tolerance.floatValue, 0f, 1f);
+                value = Mathf.Clamp(value, Mathf.Max(0.05f, retainedTolerance), 1f);
             }
             else if (propertyName == "gestureErrorTolerance")
-                value = Mathf.Clamp(value, 0f, Mathf.Clamp(hold.floatValue, 0.05f, 1f) - 0.01f);
+                value = Mathf.Clamp(value, 0f, Mathf.Clamp(hold.floatValue, 0.05f, 1f));
             serializedObject.FindProperty(propertyName).floatValue = value;
             CorrectGestureTimes();
         }

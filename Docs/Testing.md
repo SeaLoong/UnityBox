@@ -18,9 +18,29 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
-## ASS 0.9.7 时间 UI 与混淆输出
+## ASS 0.9.8 相等时间边界
 
-当前执行见[时间与混淆验证](Verification/ASSTimingObfuscation/README.md)：提交时间约束与Undo、
+当前时间规则为保持不短于容错，允许0.3s/0.3s等相等配置。Inspector提交编辑与生成副本
+使用同一规则；默认仍为0.5s/0.3s，旧源字段绘制时保留，显式修正支持Undo/Redo。
+原生Animator覆盖60/90/120Hz下的连续保持、错误中断重计和短保持遍历；
+执行与源码指纹见[相等时间验证](Verification/ASSTimingEquality/README.md)。
+普通小型粒子的SDK统计探针另行记录4种对象/激活组合，源字段保持；该探针不计入NUnit用例数。
+
+## ASS 0.9.8 专项执行结果
+
+| ASS 专项范围 | 实际结果 |
+| --- | --- |
+| ass-equal-core | 108/108 通过，1 个测试程序集 |
+| ass-equal-sdk | 151/151 通过，2 个测试程序集 |
+| ass-equal-full | 156/156 通过，3 个测试程序集 |
+| ass-equal-graphics | 3/3 通过，1 个测试程序集 |
+| ass-equal-serial | 8/8 通过，1 个测试程序集 |
+| Linux Player | 2 个场景、252 帧、13 次输出检查通过；源配置 1 个保留 |
+| 打包工具 | 23/23 通过；8 个当前 ZIP 与源码及 metadata 一致 |
+
+## ASS 0.9.7 时间 UI 与混淆输出（历史发布）
+
+该版执行见[时间与混淆验证](Verification/ASSTimingObfuscation/README.md)：提交时间约束与Undo、
 旧值绘制保全、Standalone/SDK/NDMF的真实诱饵开关、Contact保护、最终回调、图形和运行输出。
 词池保持0.9.6原样。
 
@@ -95,7 +115,7 @@ On，不匹配原 FX；原用户状态及源资源保留。回归覆盖表情85�
 
 ## 当前整项目升级与源配置检查
 
-ACC0.5.3、AO0.3.3、ASS0.9.7、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
+ACC0.5.3、AO0.3.3、ASS0.9.8、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
 自动匹配所属组件；取消时不扫描或写入。恢复使用原有 Editor 程序集，测试不注入额外模块。
 检查无选区限制、自动类型/GUID关联、陌生/重复组件保留、全部备份与 GUID 字节跨度。
 干净已保存 Scene/Prefab Stage 在操作后恢复；未保存编辑及依赖保持。

@@ -113,6 +113,33 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(Accepted, Is.True, "A fresh uninterrupted hold completes the retained sequence step.");
         }
 
+        [TestCase(60)]
+        [TestCase(90)]
+        [TestCase(120)]
+        public void EqualHoldAndTolerancePreservesTheBoundaryAndStillRequiresAFreshContinuousHold(int frameRate)
+        {
+            var config = Config(1, 2);
+            config.gestureHoldTime = config.gestureErrorTolerance = 0.3f;
+            var controller = Build(config, frameRate);
+            var layer = controller.layers.Single(item => item.name == Constants.LAYER_PASSWORD_INPUT);
+            var tolerance = layer.stateMachine.states.Single(item => item.state.name == "Step_1_ErrorTolerance").state;
+            Assert.That(((AnimationClip)tolerance.motion).length, Is.EqualTo(0.3f).Within(0.00001f),
+                "The generated tolerance must preserve equality instead of silently subtracting a margin.");
+            var holding = layer.stateMachine.states.Single(item => item.state.name == "Step_2_Holding").state;
+            var accepted = holding.transitions.Single(transition => transition.destinationState.name == "Password_Success");
+            Assert.That(accepted.exitTime * ((AnimationClip)holding.motion).length,
+                Is.EqualTo(0.3f).Within(0.00001f));
+            Input(1, 0.45f);
+            Input(2, 0.18f);
+            Input(0, delta * 2);
+            Input(2, 0.18f);
+            Assert.That(Accepted, Is.False, "Equality does not combine partial holds across an incorrect pose.");
+            Input(2, 0.3f);
+            Assert.That(Accepted, Is.True, "A fresh continuous hold accepts the next retained entry.");
+            Assert.That(config.gestureHoldTime, Is.EqualTo(0.3f));
+            Assert.That(config.gestureErrorTolerance, Is.EqualTo(0.3f));
+        }
+
         [Test]
         public void WrongInputBeyondToleranceClearsEarlierCompletedEntries()
         {
@@ -201,7 +228,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 Assert.That(component.gestureHoldTime, Is.EqualTo(0.15f));
                 Assert.That(component.gestureErrorTolerance, Is.EqualTo(0.3f));
                 Assert.That(component.gestureMaxHoldTime, Is.EqualTo(0.1f));
-                Assert.That(captured.gestureErrorTolerance, Is.LessThan(captured.gestureHoldTime));
+                Assert.That(captured.gestureErrorTolerance, Is.EqualTo(captured.gestureHoldTime));
                 Assert.That(captured.gestureHoldTime, Is.EqualTo(normalized.gestureHoldTime));
                 Assert.That(captured.gestureErrorTolerance, Is.EqualTo(normalized.gestureErrorTolerance));
                 Assert.That(captured.gestureMaxHoldTime, Is.EqualTo(normalized.gestureMaxHoldTime));
@@ -211,8 +238,10 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             finally { PrefabUtility.UnloadPrefabContents(loaded); }
         }
 
-        [TestCase("gestureHoldTime", 0.1f, 0.31f, 0.3f, 1f)]
-        [TestCase("gestureErrorTolerance", 0.8f, 0.5f, 0.49f, 1.04f)]
+        [TestCase("gestureHoldTime", 0.1f, 0.3f, 0.3f, 1f)]
+        [TestCase("gestureHoldTime", 0.3f, 0.3f, 0.3f, 1f)]
+        [TestCase("gestureErrorTolerance", 0.8f, 0.5f, 0.5f, 1.05f)]
+        [TestCase("gestureErrorTolerance", 0.5f, 0.5f, 0.5f, 1.05f)]
         [TestCase("gestureMaxHoldTime", 0.1f, 0.5f, 0.3f, 1f)]
         [TestCase("gestureHoldTime", 0.95f, 0.95f, 0.3f, 1.3f)]
         [TestCase("gestureErrorTolerance", -1f, 0.5f, 0f, 1f)]
@@ -234,11 +263,33 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 Assert.That(inspector.serializedObject.ApplyModifiedProperties(), Is.True);
                 Undo.FlushUndoRecordObjects();
                 AssertTiming(component, expectedHold, expectedTolerance, expectedMaximum);
-                Assert.That(component.gestureHoldTime - component.gestureErrorTolerance, Is.GreaterThanOrEqualTo(0.00999f));
+                Assert.That(component.gestureHoldTime, Is.GreaterThanOrEqualTo(component.gestureErrorTolerance));
                 Undo.PerformUndo();
                 AssertTiming(component, 0.5f, 0.3f, initialMaximum);
                 Undo.PerformRedo();
                 AssertTiming(component, expectedHold, expectedTolerance, expectedMaximum);
+            }
+            finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
+        }
+
+        [Test]
+        public void EqualStoredTimesStayEqualAndNeedNoInspectorCorrection()
+        {
+            var component = root.AddComponent<ASSComponent>();
+            component.gestureHoldTime = component.gestureErrorTolerance = 1f;
+            component.gestureMaxHoldTime = 3f;
+            var captured = ASSConfigData.FromComponent(component);
+            Assert.That(captured.gestureHoldTime, Is.EqualTo(1f));
+            Assert.That(captured.gestureErrorTolerance, Is.EqualTo(1f));
+            var previousLanguage = I18n.GetCurrentLanguage();
+            var inspector = UnityEditor.Editor.CreateEditor(component);
+            try
+            {
+                inspector.serializedObject.Update();
+                Assert.That((bool)typeof(Inspector).GetMethod("StoredGestureTimesNeedCorrection",
+                    BindingFlags.Instance | BindingFlags.NonPublic).Invoke(inspector, null), Is.False);
+                Assert.That(inspector.serializedObject.ApplyModifiedProperties(), Is.False);
+                AssertTiming(component, 1f, 1f, 3f);
             }
             finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
         }
@@ -263,11 +314,11 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                     .Invoke(inspector, null);
                 Assert.That(inspector.serializedObject.ApplyModifiedProperties(), Is.True);
                 Undo.FlushUndoRecordObjects();
-                AssertTiming(component, 0.15f, 0.14f, 1f);
+                AssertTiming(component, 0.15f, 0.15f, 1f);
                 Undo.PerformUndo();
                 AssertTiming(component, 0.15f, 0.3f, 0.1f);
                 Undo.PerformRedo();
-                AssertTiming(component, 0.15f, 0.14f, 1f);
+                AssertTiming(component, 0.15f, 0.15f, 1f);
             }
             finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
         }
