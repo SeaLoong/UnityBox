@@ -118,7 +118,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var build = BuildSnapshots.GetValue(avatarGameObject, _ => new BuildSnapshot { Config = assConfig });
             if (string.IsNullOrEmpty(build.GeneratedFolder))
                 build.GeneratedFolder = ASSET_FOLDER + "/Build_" + System.Guid.NewGuid().ToString("N");
-            Debug.Log("[ASS] Write Defaults: generated feature states use WD On; the lifecycle supervisor has no property curves");
+            Debug.Log("[ASS] Generated feature states use WD Off and animate only ASS feedback objects.");
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
                 enableDecoyLayers: assConfig.enableDecoyLayers,
@@ -164,14 +164,6 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             LoadAudioResources(assConfig);
             new Feedback(avatarGameObject, assConfig).Generate();
             var isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-            if (assConfig.disableRootChildren)
-            {
-                new Lock(fxController, avatarGameObject, assConfig, VrcAnimatorBehaviourAdapter.Instance).Generate();
-            }
-            else
-            {
-                Debug.Log("[ASS] Avatar lock disabled, skipping ASS_Lock layer; password feedback remains in PasswordInput/Audio layers");
-            }
             if (!assConfig.defaultEnableDefense)
             {
                 new GesturePassword(fxController, avatarGameObject, assConfig, VrcAnimatorBehaviourAdapter.Instance).Generate();
@@ -197,7 +189,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     new Defense(fxController, avatarGameObject, assConfig, isDebugMode: isPlayMode).Generate();
                     if (isPlayMode)
                     {
-                        Debug.Log("[ASS] Play mode: Active-load defense skipped; password/lock/feedback preview only");
+                        Debug.Log("[ASS] Play mode: Active-load defense skipped; password/feedback preview only");
                     }
                 }
                 catch (System.Exception ex)
@@ -848,16 +840,32 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 || path.StartsWith("ASS_Audio_Success/")
                 || path.StartsWith("ASS_Defense/");
         }
+        private static List<(string name, AnimatorControllerParameterType type, float defaultValue)>
+            PrepareDecoyParameters(AnimatorController controller)
+        {
+            // Every generated condition must refer to a declared parameter even
+            // when decoy layers are disabled and only fake states are requested.
+            Utils.EnsureInputParameters(controller, ensureIsLocal: false);
+            var parameters = Obfuscator.GetDecoyParameters();
+            foreach (var parameter in parameters)
+                Utils.AddParameterIfNotExists(controller, parameter.name, parameter.type,
+                    defaultBool: parameter.defaultValue > 0.5f,
+                    defaultInt: (int)parameter.defaultValue,
+                    defaultFloat: parameter.defaultValue);
+            if (!parameters.Any(p => p.type == AnimatorControllerParameterType.Bool))
+            {
+                string guard = Obfuscator.Param("Guard", "_ASS_Guard");
+                Utils.AddParameterIfNotExists(controller, guard, AnimatorControllerParameterType.Bool, false);
+                parameters.Add((guard, AnimatorControllerParameterType.Bool, 0f));
+            }
+            return parameters;
+        }
         private static void InjectFakeStatesIntoRealLayers(AnimatorController controller,
             List<AnimationClip> instructionalClips = null)
         {
             if (!Obfuscator.DecoyStatesEnabled) return;
-            var decoyParams = Obfuscator.GetDecoyParameters();
-            if (decoyParams == null || decoyParams.Count == 0) return;
-            // 确保守卫参数在控制器中存在
-            string guardParam = Obfuscator.Param("Guard", "_ASS_Guard");
-            Utils.AddParameterIfNotExists(controller, guardParam,
-                AnimatorControllerParameterType.Bool, false);
+            var decoyParams = PrepareDecoyParameters(controller);
+            if (decoyParams.Count == 0) return;
             var emptyClip = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             int injectedCount = 0;
             foreach (var layer in controller.layers)
@@ -931,9 +939,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             // 诱饵层用独立的 seed 生成自己的伪随机
             uint rng = Obfuscator.GetDecoyLayerSeed();
 
-            var decoyParams = Obfuscator.GetDecoyParameters();
-            foreach (var decoy in decoyParams)
-                Utils.AddParameterIfNotExists(controller, decoy.name, decoy.type);
+            var decoyParams = PrepareDecoyParameters(controller);
 
             var layer = Utils.CreateLayer(decoyLayer.layerName, 1f);
             var sm = layer.stateMachine;
@@ -941,8 +947,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
-            // 诱饵层与 ASS 其它状态统一使用 WD On；其动画只包含伪装路径。
-            defaultState.writeDefaultValues = true;
+            // 诱饵层使用 WD Off；空动画不重写用户控制器的其它绑定。
+            defaultState.writeDefaultValues = false;
             sm.defaultState = defaultState;
 
             var fakeStates = new List<AnimatorState>();
@@ -972,7 +978,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     fakeState.motion = emptyClip;
                 }
                 // 诱饵状态只模拟拓扑，不写入未绑定的真实属性。
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = false;
                 fakeStates.Add(fakeState);
             }
 

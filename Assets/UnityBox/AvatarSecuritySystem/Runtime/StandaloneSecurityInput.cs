@@ -11,7 +11,8 @@ namespace UnityBox.AvatarSecuritySystem
         private Animator animator;
         private Animator Controller => animator != null ? animator : animator = GetComponent<Animator>();
 
-        public bool IsUnlocked => Controller.GetBool(passwordParameter);
+        public bool IsPasswordCorrect => Controller.GetBool(passwordParameter);
+        public bool IsUnlocked => IsPasswordCorrect;
         public bool HasTimedOut => Controller.GetBool(timeoutParameter);
         public void SetGesture(int gesture, bool rightHand = false) =>
             Controller.SetInteger(rightHand ? "GestureRight" : "GestureLeft", gesture);

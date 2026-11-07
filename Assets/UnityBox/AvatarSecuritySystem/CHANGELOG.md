@@ -2,6 +2,37 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
+## [0.9.0] - 2026-11-07
+
+### Changed
+
+- 移除 Avatar 对象锁定与 Inspector 对应选项，旧 disableRootChildren/WD 字段隐藏保留
+  历史序列化；新增 ASS 状态统一 WD Off，保留用户图及其原 WD 设置。
+- 普通 Unity 改为真实 Player 构建场景中自动生成 Controller/运行输入，再移除编辑配置。
+  Inspector 手动 Generate 按钮移除，源场景与原 Controller 保持编辑身份。
+- 复制已有 Controller/AOC 并清理旧 ASS 生成层，包括遗留锁层，再追加手势、计时和反馈。
+- 默认保持 0.5s、容错 0.3s，统一规范化确保保持严格大于容错；连续正确姿势才累计。
+  错误中断重计，容错过期清序列，重复相邻姿势先释放，超时/Restart 优先处理。
+- 运行输入新增 IsPasswordCorrect；IsUnlocked 保留为密码结果的兼容别名。
+- Inspector、构建校验与时间说明同步英语、简体中文、繁体中文和日语。
+
+### Fixed
+
+- 仅启用诱饵状态、关闭诱饵层时，也先声明转移条件所用参数；参数池没有 Bool 时
+  添加本地布尔守卫，参数类型与条件保持一致。
+- 修复从旧发布包升级后，原 ASS 组件变成 Missing Script 的问题。0.7.24 发布 ZIP 没有
+  携带 `Runtime/Component.cs.meta`，各项目自行生成不同 GUID；0.8.0 加入固定 GUID 时
+  缺少这类旧安装的引用迁移，导致它们的组件失去脚本关联。
+- 首次加载 0.9.0 时自动扫描 `Assets` 内的 Scene 和 Prefab，后续导入资源继续处理。
+  通过 ASS 配置字段和失效脚本引用识别旧组件，直接重连到固定脚本 GUID，保留组件
+  fileID、密码、开关、音频引用和 Prefab 覆盖关系；其他类型及仍有效的脚本引用保持原值。
+- 已确认的旧 GUID 记录于 `UserSettings/UnityBox/ASSMigration/LegacyGuids.json`，
+  支持同次及后续导入的 stripped Prefab 实例引用，跨脚本重载继续使用。
+- 修复前将原文件字节保存到 `UserSettings/UnityBox/ASSMigration/<id>/`。
+  场景或 Prefab 有未保存修改时保留现场，保存后通过
+  `Tools/UnityBox/Avatar Security System/Repair Legacy Components` 完成恢复。
+- 继续沿用 0.8.0 的固定 GUID；此前已正确安装的组件继续使用原关联。
+
 ## [0.8.0] - 2026-11-05
 
 
@@ -27,7 +58,8 @@
 - Contact 根分支索引由一次扫描生成，锁定与恢复图复用索引。
 - 补齐 Editor 脚本、程序集及正式包目录的固定 metadata，保留已有资源 GUID。
 - 从原场景三处 ASS 配置恢复 Runtime/Component.cs.meta 的原 GUID
-  1c51e6a139920bb4ca12700dc82627ff，保持原场景内容和引用。
+  1c51e6a139920bb4ca12700dc82627ff，保持该仓库场景内容和引用；其它旧项目的随机
+  GUID 引用由 0.9.0 的升级迁移处理。
 
 ### Integration
 

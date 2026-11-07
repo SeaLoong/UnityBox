@@ -111,6 +111,10 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 Assert.That(final, Is.Not.Null);
                 Assert.That(final.layers.Count(layer => layer.name == Constants.LAYER_PASSWORD_INPUT), Is.EqualTo(1));
                 Assert.That(final.layers.Count(layer => layer.name == Constants.LAYER_LIFECYCLE), Is.EqualTo(1));
+                Assert.That(final.layers.Any(layer => layer.name == Constants.LAYER_LOCK), Is.False);
+                foreach (var layer in final.layers.Where(layer => Constants.IsASSManagedLayerName(layer.name)))
+                foreach (var item in layer.stateMachine.states)
+                    Assert.That(item.state.writeDefaultValues, Is.False);
                 Assert.That(final.layers.Any(layer => layer.name == "Upstream virtual output"), Is.True);
                 Assert.That(final.layers.Any(layer => layer.name == "Downstream virtual output"), Is.True);
                 Assert.That(root.GetComponent<ASSComponent>(), Is.Null);
@@ -124,8 +128,6 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 {
                     graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
                     var playable = AnimatorControllerPlayable.Create(graph, final);
-                    for (int i = 0; i < final.layers.Length; i++)
-                        if (Constants.IsASSManagedLayerName(final.layers[i].name)) playable.SetLayerWeight(i, 0f);
                     AnimationPlayableOutput.Create(graph, "Final FX", animator).SetSourcePlayable(playable);
                     graph.Play();
                     for (int frame = 0; frame < 4; frame++) graph.Evaluate(1f / 60f);

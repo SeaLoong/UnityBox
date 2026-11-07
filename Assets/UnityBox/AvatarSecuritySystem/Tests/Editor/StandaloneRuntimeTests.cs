@@ -47,7 +47,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             disableObfuscation = true, disableDefense = true, disableOverlay = true,
             disableWarningSound = true, disableRootChildren = true,
             gesturePassword = new List<int> { 1, 2 }, gestureHoldTime = 0.12f,
-            gestureMaxHoldTime = 1f, gestureErrorTolerance = 0.2f, countdownDuration = 8f,
+            gestureMaxHoldTime = 1f, gestureErrorTolerance = 0.04f, countdownDuration = 8f,
         };
 
         private AnimatorController Build(ASSConfigData config = null, bool local = true)
@@ -133,7 +133,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         {
             Build();
             Advance(5);
-            Assert.That(body.transform.localScale.x, Is.Zero.Within(0.001f));
+            Assert.That(body.transform.localScale.x, Is.EqualTo(1f).Within(0.001f));
             Input(1, 3);
             Input(0, 4);
             Input(2, 20);
@@ -146,7 +146,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
-        public void NativeAnimatorRearmsReleasedPasswordCountdownAndLockLayers()
+        public void NativeAnimatorRearmsReleasedPasswordAndCountdownWithoutChangingTheBody()
         {
             var controller = Build();
             Input(1, 20);
@@ -157,7 +157,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             animator.SetBool(Constants.PARAM_PASSWORD_CORRECT, false);
             Input(0, 10);
             Assert.That(animator.GetLayerWeight(passwordLayer), Is.EqualTo(1f));
-            Assert.That(body.transform.localScale.x, Is.Zero.Within(0.001f));
+            Assert.That(body.transform.localScale.x, Is.EqualTo(1f).Within(0.001f));
             Assert.That(animator.GetBool(Constants.PARAM_TIME_UP), Is.False);
             Input(1, 20);
             Input(2, 20);
@@ -195,22 +195,87 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(input.HasTimedOut, Is.False);
         }
 
-        [Test]
-        public void UnlockedLayerReleasesScaleToTheUsersAnimation()
+        [TestCase(true)]
+        [TestCase(false)]
+        public void PasswordTimeoutAndRestartLeaveTheUsersWdLayersInControl(bool userWriteDefaults)
         {
-            var controller = Build();
-            var userClip = new AnimationClip();
-            userClip.SetCurve("Body", typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f, 2f));
-            AssetDatabase.AddObjectToAsset(userClip, controller);
-            controller.layers[0].stateMachine.states[0].state.motion = userClip;
-            AssetDatabase.SaveAssets();
+            var source = AnimatorController.CreateAnimatorControllerAtPath(folder + "/User.controller");
+            var state = source.layers[0].stateMachine.AddState("User animation");
+            state.writeDefaultValues = userWriteDefaults;
+            var clip = new AnimationClip();
+            clip.SetCurve("Body", typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f, 2.25f));
+            clip.SetCurve("Body", typeof(Transform), "m_LocalPosition.y", AnimationCurve.Constant(0f, 1f, 4.5f));
+            var visual = new GameObject("Visual"); visual.transform.SetParent(body.transform, false);
+            var renderer = visual.AddComponent<SkinnedMeshRenderer>();
+            var mesh = new Mesh { vertices = new[] { Vector3.zero, Vector3.right, Vector3.up }, triangles = new[] { 0, 1, 2 } };
+            var delta = new Vector3[3];
+            mesh.AddBlendShapeFrame("UserShape", 100f, delta, delta, delta);
+            renderer.sharedMesh = mesh;
+            AssetDatabase.CreateAsset(mesh, folder + "/User.asset");
+            var originalMaterial = new Material(Shader.Find("Standard")) { color = Color.red };
+            originalMaterial.SetFloat("_Glossiness", 0.15f);
+            var animatedMaterial = new Material(Shader.Find("Standard")) { color = Color.green };
+            animatedMaterial.SetFloat("_Glossiness", 0.75f);
+            AssetDatabase.CreateAsset(originalMaterial, folder + "/Original.mat");
+            AssetDatabase.CreateAsset(animatedMaterial, folder + "/Animated.mat");
+            string animatedMaterialGuid = AssetDatabase.AssetPathToGUID(folder + "/Animated.mat");
+            renderer.sharedMaterial = originalMaterial;
+            clip.SetCurve("Body/Visual", typeof(SkinnedMeshRenderer), "blendShape.UserShape", AnimationCurve.Constant(0f, 1f, 73f));
+            AnimationUtility.SetObjectReferenceCurve(clip,
+                EditorCurveBinding.PPtrCurve("Body/Visual", typeof(SkinnedMeshRenderer), "m_Materials.Array.data[0]"),
+                new[] { new ObjectReferenceKeyframe { time = 0f, value = animatedMaterial }, new ObjectReferenceKeyframe { time = 1f, value = animatedMaterial } });
+            AssetDatabase.CreateAsset(clip, folder + "/User.anim");
+            state.motion = clip;
+            source.layers[0].stateMachine.defaultState = state;
+            animator = root.AddComponent<Animator>();
+            animator.runtimeAnimatorController = source;
+            var config = Config(); config.countdownDuration = 1f;
+            var output = StandaloneSecurityBuilder.Build(root, config, folder + "/Combined.controller");
+            animator.runtimeAnimatorController = output;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.Rebind();
-            Advance(5);
-            Assert.That(body.transform.localScale.x, Is.Zero.Within(0.001f));
-            Input(1, 20);
-            Input(2, 20);
-            Advance(15);
-            Assert.That(body.transform.localScale.x, Is.EqualTo(2f).Within(0.001f));
+            Assert.That(source.layers.Length, Is.EqualTo(1));
+            Assert.That(source.layers[0].stateMachine.states.Single().state.writeDefaultValues, Is.EqualTo(userWriteDefaults));
+            Assert.That(output.layers.Any(layer => layer.name == Constants.LAYER_LOCK), Is.False);
+            var outputMotion = output.layers[0].stateMachine.states.Single().state.motion;
+            Assert.That(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(outputMotion)),
+                Is.EqualTo(AssetDatabase.AssetPathToGUID(folder + "/User.anim")));
+            var materialBinding = EditorCurveBinding.PPtrCurve("Body/Visual", typeof(SkinnedMeshRenderer), "m_Materials.Array.data[0]");
+            foreach (var keyframe in AnimationUtility.GetObjectReferenceCurve((AnimationClip)outputMotion, materialBinding))
+                Assert.That(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(keyframe.value)), Is.EqualTo(animatedMaterialGuid));
+            foreach (var generated in output.layers.Where(layer => Constants.IsASSManagedLayerName(layer.name)))
+            foreach (var generatedState in generated.stateMachine.states)
+            {
+                Assert.That(generatedState.state.writeDefaultValues, Is.False);
+                if (generatedState.state.motion is AnimationClip generatedClip)
+                    Assert.That(AnimationUtility.GetCurveBindings(generatedClip).Any(binding => binding.type == typeof(Transform)), Is.False);
+            }
+            void AssertUserOutput()
+            {
+                Assert.That(body.transform.localScale.x, Is.EqualTo(2.25f).Within(0.001f));
+                Assert.That(body.transform.localPosition.y, Is.EqualTo(4.5f).Within(0.001f));
+                Assert.That(renderer.GetBlendShapeWeight(0), Is.EqualTo(73f).Within(0.001f));
+                // Animator/asset reload may return a different managed wrapper or
+                // a runtime material instance; check the actual rendered properties
+                // and the persistent curve target rather than CLR reference identity.
+                var actualMaterial = renderer.sharedMaterial;
+                Assert.That(actualMaterial.shader, Is.EqualTo(animatedMaterial.shader));
+                Assert.That(actualMaterial.GetColor("_Color"), Is.EqualTo(Color.green));
+                Assert.That(actualMaterial.GetFloat("_Glossiness"), Is.EqualTo(0.75f).Within(0.0001f));
+                string materialPath = AssetDatabase.GetAssetPath(actualMaterial);
+                if (!string.IsNullOrEmpty(materialPath))
+                    Assert.That(AssetDatabase.AssetPathToGUID(materialPath), Is.EqualTo(animatedMaterialGuid));
+            }
+            Input(0, 10); AssertUserOutput();
+            Input(1, 20); Input(2, 20); AssertUserOutput();
+            Assert.That(animator.GetBool(Constants.PARAM_PASSWORD_CORRECT), Is.True);
+            animator.SetBool(Constants.PARAM_PASSWORD_CORRECT, false);
+            Input(0, 90); AssertUserOutput();
+            Assert.That(animator.GetBool(Constants.PARAM_TIME_UP), Is.True);
+            root.GetComponent<StandaloneSecurityInput>().Restart();
+            Input(0, 6); AssertUserOutput();
+            Input(1, 20); Input(2, 20); AssertUserOutput();
+            Assert.That(animator.GetBool(Constants.PARAM_PASSWORD_CORRECT), Is.True);
         }
 
         [Test]
@@ -299,14 +364,12 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             public string correctness;
         }
 
-        [TestCase(16)]
-        [TestCase(64)]
-        [TestCase(256)]
+        [TestCase(2)]
+        [TestCase(8)]
+        [TestCase(32)]
         [Category("UnityBoxPerformance")]
-        public void LockGenerationScalesWithTheAvatarHierarchy(int childCount)
+        public void GestureGenerationScalesWithThePasswordLength(int passwordLength)
         {
-            for (int i = 1; i < childCount; i++)
-                new GameObject("Child" + i).transform.SetParent(root.transform, false);
             Obfuscator.Initialize(root.name, true, false, false, folder);
             Constants.ApplyObfuscation();
             var measurements = new List<double>();
@@ -325,7 +388,9 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                     Utils.EnsureInputParameters(controller);
                     var timer = Stopwatch.StartNew();
                     long before = GC.GetAllocatedBytesForCurrentThread();
-                    new Lock(controller, root, Config(), UnityAnimatorBehaviourAdapter.Instance).Generate();
+                    var config = Config();
+                    config.gesturePassword = Enumerable.Range(0, passwordLength).Select(index => index % 8).ToList();
+                    new GesturePassword(controller, root, config, UnityAnimatorBehaviourAdapter.Instance).Generate();
                     timer.Stop();
                     if (sample >= 0)
                     {
@@ -333,8 +398,9 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                         measurements.Add(timer.Elapsed.TotalMilliseconds);
                     }
                     Assert.That(controller.layers[0].syncedLayerIndex, Is.EqualTo(-1));
-                    var state = controller.layers[0].stateMachine.states.Single(item => item.state.name == "LockedA").state;
-                    Assert.That(AnimationUtility.GetCurveBindings((AnimationClip)state.motion).Length, Is.EqualTo(childCount * 3));
+                    Assert.That(controller.layers[0].stateMachine.states.Count(item => item.state.name.StartsWith("Step_", StringComparison.Ordinal)
+                        && item.state.name.EndsWith("_Holding", StringComparison.Ordinal)), Is.EqualTo(passwordLength));
+                    Assert.That(controller.layers[0].stateMachine.states.All(item => !item.state.writeDefaultValues), Is.True);
                     DestroyGraph(controller);
                 }
             }
@@ -342,11 +408,11 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             measurements.Sort();
             Debug.Log("UNITYBOX_BENCHMARK " + JsonUtility.ToJson(new Benchmark
             {
-                scenario = "lock_graph_generation", size = childCount, samples = measurements.Count,
+                scenario = "gesture_graph_generation", size = passwordLength, samples = measurements.Count,
                 median_ms = measurements[measurements.Count / 2], p95_ms = measurements[measurements.Count - 1],
                 min_ms = measurements[0], max_ms = measurements[measurements.Count - 1],
                 allocated_bytes_per_op = allocationCounterAvailable ? allocated / measurements.Count : -1,
-                correctness = "independent layer; three scale curves per root child; input hierarchy retained",
+                correctness = "one continuous-hold state per password step; WD Off; no avatar lock layer",
             }));
         }
 
@@ -356,6 +422,8 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             foreach (var layer in controller.layers)
             {
                 objects.Add(layer.stateMachine);
+                foreach (var transition in layer.stateMachine.anyStateTransitions) objects.Add(transition);
+                foreach (var transition in layer.stateMachine.entryTransitions) objects.Add(transition);
                 foreach (var child in layer.stateMachine.states)
                 {
                     objects.Add(child.state);
@@ -379,24 +447,33 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             var avatar = new GameObject(path);
             avatar.transform.SetParent(root.transform, false);
             new GameObject("Body").transform.SetParent(avatar.transform, false);
+            var user = AnimatorController.CreateAnimatorControllerAtPath(assetFolder + "/ASS_User.controller");
+            var userClip = new AnimationClip();
+            userClip.SetCurve("Body", typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f, 2f));
+            AssetDatabase.CreateAsset(userClip, assetFolder + "/ASS_User.anim");
+            var userState = user.layers[0].stateMachine.AddState("User output");
+            userState.writeDefaultValues = false;
+            userState.motion = userClip;
+            var animator = avatar.AddComponent<Animator>();
+            animator.runtimeAnimatorController = user;
             var controller = StandaloneSecurityBuilder.Build(avatar, Config(), assetFolder + "/ASS_Standalone.controller");
-            avatar.AddComponent<Animator>().runtimeAnimatorController = controller;
+            animator.runtimeAnimatorController = controller;
             InputValue Gesture(int gesture) => new InputValue { animator_path = path, name = Constants.PARAM_GESTURE_LEFT, type = "int", value = gesture };
             Check Scale(float value) => new Check { path = path + "/Body", property = "localScale.x", expected = value };
             Check Password(bool value) => new Check { path = path, property = "parameter.bool", parameter = Constants.PARAM_PASSWORD_CORRECT, expected = value ? 1 : 0 };
             var scenario = new Scenario
             {
-                name = "ASS gesture hold, unlock, released-layer rearm, relock and second unlock",
+                name = "ASS gesture hold, result, timeout restart and user animation preservation",
                 animator_paths = new[] { path },
                 steps = new[]
                 {
-                    new Step { frames = 10, inputs = new[] { Gesture(0) }, checks = new[] { Scale(0f), Password(false) } },
+                    new Step { frames = 10, inputs = new[] { Gesture(0) }, checks = new[] { Scale(2f), Password(false) } },
                     new Step { frames = 20, inputs = new[] { Gesture(1) }, checks = new[] { Password(false) } },
-                    new Step { frames = 20, inputs = new[] { Gesture(2) }, checks = new[] { Password(true), Scale(1f) } },
-                    new Step { frames = 150, checks = new[] { Password(true), Scale(1f) } },
-                    new Step { frames = 10, inputs = new[] { Gesture(0), new InputValue { animator_path = path, name = Constants.PARAM_PASSWORD_CORRECT, type = "bool", value = 0f } }, checks = new[] { Password(false), Scale(0f) } },
+                    new Step { frames = 20, inputs = new[] { Gesture(2) }, checks = new[] { Password(true), Scale(2f) } },
+                    new Step { frames = 150, checks = new[] { Password(true), Scale(2f) } },
+                    new Step { frames = 10, inputs = new[] { Gesture(0), new InputValue { animator_path = path, name = Constants.PARAM_PASSWORD_CORRECT, type = "bool", value = 0f } }, checks = new[] { Password(false), Scale(2f) } },
                     new Step { frames = 20, inputs = new[] { Gesture(1) }, checks = new[] { Password(false) } },
-                    new Step { frames = 20, inputs = new[] { Gesture(2) }, checks = new[] { Password(true), Scale(1f) } },
+                    new Step { frames = 20, inputs = new[] { Gesture(2) }, checks = new[] { Password(true), Scale(2f) } },
                 },
             };
             root.SendMessage("AddScenarioJson", JsonUtility.ToJson(scenario), SendMessageOptions.RequireReceiver);

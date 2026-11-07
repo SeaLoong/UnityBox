@@ -8,8 +8,10 @@
 
 原 `75396e7 chore: TEMP` 的文件变更以 `bee33c6` 保留，原提交位于
 `backup/temp-75396e7`；随后完成共享容器归属和全仓功能修复。
-原场景、实验 bundle 与已知 GUID 保留。ASS 组件 metadata 使用场景中三次出现的原 GUID
-`1c51e6a139920bb4ca12700dc82627ff`，恢复后继续对应 `ASSComponent`。
+原场景、实验 bundle 与已知 GUID 保留。ASS 固定脚本 GUID
+`1c51e6a139920bb4ca12700dc82627ff` 来自仓库样例场景，关联同名 `ASSComponent`。
+旧发布包未携带脚本 metadata，各安装自行生成的 GUID 并不都与样例相同；
+0.9.0 增加旧配置恢复流程，升级操作见下方 ASS 段落。
 
 `master` 的 `Assets/UnityBox.unity` 原样保留用户较新的 temp/refactor 场景，
 对应合并前 `409eb5b` 的 2,924,530 字节内容。优化器旧场景保留在 `53fa22f` 的提交历史中。
@@ -27,8 +29,8 @@
 SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 各包为原先缺失的脚本、程序集和目录补齐稳定 metadata；新增缺失项按仓库与
-资产路径确定身份，已有 `.meta` 保持原值。此后新克隆和安装直接使用仓库 GUID，ASS
-恢复的原 Runtime 脚本 GUID 继续关联用户场景组件。
+资产路径确定身份，已有 `.meta` 保持原值。新克隆和安装使用仓库 GUID；
+ASS 的旧项目随机 GUID 引用通过 0.9.0 迁移到固定身份，继续保留原组件配置。
 
 外部 Editor 扩展按 [程序集映射](DependencyArchitecture.md) 增加 Core、VRC/VRChat 或 MA
 引用。普通 Animator 的参数由项目脚本提供，Avatar 参数由相应平台输入服务提供。
@@ -95,24 +97,29 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-普通 Unity 新增完整 `StandaloneSecurityBuilder.Build(root, config, path)` 工作流，生成
-Controller、持久化状态图及运行时动作；Inspector 提供对应入口。`StandaloneSecurityInput`
-提供 `SetGesture`、`IsUnlocked`、`HasTimedOut` 和 `Restart`。
+ASS 0.9.0 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
+已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
+ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
 
-密码按连续 Holding 执行，错误输入回到当前步骤的等待状态；成功与超时按明确条件转移。
-生命周期层保持监督，密码由 true 变回 false 时重启锁、计时与密码层；`Restart` 同时清除
-密码结果并重新启动输入流程。解锁状态释放对象动画，用户脚本可继续控制原对象缩放。
+普通 Unity 保存角色配置后正常构建 Player 即可：构建场景副本自动复制原 Controller/AOC、
+清除旧 ASS 生成层（包含遗留锁层）、加入手势/计时/反馈图、配置 Animator 和运行时输入，
+最后移除副本中的编辑配置。Inspector 不再有手动生成按钮；源场景与 Controller 继续用于
+编辑。SDK 与 NDMF 沿用 Avatar 的自动构建和结果交接，原资产在各自生命周期中还原。
 
-生成层独立求值，状态图保存只将无资产路径的对象加入目标资源，子资产持久化后可重载和
-运行。内存/AOC 构建副本保留有效 Clip 和图身份。每 Avatar 构建使用独立目录及混淆上下文，
-SDK 后处理恢复原引用并按本次输出归属清理。NDMF 物理处理边界提交上游服务输出，后续
-服务可重新激活；最终提交测试检查前后插件输出、ASS 层和源图身份。
+默认 hold=0.5s、tolerance=0.3s，统一规则保证 hold 严格大于 tolerance。
+每位必须连续正确保持；中断重计、容错过期清序列、重复相邻位先换姿势释放，超时与
+Restart 优先处理。旧不合理时值会规范化，例如 0.15s/0.3s 的容错下调为 0.14s。
+StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一结果的兼容别名。
+界面与校验说明同步英语、简体、繁体、日语。
+仅启用诱饵状态而关闭诱饵层时，条件参数仍先注册；没有 Bool 参数池时补齐本地布尔
+守卫，避免生成未声明或类型不符的转移条件。
 
-普通 Unity 构建从构建场景副本移除 ASS 编辑配置，运行时输入组件、状态动作及生成
-Controller 保留；源场景继续持有原配置。旧场景三处 ASS 组件保持原 YAML 内容，由恢复的
-`.meta` 重新关联脚本。
-主动负载配置延续新建时关闭的默认值，普通 Unity 工作流生成手势、锁定、计时与反馈。
-用户手册和 API 见 [ASS](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
+固定脚本 GUID 来自仓库样例，只恢复该样例并不能覆盖旧发布包在不同项目生成的随机
+GUID。0.9.0 扫描 Assets 内 Scene/Prefab 的旧 ASS 配置和已确认身份的 stripped 引用，
+重新关联固定脚本，保留组件 fileID、密码和其它序列化字段及 Prefab 覆盖。
+原文件保存在 UserSettings/UnityBox/ASSMigration/<id>/；未保存场景或 Prefab 先保存，
+再运行 `Tools/UnityBox/Avatar Security System/Repair Legacy Components`。
+已有有效关联继续保留。完整步骤见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
 
 ## Prefab Diff Patcher
 

@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "passed": true,
+  "scenario": "unmodified published 0.7.24 import -> published 0.8.0 missing-script reproduction -> current 0.9.0 automatic startup recovery",
+  "editor": "2022.3.22f1",
+  "dependencies": {
+    "VRChatSDK": "3.8.2",
+    "ModularAvatar": "1.18.0",
+    "NDMF": "1.11.0"
+  },
+  "legacy_guid": "ca3ed01327e4ffa4e9e907c90419f826",
+  "canonical_guid": "1c51e6a139920bb4ca12700dc82627ff",
+  "source_non_markdown_files": 107,
+  "source_matches_current_checkout": true,
+  "normalization": {
+    "legacy_hold": 0.2199999988079071,
+    "legacy_tolerance": 0.4399999976158142,
+    "upgraded_hold": 0.2199999988079071,
+    "upgraded_tolerance": 0.20999999344348907
+  },
+  "stages": [
+    {
+      "file": "legacy-0.7.24-create.json",
+      "expected": "legacy configuration is valid",
+      "observed": "passed"
+    },
+    {
+      "file": "published-0.8.0-missing.json",
+      "expected": "regression is reproduced, saved data is retained",
+      "observed": "passed"
+    },
+    {
+      "file": "recovered-0.9.0.json",
+      "expected": "automatic recovery without manual repair API",
+      "observed": "passed"
+    }
+  ],
+  "checks": [
+    "automatic startup migration without calling RepairAssets",
+    "scene and prefab only script-GUID changes",
+    "all non-default password/hand/countdown/hold/maximum/options/audio preserved",
+    "legacy tolerance explicitly normalizes .44 to .21 for hold .22 under the new contract",
+    "prefab-instance override preserved",
+    "asset GUIDs and component fileIDs unchanged",
+    "zero missing ASS components",
+    "original byte backups present"
+  ],
+  "source_fingerprint": "source-fingerprint.json",
+  "fixture": "ASSRealZipUpgrade.cs",
+  "runner": "run_upgrade.py",
+  "raw_inputs": {
+    "scene": "legacy-scene.unity.gz",
+    "prefab": "legacy-prefab.prefab.gz",
+    "generated_meta": "legacy-generated-component.meta"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "0.7.24": {
+    "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.avatar-security-system-0.7.24.zip",
+    "sha256": "930b7c9d149c2602d84507387398d416fc9f6b805fef6076a9fa0037b976234c",
+    "component_meta_absent": true
+  },
+  "0.8.0": {
+    "url": "https://sealoong.github.io/UnityBox/top.sealoong.unitybox.avatar-security-system-0.8.0.zip",
+    "sha256": "8cc35f4ed958f9a6154fe642245f1aa6cd33b793e6ef106da77217cfbfbcd50b",
+    "component_meta_absent": false
+  }
+}

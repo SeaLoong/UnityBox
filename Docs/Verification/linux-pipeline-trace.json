@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "started_utc": "2026-11-04T19:40:29.7313200Z",
+  "started_utc": "2026-11-07T10:43:10.7566500Z",
   "completed": true,
-  "elapsed_ms": 21737.957,
+  "elapsed_ms": 54728.6991,
   "entries": [
     {
       "sequence": 0,
-      "elapsed_ms": 4.7443,
+      "elapsed_ms": 6.0403,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "",
@@ -14,7 +14,7 @@
     },
     {
       "sequence": 1,
-      "elapsed_ms": 5.1825,
+      "elapsed_ms": 6.7617,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -22,7 +22,7 @@
     },
     {
       "sequence": 2,
-      "elapsed_ms": 5.4804,
+      "elapsed_ms": 7.2628,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -30,7 +30,7 @@
     },
     {
       "sequence": 3,
-      "elapsed_ms": 5.6961,
+      "elapsed_ms": 7.5397,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -38,7 +38,7 @@
     },
     {
       "sequence": 4,
-      "elapsed_ms": 5.9226,
+      "elapsed_ms": 8.1369,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -46,7 +46,7 @@
     },
     {
       "sequence": 5,
-      "elapsed_ms": 6.1134,
+      "elapsed_ms": 8.6755,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -54,7 +54,7 @@
     },
     {
       "sequence": 6,
-      "elapsed_ms": 6.3459,
+      "elapsed_ms": 9.1827,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -62,7 +62,7 @@
     },
     {
       "sequence": 7,
-      "elapsed_ms": 21.3889,
+      "elapsed_ms": 36.992,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 PRE",
@@ -70,7 +70,7 @@
     },
     {
       "sequence": 8,
-      "elapsed_ms": 22.8317,
+      "elapsed_ms": 39.9088,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -78,7 +78,7 @@
     },
     {
       "sequence": 9,
-      "elapsed_ms": 23.1044,
+      "elapsed_ms": 40.6967,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -86,7 +86,7 @@
     },
     {
       "sequence": 10,
-      "elapsed_ms": 23.3861,
+      "elapsed_ms": 41.1075,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -94,7 +94,7 @@
     },
     {
       "sequence": 11,
-      "elapsed_ms": 27.878,
+      "elapsed_ms": 51.1399,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -102,7 +102,7 @@
     },
     {
       "sequence": 12,
-      "elapsed_ms": 28.2258,
+      "elapsed_ms": 51.942,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -110,7 +110,7 @@
     },
     {
       "sequence": 13,
-      "elapsed_ms": 28.5254,
+      "elapsed_ms": 52.4584,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -118,7 +118,7 @@
     },
     {
       "sequence": 14,
-      "elapsed_ms": 5364.1281,
+      "elapsed_ms": 16314.1934,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🎬 SCENE",
@@ -126,7 +126,7 @@
     },
     {
       "sequence": 15,
-      "elapsed_ms": 5364.6002,
+      "elapsed_ms": 16318.9799,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -134,7 +134,7 @@
     },
     {
       "sequence": 16,
-      "elapsed_ms": 5364.9501,
+      "elapsed_ms": 16319.5024,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -142,7 +142,7 @@
     },
     {
       "sequence": 17,
-      "elapsed_ms": 5366.1253,
+      "elapsed_ms": 17533.1255,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -150,7 +150,7 @@
     },
     {
       "sequence": 18,
-      "elapsed_ms": 5367.1786,
+      "elapsed_ms": 17534.7952,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -158,7 +158,7 @@
     },
     {
       "sequence": 19,
-      "elapsed_ms": 5367.583,
+      "elapsed_ms": 17538.6919,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -166,7 +166,7 @@
     },
     {
       "sequence": 20,
-      "elapsed_ms": 5369.3472,
+      "elapsed_ms": 17552.9444,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -174,7 +174,7 @@
     },
     {
       "sequence": 21,
-      "elapsed_ms": 5469.0645,
+      "elapsed_ms": 18074.8025,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 FILTER",
@@ -182,7 +182,7 @@
     },
     {
       "sequence": 22,
-      "elapsed_ms": 5469.5419,
+      "elapsed_ms": 18087.5664,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -190,7 +190,7 @@
     },
     {
       "sequence": 23,
-      "elapsed_ms": 5469.8141,
+      "elapsed_ms": 18094.6483,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -198,7 +198,7 @@
     },
     {
       "sequence": 24,
-      "elapsed_ms": 5470.6017,
+      "elapsed_ms": 18117.2007,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -206,7 +206,7 @@
     },
     {
       "sequence": 25,
-      "elapsed_ms": 5470.8489,
+      "elapsed_ms": 18118.0666,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -214,7 +214,7 @@
     },
     {
       "sequence": 26,
-      "elapsed_ms": 5471.0607,
+      "elapsed_ms": 18119.7581,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -222,7 +222,7 @@
     },
     {
       "sequence": 27,
-      "elapsed_ms": 5471.2733,
+      "elapsed_ms": 18120.249,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -230,7 +230,7 @@
     },
     {
       "sequence": 28,
-      "elapsed_ms": 5767.6375,
+      "elapsed_ms": 18706.3182,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 POST-DLL",
@@ -238,7 +238,7 @@
     },
     {
       "sequence": 29,
-      "elapsed_ms": 5769.8731,
+      "elapsed_ms": 18706.8379,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -246,7 +246,7 @@
     },
     {
       "sequence": 30,
-      "elapsed_ms": 5770.2724,
+      "elapsed_ms": 18707.0671,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -254,7 +254,7 @@
     },
     {
       "sequence": 31,
-      "elapsed_ms": 5770.5803,
+      "elapsed_ms": 18707.3854,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -262,7 +262,7 @@
     },
     {
       "sequence": 32,
-      "elapsed_ms": 5770.8794,
+      "elapsed_ms": 18707.6423,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -270,7 +270,7 @@
     },
     {
       "sequence": 33,
-      "elapsed_ms": 5771.1792,
+      "elapsed_ms": 18708.0192,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -278,7 +278,7 @@
     },
     {
       "sequence": 34,
-      "elapsed_ms": 5771.5959,
+      "elapsed_ms": 18710.0556,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -286,7 +286,7 @@
     },
     {
       "sequence": 35,
-      "elapsed_ms": 6061.5413,
+      "elapsed_ms": 19272.587,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🎨 SHADER",
@@ -294,7 +294,7 @@
     },
     {
       "sequence": 36,
-      "elapsed_ms": 6062.0243,
+      "elapsed_ms": 19273.1637,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -302,7 +302,7 @@
     },
     {
       "sequence": 37,
-      "elapsed_ms": 6062.3525,
+      "elapsed_ms": 19273.5453,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -310,7 +310,7 @@
     },
     {
       "sequence": 38,
-      "elapsed_ms": 6062.5976,
+      "elapsed_ms": 19273.8703,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -318,7 +318,7 @@
     },
     {
       "sequence": 39,
-      "elapsed_ms": 6062.8193,
+      "elapsed_ms": 19274.1031,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -326,7 +326,7 @@
     },
     {
       "sequence": 40,
-      "elapsed_ms": 6063.1469,
+      "elapsed_ms": 19274.6104,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -334,7 +334,7 @@
     },
     {
       "sequence": 41,
-      "elapsed_ms": 6063.4144,
+      "elapsed_ms": 19274.9057,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",
@@ -342,7 +342,7 @@
     },
     {
       "sequence": 42,
-      "elapsed_ms": 16615.0878,
+      "elapsed_ms": 47458.4939,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "LINKER",
@@ -350,7 +350,7 @@
     },
     {
       "sequence": 43,
-      "elapsed_ms": 21728.8232,
+      "elapsed_ms": 54721.5458,
       "pipeline": "BUILD",
       "order": -2147483648,
       "marker": "🚩 POST",
@@ -358,7 +358,7 @@
     },
     {
       "sequence": 44,
-      "elapsed_ms": 21729.1822,
+      "elapsed_ms": 54722.0205,
       "pipeline": "BUILD",
       "order": -10000,
       "marker": "⚑ N10000",
@@ -366,7 +366,7 @@
     },
     {
       "sequence": 45,
-      "elapsed_ms": 21729.4552,
+      "elapsed_ms": 54722.3108,
       "pipeline": "BUILD",
       "order": -100,
       "marker": "◎",
@@ -374,7 +374,7 @@
     },
     {
       "sequence": 46,
-      "elapsed_ms": 21729.6571,
+      "elapsed_ms": 54722.4859,
       "pipeline": "BUILD",
       "order": 0,
       "marker": "○",
@@ -382,7 +382,7 @@
     },
     {
       "sequence": 47,
-      "elapsed_ms": 21737.0513,
+      "elapsed_ms": 54727.9349,
       "pipeline": "BUILD",
       "order": 100,
       "marker": "◉",
@@ -390,7 +390,7 @@
     },
     {
       "sequence": 48,
-      "elapsed_ms": 21737.3525,
+      "elapsed_ms": 54728.3025,
       "pipeline": "BUILD",
       "order": 10000,
       "marker": "⚑ P10000",
@@ -398,7 +398,7 @@
     },
     {
       "sequence": 49,
-      "elapsed_ms": 21737.7398,
+      "elapsed_ms": 54728.524,
       "pipeline": "BUILD",
       "order": 2147483647,
       "marker": "⛳ END",

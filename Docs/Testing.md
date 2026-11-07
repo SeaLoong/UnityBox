@@ -25,38 +25,53 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 核心用例，各范围分别计数。历史数据通过原提交和运行标识定位；重新准备工程后按新快照
 执行并生成新结果。
 
-## 当前 master 功能结果
+## 本轮 ASS 0.9.0 验证范围
 
-2026-11-05 的统一源码验证按三个依赖范围执行，均退出码 0、零失败、零跳过。
-运行标识采用 UTC；测试程序集数表示实际出现在 NUnit XML 中的本仓库测试程序集。
+2026-11-07 对最终源码执行的结果如下；三个功能范围分别计数：
 
-| 依赖范围 | 通过 / 总数 | 测试程序集 | 运行标识（UTC） |
-| --- | --- | --- | --- |
-| 纯 Unity 核心 | 310/310 | 8 | `20261104T193647-8b4d6260` |
-| SDK 回退 | 385/385 | 13 | `20261104T193355-7c7b9cce` |
-| SDK + MA + NDMF | 482/482 | 19 | `20261104T193355-72562100` |
+| 范围 | 实际结果 |
+| --- | --- |
+| 纯 Unity 核心 | 352 / 352，通过 8 个测试程序集 |
+| SDK | 431 / 431，通过 13 个测试程序集 |
+| 完整 MA/NDMF | 528 / 528，通过 19 个测试程序集 |
+| 图形 | 1 / 1，实际渲染像素与图标输出通过 |
+| 独立串行性能 | 36 / 36，八插件共 57 条测量记录 |
+| Linux Player | 构建和运行成功；13 个场景、1,557 帧、4,807 次输出检查通过；源场景 3 个编辑配置保留 |
 
-各范围重复执行核心用例，分别计数。源码、资源和 GUID 与当前 checkout 的对照记录保存在
-[验证结果](VerificationResults.json)，图形、Player 和性能使用各自独立运行记录。
+全部用例均无失败或跳过。手势输入的 Player 稳态更新中位数为 0.031083 ms；
+不同密码长度的生成成本及其它插件对照见[完整性能报告](Performance.md)。
 
-## 当前独立运行验收
+当前通过数、实际测试程序集、UTC 运行标识和源码指纹集中于[验证结果](VerificationResults.json)。
+纯 Unity、SDK、完整 MA/NDMF 各范围重复核心用例，分别计数；图形、Player 和串行性能
+使用独立记录。2026-11-05 的主分支基线结果保存在 `827b865` 提交，当前结果按新源码
+快照执行后更新，原始 NUnit gzip、Player/构建 JSON 与工具输出保存在 `Docs/Verification/`。
 
-| 范围 | 实际结果 | 运行标识（UTC） |
-| --- | --- | --- |
-| 图标渲染 | 1/1，核对两张 256×256 图标的红绿像素 | `20261104T193915-e87b4e70` |
-| Linux Player | 13 个场景、1557 帧、4807 项输出检查，5 个功能提供者 | `20261104T194015-4b80a5f1` |
-| 串行性能 | 36/36，57 条测量，覆盖八个插件 | `20261104T194142-4dce9b18` |
+本轮新增的 ASS 检查包括：
 
-Linux 构建退出码 0，构建错误 0，产物 58,454,186 bytes；
-构建后重载源场景，三个编辑配置组件保持完整，Player 中的编辑配置已移除。
-实际[构建轨迹](Verification/linux-pipeline-trace.json)从序号 0–6 的
-`BuildPlayerProcessor.PrepareForBuild` 连续记录到序号 7–13 的
-`IPreprocessBuildWithReport.OnPreprocessBuild`，准备阶段记录与后续构建阶段属于同一条完成轨迹。
+- 真实旧随机 GUID 的 Scene/Prefab 升级、stripped 引用及后续导入，检查配置、组件 fileID、
+  资产 GUID、音频、Prefab 覆盖和修复前字节备份；未保存修改延后、重复修复幂等。
+- Player 构建场景自动生成 Animator 和输入组件；源场景配置和源 Controller/AOC 的用户图
+  与 WD 保留，旧 ASS 层在副本中清理，新增 ASS 状态 WD Off，用户对象缩放保持。
+- 连续正确 Holding、快速遍历拒绝累积、中断重计、重复位释放、容错与超时边界、Restart；
+  默认保持 0.5s、容错 0.3s，Inspector 与配置副本共同保证保持时间严格大于容错。
+- 仅启用诱饵状态、关闭诱饵层及无 Bool 参数池的混淆组合，检查声明的参数与转移条件类型。
+- 英语、简体、繁体和日语界面/校验说明，SDK/NDMF 真实构建与最终提交。
 
-图形运行使用 llvmpipe 软件光栅设备。完整性能表同时记录收益与成本增加，
-区分 Editor 生成、参数切换更新和 Player 固定末态更新，见[性能报告](Performance.md)。
-原始 [Player 输出](Verification/linux-player.json)、[构建结果](Verification/linux-build.json)
-和 NUnit 压缩 XML 与当前结果索引一起保存在仓库中。
+Player 继续检查编辑配置从产物移除、运行时输入/状态动作保留。Build Pipeline Logger 的
+完成轨迹覆盖 PrepareForBuild、preprocess、场景与 Linker，实际顺序见归档 JSON。
+图形运行设备、逐场景性能收益与开销、计数 API 的具体字段定义见[性能报告](Performance.md)。
+
+### 真实发布包的三阶段升级
+
+[旧包升级回归](Verification/ASSUpgrade/README.md)保存可复用 runner、Unity fixture 和各阶段
+记录。用真实 0.7.24 ZIP 创建带非默认配置、音频与 Prefab 覆盖的资源，记录 Unity 当场生成
+的脚本 GUID；换入真实 0.8.0 ZIP 并在新 Editor 进程中断言 Missing Script；最后安装当前包，
+再次启动 Editor，检查启动自动迁移恢复关联。测试不能通过预先补旧 `.meta` 或仅手工调用
+迁移 API 替代这条真实安装路径。
+
+检查资产 GUID、组件 fileID、配置与 Prefab 覆盖保持，迁移前备份与故障文件逐字节相同，
+资源原文本只替换脚本 GUID。记录 ZIP SHA256、各阶段进程退出码、日志、结果及当前源码
+指纹；最终代码改变后重新执行当前包阶段。原生随机 GUID 测试补充边界覆盖。
 
 ## 准备独立工程
 
@@ -105,7 +120,7 @@ python3 scripts/unity/test_project.py report --project TEST_PROJECT
 `.unitybox-test-results/<run_id>/`。报告读取真实退出码、XML、程序集及输出断言。
 
 功能范围包括 Animator 优化的参数/WD/Mask/状态历史与最终图、服装/Parts/Mixer、
-组合 Blendshape、ASS 手势与重锁、口型/Voice、Prefab 重载与 Variant、碰撞体历史/几何、
+组合 Blendshape、ASS 连续手势与自动构建、口型/Voice、Prefab 重载与 Variant、碰撞体历史/几何、
 日志和 Linker。平台范围追加真实 SDK、MA 与 NDMF 的安装、预算、回调和最终 Controller 交接。
 
 具体生成、迁移和恢复操作见 [变更清单](RefactorChanges.md)。
@@ -125,8 +140,8 @@ Player。场景提供者生成自己的持久化 Controller、Clip、Mesh 和对
 提供对应 hook，组合工程核对提供者和场景覆盖。报告包含构建结果、实际输出检查、逐
 Animator 稳态耗时、运行包大小和构建轨迹，存入 `.unitybox-player-results/<run_id>/`。
 
-构建回调从构建场景副本移除 AO、ASS 和口型的编辑配置组件，保留生成的 Animator、
-ASS 运行时输入与状态动作。构建后重载保存的源场景，核对场景字节和配置组件保留；Player 再检查配置已移除。
+ASS 构建回调先在场景副本自动复制原 Controller 并生成手势图，再移除编辑配置；AO 与
+口型配置同样从构建副本移除。产物保留 Animator、ASS 运行时输入和状态动作。构建后重载保存的源场景，核对场景字节和配置组件保留；Player 再检查配置已移除。
 输出断言完成后，每个 Animator 先预热50次，再采集11组、每组200次更新；这项计时描述
 最后一组输入下的稳态 `Animator.Update` 成本。托管堆是整个 Player 的保留堆大小；
 采集器不提供有效分配或 Controller 内存计数时，报告用 `-1` 标记该计数字段。

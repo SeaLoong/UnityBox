@@ -1,0 +1,38 @@
+{
+  "phase": "broken",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/ass-real-zip-upgrade-20261107",
+    "-executeMethod",
+    "ASSRealZipUpgrade.VerifyPublished080Breakage",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/ass-real-zip-upgrade-20261107/.unitybox-real-upgrade/broken-editor.log"
+  ],
+  "started_at": 1794045592.63029,
+  "exit_code": 0,
+  "finished_at": 1794045640.8569617,
+  "result": {
+    "passed": true,
+    "phase": "published 0.8.0 regression reproduction: expected missing components",
+    "legacy_guid": "ca3ed01327e4ffa4e9e907c90419f826",
+    "current_guid": "1c51e6a139920bb4ca12700dc82627ff",
+    "component_type": "",
+    "scene_guid": "",
+    "prefab_guid": "",
+    "audio_guid": "",
+    "scene_component_id": "",
+    "prefab_component_id": "",
+    "instance_component_id": "",
+    "checks": [
+      "published 0.8.0 canonical MonoScript identity confirmed",
+      "actual legacy GUID is unresolved",
+      "Scene, Prefab and overridden instance all reproduce Missing Script",
+      "all serialized configuration bytes remain intact"
+    ],
+    "error": ""
+  },
+  "passed": true
+}

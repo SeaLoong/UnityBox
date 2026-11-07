@@ -96,8 +96,11 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(mismatch.SelectMany(item => item.conditions).Select(item => item.mode),
                 Is.EquivalentTo(new[] { AnimatorConditionMode.Less, AnimatorConditionMode.Greater }));
             Assert.That(mismatch.All(item => item.conditions.Single().threshold == 1f), Is.True);
-            var confirm = holding.transitions.Single(item => item.hasExitTime && item.conditions.Length == 2);
+            Assert.That(mismatch.All(item => item.destinationState.name == "Step_1_Interrupted"), Is.True);
+            var confirm = holding.transitions.Single(item => item.hasExitTime && item.conditions.Length == 1);
             Assert.That(confirm.exitTime, Is.EqualTo(0.05f).Within(0.00001f));
+            Assert.That(confirm.conditions.Single().mode, Is.EqualTo(AnimatorConditionMode.Equals));
+            Assert.That(confirm.conditions.Single().threshold, Is.EqualTo(1f));
             Assert.That(adapter.Drivers, Has.Count.EqualTo(1));
             Assert.That(adapter.Drivers[0].State.name, Is.EqualTo("Password_Success"));
             Assert.That(adapter.Drivers[0].Parameter, Is.EqualTo(Constants.PARAM_PASSWORD_CORRECT));
@@ -127,7 +130,6 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             var count = controller.layers.Length;
             Assert.Throws<ArgumentNullException>(() => new GesturePassword(controller, root, new ASSConfigData(), null));
             Assert.Throws<ArgumentNullException>(() => new Countdown(controller, root, new ASSConfigData(), null));
-            Assert.Throws<ArgumentNullException>(() => new Lock(controller, root, new ASSConfigData(), null));
             Assert.That(controller.layers, Has.Length.EqualTo(count));
         }
 

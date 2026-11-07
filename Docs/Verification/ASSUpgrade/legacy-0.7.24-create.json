@@ -1,0 +1,38 @@
+{
+  "phase": "legacy",
+  "command": [
+    "/workspace/unitybox-setup/unity/editor/opt/unity/Editor/Unity",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "/workspace/unitybox-setup/unity/projects/ass-real-zip-upgrade-20261107",
+    "-executeMethod",
+    "ASSRealZipUpgrade.CreateLegacy",
+    "-logFile",
+    "/workspace/unitybox-setup/unity/projects/ass-real-zip-upgrade-20261107/.unitybox-real-upgrade/legacy-editor.log"
+  ],
+  "started_at": 1794044686.5249505,
+  "exit_code": 0,
+  "finished_at": 1794044842.955323,
+  "result": {
+    "passed": true,
+    "phase": "actual published 0.7.24 creation",
+    "legacy_guid": "ca3ed01327e4ffa4e9e907c90419f826",
+    "current_guid": "",
+    "component_type": "UnityBox.AvatarSecuritySystem.ASSComponent, UnityBox.AvatarSecuritySystem.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+    "scene_guid": "500d4af25c38acac9bc9563047348314",
+    "prefab_guid": "831a158665ece4bdea85fe2238885492",
+    "audio_guid": "1b5a693341bfa1a68a8e430ad3dc95da",
+    "scene_component_id": "GlobalObjectId_V1-2-500d4af25c38acac9bc9563047348314-275572193-0",
+    "prefab_component_id": "GlobalObjectId_V1-1-831a158665ece4bdea85fe2238885492-8318369716298507331-0",
+    "instance_component_id": "GlobalObjectId_V1-2-500d4af25c38acac9bc9563047348314-8318369716298507331-1692903231",
+    "checks": [
+      "old package compiled unchanged",
+      "real random MonoScript GUID",
+      "saved Scene and Prefab with non-default values",
+      "saved prefab-instance override"
+    ],
+    "error": ""
+  },
+  "passed": true
+}

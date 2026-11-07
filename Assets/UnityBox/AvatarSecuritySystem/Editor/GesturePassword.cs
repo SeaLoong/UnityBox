@@ -16,7 +16,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             this.controller = controller;
             this.avatarRoot = avatarRoot;
-            this.config = config;
+            this.config = config.Clone();
             this.behaviours = behaviours ?? throw new System.ArgumentNullException(nameof(behaviours));
         }
 
@@ -29,7 +29,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var password = config.gesturePassword;
             if (password == null || password.Count == 0)
             {
-                Debug.LogError("[ASS] Password sequence is empty, unable to create password layer");
+                Debug.LogError("[ASS] " + I18n.T("build.invalid_password"));
                 controller.AddLayer(layer);
                 return;
             }
@@ -40,20 +40,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 ensureGestureParameters: true);
             Utils.AddParameterIfNotExists(controller, PARAM_PASSWORD_CORRECT,
                 AnimatorControllerParameterType.Bool, false);
+            Utils.AddParameterIfNotExists(controller, PARAM_RESTART,
+                AnimatorControllerParameterType.Bool, false);
 
             var waitState = layer.stateMachine.AddState(
                 Obfuscator.State("Wait_Input"),
                 new Vector3(50, 50, 0));
             waitState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            waitState.writeDefaultValues = true;
+            waitState.writeDefaultValues = false;
             layer.stateMachine.defaultState = waitState;
             var inputWaitingState = layer.stateMachine.AddState(
                 Obfuscator.State("InputWaiting"),
                 new Vector3(50, 100, 0));
             var inputWaitingClip = CreateInputWaitingClip();
             inputWaitingState.motion = inputWaitingClip;
-            inputWaitingState.writeDefaultValues = true;
+            inputWaitingState.writeDefaultValues = false;
             Utils.AddSubAsset(controller, inputWaitingClip);
+            var restarted = Utils.CreateAnyStateTransition(layer.stateMachine, inputWaitingState);
+            restarted.AddCondition(AnimatorConditionMode.If, 0f, PARAM_RESTART);
+            Utils.AddIsLocalCondition(restarted, controller, isTrue: true);
             var waitToInputWaiting = Utils.CreateTransition(waitState, inputWaitingState);
             Utils.AddIsLocalCondition(waitToInputWaiting, controller, isTrue: true);
             waitToInputWaiting.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
@@ -61,7 +66,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("TimeUp_Failed"),
                 new Vector3(50, -50, 0));
             timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            timeUpFailedState.writeDefaultValues = true;
+            timeUpFailedState.writeDefaultValues = false;
             var retry = Utils.CreateTransition(timeUpFailedState, inputWaitingState);
             retry.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
@@ -72,7 +77,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             var successClip = CreateSuccessClip();
             successState.motion = successClip;
-            successState.writeDefaultValues = true;
+            successState.writeDefaultValues = false;
             Utils.AddSubAsset(controller, successClip);
             // Completed 状态：密码已正确输入的稳定终点
             var completedState = layer.stateMachine.AddState(
@@ -80,13 +85,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 2) * 350, 150, 0));
             var completedClip = CreateCompletedClip();
             completedState.motion = completedClip;
-            completedState.writeDefaultValues = true;
+            completedState.writeDefaultValues = false;
             Utils.AddSubAsset(controller, completedClip);
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Password_Release"),
                 new Vector3(50 + (password.Count + 3) * 350, 150, 0));
             releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            releaseState.writeDefaultValues = true;
+            releaseState.writeDefaultValues = false;
             var rearm = Utils.CreateTransition(releaseState, waitState);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
@@ -110,18 +115,29 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var stepHoldingStates = new List<AnimatorState>();
             var stepConfirmedStates = new List<AnimatorState>();
             var stepErrorToleranceStates = new List<AnimatorState>();
+            var stepInterruptedStates = new List<AnimatorState>();
             for (int i = 0; i < password.Count; i++)
             {
                 bool isLastStep = (i == password.Count - 1);
                 var holdingState = layer.stateMachine.AddState(
                     Obfuscator.State($"Hold_{i + 1}", $"Step_{i + 1}_Holding"),
                     new Vector3(50 + (i + 1) * 350, 50, 0));
-                holdingState.writeDefaultValues = true;
+                holdingState.writeDefaultValues = false;
                 var holdClip = CreateHoldClip(
                     Obfuscator.Clip($"Hold_{i + 1}", $"ASS_Hold_{i + 1}"), gestureMaxHoldTime);
                 holdingState.motion = holdClip;
                 Utils.AddSubAsset(controller, holdClip);
                 stepHoldingStates.Add(holdingState);
+                var interruptedState = layer.stateMachine.AddState(
+                    Obfuscator.State($"Interrupted_{i + 1}", $"Step_{i + 1}_Interrupted"),
+                    new Vector3(50 + (i + 1) * 350, -50, 0));
+                interruptedState.writeDefaultValues = false;
+                var interruptedClip = CreateHoldClip(
+                    Obfuscator.Clip($"Interrupted_{i + 1}", $"ASS_Interrupted_{i + 1}"),
+                    Mathf.Max(gestureErrorTolerance, 1f / 60f));
+                interruptedState.motion = interruptedClip;
+                Utils.AddSubAsset(controller, interruptedClip);
+                stepInterruptedStates.Add(interruptedState);
                 if (isLastStep)
                 {
                     stepConfirmedStates.Add(null);
@@ -131,19 +147,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedState = layer.stateMachine.AddState(
                     Obfuscator.State($"Confirm_{i + 1}", $"Step_{i + 1}_Confirmed"),
                     new Vector3(50 + (i + 1) * 350, 150, 0));
-                confirmedState.writeDefaultValues = true;
+                confirmedState.writeDefaultValues = false;
                 // Confirmed: clip = gestureMaxHoldTime, 超时回到 Wait
                 var confirmedClip = CreateHoldClip(
                     Obfuscator.Clip($"Confirm_{i + 1}", $"ASS_Confirmed_{i + 1}"), gestureMaxHoldTime);
                 confirmedState.motion = confirmedClip;
                 Utils.AddSubAsset(controller, confirmedClip);
                 stepConfirmedStates.Add(confirmedState);
+                bool needsRepeatRelease = password[i + 1] == password[i];
                 var errorToleranceState = layer.stateMachine.AddState(
-                    Obfuscator.State($"Tolerance_{i + 1}", $"Step_{i + 1}_ErrorTolerance"),
+                    needsRepeatRelease
+                        ? Obfuscator.State($"RepeatRelease_{i + 1}", $"Step_{i + 1}_ReleaseForRepeat")
+                        : Obfuscator.State($"Tolerance_{i + 1}", $"Step_{i + 1}_ErrorTolerance"),
                     new Vector3(50 + (i + 1) * 350, 250, 0));
-                errorToleranceState.writeDefaultValues = true;
+                errorToleranceState.writeDefaultValues = false;
                 var toleranceClip = CreateHoldClip(
-                    Obfuscator.Clip($"Tolerance_{i + 1}", $"ASS_Tolerance_{i + 1}"), gestureErrorTolerance);
+                    Obfuscator.Clip($"Tolerance_{i + 1}", $"ASS_Tolerance_{i + 1}"),
+                    needsRepeatRelease ? gestureMaxHoldTime : Mathf.Max(gestureErrorTolerance, 1f / 60f));
                 errorToleranceState.motion = toleranceClip;
                 Utils.AddSubAsset(controller, toleranceClip);
                 stepErrorToleranceStates.Add(errorToleranceState);
@@ -155,66 +175,68 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdingState = stepHoldingStates[i];
                 var confirmedState = stepConfirmedStates[i];
                 var errorToleranceState = stepErrorToleranceStates[i];
-                float holdExitTime = (gestureHoldTime > 0f && gestureMaxHoldTime > 0f)
-                    ? Mathf.Clamp01(gestureHoldTime / gestureMaxHoldTime)
-                    : 1.0f;
-                var holdToConfirm = Utils.CreateTransition(holdingState, 
-                    isLastStep ? successState : confirmedState,
-                    hasExitTime: true, exitTime: holdExitTime);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                holdToConfirm.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
-                holdToConfirm.duration = 0f;
+                var interruptedState = stepInterruptedStates[i];
+                float holdExitTime = gestureHoldTime / gestureMaxHoldTime;
 
+                // Expiration and mismatches win over acceptance at a sampled frame boundary.
                 var holdTimeout = Utils.CreateTransition(holdingState, inputWaitingState,
-                    hasExitTime: true, exitTime: 1.0f);
+                    hasExitTime: true, exitTime: 1f);
                 holdTimeout.duration = 0f;
-
-                // A hold must be continuous. Two separate transitions express OR;
-                // Less AND Greater on one transition can never match any gesture.
                 foreach (var mismatch in new[] { AnimatorConditionMode.Less, AnimatorConditionMode.Greater })
                 {
-                    var holdingError = Utils.CreateTransition(holdingState, inputWaitingState);
+                    var holdingError = Utils.CreateTransition(holdingState,
+                        gestureErrorTolerance > 0f ? interruptedState : inputWaitingState);
                     holdingError.AddCondition(mismatch, gestureValue, gestureParam);
                 }
+                var holdToConfirm = Utils.CreateTransition(holdingState,
+                    isLastStep ? successState : confirmedState,
+                    hasExitTime: true, exitTime: holdExitTime);
+                holdToConfirm.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
+                holdToConfirm.duration = 0f;
+
+                var interruptedTimeout = Utils.CreateTransition(interruptedState, inputWaitingState,
+                    hasExitTime: true, exitTime: 1f);
+                interruptedTimeout.duration = 0f;
+                var resumed = Utils.CreateTransition(interruptedState, holdingState);
+                ConfigureGestureTransition(resumed, gestureValue, gestureParam);
 
                 if (i == 0)
                 {
                     var firstTransition = Utils.CreateTransition(inputWaitingState, holdingState);
                     Utils.AddIsLocalCondition(firstTransition, controller, isTrue: true);
                     firstTransition.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
-                    firstTransition.AddCondition(AnimatorConditionMode.Greater, gestureValue - 1, gestureParam);
-                    firstTransition.AddCondition(AnimatorConditionMode.Less, gestureValue + 1, gestureParam);
+                    firstTransition.AddCondition(AnimatorConditionMode.Equals, gestureValue, gestureParam);
                 }
                 if (isLastStep) continue;
-                var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
-                ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
 
-                // Confirmed → Wait（超时：gestureMaxHoldTime clip 播完则重置）
                 var confirmedTimeout = Utils.CreateTransition(confirmedState, inputWaitingState,
-                    hasExitTime: true, exitTime: 1.0f);
+                    hasExitTime: true, exitTime: 1f);
                 confirmedTimeout.duration = 0f;
-
-                // Error from confirmedState: check against the NEXT expected gesture (password[i+1]),
-                // but exclude the JUST-CONFIRMED gesture (password[i]) via NotEqual so the user
-                // can hold it without immediately erroring.
-                var confirmedErrLow = confirmedState.AddTransition(errorToleranceState);
-                confirmedErrLow.hasExitTime = false;
-                confirmedErrLow.duration = 0f;
-                confirmedErrLow.hasFixedDuration = true;
-                confirmedErrLow.AddCondition(AnimatorConditionMode.Less, password[i + 1], gestureParam);
-                confirmedErrLow.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
-                var confirmedErrHigh = confirmedState.AddTransition(errorToleranceState);
-                confirmedErrHigh.hasExitTime = false;
-                confirmedErrHigh.duration = 0f;
-                confirmedErrHigh.hasFixedDuration = true;
-                confirmedErrHigh.AddCondition(AnimatorConditionMode.Greater, password[i + 1], gestureParam);
-                confirmedErrHigh.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
-                var toleranceCorrectTransition = errorToleranceState.AddTransition(stepHoldingStates[i + 1]);
-                ConfigureGestureTransition(toleranceCorrectTransition, password[i + 1], gestureParam);
-
-                var toleranceTimeoutToWait = Utils.CreateTransition(errorToleranceState, inputWaitingState,
-                    hasExitTime: true, exitTime: 1.0f);
-                toleranceTimeoutToWait.duration = 0f;
+                // Identical adjacent entries need a release and a fresh hold; one
+                // long pose cannot count as several password entries.
+                if (password[i + 1] != gestureValue)
+                {
+                    var confirmedToNext = Utils.CreateTransition(confirmedState, stepHoldingStates[i + 1]);
+                    ConfigureGestureTransition(confirmedToNext, password[i + 1], gestureParam);
+                }
+                foreach (var mismatch in new[] { AnimatorConditionMode.Less, AnimatorConditionMode.Greater })
+                {
+                    bool repeatedEntry = password[i + 1] == gestureValue;
+                    var transition = Utils.CreateTransition(confirmedState,
+                        repeatedEntry || gestureErrorTolerance > 0f ? errorToleranceState : inputWaitingState);
+                    transition.AddCondition(mismatch, password[i + 1], gestureParam);
+                    transition.AddCondition(AnimatorConditionMode.NotEqual, gestureValue, gestureParam);
+                    if (repeatedEntry)
+                    {
+                        transition.AddCondition(AnimatorConditionMode.Greater, -1f, gestureParam);
+                        transition.AddCondition(AnimatorConditionMode.Less, 8f, gestureParam);
+                    }
+                }
+                var toleranceTimeout = Utils.CreateTransition(errorToleranceState, inputWaitingState,
+                    hasExitTime: true, exitTime: 1f);
+                toleranceTimeout.duration = 0f;
+                var nextAfterTolerance = Utils.CreateTransition(errorToleranceState, stepHoldingStates[i + 1]);
+                ConfigureGestureTransition(nextAfterTolerance, password[i + 1], gestureParam);
             }
             if (Obfuscator.DecoyStatesEnabled && stepHoldingStates.Count > 0)
             {
@@ -234,7 +256,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var decoyState = layer.stateMachine.AddState(decoyName,
                         new Vector3(-200 + d * 30, 200 + d * 80, 0));
                     decoyState.motion = emptyClip;
-                    decoyState.writeDefaultValues = true;
+                    decoyState.writeDefaultValues = false;
                     decoyHolds.Add(decoyState);
                     var usedGestures = new HashSet<int>(password);
                     var unusedGestures = new List<int>();

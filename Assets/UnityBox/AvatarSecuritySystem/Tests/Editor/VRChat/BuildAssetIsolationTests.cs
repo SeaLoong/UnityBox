@@ -466,6 +466,77 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(child.name, Is.EqualTo("SourceChild"));
         }
 
+        [TestCase(true, true)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(false, false)]
+        public void DefaultObfuscationDecoysKeepUserWdModesAndAnimationOutput(bool writeDefaults, bool decoyLayers)
+        {
+            // This seed selects only numeric decoys and therefore exercises the
+            // internal Bool guard in both the full and fake-states-only paths.
+            avatar.name = "ASSNumericDecoys2";
+            Obfuscator.Initialize(avatar.name, false, decoyLayers, true, folder + "/DecoyGenerated");
+            Constants.ApplyObfuscation();
+            var controller = AnimatorController.CreateAnimatorControllerAtPath(folder + "/Decoys.controller");
+            var body = new GameObject("Body");
+            body.transform.SetParent(avatar.transform, false);
+            var clip = new AnimationClip();
+            clip.SetCurve("Body", typeof(Transform), "m_LocalScale.x", AnimationCurve.Constant(0f, 1f, 3.25f));
+            AssetDatabase.CreateAsset(clip, folder + "/UserAnimation.anim");
+            var machine = controller.layers[0].stateMachine;
+            var userState = machine.AddState("Original user state");
+            userState.writeDefaultValues = writeDefaults;
+            userState.motion = clip;
+            machine.defaultState = userState;
+            Assert.That(Obfuscator.GetDecoyParameters().All(p => p.type != AnimatorControllerParameterType.Bool), Is.True);
+            var empty = Utils.GetOrCreateEmptyClip(folder, "Empty.anim");
+            var generatedLayer = Utils.CreateLayer(Constants.LAYER_PASSWORD_INPUT, 1f);
+            var idle = generatedLayer.stateMachine.AddState("Generated idle");
+            idle.motion = empty;
+            idle.writeDefaultValues = false;
+            generatedLayer.stateMachine.defaultState = idle;
+            controller.AddLayer(generatedLayer);
+            // Exercise the same generation entry points as PreprocessAvatar;
+            // each entry point declares all parameters its transitions require.
+            Invoke(typeof(Processor), "GenerateDecoyLayer", controller, null);
+            Invoke(typeof(Processor), "InjectFakeStatesIntoRealLayers", controller, null);
+            Assert.That(controller.layers.Length, Is.EqualTo(decoyLayers ? 3 : 2));
+            Assert.That(generatedLayer.stateMachine.states.Length, Is.GreaterThan(1));
+            Assert.That(userState.writeDefaultValues, Is.EqualTo(writeDefaults));
+            Assert.That(userState.transitions, Is.Empty);
+            var parameters = controller.parameters.ToDictionary(p => p.name);
+            Assert.That(parameters[Obfuscator.Param("Guard", "_ASS_Guard")].type,
+                Is.EqualTo(AnimatorControllerParameterType.Bool));
+            foreach (var layer in controller.layers)
+            foreach (var item in layer.stateMachine.states)
+            {
+                if (item.state != userState) Assert.That(item.state.writeDefaultValues, Is.False);
+                foreach (var transition in item.state.transitions)
+                foreach (var condition in transition.conditions)
+                {
+                    Assert.That(parameters.ContainsKey(condition.parameter), Is.True, condition.parameter);
+                    if (condition.mode == AnimatorConditionMode.If || condition.mode == AnimatorConditionMode.IfNot)
+                        Assert.That(parameters[condition.parameter].type, Is.EqualTo(AnimatorControllerParameterType.Bool));
+                    else if (condition.mode == AnimatorConditionMode.Equals || condition.mode == AnimatorConditionMode.NotEqual)
+                        Assert.That(parameters[condition.parameter].type, Is.EqualTo(AnimatorControllerParameterType.Int));
+                    else
+                        Assert.That(parameters[condition.parameter].type, Is.EqualTo(AnimatorControllerParameterType.Int)
+                            .Or.EqualTo(AnimatorControllerParameterType.Float));
+                }
+            }
+            Utils.SaveControllerGraph(controller);
+            var animator = avatar.AddComponent<Animator>();
+            animator.runtimeAnimatorController = controller;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.Rebind();
+            for (int frame = 0; frame < 180; frame++)
+            {
+                animator.Update(1f / 60f);
+                Assert.That(body.transform.localScale.x, Is.EqualTo(3.25f).Within(0.001f), "Frame " + frame);
+            }
+            Assert.That(machine.defaultState, Is.SameAs(userState));
+        }
+
         private static VRCAvatarDescriptor.CustomAnimLayer Layer(AnimatorController controller,
             VRCAvatarDescriptor.AnimLayerType type)
         {

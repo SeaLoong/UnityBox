@@ -7,3 +7,6 @@
 `tooling-*.log` 保存实际 Python unittest 输出，测试数从成功摘要读取；`vpm-workflow.json` 保存本地发布工作流的报告。对应包 ZIP 已逐文件与当前源码比对，CRC、manifest 版本和 listing SHA256 记录在结果索引中。当前归档以索引引用为准，旧运行通过提交历史保留。
 
 解压示例：`gzip -dc core-results.xml.gz > core-results.xml`。
+
+[ASS 真实旧包升级归档](ASSUpgrade/README.md)另外保存 0.7.24 正常、0.8.0 复现脚本丢失、
+0.9.0 启动自动恢复的三阶段结果、原文件、源码指纹与可复用的复现脚本。

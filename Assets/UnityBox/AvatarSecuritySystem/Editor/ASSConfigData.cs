@@ -9,6 +9,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             var clone = (ASSConfigData)MemberwiseClone();
             clone.gesturePassword = gesturePassword == null ? null : new System.Collections.Generic.List<int>(gesturePassword);
+            clone.NormalizeGestureTimes();
             return clone;
         }
 
@@ -49,7 +50,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         {
             if (source == null) return null;
 
-            return new ASSConfigData
+            var config = new ASSConfigData
             {
                 uiLanguage = source.uiLanguage,
                 gesturePassword = source.gesturePassword != null
@@ -77,6 +78,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 writeDefaultsMode = (int)source.writeDefaultsMode,
                 sourceObjectName = source.gameObject != null ? source.gameObject.name : null
             };
+            config.NormalizeGestureTimes();
+            return config;
+        }
+
+        public void NormalizeGestureTimes()
+        {
+            ASSComponent.NormalizeGestureTimes(ref gestureHoldTime, ref gestureErrorTolerance, ref gestureMaxHoldTime);
         }
 
         public bool IsPasswordValid()

@@ -11,7 +11,7 @@ SDK、Modular Avatar（MA）、NDMF 适配通过各自程序集及真实版本�
 | Animator Optimizer | 显式 Animator/Controller、参数语义、层合并、AAP 和离线资产 | SDK Playable Controller；NDMF 当前虚拟图和 MA 行为 |
 | ACC | Scanner、服装/Parts/Mixer/材质动画、Unity Assets 窗口 | SDK Driver/Descriptor；MA 菜单、参数、FX、图标与 Setup Outfit |
 | Blendshape | Float/Bool、组合 Controller、Animator 分配 | MA 菜单/参数/FX 安装、移除与整 Avatar 预算 |
-| ASS | 完整手势/计时/锁定运行时和 StandaloneSecurityInput | SDK 行为适配、Playable 层；NDMF 构建与完成状态交接 |
+| ASS | 自动构建手势/计时/反馈图、保留用户 Animator 与运行输入 | SDK 行为适配、Playable 层；NDMF 构建与完成状态交接 |
 | 口型 | 15 口型、Voice、映射、AOC/Controller 与 Clip 生成 | Descriptor 默认值、SDK 构建、NDMF 虚拟路径与图提交 |
 | Collider | 任意根对象 3D/2D 快照、历史、几何和场景显示 | SDK PhysBone/Descriptor provider；NDMF 阶段采样 |
 | Logger | 导入、Unity 构建、Linker、Shader 与 JSON 轨迹 | SDK 与 NDMF 阶段日志 |
@@ -45,7 +45,16 @@ asmdef。最低版本表达式使用 Unity 支持的普通版本字符串，例�
 ## 序列化与构建
 
 Runtime 配置类型、字段和已知 GUID 保留；实际 SDK Base 可用时继续实现 `IEditorOnly`。
-ASS 原组件 GUID 从已提交场景恢复，三处引用对应同一 `ASSComponent`。
+ASS 0.9.0 维持同名 Runtime 程序集和固定 ASSComponent GUID，并迁移旧包省略 metadata
+产生的随机 GUID。完整旧配置确认身份后，Scene/Prefab 及 stripped 引用一并重连；写入前
+备份原字节，未保存资产先保存再修复。
+
+普通 Unity 的 ASS 由实际 Player 构建回调自动生成并移除场景副本中的作者配置，SDK/NDMF
+使用自己的 Avatar 自动构建入口。构建复制源 Controller/AOC，保留用户图与 WD，清理旧
+ASS 层后追加 WD Off 的密码、计时与反馈层。Avatar 对象锁定已移除；旧相关字段只作隐藏
+序列化兼容。默认保持 0.5s、容错 0.3s，英语、简体、繁体、日语界面共享同一时间
+校验与构建契约。SDK 混淆在注入诱饵状态前声明条件参数，独立于诱饵层开关；没有 Bool
+池时添加本地布尔守卫，按实际参数类型生成条件与参数注册。
 
 构建配置先捕获，再按本 Avatar 的完成状态交接。SDK 回退检查生成结果，NDMF 通过实际
 服务激活/提交处理虚拟图。物理生成入口在服务提交边界操作 Controller；后续插件可以

@@ -21,10 +21,10 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{countdown.duration_tooltip}")]
         public float countdownDuration = 30f;
         [HideInInspector] public float warningThreshold = 10f;
-        [Range(0.1f, 1f)]
+        [Range(0.05f, 1f)]
         [Tooltip("#{gesture.hold_time_tooltip}")]
-        public float gestureHoldTime = 0.15f;
-        [Range(0.1f, 1f)]
+        public float gestureHoldTime = 0.5f;
+        [Range(0f, 0.99f)]
         [Tooltip("#{gesture.error_tolerance_tooltip}")]
         public float gestureErrorTolerance = 0.3f;
         [Range(1f, 10f)]
@@ -36,7 +36,8 @@ namespace UnityBox.AvatarSecuritySystem
         public bool enabledInPlaymode = false;
         [Tooltip("#{defense.disable_defense_tooltip}")]
         public bool disableDefense = true;
-        [Tooltip("#{advanced.disable_objects_tooltip}")]
+        // Retained only so configurations authored before 0.9 keep their serialized data.
+        [HideInInspector]
         public bool disableRootChildren = true;
         [FormerlySerializedAs("hideUI")]
         [FormerlySerializedAs("hideOverlay")]
@@ -115,13 +116,19 @@ namespace UnityBox.AvatarSecuritySystem
             if (passwordLength >= 4) return "Medium";
             return "Weak";
         }
+        /// <summary>Use one timing contract for authoring and every generated controller.</summary>
+        public static void NormalizeGestureTimes(ref float hold, ref float tolerance, ref float maximum)
+        {
+            hold = Mathf.Clamp(hold, 0.05f, 1f);
+            tolerance = Mathf.Clamp(tolerance, 0f, hold - 0.01f);
+            maximum = Mathf.Clamp(maximum, Mathf.Max(1f, hold + tolerance + 0.05f), 10f);
+        }
 #if UNITY_EDITOR
         private void OnValidate()
         {
             ValidateWarningThreshold();
             ValidateGestureTimes();
             SanitizeDefenseModes();
-            NormalizeLegacyWriteDefaultsMode();
         }
         private void InitializePasswordIfNeeded()
         {
@@ -144,18 +151,7 @@ namespace UnityBox.AvatarSecuritySystem
         }
         private void ValidateGestureTimes()
         {
-            float minSum = gestureHoldTime + gestureErrorTolerance;
-            if (gestureMaxHoldTime <= minSum)
-            {
-                gestureMaxHoldTime = minSum + 0.5f;
-                if (gestureMaxHoldTime > 10f)
-                    gestureMaxHoldTime = 10f;
-            }
-        }
-        private void NormalizeLegacyWriteDefaultsMode()
-        {
-            if (writeDefaultsMode != WriteDefaultsMode.On)
-                writeDefaultsMode = WriteDefaultsMode.On;
+            NormalizeGestureTimes(ref gestureHoldTime, ref gestureErrorTolerance, ref gestureMaxHoldTime);
         }
         private void Reset()
         {
@@ -166,7 +162,7 @@ namespace UnityBox.AvatarSecuritySystem
             countdownDuration = defaultCountdownDuration;
             warningThreshold = defaultWarningThreshold;
             gestureMaxHoldTime = defaultGestureMaxHoldTime;
-            gestureHoldTime = 0.15f;
+            gestureHoldTime = 0.5f;
             gestureErrorTolerance = 0.3f;
             enabledInPlaymode = false;
             disableRootChildren = true;

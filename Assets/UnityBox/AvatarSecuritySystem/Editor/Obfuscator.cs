@@ -1054,9 +1054,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                // 伪状态与 ASS 其它状态统一使用 WD On；动画只包含伪装路径，
+                // 伪状态使用 WD Off；动画只包含伪装路径，
                 // 不绑定 Contact、衣柜或其它第三方对象。
-                fakeState.writeDefaultValues = true;
+                fakeState.writeDefaultValues = false;
                 fakeStates.Add(fakeState);
             }
 
@@ -1064,7 +1064,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 .Where(p => p.type == AnimatorControllerParameterType.Bool)
                 .ToList();
             if (boolGuards.Count == 0)
-                boolGuards.Add((Obfuscator.Param("Guard"), AnimatorControllerParameterType.Bool, 0f));
+                boolGuards.Add((Obfuscator.Param("Guard", "_ASS_Guard"), AnimatorControllerParameterType.Bool, 0f));
 
             var defaultState = stateMachine.defaultState;
 
@@ -1187,7 +1187,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 + $" into \"{stateMachine.name}\" (seed=0x{rng:X8})");
         }
         #endregion
-        #region 守卫参数（供 Lock/Password 等层做永假条件，仅 Bool）
+        #region 守卫参数（供 Password 等层做永假条件，仅 Bool）
         /// <summary>
         /// 基于上下文种子返回 count 个 Bool 型守卫参数名（用于诱饵状态的永假条件）。
         /// 结果确定性，不同 avatar / 不同上下文得到不同组合。

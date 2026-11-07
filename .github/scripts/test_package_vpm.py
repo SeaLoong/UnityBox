@@ -32,6 +32,7 @@ class PackageTests(unittest.TestCase):
         self.write("Runtime/Component.cs")
         self.write("Runtime/Component.cs.meta", "guid: 0123456789abcdef0123456789abcdef\n")
         self.write("Tests/Editor/Regression.cs")
+        self.write("Tests/Editor/Regression.cs.meta", "guid: fedcba9876543210fedcba9876543210\n")
         result = self.entries()
         self.assertEqual(result["Runtime/Component.cs.meta"], b"guid: 0123456789abcdef0123456789abcdef\n")
         self.assertIn("Tests/Editor/Regression.cs", result)
@@ -52,6 +53,7 @@ class PackageTests(unittest.TestCase):
 
     def test_rebuild_drops_removed_files(self):
         self.write("obsolete.cs")
+        self.write("obsolete.cs.meta", "guid: 0123456789abcdef0123456789abcdef\n")
         self.assertIn("obsolete.cs", self.entries())
         (self.source / "obsolete.cs").unlink()
         self.assertNotIn("obsolete.cs", self.entries())
@@ -77,6 +79,15 @@ class PackageTests(unittest.TestCase):
         with ZipFile(self.output) as archive:
             self.assertEqual((archive.getinfo("Tools/run.sh").external_attr >> 16) & 0o777, 0o755)
             self.assertEqual((archive.getinfo("package.json").external_attr >> 16) & 0o777, 0o644)
+
+    def test_missing_script_metadata_is_rejected_before_replacing_an_archive(self):
+        self.entries()
+        original = self.output.read_bytes()
+        self.write("Runtime/Component.cs")
+        self.write("Runtime/Runtime.asmdef", '{"name":"Example.Runtime"}')
+        with self.assertRaisesRegex(ValueError, r"Runtime/Component.cs.*Runtime/Runtime.asmdef"):
+            build_package(self.source, self.output)
+        self.assertEqual(self.output.read_bytes(), original)
 
 
 if __name__ == "__main__":

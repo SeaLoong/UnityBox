@@ -8,50 +8,33 @@ namespace UnityBox.AvatarSecuritySystem
     public class Inspector : UnityEditor.Editor
     {
         private ASSComponent _target;
-        private static readonly string[] GESTURE_NAMES =
-        {
-            "0: Idle",
-            "1: Fist ✊",
-            "2: HandOpen ✋",
-            "3: Fingerpoint ☝",
-            "4: Victory ✌",
-            "5: RockNRoll 🤘",
-            "6: HandGun 🔫",
-            "7: ThumbsUp 👍"
-        };
         private static readonly int[] GESTURE_VALUES = { 0, 1, 2, 3, 4, 5, 6, 7 };
         private void OnEnable()
         {
             _target = (ASSComponent)target;
-            if (_target.uiLanguage != SystemLanguage.Unknown)
-            {
-                SetLanguage(_target.uiLanguage);
-            }
+            SetLanguage(_target.uiLanguage);
         }
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            SetLanguage((SystemLanguage)serializedObject.FindProperty("uiLanguage").intValue);
             EditorGUILayout.Space(10);
             DrawHeaderSection();
-            if (System.Type.GetType("UnityBox.AvatarSecuritySystem.Editor.Processor, UnityBox.AvatarSecuritySystem.VRChat") == null)
-                EditorGUILayout.HelpBox("Unity configuration and animation tools are available. Avatar upload generation requires the optional VRChat SDK 3.7+ integration.", MessageType.Info);
+            EditorGUILayout.HelpBox(T("build.automatic_help"), MessageType.Info);
+            if (!HasVrChatIntegration)
+                EditorGUILayout.HelpBox(T("build.standalone_help"), MessageType.Info);
             EditorGUILayout.Space(10);
             DrawConfigurationSections();
             serializedObject.ApplyModifiedProperties();
-            EditorGUILayout.Space();
-            if (GUILayout.Button("Generate Standalone Unity Controller"))
-            {
-                string path = EditorUtility.SaveFilePanelInProject("Generate ASS Controller", "ASS_Standalone", "controller", "Choose the output controller.");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    var controller = StandaloneSecurityBuilder.Build(_target.gameObject, ASSConfigData.FromComponent(_target), path);
-                    var animator = _target.GetComponent<Animator>() ?? Undo.AddComponent<Animator>(_target.gameObject);
-                    Undo.RecordObject(animator, "Assign ASS Controller");
-                    animator.runtimeAnimatorController = controller;
-                    EditorUtility.SetDirty(animator);
-                    Selection.activeObject = controller;
-                }
-            }
+        }
+        private static bool HasVrChatIntegration => System.Type.GetType(
+            "UnityBox.AvatarSecuritySystem.Editor.Processor, UnityBox.AvatarSecuritySystem.VRChat") != null;
+        private bool UsesDefaultDefense => HasVrChatIntegration && _target.defaultEnableDefense;
+
+        private void DrawProperty(string propertyName, string labelKey)
+        {
+            var property = serializedObject.FindProperty(propertyName);
+            EditorGUILayout.PropertyField(property, new GUIContent(T(labelKey), ExpandTokens(property.tooltip)));
         }
         private void DrawHeaderSection()
         {
@@ -61,7 +44,7 @@ namespace UnityBox.AvatarSecuritySystem
         }
         private void DrawConfigurationSections()
         {
-            if (_target.defaultEnableDefense)
+            if (UsesDefaultDefense)
             {
                 DrawDefaultDefenseWarning();
                 EditorGUILayout.Space(10);
@@ -80,17 +63,16 @@ namespace UnityBox.AvatarSecuritySystem
                 DrawCountdownSection();
                 EditorGUILayout.Space(10);
             }
-            DrawDefenseSection();
-            EditorGUILayout.Space(10);
+            if (HasVrChatIntegration)
+            {
+                DrawDefenseSection();
+                EditorGUILayout.Space(10);
+            }
             DrawObfuscationSection();
             EditorGUILayout.Space(10);
-            DrawAdvancedSections();
-        }
-        private void DrawAdvancedSections()
-        {
-            DrawLockSection();
+            DrawFeedbackSection();
             EditorGUILayout.Space(10);
-            DrawAdvancedOptionsSection();
+            DrawBuildSection();
         }
         private void DrawTitle()
         {
@@ -102,16 +84,15 @@ namespace UnityBox.AvatarSecuritySystem
             string systemName = T("system.name");
             string systemShortName = T("system.short_name");
             string subtitle = T("system.subtitle");
-            EditorGUILayout.LabelField($"🔒 {systemName} ({systemShortName})", style);
+            EditorGUILayout.LabelField($"🖐 {systemName} ({systemShortName})", style);
             EditorGUILayout.LabelField(subtitle, EditorStyles.centeredGreyMiniLabel);
         }
         private void DrawPasswordSection()
         {
             EditorGUILayout.LabelField(T("password.config"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("useRightHand"),
-                new GUIContent(T("password.use_right_hand"), T("password.use_right_hand_tooltip")));
+            DrawProperty("useRightHand", "password.use_right_hand");
             EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField(T("password.sequence"), EditorStyles.miniLabel);
+            EditorGUILayout.LabelField(Content("password.sequence", "password.gesture_tooltip"), EditorStyles.miniLabel);
             var passwordProp = serializedObject.FindProperty("gesturePassword");
             DrawPasswordElements(passwordProp);
             EditorGUILayout.Space(5);
@@ -129,11 +110,11 @@ namespace UnityBox.AvatarSecuritySystem
         private void DrawPasswordElement(SerializedProperty passwordProp, int index)
         {
             EditorGUILayout.BeginHorizontal();
-            string stepLabel = string.Format(T("password.step"), index + 1);
+            string stepLabel = T("password.step", index + 1);
             EditorGUILayout.LabelField(stepLabel, GUILayout.Width(60));
             var element = passwordProp.GetArrayElementAtIndex(index);
             int currentValue = element.intValue;
-            int newValue = EditorGUILayout.IntPopup(currentValue, GESTURE_NAMES, GESTURE_VALUES);
+            int newValue = EditorGUILayout.IntPopup(currentValue, GetGestureNames(), GESTURE_VALUES);
             element.intValue = newValue;
             if (GUILayout.Button(new GUIContent("X", T("password.delete_step")), GUILayout.Width(30)))
             {
@@ -183,9 +164,7 @@ namespace UnityBox.AvatarSecuritySystem
             Color strengthColor = GetStrengthColor(strength);
             var oldColor = GUI.color;
             GUI.color = strengthColor;
-            string message = string.Format(T("password.strength"),
-                T(strengthKey),
-                _target.gesturePassword.Count);
+            string message = T("password.strength", T(strengthKey), _target.gesturePassword.Count);
             EditorGUILayout.HelpBox(message, MessageType.Info);
             GUI.color = oldColor;
         }
@@ -209,30 +188,26 @@ namespace UnityBox.AvatarSecuritySystem
         }
         private void DrawDefaultDefenseWarning()
         {
-            EditorGUILayout.HelpBox(T("advanced.default_defense_warning"), MessageType.Error);
+            EditorGUILayout.HelpBox(T("advanced.default_defense_warning"), MessageType.Info);
         }
         private void DrawGestureRecognitionSection()
         {
             EditorGUILayout.LabelField(T("gesture.config"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureHoldTime"),
-                new GUIContent(T("gesture.hold_time"), T("gesture.hold_time_tooltip")));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureMaxHoldTime"),
-                new GUIContent(T("gesture.max_hold_time"), T("gesture.max_hold_time_tooltip")));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("gestureErrorTolerance"),
-                new GUIContent(T("gesture.error_tolerance"), T("gesture.error_tolerance_tooltip")));
+            DrawProperty("gestureHoldTime", "gesture.hold_time");
+            DrawProperty("gestureMaxHoldTime", "gesture.max_hold_time");
+            DrawProperty("gestureErrorTolerance", "gesture.error_tolerance");
+            EditorGUILayout.HelpBox(T("gesture.continuous_hold_help"), MessageType.Info);
         }
         private void DrawCountdownSection()
         {
             EditorGUILayout.LabelField(T("countdown.config"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("countdownDuration"),
-                new GUIContent(T("countdown.duration"), T("countdown.duration_tooltip")));
+            DrawProperty("countdownDuration", "countdown.duration");
         }
         private void DrawLanguageSelector()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("🌐 " + T("language.title"), GUILayout.Width(120));
+            EditorGUILayout.LabelField(new GUIContent("🌐 " + T("language.title"), T("language.ui_language_tooltip")), GUILayout.Width(120));
             var languageProp = serializedObject.FindProperty("uiLanguage");
-            SystemLanguage currentLanguage = GetCurrentLanguage(languageProp);
             int currentIndex = GetLanguageIndex(languageProp);
             int newIndex = EditorGUILayout.Popup(currentIndex, GetLanguageNames());
             if (newIndex != currentIndex)
@@ -240,11 +215,6 @@ namespace UnityBox.AvatarSecuritySystem
                 ApplyLanguageChange(languageProp, GetLanguageValues()[newIndex]);
             }
             EditorGUILayout.EndHorizontal();
-        }
-        private SystemLanguage GetCurrentLanguage(SerializedProperty languageProp)
-        {
-            SystemLanguage currentLang = (SystemLanguage)languageProp.intValue;
-            return currentLang == SystemLanguage.Unknown ? Application.systemLanguage : currentLang;
         }
         private int GetLanguageIndex(SerializedProperty languageProp)
         {
@@ -257,9 +227,10 @@ namespace UnityBox.AvatarSecuritySystem
             return new[]
             {
                 T("language.auto"),
-                "简体中文",
-                "English",
-                "日本語"
+                T("language.chinese"),
+                T("language.traditional_chinese"),
+                T("language.english"),
+                T("language.japanese")
             };
         }
         private SystemLanguage[] GetLanguageValues()
@@ -268,6 +239,7 @@ namespace UnityBox.AvatarSecuritySystem
             {
                 SystemLanguage.Unknown,
                 SystemLanguage.ChineseSimplified,
+                SystemLanguage.ChineseTraditional,
                 SystemLanguage.English,
                 SystemLanguage.Japanese
             };
@@ -282,52 +254,42 @@ namespace UnityBox.AvatarSecuritySystem
         private void DrawDefenseSection()
         {
             EditorGUILayout.LabelField(T("defense.options"), EditorStyles.boldLabel);
-            using (new EditorGUI.DisabledGroupScope(_target.defaultEnableDefense))
+            using (new EditorGUI.DisabledGroupScope(UsesDefaultDefense))
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableDefense"),
-                    new GUIContent(T("defense.disable_defense"), T("defense.disable_defense_tooltip")));
+                DrawProperty("disableDefense", "defense.disable_defense");
             }
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("lightweightDefense"),
-                new GUIContent(T("defense.lightweight_defense"), T("defense.lightweight_defense_tooltip")));
+            DrawProperty("lightweightDefense", "defense.lightweight_defense");
+            DrawProperty("defaultEnableDefense", "advanced.default_defense");
             if (_target.lightweightDefense)
             {
                 EditorGUILayout.HelpBox(T("defense.lightweight_defense_note"), MessageType.Info);
             }
         }
-        private void DrawAdvancedOptionsSection()
+        private void DrawFeedbackSection()
         {
-            EditorGUILayout.LabelField(T("advanced.options"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enabledInPlaymode"),
-                new GUIContent(T("advanced.play_mode"), T("advanced.play_mode_tooltip")));
-            using (new EditorGUI.DisabledGroupScope(_target.defaultEnableDefense))
+            EditorGUILayout.LabelField(T("feedback.options"), EditorStyles.boldLabel);
+            using (new EditorGUI.DisabledGroupScope(UsesDefaultDefense))
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableOverlay"),
-                    new GUIContent(T("advanced.disable_overlay"), T("advanced.disable_overlay_tooltip")));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("disableWarningSound"),
-                    new GUIContent(T("advanced.mute_warning"), T("advanced.mute_warning_tooltip")));
+                DrawProperty("disableOverlay", "advanced.disable_overlay");
+                DrawProperty("disableWarningSound", "advanced.mute_warning");
             }
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("defaultEnableDefense"),
-                new GUIContent(T("advanced.default_defense"), T("advanced.default_defense_tooltip")));
+        }
+        private void DrawBuildSection()
+        {
+            if (!HasVrChatIntegration) return;
+            EditorGUILayout.LabelField(T("advanced.options"), EditorStyles.boldLabel);
+            DrawProperty("enabledInPlaymode", "advanced.play_mode");
         }
         private void DrawObfuscationSection()
         {
             EditorGUILayout.LabelField(T("advanced.obfuscation_section"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableObfuscation"),
-                new GUIContent(T("advanced.disable_obfuscation"), T("advanced.disable_obfuscation_tooltip")));
+            DrawProperty("disableObfuscation", "advanced.disable_obfuscation");
             EditorGUI.BeginDisabledGroup(serializedObject.FindProperty("disableObfuscation").boolValue);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enablePlayableLayerObfuscation"),
-                new GUIContent(T("advanced.obfuscate_playable_layers"), T("advanced.obfuscate_playable_layers_tooltip")));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyLayers"),
-                new GUIContent(T("advanced.decoy_layers"), T("advanced.decoy_layers_tooltip")));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("enableDecoyStates"),
-                new GUIContent(T("advanced.decoy_states"), T("advanced.decoy_states_tooltip")));
+            if (HasVrChatIntegration)
+                DrawProperty("enablePlayableLayerObfuscation", "advanced.obfuscate_playable_layers");
+            DrawProperty("enableDecoyLayers", "advanced.decoy_layers");
+            DrawProperty("enableDecoyStates", "advanced.decoy_states");
             EditorGUI.EndDisabledGroup();
-        }
-        private void DrawLockSection()
-        {
-            EditorGUILayout.LabelField(T("advanced.lock_options"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("disableRootChildren"),
-                new GUIContent(T("advanced.disable_objects"), T("advanced.disable_objects_tooltip")));
         }
     }
 }

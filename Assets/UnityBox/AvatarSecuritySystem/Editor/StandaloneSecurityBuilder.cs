@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -16,29 +17,40 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             config.defaultEnableDefense = false;
             config.disableDefense = true;
             if (!config.IsPasswordValid() || config.gesturePassword == null || config.gesturePassword.Count == 0)
-                throw new ArgumentException("Supply one or more gesture values from 0 through 7.", nameof(config));
+                throw new ArgumentException(I18n.T("build.invalid_password"), nameof(config));
             if (!controllerPath.StartsWith("Assets/", StringComparison.Ordinal) || !controllerPath.EndsWith(".controller", StringComparison.Ordinal))
-                throw new ArgumentException("Choose a .controller path below Assets.", nameof(controllerPath));
+                throw new ArgumentException(I18n.T("build.invalid_output_path"), nameof(controllerPath));
             string folder = Path.GetDirectoryName(controllerPath).Replace('\\', '/');
             Directory.CreateDirectory(folder);
             AssetDatabase.Refresh();
             Obfuscator.Initialize(root.name, config.disableObfuscation, config.enableDecoyLayers,
                 config.enableDecoyStates, folder);
             Constants.ApplyObfuscation();
-            var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-            var idle = controller.layers[0].stateMachine.AddState("Idle");
-            idle.writeDefaultValues = false;
-            idle.motion = Utils.GetOrCreateEmptyClip(folder, Constants.SHARED_EMPTY_CLIP_FILE);
+            var animator = root.GetComponent<Animator>();
+            var source = animator != null ? animator.runtimeAnimatorController : null;
+            var controller = source == null
+                ? AnimatorController.CreateAnimatorControllerAtPath(controllerPath)
+                : ControllerGraphCopy.CreateEditableCopy(source, controllerPath);
+            RemovePreviouslyGeneratedLayers(controller, root.name);
+            if (controller.layers.Length == 0) controller.AddLayer("Base Layer");
+            if (controller.layers[0].stateMachine.states.Length == 0)
+            {
+                var idle = controller.layers[0].stateMachine.AddState("Idle");
+                idle.writeDefaultValues = false;
+                idle.motion = Utils.GetOrCreateEmptyClip(folder, Constants.SHARED_EMPTY_CLIP_FILE);
+            }
+            bool hadLocalParameter = controller.parameters.Any(parameter => parameter.name == Constants.PARAM_IS_LOCAL);
             Utils.EnsureInputParameters(controller);
-            var parameters = controller.parameters;
-            for (int i = 0; i < parameters.Length; i++)
-                if (parameters[i].name == Constants.PARAM_IS_LOCAL) parameters[i].defaultBool = true;
-            controller.parameters = parameters;
+            if (!hadLocalParameter)
+            {
+                var parameters = controller.parameters;
+                parameters.Single(parameter => parameter.name == Constants.PARAM_IS_LOCAL).defaultBool = true;
+                controller.parameters = parameters;
+            }
             if (config.successSound == null) config.successSound = Resources.Load<AudioClip>(Constants.AUDIO_PASSWORD_SUCCESS);
             if (config.warningBeep == null) config.warningBeep = Resources.Load<AudioClip>(Constants.AUDIO_COUNTDOWN_WARNING);
             new Feedback(root, config).Generate();
             var adapter = UnityAnimatorBehaviourAdapter.Instance;
-            new Lock(controller, root, config, adapter).Generate();
             new GesturePassword(controller, root, config, adapter).Generate();
             var countdown = new Countdown(controller, root, config, adapter);
             countdown.Generate();
@@ -51,6 +63,22 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Utils.SaveControllerGraph(controller);
             AssetDatabase.SaveAssets();
             return controller;
+        }
+
+        private static void RemovePreviouslyGeneratedLayers(AnimatorController controller, string avatarName)
+        {
+            var names = new[]
+            {
+                (key: "LAYER_LOCK", clean: "ASS_Lock"),
+                (key: "LAYER_PASSWORD_INPUT", clean: "ASS_PasswordInput"),
+                (key: "LAYER_COUNTDOWN", clean: "ASS_Countdown"),
+                (key: "LAYER_AUDIO", clean: "ASS_Audio"),
+                (key: "LAYER_LIFECYCLE", clean: "ASS_Lifecycle"),
+                (key: "LAYER_DEFENSE", clean: "ASS_Defense"),
+            };
+            var kept = controller.layers.Where(layer => !Constants.IsASSManagedLayerName(layer.name)
+                && !names.Any(name => layer.name == Obfuscator.GetObfuscatedLayerNameForCleanup(name.key, name.clean, avatarName))).ToArray();
+            controller.layers = kept;
         }
     }
 }
