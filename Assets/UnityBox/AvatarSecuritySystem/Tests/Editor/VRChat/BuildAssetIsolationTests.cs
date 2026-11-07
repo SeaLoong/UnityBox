@@ -531,7 +531,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             var generatedLayer = Utils.CreateLayer(Constants.LAYER_PASSWORD_INPUT, 1f);
             var idle = generatedLayer.stateMachine.AddState("Generated idle");
             idle.motion = empty;
-            idle.writeDefaultValues = false;
+            idle.writeDefaultValues = true;
             generatedLayer.stateMachine.defaultState = idle;
             controller.AddLayer(generatedLayer);
             // Exercise the same generation entry points as PreprocessAvatar;
@@ -548,7 +548,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             foreach (var layer in controller.layers)
             foreach (var item in layer.stateMachine.states)
             {
-                if (item.state != userState) Assert.That(item.state.writeDefaultValues, Is.False);
+                if (item.state != userState) Assert.That(item.state.writeDefaultValues, Is.True);
                 foreach (var transition in item.state.transitions)
                 foreach (var condition in transition.conditions)
                 {

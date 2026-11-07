@@ -1,0 +1,18 @@
+{
+  "README.md": "e1c7d897f734239cd637a08aaf40888891ada18403c59d9368dd05c18f3520dc",
+  "ass-wdon-core-results.xml.gz": "907e3afb7f82e46e86b2165cebc29c177ca8638b3f8591425f7dde99a380d357",
+  "ass-wdon-full-results.xml.gz": "b6f3976f27cc66606a664706adb76cb179f0b640e3f53e728fc5ce2a9b561442",
+  "ass-wdon-linux-build.json": "bedb102b20f7ded5710cb5eb14dd96e220ef9dfc2994e55e2c32c3a9d1e973e2",
+  "ass-wdon-linux-player.json": "65a493a6ae9e48c5d5d83e3603acd76cc396bc27fc74dfb4b1b8f2b5e3c57ede",
+  "ass-wdon-sdk-results.xml.gz": "65161e114901053685f550f1fdb4ac24adbc58c32526e226b3626ba89cc21e4a",
+  "ass-wdon-serial-results.xml.gz": "c3d4c985b351b49006d712e35313029b5096981cfa7744526864a05a02119866",
+  "baseline-off/AssWdAudit.cs": "0f71cdced90b8c800ed63f2d40d7208b19671bf0f4aba1d2555cfe9cdebced19",
+  "baseline-off/result.json": "eca6a3146c3efd5a8c04452f0731279928f8da1fae618d54372bbed4ad63173c",
+  "baseline-off/source-fingerprints.json": "e082511f32272195d1fd208bcb9969486eeb0b3a8408776e95b2b3a3469792e3",
+  "baseline-off/verification.json": "33656c355de469de1e77d98bb9d41f80d6c43ad0c46e3677e294f8cbbc0cf986",
+  "capture-ass-wdon.py": "f4655a4ebb94033fe8ab664566e2ecbfd5eabb608e00b4c9265ad128fe1d4ecf",
+  "evidence.json": "f38c13d7400e3625cf66290393895425d5a73277eaa38cb111f48ccdfd9d674a",
+  "feedback/AssFeedbackAudit.cs": "bf98a2d20f6e57dec0b26d2b874699ccd6d2b7b2b0faf1e36da7464e2f1c8e28",
+  "feedback/result.json": "f2aad2aa33c89bf0c9e7d8449d7405f515e585de104458b1d6830b261b5cc840",
+  "packaging-tests.log": "8486c4bafec85498b865d8f55d25be7a3b6dfba920204d13575e4b4f2aa46a30"
+}

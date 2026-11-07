@@ -1,0 +1,241 @@
+{
+    "unity": "2022.3.22f1",
+    "completed": true,
+    "error": "",
+    "rows": [
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": true,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "empty-clip",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "null-motion",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 85.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "none",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [],
+            "assStates": 0,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "current-off",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 0
+        },
+        {
+            "userWriteDefaults": false,
+            "neutralMotion": "explicit-zero",
+            "addedAssMode": "ass-only-on",
+            "initial": 0.0,
+            "expression": 85.0,
+            "neutral": 0.0,
+            "assBindings": [
+                "__internal_dummy_anim__|GameObject|m_IsActive",
+                "ASS_Audio_Success|GameObject|m_IsActive"
+            ],
+            "assStates": 19,
+            "assWdOnStates": 19
+        }
+    ]
+}

@@ -118,7 +118,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var build = BuildSnapshots.GetValue(avatarGameObject, _ => new BuildSnapshot { Config = assConfig });
             if (string.IsNullOrEmpty(build.GeneratedFolder))
                 build.GeneratedFolder = ASSET_FOLDER + "/Build_" + System.Guid.NewGuid().ToString("N");
-            Debug.Log("[ASS] Generated feature states use WD Off and animate only ASS feedback objects.");
+            Debug.Log("[ASS] Generated ASS states use WD On; existing user state settings are preserved.");
             Obfuscator.Initialize(avatarGameObject.name,
                 disableObfuscation: assConfig.disableObfuscation,
                 enableDecoyLayers: assConfig.enableDecoyLayers,
@@ -671,7 +671,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 System.IO.Directory.CreateDirectory(Obfuscator.GeneratedFolder);
                 controller = AnimatorController.CreateAnimatorControllerAtPath(path);
                 var idle = controller.layers[0].stateMachine.AddState("Idle");
-                idle.writeDefaultValues = false;
+                idle.writeDefaultValues = true;
                 idle.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
                 var layers = descriptor.baseAnimationLayers;
                 for (int i = 0; i < layers.Length; i++)
@@ -947,8 +947,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             var defaultState = sm.AddState(Obfuscator.State("DecoyDefault", "Default"), new Vector3(300, 0, 0));
             defaultState.motion = emptyClip;
-            // 诱饵层使用 WD Off；空动画不重写用户控制器的其它绑定。
-            defaultState.writeDefaultValues = false;
+            // 诱饵层同样使用 WD On，保持 ASS 新生成状态的一致语义。
+            defaultState.writeDefaultValues = true;
             sm.defaultState = defaultState;
 
             var fakeStates = new List<AnimatorState>();
@@ -978,7 +978,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     fakeState.motion = emptyClip;
                 }
                 // 诱饵状态只模拟拓扑，不写入未绑定的真实属性。
-                fakeState.writeDefaultValues = false;
+                fakeState.writeDefaultValues = true;
                 fakeStates.Add(fakeState);
             }
 

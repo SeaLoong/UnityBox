@@ -71,7 +71,7 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 ## Verify confirmed whole-Assets upgrades and serialized identity
 
 - Ordinary package import/startup preserves source bytes, Runtime GUIDs and stored values. Normalize build copies only.
-- ACC0.5.3, AO0.3.3, ASS0.9.5 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
+- ACC0.5.3, AO0.3.3, ASS0.9.6 and Viseme0.2.3 embed recovery in existing owner Editor assemblies.
   Tools/UnityBox/<owner>/Upgrade Component References confirms once, then processes all Assets.
   Owner menus are Advanced Costume Controller, Animator Optimizer, ASS and Viseme Blendshape Override.
   ACC/AO Open actions are siblings; there is no selection window or per-GUID mapping UI.
@@ -94,6 +94,28 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 - Use [ComponentReferences](../../../Docs/ComponentReferences.md) and
   [current evidence](../../../Docs/Verification/ComponentReferences/README.md) for exact commands/results.
 
+
+## Verify ASS WD On generation and facial reset
+
+- ASS0.9.6 sets every newly generated state to WD On: password, countdown, audio, lifecycle,
+  release, defense, decoys/obfuscation and newly created default Idle. Use a fixed On policy; do
+  not match the source FX or modify copied user states. Retain serialized legacy `writeDefaultsMode`
+  data while ignoring it for new-state generation. Normal build regenerates the output copy;
+  import/startup does not convert saved controllers or scenes.
+- Test actual Animator output with an original WD On Expression writing BlendShape85 and a sparse
+  Neutral using an empty Clip or null Motion. The original graph resets to0; the former ASS Off
+  graph retained85. The new generated graph must reset to0 without manually overriding its flags.
+- Include original WD Off hold behavior, explicit-zero Neutral, original state/Clip/metadata bytes,
+  full password/countdown/Restart and the ASS-generated state flags. Preserve user On/Off values.
+- Run two full timeout/restart cycles in the native Animator. Countdown's TimeUp-to-Release must have
+  a real TimeUp condition; a transition with neither Exit Time nor conditions is ignored by Unity.
+  Local Restart takes priority back to Remote in Countdown and Audio, restoring the next timer and
+  warning phase. Check progress returns to its default after success/timeout, timeout hides Overlay
+  and audio objects, and the next cycle restores progress and warning audio.
+- Check SDK/NDMF final Controller states and facial output after graph commit, including late
+  ASS generation, decoy and obfuscation paths. Include native Player/build output as appropriate.
+- Store current records under [ASSWriteDefaultsOn](../../../Docs/Verification/ASSWriteDefaultsOn/README.md).
+  Keep the former WD Off analysis and earlier versioned evidence under their actual source identity.
 
 ## Verify ASS audio import and SDK upload validation
 

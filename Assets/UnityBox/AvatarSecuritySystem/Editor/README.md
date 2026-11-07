@@ -3,11 +3,11 @@
 Avatar Security System（ASS）提供手势密码验证、倒计时提示、Overlay 和声音反馈，
 并支持 VRChat 防御配置。可以按需要调整密码、计时和反馈选项，通过参数或运行时 API
 读取密码结果。普通 Unity 与 VRChat 分别在各自构建流程生成运行图，原有角色动画
-继续由项目控制。当前版本为 **0.9.5**。
+继续由项目控制。当前版本为 **0.9.6**。
 
 ## 升级与已有项目
 
-0.9.5 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
+0.9.6 保持移除旧启动/导入迁移回调，提供本包自带的 Tools 升级命令。打开项目、安装或导入包、
 加载 Scene/Prefab 时，ASS 不扫描或重写项目中的脚本 GUID、场景、Prefab 与已保存配置。
 组件加载也不再通过 `OnValidate` 自动改写已有时值；生成时只规范化配置副本。
 新组件与用户显式执行 Reset 使用默认保持 0.5s、容错 0.3s。
@@ -71,8 +71,25 @@ input.Restart();                     // 清除本轮结果与计时，重新接�
 
 Inspector 保留插件介绍与字段说明，不再显示新增的顶部自动构建 HelpBox，也无手动 Generate 按钮。自动生成只作用于构建场景副本：
 分配独立 Controller、配置运行时输入与状态行为，然后移除编辑配置。源场景继续保留
-原 Controller 与 `ASSComponent`，供后续编辑。新生成状态均为 WD Off；旧 ASS 生成层
+原 Controller 与 `ASSComponent`，供后续编辑。新生成状态均为 WD On；旧 ASS 生成层
 （包括遗留锁层）在副本内清理，用户层及其 WD 设置保留。
+
+## Write Defaults 与表情复位
+
+0.9.6 将 ASS 新生成状态统一设置为 **WD On**：密码输入、保持、成功、计时、音频、
+生命周期、释放、防御、混淆、诱饵以及新建默认 Idle 都采用同一策略。生成器直接使用
+On，不按原 FX 的模式匹配，也不增加选择项。用户已有状态的 On/Off 设置继续保留。
+
+原 WD On 表情图可通过空闲状态恢复 BlendShape 默认值。修复前的实际 Unity 对照中，
+表情权重从 0 变为 85 后切回空 Neutral，追加 ASS WD Off 层会使其停留在 85；ASS 新状态
+使用 On 后恢复为 0。动画路径属于 ASS 并不能隔离同一 Animator 中的默认值恢复行为。
+
+更新插件后重新发起正常构建，ASS 在生成副本中清理旧生成层并建立新的 WD On 状态。
+源 Controller、Scene/Prefab 和已有用户状态不在导入或加载时转换。隐藏的历史
+`writeDefaultsMode` 值保留为序列化数据，新状态始终使用上述策略。
+
+表情对照、原图保全及功能流程的执行记录见
+[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 
 ## 连续保持与防快速遍历
 
@@ -87,6 +104,11 @@ Inspector 保留插件介绍与字段说明，不再显示新增的顶部自动�
 超过单步最大保持/等待窗口会返回输入入口；倒计时到期和 `Restart` 优先于接受本帧手势。
 密码成功后产生结果与声音/Overlay 反馈，完成状态释放 ASS 自身功能层。结果变回 false
 或调用 `Restart` 后接受下一轮输入。应用依据 `IsPasswordCorrect` 处理自己的交互状态。
+
+成功或超时退出计时后，WD On 使进度属性恢复默认值；超时会关闭 Overlay 与音频对象。
+重新调用 `Restart` 后，倒计时和警告音层优先回到本地起点，下一轮重新计时并在警告阶段
+恢复提示音。0.9.6 同时修复了原有超时退出转场被 Unity 忽略、导致第二轮停止计时的问题；
+两轮超时与重启、进度及声音恢复纳入原生回归。
 
 ## VRChat 自动构建
 
@@ -133,7 +155,8 @@ VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 
 
 - 混淆只启用诱饵状态、关闭诱饵层时，仍声明条件使用的参数；参数池没有 Bool 时
   添加本地布尔守卫，参数类型与转移条件保持一致。
-- 0.9.0 移除 Avatar 对象锁定功能和对应选项，生成器仅管理 ASS 自己的反馈对象。
+- 0.9.0 移除 Avatar 对象锁定功能和对应选项。普通密码/反馈层控制 ASS 自身反馈对象；
+  可选防御分支沿用其对象生成与已有 Light 复用流程。
 - 旧 `disableRootChildren`、`writeDefaultsMode` 隐藏保留，用于读取历史序列化数据；
   新图不依据它们生成身体锁定或强制修改用户层的 WD。
 - Overlay 和倒计时警告音使用独立开关；密码成功音保留。显式音频引用优先，导入要求见上文。
@@ -145,13 +168,14 @@ VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 
 ## 测试与性能
 
 原生 Animator 回归覆盖连续保持、快速遍历、中断后的重新计时、重复位释放、容错与
-超时边界、Restart 和 WD Off。构建回归检查自动生成、既有 Controller/AOC 的用户层、
+超时边界、Restart、WD On 及表情空闲复位。构建回归检查自动生成、既有 Controller/AOC 的用户层、
 源场景配置保留以及 Avatar 对象缩放不受 ASS 影响。
 
 导入保全回归以旧 GUID、已有配置与 Scene/Prefab 为输入，检查导入和打开不会替换身份、
 修改原文件或自动创建迁移记录；构建副本的时间规范化与源字段保持分别检查。
 SDK 与 NDMF 测试覆盖实际 Behaviour、参数副本、多 Avatar 生命周期和最终提交。
 
+0.9.6 的生成状态与表情复位见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 0.9.5 的音频上传检查见[音频上传验证](../../../../Docs/Verification/ASSAudioUpload/README.md)。
 0.9.4 的历史组件引用执行范围与结果见[组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
 [0.9.1 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)保留该历史版本的范围。

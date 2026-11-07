@@ -5459,18 +5459,37 @@
   "baseline_revision": "7cd4b40cd03aa81c268e8686609b2d60a9601238",
   "latest_patch": {
     "plugin": "AvatarSecuritySystem",
-    "version": "0.9.5",
-    "evidence": "Verification/ASSAudioUpload/evidence.json",
-    "verified_at_utc": "2026-11-07T20:26:28.783663+00:00",
+    "version": "0.9.6",
+    "evidence": "Verification/ASSWriteDefaultsOn/evidence.json",
+    "verified_at_utc": "2026-11-07T21:52:56.718573+00:00",
     "native_tests": {
-      "ass-audio-core": 80,
-      "ass-audio-sdk": 121,
-      "ass-audio-full": 123
+      "ass-wdon-core": 87,
+      "ass-wdon-sdk": 128,
+      "ass-wdon-full": 132,
+      "ass-wdon-serial": 7
     },
     "player": {
       "scenarios": 2,
       "frames": 252,
       "checks": 13
     }
-  }
+  },
+  "patch_history": [
+    {
+      "plugin": "AvatarSecuritySystem",
+      "version": "0.9.5",
+      "evidence": "Verification/ASSAudioUpload/evidence.json",
+      "verified_at_utc": "2026-11-07T20:26:28.783663+00:00",
+      "native_tests": {
+        "ass-audio-core": 80,
+        "ass-audio-sdk": 121,
+        "ass-audio-full": 123
+      },
+      "player": {
+        "scenarios": 2,
+        "frames": 252,
+        "checks": 13
+      }
+    }
+  ]
 }

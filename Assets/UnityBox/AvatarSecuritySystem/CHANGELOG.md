@@ -2,7 +2,19 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.5] - 2026-11-08
+## [0.9.6] - 2026-11-08
+
+### Fixed
+
+- ASS 所有新生成状态统一使用 WD On，包括密码、计时、音频、生命周期、释放、防御、混淆、诱饵和新建默认 Idle；不根据原 FX 自动匹配，也不新增设置。
+- 修复原 WD On 表情层切回空闲状态时，追加的 ASS WD Off 层使 BlendShape 无法恢复默认值的问题。修复前 Unity 对照中，权重 85 在空 Neutral 中残留；ASS 新状态使用 On 后恢复为 0。
+- 修复 Countdown 的既有 `TimeUp → Release` 转场缺少 Exit Time 和条件、被 Unity 忽略的问题；现在以 TimeUp 条件触发退出。Countdown 与 Audio 的本地 Restart 优先回到 Remote，超时后的下一轮继续计时并恢复警告音。
+- 成功或超时退出计时后，WD On 将进度属性恢复默认值；超时关闭 Overlay 与音频对象。原生回归覆盖两轮超时/重启及进度、声音恢复。
+- 保留复制前用户状态的 On/Off 设置、Clip、绑定与源资产身份。隐藏的旧 `writeDefaultsMode` 字段仅保留序列化数据，不控制新状态。
+- 更新后正常构建重建 ASS 输出即可；不扫描或改写已保存的源 Controller、Scene/Prefab，不在导入时转换 WD。0.9.5 的音频导入设置与两个反馈开关含义继续保留。
+- 表情复位、原图保全、密码/倒计时/Restart 与最终 SDK/NDMF 图的执行记录见 [WD On 验证](../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
+
+## [0.9.5] - 2026-11-08（历史发布）
 
 ### Fixed
 

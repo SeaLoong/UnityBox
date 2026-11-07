@@ -17,7 +17,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             var lifecycle = Utils.CreateLayer(LAYER_LIFECYCLE, 1f);
             var locked = lifecycle.stateMachine.AddState("Armed");
             var unlocked = lifecycle.stateMachine.AddState("Unlocked");
-            locked.writeDefaultValues = unlocked.writeDefaultValues = false;
+            locked.writeDefaultValues = unlocked.writeDefaultValues = true;
             locked.motion = unlocked.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
             lifecycle.stateMachine.defaultState = locked;
             behaviours.AddMultiParameterDriverBehaviour(locked, new Dictionary<string, float> { [PARAM_TIME_UP] = 0f, [PARAM_RESTART] = 0f }, localOnly: true);

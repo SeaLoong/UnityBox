@@ -18,19 +18,36 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
-## ASS 0.9.5 音频上传修复
+## ASS 0.9.6 WD On 与表情复位
 
-当前专项执行记录见[ASS 音频上传校验](Verification/ASSAudioUpload/README.md)，包含真实 SDK
+当前专项记录见[ASS WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。全部新状态固定
+On，不匹配原 FX；原用户状态及源资源保留。回归覆盖表情85→空 Neutral复位、原 Off 图保持、
+显式归零、NDMF最终图、密码/超时/Restart、实际Player与串行性能。
+
+## ASS 0.9.5 音频上传基线
+
+该版专项执行记录见[ASS 音频上传校验](Verification/ASSAudioUpload/README.md)，包含真实 SDK
 校验的拒绝/允许对照、两个开关的全部组合及 NDMF 最终图。音频导入 metadata 随插件发行，
 原 MP3、Runtime 脚本身份、场景及其它插件保持。
 
-## ASS 专项执行结果
+## ASS 0.9.5 专项执行结果
 
 | ASS 专项范围 | 实际结果 |
 | --- | --- |
 | ass-audio-core | 80/80 通过，1 个测试程序集 |
 | ass-audio-sdk | 121/121 通过，2 个测试程序集 |
 | ass-audio-full | 123/123 通过，3 个测试程序集 |
+| Linux Player | 2 个场景、252 帧、13 次输出检查通过；源配置 1 个保留 |
+| 打包工具 | 23/23 通过；8 个当前 ZIP 与源码及 metadata 一致 |
+
+## ASS 0.9.6 专项执行结果
+
+| ASS 专项范围 | 实际结果 |
+| --- | --- |
+| ass-wdon-core | 87/87 通过，1 个测试程序集 |
+| ass-wdon-sdk | 128/128 通过，2 个测试程序集 |
+| ass-wdon-full | 132/132 通过，3 个测试程序集 |
+| ass-wdon-serial | 7/7 通过，1 个测试程序集 |
 | Linux Player | 2 个场景、252 帧、13 次输出检查通过；源配置 1 个保留 |
 | 打包工具 | 23/23 通过；8 个当前 ZIP 与源码及 metadata 一致 |
 
@@ -60,7 +77,7 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 
 ## 当前整项目升级与源配置检查
 
-ACC0.5.3、AO0.3.3、ASS0.9.5、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
+ACC0.5.3、AO0.3.3、ASS0.9.6、Viseme0.2.3 的 Tools 菜单确认一次后扫描整个 Assets，
 自动匹配所属组件；取消时不扫描或写入。恢复使用原有 Editor 程序集，测试不注入额外模块。
 检查无选区限制、自动类型/GUID关联、陌生/重复组件保留、全部备份与 GUID 字节跨度。
 干净已保存 Scene/Prefab Stage 在操作后恢复；未保存编辑及依赖保持。

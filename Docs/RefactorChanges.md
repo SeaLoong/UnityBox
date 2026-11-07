@@ -37,7 +37,7 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 ## 六类组件与包内恢复
 
-ACC 0.5.3、AO 0.3.3、ASS 0.9.5、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
+ACC 0.5.3、AO 0.3.3、ASS 0.9.6、Viseme 0.2.3 保留六种生产组件的类名、Runtime 程序集、字段与固定 GUID。
 恢复实现在各插件原有 Unity-only Editor 程序集中，随正常插件更新交付。从 `Tools/UnityBox/<插件菜单>/Upgrade Component References` 确认一次后，扫描整个 `Assets`，自动识别并恢复本插件的旧脚本引用。无需选择资源、打开恢复面板或逐 GUID 指定类型。
 
 识别结合明确类型、已知 GUID、完整字段结构与 ACC Outfit/Prefab 来源，不再要求用户逐 GUID 选择。
@@ -121,9 +121,23 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 Inspector 或 SDK Fix 配置后台加载。[本次验证](Verification/ASSAudioUpload/README.md)
 覆盖导入、开关组合、真实 SDK 检查和 NDMF 最终图。
 
-ASS 0.9.5 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
-已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
-ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
+ASS 0.9.6 提供密码结果、计时、Overlay、声音和 Restart，全部新生成状态统一 WD On。
+范围包含密码、计时、音频、生命周期、防御、混淆、诱饵和 ASS 新建的默认 Idle。
+不匹配原 FX、不增加 WD 模式选项，用户已有层和状态的 On/Off 保留。历史隐藏
+`writeDefaultsMode` 值继续保留，不控制新图生成；`disableRootChildren` 不恢复旧身体锁定。
+
+旧固定 WD Off 会使原 WD On 表情的空 Neutral 停留在前一状态的权重；真实对照中的 85
+在新 ASS On 图恢复为 0。更新后正常构建，在副本中重建 ASS 层并保留原 Controller、
+场景与用户状态。对应输出见[WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。
+
+本次还修复旧 Countdown 的 TimeUp→Release 转场：原结构没有 Exit Time 或条件，被
+Unity 忽略，导致超时后 Restart 清除了 TimeUp 却无法再次计时。现在使用 TimeUp 条件
+进入 Release，并让 Countdown/Audio 的本地 Restart 优先返回 Remote，恢复新一轮倒计时
+和警告音。该修复针对旧转场结构。成功或超时退出时，WD On 将进度属性恢复为默认值；
+超时 Overlay 和音频对象关闭。回归覆盖两轮超时、重启及进度和声音恢复。
+
+普通密码、计时和音频曲线绑定 ASS 反馈对象。启用防御模式且存在可复用 Light 时，
+沿用既有的 Avatar 灯光复用及父节点激活逻辑；本次调整其生成状态的 WD。
 
 普通 Unity 保存角色配置后正常构建 Player 即可：构建场景副本自动复制原 Controller/AOC、
 清除旧 ASS 生成层（包含遗留锁层）、加入手势/计时/反馈图、配置 Animator 和运行时输入，

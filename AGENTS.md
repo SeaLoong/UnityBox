@@ -19,6 +19,8 @@
 - A confirmed project upgrade may temporarily suspend and restore affected clean saved Scene/Prefab
   contexts. Never save unrelated user edits; preserve dirty/untitled contexts and their dependencies.
   Ordinary startup/import remains read-only. ACC has one Open entry for complete Avatar generation; no standalone Controller output UI.
+- ASS new states uniformly use WD On, including decoy/obfuscation/default idle states. Do not
+  match the original FX mode or alter existing user states; retain the legacy hidden WD field as data.
 - Follow `code-simplifier.md`. Use explicit input/output contracts and complete behavior changes with
   native Animator, saved-asset reload, Undo/Redo, Player/build or rendered-output checks as appropriate.
 - Keep generic Unity algorithms independent of optional SDK, MA and NDMF assemblies. Preserve real

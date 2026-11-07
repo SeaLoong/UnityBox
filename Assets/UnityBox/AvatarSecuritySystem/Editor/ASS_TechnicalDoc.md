@@ -1,4 +1,4 @@
-# Avatar Security System 0.9.5 技术参考
+# Avatar Security System 0.9.6 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
 [用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
@@ -46,9 +46,23 @@ root.GetComponent<Animator>().runtimeAnimatorController = result;
 随后清除已识别的 ASS 层（包含遗留 ASS_Lock）并生成密码、计时、声音和生命周期层。
 缺少 Animator 或输入组件时由构建场景处理器创建；普通图的 IsLocal 默认 true。
 
-0.9.0 的新增 ASS 状态全部 WD Off，层同步索引为 -1。新图只驱动 ASS 自己的反馈对象，
-不生成 Avatar 身体锁定、不写用户对象缩放，也不改写用户层的 WD。
-`disableRootChildren` 与 `writeDefaultsMode` 隐藏保留历史值，生成阶段不再用它们启用锁定。
+0.9.6 新生成的 ASS 状态统一 WD On，层同步索引为 -1。该规则覆盖密码、计时、音频、
+生命周期、释放、防御、混淆、诱饵以及缺少原控制器时新建的默认 Idle。生成器使用固定
+On 策略，不分析原 FX 选择模式，不依据隐藏的 `writeDefaultsMode` 值分支。
+复制的用户状态保留原 On/Off，源图及 Scene/Prefab 不因安装或导入而转换。
+
+普通密码/反馈层不生成 Avatar 身体锁定或身体缩放动画；可选防御分支仍使用其对象生成、
+Light 复用和激活流程。`disableRootChildren` 与 `writeDefaultsMode` 仅保留历史序列化数据。
+
+### 表情默认值恢复
+
+同一 Animator 的 WD 混合会影响默认值恢复，即使 ASS Clip 没有面部绑定也会参与这一过程。
+修复前的真实 Unity 对照：原 WD On 表情层将 BlendShape 设为 85 后切回空 Neutral，原图
+恢复为 0，追加旧 ASS WD Off 层后残留 85；仅将 ASS 新状态设为 On 后恢复为 0。
+显式归零的 Neutral 及原 WD Off 图的保持语义分别作为原生对照。
+
+0.9.6 在正常构建所用副本中重建 ASS 图，不改写原用户状态的 WD。当前执行与源指纹见
+[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
 
 ## 手势时间契约
 
@@ -66,12 +80,19 @@ hold−0.01s；maximum 位于 max(1s, hold+tolerance+0.05s) 至 10s。
 | 层 | 主路径与状态 |
 | --- | --- |
 | Password | Wait → InputWaiting → Holding/Interrupted → Confirmed/下一位 → Success → Completed → Release |
-| Countdown | Remote/Countdown → TimeUp 或密码已通过 → Release |
+| Countdown | Remote → Countdown → TimeUp → Release；密码已通过进入 Unlocked |
 | Audio | 等待 → 警告声音 → Stop/Release |
 | Lifecycle | Armed ↔ 密码已通过；Restart 开始下一轮 |
 
 生命周期层无用户属性曲线，进入 Armed 时清 TimeUp/Restart 并重新启用 ASS 功能层。
-密码结果变回 false 或 Restart 可重新接受输入，超时终态也支持新一轮。
+Countdown 的 `TimeUp → Release` 使用 TimeUp 条件显式触发：旧转场没有 Exit Time 或条件，
+会被 Unity 忽略，造成超时后的 Restart 虽已清除 TimeUp，第二轮却停留在旧计时状态。
+0.9.6 修正该条件，并在 Countdown 与 Audio 增加本地 Restart 优先返回 Remote 的路径，
+让新一轮恢复计时和警告音。密码结果变回 false 或 Restart 均可重新接受输入。
+
+成功或超时退出计时后，WD On 将进度属性恢复默认值；超时关闭 Overlay 与音频对象。
+实际回归连续执行两轮超时/重启，同时观察进度曲线、新一轮倒计时和警告音对象恢复。
+这些可见输出与表情复位一起记录在本版 WD On 验证中。
 `IsPasswordCorrect` 读取布尔结果；旧 `IsUnlocked` 只映射同一结果，含义不涉及 Avatar 对象锁。
 
 ## 资产身份与 Controller 副本
@@ -116,7 +137,7 @@ SDK 的 `VRC.SDK3A.Editor.VRCSdkControlPanelAvatarBuilder.ScanAvatarForAnimatorP
 
 ## 导入与源配置边界
 
-0.9.5 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
+0.9.6 保持移除旧 ASS `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、自动场景重载、
 旧修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
 本版也不读取旧身份表来重连后续导入的资源。
 
@@ -155,7 +176,7 @@ BOM/换行与项目 metadata。备份位于
 ## 验证与界面
 
 原生测试覆盖连续正确保持、快速姿势遍历、中断与重新计时、重复位释放、时间边界、
-Restart、WD Off、用户对象缩放保持，以及真实构建场景的自动生成和原图副本。
+Restart、WD On、表情默认值复位及用户对象缩放保持，以及真实构建场景的自动生成和原图副本。
 导入保全用例检查旧身份的 Scene/Prefab 在导入和打开后字节、GUID、源配置及编辑状态
 保持原状；生成用例分别检查源字段和有效构建配置。当前结果见
 [组件引用验证记录](../../../../Docs/Verification/ComponentReferences/README.md)。
@@ -165,4 +186,6 @@ SDK/NDMF 用例检查实际 Behaviour、源资产隔离与最终提交；混淆�
 Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语言按 Unity 语言选择。
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
 与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
-0.9.4 的组件引用和源配置范围保留于历史组件引用记录；0.9.5 的音频导入和上传校验单列于音频上传记录。历史身体锁生成样本通过旧提交追溯。
+0.9.4 的组件引用和源配置范围保留于历史组件引用记录；0.9.5 的音频导入和上传校验单列于音频上传记录。
+0.9.6 的 WD On、表情复位与生成后输出见[WD On 验证](../../../../Docs/Verification/ASSWriteDefaultsOn/README.md)。
+历史 WD Off 和身体锁生成样本通过其原版本、提交及归档追溯。

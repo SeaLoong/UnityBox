@@ -29,19 +29,23 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Remote"),
                 new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            remoteState.writeDefaultValues = false;
+            remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
+            var restart = Utils.CreateAnyStateTransition(layer.stateMachine, remoteState);
+            restart.canTransitionToSelf = true;
+            restart.AddCondition(AnimatorConditionMode.If, 0f, PARAM_RESTART);
+            Utils.AddIsLocalCondition(restart, controller, isTrue: true);
             var countdownState = layer.stateMachine.AddState(
                 Obfuscator.State("Countdown"),
                 new Vector3(200, 50, 0));
             countdownState.motion = countdownClip;
             countdownState.speed = 1f;
-            countdownState.writeDefaultValues = false;
+            countdownState.writeDefaultValues = true;
             var unlockedState = layer.stateMachine.AddState(
                 Obfuscator.State("Unlocked"),
                 new Vector3(200, 150, 0));
             unlockedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            unlockedState.writeDefaultValues = false;
+            unlockedState.writeDefaultValues = true;
             var rearm = Utils.CreateTransition(unlockedState, remoteState);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
@@ -54,13 +58,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("TimeUp"),
                 new Vector3(200, 250, 0));
             timeUpState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            timeUpState.writeDefaultValues = false;
+            timeUpState.writeDefaultValues = true;
             behaviours.AddParameterDriverBehaviour(timeUpState, PARAM_TIME_UP, 1f, localOnly: true);
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Countdown_Release"),
                 new Vector3(200, 300, 0));
             releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            releaseState.writeDefaultValues = false;
+            releaseState.writeDefaultValues = true;
             var releaseToRemote = Utils.CreateTransition(releaseState, remoteState);
             releaseToRemote.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
             releaseToRemote.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
@@ -70,6 +74,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             toTimeUp.AddCondition(AnimatorConditionMode.IfNot, 0, PARAM_PASSWORD_CORRECT);
             // TimeUp 的 ParameterDriver 在进入状态时执行，随后进入同一释放终态。
             var timeUpToRelease = Utils.CreateTransition(timeUpState, releaseState);
+            timeUpToRelease.AddCondition(AnimatorConditionMode.If, 0f, PARAM_TIME_UP);
             timeUpToRelease.duration = 0f;
             var countdownToUnlocked = Utils.CreateTransition(countdownState, unlockedState);
             countdownToUnlocked.AddCondition(AnimatorConditionMode.If, 0, PARAM_PASSWORD_CORRECT);
@@ -95,28 +100,32 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Remote"),
                 new Vector3(200, -50, 0));
             remoteState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            remoteState.writeDefaultValues = false;
+            remoteState.writeDefaultValues = true;
             layer.stateMachine.defaultState = remoteState;
+            var restart = Utils.CreateAnyStateTransition(layer.stateMachine, remoteState);
+            restart.canTransitionToSelf = true;
+            restart.AddCondition(AnimatorConditionMode.If, 0f, PARAM_RESTART);
+            Utils.AddIsLocalCondition(restart, controller, isTrue: true);
             var waitingState = layer.stateMachine.AddState(
                 Obfuscator.State("Waiting"),
                 new Vector3(200, 50, 0));
             var waitingClip = CreateDummyClip(CLIP_AUDIO_WAITING, warningStartTime + 0.1f,
                 enableWarningAudio: true);
             waitingState.motion = waitingClip;
-            waitingState.writeDefaultValues = false;
+            waitingState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, waitingClip);
             var stopState = layer.stateMachine.AddState(
                 Obfuscator.State("Stop"),
                 new Vector3(200, 250, 0));
             var stopClip = CreateStopClip();
             stopState.motion = stopClip;
-            stopState.writeDefaultValues = false;
+            stopState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, stopClip);
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Audio_Release"),
                 new Vector3(200, 300, 0));
             releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            releaseState.writeDefaultValues = false;
+            releaseState.writeDefaultValues = true;
             var releaseToRemote = Utils.CreateTransition(releaseState, remoteState);
             releaseToRemote.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
             releaseToRemote.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
@@ -130,7 +139,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(200, 150, 0));
             var beepClip = CreateDummyClip(CLIP_WARNING_LOOP, 1f, enableWarningAudio: true);
             beepState.motion = beepClip;
-            beepState.writeDefaultValues = false;
+            beepState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, beepClip);
             if (config.warningBeep != null)
             {

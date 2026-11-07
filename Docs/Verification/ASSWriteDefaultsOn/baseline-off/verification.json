@@ -1,0 +1,11 @@
+{
+  "completed_utc": "2026-11-07T21:19:48.505055+00:00",
+  "revision": "7ca9f65eedcb095204cadfdae666fc80b08ac7fb",
+  "production_files_changed": false,
+  "assertions": "18 native cases; WD On face defaults reset is lost after current WD Off ASS layers and restored when ASS-only states are On; explicit neutral curve works in all; original Off hold preserved in all tested variants; no ASS face bindings",
+  "artifacts": {
+    "AssWdAudit.cs": "0f71cdced90b8c800ed63f2d40d7208b19671bf0f4aba1d2555cfe9cdebced19",
+    "result.json": "eca6a3146c3efd5a8c04452f0731279928f8da1fae618d54372bbed4ad63173c",
+    "editor.log": "d002bb08db2aa9ba57559954e3be35de7f0bdbc0f64a8c66a7f9216f029fcefc"
+  }
+}

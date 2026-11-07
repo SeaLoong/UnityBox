@@ -113,6 +113,8 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(generated.layers[0].stateMachine, Is.Not.SameAs(controller.layers[0].stateMachine));
             Assert.That(generated.layers[0].stateMachine.states.Single().state.writeDefaultValues, Is.EqualTo(writeDefaults));
             Assert.That(generated.layers.Any(layer => layer.name == "ASS_Lock"), Is.False);
+            Assert.That(generated.layers.Where(layer => Constants.IsASSManagedLayerName(layer.name))
+                .SelectMany(layer => layer.stateMachine.states).All(item => item.state.writeDefaultValues), Is.True);
             for (int frame = 0; frame < 240; frame++)
             {
                 animator.SetInteger(Constants.PARAM_GESTURE_LEFT, frame < 30 ? 0 : frame < 60 ? 1 : 2);

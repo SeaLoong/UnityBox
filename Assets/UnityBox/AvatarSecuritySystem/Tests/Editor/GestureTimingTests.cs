@@ -226,7 +226,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Input(1, 0.22f);
             Assert.That(Accepted, Is.True);
             Assert.That(controller.layers.SelectMany(layer => layer.stateMachine.states)
-                .All(item => !item.state.writeDefaultValues), Is.True);
+                .All(item => item.state.writeDefaultValues), Is.True);
         }
     }
 }

@@ -47,14 +47,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("Wait_Input"),
                 new Vector3(50, 50, 0));
             waitState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            waitState.writeDefaultValues = false;
+            waitState.writeDefaultValues = true;
             layer.stateMachine.defaultState = waitState;
             var inputWaitingState = layer.stateMachine.AddState(
                 Obfuscator.State("InputWaiting"),
                 new Vector3(50, 100, 0));
             var inputWaitingClip = CreateInputWaitingClip();
             inputWaitingState.motion = inputWaitingClip;
-            inputWaitingState.writeDefaultValues = false;
+            inputWaitingState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, inputWaitingClip);
             var restarted = Utils.CreateAnyStateTransition(layer.stateMachine, inputWaitingState);
             restarted.AddCondition(AnimatorConditionMode.If, 0f, PARAM_RESTART);
@@ -66,7 +66,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.State("TimeUp_Failed"),
                 new Vector3(50, -50, 0));
             timeUpFailedState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            timeUpFailedState.writeDefaultValues = false;
+            timeUpFailedState.writeDefaultValues = true;
             var retry = Utils.CreateTransition(timeUpFailedState, inputWaitingState);
             retry.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
             var anyToFailed = Utils.CreateAnyStateTransition(layer.stateMachine, timeUpFailedState);
@@ -77,7 +77,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 1) * 350, 150, 0));
             var successClip = CreateSuccessClip();
             successState.motion = successClip;
-            successState.writeDefaultValues = false;
+            successState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, successClip);
             // Completed 状态：密码已正确输入的稳定终点
             var completedState = layer.stateMachine.AddState(
@@ -85,13 +85,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 new Vector3(50 + (password.Count + 2) * 350, 150, 0));
             var completedClip = CreateCompletedClip();
             completedState.motion = completedClip;
-            completedState.writeDefaultValues = false;
+            completedState.writeDefaultValues = true;
             Utils.AddSubAsset(controller, completedClip);
             var releaseState = layer.stateMachine.AddState(
                 Obfuscator.State("Release", "Password_Release"),
                 new Vector3(50 + (password.Count + 3) * 350, 150, 0));
             releaseState.motion = Utils.GetOrCreateEmptyClip(Obfuscator.GeneratedFolder, SHARED_EMPTY_CLIP_FILE);
-            releaseState.writeDefaultValues = false;
+            releaseState.writeDefaultValues = true;
             var rearm = Utils.CreateTransition(releaseState, waitState);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_PASSWORD_CORRECT);
             rearm.AddCondition(AnimatorConditionMode.IfNot, 0f, PARAM_TIME_UP);
@@ -122,7 +122,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var holdingState = layer.stateMachine.AddState(
                     Obfuscator.State($"Hold_{i + 1}", $"Step_{i + 1}_Holding"),
                     new Vector3(50 + (i + 1) * 350, 50, 0));
-                holdingState.writeDefaultValues = false;
+                holdingState.writeDefaultValues = true;
                 var holdClip = CreateHoldClip(
                     Obfuscator.Clip($"Hold_{i + 1}", $"ASS_Hold_{i + 1}"), gestureMaxHoldTime);
                 holdingState.motion = holdClip;
@@ -131,7 +131,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var interruptedState = layer.stateMachine.AddState(
                     Obfuscator.State($"Interrupted_{i + 1}", $"Step_{i + 1}_Interrupted"),
                     new Vector3(50 + (i + 1) * 350, -50, 0));
-                interruptedState.writeDefaultValues = false;
+                interruptedState.writeDefaultValues = true;
                 var interruptedClip = CreateHoldClip(
                     Obfuscator.Clip($"Interrupted_{i + 1}", $"ASS_Interrupted_{i + 1}"),
                     Mathf.Max(gestureErrorTolerance, 1f / 60f));
@@ -147,7 +147,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var confirmedState = layer.stateMachine.AddState(
                     Obfuscator.State($"Confirm_{i + 1}", $"Step_{i + 1}_Confirmed"),
                     new Vector3(50 + (i + 1) * 350, 150, 0));
-                confirmedState.writeDefaultValues = false;
+                confirmedState.writeDefaultValues = true;
                 // Confirmed: clip = gestureMaxHoldTime, 超时回到 Wait
                 var confirmedClip = CreateHoldClip(
                     Obfuscator.Clip($"Confirm_{i + 1}", $"ASS_Confirmed_{i + 1}"), gestureMaxHoldTime);
@@ -160,7 +160,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                         ? Obfuscator.State($"RepeatRelease_{i + 1}", $"Step_{i + 1}_ReleaseForRepeat")
                         : Obfuscator.State($"Tolerance_{i + 1}", $"Step_{i + 1}_ErrorTolerance"),
                     new Vector3(50 + (i + 1) * 350, 250, 0));
-                errorToleranceState.writeDefaultValues = false;
+                errorToleranceState.writeDefaultValues = true;
                 var toleranceClip = CreateHoldClip(
                     Obfuscator.Clip($"Tolerance_{i + 1}", $"ASS_Tolerance_{i + 1}"),
                     needsRepeatRelease ? gestureMaxHoldTime : Mathf.Max(gestureErrorTolerance, 1f / 60f));
@@ -256,7 +256,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     var decoyState = layer.stateMachine.AddState(decoyName,
                         new Vector3(-200 + d * 30, 200 + d * 80, 0));
                     decoyState.motion = emptyClip;
-                    decoyState.writeDefaultValues = false;
+                    decoyState.writeDefaultValues = true;
                     decoyHolds.Add(decoyState);
                     var usedGestures = new HashSet<int>(password);
                     var unusedGestures = new List<int>();

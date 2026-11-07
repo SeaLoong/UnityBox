@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
@@ -136,6 +137,8 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         {
             var controller = Build();
             Assert.That(controller.layers.All(layer => layer.syncedLayerIndex == -1), Is.True);
+            Assert.That(controller.layers.SelectMany(layer => States(layer.stateMachine))
+                .All(state => state.writeDefaultValues), Is.True);
             var assetPath = AssetDatabase.GetAssetPath(controller);
             foreach (var state in controller.layers.SelectMany(layer => layer.stateMachine.states).Select(item => item.state))
             {
@@ -195,16 +198,38 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(animator.GetBool(Constants.PARAM_PASSWORD_CORRECT), Is.False);
         }
 
-        [Test]
-        public void TimeoutRestartRearmsTheCompleteControllerAndAcceptsFreshInput()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void TimeoutRestartRearmsTheCompleteControllerAndAcceptsFreshInput(bool feedback)
         {
             var config = Config();
             config.countdownDuration = 0.4f;
+            config.warningThreshold = 0.2f;
+            config.disableOverlay = config.disableWarningSound = !feedback;
             config.gesturePassword = new List<int> { 1 };
             Build(config);
             Advance(40);
             var input = root.GetComponent<StandaloneSecurityInput>();
             Assert.That(input.HasTimedOut, Is.True);
+            var output = (AnimatorController)animator.runtimeAnimatorController;
+            int countdownLayer = Array.FindIndex(output.layers, layer => layer.name == Constants.LAYER_COUNTDOWN);
+            Assert.That(animator.GetLayerWeight(countdownLayer), Is.Zero);
+            input.Restart();
+            Advance(10);
+            Assert.That(input.HasTimedOut, Is.False);
+            Assert.That(animator.GetLayerWeight(countdownLayer), Is.EqualTo(1f));
+            if (feedback)
+            {
+                Assert.That(root.transform.Find(Constants.GO_OVERLAY).gameObject.activeSelf, Is.True);
+                Assert.That(root.transform.Find(Constants.GO_AUDIO_WARNING).gameObject.activeSelf, Is.True);
+                var renderer = root.transform.Find(Constants.GO_OVERLAY).GetComponentInChildren<MeshRenderer>(true);
+                var block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(block);
+                Assert.That(block.GetFloat("_C9D4"), Is.InRange(0.1f, 0.99f));
+            }
+            Advance(40);
+            Assert.That(input.HasTimedOut, Is.True, "Restart must begin a second real countdown.");
+            Assert.That(animator.GetLayerWeight(countdownLayer), Is.Zero);
             input.Restart();
             input.SetGesture(1);
             Advance(18);
@@ -263,7 +288,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             foreach (var generated in output.layers.Where(layer => Constants.IsASSManagedLayerName(layer.name)))
             foreach (var generatedState in generated.stateMachine.states)
             {
-                Assert.That(generatedState.state.writeDefaultValues, Is.False);
+                Assert.That(generatedState.state.writeDefaultValues, Is.True);
                 if (generatedState.state.motion is AnimationClip generatedClip)
                     Assert.That(AnimationUtility.GetCurveBindings(generatedClip).Any(binding => binding.type == typeof(Transform)), Is.False);
             }
@@ -293,6 +318,113 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Input(0, 6); AssertUserOutput();
             Input(1, 20); Input(2, 20); AssertUserOutput();
             Assert.That(animator.GetBool(Constants.PARAM_PASSWORD_CORRECT), Is.True);
+        }
+
+        [TestCase(true, "empty-clip")]
+        [TestCase(true, "null-motion")]
+        [TestCase(true, "explicit-zero")]
+        [TestCase(false, "empty-clip")]
+        [TestCase(false, "null-motion")]
+        [TestCase(false, "explicit-zero")]
+        public void ExpressionNeutralOutputSurvivesSecurityGenerationWithoutChangingTheSourceWd(
+            bool userWriteDefaults, string neutralMotion)
+        {
+            var face = new GameObject("Face");
+            face.transform.SetParent(body.transform, false);
+            var renderer = face.AddComponent<SkinnedMeshRenderer>();
+            var mesh = new Mesh
+            {
+                vertices = new[] { Vector3.zero, Vector3.right, Vector3.up },
+                triangles = new[] { 0, 1, 2 },
+            };
+            var delta = new[] { Vector3.forward * 0.1f, Vector3.zero, Vector3.zero };
+            mesh.AddBlendShapeFrame("Expression", 100f, delta, new Vector3[3], new Vector3[3]);
+            AssetDatabase.CreateAsset(mesh, folder + "/Face.asset");
+            renderer.sharedMesh = mesh;
+            var source = AnimatorController.CreateAnimatorControllerAtPath(folder + "/FaceSource.controller");
+            var empty = new AnimationClip { name = "Empty" };
+            AssetDatabase.CreateAsset(empty, folder + "/Empty.anim");
+            var baseState = source.layers[0].stateMachine.AddState("Base");
+            baseState.writeDefaultValues = userWriteDefaults;
+            baseState.motion = empty;
+            source.layers[0].stateMachine.defaultState = baseState;
+            source.AddLayer("Face");
+            var layers = source.layers;
+            layers[1].defaultWeight = 1f;
+            source.layers = layers;
+            var machine = source.layers[1].stateMachine;
+            var expression = machine.AddState("Expression");
+            expression.writeDefaultValues = userWriteDefaults;
+            var expressionClip = new AnimationClip { name = "Expression" };
+            expressionClip.SetCurve("Body/Face", typeof(SkinnedMeshRenderer), "blendShape.Expression",
+                AnimationCurve.Constant(0f, 1f, 85f));
+            AssetDatabase.CreateAsset(expressionClip, folder + "/Expression.anim");
+            expression.motion = expressionClip;
+            var neutral = machine.AddState("Neutral");
+            neutral.writeDefaultValues = userWriteDefaults;
+            if (neutralMotion == "empty-clip") neutral.motion = empty;
+            else if (neutralMotion == "explicit-zero")
+            {
+                var neutralClip = new AnimationClip { name = "Neutral" };
+                neutralClip.SetCurve("Body/Face", typeof(SkinnedMeshRenderer), "blendShape.Expression",
+                    AnimationCurve.Constant(0f, 1f, 0f));
+                AssetDatabase.CreateAsset(neutralClip, folder + "/Neutral.anim");
+                neutral.motion = neutralClip;
+            }
+            machine.defaultState = neutral;
+            Utils.SaveControllerGraph(source);
+            AssetDatabase.SaveAssets();
+            var sourceFiles = new[] { "/FaceSource.controller", "/Empty.anim", "/Expression.anim", "/Face.asset" }
+                .Concat(neutralMotion == "explicit-zero" ? new[] { "/Neutral.anim" } : Array.Empty<string>())
+                .SelectMany(name => new[] { folder + name, folder + name + ".meta" })
+                .ToDictionary(path => path, File.ReadAllBytes);
+            animator = root.AddComponent<Animator>();
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            float expectedNeutral = userWriteDefaults || neutralMotion == "explicit-zero" ? 0f : 85f;
+
+            void AssertExpressionCycle(AnimatorController controller)
+            {
+                animator.runtimeAnimatorController = null;
+                renderer.SetBlendShapeWeight(0, 0f);
+                animator.runtimeAnimatorController = controller;
+                animator.Rebind();
+                Advance(8);
+                Assert.That(renderer.GetBlendShapeWeight(0), Is.Zero.Within(0.001f));
+                animator.Play("Face.Expression", 1, 0f);
+                Advance(8);
+                Assert.That(renderer.GetBlendShapeWeight(0), Is.EqualTo(85f).Within(0.001f));
+                animator.Play("Face.Neutral", 1, 0f);
+                Advance(8);
+                Assert.That(renderer.GetBlendShapeWeight(0), Is.EqualTo(expectedNeutral).Within(0.001f));
+            }
+
+            AssertExpressionCycle(source);
+            var config = Config();
+            config.writeDefaultsMode = (int)ASSComponent.WriteDefaultsMode.Off;
+            var output = StandaloneSecurityBuilder.Build(root, config, folder + "/FaceCombined.controller");
+            var generatedLayers = output.layers.Skip(source.layers.Length).ToArray();
+            Assert.That(generatedLayers, Is.Not.Empty);
+            Assert.That(generatedLayers.SelectMany(layer => States(layer.stateMachine))
+                .All(state => state.writeDefaultValues), Is.True);
+            Assert.That(output.layers.Take(source.layers.Length).SelectMany(layer => States(layer.stateMachine))
+                .All(state => state.writeDefaultValues == userWriteDefaults), Is.True);
+            Assert.That(generatedLayers.SelectMany(layer => States(layer.stateMachine))
+                .Select(state => state.motion).OfType<AnimationClip>().SelectMany(AnimationUtility.GetCurveBindings)
+                .Any(binding => binding.path == "Body/Face"), Is.False);
+            AssertExpressionCycle(output);
+            Assert.That(config.writeDefaultsMode, Is.EqualTo((int)ASSComponent.WriteDefaultsMode.Off));
+            Assert.That(source.layers.SelectMany(layer => States(layer.stateMachine))
+                .All(state => state.writeDefaultValues == userWriteDefaults), Is.True);
+            AssetDatabase.SaveAssets();
+            foreach (var file in sourceFiles)
+                Assert.That(File.ReadAllBytes(file.Key), Is.EqualTo(file.Value), file.Key);
+        }
+
+        private static IEnumerable<AnimatorState> States(AnimatorStateMachine machine)
+        {
+            foreach (var state in machine.states) yield return state.state;
+            foreach (var child in machine.stateMachines)
+            foreach (var state in States(child.stateMachine)) yield return state;
         }
 
         [Test]
@@ -417,7 +549,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                     Assert.That(controller.layers[0].syncedLayerIndex, Is.EqualTo(-1));
                     Assert.That(controller.layers[0].stateMachine.states.Count(item => item.state.name.StartsWith("Step_", StringComparison.Ordinal)
                         && item.state.name.EndsWith("_Holding", StringComparison.Ordinal)), Is.EqualTo(passwordLength));
-                    Assert.That(controller.layers[0].stateMachine.states.All(item => !item.state.writeDefaultValues), Is.True);
+                    Assert.That(controller.layers[0].stateMachine.states.All(item => item.state.writeDefaultValues), Is.True);
                     DestroyGraph(controller);
                 }
             }
@@ -429,7 +561,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 median_ms = measurements[measurements.Count / 2], p95_ms = measurements[measurements.Count - 1],
                 min_ms = measurements[0], max_ms = measurements[measurements.Count - 1],
                 allocated_bytes_per_op = allocationCounterAvailable ? allocated / measurements.Count : -1,
-                correctness = "one continuous-hold state per password step; WD Off; no avatar lock layer",
+                correctness = "one continuous-hold state per password step; WD On; no avatar lock layer",
             }));
         }
 

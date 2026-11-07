@@ -1,0 +1,30 @@
+[
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/AnimatorLifecycle.cs",
+    "original_source_sha256": "5da039e51a2e8f697b8deabffe67ce6f86993f101634b1c5334d21f7eafb3570"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/GesturePassword.cs",
+    "original_source_sha256": "40265050919bd7fe5470c937cfc5581ea19461eba647860d85bcf6c22352889a"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/Countdown.cs",
+    "original_source_sha256": "daa1b6eb4eabe0e2e1d6eab648998dae302d0f27f97abd441749081e78dd496f"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/StandaloneSecurityBuilder.cs",
+    "original_source_sha256": "d70d118da4099496a6d74a044e57c3694f8ada74d62e1f5eb5f3625b6548dbcb"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/Obfuscator.cs",
+    "original_source_sha256": "dc8417c9b12bb1814861cf7ab54a11ebc60ec98da21e4458937fce12933bb8d6"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/VRChat/Processor.cs",
+    "original_source_sha256": "812f529fab65e46d8ceaad2c1f0d01002fb9ed3cb9ea30c1dd3f6a8ae9d1c8b1"
+  },
+  {
+    "path": "Assets/UnityBox/AvatarSecuritySystem/Editor/VRChat/Defense.cs",
+    "original_source_sha256": "8d5f4e84c88878573f7282ce1ec938051d308f6bf0760759dc19776c8b88f838"
+  }
+]

@@ -1054,9 +1054,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     fakeState.motion = emptyClip;
                 }
-                // 伪状态使用 WD Off；动画只包含伪装路径，
+                // 伪状态同样使用 WD On；动画只包含伪装路径，
                 // 不绑定 Contact、衣柜或其它第三方对象。
-                fakeState.writeDefaultValues = false;
+                fakeState.writeDefaultValues = true;
                 fakeStates.Add(fakeState);
             }
 

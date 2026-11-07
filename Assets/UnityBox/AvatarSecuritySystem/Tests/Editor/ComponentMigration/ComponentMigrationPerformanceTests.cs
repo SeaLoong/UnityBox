@@ -134,6 +134,10 @@ namespace UnityBox.AvatarSecuritySystem.ComponentMigration.Tests
             byte[] legacy = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(valid).Replace("guid: " + target, "guid: " + Legacy));
             var measurements = new List<double>();
             long allocations = 0;
+            long allocationProbeBefore = GC.GetAllocatedBytesForCurrentThread();
+            var allocationProbe = new byte[1024];
+            bool allocationAvailable = GC.GetAllocatedBytesForCurrentThread() > allocationProbeBefore;
+            GC.KeepAlive(allocationProbe);
             AssetDatabase.StartAssetEditing();
             try
             {
@@ -171,7 +175,7 @@ namespace UnityBox.AvatarSecuritySystem.ComponentMigration.Tests
                 scenario = "discover_project_assets", size = unrelatedCount, samples = measurements.Count,
                 min_ms = measurements[0], median_ms = measurements[measurements.Count / 2],
                 p95_ms = measurements[measurements.Count - 1], max_ms = measurements[measurements.Count - 1],
-                allocated_bytes_per_op = allocations / measurements.Count,
+                allocated_bytes_per_op = allocationAvailable ? allocations / measurements.Count : -1,
                 correctness = "1024 unrelated YAML assets excluded from retained evidence; owner discovered; source and metadata bytes unchanged",
             }));
         }

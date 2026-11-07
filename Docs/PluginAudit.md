@@ -10,7 +10,7 @@
 | ACC | 服装/变体、Parts、共享/独立 Mixer、材质、图标、同步压缩、MA 安装 | 原生 Animator 切换可见对象；本地编码/远端解码图和 Driver 写入值；生成与重新生成的 Undo/Redo；真实图标像素 |
 | Blendshape | Float/Bool/反向、多个 Renderer 的组合 Controller、Animator 分配、MA 安装/移除 | 原生 Animator 权重；组合后绑定和参数类型；整 Avatar 参数预算；安装、移除、重新生成的 Undo |
 | 口型 | 15 口型、Voice、Auto/On/Off WD、OverrideController、旧字段迁移 | 多口型与音量组合的逐帧权重；SDK/AOC 与 NDMF 关联图策略；最终提交后的 Controller、重命名路径及后续处理 |
-| ASS | 0.9.5 自动构建、连续手势、超时、反馈、Restart 与源配置保全 | 连续保持/快速遍历/重复位释放；自动构建副本保留用户图和 WD；ASS 新状态 WD Off、Avatar 对象缩放保持；打开/导入保留原 GUID、字段和 Prefab；SDK/NDMF 交接 |
+| ASS | 0.9.6 自动构建、连续手势、超时、反馈、Restart 与源配置保全 | 连续保持/快速遍历/重复位释放；自动构建副本保留用户图和 WD；ASS 新状态 WD On、Avatar 对象缩放保持；打开/导入保留原 GUID、字段和 Prefab；SDK/NDMF 交接 |
 | Prefab | 属性、组件和子树选择；Variant 与嵌套 Prefab；布局、托管引用和自定义序列化 | 保存重载后的实际 Prefab 类型、嵌套源路径、组件与引用；数组/循环/共享引用；活动用户场景与 dirty 状态 |
 | Collider | 3D/2D 与 PhysBoneCollider 快照、几何变化、缓存预览、历史 JSON、包围盒 | 多根对象和跨会话身份；同一 Mesh 引用重新烘焙后的几何差异；禁用/非活动对象；历史恢复和阶段采样 |
 | Logger | Unity 导入/构建、SDK/NDMF、真实 Linker、Shader 去重和耗时轨迹 | 多次构建独立序号和时间；当前/最后完成轨迹 JSON；实际 Player 构建中的 Linker 与场景回调 |
@@ -19,7 +19,7 @@
 
 自有 Avatar/Prefab 组件共六种：ACC 三个标记，AO、ASS、Viseme 各一类；其它四个插件没有自有 authoring 组件。
 类型、程序集、固定 GUID 与旧发布来源见[全八插件矩阵](ComponentReferences.md)。
-ACC 0.5.3、AO 0.3.3、ASS 0.9.5、Viseme 0.2.3 从各自 Tools 菜单确认一次后，自动升级整个 Assets 的所属旧引用。
+ACC 0.5.3、AO 0.3.3、ASS 0.9.6、Viseme 0.2.3 从各自 Tools 菜单确认一次后，自动升级整个 Assets 的所属旧引用。
 识别包含已知类型、GUID 与 ACC Outfit/Prefab 上下文；未知和重复组件保留。原文件及 metadata 先备份。
 干净已保存的编辑上下文会恢复，未保存状态及依赖保持。各包继续使用配置副本处理构建有效值。
 
@@ -28,8 +28,8 @@ ACC 0.5.3、AO 0.3.3、ASS 0.9.5、Viseme 0.2.3 从各自 Tools 菜单确认一�
 服装、Blendshape、口型和 ASS 生成层显式设置 `syncedLayerIndex=-1`，因此每层独立求值。
 旧实现的 C# 默认值 0 会把后续层同步到基础层；原生 Animator 回归覆盖这些层的独立输出。
 
-ASS 0.9.5 在正常 Player 构建的场景副本中自动调用后端，并配置 StandaloneSecurityInput；
-源 Controller/AOC 与用户状态保持独立，ASS 新状态为 WD Off，原身体锁功能和选项移除。
+ASS 0.9.6 在正常 Player 构建的场景副本中自动调用后端，并配置 StandaloneSecurityInput；
+源 Controller/AOC 与用户状态保持独立，ASS 新状态为 WD On，原身体锁功能和选项移除。
 输入以连续正确保持计时，默认 0.5s/0.3s 且保持严格大于容错；错误中断重计，快速
 遍历不累积，重复位先释放，超时和 Restart 优先。API 使用 IsPasswordCorrect 查询结果。
 ASS 保持移除旧 GUID 自动迁移及加载时参数纠正，打开与导入保留原文件和已存字段；
@@ -40,6 +40,19 @@ ASS 保持移除旧 GUID 自动迁移及加载时参数纠正，打开与导入�
 Prefab 在 A 的实例上应用选择，保留 Variant 祖先与嵌套连接。Collider 将几何和历史比较
 缓存在对应快照版本，Logger 将常用设置缓存并保留最后完成构建的轨迹；这些路径分别有
 规模化基准，与生成类工具的资产写入、Animator 更新基准一起列入统一性能报告。
+
+## ASS Write Defaults
+
+0.9.6 的所有新生成状态使用 WD On，不匹配原 FX，用户原状态 On/Off 保留。
+密码、计时、音频、生命周期、防御、混淆、诱饵与新建默认 Idle 使用同一生成规则；
+历史隐藏 `writeDefaultsMode` 字段只保留序列化值。原 WD On 表情从 85 切回空 Neutral
+在旧 ASS Off 图残留 85，在 ASS On 图归零。[WD On 记录](Verification/ASSWriteDefaultsOn/README.md)
+保存实际 Animator、构建与源图保全检查。
+
+另修复旧 TimeUp→Release 的无条件、无 Exit Time 转场被 Unity 忽略的问题；新增 TimeUp
+条件及 Countdown/Audio 的本地 Restart 优先路径，使超时后能再次计时并恢复警告音。
+实际检查覆盖连续两轮超时和重启、成功/超时后的进度默认值恢复，以及超时 Overlay、
+音频对象关闭。这项转场修复与 WD On 调整分别处理。
 
 ## ASS 音频上传
 

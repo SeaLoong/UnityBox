@@ -1,5 +1,8 @@
 # UnityBox 性能实测
 
+ASS0.9.6 的 WD On、当前串行基准与 Player 结果见
+[WD On 验证](Verification/ASSWriteDefaultsOn/README.md)。
+
 Editor、图形及全库 Player 数据来自 `7cd4b40` 的八插件基线（ASS0.9.4）。
 ASS0.9.5 的音频导入与 SDK 上传校验、专项 Player 记录见
 [音频修复验证](Verification/ASSAudioUpload/README.md)。

@@ -36,7 +36,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (controller.layers[0].stateMachine.states.Length == 0)
             {
                 var idle = controller.layers[0].stateMachine.AddState("Idle");
-                idle.writeDefaultValues = false;
+                idle.writeDefaultValues = true;
                 idle.motion = Utils.GetOrCreateEmptyClip(folder, Constants.SHARED_EMPTY_CLIP_FILE);
             }
             bool hadLocalParameter = controller.parameters.Any(parameter => parameter.name == Constants.PARAM_IS_LOCAL);
