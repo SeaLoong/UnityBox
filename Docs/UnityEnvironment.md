@@ -146,33 +146,23 @@ python3 scripts/unity/test_project.py run \
 Player 另测固定输入下的稳态 `Animator.Update`，与 Editor 生成耗时分别记录。
 单次功能运行中的时间仅用于排查；汇总性能使用独立串行运行。
 
-## 真实发布包升级与资源身份
+## 包导入与源资源保全
 
-Unity 发布包应保留导入资源的 `.meta`，包括脚本、asmdef 及 Editor/Runtime/Tests 目录。
-GUID 是已有 Scene/Prefab 对脚本的身份引用，第三方安装也使用这套规则。发布检查拒绝
-缺少脚本或程序集 metadata；已有 GUID 在后续版本继续沿用。
+Unity 发布包保留导入资源的 `.meta`，包括脚本、asmdef 及 Editor/Runtime/Tests 目录。
+已有脚本和资源 GUID 在后续发布继续沿用。包更新保留用户项目中的既有身份和源资源；
+需要迁移或恢复时，先列出逐文件差异，由用户明确选定操作目标。
 
-[ASS 三阶段升级回归](Verification/ASSUpgrade/README.md)归档可复用 runner、Unity fixture
-及阶段记录。使用隔离工程和真实依赖，按以下顺序执行，每个阶段开启新 Editor 进程：
+ASS 0.9.1 已移除启动/导入迁移、自动场景重载、修复菜单/API 及组件加载时的参数纠正。
+测试在隔离工程中准备既有配置、旧 Missing Script 引用及 Scene/Prefab，记录文件字节、
+GUID 和字段；启动、导入、打开后再次比较，确认源资源保持原样。构建回归另行检查有效
+时间约束只作用于配置副本，正常 Player/Avatar 构建入口继续生成输出。
+当前执行记录见[ASS 导入安全检查](Verification/ASSImportSafety/README.md)。
 
-1. 校验真实发布的 0.7.24 ZIP SHA256，按其原始内容导入，保留当时缺少 `.meta` 的行为。
-   创建并保存 Scene、Prefab 和带覆盖的实例，设置非默认密码、开关和 AudioClip 引用；
-   记录 Unity 实际生成的脚本 GUID、资源 GUID、组件 fileID 和配置。
-2. 用真实发布的 0.8.0 ZIP 替换包，断言已有组件出现 Missing Script，记录故障资源原字节。
-   替换时按实际更新移除旧包，不把旧包生成的 `.meta` 人为带进新版。
-3. 安装与最终 ZIP 内容一致的当前候选包，重新启动并等待编译、导入和启动回调。
-   检查自动迁移恢复组件类型、配置、音频引用、资产 GUID、组件 fileID 和 Prefab 覆盖；
-   此阶段由正常启动触发迁移，另用原生测试检查显式修复 API 和边界场景。
-
-迁移前备份位于 `UserSettings/UnityBox/ASSMigration/<id>/<assetPath>`，必须与故障文件逐字节
-相同。迁移后的原文本只替换 `m_Script.guid`，保留 BOM、换行和其它内容；配置加载后的
-计时规范化单独验证。其它 Missing Script 保持原关联，重复修复幂等，未保存 Scene/Prefab
-先保存，再运行 `Tools/UnityBox/Avatar Security System/Repair Legacy Components`。
-确认过的旧身份记录于项目的 `LegacyGuids.json`，新包继续使用固定脚本 GUID。
-
-每阶段保存命令、退出码、日志、结构化结果和 ZIP SHA256，最终阶段记录源码指纹。
-代码改变后，复用归档的故障快照重新执行当前包阶段，再更新[结果索引](VerificationResults.json)。
-fixture 和原字节保存在验证归档中；源项目场景、用户账号资料和机器许可证留在原处。
+[ASSUpgrade](Verification/ASSUpgrade/README.md)只归档 0.9.0 已撤回自动迁移的历史复现，
+不再用于当前候选包的升级验收，也不在用户工程中运行。若调查历史改写，保留当前工程
+副本及 `UserSettings/UnityBox/ASSMigration/`，按每轮 `<id>/Assets/...` 逐文件对照。
+这些备份不包含包版本、旧 `.meta` 或后续修改；只有用户明确选择并审阅恢复目标后才写入。
+已经恢复正常的工程不因该历史目录存在而再次恢复或重装依赖。
 
 ## 工具与发布检查
 

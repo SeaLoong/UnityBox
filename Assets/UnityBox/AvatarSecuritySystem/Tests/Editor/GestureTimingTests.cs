@@ -170,7 +170,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
-        public void ComponentAndProgrammaticConfigurationShareTheStrictTimingContract()
+        public void ImportPreservesStoredTimesAndBuildCopiesEnforceTheTimingContract()
         {
             var original = root.AddComponent<ASSComponent>();
             Assert.That(original.gestureHoldTime, Is.EqualTo(0.5f));
@@ -197,9 +197,12 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 input.gestureErrorTolerance = 0.3f;
                 input.gestureMaxHoldTime = 0.1f;
                 var normalized = input.Clone();
-                Assert.That(component.gestureErrorTolerance, Is.LessThan(component.gestureHoldTime));
-                Assert.That(component.gestureHoldTime, Is.EqualTo(normalized.gestureHoldTime));
-                Assert.That(component.gestureErrorTolerance, Is.EqualTo(normalized.gestureErrorTolerance));
+                Assert.That(component.gestureHoldTime, Is.EqualTo(0.15f));
+                Assert.That(component.gestureErrorTolerance, Is.EqualTo(0.3f));
+                Assert.That(component.gestureMaxHoldTime, Is.EqualTo(0.1f));
+                Assert.That(captured.gestureErrorTolerance, Is.LessThan(captured.gestureHoldTime));
+                Assert.That(captured.gestureHoldTime, Is.EqualTo(normalized.gestureHoldTime));
+                Assert.That(captured.gestureErrorTolerance, Is.EqualTo(normalized.gestureErrorTolerance));
                 Assert.That(captured.gestureMaxHoldTime, Is.EqualTo(normalized.gestureMaxHoldTime));
                 Assert.That(input.gestureErrorTolerance, Is.EqualTo(0.3f), "Building a normalized copy does not rewrite caller configuration.");
                 Assert.That(component.writeDefaultsMode, Is.EqualTo(ASSComponent.WriteDefaultsMode.Off), "The retired option is retained as data and never controls new states.");

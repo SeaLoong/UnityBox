@@ -1,0 +1,12 @@
+{
+  "result": "Succeeded",
+  "output": "/workspace/unitybox-setup/unity/projects/ass091-core-v2-20261107/.unitybox-player-results/20261107T121944-bd721ee5/UnityBoxPlayer",
+  "total_errors": 0,
+  "total_warnings": 4,
+  "total_size_bytes": 57729423,
+  "duration_seconds": 58.7985056,
+  "hook_providers": [
+    "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+  ],
+  "source_configuration_components": 1
+}

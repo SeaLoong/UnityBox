@@ -59,7 +59,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(I18n.Translate("language.title", SystemLanguage.ChineseTraditional), Is.EqualTo("語言"));
             Assert.That(I18n.Translate("language.title", SystemLanguage.ChineseSimplified), Is.EqualTo("语言"));
             Assert.That(I18n.Translate("language.title", SystemLanguage.Chinese), Is.EqualTo("语言"));
-            Assert.That(I18n.Translate("migration.menu_label", SystemLanguage.ChineseTraditional), Is.EqualTo("修復舊版元件引用"));
+            Assert.That(I18n.Translate("system.subtitle", SystemLanguage.ChineseTraditional), Is.EqualTo("防盜模密碼保護系統"));
             Assert.That(I18n.Translate("language.title", SystemLanguage.French), Is.EqualTo("Language"));
         }
 
@@ -79,17 +79,18 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
-        public void LocalizedMigrationFormattingKeepsCountsAndBackupPaths()
+        public void LocalizedPasswordAndBuildMessagesKeepTheirFormattedArguments()
         {
             foreach (SystemLanguage language in I18n.SupportedLanguages)
             {
                 I18n.SetLanguage(language);
-                string text = I18n.T("migration.restored", 3, 2, "UserSettings/ASS/{original}");
-                Assert.That(text, Does.Contain("3"));
-                Assert.That(text, Does.Contain("2"));
-                Assert.That(text, Does.Contain("UserSettings/ASS/{original}"));
+                string strength = I18n.T("password.strength.strong");
+                string text = I18n.T("password.strength", strength, 7);
+                Assert.That(text, Does.Contain(strength));
+                Assert.That(text, Does.Contain("7"));
                 Assert.That(text, Does.Not.Contain("{0}"));
-                Assert.That(I18n.T("build.duplicate_configuration", "Avatar/Child"), Does.Contain("Avatar/Child"));
+                Assert.That(text, Does.Not.Contain("{1}"));
+                Assert.That(I18n.T("build.duplicate_configuration", "Avatar/{Child}"), Does.Contain("Avatar/{Child}"));
             }
         }
 
@@ -111,23 +112,23 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
-        public void InspectorDescribesAutomaticBuildAndContinuousHoldWithoutLockControls()
+        public void InspectorKeepsOriginalDescriptionAndContinuousHoldWithoutRemovedControls()
         {
             string source = InspectorSource();
             Assert.That(source, Does.Not.Contain("Generate Standalone Unity Controller"));
             Assert.That(source, Does.Not.Contain("SaveFilePanelInProject"));
             Assert.That(source, Does.Not.Contain("DrawLockSection"));
             Assert.That(source, Does.Not.Contain("disableRootChildren"));
-            Assert.That(source, Does.Contain("build.automatic_help"));
+            Assert.That(source, Does.Not.Contain("build.automatic_help"));
             Assert.That(source, Does.Contain("gesture.continuous_hold_help"));
             Assert.That(source, Does.Contain("ExpandTokens(property.tooltip)"));
-            Assert.That(I18n.Translate("build.automatic_help", SystemLanguage.English), Does.Contain("automatically"));
+            Assert.That(I18n.Translate("system.subtitle", SystemLanguage.ChineseSimplified), Is.EqualTo("防盗模密码保护系统"));
             Assert.That(I18n.Translate("gesture.continuous_hold_help", SystemLanguage.English), Does.Contain("uninterrupted"));
         }
 
         private static string InspectorSource()
         {
-            string component = AssetDatabase.GUIDToAssetPath(LegacyComponentMigration.CanonicalGuid);
+            string component = AssetDatabase.GUIDToAssetPath("1c51e6a139920bb4ca12700dc82627ff");
             string package = Path.GetDirectoryName(Path.GetDirectoryName(component));
             return File.ReadAllText(Path.Combine(package, "Editor/Inspector.cs"));
         }

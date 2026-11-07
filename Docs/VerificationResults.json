@@ -5367,5 +5367,11 @@
         "removed_fields": []
       }
     }
+  },
+  "archive_context": {
+    "release": "ASS0.9.0",
+    "commit": "036062df594fe3c1d575d600aec68bc5f79f85be",
+    "scope": "Historical whole-repository measurements and checks; source-match fields refer to the recorded run snapshot.",
+    "current_ass_validation": "Verification/ASSImportSafety/Results.json"
   }
 }

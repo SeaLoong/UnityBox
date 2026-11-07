@@ -1,0 +1,19 @@
+test_changed_published_version_requires_manifest_increment (test_build_vpm_listing.ListingTests.test_changed_published_version_requires_manifest_increment) ... ok
+test_corrupted_published_archive_aborts_before_listing (test_build_vpm_listing.ListingTests.test_corrupted_published_archive_aborts_before_listing) ... ok
+test_history_zip_and_entry_survive_and_each_manifest_keeps_its_version (test_build_vpm_listing.ListingTests.test_history_zip_and_entry_survive_and_each_manifest_keeps_its_version) ... ok
+test_local_history_and_sibling_archives_work_without_http (test_build_vpm_listing.ListingTests.test_local_history_and_sibling_archives_work_without_http) ... ok
+test_only_first_listing_404_is_empty_history (test_build_vpm_listing.ListingTests.test_only_first_listing_404_is_empty_history) ... ok
+test_same_version_legacy_timestamp_keeps_original_artifact (test_build_vpm_listing.ListingTests.test_same_version_legacy_timestamp_keeps_original_artifact) ... ok
+test_excludes_generated_folders_at_any_depth (test_package_vpm.PackageTests.test_excludes_generated_folders_at_any_depth) ... ok
+test_excludes_probe_scripts_and_generated_fixtures_with_metadata (test_package_vpm.PackageTests.test_excludes_probe_scripts_and_generated_fixtures_with_metadata) ... ok
+test_executable_files_keep_execution_in_zip (test_package_vpm.PackageTests.test_executable_files_keep_execution_in_zip) ... ok
+test_identical_contents_ignore_source_mtime (test_package_vpm.PackageTests.test_identical_contents_ignore_source_mtime) ... ok
+test_missing_script_metadata_is_rejected_before_replacing_an_archive (test_package_vpm.PackageTests.test_missing_script_metadata_is_rejected_before_replacing_an_archive) ... ok
+test_other_packages_keep_their_test_assets (test_package_vpm.PackageTests.test_other_packages_keep_their_test_assets) ... ok
+test_preserves_unity_guids_and_editor_regression_tests (test_package_vpm.PackageTests.test_preserves_unity_guids_and_editor_regression_tests) ... ok
+test_rebuild_drops_removed_files (test_package_vpm.PackageTests.test_rebuild_drops_removed_files) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 2.645s
+
+OK

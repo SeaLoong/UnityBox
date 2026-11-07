@@ -1,0 +1,44 @@
+{
+  "unity_version": "2022.3.22f1",
+  "passed": true,
+  "scenarios": 2,
+  "frames": 252,
+  "checks": 13,
+  "providers": [
+    "UnityBox.AvatarSecuritySystem.Tests.StandaloneRuntimeTests"
+  ],
+  "failures": [],
+  "measurements": [
+    {
+      "plugin": "StandalonePlayer",
+      "scenario": "Unity.PlayerSmoke/Basic",
+      "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+      "size": 1,
+      "samples": 11,
+      "animator_layers": 1,
+      "clip_count": 1,
+      "median_ms": 0.028679,
+      "p95_ms": 0.061239,
+      "min_ms": 0.0089855,
+      "max_ms": 0.061239,
+      "allocated_bytes_per_op": -1,
+      "controller_memory_bytes": -1
+    },
+    {
+      "plugin": "StandalonePlayer",
+      "scenario": "ASS gesture hold, result, timeout restart and user animation preservation/ASS_StandaloneProbe",
+      "correctness": "Scenario output checks passed before timing; milliseconds per Animator batch update",
+      "size": 1,
+      "samples": 11,
+      "animator_layers": 4,
+      "clip_count": 20,
+      "median_ms": 0.09038299999999999,
+      "p95_ms": 0.6745505,
+      "min_ms": 0.041622000000000006,
+      "max_ms": 0.6745505,
+      "allocated_bytes_per_op": -1,
+      "controller_memory_bytes": -1
+    }
+  ],
+  "mono_heap_bytes": 344064
+}

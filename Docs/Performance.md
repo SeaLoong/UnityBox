@@ -1,5 +1,8 @@
 # UnityBox 性能实测
 
+以下保留 **ASS 0.9.0 / `036062d` 全库快照**的性能测量；各数值对应下文运行标识与当时源码。
+ASS 0.9.1 的改动与当前导入、构建检查单列于[导入安全记录](Verification/ASSImportSafety/README.md)。
+
 使用 Unity 2022.3.22f1、Linux x86-64，在隔离工程中执行。测量与生成物、Animator 输出检查在同一原生测试范围执行。原始数据、运行命令、源码指纹和日志 SHA256 见 [PerformanceResults.json](PerformanceResults.json)。
 
 时间单位为毫秒/次操作；表中的 p95 使用采样序列的 nearest-rank 分位数。Editor 生成耗时包含各测试明确计时的生成/保存操作。ACC 和 Blendshape 的 Editor 更新基准逐帧切换参数；优化器的合并对照与 Player 更新基准使用固定输入。

@@ -1,36 +1,40 @@
 # Avatar Security System
 
-ASS **0.9.0** 提供手势密码、输入倒计时、Overlay 和声音反馈。普通 Unity 在 Player 构建时
-自动生成运行图；VRChat 沿用 SDK/NDMF 自动构建入口。密码结果由参数和运行时 API 提供，
-角色身体、Renderer 和原有动画继续由项目自己的逻辑控制。
+Avatar Security System（ASS）提供手势密码验证、倒计时提示、Overlay 和声音反馈，
+并支持 VRChat 防御配置。可以按需要调整密码、计时和反馈选项，通过参数或运行时 API
+读取密码结果。普通 Unity 与 VRChat 分别在各自构建流程生成运行图，原有角色动画
+继续由项目控制。当前版本为 **0.9.1**。
 
-## 更新后旧组件显示 Missing Script
+## 升级与已有项目
 
-更新 ASS 到 **0.9.0**，等待 Unity 完成脚本编译。首次加载该版本时会自动恢复 `Assets`
-内 Scene 和 Prefab 的旧 ASS 脚本关联；之后导入的旧资源也使用同一恢复流程。
-保留原 Missing Script 组件及其中的配置，恢复会重连脚本，继续读取原密码、手侧、
-音频引用和 Prefab 覆盖。旧计时配置按下方的时间约束规范化。
+0.9.1 移除 0.9.0 的整个自动迁移实现、修复菜单和写入 API。打开项目、安装或导入包、
+加载 Scene/Prefab 时，ASS 不扫描或重写项目中的脚本 GUID、场景、Prefab 与已保存配置。
+组件加载也不再通过 `OnValidate` 自动改写已有时值；生成时只规范化配置副本。
+新组件与用户显式执行 Reset 使用默认保持 0.5s、容错 0.3s。
 
-场景或 Prefab 有未保存修改时，先保存，再运行：
+通过 VCC/ALCOM 完整更新包后，重新启动 Unity 一次，使旧版 Editor 回调完全卸载。
+如果手动覆盖源码，还需移除旧包中已删除的 `Editor/LegacyComponentMigration.cs`、
+`Tests/Editor/LegacyComponentMigrationTests.cs` 及两者的 `.meta`，避免旧代码残留。
+保留 `Runtime/Component.cs.meta` 和用户 Scene/Prefab 及其 metadata。
 
-`Tools → UnityBox → Avatar Security System → Repair Legacy Components`
+0.9.0 的启动/导入 GUID 改写和自动场景重载已撤回。已有组件显示 Missing Script 或
+invalid script 时，先读取该组件的 `m_Script` GUID，核对其脚本路径、所属包与 Console
+首条编译错误，再针对该引用处理。
 
-每次修改前，原文件按 Assets 相对路径备份到
-`UserSettings/UnityBox/ASSMigration/<id>/`。已确认的旧 GUID 保存为
-`UserSettings/UnityBox/ASSMigration/LegacyGuids.json`，供后续导入的 Prefab 实例继续恢复。
-已有正确脚本引用和其它类型的 Missing Script 保持原关联。
+若要调查 0.9.0 已发生的改写，保留项目当前副本及
+`UserSettings/UnityBox/ASSMigration/<id>/Assets/...`。这些备份是相应轮次写入前的 Scene/Prefab
+原字节，只覆盖当轮被改写的文件，不包含原脚本 `.meta`、包版本或后来保存的修改。
+`LegacyGuids.json` 仅记录旧身份。需要恢复时先逐文件比较，再由用户明确选择目标；
+本版不会自动恢复、覆盖或删除这些备份，也不自动重连 Missing Script。
 
-原因是 0.7.24 发布 ZIP 没有携带脚本 `.meta`，Unity 在不同旧项目生成了不同 GUID。
-0.8.0 加入固定 GUID 时遗漏了随机 GUID 的迁移。0.9.0 补齐这条升级路径，继续沿用
-`1c51e6a139920bb4ca12700dc82627ff`，Runtime 程序集和 `ASSComponent` 类型名称保持不变。
+0.7.24 发布 ZIP 没有携带脚本 `.meta`，Unity 在不同旧项目生成了不同 GUID；0.8.0 起使用
+固定 GUID `1c51e6a139920bb4ca12700dc82627ff`。本版继续保留这个已发布身份和
+`ASSComponent` 类型，已有项目的脚本引用继续保留。
+Unity 第三方包需要保存导入资源的 `.meta`，官方[包布局说明](https://docs.unity3d.com/2022.3/Documentation/Manual/cus-layout.html)
+说明了 Editor/Runtime/Tests 的资源身份要求；发布检查拒绝缺少 `.meta` 的脚本或程序集。
 
-Unity 第三方包也需要保存导入资源的 `.meta`。官方[包布局说明](https://docs.unity3d.com/2022.3/Documentation/Manual/cus-layout.html)
-明确要求 `Editor`、`Runtime`、`Tests` 及其内容包含 `.meta`；`Documentation~` 等忽略目录除外。
-脚本通过其中的 GUID 被 Scene/Prefab 引用，首次安装时由 Unity 在各项目分别生成的身份不能替代
-发布包内的稳定身份。本仓库发布检查现会拒绝缺少 `.meta` 的脚本或程序集。
-
-真实发布包的三阶段升级流程、复用脚本及原始记录见
-[旧包升级回归](../../../../Docs/Verification/ASSUpgrade/README.md)。
+当前的导入保全检查见[ASS 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)。
+0.9.0 的旧自动迁移复现仅作为[历史归档](../../../../Docs/Verification/ASSUpgrade/README.md)保留。
 
 ## 普通 Unity 自动构建
 
@@ -52,7 +56,7 @@ input.Restart();                     // 清除本轮结果与计时，重新接�
 `IsLocal`、`GestureLeft`、`GestureRight` 参数。输入组件保存实际生成的参数名，名称混淆时
 继续使用同一 API。`IsUnlocked` 保留为 `IsPasswordCorrect` 的兼容别名，只表示密码结果。
 
-Inspector 使用普通构建入口，无手动 Generate 按钮。自动生成只作用于构建场景副本：
+Inspector 保留插件介绍与字段说明，不再显示新增的顶部自动构建 HelpBox，也无手动 Generate 按钮。自动生成只作用于构建场景副本：
 分配独立 Controller、配置运行时输入与状态行为，然后移除编辑配置。源场景继续保留
 原 Controller 与 `ASSComponent`，供后续编辑。新生成状态均为 WD Off；旧 ASS 生成层
 （包括遗留锁层）在副本内清理，用户层及其 WD 设置保留。
@@ -60,8 +64,8 @@ Inspector 使用普通构建入口，无手动 Generate 按钮。自动生成只
 ## 连续保持与防快速遍历
 
 默认 `gestureHoldTime=0.5s`、`gestureErrorTolerance=0.3s`。保持时间必须严格大于容错时间；
-Inspector、配置副本和构建器共用同一规范化规则。旧值不满足该关系时，容错会下调至保持
-时间以下，例如旧的 0.15s / 0.3s 会规范为 0.15s / 0.14s。
+生成器在独立配置副本中应用时间规则；已保存字段在打开、导入和加载时保持原值。
+例如保存的 0.15s / 0.3s 在构建副本中使用 0.15s / 0.14s，源组件仍保留原设置。
 
 每一位都必须连续保持正确姿势达到保持时长。切到错误姿势会中断当前计时，恢复正确
 姿势后从零重新累计；容错窗口到期会清除当前序列进度。连续快速轮换 0–7 不会累计为
@@ -100,7 +104,7 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 - 空密码在 Avatar 构建中表示跳过 ASS。普通构建同样保留原 Animator，仅移除构建副本的
   空配置；Editor 后端 API 要求至少一位有效密码。
 - Inspector 的英语、简体中文、繁体中文和日语文本随界面语言选择显示，包含保持/容错
-  的时间说明、构建校验及迁移提示。
+  的时间说明和构建校验。
 
 ## 测试与性能
 
@@ -108,13 +112,13 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 超时边界、Restart 和 WD Off。构建回归检查自动生成、既有 Controller/AOC 的用户层、
 源场景配置保留以及 Avatar 对象缩放不受 ASS 影响。
 
-`LegacyComponentMigrationTests` 用不同旧 GUID 检查 Scene、Prefab、stripped 引用和后续
-导入，验证配置、组件 fileID、资源 GUID、引用、备份原字节、CRLF/BOM 及幂等。
+导入保全回归以旧 GUID、已有配置与 Scene/Prefab 为输入，检查导入和打开不会替换身份、
+修改原文件或自动创建迁移记录；构建副本的时间规范化与源字段保持分别检查。
 SDK 与 NDMF 测试覆盖实际 Behaviour、参数副本、多 Avatar 生命周期和最终提交。
 
-本版实际执行数量、运行标识和源码指纹见[测试指南](../../../../Docs/Testing.md)及
-[验证结果](../../../../Docs/VerificationResults.json)。测量使用当前手势图生成和 Animator
-更新场景，数据及环境见[性能报告](../../../../Docs/Performance.md)。
+0.9.1 的执行范围与结果见[导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)。
+[测试指南](../../../../Docs/Testing.md)提供重跑命令；[全库基线结果](../../../../Docs/VerificationResults.json)
+及[性能报告](../../../../Docs/Performance.md)保留 0.9.0 对应快照的生成和 Animator 更新测量。
 实现与扩展 API 见[技术参考](ASS_TechnicalDoc.md)，历史变化见[CHANGELOG](../CHANGELOG.md)。
 正式包保留功能测试，排除仓库路径探针与实验 Bundle。
 

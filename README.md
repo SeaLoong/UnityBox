@@ -32,30 +32,30 @@ https://sealoong.github.io/UnityBox/vpm.json
 源码或本地 UPM 安装直接从 `master` 的 `Assets/UnityBox` 选择所需包。
 源码版本以对应提交和包内 `package.json` 为准，VPM listing 列出已部署的发布产物。
 升级时保留 `.meta` 与场景，按各工具入口更新 Controller、菜单和参数安装结果；
-ASS 0.9.0 随正常 Player/Avatar 构建自动生成。
+ASS 0.9.1 随正常 Player/Avatar 构建自动生成。
 生成器将每次输出保留在独立 Build 目录，场景 Undo 可以恢复之前的引用。
-ASS 0.9.0 自动恢复旧发布包产生的随机脚本 GUID；未保存的 Scene/Prefab 保存后可通过
-修复菜单完成重连。普通 Unity 的 ASS 在正常 Player 构建中自动生成，无手动生成步骤。
+ASS 0.9.1 移除自动迁移及修复菜单/API，打开项目、导入和加载资源时保留源文件、GUID
+与已有参数。普通 Unity 的 ASS 在正常 Player 构建副本中自动生成，无手动生成步骤。
 本版移除 Avatar 对象锁定，采用连续手势保持、默认保持 0.5s / 容错 0.3s、严格时间关系
 及四语言界面。诱饵状态可独立启用，无 Bool 池时也会补齐条件所用的本地布尔守卫。
-升级和数据备份步骤见[ASS 用户指南](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
+升级和旧迁移记录的保留说明见[ASS 用户指南](Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
 
 ## 功能、构建与性能
 
 八个插件从同一个 `master` checkout 准备纯 Unity、SDK、完整 MA/NDMF 三种隔离工程，
-分别执行功能、图形、Linux Player 和串行性能测试。当前运行标识、通过数、原始结果及
-源码指纹见[测试指南](Docs/Testing.md)和[验证结果](Docs/VerificationResults.json)；
+分别执行功能、图形、Linux Player 和串行性能测试。执行范围、运行标识与源码指纹见
+[测试指南](Docs/Testing.md)；[验证结果](Docs/VerificationResults.json)保留 0.9.0 的全库基线；
 三个依赖范围重复执行核心用例，分别计数。
 
-本轮 ASS 0.9.0 的升级、自动构建、连续保持和 WD Off 检查纳入对应范围；
-实际通过数、运行标识、Player 场景和串行测量以[最新结果索引](Docs/VerificationResults.json)
-及[测试指南](Docs/Testing.md)为准。历史发布结果按对应提交追溯。
+ASS 0.9.1 的导入与源配置保全检查单列于[当前修复记录](Docs/Verification/ASSImportSafety/README.md)。
+0.9.0 的自动构建、连续保持、WD Off、Player 和串行测量保留为对应发布快照的基线；
+历史自动迁移实现已于 0.9.1 移除，当前包保留已有项目的脚本引用和源配置。
 
 [功能总览](Docs/PluginAudit.md) 列出每个插件的输入、输出和执行场景；
 [变更与迁移](Docs/RefactorChanges.md) 解释修复触发条件、行为变化和生成资产的升级方式。
 [测试指南](Docs/Testing.md) 包含核心、完整依赖、图标渲染、独立 Player 和串行基准命令。
 [性能报告](Docs/Performance.md) 与 [原始测量](Docs/PerformanceResults.json) 记录规模、样本数、
-中位数、p95 和实际运行环境；[验证结果](Docs/VerificationResults.json) 保存各次运行及内容指纹。
+中位数、p95 和实际运行环境；各项数据以记录中的包版本、日期和内容指纹确定范围。
 
 测试工具使用真实 Unity **2022.3.22f1**、UTF **1.1.33**、NUnit **1.0.6**。
 Avatar 组合固定 SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。

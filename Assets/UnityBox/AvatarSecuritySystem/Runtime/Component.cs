@@ -116,7 +116,7 @@ namespace UnityBox.AvatarSecuritySystem
             if (passwordLength >= 4) return "Medium";
             return "Weak";
         }
-        /// <summary>Use one timing contract for authoring and every generated controller.</summary>
+        /// <summary>Normalize the timing values used by generated controller copies.</summary>
         public static void NormalizeGestureTimes(ref float hold, ref float tolerance, ref float maximum)
         {
             hold = Mathf.Clamp(hold, 0.05f, 1f);
@@ -124,35 +124,6 @@ namespace UnityBox.AvatarSecuritySystem
             maximum = Mathf.Clamp(maximum, Mathf.Max(1f, hold + tolerance + 0.05f), 10f);
         }
 #if UNITY_EDITOR
-        private void OnValidate()
-        {
-            ValidateWarningThreshold();
-            ValidateGestureTimes();
-            SanitizeDefenseModes();
-        }
-        private void InitializePasswordIfNeeded()
-        {
-            if (gesturePassword == null)
-            {
-                gesturePassword = new List<int> { 1, 2, 3, 4 };
-            }
-        }
-        private void ValidateWarningThreshold()
-        {
-            if (warningThreshold > countdownDuration / 2)
-            {
-                warningThreshold = countdownDuration / 2f;
-            }
-        }
-        private void SanitizeDefenseModes()
-        {
-            if (defaultEnableDefense && disableDefense)
-                disableDefense = false;
-        }
-        private void ValidateGestureTimes()
-        {
-            NormalizeGestureTimes(ref gestureHoldTime, ref gestureErrorTolerance, ref gestureMaxHoldTime);
-        }
         private void Reset()
         {
             const float defaultCountdownDuration = 30f;

@@ -11,7 +11,7 @@
 原场景、实验 bundle 与已知 GUID 保留。ASS 固定脚本 GUID
 `1c51e6a139920bb4ca12700dc82627ff` 来自仓库样例场景，关联同名 `ASSComponent`。
 旧发布包未携带脚本 metadata，各安装自行生成的 GUID 并不都与样例相同；
-0.9.0 增加旧配置恢复流程，升级操作见下方 ASS 段落。
+0.9.0 曾加入自动恢复，0.9.1 已撤回整个迁移实现，资源保全边界见下方 ASS 段落。
 
 `master` 的 `Assets/UnityBox.unity` 原样保留用户较新的 temp/refactor 场景，
 对应合并前 `409eb5b` 的 2,924,530 字节内容。优化器旧场景保留在 `53fa22f` 的提交历史中。
@@ -30,7 +30,7 @@ SDK Base 可用时配置组件实现真实 `IEditorOnly`。
 
 各包为原先缺失的脚本、程序集和目录补齐稳定 metadata；新增缺失项按仓库与
 资产路径确定身份，已有 `.meta` 保持原值。新克隆和安装使用仓库 GUID；
-ASS 的旧项目随机 GUID 引用通过 0.9.0 迁移到固定身份，继续保留原组件配置。
+ASS 0.9.1 不扫描或改写旧项目的随机 GUID，也不在组件加载时改写原配置。
 
 外部 Editor 扩展按 [程序集映射](DependencyArchitecture.md) 增加 Core、VRC/VRChat 或 MA
 引用。普通 Animator 的参数由项目脚本提供，Avatar 参数由相应平台输入服务提供。
@@ -97,29 +97,37 @@ NDMF 使用实际重映射路径，最终提交后可再经过其它插件处理
 
 ## Avatar Security System
 
-ASS 0.9.0 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
+ASS 0.9.1 提供密码结果、计时、Overlay、声音和 Restart。Avatar 对象锁定及对应选项
 已经移除，历史 disableRootChildren/writeDefaultsMode 字段隐藏保留，生成阶段只管理
 ASS 自己的反馈对象。新增状态统一 WD Off，用户已有层及其 WD 保留。
 
 普通 Unity 保存角色配置后正常构建 Player 即可：构建场景副本自动复制原 Controller/AOC、
 清除旧 ASS 生成层（包含遗留锁层）、加入手势/计时/反馈图、配置 Animator 和运行时输入，
-最后移除副本中的编辑配置。Inspector 不再有手动生成按钮；源场景与 Controller 继续用于
+最后移除副本中的编辑配置。Inspector 移除新增顶部 HelpBox，保留插件介绍与字段说明，
+不再有手动生成按钮；源场景与 Controller 继续用于
 编辑。SDK 与 NDMF 沿用 Avatar 的自动构建和结果交接，原资产在各自生命周期中还原。
 
 默认 hold=0.5s、tolerance=0.3s，统一规则保证 hold 严格大于 tolerance。
 每位必须连续正确保持；中断重计、容错过期清序列、重复相邻位先换姿势释放，超时与
-Restart 优先处理。旧不合理时值会规范化，例如 0.15s/0.3s 的容错下调为 0.14s。
+Restart 优先处理。时间约束只在生成配置副本中规范化，例如副本中的 0.15s/0.3s
+使用 0.15s/0.14s；源组件保留原有字段，打开、加载和导入不自动改值。
 StandaloneSecurityInput 推荐查询 IsPasswordCorrect；IsUnlocked 只作同一结果的兼容别名。
 界面与校验说明同步英语、简体、繁体、日语。
 仅启用诱饵状态而关闭诱饵层时，条件参数仍先注册；没有 Bool 参数池时补齐本地布尔
 守卫，避免生成未声明或类型不符的转移条件。
 
-固定脚本 GUID 来自仓库样例，只恢复该样例并不能覆盖旧发布包在不同项目生成的随机
-GUID。0.9.0 扫描 Assets 内 Scene/Prefab 的旧 ASS 配置和已确认身份的 stripped 引用，
-重新关联固定脚本，保留组件 fileID、密码和其它序列化字段及 Prefab 覆盖。
-原文件保存在 UserSettings/UnityBox/ASSMigration/<id>/；未保存场景或 Prefab 先保存，
-再运行 `Tools/UnityBox/Avatar Security System/Repair Legacy Components`。
-已有有效关联继续保留。完整步骤见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
+0.9.1 完整移除 0.9.0 的旧 GUID 迁移器、启动/导入扫描、依赖资源改写、场景重载和
+修复菜单/API，同时移除 `OnValidate` 对已有参数的自动纠正。原固定脚本 GUID 保持，
+已有 Scene/Prefab、组件 fileID、配置及引用不在包加载时被重写。
+
+0.9.0 自动改写前留下的 UserSettings/UnityBox/ASSMigration/<id>/Assets/... 只作历史
+原文件记录，本版不自动恢复、覆盖或删除。需要调查时保留当前工程副本和备份，逐文件
+比较后由用户选择恢复目标；备份不包含脚本 metadata、包版本和后来保存的编辑。
+已有 Missing Script 按组件的 `m_Script` GUID 查找脚本路径和所属包，结合 Console
+首条编译错误处理该引用；当前包不执行项目范围的迁移或批量恢复。
+
+完整说明见[ASS 用户手册](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)，
+当前执行范围见[导入安全记录](Verification/ASSImportSafety/README.md)。
 
 ## Prefab Diff Patcher
 

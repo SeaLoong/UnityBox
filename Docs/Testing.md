@@ -10,14 +10,15 @@
 SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具链使用
 共享 XDG `/workspace/unitybox-setup/unity/interactive`；机器授权与 Hub 复用见[环境流程](UnityEnvironment.md)。
 
-[验证结果](VerificationResults.json)记录功能、程序集、Player、图形和退出码；
+ASS 0.9.1 当前检查见[导入安全记录](Verification/ASSImportSafety/README.md)。
+[验证结果](VerificationResults.json)保留 0.9.0 全库基线的功能、程序集、Player、图形和退出码；
 [原生结果](UnityNativeResults.json)保留 NUnit 运行与源内容指纹；
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
 ## 执行结果与归档
 
-[验证结果](VerificationResults.json)记录当前源码对应的实际通过数、测试程序集、运行标识、
+[验证结果](VerificationResults.json)记录该次 0.9.0 快照的实际通过数、测试程序集、运行标识、
 命令、退出码和源文件指纹。关键 NUnit XML 使用标准 gzip 归档，Player 的构建、执行与
 流水线 JSON 一起保存在 `Docs/Verification/`，索引记录归档路径和 SHA256。
 
@@ -25,9 +26,20 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 核心用例，各范围分别计数。历史数据通过原提交和运行标识定位；重新准备工程后按新快照
 执行并生成新结果。
 
-## 本轮 ASS 0.9.0 验证范围
+## ASS 0.9.1 导入与配置保全
 
-2026-11-07 对最终源码执行的结果如下；三个功能范围分别计数：
+当前修复移除自动迁移器、启动/导入扫描、GUID 改写、场景重载及修复菜单/API，并停止
+组件加载时的 OnValidate 参数纠正。测试在隔离工程比较导入、打开前后的 Scene/Prefab
+字节、脚本 GUID、既有字段及编辑状态；生成图的规范化只在配置副本中发生。
+执行命令、退出码、用例数和当前源指纹单列于[ASS 导入安全记录](Verification/ASSImportSafety/README.md)。
+
+Missing Script 的排查记录应包括组件实际 `m_Script` GUID、脚本路径、所属包和
+Console 首条编译错误。导入保全测试只对隔离 fixture 操作，原项目资源留在原处。
+
+## 0.9.0 全库基线（历史快照）
+
+以下为 2026-11-07、`036062d` 发布快照的执行结果；三个功能范围分别计数，
+这些数字不作为 0.9.1 改动后的执行数量：
 
 | 范围 | 实际结果 |
 | --- | --- |
@@ -41,19 +53,19 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 全部用例均无失败或跳过。手势输入的 Player 稳态更新中位数为 0.031083 ms；
 不同密码长度的生成成本及其它插件对照见[完整性能报告](Performance.md)。
 
-当前通过数、实际测试程序集、UTC 运行标识和源码指纹集中于[验证结果](VerificationResults.json)。
+该快照的实际测试程序集、UTC 运行标识和源码指纹集中于[验证结果](VerificationResults.json)。
 纯 Unity、SDK、完整 MA/NDMF 各范围重复核心用例，分别计数；图形、Player 和串行性能
-使用独立记录。2026-11-05 的主分支基线结果保存在 `827b865` 提交，当前结果按新源码
-快照执行后更新，原始 NUnit gzip、Player/构建 JSON 与工具输出保存在 `Docs/Verification/`。
+使用独立记录。2026-11-05 的主分支基线结果保存在 `827b865` 提交，0.9.0 结果按其源码
+快照记录，原始 NUnit gzip、Player/构建 JSON 与工具输出保存在 `Docs/Verification/`。
 
-本轮新增的 ASS 检查包括：
+0.9.0 当时的 ASS 检查包括（自动迁移实现现已撤回）：
 
 - 真实旧随机 GUID 的 Scene/Prefab 升级、stripped 引用及后续导入，检查配置、组件 fileID、
   资产 GUID、音频、Prefab 覆盖和修复前字节备份；未保存修改延后、重复修复幂等。
 - Player 构建场景自动生成 Animator 和输入组件；源场景配置和源 Controller/AOC 的用户图
   与 WD 保留，旧 ASS 层在副本中清理，新增 ASS 状态 WD Off，用户对象缩放保持。
 - 连续正确 Holding、快速遍历拒绝累积、中断重计、重复位释放、容错与超时边界、Restart；
-  默认保持 0.5s、容错 0.3s，Inspector 与配置副本共同保证保持时间严格大于容错。
+  默认保持 0.5s、容错 0.3s；0.9.1 将时间规范化限定于生成配置副本，源字段不在加载时改写。
 - 仅启用诱饵状态、关闭诱饵层及无 Bool 参数池的混淆组合，检查声明的参数与转移条件类型。
 - 英语、简体、繁体和日语界面/校验说明，SDK/NDMF 真实构建与最终提交。
 
@@ -61,17 +73,11 @@ Player 继续检查编辑配置从产物移除、运行时输入/状态动作保
 完成轨迹覆盖 PrepareForBuild、preprocess、场景与 Linker，实际顺序见归档 JSON。
 图形运行设备、逐场景性能收益与开销、计数 API 的具体字段定义见[性能报告](Performance.md)。
 
-### 真实发布包的三阶段升级
+### 历史自动迁移归档
 
-[旧包升级回归](Verification/ASSUpgrade/README.md)保存可复用 runner、Unity fixture 和各阶段
-记录。用真实 0.7.24 ZIP 创建带非默认配置、音频与 Prefab 覆盖的资源，记录 Unity 当场生成
-的脚本 GUID；换入真实 0.8.0 ZIP 并在新 Editor 进程中断言 Missing Script；最后安装当前包，
-再次启动 Editor，检查启动自动迁移恢复关联。测试不能通过预先补旧 `.meta` 或仅手工调用
-迁移 API 替代这条真实安装路径。
-
-检查资产 GUID、组件 fileID、配置与 Prefab 覆盖保持，迁移前备份与故障文件逐字节相同，
-资源原文本只替换脚本 GUID。记录 ZIP SHA256、各阶段进程退出码、日志、结果及当前源码
-指纹；最终代码改变后重新执行当前包阶段。原生随机 GUID 测试补充边界覆盖。
+[0.9.0 三阶段记录](Verification/ASSUpgrade/README.md)保存旧包、故障复现及已撤回自动
+迁移器的执行证据，仅用于追溯旧实现。当前包的验收要求源资源保全，不继续运行旧自动
+修复断言，也不在用户工程中重现该旧迁移流程。
 
 ## 准备独立工程
 

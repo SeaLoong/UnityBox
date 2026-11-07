@@ -10,7 +10,9 @@ Maintain the eight plugins together on `master` and follow the asset workflow in
 - Use surrounding C# conventions and preserve line endings. Editor APIs belong in Editor assemblies;
   serialized components and runtime actions belong in Runtime assemblies.
 - Keep serialized field names, script GUIDs, binding paths, parameter defaults, layer order and callback
-  contracts stable. Implement migrations explicitly when stored data changes.
+  contracts stable. Never migrate user assets as an automatic consequence of opening/importing a package.
+  Stored-data migration or backup restoration requires an explicit user-selected reviewed operation;
+  ordinary feature/fix authorization does not imply permission for either action.
 - Give features clear input and output contracts. Follow the normal path directly; report actual input
   errors with the relevant parameter, object or asset path.
 - Finish a behavior change with meaningful output checks: native Animator evaluation, save/reload,

@@ -20,7 +20,6 @@ namespace UnityBox.AvatarSecuritySystem
             SetLanguage((SystemLanguage)serializedObject.FindProperty("uiLanguage").intValue);
             EditorGUILayout.Space(10);
             DrawHeaderSection();
-            EditorGUILayout.HelpBox(T("build.automatic_help"), MessageType.Info);
             if (!HasVrChatIntegration)
                 EditorGUILayout.HelpBox(T("build.standalone_help"), MessageType.Info);
             EditorGUILayout.Space(10);

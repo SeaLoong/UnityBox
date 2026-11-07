@@ -68,35 +68,36 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
    Delete only rebuildable owned caches when disk space requires it, retaining imported DLLs,
    source snapshots and raw evidence. Check active projects before cleaning their caches.
 
-## Verify published-package upgrades and serialized identity
+## Verify import preservation and serialized identity
 
-- Ship stable `.meta` files with imported Unity package assets, including scripts, asmdefs, and their
-  Editor/Runtime/Tests directories. Preserve existing GUIDs. Run the package checks that reject missing
-  script/assembly metadata; third-party installation does not remove this identity requirement.
-- Reuse [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) for the real ZIP runner,
-  Unity fixture and phase records. Work in an isolated owned project with the actual dependencies.
-  Check the published ZIP SHA256 and retain each phase's command, exit code, log and structured result.
-- Phase 1: import the actual ASS 0.7.24 ZIP, including its missing metadata. Let Unity generate its real
-  script GUID. Create and save a Scene, Prefab and instance overrides with non-default configuration
-  and an AudioClip asset reference. Record script/asset GUIDs, component fileIDs and serialized values.
-- Phase 2: replace the package with the actual published 0.8.0 ZIP as an update, then open a fresh
-  Editor process. Assert the old component is Missing Script. Do not add metadata to the old package
-  or preserve its generated package metadata across this replacement; that changes the update case.
-- Phase 3: install the current candidate's complete package contents and start a fresh Editor process.
-  Wait for compilation, imports and startup callbacks, then verify automatic repair without invoking
-  `RepairAssets` from the test. Keep direct API tests as additional migration boundary coverage.
-- Assert restored component type, values, AudioClip references, component fileIDs, asset GUIDs and
-  Prefab overrides. Check other Missing Script components remain unchanged, repeat repair is
-  idempotent and unsaved scenes/Prefab stages are deferred. Save deferred edits before using
-  `Tools/UnityBox/Avatar Security System/Repair Legacy Components`.
-- Compare the pre-write backup bytes at `UserSettings/UnityBox/ASSMigration/<id>/<assetPath>` with
-  the broken serialized file. The migration replaces only `m_Script.guid`, retaining all other bytes,
-  BOM/newlines and object identity. `LegacyGuids.json` stores confirmed legacy identities per project;
-  keep the canonical published GUID stable. Runtime time normalization is checked separately from
-  byte-preserving migration.
-- Capture the candidate source fingerprint and final ZIP identity. After production changes, repeat
-  the current-package phase against the retained broken fixture. Archive runner/fixture sources,
-  old bytes and all three phase records alongside final evidence. Keep credentials and licenses private.
+- Opening a project, importing a package, or loading a Scene/Prefab must preserve source asset bytes,
+  existing script GUIDs, serialized values and the user's editing state. Do not install startup/import
+  migrations or automatic OnValidate corrections of saved configuration.
+- A general feature/fix request does not authorize migration, bulk GUID replacement, backup restoration
+  or rewriting the user's assets. An actual migration/restore requires an explicit user-selected,
+  reviewed operation. Ordinary requested generation and build-copy processing remain separate actions.
+- Ship stable `.meta` files with package assets, scripts, asmdefs and Editor/Runtime/Tests directories;
+  preserve already published identities. Metadata in a new package does not justify rewriting old
+  project references. Run release preflight for missing script/assembly metadata.
+- ASS 0.9.1 removes the entire migration implementation, menu/API and automatic configuration
+  correction. Keep the 0.5-second hold / 0.3-second tolerance defaults for new components and explicit
+  Reset. Normalize a separate captured configuration for generated graphs; preserve source fields.
+- Use isolated owned projects to test startup, force import and opening of existing Scene/Prefab
+  assets, including old missing-script references. Compare before/after bytes, metadata, fileIDs,
+  fields and editing state. Check that no migration directory, identity map or repair write appears.
+  Record actual commands, source fingerprint and results in
+  [ASSImportSafety](../../../Docs/Verification/ASSImportSafety/README.md).
+- [ASSUpgrade](../../../Docs/Verification/ASSUpgrade/README.md) is a historical 0.9.0 incident archive,
+  not the current upgrade acceptance workflow. Its synthetic passing cases do not authorize or
+  establish preservation of arbitrary user projects. Never run that old automatic repair in a user's
+  project or substitute the current package into the old runner's automatic-repair assertion.
+- Existing `UserSettings/UnityBox/ASSMigration/<id>/Assets/...` files are pre-write bytes for only the
+  assets edited in that historical run; they omit old package metadata, later edits and callback
+  side effects. Retain current project and backups before comparing individual files. Do not restore
+  them wholesale or interpret `LegacyGuids.json` alone as proof that assets were rewritten.
+- Diagnose a Missing Script from its actual m_Script GUID, script path, owning package and first
+  Console/compiler error. Preserve the working project and address the identified reference or
+  compiler failure directly; keep restore operations tied to user-selected file differences.
 
 ## Retain reviewable results and publish the code
 

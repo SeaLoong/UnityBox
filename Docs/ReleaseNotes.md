@@ -1,28 +1,31 @@
 # 发布与升级说明
 
-## 2026-11-07：ASS 0.9.0 升级恢复与自动构建
+## 2026-11-07：ASS 0.9.1 撤回自动迁移
 
-从 0.7.24 等旧版本升级后显示 Missing Script 的 ASS 组件，可通过 **0.9.0** 恢复。
-旧发布 ZIP 没有携带脚本 `.meta`，Unity 在不同安装中生成了不同 GUID；0.8.0 开始携带
-固定 GUID 时缺少这类引用迁移。0.9.0 延续固定 GUID，新增自动恢复既有配置的流程。
+本版完整移除 0.9.0 的自动迁移实现、项目扫描、导入/移动时 GUID 改写、自动场景重载、
+修复菜单和写入 API。打开项目、导入包和加载 Scene/Prefab 时保留源资源及已有配置。
+组件不再通过 `OnValidate` 自动改写时值；有效时间约束在生成所用的配置副本中处理。
+默认保持 0.5s、容错 0.3s 保持不变，新组件和显式 Reset 使用这些默认值。
 
-更新后等待 Unity 完成编译，首次加载时自动处理 `Assets` 下的 Scene 和 Prefab，
-之后导入的旧资源也会处理。保留原 Missing Script 组件与其配置；恢复直接重连
-脚本，组件 fileID、密码、开关、音频引用和 Prefab 覆盖继续使用原值；旧计时按本版
-保持/容错关系规范化。
+已有 Scene/Prefab 中的 Missing Script 按该组件的 `m_Script` GUID、所属脚本及
+Console 首条编译错误定位，当前版本不执行项目范围的引用替换。
 
-场景或 Prefab 有未保存修改时，保存后运行：
+Inspector 移除新增的顶部自动构建 HelpBox，恢复插件介绍和字段说明的呈现；
+Avatar 锁定选项与手动 Generate 按钮继续移除。
 
-`Tools → UnityBox → Avatar Security System → Repair Legacy Components`
+0.9.0 已留下的 `UserSettings/UnityBox/ASSMigration/<id>/Assets/...` 记录继续保留。
+它们只包含相应轮次写入前的 Scene/Prefab，不含旧脚本 metadata、包版本和后续修改；
+需要恢复时先保全当前项目并逐文件比较，由用户明确选择内容。本版没有自动恢复步骤。
 
-修复前的原文件按 Assets 相对路径保存到
-`UserSettings/UnityBox/ASSMigration/<id>/`。其它类型的 Missing Script、有效脚本引用和
-0.8.0 已正确关联的组件保持原样。实现和 API 见
-[ASS 技术参考](../Assets/UnityBox/AvatarSecuritySystem/Editor/ASS_TechnicalDoc.md)，
-测试执行记录集中于[验证结果](VerificationResults.json)。
+当前执行范围与源指纹见[导入安全记录](Verification/ASSImportSafety/README.md)。
+自动构建、连续手势、WD Off、四语言和用户原 Controller/AOC 保留继续使用，
+完整操作见[ASS 用户指南](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。
 
-真实旧 ZIP、0.8.0 故障复现与当前包启动自动迁移的
-[三阶段升级记录和复用脚本](Verification/ASSUpgrade/README.md)保留每阶段证据。
+## 2026-11-07：ASS 0.9.0（历史发布）
+
+0.9.0 曾通过启动和导入回调修复旧随机脚本 GUID，相关实现已于 0.9.1 撤回。
+[历史三阶段归档](Verification/ASSUpgrade/README.md)保留合成工程上的旧行为记录，
+用于追溯 0.9.0 的实现；当前版本的检查以源资源保全为目标。
 
 ### 自动构建与输入流程调整
 
@@ -33,8 +36,8 @@ Generate 按钮移除；新增 ASS 状态全部 WD Off，不写用户 Avatar 对
 
 默认保持 0.5s、容错 0.3s，并统一保证保持时间严格大于容错。正确姿势需连续达到保持
 时长，错误中断后重新计时，容错过期清当前序列，重复位需要先换姿势释放；超时和
-Restart 优先。旧计时配置不满足关系时会按规则规范化，例如 0.15s / 0.3s 调整为
-0.15s / 0.14s。运行时使用 IsPasswordCorrect；IsUnlocked 继续作为同一密码结果的兼容别名。
+Restart 优先。0.9.0 曾在加载时把不满足关系的旧时值规范化，例如 0.15s / 0.3s
+调整为 0.15s / 0.14s；0.9.1 只在构建配置副本中处理该约束，保留源字段。运行时使用 IsPasswordCorrect；IsUnlocked 继续作为同一密码结果的兼容别名。
 仅启用诱饵状态、关闭诱饵层时仍声明条件参数；没有 Bool 池时添加本地布尔守卫，
 使参数类型与生成的转移条件一致。Inspector 与校验说明覆盖英语、简体、繁体、日语，使用步骤见
 [ASS 用户指南](../Assets/UnityBox/AvatarSecuritySystem/Editor/README.md)。

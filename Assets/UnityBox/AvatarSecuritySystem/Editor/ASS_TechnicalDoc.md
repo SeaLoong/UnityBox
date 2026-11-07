@@ -1,7 +1,7 @@
-# Avatar Security System 0.9.0 技术参考
+# Avatar Security System 0.9.1 技术参考
 
 ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命周期分开组织。
-[用户指南](README.md)说明自动构建和运行时输入；本页记录生成与升级契约。
+[用户指南](README.md)说明自动构建和运行时输入；本页记录生成与源资源保全契约。
 
 ## 模块和装配
 
@@ -18,7 +18,6 @@ ASS 将编辑配置、密码图、原生 Unity/SDK 行为和构建资产生命�
 | UnityAnimatorBehaviourAdapter.cs | 生成原生 StateMachineBehaviour |
 | VRChat/VrcAnimatorBehaviourAdapter.cs | 生成真实 SDK Behaviour |
 | ControllerGraphCopy.cs | 可编辑 Controller 副本、Override 展开和引用重映射 |
-| LegacyComponentMigration.cs | 旧脚本身份发现、Scene/Prefab 重连、备份与后续导入 |
 | Obfuscator.cs / VRChat/Processor.cs | 名称映射、每 Avatar 输出与 SDK 原引用还原 |
 | NDMF/NDMFPlugin.cs | Resolving 捕获与 PlatformFinish 生成 |
 
@@ -54,9 +53,10 @@ root.GetComponent<Animator>().runtimeAnimatorController = result;
 ## 手势时间契约
 
 默认 hold=0.5s、tolerance=0.3s、maximum=3s。`ASSComponent.NormalizeGestureTimes`
-为 Inspector、配置副本与生成器提供同一规则：hold 在 0.05–1s；tolerance 在 0 至
+仅在生成所用配置副本中提供时间规则：hold 在 0.05–1s；tolerance 在 0 至
 hold−0.01s；maximum 位于 max(1s, hold+tolerance+0.05s) 至 10s。
-因此实际保持时间始终严格大于容错窗口，旧的不合理值在加载/构建时规范化。
+实际生成图的保持时间严格大于容错窗口；组件加载、打开 Inspector 和资源导入保留已存字段。
+`OnValidate` 不再自动纠正源配置；默认值由新组件和用户显式 Reset 提供。
 
 每一步的 Holding 只在正确手势连续成立时累计时间。错误姿势先进入 Interrupted，
 短暂恢复也会重新进入 Holding 并从零计时；超过容错窗口返回序列入口。
@@ -89,42 +89,38 @@ VRChat 混淆在注入诱饵状态前声明实际使用的条件参数，独立�
 `PrepareDecoyParameters` 在参数池没有 Bool 时补齐本地 false 布尔守卫；参数注册按
 实际 Float/Int/Bool 类型处理，避免仅启用诱饵状态时出现未声明或类型不符的条件。
 
-## 旧脚本 GUID 恢复
+## 导入与源配置边界
 
-固定 GUID `1c51e6a139920bb4ca12700dc82627ff` 最初来自仓库样例场景。
-0.7.24 的真实 ZIP 未携带 Runtime/Component.cs.meta，旧安装各自生成 GUID；0.8.0 加入
-固定身份时遗漏了这些升级引用。0.9.0 用 LegacyComponentMigration 恢复同名 Runtime
-程序集中的 ASSComponent，继续保留 0.8.0 的固定身份。
+0.9.1 移除 `LegacyComponentMigration`、初始化扫描、AssetPostprocessor 迁移、场景重载、
+修复菜单与写入 API。不存在从启动、资源导入或移动回调进入的 GUID 修复路径；
+本版也不读取旧身份表来重连后续导入的资源。
 
-完整旧配置以 gesturePassword、useRightHand、countdownDuration、gestureHoldTime、
-gestureErrorTolerance、gestureMaxHoldTime、disableRootChildren、writeDefaultsMode 识别；
-脚本 GUID 必须失效，非空 EditorClassIdentifier 必须对应 ASSComponent。
-处理先发现完整配置的旧身份，再修同身份的兼容引用，包含只序列化脚本的 stripped
-Prefab 实例。Scene/Prefab 依赖一并读取，确认身份保存于
-UserSettings/UnityBox/ASSMigration/LegacyGuids.json，每次调用重新读取，支持后续导入。
-其它类型的 Missing Script 与已有有效脚本引用保持原关联。
+固定 GUID `1c51e6a139920bb4ca12700dc82627ff`、Runtime 程序集、字段名及类型继续保持。
+0.7.24 未携带 metadata 形成的随机身份在已有项目中原样保留。
 
-迁移仅改 m_Script.guid，保留组件 fileID、其它字段文本、资源引用、BOM/换行及 Prefab
-对应关系；每次写入前把原字节备份到 UserSettings/UnityBox/ASSMigration/<id>/<assetPath>。
-旧计时若不满足 0.9.0 的关系，在组件加载和配置捕获时按上面的共同规则规范化，原始
-备份仍保存调整前的文件。
+源 `ASSComponent` 的已存参数直接保留。`ASSConfigData.FromComponent` 与 `Clone` 生成
+独立配置副本，再为生成图规范化时间。普通 Player/Avatar 构建仍通过原入口处理构建副本，
+生成输出和临时配置的变化不回写源 Scene/Prefab。
 
-未保存的 Scene/Prefab 延后恢复，保存后运行
-`Tools/UnityBox/Avatar Security System/Repair Legacy Components`。干净的已加载 Scene
-完成写入后重载。`RepairAssets(IEnumerable<string>, bool reloadCleanScenes=true)` 返回恢复数、
-变更资源、延后资源和备份目录；`TryMigrateYaml` 提供不写文件的文本迁移入口。
+0.9.0 的 `UserSettings/UnityBox/ASSMigration/<id>/Assets/...` 只保存对应轮次的原始
+Scene/Prefab 字节，不包含旧包 metadata 或后续修改；`LegacyGuids.json` 不是恢复日志。
+当前版本不创建迁移目录、不读取这些记录来改写文件，也不执行自动备份恢复。
+如需调查旧写入，先保存当前项目副本，再逐文件对照备份；恢复目标和内容由用户明确选择。
+
+历史自动迁移的复现数据保留在[0.9.0 归档](../../../../Docs/Verification/ASSUpgrade/README.md)，
+用于追溯该版本的脚本替换、导入和重载行为。当前版本的检查以源资源保全为目标。
 
 ## 验证与界面
 
 原生测试覆盖连续正确保持、快速姿势遍历、中断与重新计时、重复位释放、时间边界、
 Restart、WD Off、用户对象缩放保持，以及真实构建场景的自动生成和原图副本。
-升级用例覆盖多个旧 GUID、Scene/Prefab、stripped 引用、后续导入、配置与引用、原字节
-备份及幂等。真实 0.7.24 → 0.8.0 → 当前包的启动升级另存
-[三阶段记录与复用脚本](../../../../Docs/Verification/ASSUpgrade/README.md)。
+导入保全用例检查旧身份的 Scene/Prefab 在导入和打开后字节、GUID、源配置及编辑状态
+保持原状；生成用例分别检查源字段和有效构建配置。当前结果见
+[ASS 导入安全记录](../../../../Docs/Verification/ASSImportSafety/README.md)。
 SDK/NDMF 用例检查实际 Behaviour、源资产隔离与最终提交；混淆检查覆盖诱饵状态单独
 启用、无 Bool 池及条件参数声明。
 
 Inspector 及其校验说明支持英语、简体、繁体和日语；缺省语言按 Unity 语言选择。
 运行数量、源指纹、Player 构建和性能测量集中于仓库[测试指南](../../../../Docs/Testing.md)
-与[性能报告](../../../../Docs/Performance.md)。当前基准测量手势图生成和 Animator 更新，
-历史身体锁生成样本通过旧提交追溯。
+与[性能报告](../../../../Docs/Performance.md)。0.9.0 的基线测量覆盖手势图生成和 Animator 更新，
+0.9.1 的结果范围单列于导入安全记录。历史身体锁生成样本通过旧提交追溯。

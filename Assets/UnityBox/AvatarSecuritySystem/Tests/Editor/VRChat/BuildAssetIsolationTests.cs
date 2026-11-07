@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -38,6 +39,43 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 Object.DestroyImmediate(descriptor.expressionParameters);
             Object.DestroyImmediate(avatar);
             AssetDatabase.DeleteAsset(folder);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ImportPreservesVrcDescriptorAndNeverReassignsAnUnknownScript(bool legacyReference)
+        {
+            var config = avatar.AddComponent<ASSComponent>();
+            config.gestureHoldTime = 0.15f;
+            config.gestureErrorTolerance = 0.3f;
+            descriptor.ViewPosition = new Vector3(0.1f, 1.73f, 0.2f);
+            string descriptorScript = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(descriptor));
+            string descriptorGuid = AssetDatabase.AssetPathToGUID(descriptorScript);
+            byte[] descriptorMetadata = File.ReadAllBytes(descriptorScript + ".meta");
+            string path = folder + "/Avatar.prefab";
+            PrefabUtility.SaveAsPrefabAsset(avatar, path);
+            if (legacyReference)
+                File.WriteAllText(path, File.ReadAllText(path).Replace(
+                    "1c51e6a139920bb4ca12700dc82627ff", "70959987f069e36d39b8a69869eef7f5"));
+            byte[] original = File.ReadAllBytes(path);
+            byte[] metadata = File.ReadAllBytes(path + ".meta");
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            var imported = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var importedDescriptor = imported.GetComponent<VRCAvatarDescriptor>();
+            Assert.That(importedDescriptor, Is.Not.Null);
+            Assert.That(importedDescriptor.ViewPosition, Is.EqualTo(new Vector3(0.1f, 1.73f, 0.2f)));
+            Assert.That(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(importedDescriptor))),
+                Is.EqualTo(descriptorGuid));
+            Assert.That(GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(imported), Is.EqualTo(legacyReference ? 1 : 0));
+            if (!legacyReference)
+            {
+                Assert.That(imported.GetComponent<ASSComponent>().gestureHoldTime, Is.EqualTo(0.15f));
+                Assert.That(imported.GetComponent<ASSComponent>().gestureErrorTolerance, Is.EqualTo(0.3f));
+            }
+            AssetDatabase.SaveAssets();
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(original));
+            Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metadata));
+            Assert.That(File.ReadAllBytes(descriptorScript + ".meta"), Is.EqualTo(descriptorMetadata));
         }
 
         [Test]

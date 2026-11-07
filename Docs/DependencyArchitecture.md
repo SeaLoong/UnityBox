@@ -45,9 +45,9 @@ asmdef。最低版本表达式使用 Unity 支持的普通版本字符串，例�
 ## 序列化与构建
 
 Runtime 配置类型、字段和已知 GUID 保留；实际 SDK Base 可用时继续实现 `IEditorOnly`。
-ASS 0.9.0 维持同名 Runtime 程序集和固定 ASSComponent GUID，并迁移旧包省略 metadata
-产生的随机 GUID。完整旧配置确认身份后，Scene/Prefab 及 stripped 引用一并重连；写入前
-备份原字节，未保存资产先保存再修复。
+ASS 0.9.1 维持同名 Runtime 程序集和固定 ASSComponent GUID，移除 0.9.0 的整个自动
+迁移实现和修复菜单/API。启动、打开与导入保留原 Scene/Prefab、脚本身份和已存字段；
+源配置不通过 OnValidate 自动纠正，生成图只规范化独立配置副本。旧备份不自动恢复。
 
 普通 Unity 的 ASS 由实际 Player 构建回调自动生成并移除场景副本中的作者配置，SDK/NDMF
 使用自己的 Avatar 自动构建入口。构建复制源 Controller/AOC，保留用户图与 WD，清理旧

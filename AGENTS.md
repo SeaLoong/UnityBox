@@ -7,6 +7,11 @@
   `Assets/UnityBox.unity` retains the user's newer temp/refactor scene bytes; the older optimizer
   example scene remains available in its original feature-branch commit history. Use the existing checkout; do not create worktrees unless
   the user requests them.
+- Opening/importing packages and loading Scene/Prefab assets must preserve existing source bytes,
+  GUIDs, serialized values and editing state. Do not add automatic migrations, bulk GUID replacement,
+  scene reloads or OnValidate corrections of stored configuration. A general fix request does not
+  authorize migration or backup restoration; those require an explicit user-selected reviewed operation.
+  Normal requested generation and processing of build-scene/configuration copies remain authorized.
 - Follow `code-simplifier.md`. Use explicit input/output contracts and complete behavior changes with
   native Animator, saved-asset reload, Undo/Redo, Player/build or rendered-output checks as appropriate.
 - Keep generic Unity algorithms independent of optional SDK, MA and NDMF assemblies. Preserve real
