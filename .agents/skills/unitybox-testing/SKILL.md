@@ -97,11 +97,17 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 
 ## Verify ASS time editing and obfuscation output
 
-- ASS0.9.8 Inspector commits delayed numeric edits with hold at least tolerance (equality allowed),
-  tolerance at most hold, and maximum at least max(1s,hold+tolerance+0.05s). Preserve
-  default0.5/0.3 values. Verify real SerializedObject edits and Undo/Redo, not copied arithmetic.
+- ASS0.9.9 Inspector draws each timing row as a slider plus a delayed numeric field. The slider
+  range is derived from the stored hold/tolerance (hold: max(0.05s,tolerance)–1s, tolerance: 0–hold,
+  maximum: max(1s,hold+tolerance+0.05s)–10s) so a drag cannot be clamped back; the numeric field
+  commits on Enter/blur and both paths share one commit function with Undo/Redo. Preserve
+  default0.5/0.3 values and legacy out-of-range values when only drawing. Verify real
+  SerializedObject edits and Undo/Redo, and the range values, not copied arithmetic.
   Equal0.3/0.3 values must survive normalization; test actual Animator hold/interruption behavior
   at60/90/120Hz, including short repeated partial holds that must restart after a wrong gesture.
+- ASS0.9.9 restores `disableDefense=false` for new components and Reset: a locked defense layer is
+  generated unless the user disables it; `defaultEnableDefense` stays off and Standalone builds force
+  `disableDefense=true`. Check stored legacy components keep their serialized value.
 - Open and repaint an Inspector containing legacy invalid values; compare stored fields, dirty state,
   Prefab/source bytes and metadata. Drawing must preserve values. Exercise the explicit correction
   action separately, and require a real editor window for graphics/event checks.

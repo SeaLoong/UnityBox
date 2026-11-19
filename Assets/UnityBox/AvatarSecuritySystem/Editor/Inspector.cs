@@ -7,6 +7,10 @@ namespace UnityBox.AvatarSecuritySystem
     [CustomEditor(typeof(ASSComponent))]
     public class Inspector : UnityEditor.Editor
     {
+        private const float TimingValueFieldWidth = 56f;
+        private const float TimingSliderMinimumWidth = 40f;
+        private const float TimingSliderHorizontalGap = 2f;
+        private const float TimingSliderMinimumSpan = 0.01f;
         private ASSComponent _target;
         private static readonly int[] GESTURE_VALUES = { 0, 1, 2, 3, 4, 5, 6, 7 };
         private void OnEnable()
@@ -205,11 +209,61 @@ namespace UnityBox.AvatarSecuritySystem
         private void DrawGestureTimingField(string propertyName, string labelKey)
         {
             var property = serializedObject.FindProperty(propertyName);
+            var label = new GUIContent(T(labelKey), ExpandTokens(property.tooltip));
+            GetTimingSliderRange(propertyName, out float minimum, out float maximum);
+            float stored = property.floatValue;
+            minimum = Mathf.Min(minimum, stored);
+            maximum = Mathf.Max(maximum, stored);
+            if (maximum - minimum < TimingSliderMinimumSpan) maximum = minimum + TimingSliderMinimumSpan;
+            Rect content = EditorGUI.PrefixLabel(EditorGUILayout.GetControlRect(), label);
+            float valueWidth = Mathf.Clamp(content.width - TimingSliderMinimumWidth - TimingSliderHorizontalGap,
+                32f, TimingValueFieldWidth);
+            float sliderWidth = Mathf.Max(0f, content.width - valueWidth - TimingSliderHorizontalGap);
+            var sliderRect = new Rect(content.x, content.y, sliderWidth, content.height);
+            var valueRect = new Rect(content.xMax - valueWidth, content.y, valueWidth, content.height);
+            EditorGUI.BeginChangeCheck();
+            float sliderValue = EditorGUI.Slider(sliderRect, stored, minimum, maximum);
+            if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(sliderValue, stored))
+            {
+                ApplyGestureTimingEdit(propertyName, sliderValue);
+                stored = property.floatValue;
+            }
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(propertyName);
-            float value = EditorGUILayout.DelayedFloatField(
-                new GUIContent(T(labelKey), ExpandTokens(property.tooltip)), property.floatValue);
-            if (EditorGUI.EndChangeCheck()) ApplyGestureTimingEdit(propertyName, value);
+            float typedValue = EditorGUI.DelayedFloatField(valueRect, stored, EditorStyles.numberField);
+            if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(typedValue, stored))
+            {
+                ApplyGestureTimingEdit(propertyName, typedValue);
+            }
+        }
+        /// <summary>Drag range for one timing field: every value inside it already satisfies the committed contract.</summary>
+        public static void GetTimingSliderRange(string propertyName, float hold, float tolerance,
+            out float minimum, out float maximum)
+        {
+            float normalizedHold = Mathf.Clamp(hold, 0.05f, 1f);
+            float normalizedTolerance = Mathf.Clamp(tolerance, 0f, normalizedHold);
+            switch (propertyName)
+            {
+                case "gestureHoldTime":
+                    minimum = Mathf.Max(0.05f, Mathf.Clamp(tolerance, 0f, 1f));
+                    maximum = 1f;
+                    return;
+                case "gestureErrorTolerance":
+                    minimum = 0f;
+                    maximum = normalizedHold;
+                    return;
+                default:
+                    minimum = Mathf.Max(1f, normalizedHold + normalizedTolerance + 0.05f);
+                    maximum = 10f;
+                    return;
+            }
+        }
+        private void GetTimingSliderRange(string propertyName, out float minimum, out float maximum)
+        {
+            GetTimingSliderRange(propertyName,
+                serializedObject.FindProperty("gestureHoldTime").floatValue,
+                serializedObject.FindProperty("gestureErrorTolerance").floatValue,
+                out minimum, out maximum);
         }
         private void ApplyGestureTimingEdit(string propertyName, float value)
         {

@@ -48,7 +48,7 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             component.gesturePassword[0] = 6;
             component.gesturePassword.Add(3);
             Assert.That(snapshot.gesturePassword, Is.EqualTo(new[] { 0, 2, 7 }));
-            Assert.That(snapshot.disableDefense, Is.True);
+            Assert.That(snapshot.disableDefense, Is.False);
             Assert.That(snapshot.defaultEnableDefense, Is.False);
         }
 

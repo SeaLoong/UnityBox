@@ -74,9 +74,11 @@ Light 复用和激活流程。`disableRootChildren` 与 `writeDefaultsMode` 仅�
 提供共享规则：hold 在 0.05–1s；tolerance 在 0 至 hold；maximum 位于
 max(1s, hold+tolerance+0.05s) 至 10s。构建始终规范化独立配置副本。
 
-Inspector 使用延迟数值输入，只在提交编辑时写入：修改 hold 会保留有效 tolerance，并将
-hold 限制到至少 tolerance；修改 tolerance 会限制到 hold；随后按共享规则
-更新 maximum。写入通过 SerializedObject 提交并加入 Undo；旧非法值绘制时保留，显式
+Inspector 每行是滑块与延迟数值框的组合：滑块范围由当前 hold/tolerance 推导（hold 为
+max(0.05s, tolerance)–1s，tolerance 为 0–hold，maximum 为 max(1s, hold+tolerance+0.05s)–10s），
+数值框按 Enter 或失焦提交；两种输入都调用同一个提交函数并加入 Undo：修改 hold 会保留
+有效 tolerance，并将 hold 限制到至少 tolerance；修改 tolerance 会限制到 hold；随后按共享规则
+更新 maximum。旧非法值绘制时保留（超出滑块区间时停在端点），显式
 “修正时间”按钮才提交规范值。组件加载、打开 Inspector 和资源导入保留已存字段，
 `OnValidate` 不纠正源配置；新组件和用户显式 Reset 提供默认值。
 
@@ -140,7 +142,9 @@ SDK/NDMF 仍在构建副本执行现有生成接入。比较 Avatar 面板数据
 对象阶段：源 Avatar 统计与生成后的副本不同。真实SDK3.8.2普通粒子统计中，关闭子对象仍计入
 系统数量与最大容量，停止发射时实时粒子数为0。只在独立副本添加组件不改变源对象统计。
 数据、初始化与调用见[SDK统计记录](../../../../Docs/Verification/ASSTimingEquality/README.md)。
-0.9.8 的修改范围是时间相等边界，防御代码和负载参数保留。
+0.9.9 恢复「禁用防御」默认关闭：`ASSConfigData.FromComponent` 复制组件值，普通生成按
+`defaultEnableDefense` 与 `disableDefense` 选择受密码保护的防御层或始终开启的默认防御层；
+Standalone 构建仍在配置副本中强制 `disableDefense=true`。
 
 ## 音频引用与 SDK 上传校验
 

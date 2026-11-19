@@ -35,7 +35,7 @@ namespace UnityBox.AvatarSecuritySystem
         [Tooltip("#{advanced.play_mode_tooltip}")]
         public bool enabledInPlaymode = false;
         [Tooltip("#{defense.disable_defense_tooltip}")]
-        public bool disableDefense = true;
+        public bool disableDefense = false;
         // Retained only so configurations authored before 0.9 keep their serialized data.
         [HideInInspector]
         public bool disableRootChildren = true;
@@ -140,7 +140,7 @@ namespace UnityBox.AvatarSecuritySystem
             disableWarningSound = false;
             disableOverlay = false;
             defaultEnableDefense = false;
-            disableDefense = true;
+            disableDefense = false;
             lightweightDefense = false;
             enablePlayableLayerObfuscation = true;
             writeDefaultsMode = WriteDefaultsMode.On;

@@ -79,10 +79,10 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
-        public void NewComponentDoesNotEnableActiveLoadDefense()
+        public void NewComponentGeneratesUnlockedDefenseWithoutActiveLoadDefense()
         {
             var config = avatar.AddComponent<ASSComponent>();
-            Assert.That(config.disableDefense, Is.True);
+            Assert.That(config.disableDefense, Is.False);
             Assert.That(config.defaultEnableDefense, Is.False);
         }
 

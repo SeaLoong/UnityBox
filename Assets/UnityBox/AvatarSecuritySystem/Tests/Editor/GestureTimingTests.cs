@@ -272,6 +272,43 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
         }
 
+        [TestCase("gestureHoldTime", 0.5f, 0.3f)]
+        [TestCase("gestureHoldTime", 0.3f, 0.3f)]
+        [TestCase("gestureHoldTime", 1f, 1f)]
+        [TestCase("gestureHoldTime", 0.15f, 0.3f)]
+        [TestCase("gestureErrorTolerance", 0.5f, 0.6f)]
+        [TestCase("gestureErrorTolerance", 1f, 1f)]
+        [TestCase("gestureMaxHoldTime", 0.5f, 0.3f)]
+        [TestCase("gestureMaxHoldTime", 0.15f, 0.3f)]
+        public void SliderRangeOffersOnlyValuesTheTimingContractAccepts(string property, float hold, float tolerance)
+        {
+            var component = root.AddComponent<ASSComponent>();
+            var previousLanguage = I18n.GetCurrentLanguage();
+            var inspector = UnityEditor.Editor.CreateEditor(component);
+            var apply = typeof(Inspector).GetMethod("ApplyGestureTimingEdit",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            try
+            {
+                Inspector.GetTimingSliderRange(property, hold, tolerance, out float minimum, out float maximum);
+                Assert.That(minimum, Is.LessThanOrEqualTo(maximum));
+                foreach (float candidate in new[] { minimum, maximum, (minimum + maximum) * 0.5f })
+                {
+                    component.gestureHoldTime = hold;
+                    component.gestureErrorTolerance = tolerance;
+                    component.gestureMaxHoldTime = 3f;
+                    inspector.serializedObject.Update();
+                    apply.Invoke(inspector, new object[] { property, candidate });
+                    inspector.serializedObject.ApplyModifiedProperties();
+                    Assert.That(ReadTiming(component, property), Is.EqualTo(candidate).Within(0.000001f),
+                        $"The slider range of {property} must reach {candidate} without being clamped back.");
+                    Assert.That(component.gestureHoldTime, Is.GreaterThanOrEqualTo(component.gestureErrorTolerance));
+                    Assert.That(component.gestureMaxHoldTime, Is.GreaterThanOrEqualTo(
+                        Mathf.Max(1f, component.gestureHoldTime + component.gestureErrorTolerance + 0.05f) - 0.000001f));
+                }
+            }
+            finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
+        }
+
         [Test]
         public void EqualStoredTimesStayEqualAndNeedNoInspectorCorrection()
         {
@@ -322,6 +359,13 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             }
             finally { Object.DestroyImmediate(inspector); I18n.SetLanguage(previousLanguage); }
         }
+
+        private static float ReadTiming(ASSComponent component, string property) => property switch
+        {
+            "gestureHoldTime" => component.gestureHoldTime,
+            "gestureErrorTolerance" => component.gestureErrorTolerance,
+            _ => component.gestureMaxHoldTime
+        };
 
         private static void AssertTiming(ASSComponent component, float hold, float tolerance, float maximum)
         {
