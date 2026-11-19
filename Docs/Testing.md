@@ -18,6 +18,14 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
+## ASS 0.9.11 Overlay Logo 流送
+
+Logo metadata 正式纳入发布并同时开启 Mip Maps / Streaming Mip Maps；现有 GUID 保持。
+新增 4 组生成回归覆盖 SDK/NDMF 标记路径与 Overlay 激活/未激活组合：确认材质真实引用 Logo，
+遍历全部 Renderer 贴图并检查 `!mipmapEnabled || streamingMipmaps`，比较源图片、GUID 与 metadata。
+另用隔离贴图验证非流送负例会被发现、启用流送后通过，不修改源 Logo 或用户资源。
+执行命令、依赖范围、实际结果与发布 ZIP 校验见[验证记录](Verification/ASSLogoStreaming/README.md)。
+
 ## ASS 0.9.10 时间行数值框修正
 
 0.9.9 的滑块使用自带数值框的 `EditorGUI.Slider`，每行显示两个数值框；0.9.10 改用

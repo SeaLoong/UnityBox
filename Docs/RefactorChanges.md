@@ -4,6 +4,13 @@
 原 `refactor` 七插件与 Animator Optimizer 在同一个 checkout 开发、测试和发布。
 执行记录见 [验证结果](VerificationResults.json)，测量数据见 [性能报告](Performance.md)。
 
+## ASS 0.9.11：Logo 发布配置
+
+Overlay Logo 的 TextureImporter metadata 纳入版本控制和发布 ZIP，保留仓库现有 GUID，
+启用 Mip Maps 与 Streaming Mip Maps。只修正插件自带资源，不在构建过程中扫描修改用户导入器，
+不绕过 SDK 校验。更新后重新正常构建生成 Overlay。真实导入/生成与负例验证见
+[Logo 流送记录](Verification/ASSLogoStreaming/README.md)。本次未更改运行时代码，未重测性能。
+
 ## 分支和用户文件
 
 原 `75396e7 chore: TEMP` 的文件变更以 `bee33c6` 保留，原提交位于

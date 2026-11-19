@@ -137,6 +137,15 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 `Generated/Build_<id>`；SDK 后处理还原原 Descriptor、Controller 和参数，NDMF 输出跟随
 构建结果保留。原 Controller、Clip、BlendTree 及表达式参数保持各自资产身份。
 
+## Overlay 贴图与上传
+
+0.9.11 随包提供 Logo 的固定 TextureImporter metadata，保留仓库现有 GUID，开启
+**Mip Maps** 与 **Streaming Mip Maps**。SDK 会扫描生成头像全部 Renderer 的材质贴图，
+包括未激活 Overlay；`mipmapEnabled && !streamingMipmaps` 会阻止上传。
+ASS 在构建阶段才生成 Overlay，因此源头像面板没有错误不代表生成后的 Logo 合规。
+更新包后重新正常构建即可，无需关闭 mipmap，不会在构建中修改用户 TextureImporter 或 SDK。
+验证见[Logo 流送回归](../../../../Docs/Verification/ASSLogoStreaming/README.md)。
+
 ## 音频与上传
 
 0.9.5 为 `PasswordSuccess`、`CountdownWarning`、`StepSuccess` 和 `InputError` 四个自带

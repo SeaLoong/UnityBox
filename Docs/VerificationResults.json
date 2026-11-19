@@ -1,6 +1,19 @@
 {
   "branch": "master",
   "schema": 3,
+  "supplemental_patch_runs": [
+    {
+      "scope": "ASS 0.9.11 Overlay Logo streaming",
+      "date_local": "2026-11-20",
+      "platform": "Windows 11",
+      "editor": "2022.3.22f1",
+      "core": { "total": 116, "passed": 116, "failed": 0, "skipped": 0 },
+      "sdk_ndmf": { "total": 53, "passed": 53, "failed": 0, "skipped": 0 },
+      "new_texture_cases": 5,
+      "evidence": "Docs/Verification/ASSLogoStreaming/results.json",
+      "notes": "Separate correct fixture layouts; earlier diagnostic failures retained. Windows packaging unittest: 19 passed, 4 existing CRLF/POSIX differences. No new Player/performance run; historical full-library records below are unchanged."
+    }
+  ],
   "captured_at_utc": "2026-11-07T17:29:24.398466+00:00",
   "editor": "2022.3.22f1",
   "platform": "Linux x86-64",

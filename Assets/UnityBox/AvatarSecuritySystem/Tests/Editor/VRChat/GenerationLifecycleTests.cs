@@ -131,6 +131,90 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             AssertPackagedAudioUnchanged(original);
         }
 
+        private static Texture[] RendererTextures(GameObject avatar)
+        {
+            return avatar.GetComponentsInChildren<Renderer>(true)
+                .SelectMany(renderer => renderer.sharedMaterials)
+                .Where(material => material != null)
+                .SelectMany(material => material.GetTexturePropertyNameIDs().Select(material.GetTexture))
+                .Where(texture => texture != null).Distinct().ToArray();
+        }
+
+        private static Texture[] NonStreamingMipmappedTextures(GameObject avatar)
+        {
+            return RendererTextures(avatar).Where(texture =>
+            {
+                var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(texture)) as TextureImporter;
+                return importer != null && importer.mipmapEnabled && !importer.streamingMipmaps;
+            }).ToArray();
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void GeneratedOverlayTexturesMeetUploadStreamingRequirementsWithoutChangingSource(
+            bool ndmf, bool inactive)
+        {
+            var logo = Resources.Load<Texture2D>("Avatar Security System");
+            Assert.That(logo, Is.Not.Null);
+            string path = AssetDatabase.GetAssetPath(logo);
+            byte[] imageBytes = File.ReadAllBytes(path);
+            byte[] metaBytes = File.ReadAllBytes(path + ".meta");
+            string guid = AssetDatabase.AssetPathToGUID(path);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            Assert.That(importer.mipmapEnabled, Is.True, "Keep Logo mipmaps enabled, not bypassed.");
+            Assert.That(importer.streamingMipmaps, Is.True, "The shipped Logo importer must enable streaming.");
+
+            var avatar = Avatar("Overlay texture upload validation");
+            avatar.GetComponent<ASSComponent>().disableOverlay = false;
+            Process(avatar, ndmf);
+            var overlay = avatar.transform.Find(Constants.GO_OVERLAY);
+            Assert.That(overlay, Is.Not.Null);
+            overlay.gameObject.SetActive(!inactive);
+            Assert.That(RendererTextures(avatar), Does.Contain(logo), "The generated material must use the shipped Logo.");
+            Assert.That(NonStreamingMipmappedTextures(avatar), Is.Empty,
+                "All generated Renderer textures, including inactive children, must meet SDK streaming rules.");
+            Assert.That(AssetDatabase.AssetPathToGUID(path), Is.EqualTo(guid));
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(imageBytes));
+            Assert.That(File.ReadAllBytes(path + ".meta"), Is.EqualTo(metaBytes),
+                "Building must not rewrite the source TextureImporter.");
+        }
+
+        [Test]
+        public void TextureScanDetectsNonStreamingMipmapsOnInactiveOverlayAndAcceptsStreamingControl()
+        {
+            var avatar = Avatar("Inactive overlay texture control");
+            avatar.GetComponent<ASSComponent>().disableOverlay = false;
+            Process(avatar, true);
+            var overlay = avatar.transform.Find(Constants.GO_OVERLAY);
+            var renderer = overlay.GetComponentInChildren<Renderer>(true);
+            Assert.That(renderer.sharedMaterial.HasProperty("_G4D9"), Is.True);
+            var logo = (Texture2D)renderer.sharedMaterial.GetTexture("_G4D9");
+            Assert.That(logo, Is.Not.Null);
+            string logoPath = AssetDatabase.GetAssetPath(logo);
+            byte[] logoMeta = File.ReadAllBytes(logoPath + ".meta");
+            string folder = "Assets/__ASSTextureImport_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", folder.Substring(7));
+            generatedFolders.Add(folder);
+            string path = folder + "/UploadControl.png";
+            File.Copy(logoPath, path);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.mipmapEnabled = true;
+            importer.streamingMipmaps = false;
+            importer.SaveAndReimport();
+            var control = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            renderer.sharedMaterial.SetTexture("_G4D9", control);
+            overlay.gameObject.SetActive(false);
+            Assert.That(NonStreamingMipmappedTextures(avatar), Is.EqualTo(new[] { control }));
+
+            importer.streamingMipmaps = true;
+            importer.SaveAndReimport();
+            Assert.That(NonStreamingMipmappedTextures(avatar), Is.Empty);
+            Assert.That(File.ReadAllBytes(logoPath + ".meta"), Is.EqualTo(logoMeta));
+        }
+
         [Test]
         public void RealSdkRejectsForegroundDecompressionAndAcceptsTheSameClipAfterBackgroundImport()
         {

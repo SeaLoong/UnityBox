@@ -1,6 +1,14 @@
 # 发布与升级说明
 
-## 2026-11-20：ASS 0.9.10 修正时间行重复数值框
+## 2026-11-20：ASS 0.9.11 修正 Overlay Logo 流送配置
+
+Logo 的 TextureImporter metadata 正式纳入发布，保留仓库已有 GUID，开启 Mip Maps 与
+Streaming Mip Maps。修复构建生成 Overlay 后，SDK 因 Logo 含 mipmap 却未开启流送而阻止上传的问题。
+更新至 **0.9.11** 后重新正常构建；不需要禁用 mipmap、修改 SDK，构建时也不改写用户贴图导入器。
+添加生成头像全部 Renderer（含未激活对象）的贴图合规、原资源保全和违规/合规对照回归。
+执行记录见[Logo 流送验证](Verification/ASSLogoStreaming/README.md)。
+
+## 2026-11-20：ASS 0.9.10 修正时间行重复数值框（历史发布）
 
 ASS 从 **0.9.9** 更新为 **0.9.10**。0.9.9 的滑块使用 `EditorGUI.Slider`，它自带一个数值框，
 与右侧的延迟数值框叠加成两格。本版滑块改用 `GUI.HorizontalSlider`（无内建数值框），每行只保留

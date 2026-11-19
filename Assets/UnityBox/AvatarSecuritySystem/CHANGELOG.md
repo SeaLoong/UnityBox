@@ -2,7 +2,14 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.10] - 2026-11-20
+## [0.9.11] - 2026-11-20
+
+### Fixed
+
+- 将 Overlay Logo 的 TextureImporter metadata 纳入发布：保留现有 GUID，启用 Mip Maps 与 Streaming Mip Maps，避免构建后新增 Overlay 材质导致 SDK 上传校验报错。仅修正随包资源，不在构建时修改用户 TextureImporter 或 SDK 校验。
+- 增加生成头像贴图回归：扫描所有 Renderer（包括未激活子对象）引用的贴图，要求 `!mipmapEnabled || streamingMipmaps`，确认 Logo 确实被引用且生成过程不改写图片、GUID 或 metadata；用隔离贴图验证违规/合规对照。
+
+## [0.9.10] - 2026-11-20（历史发布）
 
 ### Fixed
 

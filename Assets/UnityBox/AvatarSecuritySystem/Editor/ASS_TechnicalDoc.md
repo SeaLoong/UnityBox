@@ -148,6 +148,16 @@ SDK/NDMF 仍在构建副本执行现有生成接入。比较 Avatar 面板数据
 `defaultEnableDefense` 与 `disableDefense` 选择受密码保护的防御层或始终开启的默认防御层；
 Standalone 构建仍在配置副本中强制 `disableDefense=true`。
 
+## Overlay Logo 与贴图流送
+
+`Feedback.CreateOverlayMesh` 在构建生成材质后，将 Resources 中的 Logo 绑定到 `_G4D9`。
+SDK `VerifyAvatarMipMapStreaming` 扫描 Renderer（包括未激活对象）的所有材质贴图，拒绝
+`TextureImporter.mipmapEnabled && !TextureImporter.streamingMipmaps`。
+0.9.11 将之前未被 Git 跟踪的 Logo metadata 纳入发布，保留仓库已有 GUID，并同时启用
+mipmap 与 streaming。修正在资源发布层完成；生成路径不修改 TextureImporter，也不修改 SDK。
+回归检查 SDK/NDMF 标记的生成路径、激活/未激活 Overlay、材质真实 Logo 引用及原资源字节保全；
+隔离副本的开关对照确认检查器能发现违规贴图。见[验证记录](../../../../Docs/Verification/ASSLogoStreaming/README.md)。
+
 ## 音频引用与 SDK 上传校验
 
 `Processor.LoadAudioResources` 和 `StandaloneSecurityBuilder.Build` 在配置副本未指定音频时，

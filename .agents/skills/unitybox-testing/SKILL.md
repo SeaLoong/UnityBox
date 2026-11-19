@@ -177,6 +177,20 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   [ASSAudioUpload](../../../Docs/Verification/ASSAudioUpload/README.md), with actual commands and counts.
   Retain earlier whole-library and component-upgrade evidence under its original version/source identity.
 
+## Verify ASS Overlay texture streaming
+
+- ASS0.9.11 ships the Logo TextureImporter metadata with the existing checkout GUID, mipmaps enabled
+  and streaming enabled. Track and inspect the actual release ZIP metadata; do not rewrite user
+  TextureImporters during builds or bypass SDK validation. Earlier Git revisions omitted this metadata.
+- Generate an Overlay through both Processor SDK/NDMF-mode paths. Enumerate all Renderer materials
+  including inactive children, require the shipped Logo to be referenced, and check every imported
+  texture satisfies `!importer.mipmapEnabled || importer.streamingMipmaps`.
+- Compare Logo PNG, GUID and metadata bytes before/after generation. Use an owned temporary texture
+  on an inactive Overlay as a non-streaming negative control, then enable streaming only on that copy
+  and require a clean scan. Do not alter the source Logo or user project for the control.
+- Retain actual native counts and source-matched records under
+  [ASSLogoStreaming](../../../Docs/Verification/ASSLogoStreaming/README.md).
+
 ## Retain reviewable results and publish the code
 
 - Run Python unittest discovery under `scripts/unity` after harness edits. For packaging and release

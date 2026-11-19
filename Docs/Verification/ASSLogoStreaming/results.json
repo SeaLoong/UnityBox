@@ -1,0 +1,187 @@
+{
+  "captured_at_utc": "2026-11-19T20:14:07.716701+00:00",
+  "scope": "ASS 0.9.11 Logo streaming",
+  "base_revision": "490afacd91716989c81c7e33d111916d21620d50",
+  "editor": "2022.3.22f1",
+  "platform": "Windows 11",
+  "python": "3.14.2",
+  "dependencies": {
+    "VRChat Base/Avatars": "3.8.2",
+    "NDMF": "1.11.0",
+    "UTF": "1.1.33",
+    "NUnit": "1.0.6"
+  },
+  "tested_package_marker": {
+    "tool": "UnityBox.test_project",
+    "schema": 1,
+    "project_id": "beb1ffa5d29a4129974bb632955da84a",
+    "prepared_at": "2026-11-19T20:13:23.645199+00:00",
+    "repo": "D:\\uv\\src11",
+    "revision": null,
+    "profile": "core",
+    "packages": {
+      "com.unity.ext.nunit": {
+        "files": 14,
+        "sha256": "0663fa9b2e7e899ff368b8217084f1f4010aed34288229921af4f7ad3f42ab50",
+        "version": "1.0.6",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.ext.nunit",
+        "origin": "cache"
+      },
+      "com.unity.test-framework": {
+        "files": 669,
+        "sha256": "d081e9e4fdd84948cac384e2ff06491055d03c6e059cf808f51e1a2746d35386",
+        "version": "1.1.33",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.test-framework",
+        "origin": "cache"
+      },
+      "top.sealoong.unitybox.avatar-security-system": {
+        "files": 137,
+        "sha256": "e66d9b81af75d53745add72899e361d1b3d438a20d33f32a282dec52fae7d904",
+        "version": "0.9.11",
+        "source": "D:\\uv\\src11\\Assets\\UnityBox\\AvatarSecuritySystem",
+        "origin": "local"
+      }
+    },
+    "selected_packages": [
+      "top.sealoong.unitybox.avatar-security-system"
+    ],
+    "ignored_vpm_dependencies": {},
+    "registry_dependencies": {},
+    "test_assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ]
+  },
+  "verified_non_markdown_files": 134,
+  "core": {
+    "result": "Passed",
+    "total": "116",
+    "passed": "116",
+    "failed": "0",
+    "skipped": "0",
+    "start-time": "2026-11-19 20:13:42Z",
+    "end-time": "2026-11-19 20:13:52Z"
+  },
+  "sdk_ndmf": {
+    "result": "Passed",
+    "total": "53",
+    "passed": "53",
+    "failed": "0",
+    "skipped": "0",
+    "start-time": "2026-11-19 20:13:34Z",
+    "end-time": "2026-11-19 20:13:51Z"
+  },
+  "core_command": [
+    "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "D:\\uv\\ac11",
+    "-runTests",
+    "-testPlatform",
+    "EditMode",
+    "-testResults",
+    "D:\\uv\\ac11\\.unitybox-test-results\\20261119T201323-92c40ae3\\results.xml",
+    "-logFile",
+    "D:\\uv\\ac11\\.unitybox-test-results\\20261119T201323-92c40ae3\\unity.log",
+    "-testCategory",
+    "!UnityBoxPerformance;!UnityBoxGraphics",
+    "-assemblyNames",
+    "UnityBox.AvatarSecuritySystem.Editor.Tests"
+  ],
+  "sdk_command": [
+    "D:/Unity/2022.3.22f1/Editor/Unity.exe",
+    "-batchmode",
+    "-projectPath",
+    "D:/uv/as11",
+    "-runTests",
+    "-testPlatform",
+    "EditMode",
+    "-testResults",
+    "D:/uv/as11/sdk.xml",
+    "-logFile",
+    "D:/uv/as11/sdk.log",
+    "-assemblyNames",
+    "UnityBox.AvatarSecuritySystem.VRChat.Tests;UnityBox.AvatarSecuritySystem.NDMF.Tests",
+    "-testCategory",
+    "!UnityBoxPerformance;!UnityBoxGraphics"
+  ],
+  "packaging_unittest": {
+    "command": "PYTHONUTF8=1 python -m unittest discover -s .github/scripts -p 'test_*.py' -v",
+    "passed": 19,
+    "failed": 4,
+    "reason": "Existing Windows CRLF fixture expectations (3) and POSIX executable bits (1); tools unchanged. Linux suite runs in release workflow."
+  },
+  "diagnostics": {
+    "package_layout": {
+      "result": "Failed(Child)",
+      "total": "169",
+      "passed": "96",
+      "failed": "73",
+      "skipped": "0",
+      "start-time": "2026-11-19 20:10:32Z",
+      "end-time": "2026-11-19 20:11:00Z"
+    },
+    "assets_layout": {
+      "result": "Failed(Child)",
+      "total": "169",
+      "passed": "165",
+      "failed": "4",
+      "skipped": "0",
+      "start-time": "2026-11-19 20:12:18Z",
+      "end-time": "2026-11-19 20:12:57Z"
+    },
+    "explanation": "First combined run put ASS under Packages: migration fixture assumptions left compiler state invalid (73 failures). Moving ASS into Assets yielded 165/169, with only four pre-existing audio assertions requiring Packages paths. Final core run uses normal prepared Packages layout; SDK/NDMF run uses Assets layout. Production source unchanged between runs."
+  },
+  "artifacts": {
+    "core_xml": {
+      "file": "Docs/Verification/ASSLogoStreaming/core-results.xml.gz",
+      "sha256": "dbbbf645130b06a5df68c91c9ac67e748078d69da90f9cd56faf85eb0f03b2d6",
+      "raw_sha256": "9c2fef030e9afbfe9f5e8f8ec7e59b568248f4731421e20809401f2949c11033"
+    },
+    "core_log": {
+      "file": "Docs/Verification/ASSLogoStreaming/core.log.gz",
+      "sha256": "f32eb5a4a6d174919362b5546e576c2bd28af6c0dfdfac0fc8f5b14e3d12e6e8",
+      "raw_sha256": "9facf3a050c43c5d7701edd96eb09271fc4c8ab98d5f362493a4e3beefec77ef"
+    },
+    "sdk_xml": {
+      "file": "Docs/Verification/ASSLogoStreaming/sdk-results.xml.gz",
+      "sha256": "dd1cdd5e7b0fa974e373849d23ecff03c1d3cf19336ab0b7e2e94fa8749116bf",
+      "raw_sha256": "22e812abc4e6b2145f7051f24c3453cae723029060e77b8dfd0ee650c455fe0b"
+    },
+    "sdk_log": {
+      "file": "Docs/Verification/ASSLogoStreaming/sdk.log.gz",
+      "sha256": "56287f7da04342fd4c1c0be28bdd6c26455087ac89f4caecc479f89c31b91f9b",
+      "raw_sha256": "ac8610cf85dde7676f7be8b152bfecd53a10eac429079423aa165e45cb9f4ba9"
+    },
+    "packaging_log": {
+      "file": "Docs/Verification/ASSLogoStreaming/packaging.log.gz",
+      "sha256": "ba9383401c4f15b76f64edb67b33835da9885ce0f390d042a6d86293313b9b6b",
+      "raw_sha256": "e775e22e8ea92a0e68c95b7c44fb4ba7e2bc11e4cacf2bb34c2e90d49532ead1"
+    },
+    "initial_package_layout_xml": {
+      "file": "Docs/Verification/ASSLogoStreaming/diagnostic-package-layout.xml.gz",
+      "sha256": "f6ee86ebf8292c9af24d3024f6346717b93d4ac400461e4fb6c1c7aedb68983d",
+      "raw_sha256": "98a9ca97e41a50a4c30b9b94f9269615f3f8c6ee2827c28128d3a0b6cffbd48f"
+    },
+    "initial_assets_layout_xml": {
+      "file": "Docs/Verification/ASSLogoStreaming/diagnostic-assets-layout.xml.gz",
+      "sha256": "6e91da440f0c9d9005bef03eee5442fc4da5c3763fb5193de10938b7866e8dd3",
+      "raw_sha256": "0ab5a3eec8b4812153464943b5aaff9db58fc490550019c6ed21a256f0be7e51"
+    }
+  },
+  "not_run": [
+    "Performance benchmarks",
+    "Player build",
+    "Actual avatar upload",
+    "New rendered-pixel comparison"
+  ],
+  "packaging": {
+    "zip_entries": 137,
+    "zip_sha256": "3186af88c159fc55ae09537fafa12f772010f82e23f2ccb715c4cce05f1c8fd6",
+    "logo_png_sha256": "0d8e6987faea97623bb1556b700cf3c5237a081d8f8b465acf8fd3ce63ccf896",
+    "logo_meta_sha256": "183becb4bb8f9f67132f96fd1d8bfba5bd15ebb4cef397153f600b230117055f",
+    "all_payload_bytes_match": true,
+    "crc_passed": true,
+    "command": "python .github/scripts/package_vpm.py D:/uv/release11/Assets/UnityBox/AvatarSecuritySystem D:/uv/top.sealoong.unitybox.avatar-security-system-0.9.11.zip"
+  }
+}
