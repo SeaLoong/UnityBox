@@ -1,9 +1,13 @@
-# ASS 0.9.9：手势时间混合滑块与禁用防御默认值
+# ASS 0.9.10：时间行数值框修正与禁用防御默认值
 
-手势时间三行改为滑块与延迟数值框的混合控件：滑块范围由当前 `hold`／`tolerance` 推导
+手势时间三行是滑块与延迟数值框的混合控件：滑块范围由当前 `hold`／`tolerance` 推导
 （hold 为 `max(0.05s, tolerance)–1s`，tolerance 为 `0–hold`，maximum 为
 `max(1s, hold+tolerance+0.05s)–10s`），拖动和数值框提交都调用同一个提交函数，
 继续保留旧值只读绘制、显式“修正时间”和 Undo/Redo。
+
+0.9.9 首发时滑块用 `EditorGUI.Slider`，它自带一个数值框，与右侧延迟数值框叠加成每行两格
+（由用户截图发现）。0.9.10 改用无内建数值框的 `GUI.HorizontalSlider`，每行只保留一个
+延迟数值框；范围、提交路径与只读绘制语义不变。
 
 「禁用防御」恢复默认关闭：新建组件与显式 Reset 在「默认启用防御」关闭时生成受密码保护的
 防御层；只有手动勾选才跳过防御生成。旧组件已保存的值不变，Standalone 构建仍在配置副本中
@@ -32,10 +36,10 @@ SDK 工程不能用 `-nographics`：该批真实 SDK 包在无图形设备时启
 
 | 范围 | 实际结果 |
 | --- | --- |
-| 0.9.9 core（功能） | 116 用例：114 通过，2 失败 |
-| 0.9.9 graphics | 1/1 通过（真实窗口绘制，旧值不写回） |
-| 0.9.9 SDK | 48/48 通过（VRChat 43，NDMF 5） |
-| 0.9.9 打包 | `package_vpm.py` 生成 149 条目 ZIP，manifest 版本 0.9.9，含新 Inspector、时间测试与默认值改动 |
+| 0.9.10 core（功能） | 116 用例：114 通过，2 失败 |
+| 0.9.10 graphics | 1/1 通过（真实窗口绘制，旧值不写回） |
+| 0.9.10 SDK | 48/48 通过（VRChat 43，NDMF 5） |
+| 0.9.10 打包 | `package_vpm.py` 生成 149 条目 ZIP，manifest 版本 0.9.10，含 `GUI.HorizontalSlider` 修正 |
 | 0.9.8 基线 core | 108 用例：106 通过，2 失败（同一批迁移用例） |
 | 工具与打包 unittest | `scripts/unity` 44/44 通过；`.github/scripts` 23 条中 18 通过，5 条为 Windows 文本/权限/默认编码差异（见下） |
 
@@ -53,6 +57,14 @@ SDK 工程不能用 `-nographics`：该批真实 SDK 包在无图形设备时启
   真实 SDK 组件默认值，SDK 范围通过。
 - `GestureTimingInspectorGuiTests.OpeningAndDrawingLegacyTimingValuesPreservesTheComponentAndPrefabBytes`：
   绘制 `0.15s/0.3s/0.1s` 的旧组件不写回字段、不弄脏场景、Prefab 与 metadata 字节不变。
+
+## 数值框重复的修正依据
+
+Unity 2022.3 的 `EditorGUI.Slider` 在内部 `DoSlider` 中固定绘制滑块加一个 `DoFloatField`
+数值框（宽度为 `EditorGUIUtility.fieldWidth`），所以 0.9.9 的滑块区间右侧又出现一格，
+与延迟数值框并排。`GUI.HorizontalSlider` 只绘制 `skin.horizontalSlider` 与
+`horizontalSliderThumb`，没有数值框；0.9.10 改用它，因此每行恰好一个可输入数值框。
+修正后重新执行图形绘制用例（真实窗口）与 core／SDK 范围，结果见上表。
 
 ## 两个 core 失败的结论
 
@@ -97,7 +109,7 @@ SDK 范围（同源包 + 真实 SDK/NDMF，不传 `-nographics`）：
 - `baseline-results.xml.gz`：`a1930d6` 未改源码的 core 对照结果。
 - [`sha256.json`](sha256.json)：源码包文件数与 SHA256、基线包 SHA256、各归档 SHA256、运行环境。
 
-源码状态为当前分支 ASS 0.9.9；完整提交标识见对应提交说明。
+源码状态为当前分支 ASS 0.9.10；完整提交标识见对应提交说明。
 
 本次在 Windows 本地执行；`Docs/VerificationResults.json`、`UnityNativeResults.json` 仍为
 上一次 Linux 完整工具链的记录，待下一次完整工具链运行（`capture_evidence.py`）时按当时源码

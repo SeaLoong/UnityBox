@@ -76,7 +76,9 @@ max(1s, hold+tolerance+0.05s) 至 10s。构建始终规范化独立配置副本�
 
 Inspector 每行是滑块与延迟数值框的组合：滑块范围由当前 hold/tolerance 推导（hold 为
 max(0.05s, tolerance)–1s，tolerance 为 0–hold，maximum 为 max(1s, hold+tolerance+0.05s)–10s），
-数值框按 Enter 或失焦提交；两种输入都调用同一个提交函数并加入 Undo：修改 hold 会保留
+数值框按 Enter 或失焦提交。滑块用 `GUI.HorizontalSlider` 绘制，不用自带数值框的
+`EditorGUI.Slider`，避免与延迟数值框重复显示；两种输入都调用同一个提交函数并加入 Undo：
+修改 hold 会保留
 有效 tolerance，并将 hold 限制到至少 tolerance；修改 tolerance 会限制到 hold；随后按共享规则
 更新 maximum。旧非法值绘制时保留（超出滑块区间时停在端点），显式
 “修正时间”按钮才提交规范值。组件加载、打开 Inspector 和资源导入保留已存字段，

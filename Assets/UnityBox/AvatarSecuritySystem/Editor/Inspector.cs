@@ -222,7 +222,9 @@ namespace UnityBox.AvatarSecuritySystem
             var sliderRect = new Rect(content.x, content.y, sliderWidth, content.height);
             var valueRect = new Rect(content.xMax - valueWidth, content.y, valueWidth, content.height);
             EditorGUI.BeginChangeCheck();
-            float sliderValue = EditorGUI.Slider(sliderRect, stored, minimum, maximum);
+            // GUI.HorizontalSlider has no built-in number field; EditorGUI.Slider always draws one,
+            // which would sit next to the delayed field and show every value twice.
+            float sliderValue = GUI.HorizontalSlider(sliderRect, stored, minimum, maximum);
             if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(sliderValue, stored))
             {
                 ApplyGestureTimingEdit(propertyName, sliderValue);

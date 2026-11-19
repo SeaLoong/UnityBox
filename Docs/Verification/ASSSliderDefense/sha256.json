@@ -1,9 +1,9 @@
 {
   "source": {
-    "revision": "a1930d6f9eaa129fd58d8825521ce14aebba8a24 + working tree (ASS 0.9.9)",
-    "package_version": "0.9.9",
+    "revision": "a1930d6f9eaa129fd58d8825521ce14aebba8a24 + working tree (ASS 0.9.10)",
+    "package_version": "0.9.10",
     "package_files": 149,
-    "package_sha256": "8e1ecaa1fae694a53d72c97349532f8590a23ff841391d17c0a66432df8e3374"
+    "package_sha256": "736bd70b45aeb2e2b16a0281e9b6b7081894cae58e1160fe7735a48083efe634"
   },
   "baseline": {
     "revision": "a1930d6f9eaa129fd58d8825521ce14aebba8a24",
@@ -17,15 +17,16 @@
   },
   "artifacts": {
     "baseline-results.xml.gz": "031fbcc3cc210de8f27b9fc1348d2d78031c68fcc272a71716d09a9e22ab1dfb",
-    "core-results.xml.gz": "3062dd08bc6251a768742e5b136a9cc6a115628d146edadbb2d919b121cd455b",
-    "graphics-results.xml.gz": "3c350980cb29e97415e7e72418152b20dfe8944f31ffc5ca607637415582f5ee",
-    "sdk-results.xml.gz": "d37d6f4c0ce033e6677650b98832740619f41ff7b97b4c3a1150362a7135cb37"
+    "core-results.xml.gz": "e66fe6ade867c8bb924a46267af03a5d772885b896cb196df0183a5b59dd7dbf",
+    "graphics-results.xml.gz": "aa552f777195add7e04a68119c32a757e366b5586faabc543f001259faeebb53",
+    "README.md": "f778de87755ffbd7f5f0d291cb111ed09fe9e5d75ed29338612a4c7b479a0b17",
+    "sdk-results.xml.gz": "f19c0f41429b581fe64c8f8fb648c73b051c3dc82b173b472d481c8e9245287d"
   },
-  "note": "package_sha256 是实际执行测试时的隔离副本；此后本提交只调整了 Markdown 文档，C# 源码与测试未再改变。",
   "packaging": {
     "tool": "python .github/scripts/package_vpm.py Assets/UnityBox/AvatarSecuritySystem <zip>",
     "zip_entries": 149,
-    "zip_sha256": "f207006299f57ff749d97d2ab319747b74eaff336c182c7889d0b257e24a507f",
-    "manifest_version": "0.9.9"
-  }
+    "zip_sha256": "8bdc57dec227bdee05ea46ea001d864252ea7e10be273601e13883454ee94a93",
+    "manifest_version": "0.9.10"
+  },
+  "note": "package_sha256 是实际执行测试时的隔离副本；此后本提交只调整了 Markdown 文档，C# 源码与测试未再改变。"
 }

@@ -97,11 +97,12 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 
 ## Verify ASS time editing and obfuscation output
 
-- ASS0.9.9 Inspector draws each timing row as a slider plus a delayed numeric field. The slider
+- ASS0.9.10 Inspector draws each timing row as a slider plus a delayed numeric field. The slider
   range is derived from the stored hold/tolerance (hold: max(0.05s,tolerance)–1s, tolerance: 0–hold,
   maximum: max(1s,hold+tolerance+0.05s)–10s) so a drag cannot be clamped back; the numeric field
-  commits on Enter/blur and both paths share one commit function with Undo/Redo. Preserve
-  default0.5/0.3 values and legacy out-of-range values when only drawing. Verify real
+  commits on Enter/blur and both paths share one commit function with Undo/Redo. Draw the slider
+  with `GUI.HorizontalSlider`: `EditorGUI.Slider` has its own number field and duplicates the value.
+  Preserve default0.5/0.3 values and legacy out-of-range values when only drawing. Verify real
   SerializedObject edits and Undo/Redo, and the range values, not copied arithmetic.
   Equal0.3/0.3 values must survive normalization; test actual Animator hold/interruption behavior
   at60/90/120Hz, including short repeated partial holds that must restart after a wrong gesture.
