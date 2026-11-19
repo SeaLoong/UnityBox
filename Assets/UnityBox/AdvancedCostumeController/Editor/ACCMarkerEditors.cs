@@ -56,11 +56,14 @@ namespace UnityBox.AdvancedCostumeController
     public static bool ApplySerializedProperties(
       SerializedObject serializedObject,
       IEnumerable<Object> targets,
-      string undoName)
+      string undoName,
+      bool keepVariantPreview = false)
     {
       if (serializedObject == null || !serializedObject.hasModifiedProperties)
         return false;
 
+      var preview = keepVariantPreview ? ACCVariantPreview.ActiveVariant : null;
+      var previewBase = preview != null ? preview.OutfitBase : null;
       int group = Begin(undoName);
       try
       {
@@ -72,6 +75,10 @@ namespace UnityBox.AdvancedCostumeController
       {
         Complete(group);
       }
+      // Only rule editing opts into live preview. Restore before recording Undo
+      // and writing Prefab overrides, then resample the same active variant.
+      if (preview != null && preview.OutfitBase == previewBase)
+        ACCVariantPreview.Start(preview);
       return true;
     }
   }
@@ -89,6 +96,12 @@ namespace UnityBox.AdvancedCostumeController
             $"正在预览 {active.name} 变体", $"Previewing variant: {active.name}"), MessageType.Info);
         else
           EditorGUILayout.LabelField(Localization.Text("材质变体预览", "Material Variant Preview"), EditorStyles.boldLabel);
+
+        if (active != null)
+          EditorGUILayout.LabelField(Localization.Text(
+            "实时预览中：修改替换规则会立即更新场景。",
+            "Live preview: editing replacement rules updates the scene immediately."),
+            EditorStyles.wordWrappedMiniLabel);
 
         bool stop = active != null && (variant == null || variant == active);
         using (new EditorGUI.DisabledScope(!stop && !ACCVariantPreview.CanPreview(variant)))

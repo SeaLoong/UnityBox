@@ -1,6 +1,19 @@
 {
   "branch": "master",
   "schema": 3,
+  "supplemental_native_evidence": [
+    {
+      "scope": "ACC 0.5.5 live material rule preview",
+      "date_local": "2026-11-20",
+      "platform": "Windows 11",
+      "editor": "2022.3.22f1",
+      "core_passed": 74,
+      "sdk_ma_ndmf_passed": 104,
+      "graphics_passed": 7,
+      "evidence": "Docs/Verification/ACCLiveVariantPreview/results.json",
+      "notes": "Fresh native NUnit XML, commands, run/project identities, imported assembly/source fingerprints and archive hashes; historical Linux records below retain their original identity."
+    }
+  ],
   "captured_at_utc": "2026-11-07T17:29:24.398466+00:00",
   "editor": "2022.3.22f1",
   "platform": "Linux x86-64",

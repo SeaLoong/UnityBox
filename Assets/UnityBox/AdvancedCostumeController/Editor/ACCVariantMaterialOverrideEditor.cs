@@ -128,8 +128,13 @@ namespace UnityBox.AdvancedCostumeController
           Localization.Text("仅记录差异槽位，且优先于全局规则。",
             "Stores differing slots only and takes priority over global rules."));
 
-        ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
-          "Edit ACC material variant");
+        ApplyRuleChanges();
+      }
+
+      private bool ApplyRuleChanges()
+      {
+        return ACCEditorUndo.ApplySerializedProperties(serializedObject, targets,
+          "Edit ACC material variant", keepVariantPreview: true);
       }
 
       private void DrawAnalysisTool()
@@ -374,9 +379,7 @@ namespace UnityBox.AdvancedCostumeController
         SerializedProperty slotProperty,
         Renderer targetRenderer)
       {
-        Material[] materials = targetRenderer != null
-          ? targetRenderer.sharedMaterials
-          : null;
+        Material[] materials = ACCVariantPreview.GetOriginalMaterials(targetRenderer);
         bool hasSlots = materials != null && materials.Length > 0;
         string[] options = hasSlots
           ? materials.Select((material, index) =>
@@ -419,9 +422,8 @@ namespace UnityBox.AdvancedCostumeController
 
       private static Material GetMaterialAtSlot(Renderer renderer, int slot)
       {
-        ACCVariantPreview.Stop();
         if (renderer == null) return null;
-        var materials = renderer.sharedMaterials;
+        var materials = ACCVariantPreview.GetOriginalMaterials(renderer);
         return materials != null && slot >= 0 && slot < materials.Length
           ? materials[slot]
           : null;

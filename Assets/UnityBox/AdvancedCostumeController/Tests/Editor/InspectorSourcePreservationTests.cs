@@ -178,6 +178,101 @@ namespace UnityBox.AdvancedCostumeController.Tests
       Assert.That(File.ReadAllBytes(prefabPath), Is.EqualTo(bytes));
     }
 
+    private static bool SetRuleReplacement(UnityEditor.Editor inspector, Material material)
+    {
+      inspector.serializedObject.Update();
+      inspector.serializedObject.FindProperty("Replacements").GetArrayElementAtIndex(0)
+        .FindPropertyRelative("Replacement").objectReferenceValue = material;
+      return (bool)Invoke(inspector, "ApplyRuleChanges");
+    }
+
+    [Test]
+    public void InspectorRuleCommitsRefreshImmediatelyAndUndoRedoKeepPreview()
+    {
+      byte[] bytes = File.ReadAllBytes(prefabPath);
+      var inspector = OpenInspector(configuredMarker);
+      var renderer = configuredMarker.OutfitBase.transform.Find("Body").GetComponent<Renderer>();
+      Assert.That(ACCVariantPreview.Start(configuredMarker), Is.True);
+      try
+      {
+        Assert.That(SetRuleReplacement(inspector, replacement), Is.True);
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(replacement));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Assert.That(SetRuleReplacement(inspector, null), Is.True);
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Undo.FlushUndoRecordObjects();
+        Undo.PerformUndo();
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(replacement));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Undo.PerformRedo();
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Assert.That(configuredMarker.Replacements[0].Source, Is.EqualTo(original));
+        Assert.That(File.ReadAllBytes(prefabPath), Is.EqualTo(bytes));
+      }
+      finally { ACCVariantPreview.Stop(); }
+      Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+    }
+
+    [Test]
+    public void EditingInactiveOrMultipleVariantsDoesNotStealPreviewAndSlotSourceStaysOriginal()
+    {
+      emptyMarker.Replacements.Add(new ACCVariantMaterialOverride.MaterialReplacement
+      { Source = original, Replacement = stored });
+      var renderer = configuredMarker.OutfitBase.transform.Find("Body").GetComponent<Renderer>();
+      var inactiveInspector = OpenInspector(emptyMarker);
+      var multiInspector = UnityEditor.Editor.CreateEditor(new Object[] { configuredMarker, emptyMarker });
+      inspectors.Add(multiInspector);
+      Assert.That(ACCVariantPreview.Start(configuredMarker), Is.True);
+      try
+      {
+        var readSlot = typeof(ACCVariantMaterialOverrideEditor).GetMethod("GetMaterialAtSlot",
+          BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.That(readSlot, Is.Not.Null);
+        Assert.That(readSlot.Invoke(null, new object[] { renderer, 0 }), Is.EqualTo(original));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Assert.That(SetRuleReplacement(inactiveInspector, replacement), Is.True);
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(stored));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+        Assert.That(SetRuleReplacement(multiInspector, replacement), Is.True);
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(replacement));
+        Assert.That(configuredMarker.Replacements[0].Replacement, Is.EqualTo(replacement));
+        Assert.That(emptyMarker.Replacements[0].Replacement, Is.EqualTo(replacement));
+        Assert.That(ACCVariantPreview.ActiveVariant, Is.EqualTo(configuredMarker));
+      }
+      finally { ACCVariantPreview.Stop(); }
+      Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+    }
+
+    [UnityTest, Category("UnityBoxGraphics")]
+    public IEnumerator LiveRuleEditsRemainVisibleWhileVariantAndBaseInspectorsRepaint()
+    {
+      byte[] bytes = File.ReadAllBytes(prefabPath);
+      var inspector = OpenInspector(configuredMarker);
+      var renderer = configuredMarker.OutfitBase.transform.Find("Body").GetComponent<Renderer>();
+      host = ScriptableObject.CreateInstance<ACCInspectorTestHost>();
+      host.Inspectors = new[] { inspector, OpenInspector(emptyMarker),
+        OpenInspector(configuredMarker.OutfitBase.GetComponent<ACCOutfitMarker>()) };
+      host.position = new Rect(40, 40, 640, 1000);
+      host.ShowUtility();
+      Assert.That(ACCVariantPreview.Start(configuredMarker), Is.True);
+      try
+      {
+        foreach (var material in new[] { replacement, (Material)null, stored })
+        {
+          Assert.That(SetRuleReplacement(inspector, material), Is.True);
+          for (int i = 0; i < 3; i++) { host.Repaint(); yield return null; }
+          Assert.That(renderer.sharedMaterials[0], Is.EqualTo(material != null ? material : original));
+          Assert.That(ACCVariantPreview.GetActiveVariant(emptyMarker.OutfitBase), Is.EqualTo(configuredMarker));
+        }
+        Assert.That(host.DrawCount, Is.GreaterThan(0));
+        Assert.That(File.ReadAllBytes(prefabPath), Is.EqualTo(bytes));
+      }
+      finally { ACCVariantPreview.Stop(); }
+      Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+    }
+
     [UnityTest, Category("UnityBoxGraphics")]
     public IEnumerator VariantAndBaseInspectorsSharePreviewWithoutChangingSavedPrefab()
     {

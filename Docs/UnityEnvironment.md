@@ -101,11 +101,11 @@ python3 scripts/unity/test_project.py prepare \
 已留作证据的工程保持原快照，后续修改使用新目录。工程与证据保存在 `/workspace`，
 `/tmp` 用于可重新生成的临时文件。
 
-### Windows 本机补充（ACC 0.5.4）
+### Windows 本机补充（ACC 0.5.4 / 0.5.5）
 
 本机可用 `D:\Unity\2022.3.22f1\Editor\Unity.exe` 和 Python 3.13；命令传入 `--unity` 指定 Editor，Python 使用 `-X utf8` 避免默认 GBK 读取 UTF-8 报告。仍通过 `test_project.py prepare --repo` 创建独立工程；整项目升级的备份相对路径较深，隔离工程宜用短绝对路径（如 `D:\ac4`），避免旧 Mono 的 Windows MAX_PATH。不要关闭用户其它工程，只能再运行一个验证 Editor。
 
-本机集成范围真实使用 SDK 3.10.2 / MA 1.18.1 / NDMF 1.14.4，不宣称为上面的固定 Linux 版本范围；具体依赖来源、命令与计数见[ACC 预览验证](Verification/ACCVariantPreview/README.md)。现有 runner 的超时强制终止实现基于 POSIX，不能据普通成功执行宣称 Windows 超时处理已受验证。
+本机集成范围真实使用 SDK 3.10.2 / MA 1.18.1 / NDMF 1.14.4，不宣称为上面的固定 Linux 版本范围；具体依赖来源、命令与计数见[ACC 预览验证](Verification/ACCVariantPreview/README.md)。0.5.5 实时规则编辑复跑见[实时预览验证](Verification/ACCLiveVariantPreview/README.md)。现有 runner 的超时强制终止实现基于 POSIX，不能据普通成功执行宣称 Windows 超时处理已受验证。
 
 ## 功能、图形、构建与性能
 

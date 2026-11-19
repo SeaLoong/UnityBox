@@ -18,7 +18,11 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
-## ACC 0.5.4 材质变体预览
+## ACC 0.5.5 实时规则预览
+
+验证连续更换/清空全局 Replacement、精准规则增删/改槽/跨 Renderer 与空槽重采样、空规则会话保留、原始材质拷贝隔离、规则 Undo/Redo、实际 Inspector 提交（包括非当前变体和多选）与多 Inspector 重绘。复跑 ACC 完整 core、真实 SDK/MA/NDMF 集成和图形/Prefab Stage 范围；保存/还原/源字节保全保持覆盖。新旧版本的实际执行身份分别保留，命令见[实时预览验证](Verification/ACCLiveVariantPreview/README.md)。
+
+## ACC 0.5.4 材质变体预览（历史执行）
 
 使用真实 Renderer / AnimationMode 验证全局与精准覆盖、空槽、先还原再切换、同名分组隔离、选择变化、外部 AnimationMode 保护、Undo/Redo、Scene/Prefab 保存重载与字节/metadata/配置保全。图形范围打开同组变体和本体 Inspector，验证绘制不结束共享会话；Prefab Stage 单独检查实际保存。隔离工程命令与本机真实依赖范围见[预览验证记录](Verification/ACCVariantPreview/README.md)。不将历史 Player/性能计数记为本次执行。
 

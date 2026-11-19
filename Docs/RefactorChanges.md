@@ -4,7 +4,11 @@
 原 `refactor` 七插件与 Animator Optimizer 在同一个 checkout 开发、测试和发布。
 执行记录见 [验证结果](VerificationResults.json)，测量数据见 [性能报告](Performance.md)。
 
-## ACC 0.5.4：同组材质变体预览
+## ACC 0.5.5：规则编辑实时预览
+
+变体 Inspector 在规则提交前还原预览本体，登记真实 Undo 和 Prefab override 后立即重采样原 activeVariant，连续替换、清空、增删规则不再退出预览。Undo/Redo 保留有效会话，空规则仍能继续试材质；编辑其它变体和多选不自动切换当前预览。槽位下拉和 Source 自动填入读取原始材质快照的独立拷贝。保存、更换本体、分析/生成等边界仍会安全停止，无启动/导入配置迁移，不增加逐帧层级扫描。见[实时预览验证](Verification/ACCLiveVariantPreview/README.md)。
+
+## ACC 0.5.4：同组材质变体预览（历史行为）
 
 变体 Inspector 直接预览服装本体上的材质效果。同一 OutfitBase 的其它变体共享当前预览名称并支持切换；本体服装标记提供停止预览。预览不跟随 Selection 结束，全局同时只预览一个变体；切换组或停止时还原原始材质。Unity AnimationMode 管理临时属性，保存、Undo/Redo、播放切换、重载以及 ACC 分析/扫描/生成前停止。不迁移原组件或改写源资源，也不修改部件激活状态。操作与验证范围见[ACC 手册](../Assets/UnityBox/AdvancedCostumeController/README.md#场景材质预览)和[预览验证记录](Verification/ACCVariantPreview/README.md)。
 

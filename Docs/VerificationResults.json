@@ -3,6 +3,17 @@
   "schema": 3,
   "supplemental_patch_runs": [
     {
+      "scope": "ACC 0.5.5 live material rule preview",
+      "date_local": "2026-11-20",
+      "platform": "Windows 11",
+      "editor": "2022.3.22f1",
+      "core": { "total": 74, "passed": 74, "failed": 0, "skipped": 0 },
+      "sdk_ma_ndmf": { "total": 104, "passed": 104, "failed": 0, "skipped": 0 },
+      "graphics": { "total": 7, "passed": 7, "failed": 0, "skipped": 0 },
+      "evidence": "Docs/Verification/ACCLiveVariantPreview/results.json",
+      "notes": "Live Inspector commit/Undo/Redo resampling, continuous replacement/clear, precise slot edits, original-material snapshots, inactive and multi-object edits without stealing preview; all existing ACC functional/graphics suites rerun. SDK 3.10.2/MA 1.18.1/NDMF 1.14.4. Windows packaging 19/23 (4 existing CRLF/POSIX expectations); local ZIP CRC/payload pass. Three pre-existing orphan sidecars explicitly excluded from imported fingerprints only. No dedicated Player/serial benchmark."
+    },
+    {
       "scope": "ACC 0.5.4 shared material variant preview",
       "date_local": "2026-11-20",
       "platform": "Windows 11",

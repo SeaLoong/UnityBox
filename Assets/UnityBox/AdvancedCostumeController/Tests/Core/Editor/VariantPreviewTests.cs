@@ -81,6 +81,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
         stage = null;
       }
       if (root != null) Undo.ClearUndo(root.transform);
+      if (marker != null) Undo.ClearUndo(marker);
       if (scene.IsValid() && scene.isLoaded) EditorSceneManager.CloseScene(scene, true);
       if (ownsSceneContext)
       {
@@ -120,6 +121,142 @@ namespace UnityBox.AdvancedCostumeController.Tests
       ACCVariantPreview.Stop();
       AssertStopped(outfit, renderer, originals);
       Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(configuration));
+    }
+
+    [Test]
+    public void RefreshReplacesAndClearsGlobalRulesAgainstOriginalMaterialsWithoutEndingSession()
+    {
+      Assert.That(ACCVariantPreview.Refresh(), Is.False);
+      Assert.That(ACCVariantPreview.Start(marker), Is.True);
+      AssertActive(new[] { red, red });
+
+      marker.Replacements[0].Replacement = blue;
+      marker.Replacements.Add(Global(red, untouched));
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { blue, blue });
+
+      marker.Replacements[0].Replacement = null;
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { original, original });
+
+      marker.Replacements[0].Replacement = red;
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { red, red });
+
+      marker.Replacements.Clear();
+      marker.RendererOverrides.Clear();
+      string configuration = EditorJsonUtility.ToJson(marker);
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { original, original });
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(configuration));
+
+      // An empty rule set keeps the session available for the next edit.
+      marker.Replacements.Add(Global(original, blue));
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { blue, blue });
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { blue, blue });
+      ACCVariantPreview.Stop();
+      AssertStopped(outfit, renderer, new[] { original, original });
+      Assert.That(ACCVariantPreview.Refresh(), Is.False);
+    }
+
+    [Test]
+    public void RefreshAddsMovesEditsAndRemovesPreciseRulesWithoutLeavingStaleSlots()
+    {
+      renderer.sharedMaterials = new[] { original, null, untouched };
+      var sibling = Child(outfit, "Sibling").AddComponent<SkinnedMeshRenderer>();
+      sibling.sharedMaterials = new[] { original, untouched };
+      marker.RendererOverrides.Clear();
+      Assert.That(ACCVariantPreview.Start(marker), Is.True);
+      AssertActive(new[] { red, null, untouched });
+
+      var precise = Precise(renderer, 0, blue);
+      marker.RendererOverrides.Add(precise);
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { blue, null, untouched });
+
+      precise.MaterialSlot = 1;
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { red, blue, untouched });
+
+      precise.Replacement = red;
+      marker.RendererOverrides.Add(Precise(renderer, 2, blue));
+      marker.RendererOverrides.Add(Precise(sibling, 1, blue));
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { red, red, blue });
+      Assert.That(sibling.sharedMaterials, Is.EqualTo(new[] { red, blue }));
+
+      marker.RendererOverrides.Remove(precise);
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { red, null, blue });
+      Assert.That(sibling.sharedMaterials, Is.EqualTo(new[] { red, blue }));
+
+      marker.RendererOverrides.Clear();
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { red, null, untouched });
+      Assert.That(sibling.sharedMaterials, Is.EqualTo(new[] { red, untouched }));
+      marker.Replacements.Clear();
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { original, null, untouched });
+      Assert.That(sibling.sharedMaterials, Is.EqualTo(new[] { original, untouched }));
+      ACCVariantPreview.Stop();
+      AssertStopped(outfit, renderer, new[] { original, null, untouched });
+      Assert.That(sibling.sharedMaterials, Is.EqualTo(new[] { original, untouched }));
+    }
+
+    [Test]
+    public void GetOriginalMaterialsReturnsIndependentSnapshotsBeforeDuringAndAfterRefresh()
+    {
+      renderer.sharedMaterials = new[] { original, null, untouched };
+      var before = ACCVariantPreview.GetOriginalMaterials(renderer);
+      Assert.That(before, Is.EqualTo(new[] { original, null, untouched }));
+      before[0] = blue;
+      Assert.That(renderer.sharedMaterials, Is.EqualTo(new[] { original, null, untouched }));
+      marker.RendererOverrides.Add(Precise(renderer, 1, blue));
+      Assert.That(ACCVariantPreview.Start(marker), Is.True);
+      AssertActive(new[] { red, blue, untouched });
+
+      var snapshot = ACCVariantPreview.GetOriginalMaterials(renderer);
+      var another = ACCVariantPreview.GetOriginalMaterials(renderer);
+      Assert.That(snapshot, Is.EqualTo(new[] { original, null, untouched }));
+      Assert.That(another, Is.EqualTo(snapshot));
+      Assert.That(another, Is.Not.SameAs(snapshot));
+      snapshot[0] = blue;
+      snapshot[1] = red;
+      snapshot[2] = null;
+      Assert.That(another, Is.EqualTo(new[] { original, null, untouched }));
+      AssertActive(new[] { red, blue, untouched });
+
+      marker.Replacements[0].Replacement = blue;
+      marker.RendererOverrides.Clear();
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { blue, null, untouched });
+      Assert.That(ACCVariantPreview.GetOriginalMaterials(renderer),
+        Is.EqualTo(new[] { original, null, untouched }));
+      ACCVariantPreview.Stop();
+      AssertStopped(outfit, renderer, new[] { original, null, untouched });
+      Assert.That(ACCVariantPreview.GetOriginalMaterials(renderer),
+        Is.EqualTo(new[] { original, null, untouched }));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void RefreshStopsSafelyWhenOutfitBaseChanges(bool clearBase)
+    {
+      var otherOutfit = Child(root, "Other outfit");
+      var otherRenderer = Child(otherOutfit, "Body").AddComponent<MeshRenderer>();
+      otherRenderer.sharedMaterials = new[] { original, untouched };
+      Assert.That(ACCVariantPreview.Start(marker), Is.True);
+      AssertActive(new[] { red, red });
+
+      marker.OutfitBase = clearBase ? null : otherOutfit;
+
+      Assert.That(ACCVariantPreview.Refresh(), Is.False);
+      AssertStopped(outfit, renderer, new[] { original, original });
+      Assert.That(ACCVariantPreview.GetActiveVariant(otherOutfit), Is.Null);
+      Assert.That(otherRenderer.sharedMaterials, Is.EqualTo(new[] { original, untouched }));
+      Assert.That(marker.OutfitBase, Is.EqualTo(clearBase ? null : otherOutfit));
     }
 
     [Test]
@@ -257,7 +394,7 @@ namespace UnityBox.AdvancedCostumeController.Tests
     }
 
     [Test]
-    public void UndoStopsPreviewRestoresMaterialsAndStillUndoesTheActualUserEdit()
+    public void UndoAndRedoPreservePreviewWhileApplyingTheActualUserTransformEdit()
     {
       Undo.IncrementCurrentGroup();
       Undo.RecordObject(root.transform, "Preview fixture move");
@@ -270,10 +407,56 @@ namespace UnityBox.AdvancedCostumeController.Tests
       Undo.PerformUndo();
 
       Assert.That(root.transform.localPosition, Is.EqualTo(Vector3.zero));
-      AssertStopped(outfit, renderer, new[] { original, original });
+      AssertActive(new[] { red, red });
       Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(configuration));
       Undo.PerformRedo();
       Assert.That(root.transform.localPosition, Is.EqualTo(new Vector3(1, 2, 3)));
+      AssertActive(new[] { red, red });
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(configuration));
+      ACCVariantPreview.Stop();
+      AssertStopped(outfit, renderer, new[] { original, original });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void UndoAndRedoRuleEditsAndClearsRefreshRealRendererWhileKeepingSession(bool preciseRule)
+    {
+      Assert.That(ACCVariantPreview.Start(marker), Is.True);
+      string initialConfiguration = EditorJsonUtility.ToJson(marker);
+      Undo.IncrementCurrentGroup();
+      Undo.RecordObject(marker, "Edit preview material rule");
+      if (preciseRule) marker.RendererOverrides.Add(Precise(renderer, 1, blue));
+      else marker.Replacements[0].Replacement = blue;
+      Undo.FlushUndoRecordObjects();
+      Undo.IncrementCurrentGroup();
+      string editedConfiguration = EditorJsonUtility.ToJson(marker);
+      var editedMaterials = preciseRule ? new[] { red, blue } : new[] { blue, blue };
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(editedMaterials);
+
+      Undo.RecordObject(marker, "Clear preview material rules");
+      marker.Replacements.Clear();
+      marker.RendererOverrides.Clear();
+      Undo.FlushUndoRecordObjects();
+      Undo.IncrementCurrentGroup();
+      string emptyConfiguration = EditorJsonUtility.ToJson(marker);
+      Assert.That(ACCVariantPreview.Refresh(), Is.True);
+      AssertActive(new[] { original, original });
+
+      // No explicit Refresh here: exercise Unity's real undoRedoPerformed event.
+      Undo.PerformUndo();
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(editedConfiguration));
+      AssertActive(editedMaterials);
+      Undo.PerformUndo();
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(initialConfiguration));
+      AssertActive(new[] { red, red });
+      Undo.PerformRedo();
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(editedConfiguration));
+      AssertActive(editedMaterials);
+      Undo.PerformRedo();
+      Assert.That(EditorJsonUtility.ToJson(marker), Is.EqualTo(emptyConfiguration));
+      AssertActive(new[] { original, original });
+      ACCVariantPreview.Stop();
       AssertStopped(outfit, renderer, new[] { original, original });
     }
 
@@ -484,6 +667,13 @@ namespace UnityBox.AdvancedCostumeController.Tests
     {
       Assert.That(ACCVariantPreview.CanPreview(candidate), Is.False);
       Assert.That(ACCVariantPreview.Start(candidate), Is.False);
+    }
+
+    private void AssertActive(Material[] expected)
+    {
+      Assert.That(AnimationMode.InAnimationMode(), Is.True);
+      Assert.That(ACCVariantPreview.GetActiveVariant(outfit), Is.SameAs(marker));
+      Assert.That(renderer.sharedMaterials, Is.EqualTo(expected));
     }
 
     private static void AssertStopped(GameObject targetBase, Renderer target, Material[] expected)

@@ -20,13 +20,36 @@ namespace UnityBox.AdvancedCostumeController
     private static bool ownsAnimationMode;
     private static AnimationModeDriver driver;
     private static readonly List<Renderer> previewRenderers = new List<Renderer>();
+    private static readonly Dictionary<Renderer, Material[]> originalMaterials =
+      new Dictionary<Renderer, Material[]>();
+
+    public static ACCVariantMaterialOverride ActiveVariant
+    {
+      get { ValidateSession(); return activeVariant; }
+    }
+
+    /// <summary>Re-evaluate changed rules against restored originals, never the previous result.</summary>
+    public static bool Refresh()
+    {
+      var variant = ActiveVariant;
+      return variant != null && Start(variant);
+    }
+
+    /// <summary>Read-only authoring view for slot pickers while the Renderer is previewing.</summary>
+    public static Material[] GetOriginalMaterials(Renderer renderer)
+    {
+      ValidateSession();
+      if (renderer == null) return new Material[0];
+      return originalMaterials.TryGetValue(renderer, out var materials)
+        ? (Material[])materials.Clone() : renderer.sharedMaterials;
+    }
 
     static ACCVariantPreview()
     {
       AssemblyReloadEvents.beforeAssemblyReload += Stop;
       EditorApplication.quitting += Stop;
       EditorApplication.playModeStateChanged += _ => Stop();
-      Undo.undoRedoPerformed += Stop;
+      Undo.undoRedoPerformed += OnUndoRedo;
       EditorSceneManager.sceneSaving += (_, __) => Stop();
       PrefabStage.prefabSaving += _ => Stop();
       EditorApplication.update += ValidateSession;
@@ -73,6 +96,7 @@ namespace UnityBox.AdvancedCostumeController
         {
           var materials = renderer.sharedMaterials;
           bool wasDirty = EditorUtility.IsDirty(renderer);
+          var originals = (Material[])materials.Clone();
           bool changed = false;
           for (int slot = 0; slot < materials.Length; slot++)
           {
@@ -94,6 +118,7 @@ namespace UnityBox.AdvancedCostumeController
           if (changed)
           {
             previewRenderers.Add(renderer);
+            originalMaterials.Add(renderer, originals);
             renderer.sharedMaterials = materials;
             // Native Renderer assignment dirties the object even in animation
             // mode (but not its Scene). Clear only this operation's dirty bit.
@@ -122,6 +147,7 @@ namespace UnityBox.AdvancedCostumeController
       var cleanRenderers = previewRenderers.Where(renderer => renderer != null &&
         !EditorUtility.IsDirty(renderer)).ToArray();
       previewRenderers.Clear();
+      originalMaterials.Clear();
       if (driver != null)
       {
         if (AnimationMode.InAnimationMode(driver)) AnimationMode.StopAnimationMode(driver);
@@ -131,6 +157,13 @@ namespace UnityBox.AdvancedCostumeController
       foreach (var renderer in cleanRenderers)
         if (renderer != null) EditorUtility.ClearDirty(renderer);
       Repaint();
+    }
+
+    private static void OnUndoRedo()
+    {
+      // The Undo operation has already restored authoring fields. Keep a valid
+      // session live, but a deleted marker or changed base ends it safely.
+      Refresh();
     }
 
     private static void ValidateSession()

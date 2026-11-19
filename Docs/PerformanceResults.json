@@ -3,6 +3,13 @@
   "editor": "2022.3.22f1",
   "editor_only_feature_notes": [
     {
+      "scope": "ACC 0.5.5 live material rule preview",
+      "date_local": "2026-11-20",
+      "dedicated_performance_or_player_run": false,
+      "reason": "Inspector commit/Undo-driven resampling, no per-frame hierarchy/material scan. User Editor preserved; graphics icon timing is diagnostic only, not a dedicated serial benchmark.",
+      "functional_evidence": "Docs/Verification/ACCLiveVariantPreview/results.json"
+    },
+    {
       "scope": "ACC 0.5.4 shared material variant preview",
       "date_local": "2026-11-20",
       "dedicated_performance_or_player_run": false,
