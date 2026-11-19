@@ -1,0 +1,222 @@
+{
+  "scope": "ASS 0.9.12 resource compression",
+  "captured_at_utc": "2026-11-19T20:24:03.094228+00:00",
+  "base_revision": "2dd34a30dba1a7a743d94155f8d90ebc7ab5dc09",
+  "platform": "Windows 11",
+  "editor": "2022.3.22f1",
+  "dependencies": {
+    "UTF": "1.1.33",
+    "NUnit": "1.0.6",
+    "VRChat Base/Avatars": "3.8.2",
+    "NDMF": "1.11.0"
+  },
+  "tested_package_marker": {
+    "tool": "UnityBox.test_project",
+    "schema": 1,
+    "project_id": "3a18f23f9ebc40ff9c87e026e79f1920",
+    "prepared_at": "2026-11-19T20:21:25.055724+00:00",
+    "repo": "D:\\uv\\src12a",
+    "revision": null,
+    "profile": "core",
+    "packages": {
+      "com.unity.ext.nunit": {
+        "files": 14,
+        "sha256": "0663fa9b2e7e899ff368b8217084f1f4010aed34288229921af4f7ad3f42ab50",
+        "version": "1.0.6",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.ext.nunit",
+        "origin": "cache"
+      },
+      "com.unity.test-framework": {
+        "files": 669,
+        "sha256": "d081e9e4fdd84948cac384e2ff06491055d03c6e059cf808f51e1a2746d35386",
+        "version": "1.1.33",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.test-framework",
+        "origin": "cache"
+      },
+      "top.sealoong.unitybox.avatar-security-system": {
+        "files": 137,
+        "sha256": "6f1ee985a073dfa2226ab04b1f26d3590b0a198185b6fbb321a68d627c7162b5",
+        "version": "0.9.12",
+        "source": "D:\\uv\\src12a\\Assets\\UnityBox\\AvatarSecuritySystem",
+        "origin": "local"
+      }
+    },
+    "selected_packages": [
+      "top.sealoong.unitybox.avatar-security-system"
+    ],
+    "ignored_vpm_dependencies": {},
+    "registry_dependencies": {},
+    "test_assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ]
+  },
+  "verified_non_markdown_files": 134,
+  "png": {
+    "old_bytes": 687112,
+    "new_bytes": 662801,
+    "saved_bytes": 24311,
+    "saved_percent": 3.53814225337354,
+    "dimensions": [
+      1638,
+      1638
+    ],
+    "mode": "RGBA",
+    "old_sha256": "0d8e6987faea97623bb1556b700cf3c5237a081d8f8b465acf8fd3ce63ccf896",
+    "new_sha256": "cbfd8c7137952e43935c97be9e5660a63770ce32b9bea6bf12a1dd232291bbfd",
+    "rgba_pixel_sha256": "a4c6ad6ba72e64571f3135adae14c038de3e2c987650550c694e7934cc18d1cc",
+    "non_IDAT_chunks_byte_identical": true
+  },
+  "audio": {
+    "CountdownWarning": {
+      "mp3_sha256": "52a99062f63f3e84056fc100e7d3984ac42502b12783c958a05fa6f9026e60f8",
+      "meta_sha256": "1a3befdb0748c0430269c13fc141b79f24d3cac7629c64fdd99c5a4f26de2692",
+      "source_mp3_unchanged": true,
+      "only_importer_quality_changed": true
+    },
+    "PasswordSuccess": {
+      "mp3_sha256": "6840eb19dd2a933b591c2d23baa2440d07eb1e263b29f9cdcf85ce09ec4302b5",
+      "meta_sha256": "0ad357926466c8a5de0ba2c18af1feb34c10e7fc79860b7e698c49d91b90d674",
+      "source_mp3_unchanged": true,
+      "only_importer_quality_changed": true
+    },
+    "InputError": {
+      "mp3_sha256": "bb93e80d438becd38f768aa8fddd6f650637f16b2a38e5a0b47fef21654d5f1b",
+      "meta_sha256": "c14ca3d1399c3445a4bfa565589aafb31d149e08f27ee2b9c8ed7d6ff0554ce6",
+      "source_mp3_unchanged": true,
+      "only_importer_quality_changed": true
+    },
+    "StepSuccess": {
+      "mp3_sha256": "910f512e72249879c137209a9a204d260bc8a6c018e8cd972d07d3dc5da10956",
+      "meta_sha256": "7c7455048873f0ab24db9271b7ced295ddf7a27441833c480ac6d722031d4057",
+      "source_mp3_unchanged": true,
+      "only_importer_quality_changed": true
+    }
+  },
+  "core": {
+    "total": 116,
+    "passed": 116,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+        "total": 116,
+        "passed": 116,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "core_command": [
+    "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+    "-batchmode",
+    "-nographics",
+    "-projectPath",
+    "D:\\uv\\ac12a",
+    "-runTests",
+    "-testPlatform",
+    "EditMode",
+    "-testResults",
+    "D:\\uv\\ac12a\\.unitybox-test-results\\20261119T202125-8cbeb95c\\results.xml",
+    "-logFile",
+    "D:\\uv\\ac12a\\.unitybox-test-results\\20261119T202125-8cbeb95c\\unity.log",
+    "-testCategory",
+    "!UnityBoxPerformance;!UnityBoxGraphics",
+    "-assemblyNames",
+    "UnityBox.AvatarSecuritySystem.Editor.Tests"
+  ],
+  "sdk_ndmf": {
+    "total": "53",
+    "passed": "53",
+    "failed": "0",
+    "skipped": "0",
+    "result": "Passed",
+    "start-time": "2026-11-19 20:23:39Z",
+    "end-time": "2026-11-19 20:23:55Z"
+  },
+  "sdk_command": [
+    "D:/Unity/2022.3.22f1/Editor/Unity.exe",
+    "-batchmode",
+    "-projectPath",
+    "D:/uv/as12",
+    "-runTests",
+    "-testPlatform",
+    "EditMode",
+    "-testResults",
+    "D:/uv/as12/sdk-final.xml",
+    "-logFile",
+    "D:/uv/as12/sdk-final.log",
+    "-assemblyNames",
+    "UnityBox.AvatarSecuritySystem.VRChat.Tests;UnityBox.AvatarSecuritySystem.NDMF.Tests",
+    "-testCategory",
+    "!UnityBoxPerformance;!UnityBoxGraphics"
+  ],
+  "artifacts": {
+    "core_xml": {
+      "file": "Docs/Verification/ASSResourceCompression/core-results.xml.gz",
+      "sha256": "73b68c78afed5c8c40a8c367b89863ae5793806790eb40a77f2ff195bd1da3e6",
+      "raw_sha256": "73d977c347c8e09e2deec70967401373b98c9b2d838b8dfb0b121dc512c62778"
+    },
+    "core_log": {
+      "file": "Docs/Verification/ASSResourceCompression/core.log.gz",
+      "sha256": "428cf458b865115e5c5accbc8f2e430b5136cf2f968fd8ffa19c3876e691035a",
+      "raw_sha256": "778e41b1b470013a1aed10aa35a6931469a29b70afb61acb6c55ce2c2cbfa08a"
+    },
+    "sdk_xml": {
+      "file": "Docs/Verification/ASSResourceCompression/sdk-results.xml.gz",
+      "sha256": "83b1373a83caaa81229e7cbed1f8d388fd045b97062cd43951d965b9f9c76bbf",
+      "raw_sha256": "8c23297a4b58001e0105917c271d238b3d99c7d2dbf3bf9f951ae7175821f50b"
+    },
+    "sdk_log": {
+      "file": "Docs/Verification/ASSResourceCompression/sdk.log.gz",
+      "sha256": "40f41c3496a053933cd02564ee123c51f2271c87ef9c6f3ed3e2589bd3b4e9dd",
+      "raw_sha256": "ba1676e8478666487e39b6aae65731223fa49390624050464d3072ffd7f961a0"
+    },
+    "packaging_log": {
+      "file": "Docs/Verification/ASSResourceCompression/packaging.log.gz",
+      "sha256": "fdadf66b3285af6c2a38f35d1e4f21b0031c2d9af56b51c246c04286f9f0ac00",
+      "raw_sha256": "e747a556aedf656e963e95a17e525f523b0528b08792a02ee0b7c2935d3ba0d0"
+    },
+    "sdk_first_import_xml": {
+      "file": "Docs/Verification/ASSResourceCompression/sdk-first-import.xml.gz",
+      "sha256": "7be494f198688e4fe2806b7e0b38fa4d751ca367ecabcf4278e35cc4f4f03653",
+      "raw_sha256": "a1a95833510f1e3c16a1dfedfc5a9c9de06b03698fb959324188719bf4c2be64"
+    },
+    "sdk_first_import_log": {
+      "file": "Docs/Verification/ASSResourceCompression/sdk-first-import.log.gz",
+      "sha256": "a06153e9a1943041e094d52fbe5223da16a3780b8e045a01a41de473efc0f846",
+      "raw_sha256": "3ff3f933364fdb1a8f185031013ad28f9160df2ab10f1b45439344462522ca18"
+    }
+  },
+  "sdk_first_import_note": "First fresh SDK editor run: 32/53 passed; 21 failures with Unity refusing StateMachineBehaviour creation (Please fix compile errors) despite no error CS in log. Restart and full rerun with identical source retained as final result; first-import diagnostics archived.",
+  "packaging_unittest": {
+    "command": "PYTHONUTF8=1 python -m unittest discover -s .github/scripts -p 'test_*.py' -v",
+    "passed": 19,
+    "failed": 4,
+    "reason": "Three existing Windows CRLF expectations and one POSIX executable-bit expectation. Tools unchanged; Linux release CI runs full suite."
+  },
+  "not_measured": [
+    "New Player/performance run",
+    "Actual upload/download size",
+    "VRAM reduction",
+    "Subjective listening quality"
+  ],
+  "packaging": {
+    "entries": 137,
+    "zip_bytes": 914694,
+    "zip_sha256": "5487985dbb54aa14316aceb1831bce8dffe46d100b740d6924bbd6cabc2527b3",
+    "crc_passed": true,
+    "all_payload_bytes_match": true,
+    "four_audio_quality_0_01_and_background_loading": true,
+    "command": "python .github/scripts/package_vpm.py D:/uv/release12/Assets/UnityBox/AvatarSecuritySystem D:/uv/top.sealoong.unitybox.avatar-security-system-0.9.12.zip"
+  }
+}

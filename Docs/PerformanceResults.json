@@ -1,6 +1,21 @@
 {
   "schema": 1,
   "editor": "2022.3.22f1",
+  "source_asset_size_runs": [
+    {
+      "scope": "ASS 0.9.12 Logo PNG lossless recompression",
+      "date_local": "2026-11-20",
+      "source_dimensions": [1638, 1638],
+      "before_bytes": 687112,
+      "after_bytes": 662801,
+      "saved_bytes": 24311,
+      "saved_percent": 3.53814225337354,
+      "rgba_pixels_and_non_idat_chunks_identical": true,
+      "texture_importer_unchanged": true,
+      "evidence": "Docs/Verification/ASSResourceCompression/results.json",
+      "notes": "Source file bytes only; no new VRAM, upload size, runtime or Player benchmark. Historical Editor/Player runs below remain unchanged."
+    }
+  ],
   "editor_runs": [
     {
       "scope": "serial",

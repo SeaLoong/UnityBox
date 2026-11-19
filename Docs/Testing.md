@@ -18,6 +18,13 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
+## ASS 0.9.12 素材压缩
+
+四个随包音频导入测试增加 Vorbis / Quality=0.01 断言，保留后台加载、样本和加载类型检查。
+重跑 core 与 SDK/NDMF 功能范围，包括 Logo 流送和 SDK 音频上传校验。PNG 优化核对原始
+1638×1638 RGBA 像素、非 IDAT metadata、TextureImporter 和 GUID 不变；四个 MP3 源字节不变。
+真实结果及发布 ZIP 检查见[素材压缩验证](Verification/ASSResourceCompression/README.md)。
+
 ## ASS 0.9.11 Overlay Logo 流送
 
 Logo metadata 正式纳入发布并同时开启 Mip Maps / Streaming Mip Maps；现有 GUID 保持。

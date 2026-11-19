@@ -1,6 +1,14 @@
 # 发布与升级说明
 
-## 2026-11-20：ASS 0.9.11 修正 Overlay Logo 流送配置
+## 2026-11-20：ASS 0.9.12 素材压缩
+
+四个随包音频的 Vorbis Quality 调整为 **1%**，保留后台加载、GUID 与原 MP3 字节。
+Logo PNG 无损重压：687,112 → 662,801 字节（减少 3.54%），保留原始 1638×1638 分辨率、
+全部 RGBA 像素及元数据。现有贴图导入分辨率、Crunch 和 Streaming Mip Maps 不变。
+源 PNG 缩小不等于头像上传贴图或显存同比缩小，低音频 Quality 也不改变解压 PCM 的内存规模。
+更新后正常重导入/构建即可；执行记录见[素材压缩验证](Verification/ASSResourceCompression/README.md)。
+
+## 2026-11-20：ASS 0.9.11 修正 Overlay Logo 流送配置（历史发布）
 
 Logo 的 TextureImporter metadata 正式纳入发布，保留仓库已有 GUID，开启 Mip Maps 与
 Streaming Mip Maps。修复构建生成 Overlay 后，SDK 因 Logo 含 mipmap 却未开启流送而阻止上传的问题。

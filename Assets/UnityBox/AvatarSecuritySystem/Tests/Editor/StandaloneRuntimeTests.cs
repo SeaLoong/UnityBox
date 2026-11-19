@@ -116,7 +116,10 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(clip, Is.Not.Null);
             string path = AssetDatabase.GetAssetPath(clip);
             Assert.That(path, Does.StartWith("Packages/top.sealoong.unitybox.avatar-security-system/Resources/"));
-            Assert.That(((AudioImporter)AssetImporter.GetAtPath(path)).loadInBackground, Is.True);
+            var importer = (AudioImporter)AssetImporter.GetAtPath(path);
+            Assert.That(importer.loadInBackground, Is.True);
+            Assert.That(importer.defaultSampleSettings.compressionFormat, Is.EqualTo(AudioCompressionFormat.Vorbis));
+            Assert.That(importer.defaultSampleSettings.quality, Is.EqualTo(0.01f).Within(0.0001f));
             Assert.That(clip.loadInBackground, Is.True);
             Assert.That(clip.loadType, Is.EqualTo(AudioClipLoadType.DecompressOnLoad));
             Assert.That(clip.samples, Is.GreaterThan(0));

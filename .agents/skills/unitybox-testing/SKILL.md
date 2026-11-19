@@ -177,6 +177,17 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   [ASSAudioUpload](../../../Docs/Verification/ASSAudioUpload/README.md), with actual commands and counts.
   Retain earlier whole-library and component-upgrade evidence under its original version/source identity.
 
+## Verify ASS resource compression
+
+- ASS0.9.12 ships all four audio importers with Vorbis Quality=0.01 (1%). Preserve source MP3 bytes,
+  GUIDs, sample-rate settings, load type and background loading. Assert imported quality in native core
+  tests and rerun the real SDK/NDMF audio upload checks. Do not claim decoded PCM shrinks with Quality.
+- Logo PNG is losslessly re-encoded at its original 1638x1638 size: require byte-identical RGBA pixels
+  and non-IDAT chunks (including DPI/XMP), as well as unchanged TextureImporter metadata/GUID.
+  Keep the current import max size 512, Crunch, mipmaps and streaming; do not lower resolution further.
+- Distinguish source PNG size from built texture/download/VRAM. Retain native runs and byte/pixel
+  fingerprints under [ASSResourceCompression](../../../Docs/Verification/ASSResourceCompression/README.md).
+
 ## Verify ASS Overlay texture streaming
 
 - ASS0.9.11 ships the Logo TextureImporter metadata with the existing checkout GUID, mipmaps enabled

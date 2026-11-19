@@ -146,6 +146,18 @@ ASS 在构建阶段才生成 Overlay，因此源头像面板没有错误不代�
 更新包后重新正常构建即可，无需关闭 mipmap，不会在构建中修改用户 TextureImporter 或 SDK。
 验证见[Logo 流送回归](../../../../Docs/Verification/ASSLogoStreaming/README.md)。
 
+### 素材体积（0.9.12）
+
+四个随包音频的 Vorbis 导入 Quality 固定为 **1%**（`quality: 0.01`），保留 MP3 源文件、
+GUID、采样率、Decompress On Load 和 Load In Background。该选项是有损音质设置，
+不是将 MP3 文件直接压到原来的 1%；解压后的运行时 PCM 内存不会因 Quality 同比例缩小。
+
+Logo 源 PNG 无损重压 IDAT，687,112 → 662,801 字节（减少 3.54%）；原始 **1638×1638**
+RGBA 像素、透明度、DPI/XMP 等元数据完全一致，没有缩放或颜色量化。现有 TextureImporter
+最大尺寸 512、Crunch、mipmap 和 streaming 设置保持，未进一步降低导入分辨率。
+PNG 源文件体积与 Unity 构建内的贴图体积/显存不同，不据此声称上传或显存同比减少。
+测量和回归见[素材压缩验证](../../../../Docs/Verification/ASSResourceCompression/README.md)。
+
 ## 音频与上传
 
 0.9.5 为 `PasswordSuccess`、`CountdownWarning`、`StepSuccess` 和 `InputError` 四个自带

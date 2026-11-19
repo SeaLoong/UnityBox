@@ -4,6 +4,13 @@
 原 `refactor` 七插件与 Animator Optimizer 在同一个 checkout 开发、测试和发布。
 执行记录见 [验证结果](VerificationResults.json)，测量数据见 [性能报告](Performance.md)。
 
+## ASS 0.9.12：素材压缩
+
+四个自带音频的导入 Quality 固定为 1%，保留后台加载和源 MP3。Logo PNG 无损重压，
+1638×1638 RGBA 像素及原元数据完全保持，体积减少 24,311 字节（3.54%）。
+贴图导入尺寸、GUID、Crunch、mipmap/streaming 不改；不将源 PNG 缩小宣称为显存收益。
+具体导入/SDK 回归和字节对照见[素材压缩记录](Verification/ASSResourceCompression/README.md)。
+
 ## ASS 0.9.11：Logo 发布配置
 
 Overlay Logo 的 TextureImporter metadata 纳入版本控制和发布 ZIP，保留仓库现有 GUID，

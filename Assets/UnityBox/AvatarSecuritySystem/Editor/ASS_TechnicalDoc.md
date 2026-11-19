@@ -158,6 +158,17 @@ mipmap 与 streaming。修正在资源发布层完成；生成路径不修改 Te
 回归检查 SDK/NDMF 标记的生成路径、激活/未激活 Overlay、材质真实 Logo 引用及原资源字节保全；
 隔离副本的开关对照确认检查器能发现违规贴图。见[验证记录](../../../../Docs/Verification/ASSLogoStreaming/README.md)。
 
+## 0.9.12 素材压缩边界
+
+四个随包 MP3 的 AudioImporter 使用 Vorbis、`defaultSettings.quality: 0.01`，仅修改
+导入质量，保留 MP3 字节、GUID、加载类型、后台加载、采样率及无平台覆盖的配置。
+低 Quality 是有损编码取舍，不表示源 MP3 或解压后的 PCM 内存缩小到 1%。
+
+Logo 只重压 PNG IDAT；1638×1638 RGBA 解码字节和全部非 IDAT chunk 均完全一致，
+包括 IHDR、DPI、XMP。源体积从 687,112 降至 662,801 字节。TextureImporter 与 GUID
+逐字节保留：最大尺寸 512、Crunch、mipmap 与 streaming 不变。未增加构建时资源改写。
+验证见[素材压缩记录](../../../../Docs/Verification/ASSResourceCompression/README.md)。
+
 ## 音频引用与 SDK 上传校验
 
 `Processor.LoadAudioResources` 和 `StandaloneSecurityBuilder.Build` 在配置副本未指定音频时，

@@ -3,6 +3,16 @@
   "schema": 3,
   "supplemental_patch_runs": [
     {
+      "scope": "ASS 0.9.12 resource compression",
+      "date_local": "2026-11-20",
+      "platform": "Windows 11",
+      "editor": "2022.3.22f1",
+      "core": { "total": 116, "passed": 116, "failed": 0, "skipped": 0 },
+      "sdk_ndmf": { "total": 53, "passed": 53, "failed": 0, "skipped": 0 },
+      "evidence": "Docs/Verification/ASSResourceCompression/results.json",
+      "notes": "Four native audio Quality=0.01 assertions; source MP3, PNG pixels/metadata and TextureImporter preservation checked. First-import SDK failure retained; unchanged-source restart passes. Windows packaging: 19 passed, 4 existing CRLF/POSIX failures. No new Player, upload-size or VRAM measurement."
+    },
+    {
       "scope": "ASS 0.9.11 Overlay Logo streaming",
       "date_local": "2026-11-20",
       "platform": "Windows 11",
