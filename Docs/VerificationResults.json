@@ -3,6 +3,17 @@
   "schema": 3,
   "supplemental_patch_runs": [
     {
+      "scope": "ACC 0.5.4 shared material variant preview",
+      "date_local": "2026-11-20",
+      "platform": "Windows 11",
+      "editor": "2022.3.22f1",
+      "core": { "total": 67, "passed": 67, "failed": 0, "skipped": 0 },
+      "sdk_ma_ndmf": { "total": 95, "passed": 95, "failed": 0, "skipped": 0 },
+      "graphics": { "total": 6, "passed": 6, "failed": 0, "skipped": 0 },
+      "evidence": "Docs/Verification/ACCVariantPreview/results.json",
+      "notes": "Real Renderer/AnimationMode, switching, exact-base group identity, Undo/Redo, Scene/Prefab saved-byte/reload and dirty-state preservation; real Inspector/Prefab Stage graphics. SDK 3.10.2, MA 1.18.1, NDMF 1.14.4. Local packaging 19/23 passes (4 Windows CRLF/POSIX failures); ZIP CRC and exact local payload pass. Three pre-existing orphan sidecars explicitly excluded from imported fingerprints after Unity discarded disposable copies; checkout originals retained. No dedicated Player/performance run. Diagnostic failures retained separately."
+    },
+    {
       "scope": "ASS 0.9.12 resource compression",
       "date_local": "2026-11-20",
       "platform": "Windows 11",

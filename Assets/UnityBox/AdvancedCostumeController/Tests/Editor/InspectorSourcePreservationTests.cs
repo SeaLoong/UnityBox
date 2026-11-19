@@ -179,6 +179,43 @@ namespace UnityBox.AdvancedCostumeController.Tests
     }
 
     [UnityTest, Category("UnityBoxGraphics")]
+    public IEnumerator VariantAndBaseInspectorsSharePreviewWithoutChangingSavedPrefab()
+    {
+      string before = Snapshot();
+      byte[] bytes = File.ReadAllBytes(prefabPath);
+      byte[] metadata = File.ReadAllBytes(prefabPath + ".meta");
+      bool dirty = contents.scene.isDirty;
+      var renderer = configuredMarker.OutfitBase.transform.Find("Body").GetComponent<Renderer>();
+      host = ScriptableObject.CreateInstance<ACCInspectorTestHost>();
+      host.Inspectors = new[]
+      {
+        OpenInspector(configuredMarker), OpenInspector(emptyMarker),
+        OpenInspector(configuredMarker.OutfitBase.GetComponent<ACCOutfitMarker>())
+      };
+      host.position = new Rect(40, 40, 640, 1000);
+      host.ShowUtility();
+      try
+      {
+        Assert.That(ACCVariantPreview.Start(configuredMarker), Is.True);
+        for (int frame = 0; frame < 4; frame++) { host.Repaint(); yield return null; }
+        Assert.That(host.DrawCount, Is.GreaterThan(0));
+        Assert.That(ACCVariantPreview.GetActiveVariant(emptyMarker.OutfitBase), Is.EqualTo(configuredMarker));
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(stored));
+        Assert.That(ACCVariantPreview.Start(emptyMarker), Is.True);
+        host.Repaint();
+        yield return null;
+        Assert.That(renderer.sharedMaterials[0], Is.EqualTo(original));
+        Assert.That(ACCVariantPreview.GetActiveVariant(configuredMarker.OutfitBase), Is.EqualTo(emptyMarker));
+      }
+      finally { ACCVariantPreview.Stop(); }
+      Assert.That(Snapshot(), Is.EqualTo(before));
+      Assert.That(contents.scene.isDirty, Is.EqualTo(dirty));
+      AssetDatabase.SaveAssets();
+      Assert.That(File.ReadAllBytes(prefabPath), Is.EqualTo(bytes));
+      Assert.That(File.ReadAllBytes(prefabPath + ".meta"), Is.EqualTo(metadata));
+    }
+
+    [UnityTest, Category("UnityBoxGraphics")]
     public IEnumerator RepaintingSavedPrefabInspectorsKeepsInvalidSlotAndExcludedGroupName()
     {
       string before = Snapshot();

@@ -51,6 +51,7 @@ namespace UnityBox.AdvancedCostumeController
       OutfitData defaultOutfit,
       string path)
     {
+      ACCVariantPreview.Stop();
       if (config.EnableParameterCompression && CostumeAvatarIntegration.Adapter == null)
         throw new System.InvalidOperationException("Parameter compression requires the real VRChat integration. Disable compression for ordinary Unity controllers.");
       var controller = AnimatorController.CreateAnimatorControllerAtPath(path);
@@ -785,24 +786,7 @@ namespace UnityBox.AdvancedCostumeController
         for (int slot = 0; slot < materials.Length; slot++)
         {
           string path = CostumeHierarchy.GetRelativePath(costumesRoot, renderer.gameObject);
-          var material = materials[slot];
-          if (marker != null)
-          {
-            var rendererOverride = marker.RendererOverrides?.FirstOrDefault(entry =>
-              entry != null && entry.TargetRenderer == renderer &&
-              entry.MaterialSlot == slot && entry.Replacement != null);
-            if (rendererOverride != null)
-            {
-              material = rendererOverride.Replacement;
-            }
-            else
-            {
-              var replacement = marker.Replacements?.FirstOrDefault(entry =>
-                entry != null && entry.Source == material);
-              if (replacement != null && replacement.Replacement != null)
-                material = replacement.Replacement;
-            }
-          }
+          var material = MaterialVariantUtility.Resolve(marker, renderer, slot, materials[slot]);
 
           var binding = EditorCurveBinding.PPtrCurve(path, typeof(Renderer),
             $"m_Materials.Array.data[{slot}]");

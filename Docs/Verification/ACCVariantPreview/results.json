@@ -1,0 +1,1593 @@
+{
+  "capture_adapter": {
+    "path": "D:\\unitybox-verify\\capture_acc_preview.py",
+    "bytes": 5245,
+    "sha256": "671fcaf2c82bbb0b137c37f73b08c88dc9009ab15d0cb6ddf5c005b9083e2722"
+  },
+  "capture_command": [
+    "py",
+    "-3.13",
+    "-X",
+    "utf8",
+    "-B",
+    "D:\\unitybox-verify\\capture_acc_preview.py",
+    "D:\\ac8",
+    "D:\\af8"
+  ],
+  "schema": 1,
+  "date_local": "2026-11-20",
+  "feature": "ACC 0.5.4 shared material variant preview",
+  "native_runs": [
+    {
+      "scope": "core",
+      "kind": "functional",
+      "passed": true,
+      "run_id_utc": "20261119T213218-6d1428a9",
+      "project": "D:\\ac8",
+      "project_id": "2881072913de4537af8e11c24f8fe221",
+      "prepared_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+      "profile": "core",
+      "package_versions": {
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.test-framework": "1.1.33",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+      },
+      "tests": {
+        "total": 67,
+        "passed": 67,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 67,
+            "passed": 67,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "run": {
+        "run_id": "20261119T213218-6d1428a9",
+        "project_id": "2881072913de4537af8e11c24f8fe221",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac8",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\results.xml",
+          "-logFile",
+          "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:32:18.044349+00:00",
+        "started_epoch": 1795123938.044367,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 0,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac8\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:33:06.280662+00:00"
+      },
+      "benchmarks": [],
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.advanced-costume-controller": {
+            "version": "0.5.4",
+            "source": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController",
+            "checkout": "D:\\VRChatProjects\\UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+            "prepared_tree_sha256": "76bf0d25b86db3a4d523bbdbdc89d4850fb9315786a31583500a265a4ce3c904",
+            "source_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "imported_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "file_count": 112,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": []
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AdvancedCostumeController.Core": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\ac8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.dll",
+              "bytes": 115200,
+              "sha256": "72bbdb1e7bf11f50776b8fb09c9f8b86ee0092b89fbfd9b251b83dfc9a54e319"
+            },
+            "source_file_count": 18,
+            "source_sha256": "b4992316c44a386a4ecb538f213eb03c18f8f85f2badc3ed9ed5ab7a7d759b77"
+          },
+          "UnityBox.AdvancedCostumeController.Runtime": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\ac8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Runtime.dll",
+              "bytes": 9216,
+              "sha256": "ae91e200b3175dbd51806bdb0740894d51c0b72650e09624d5ab1ebe26361119"
+            },
+            "source_file_count": 4,
+            "source_sha256": "e62f6a2d4853e98b2b3503ff032d8f59423838b87ad88bc232a866d7e68e9e7b"
+          },
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\ac8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "bytes": 75264,
+              "sha256": "e586a2e7e8f8a5eb46ecfd6d39516de8ab154710eff8fd56dcdc786101bdea92"
+            },
+            "source_file_count": 7,
+            "source_sha256": "777558e79d166936d1e7efa3b8c7e0cc3fc394e71b65d6fd28f81b4a2ba97d67"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All actual package source/resources and their metadata match the final checkout, modulo the existing permitted folder.meta whitespace normalization. Three pre-existing orphan sidecars were discarded by Unity in the disposable import and explicitly excluded; original checkout bytes retained.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta",
+          "Editor/AnimationBuilder.cs.meta",
+          "Editor/Models.cs.meta",
+          "Editor/Scanner.cs.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON",
+        "orphan_metadata_exclusions": [
+          {
+            "relative_path": "Editor/AnimationBuilder.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\AnimationBuilder.cs.meta",
+            "bytes": 243,
+            "sha256": "51a3c2ce3eb0a963f9f5316452a9be1582098fea0e7bccfaeba0ac22fd44bf08"
+          },
+          {
+            "relative_path": "Editor/Models.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Models.cs.meta",
+            "bytes": 243,
+            "sha256": "084c3c8b7ab2f545b4d1468035b6116642a0ebff812d931cff6079dbea73f12a"
+          },
+          {
+            "relative_path": "Editor/Scanner.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Scanner.cs.meta",
+            "bytes": 243,
+            "sha256": "3239d6615a322e2a767b69f2afa2ffb1b457a8c5e62fe143aca09a5ca2f106a2"
+          }
+        ]
+      },
+      "graphics_device": [],
+      "artifacts": {
+        "report": {
+          "path": "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\report.json",
+          "bytes": 2436,
+          "sha256": "9fed7d764fe65ea53f06ef2adb7838da173b8b3ad24cc92b1a4ba30cc2c82488"
+        },
+        "xml": {
+          "path": "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\results.xml",
+          "bytes": 52558,
+          "sha256": "f557faa5a633a4eb67bf56257139800fcc4085b355c6aa08147c8c2e15ff938a"
+        },
+        "unity_log": {
+          "path": "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\unity.log",
+          "bytes": 417541,
+          "sha256": "e2d5f8eb088279d1c9bb217a7df23bc6d4dadfafce4f2c6774473eb77ca4b3ce"
+        },
+        "launcher_log": {
+          "path": "D:\\ac8\\.unitybox-test-results\\20261119T213218-6d1428a9\\launcher.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "retained_artifacts": {
+        "xml": {
+          "path": "Docs/Verification/ACCVariantPreview/core-results.xml.gz",
+          "sha256": "3a95c44b79631ac568296c6d240a211d0f200740af6858efcde462c9bf9bc5f6"
+        },
+        "report": {
+          "path": "Docs/Verification/ACCVariantPreview/core-report.json.gz",
+          "sha256": "87a16209eb8e661422f2a0396c094f5763fc7bc5a884076cfdae2cb9a92b9e08"
+        },
+        "run": {
+          "path": "Docs/Verification/ACCVariantPreview/core-run.json.gz",
+          "sha256": "e6b92098848ad7f1790b93b9695d2bda8da2db282d54c517d1dd14e310e2af84"
+        }
+      }
+    },
+    {
+      "scope": "sdk_ma_ndmf",
+      "kind": "functional",
+      "passed": true,
+      "run_id_utc": "20261119T213315-9424ee3f",
+      "project": "D:\\af8",
+      "project_id": "22795a3b08a44c46a69f76c35ad8da65",
+      "prepared_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.21",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.3.2",
+        "com.unity.nuget.mono-cecil": "1.11.5",
+        "com.unity.nuget.newtonsoft-json": "3.2.2",
+        "com.unity.postprocessing": "3.4.0",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.7",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.10",
+        "com.unity.xr.management": "4.4.0",
+        "com.unity.xr.oculus": "4.2.0",
+        "com.vrchat.avatars": "3.10.2",
+        "com.vrchat.base": "3.10.2",
+        "nadena.dev.modular-avatar": "1.18.1",
+        "nadena.dev.ndmf": "1.14.4",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+      },
+      "tests": {
+        "total": 95,
+        "passed": 95,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 67,
+            "passed": 67,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "total": 28,
+            "passed": 28,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "run": {
+        "run_id": "20261119T213315-9424ee3f",
+        "project_id": "22795a3b08a44c46a69f76c35ad8da65",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\af8",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\results.xml",
+          "-logFile",
+          "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests;UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "profile": "vrc",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.burst": "1.8.21",
+          "com.unity.collections": "2.1.4",
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.mathematics": "1.3.2",
+          "com.unity.nuget.mono-cecil": "1.11.5",
+          "com.unity.nuget.newtonsoft-json": "3.2.2",
+          "com.unity.postprocessing": "3.4.0",
+          "com.unity.test-framework": "1.1.33",
+          "com.unity.timeline": "1.7.7",
+          "com.unity.ugui": "1.0.0",
+          "com.unity.xr.legacyinputhelpers": "2.1.10",
+          "com.unity.xr.management": "4.4.0",
+          "com.unity.xr.oculus": "4.2.0",
+          "com.vrchat.avatars": "3.10.2",
+          "com.vrchat.base": "3.10.2",
+          "nadena.dev.modular-avatar": "1.18.1",
+          "nadena.dev.ndmf": "1.14.4",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:33:15.568000+00:00",
+        "started_epoch": 1795123995.5680118,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 0,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "xdg_root": "D:\\af8\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:36:29.657687+00:00"
+      },
+      "benchmarks": [],
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.advanced-costume-controller": {
+            "version": "0.5.4",
+            "source": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController",
+            "checkout": "D:\\VRChatProjects\\UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+            "prepared_tree_sha256": "76bf0d25b86db3a4d523bbdbdc89d4850fb9315786a31583500a265a4ce3c904",
+            "source_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "imported_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "file_count": 112,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": []
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AdvancedCostumeController.Core": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.dll",
+              "bytes": 114176,
+              "sha256": "06a8c032893cdc20e4d676f8453f0ccdf2112644eb89a7df06bc6acccf4b0f3f"
+            },
+            "source_file_count": 18,
+            "source_sha256": "b4992316c44a386a4ecb538f213eb03c18f8f85f2badc3ed9ed5ab7a7d759b77"
+          },
+          "UnityBox.AdvancedCostumeController": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.dll",
+              "bytes": 139776,
+              "sha256": "ffe352a86f2a2fd4ec09aa6a43fa6923fab554a74ec6de59f7d19063eef59df9"
+            },
+            "source_file_count": 9,
+            "source_sha256": "6183e672e506e73cf2e30e2d54261ac78ae38447d2a3cfc23dd7b690e477e9c8"
+          },
+          "UnityBox.AdvancedCostumeController.VRChat": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.VRChat.dll",
+              "bytes": 6656,
+              "sha256": "a81c69a867f7c09b8b630df99f041a758ca9c605ec32214a90e9d2852e73bf19"
+            },
+            "source_file_count": 2,
+            "source_sha256": "83a2f5b15481ef9bfbb87875af2f879b0695f8483d16a23619e93d25fde213b3"
+          },
+          "UnityBox.AdvancedCostumeController.Runtime": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Runtime.dll",
+              "bytes": 9216,
+              "sha256": "d914d59d0333d848fdfb9f05dc0fa0e86996965a10dfd35caf88771ac4801e39"
+            },
+            "source_file_count": 4,
+            "source_sha256": "e62f6a2d4853e98b2b3503ff032d8f59423838b87ad88bc232a866d7e68e9e7b"
+          },
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "bytes": 75264,
+              "sha256": "25f53fa361d526595b89b9de504a8ba658447bbc7cab6ce96935ff143ac1c587"
+            },
+            "source_file_count": 7,
+            "source_sha256": "777558e79d166936d1e7efa3b8c7e0cc3fc394e71b65d6fd28f81b4a2ba97d67"
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Editor.Tests.dll",
+              "bytes": 44544,
+              "sha256": "2af36276704444846e4d15b672d2d8ea26f037858ff81a555f9f07953e866a12"
+            },
+            "source_file_count": 6,
+            "source_sha256": "c1ada3c86393fefd7d3f7d5ecbcc1322aac4958ee025b89524c6b8fa241bade9"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All actual package source/resources and their metadata match the final checkout, modulo the existing permitted folder.meta whitespace normalization. Three pre-existing orphan sidecars were discarded by Unity in the disposable import and explicitly excluded; original checkout bytes retained.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta",
+          "Editor/AnimationBuilder.cs.meta",
+          "Editor/Models.cs.meta",
+          "Editor/Scanner.cs.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON",
+        "orphan_metadata_exclusions": [
+          {
+            "relative_path": "Editor/AnimationBuilder.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\AnimationBuilder.cs.meta",
+            "bytes": 243,
+            "sha256": "51a3c2ce3eb0a963f9f5316452a9be1582098fea0e7bccfaeba0ac22fd44bf08"
+          },
+          {
+            "relative_path": "Editor/Models.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Models.cs.meta",
+            "bytes": 243,
+            "sha256": "084c3c8b7ab2f545b4d1468035b6116642a0ebff812d931cff6079dbea73f12a"
+          },
+          {
+            "relative_path": "Editor/Scanner.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Scanner.cs.meta",
+            "bytes": 243,
+            "sha256": "3239d6615a322e2a767b69f2afa2ffb1b457a8c5e62fe143aca09a5ca2f106a2"
+          }
+        ]
+      },
+      "graphics_device": [],
+      "artifacts": {
+        "report": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\report.json",
+          "bytes": 3491,
+          "sha256": "7ef13eac72a573f982488f717b60eb96b5e4dfcee4ecf95eda8597a04e8d1806"
+        },
+        "xml": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\results.xml",
+          "bytes": 79198,
+          "sha256": "8ea2f74621858726b6b919d99d9e64d1701f42390266ad66e9798f459b535fbe"
+        },
+        "unity_log": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\unity.log",
+          "bytes": 2378465,
+          "sha256": "67679dc5637f0416025e5cba54da4481d230058480edeed72634ea63e0273592"
+        },
+        "launcher_log": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213315-9424ee3f\\launcher.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "retained_artifacts": {
+        "xml": {
+          "path": "Docs/Verification/ACCVariantPreview/sdk_ma_ndmf-results.xml.gz",
+          "sha256": "b18fa24b515844778ad283e3b49dfd2db174d143ffa00c9e94d635af6d093e62"
+        },
+        "report": {
+          "path": "Docs/Verification/ACCVariantPreview/sdk_ma_ndmf-report.json.gz",
+          "sha256": "f7e1ca331e31504aead9e7cf818afb2915cf54c610fded3282a03003cf17d41a"
+        },
+        "run": {
+          "path": "Docs/Verification/ACCVariantPreview/sdk_ma_ndmf-run.json.gz",
+          "sha256": "34f7ec97f16b0170568eaf7e1764cde3328c5effd698d12c6a81f3a58d468c04"
+        }
+      }
+    },
+    {
+      "scope": "graphics",
+      "kind": "graphics",
+      "passed": true,
+      "run_id_utc": "20261119T213630-e9ce579f",
+      "project": "D:\\af8",
+      "project_id": "22795a3b08a44c46a69f76c35ad8da65",
+      "prepared_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+      "profile": "vrc",
+      "package_versions": {
+        "com.unity.burst": "1.8.21",
+        "com.unity.collections": "2.1.4",
+        "com.unity.ext.nunit": "1.0.6",
+        "com.unity.mathematics": "1.3.2",
+        "com.unity.nuget.mono-cecil": "1.11.5",
+        "com.unity.nuget.newtonsoft-json": "3.2.2",
+        "com.unity.postprocessing": "3.4.0",
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.timeline": "1.7.7",
+        "com.unity.ugui": "1.0.0",
+        "com.unity.xr.legacyinputhelpers": "2.1.10",
+        "com.unity.xr.management": "4.4.0",
+        "com.unity.xr.oculus": "4.2.0",
+        "com.vrchat.avatars": "3.10.2",
+        "com.vrchat.base": "3.10.2",
+        "nadena.dev.modular-avatar": "1.18.1",
+        "nadena.dev.ndmf": "1.14.4",
+        "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+      },
+      "tests": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Passed",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [],
+        "skipped_tests": []
+      },
+      "run": {
+        "run_id": "20261119T213630-e9ce579f",
+        "project_id": "22795a3b08a44c46a69f76c35ad8da65",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-projectPath",
+          "D:\\af8",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\results.xml",
+          "-logFile",
+          "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\unity.log",
+          "-testCategory",
+          "UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests;UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "profile": "vrc",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.burst": "1.8.21",
+          "com.unity.collections": "2.1.4",
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.mathematics": "1.3.2",
+          "com.unity.nuget.mono-cecil": "1.11.5",
+          "com.unity.nuget.newtonsoft-json": "3.2.2",
+          "com.unity.postprocessing": "3.4.0",
+          "com.unity.test-framework": "1.1.33",
+          "com.unity.timeline": "1.7.7",
+          "com.unity.ugui": "1.0.0",
+          "com.unity.xr.legacyinputhelpers": "2.1.10",
+          "com.unity.xr.management": "4.4.0",
+          "com.unity.xr.oculus": "4.2.0",
+          "com.vrchat.avatars": "3.10.2",
+          "com.vrchat.base": "3.10.2",
+          "nadena.dev.modular-avatar": "1.18.1",
+          "nadena.dev.ndmf": "1.14.4",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:36:30.099920+00:00",
+        "started_epoch": 1795124190.0999346,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [],
+        "timed_out": false,
+        "exit_code": 0,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "xdg_root": "D:\\af8\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": true,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:36:58.721599+00:00"
+      },
+      "benchmarks": [
+        {
+          "plugin": "AdvancedCostumeController",
+          "scenario": "menu_icon_rendering_256px",
+          "correctness": "two256x256RGBA icons show distinct red/green geometry; source material and layer retained",
+          "size": 2,
+          "samples": 5,
+          "median_ms": 217.18460000000002,
+          "p95_ms": 217.8547,
+          "min_ms": 215.2234,
+          "max_ms": 217.8547,
+          "allocated_bytes_per_op": -1
+        }
+      ],
+      "source_evidence": {
+        "packages": {
+          "top.sealoong.unitybox.advanced-costume-controller": {
+            "version": "0.5.4",
+            "source": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController",
+            "checkout": "D:\\VRChatProjects\\UnityBox",
+            "branch": "master",
+            "checkout_base_revision": "33afea6bf74ed8787970c1085ce7b8d58b40f8ab",
+            "prepared_tree_sha256": "76bf0d25b86db3a4d523bbdbdc89d4850fb9315786a31583500a265a4ce3c904",
+            "source_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "imported_snapshot_sha256": "655ec4172ec873069b85bf5d76a5c71e82db552f660f4c59449271e416b34c0e",
+            "file_count": 112,
+            "metadata_formatting_only": [],
+            "importer_generated_metadata": []
+          }
+        },
+        "imported_assemblies": {
+          "UnityBox.AdvancedCostumeController.Core": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.dll",
+              "bytes": 114176,
+              "sha256": "06a8c032893cdc20e4d676f8453f0ccdf2112644eb89a7df06bc6acccf4b0f3f"
+            },
+            "source_file_count": 18,
+            "source_sha256": "b4992316c44a386a4ecb538f213eb03c18f8f85f2badc3ed9ed5ab7a7d759b77"
+          },
+          "UnityBox.AdvancedCostumeController": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.dll",
+              "bytes": 139776,
+              "sha256": "ffe352a86f2a2fd4ec09aa6a43fa6923fab554a74ec6de59f7d19063eef59df9"
+            },
+            "source_file_count": 9,
+            "source_sha256": "6183e672e506e73cf2e30e2d54261ac78ae38447d2a3cfc23dd7b690e477e9c8"
+          },
+          "UnityBox.AdvancedCostumeController.VRChat": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.VRChat.dll",
+              "bytes": 6656,
+              "sha256": "a81c69a867f7c09b8b630df99f041a758ca9c605ec32214a90e9d2852e73bf19"
+            },
+            "source_file_count": 2,
+            "source_sha256": "83a2f5b15481ef9bfbb87875af2f879b0695f8483d16a23619e93d25fde213b3"
+          },
+          "UnityBox.AdvancedCostumeController.Runtime": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Runtime.dll",
+              "bytes": 9216,
+              "sha256": "d914d59d0333d848fdfb9f05dc0fa0e86996965a10dfd35caf88771ac4801e39"
+            },
+            "source_file_count": 4,
+            "source_sha256": "e62f6a2d4853e98b2b3503ff032d8f59423838b87ad88bc232a866d7e68e9e7b"
+          },
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Core.Tests.dll",
+              "bytes": 75264,
+              "sha256": "25f53fa361d526595b89b9de504a8ba658447bbc7cab6ce96935ff143ac1c587"
+            },
+            "source_file_count": 7,
+            "source_sha256": "777558e79d166936d1e7efa3b8c7e0cc3fc394e71b65d6fd28f81b4a2ba97d67"
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "package": "top.sealoong.unitybox.advanced-costume-controller",
+            "dll": {
+              "path": "D:\\af8\\Library\\ScriptAssemblies\\UnityBox.AdvancedCostumeController.Editor.Tests.dll",
+              "bytes": 44544,
+              "sha256": "2af36276704444846e4d15b672d2d8ea26f037858ff81a555f9f07953e866a12"
+            },
+            "source_file_count": 6,
+            "source_sha256": "c1ada3c86393fefd7d3f7d5ecbcc1322aac4958ee025b89524c6b8fa241bade9"
+          }
+        },
+        "package_snapshot_matches_current_source": true,
+        "comparison": "All actual package source/resources and their metadata match the final checkout, modulo the existing permitted folder.meta whitespace normalization. Three pre-existing orphan sidecars were discarded by Unity in the disposable import and explicitly excluded; original checkout bytes retained.",
+        "snapshot_excludes": [
+          "*.md",
+          "*.md.meta",
+          "Editor/AnimationBuilder.cs.meta",
+          "Editor/Models.cs.meta",
+          "Editor/Scanner.cs.meta"
+        ],
+        "fingerprint_encoding": "SHA256 of sorted [relative path, file SHA256] pairs as compact JSON",
+        "orphan_metadata_exclusions": [
+          {
+            "relative_path": "Editor/AnimationBuilder.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\AnimationBuilder.cs.meta",
+            "bytes": 243,
+            "sha256": "51a3c2ce3eb0a963f9f5316452a9be1582098fea0e7bccfaeba0ac22fd44bf08"
+          },
+          {
+            "relative_path": "Editor/Models.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Models.cs.meta",
+            "bytes": 243,
+            "sha256": "084c3c8b7ab2f545b4d1468035b6116642a0ebff812d931cff6079dbea73f12a"
+          },
+          {
+            "relative_path": "Editor/Scanner.cs.meta",
+            "path": "D:\\VRChatProjects\\UnityBox\\Assets\\UnityBox\\AdvancedCostumeController\\Editor\\Scanner.cs.meta",
+            "bytes": 243,
+            "sha256": "3239d6615a322e2a767b69f2afa2ffb1b457a8c5e62fe143aca09a5ca2f106a2"
+          }
+        ]
+      },
+      "graphics_device": [],
+      "artifacts": {
+        "report": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\report.json",
+          "bytes": 3722,
+          "sha256": "2962406cc775126427c25226eb8838af75b2978ddec9cb227a2af9bb50c6143d"
+        },
+        "xml": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\results.xml",
+          "bytes": 14751,
+          "sha256": "ee02f8d7129a22eabac8dc7486faecce29dc4fa25571d83457dbb082e1f03b6d"
+        },
+        "unity_log": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\unity.log",
+          "bytes": 488301,
+          "sha256": "dac3993f6ca54bcae11913b125e26886ee3fac315dfbf64cc4c20be345eb5662"
+        },
+        "launcher_log": {
+          "path": "D:\\af8\\.unitybox-test-results\\20261119T213630-e9ce579f\\launcher.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "retained_artifacts": {
+        "xml": {
+          "path": "Docs/Verification/ACCVariantPreview/graphics-results.xml.gz",
+          "sha256": "1fe8a29cbc7af4e1bcb94b27cd7de6182e6ad0e8599859287a367b4045613595"
+        },
+        "report": {
+          "path": "Docs/Verification/ACCVariantPreview/graphics-report.json.gz",
+          "sha256": "f6eee5e83bd373c8ee4547ecf6c37ddef77a09012f6355b0263efbdf652101a8"
+        },
+        "run": {
+          "path": "Docs/Verification/ACCVariantPreview/graphics-run.json.gz",
+          "sha256": "4e932f1e2bb34072f75d8df420985d3dd07493569d324405beba275e9a9683ac"
+        }
+      }
+    }
+  ],
+  "packaging": {
+    "archive": {
+      "path": "D:\\unitybox-verify\\acc-0.5.4-preview.zip",
+      "bytes": 201281,
+      "sha256": "15900ea10f70c14b25b6bb265dda40254e97f165489c06c504a38ef125051985"
+    },
+    "files": 119,
+    "all_payloads_and_metadata_match_source": true,
+    "crc_passed": true,
+    "tooling_suite": {
+      "command": [
+        "py",
+        "-3.13",
+        "-X",
+        "utf8",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        ".github/scripts",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 1,
+      "total": 23,
+      "passed": 19,
+      "failed": 4,
+      "log": {
+        "path": "D:\\unitybox-verify\\acc-preview-packaging-utf8-20261120.log",
+        "bytes": 7564,
+        "sha256": "7816f4eea61d91f67fe0faf5cbdd8ad7b419ad98175a10d4f82ee416049a8304"
+      },
+      "notes": "Existing Windows CRLF metadata and POSIX executable-bit expectations; initial default-encoding run also had a GBK decoding error. No packaging tooling source changed."
+    }
+  },
+  "not_run": [
+    "Player: Editor-only preview feature",
+    "Performance: no runtime performance claim; user Editor remains running"
+  ],
+  "diagnostics": [
+    {
+      "project": "D:\\unitybox-verify\\acc-preview-full-probe",
+      "run": {
+        "run_id": "20261119T212018-0a6c2fd7",
+        "project_id": "dfef2fc6168241af8a278d34d71f37c3",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\unitybox-verify\\acc-preview-full-probe",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\unitybox-verify\\acc-preview-full-probe\\.unitybox-test-results\\20261119T212018-0a6c2fd7\\results.xml",
+          "-logFile",
+          "D:\\unitybox-verify\\acc-preview-full-probe\\.unitybox-test-results\\20261119T212018-0a6c2fd7\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests;UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "profile": "vrc",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.burst": "1.8.21",
+          "com.unity.collections": "2.1.4",
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.mathematics": "1.3.2",
+          "com.unity.nuget.mono-cecil": "1.11.5",
+          "com.unity.nuget.newtonsoft-json": "3.2.2",
+          "com.unity.postprocessing": "3.4.0",
+          "com.unity.test-framework": "1.1.33",
+          "com.unity.timeline": "1.7.7",
+          "com.unity.ugui": "1.0.0",
+          "com.unity.xr.legacyinputhelpers": "2.1.10",
+          "com.unity.xr.management": "4.4.0",
+          "com.unity.xr.oculus": "4.2.0",
+          "com.vrchat.avatars": "3.10.2",
+          "com.vrchat.base": "3.10.2",
+          "nadena.dev.modular-avatar": "1.18.1",
+          "nadena.dev.ndmf": "1.14.4",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.3"
+        },
+        "started_at": "2026-11-19T21:20:18.854859+00:00",
+        "started_epoch": 1795123218.85487,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 2,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "xdg_root": "D:\\unitybox-verify\\acc-preview-full-probe\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:24:24.011794+00:00"
+      },
+      "tests": {
+        "total": 83,
+        "passed": 80,
+        "failed": 3,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Failed(Child)",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests",
+          "UnityBox.AdvancedCostumeController.Editor.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 55,
+            "passed": 52,
+            "failed": 3,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          },
+          "UnityBox.AdvancedCostumeController.Editor.Tests": {
+            "total": 28,
+            "passed": 28,
+            "failed": 0,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [
+          {
+            "test": "UnityBox.AdvancedCostumeController.ComponentMigration.Tests.ComponentMigrationTests.ExplicitBatchPreservesEveryByteExceptSelectedScriptGuidAndBacksUpOriginal",
+            "result": "Failed",
+            "message": "System.IO.DirectoryNotFoundException : Could not find a part of the path \"D:\\unitybox-verify\\acc-preview-full-probe\\UserSettings\\UnityBox\\AdvancedCostumeController\\ComponentReferenceMigration\\20261119T212359-92b29380ea9d40a497fe5c60ec0d0cee\\Assets\\__ACCComponentMigration_baf9af7060d048289bf9332fd3aaac65\\73fc52b9ecff49ad8f7e782337d59bee.prefab\""
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.ComponentMigration.Tests.ComponentMigrationTests.VerifiedOutfitAncestorIdentifiesPartGuidAndRepairsItsOtherInstances",
+            "result": "Failed",
+            "message": "System.IO.DirectoryNotFoundException : Could not find a part of the path \"D:\\unitybox-verify\\acc-preview-full-probe\\UserSettings\\UnityBox\\AdvancedCostumeController\\ComponentReferenceMigration\\20261119T212401-6a17bebd36974fd2ab1617ec93e08611\\Assets\\__ACCComponentMigration_95aebb098c32453ca3677f8884f8a78f\\7161e6fd39054cd38271f7ed5b7a8d4a.prefab\""
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.ComponentMigration.Tests.ComponentMigrationTests.WholeProjectUpgradeRestoresCleanSavedSceneAndKeepsUnrelatedDirtySceneInstances",
+            "result": "Failed",
+            "message": "System.IO.DirectoryNotFoundException : Could not find a part of the path \"D:\\unitybox-verify\\acc-preview-full-probe\\UserSettings\\UnityBox\\AdvancedCostumeController\\ComponentReferenceMigration\\20261119T212402-bfd5359364bb420baec84fd3ea758f77\\Assets\\__ACCComponentMigration_fcf59b3556d54ae895017d1f9cab0b7d\\f5b5ef138aba4bd4a0fd2e1f35f25d8b.prefab\""
+          }
+        ],
+        "skipped_tests": []
+      },
+      "reasons": [
+        "Unity exit code: 2",
+        "Tests failed, were inconclusive, or had unknown outcomes",
+        "NUnit overall result: Failed(Child)"
+      ],
+      "log_errors": [],
+      "report": {
+        "path": "D:\\unitybox-verify\\acc-preview-full-probe\\.unitybox-test-results\\20261119T212018-0a6c2fd7\\report.json",
+        "bytes": 5638,
+        "sha256": "e531d256e3a126a37ac79d2a7d53eac81c704e7fcfb2fdd952e48304db0380d5"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T212018-0a6c2fd7.json.gz",
+        "sha256": "e73df1bad27a44bf36dc64b3a02bbb4d3920244762a0491e0e352ba57d328a53"
+      }
+    },
+    {
+      "project": "D:\\ac20261120",
+      "run": {
+        "run_id": "20261119T212505-5213a21c",
+        "project_id": "8b9e2b9f67504cfd85e9814f46fc1093",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac20261120",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac20261120\\.unitybox-test-results\\20261119T212505-5213a21c\\results.xml",
+          "-logFile",
+          "D:\\ac20261120\\.unitybox-test-results\\20261119T212505-5213a21c\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:25:05.225480+00:00",
+        "started_epoch": 1795123505.2254915,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 1,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac20261120\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:25:32.262033+00:00"
+      },
+      "tests": null,
+      "reasons": [
+        "Unity exit code: 1",
+        "Unity log contains licensing or compilation errors",
+        "No fresh NUnit XML was produced"
+      ],
+      "log_errors": [
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizableAttribute' could not be found (are you missing a using directive or an assembly reference?)",
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizable' could not be found (are you missing a using directive or an assembly reference?)",
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizableAttribute' could not be found (are you missing a using directive or an assembly reference?)",
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizable' could not be found (are you missing a using directive or an assembly reference?)",
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizableAttribute' could not be found (are you missing a using directive or an assembly reference?)",
+        "Packages\\top.sealoong.unitybox.advanced-costume-controller\\Tests\\Core\\Editor\\VariantPreviewTests.cs(17,4): error CS0246: The type or namespace name 'NonParallelizable' could not be found (are you missing a using directive or an assembly reference?)",
+        "Scripts have compiler errors.",
+        "Scripts have compiler errors."
+      ],
+      "report": {
+        "path": "D:\\ac20261120\\.unitybox-test-results\\20261119T212505-5213a21c\\report.json",
+        "bytes": 3703,
+        "sha256": "fe608a671eb6cf9208ee3f2bdb35e4731f63d11c8e0d452c3b8fcd71fd803de9"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T212505-5213a21c.json.gz",
+        "sha256": "a2bbc6631d56350e6932ddd737fc14cf85ca802f2fcc3846f4fae75f8d8d4797"
+      }
+    },
+    {
+      "project": "D:\\ac4",
+      "run": {
+        "run_id": "20261119T212608-be8c2acf",
+        "project_id": "4c386140b0d844c5a1b8801c34113fbb",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac4",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac4\\.unitybox-test-results\\20261119T212608-be8c2acf\\results.xml",
+          "-logFile",
+          "D:\\ac4\\.unitybox-test-results\\20261119T212608-be8c2acf\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:26:08.593149+00:00",
+        "started_epoch": 1795123568.5931659,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 2,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac4\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:26:44.438129+00:00"
+      },
+      "tests": {
+        "total": 66,
+        "passed": 55,
+        "failed": 11,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Failed(Child)",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 66,
+            "passed": 55,
+            "failed": 11,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.ExistingForeignAnimationModeIsNeitherTakenOverNorStopped",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.GlobalRulesUseFirstMatchingSourceEvenWhenItsReplacementIsNullAndDoNotChain",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.InvalidMarkersAndPersistentAssetsCannotInterruptAValidPreview",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.PreciseRulesOverrideNullSlotsAndGlobalsWhileInvalidAndOutsideRenderersAreIgnored",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SameNamedGroupsAndVariantsUseExactOutfitIdentityAndOneEditorWideSession",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SaveAssetsStopsPreviewWithoutSavingSceneOrChangingSerializedConfiguration",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingPrefabOutsideStageStopsPreviewAndPreservesSourceBytesAndStoredReferences",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingSceneStopsBeforeSerializationAndPreservesBytesMetadataConfigurationAndCleanState",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SelectionChangesDoNotOwnOrStopThePreview",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.StartSwitchAndIdempotentStopUseRealRendererAndRestoreBeforeResolvingNextVariant",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.UndoStopsPreviewRestoresMaterialsAndStillUndoesTheActualUserEdit",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : Cannot create a new scene additively with an untitled scene unsaved."
+          }
+        ],
+        "skipped_tests": []
+      },
+      "reasons": [
+        "Unity exit code: 2",
+        "Tests failed, were inconclusive, or had unknown outcomes",
+        "NUnit overall result: Failed(Child)"
+      ],
+      "log_errors": [],
+      "report": {
+        "path": "D:\\ac4\\.unitybox-test-results\\20261119T212608-be8c2acf\\report.json",
+        "bytes": 6257,
+        "sha256": "a60ef9f49f9d36883b4fa40ccc078d43d670775aa8521b728cc851d73bfb760c"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T212608-be8c2acf.json.gz",
+        "sha256": "1762bbcea006f3f5d21d1dae567692326847691da687f197353f8e437c08ddb8"
+      }
+    },
+    {
+      "project": "D:\\ac5",
+      "run": {
+        "run_id": "20261119T212725-7ac4e0f2",
+        "project_id": "b5b6d2d2a1274982ad53b84535ec5664",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac5",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac5\\.unitybox-test-results\\20261119T212725-7ac4e0f2\\results.xml",
+          "-logFile",
+          "D:\\ac5\\.unitybox-test-results\\20261119T212725-7ac4e0f2\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:27:25.293277+00:00",
+        "started_epoch": 1795123645.2932947,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 2,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac5\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:28:00.268976+00:00"
+      },
+      "tests": {
+        "total": 66,
+        "passed": 55,
+        "failed": 11,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Failed(Child)",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 66,
+            "passed": 55,
+            "failed": 11,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.ExistingForeignAnimationModeIsNeitherTakenOverNorStopped",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.GlobalRulesUseFirstMatchingSourceEvenWhenItsReplacementIsNullAndDoNotChain",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.InvalidMarkersAndPersistentAssetsCannotInterruptAValidPreview",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.PreciseRulesOverrideNullSlotsAndGlobalsWhileInvalidAndOutsideRenderersAreIgnored",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SameNamedGroupsAndVariantsUseExactOutfitIdentityAndOneEditorWideSession",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SaveAssetsStopsPreviewWithoutSavingSceneOrChangingSerializedConfiguration",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingPrefabOutsideStageStopsPreviewAndPreservesSourceBytesAndStoredReferences",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingSceneStopsBeforeSerializationAndPreservesBytesMetadataConfigurationAndCleanState",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SelectionChangesDoNotOwnOrStopThePreview",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.StartSwitchAndIdempotentStopUseRealRendererAndRestoreBeforeResolvingNextVariant",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.UndoStopsPreviewRestoresMaterialsAndStillUndoesTheActualUserEdit",
+            "result": "Failed",
+            "message": "SetUp : System.InvalidOperationException : This can only be used during play mode, please use EditorSceneManager.NewScene() instead."
+          }
+        ],
+        "skipped_tests": []
+      },
+      "reasons": [
+        "Unity exit code: 2",
+        "Tests failed, were inconclusive, or had unknown outcomes",
+        "NUnit overall result: Failed(Child)"
+      ],
+      "log_errors": [],
+      "report": {
+        "path": "D:\\ac5\\.unitybox-test-results\\20261119T212725-7ac4e0f2\\report.json",
+        "bytes": 6488,
+        "sha256": "e9752a31ea2e2698889fea9ccd336578b2df1fe6d1671a71f1fba427d55c8f0c"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T212725-7ac4e0f2.json.gz",
+        "sha256": "926113973772ddd22a3cd6aab61558f9902925f3938ffdc0c49d478f4eee6d9d"
+      }
+    },
+    {
+      "project": "D:\\ac6",
+      "run": {
+        "run_id": "20261119T212912-8e8761be",
+        "project_id": "583704eaa080435e85376ff2e3504557",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac6",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac6\\.unitybox-test-results\\20261119T212912-8e8761be\\results.xml",
+          "-logFile",
+          "D:\\ac6\\.unitybox-test-results\\20261119T212912-8e8761be\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:29:12.485399+00:00",
+        "started_epoch": 1795123752.4854124,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 2,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac6\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:29:50.026680+00:00"
+      },
+      "tests": {
+        "total": 66,
+        "passed": 55,
+        "failed": 11,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Failed(Child)",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 66,
+            "passed": 55,
+            "failed": 11,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.ExistingForeignAnimationModeIsNeitherTakenOverNorStopped",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.GlobalRulesUseFirstMatchingSourceEvenWhenItsReplacementIsNullAndDoNotChain",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.InvalidMarkersAndPersistentAssetsCannotInterruptAValidPreview",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.PreciseRulesOverrideNullSlotsAndGlobalsWhileInvalidAndOutsideRenderersAreIgnored",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SameNamedGroupsAndVariantsUseExactOutfitIdentityAndOneEditorWideSession",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SaveAssetsStopsPreviewWithoutSavingSceneOrChangingSerializedConfiguration",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingPrefabOutsideStageStopsPreviewAndPreservesSourceBytesAndStoredReferences",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingSceneStopsBeforeSerializationAndPreservesBytesMetadataConfigurationAndCleanState",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SelectionChangesDoNotOwnOrStopThePreview",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.StartSwitchAndIdempotentStopUseRealRendererAndRestoreBeforeResolvingNextVariant",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.UndoStopsPreviewRestoresMaterialsAndStillUndoesTheActualUserEdit",
+            "result": "Failed",
+            "message": "SetUp :   Isolated fixtures must not discard unsaved edits.\n  Expected: False\n  But was:  True\n"
+          }
+        ],
+        "skipped_tests": []
+      },
+      "reasons": [
+        "Unity exit code: 2",
+        "Tests failed, were inconclusive, or had unknown outcomes",
+        "NUnit overall result: Failed(Child)"
+      ],
+      "log_errors": [],
+      "report": {
+        "path": "D:\\ac6\\.unitybox-test-results\\20261119T212912-8e8761be\\report.json",
+        "bytes": 6114,
+        "sha256": "d23d272b94093d35a8522bb7514ad8a06ed2e9804b165e8e26858ac7bc894f21"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T212912-8e8761be.json.gz",
+        "sha256": "9739185453db44b505ac849ecdde1425176243127d988ad456fa1fe4e255cc81"
+      }
+    },
+    {
+      "project": "D:\\ac7",
+      "run": {
+        "run_id": "20261119T213010-bfb904cc",
+        "project_id": "5480d23516c04ee2893fe4eac6ac5c02",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "D:\\ac7",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "D:\\ac7\\.unitybox-test-results\\20261119T213010-bfb904cc\\results.xml",
+          "-logFile",
+          "D:\\ac7\\.unitybox-test-results\\20261119T213010-bfb904cc\\unity.log",
+          "-testCategory",
+          "!UnityBoxPerformance;!UnityBoxGraphics",
+          "-assemblyNames",
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "profile": "core",
+        "ignored_vpm_dependencies": {},
+        "package_versions": {
+          "com.unity.ext.nunit": "1.0.6",
+          "com.unity.test-framework": "1.1.33",
+          "top.sealoong.unitybox.advanced-costume-controller": "0.5.4"
+        },
+        "started_at": "2026-11-19T21:30:10.281595+00:00",
+        "started_epoch": 1795123810.281606,
+        "timeout_seconds": 1200.0,
+        "expected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "timed_out": false,
+        "exit_code": 2,
+        "selected_assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "xdg_root": "D:\\ac7\\.unitybox-xdg",
+        "test_filter": null,
+        "test_category": "!UnityBoxPerformance;!UnityBoxGraphics",
+        "benchmark": false,
+        "graphics": false,
+        "machine": {
+          "platform": "Windows-11-10.0.26300-SP0",
+          "cpu_count": 16
+        },
+        "finished_at": "2026-11-19T21:30:54.733236+00:00"
+      },
+      "tests": {
+        "total": 66,
+        "passed": 64,
+        "failed": 2,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0,
+        "result": "Failed(Child)",
+        "assemblies": [
+          "UnityBox.AdvancedCostumeController.Core.Tests"
+        ],
+        "assembly_counts": {
+          "UnityBox.AdvancedCostumeController.Core.Tests": {
+            "total": 66,
+            "passed": 64,
+            "failed": 2,
+            "skipped": 0,
+            "inconclusive": 0,
+            "unknown": 0
+          }
+        },
+        "failures": [
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SaveAssetsStopsPreviewWithoutSavingSceneOrChangingSerializedConfiguration",
+            "result": "Failed",
+            "message": "  Expected: False\n  But was:  True\n"
+          },
+          {
+            "test": "UnityBox.AdvancedCostumeController.Tests.VariantPreviewTests.SavingSceneStopsBeforeSerializationAndPreservesBytesMetadataConfigurationAndCleanState",
+            "result": "Failed",
+            "message": "  Expected: False\n  But was:  True\n"
+          }
+        ],
+        "skipped_tests": []
+      },
+      "reasons": [
+        "Unity exit code: 2",
+        "Tests failed, were inconclusive, or had unknown outcomes",
+        "NUnit overall result: Failed(Child)"
+      ],
+      "log_errors": [],
+      "report": {
+        "path": "D:\\ac7\\.unitybox-test-results\\20261119T213010-bfb904cc\\report.json",
+        "bytes": 3127,
+        "sha256": "0c23839b72f9f8c2ed48e3088f4263bdd24494437e2c359bfd3783fa12811cb7"
+      },
+      "retained_report": {
+        "path": "Docs/Verification/ACCVariantPreview/diagnostic-20261119T213010-bfb904cc.json.gz",
+        "sha256": "fadf25f85e8d5f6bda61c81e79f2652aabcd0070269cd6c9281fb92fc3d4c947"
+      }
+    }
+  ]
+}

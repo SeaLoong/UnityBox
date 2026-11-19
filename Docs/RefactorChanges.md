@@ -4,6 +4,10 @@
 原 `refactor` 七插件与 Animator Optimizer 在同一个 checkout 开发、测试和发布。
 执行记录见 [验证结果](VerificationResults.json)，测量数据见 [性能报告](Performance.md)。
 
+## ACC 0.5.4：同组材质变体预览
+
+变体 Inspector 直接预览服装本体上的材质效果。同一 OutfitBase 的其它变体共享当前预览名称并支持切换；本体服装标记提供停止预览。预览不跟随 Selection 结束，全局同时只预览一个变体；切换组或停止时还原原始材质。Unity AnimationMode 管理临时属性，保存、Undo/Redo、播放切换、重载以及 ACC 分析/扫描/生成前停止。不迁移原组件或改写源资源，也不修改部件激活状态。操作与验证范围见[ACC 手册](../Assets/UnityBox/AdvancedCostumeController/README.md#场景材质预览)和[预览验证记录](Verification/ACCVariantPreview/README.md)。
+
 ## ASS 0.9.12：素材压缩
 
 四个自带音频的导入 Quality 固定为 1%，保留后台加载和源 MP3。Logo PNG 无损重压，

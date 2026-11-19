@@ -14,6 +14,7 @@ namespace UnityBox.AdvancedCostumeController
   {
     public static int Begin(string undoName)
     {
+      ACCVariantPreview.Stop();
       Undo.IncrementCurrentGroup();
       int group = Undo.GetCurrentGroup();
       Undo.SetCurrentGroupName(undoName);
@@ -75,6 +76,40 @@ namespace UnityBox.AdvancedCostumeController
     }
   }
 
+  internal static class ACCVariantPreviewGUI
+  {
+    public static void Draw(GameObject outfitBase, ACCVariantMaterialOverride variant = null)
+    {
+      var active = ACCVariantPreview.GetActiveVariant(outfitBase);
+      if (variant == null && active == null) return;
+      using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+      {
+        if (active != null)
+          EditorGUILayout.HelpBox(Localization.Text(
+            $"正在预览 {active.name} 变体", $"Previewing variant: {active.name}"), MessageType.Info);
+        else
+          EditorGUILayout.LabelField(Localization.Text("材质变体预览", "Material Variant Preview"), EditorStyles.boldLabel);
+
+        bool stop = active != null && (variant == null || variant == active);
+        using (new EditorGUI.DisabledScope(!stop && !ACCVariantPreview.CanPreview(variant)))
+        {
+          string label = stop ? Localization.Text("停止预览", "Stop Preview") :
+            active != null ? Localization.Text($"切换预览到 {variant.name}", $"Preview {variant.name}") :
+            Localization.Text("预览变体", "Preview Variant");
+          if (GUILayout.Button(label))
+          {
+            if (stop) ACCVariantPreview.Stop();
+            else ACCVariantPreview.Start(variant);
+          }
+        }
+        if (variant != null && active == null && !ACCVariantPreview.CanPreview(variant))
+          EditorGUILayout.HelpBox(Localization.Text(
+            "请在编辑模式选择同一场景中的有效本体；先停止其它动画预览。",
+            "Use a valid base in the same scene in Edit Mode; stop other animation previews first."), MessageType.None);
+      }
+    }
+  }
+
   [CustomEditor(typeof(ACCOutfitMarker))]
   [CanEditMultipleObjects]
   public class ACCOutfitMarkerEditor : Editor
@@ -96,6 +131,9 @@ namespace UnityBox.AdvancedCostumeController
           "Multiple ACC outfit markers are selected. Changes will be applied to all selected objects."),
           MessageType.Info);
       }
+
+      foreach (var selected in targets.OfType<ACCOutfitMarker>())
+        ACCVariantPreviewGUI.Draw(selected.gameObject);
 
       EditorGUILayout.Space();
       EditorGUILayout.LabelField(Localization.Text("部件名称格式化", "Part Name Formatting"), EditorStyles.boldLabel);

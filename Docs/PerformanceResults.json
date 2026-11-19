@@ -1,6 +1,15 @@
 {
   "schema": 1,
   "editor": "2022.3.22f1",
+  "editor_only_feature_notes": [
+    {
+      "scope": "ACC 0.5.4 shared material variant preview",
+      "date_local": "2026-11-20",
+      "dedicated_performance_or_player_run": false,
+      "reason": "Editor-only preview; user Editor preserved. Existing graphics test emitted icon-render timing in functional evidence, not a qualified serial benchmark or Player measurement.",
+      "functional_evidence": "Docs/Verification/ACCVariantPreview/results.json"
+    }
+  ],
   "source_asset_size_runs": [
     {
       "scope": "ASS 0.9.12 Logo PNG lossless recompression",

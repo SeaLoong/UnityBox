@@ -36,6 +36,9 @@ namespace UnityBox.AdvancedCostumeController
             MessageType.Info);
         }
 
+        foreach (var selected in targets.OfType<ACCVariantMaterialOverride>())
+          ACCVariantPreviewGUI.Draw(selected.OutfitBase, selected);
+
         var outfitBaseProp = serializedObject.FindProperty("OutfitBase");
         EditorGUI.BeginChangeCheck();
         EditorGUILayout.PropertyField(outfitBaseProp,
@@ -416,6 +419,7 @@ namespace UnityBox.AdvancedCostumeController
 
       private static Material GetMaterialAtSlot(Renderer renderer, int slot)
       {
+        ACCVariantPreview.Stop();
         if (renderer == null) return null;
         var materials = renderer.sharedMaterials;
         return materials != null && slot >= 0 && slot < materials.Length
@@ -456,6 +460,7 @@ namespace UnityBox.AdvancedCostumeController
 
       internal static void PopulateGlobalMaterialEntries(ACCVariantMaterialOverride marker)
       {
+        ACCVariantPreview.Stop();
         if (marker == null || marker.OutfitBase == null) return;
         var previous = (marker.Replacements ??
           new List<ACCVariantMaterialOverride.MaterialReplacement>())
@@ -551,6 +556,7 @@ namespace UnityBox.AdvancedCostumeController
         Transform outfitBase,
         Transform variantSource)
       {
+        ACCVariantPreview.Stop();
         var observations = new List<MaterialSlotObservation>();
         if (outfitBase == null || variantSource == null) return observations;
 

@@ -17,6 +17,7 @@ namespace UnityBox.AdvancedCostumeController
     /// <returns>发现的服装列表</returns>
     public static List<OutfitData> FindOutfits(GameObject costumesRoot)
     {
+      ACCVariantPreview.Stop();
       var outfitDataList = new List<OutfitData>();
       var processedOutfitObjects = new HashSet<GameObject>();
       var explicitOutfitBases = new HashSet<Transform>();

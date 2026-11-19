@@ -18,6 +18,10 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 [性能报告](Performance.md)和[原始测量](PerformanceResults.json)记录规模与串行样本。
 每个依赖范围是一次独立执行，同一核心用例在不同范围重复运行；按各次运行记录计数。
 
+## ACC 0.5.4 材质变体预览
+
+使用真实 Renderer / AnimationMode 验证全局与精准覆盖、空槽、先还原再切换、同名分组隔离、选择变化、外部 AnimationMode 保护、Undo/Redo、Scene/Prefab 保存重载与字节/metadata/配置保全。图形范围打开同组变体和本体 Inspector，验证绘制不结束共享会话；Prefab Stage 单独检查实际保存。隔离工程命令与本机真实依赖范围见[预览验证记录](Verification/ACCVariantPreview/README.md)。不将历史 Player/性能计数记为本次执行。
+
 ## ASS 0.9.12 素材压缩
 
 四个随包音频导入测试增加 Vorbis / Quality=0.01 断言，保留后台加载、样本和加载类型检查。
