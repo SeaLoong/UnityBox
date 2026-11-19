@@ -137,6 +137,14 @@ ParameterDriver、PlayAudio、AnimatorLayerControl 执行。每个 Avatar 使用
 `Generated/Build_<id>`；SDK 后处理还原原 Descriptor、Controller 和参数，NDMF 输出跟随
 构建结果保留。原 Controller、Clip、BlendTree 及表达式参数保持各自资产身份。
 
+### 防御预算与统计上限（0.9.13）
+
+上传面板的「最大粒子总数」「网格粒子三角形总数」「光源」是三个独立统计，各自上限为
+`int.MaxValue`。0.9.13 起三项分别按「上限 − 已有数量」计算预算，粒子计划用
+「1 三角形 + 2 三角形」两段（三角形预算不足时改用 billboard）使粒子数与网格三角形数
+同时达到上限；光源预算只由第一个生成系统承载。更新后重新构建即生效。
+实测记录见[预算验证](../../../../Docs/Verification/ASSDefenseBudget/README.md)。
+
 ## Overlay 贴图与上传
 
 0.9.11 随包提供 Logo 的固定 TextureImporter metadata，保留仓库现有 GUID，开启

@@ -26,7 +26,14 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 
 使用真实 Renderer / AnimationMode 验证全局与精准覆盖、空槽、先还原再切换、同名分组隔离、选择变化、外部 AnimationMode 保护、Undo/Redo、Scene/Prefab 保存重载与字节/metadata/配置保全。图形范围打开同组变体和本体 Inspector，验证绘制不结束共享会话；Prefab Stage 单独检查实际保存。隔离工程命令与本机真实依赖范围见[预览验证记录](Verification/ACCVariantPreview/README.md)。不将历史 Player/性能计数记为本次执行。
 
-## ASS 0.9.12 素材压缩
+## ASS 0.9.13 防御预算
+
+新增 `GeneratedDefenseBudgetKeepsEachStatisticAtItsOwnCap`：带已有粒子（billboard + Mesh）、
+已有灯光的头像上生成防御，要求「最大粒子总数」「光源」精确等于 `int.MaxValue`，网格三角形
+不超过上限。另有真实 Unity 探针记录三项统计的达标情况，见
+[预算验证](Verification/ASSDefenseBudget/README.md)。
+
+## ASS 0.9.12 素材压缩（历史发布）
 
 四个随包音频导入测试增加 Vorbis / Quality=0.01 断言，保留后台加载、样本和加载类型检查。
 重跑 core 与 SDK/NDMF 功能范围，包括 Logo 流送和 SDK 音频上传校验。PNG 优化核对原始

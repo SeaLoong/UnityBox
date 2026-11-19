@@ -177,6 +177,17 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
   [ASSAudioUpload](../../../Docs/Verification/ASSAudioUpload/README.md), with actual commands and counts.
   Retain earlier whole-library and component-upgrade evidence under its original version/source identity.
 
+## Verify ASS defense budgets
+
+- ASS0.9.13 computes particle, mesh-triangle and light budgets independently from each statistic's
+  `int.MaxValue` cap. The particle plan splits into 1-triangle and 2-triangle segments (or mesh plus
+  billboard when triangles are short) so particle count and mesh triangles can both saturate; only
+  the first system carries the light budget. Billboards must not be charged 2 triangles each.
+- Verify with native generation on an avatar that already owns billboard and mesh particles plus a
+  light: totals must reach `int.MaxValue` exactly for particles and lights and stay within the cap
+  for mesh triangles. Retain the probe output under
+  [ASSDefenseBudget](../../../Docs/Verification/ASSDefenseBudget/README.md).
+
 ## Verify ASS resource compression
 
 - ASS0.9.12 ships all four audio importers with Vorbis Quality=0.01 (1%). Preserve source MP3 bytes,

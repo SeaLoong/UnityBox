@@ -148,6 +148,19 @@ SDK/NDMF 仍在构建副本执行现有生成接入。比较 Avatar 面板数据
 `defaultEnableDefense` 与 `disableDefense` 选择受密码保护的防御层或始终开启的默认防御层；
 Standalone 构建仍在配置副本中强制 `disableDefense=true`。
 
+## 0.9.13 防御预算与统计上限
+
+上传面板的「最大粒子总数」「网格粒子三角形总数」「光源」是三个独立统计，上限均为
+`int.MaxValue`。0.9.12 及以前，粒子数会被网格预算反推压低、`lightsModule.maxLights`
+直接复制粒子数，所以三项各自差一点到上限且差值不同。
+
+0.9.13 起按统计各自计算预算：粒子取 `int.MaxValue − 已有粒子`，网格三角形取
+`int.MaxValue − 已有网格三角形`，光源取 `int.MaxValue − 已有光源`。粒子计划拆成
+「每粒子 1 三角形」和「每粒子 2 三角形」两段（三角形预算不足时改为「网格 + billboard」），
+使粒子总数与网格三角形总数能同时精确达到上限；只有第一个生成系统承载光源预算。
+`GetExistingParticleStats` 只为 Mesh 渲染模式计三角形，billboard 不再按每粒子 2 个虚报。
+实测见[预算验证](../../../../Docs/Verification/ASSDefenseBudget/README.md)。
+
 ## Overlay Logo 与贴图流送
 
 `Feedback.CreateOverlayMesh` 在构建生成材质后，将 Resources 中的 Logo 绑定到 `_G4D9`。

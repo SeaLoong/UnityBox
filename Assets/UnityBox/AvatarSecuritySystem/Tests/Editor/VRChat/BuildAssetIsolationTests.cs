@@ -87,6 +87,62 @@ namespace UnityBox.AvatarSecuritySystem.Tests
         }
 
         [Test]
+        public void GeneratedDefenseBudgetKeepsEachStatisticAtItsOwnCap()
+        {
+            var users = new GameObject("UserParticles");
+            users.transform.SetParent(avatar.transform, false);
+            var mesh = new Mesh { vertices = new[] { Vector3.zero, Vector3.right, Vector3.up }, triangles = new[] { 0, 1, 2 } };
+            const int billboards = 5, billboardParticles = 1234, meshSystems = 2, meshParticles = 500;
+            for (int i = 0; i < billboards; i++)
+            {
+                var go = new GameObject("UserBillboard" + i);
+                go.transform.SetParent(users.transform, false);
+                var system = go.AddComponent<ParticleSystem>();
+                var main = system.main;
+                main.maxParticles = billboardParticles;
+            }
+            for (int i = 0; i < meshSystems; i++)
+            {
+                var go = new GameObject("UserMesh" + i);
+                go.transform.SetParent(users.transform, false);
+                var system = go.AddComponent<ParticleSystem>();
+                var main = system.main;
+                main.maxParticles = meshParticles;
+                var renderer = go.GetComponent<ParticleSystemRenderer>();
+                renderer.renderMode = ParticleSystemRenderMode.Mesh;
+                renderer.mesh = mesh;
+            }
+            var lightObject = new GameObject("UserLight");
+            lightObject.transform.SetParent(users.transform, false);
+            lightObject.AddComponent<Light>();
+
+            var controller = new AnimatorController();
+            try
+            {
+                new Defense(controller, avatar, new ASSConfigData { disableDefense = false }, isDebugMode: false).Generate();
+                long particles = 0, meshTriangles = 0, lights = avatar.GetComponentsInChildren<Light>(true).Length;
+                foreach (var system in avatar.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    if (system == null) continue;
+                    var main = system.main;
+                    particles += main.maxParticles;
+                    if (system.lights.enabled) lights += system.lights.maxLights;
+                    var renderer = system.GetComponent<ParticleSystemRenderer>();
+                    if (renderer != null && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.mesh != null)
+                        meshTriangles += (long)main.maxParticles * (renderer.mesh.triangles.Length / 3);
+                }
+                // Particle count and light count own separate budgets, so both may reach the cap the
+                // avatar statistics use. The mesh triangle statistic shares the same cap but is
+                // bounded below by one triangle per generated particle.
+                Assert.That(particles, Is.EqualTo(int.MaxValue), "particle statistic should saturate its cap");
+                Assert.That(lights, Is.EqualTo(int.MaxValue), "light statistic should saturate its own cap");
+                Assert.That(meshTriangles, Is.LessThanOrEqualTo(int.MaxValue));
+                Assert.That((double)meshTriangles, Is.GreaterThan(int.MaxValue - (double)(billboards * billboardParticles)), "mesh statistic must stay within its own budget");
+            }
+            finally { Object.DestroyImmediate(controller); }
+        }
+
+        [Test]
         public void PlayModePreviewDoesNotCreateActiveLoadObjectsOrLayers()
         {
             var controller = new AnimatorController();

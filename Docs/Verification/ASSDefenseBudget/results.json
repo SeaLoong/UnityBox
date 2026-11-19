@@ -1,0 +1,136 @@
+{
+  "scope": "ASS 0.9.13 defense budgets",
+  "captured_at_utc": "2026-11-19T22:01:15.562656+00:00",
+  "base_revision": "caa1e24",
+  "platform": "Windows 11",
+  "editor": "2022.3.22f1",
+  "dependencies": {
+    "UTF": "1.1.33",
+    "NUnit": "1.0.6",
+    "VRChat Base/Avatars": "3.8.2",
+    "NDMF": "1.11.0"
+  },
+  "tested_package_marker": {
+    "tool": "UnityBox.test_project",
+    "schema": 1,
+    "project_id": "e9671e4b5a0c4a2083444ad0c22dd080",
+    "prepared_at": "2026-11-19T21:58:27.760182+00:00",
+    "repo": "D:\\uv\\src13b",
+    "revision": null,
+    "profile": "core",
+    "packages": {
+      "com.unity.ext.nunit": {
+        "files": 14,
+        "sha256": "0663fa9b2e7e899ff368b8217084f1f4010aed34288229921af4f7ad3f42ab50",
+        "version": "1.0.6",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.ext.nunit",
+        "origin": "cache"
+      },
+      "com.unity.test-framework": {
+        "files": 669,
+        "sha256": "d081e9e4fdd84948cac384e2ff06491055d03c6e059cf808f51e1a2746d35386",
+        "version": "1.1.33",
+        "source": "D:\\unitybox-verify\\cache\\com.unity.test-framework",
+        "origin": "cache"
+      },
+      "top.sealoong.unitybox.avatar-security-system": {
+        "files": 137,
+        "sha256": "a236bb78ae04104386b38e8ce97cdab142d4fa5a772ea5cdf140f72c0c0277dc",
+        "version": "0.9.12",
+        "source": "D:\\uv\\src13b\\Assets\\UnityBox\\AvatarSecuritySystem",
+        "origin": "local"
+      }
+    },
+    "selected_packages": [
+      "top.sealoong.unitybox.avatar-security-system"
+    ],
+    "ignored_vpm_dependencies": {},
+    "registry_dependencies": {},
+    "test_assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ]
+  },
+  "probe": {
+    "command": "D:/Unity/2022.3.22f1/Editor/Unity.exe -batchmode -projectPath D:/uv/as12 -executeMethod BudgetProbe.Run -logFile D:/uv/budget5.log",
+    "existing": {
+      "particles": 7170,
+      "meshTriangles": 1000,
+      "lights": 1
+    },
+    "generated_totals": {
+      "particles": 2147483647,
+      "meshTriangles": 2147483647,
+      "lights": 2147483647
+    },
+    "delta_from_int_max": {
+      "particles": 0,
+      "meshTriangles": 0,
+      "lights": 0
+    },
+    "note": "Particle count, mesh triangle count and light count each saturate their own cap; previously particles were clamped to the mesh budget and lights copied the particle count."
+  },
+  "core": {
+    "total": 116,
+    "passed": 116,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0,
+    "unknown": 0,
+    "result": "Passed",
+    "assemblies": [
+      "UnityBox.AvatarSecuritySystem.Editor.Tests"
+    ],
+    "assembly_counts": {
+      "UnityBox.AvatarSecuritySystem.Editor.Tests": {
+        "total": 116,
+        "passed": 116,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0,
+        "unknown": 0
+      }
+    },
+    "failures": [],
+    "skipped_tests": []
+  },
+  "sdk_ndmf": {
+    "total": "54",
+    "passed": "54",
+    "failed": "0",
+    "result": "Passed",
+    "start-time": "2026-11-19 21:58:43Z",
+    "end-time": "2026-11-19 21:59:03Z"
+  },
+  "artifacts": {
+    "probe_log": {
+      "file": "Docs/Verification/ASSDefenseBudget/probe.log.gz",
+      "sha256": "8bbda20d6d9d01954285716f7d5c0f010443f174355beed4424750d143ab947f",
+      "raw_sha256": "587b5c8cece636e368442fc9b439732b4cc1a00d7fc6ea9c00c6e0ea59d9e461"
+    },
+    "core_xml": {
+      "file": "Docs/Verification/ASSDefenseBudget/core-results.xml.gz",
+      "sha256": "fa704551b8efc15fd1df1f8c9fe6a5030d6c4a11dc770c0d9546cab76d9df7db",
+      "raw_sha256": "6d645a2cfda64a022abe395154f71cd1915ace77d4ad9c43cc7a9530023d901f"
+    },
+    "core_log": {
+      "file": "Docs/Verification/ASSDefenseBudget/core.log.gz",
+      "sha256": "eb1010cde8bbb92652b9ca3176e66b541468a234fb4ac3a7ded17aaf687005b0",
+      "raw_sha256": "fb6c862d5cc195072c9cab9e2ac9478477575448fd747f9a5c644207a99fc957"
+    },
+    "sdk_xml": {
+      "file": "Docs/Verification/ASSDefenseBudget/sdk-results.xml.gz",
+      "sha256": "3f4c60b70582b6d7222850072687051d985b7fe8d79a8cea917a978af12f127e",
+      "raw_sha256": "8973235f7b06596eb8ee7bb4a3a8bf441901572f1758ac0dab206cb39447a8e5"
+    },
+    "sdk_log": {
+      "file": "Docs/Verification/ASSDefenseBudget/sdk.log.gz",
+      "sha256": "4fd60c2ca375f58828baab26196079c5677851745de49a39b5957038f9c2fc66",
+      "raw_sha256": "48c1af5037a6e47756117187ac1ec42998dac6467dbf33e7cb7c70d874bcbeab"
+    }
+  },
+  "not_measured": [
+    "Player run",
+    "actual upload",
+    "runtime particle cost"
+  ]
+}

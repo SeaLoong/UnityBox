@@ -26,7 +26,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private static string LightPrefix => GO_LIGHT_PREFIX;
         private static string DefenseMeshName => GO_DEFENSE_MESH;
         private static string SharedDefenseMaterialName => Obfuscator.GameObject("GO_SHARED_DEFENSE_MATERIAL", "ASS_SharedDefenseMat");
-        private const float AggressiveSimulationSpeed = 50000000f;
+        private const float AggressiveSimulationSpeed = Constants.PARTICLE_MAX_SIMULATION_SPEED;
         private const float AggressiveExternalForceMultiplier = 50000000f;
         private const float AggressiveShapeRadius = 12f;
         private const float AggressiveRandomPosition = 6f;
@@ -162,9 +162,9 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 : null;
             if (parameters.ParticleCount > 0)
             {
-                if (particlePlan.SystemCount > 0 && particlePlan.ParticleTarget > 0 && particlePlan.MeshPolyTarget > 0)
+                if (particlePlan.SystemCount > 0 && particlePlan.ParticleTarget > 0)
                     CreateParticleComponents(root, particlePlan.SystemCount, particlePlan.ParticleTarget, particlePlan.MeshPolyTarget,
-                        defenseLights, sharedDefenseMaterial, IsLightweightDefense, enableCollision, enableTrails);
+                        particlePlan.LightTarget, defenseLights, sharedDefenseMaterial, IsLightweightDefense, enableCollision, enableTrails);
             }
             if (parameters.PhysXRigidbodyCount > 0 || parameters.ClothComponentCount > 0)
             {
@@ -209,15 +209,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int SystemCount;
             public readonly long ParticleCount;
             public readonly long MeshTriangles;
+            public readonly long LightCount;
             public readonly bool HasCollisionEnabled;
             public readonly bool HasTrailsEnabled;
 
-            public ExistingParticleStats(int systemCount, long particleCount, long meshTriangles,
+            public ExistingParticleStats(int systemCount, long particleCount, long meshTriangles, long lightCount,
                 bool hasCollisionEnabled, bool hasTrailsEnabled)
             {
                 SystemCount = systemCount;
                 ParticleCount = particleCount;
                 MeshTriangles = meshTriangles;
+                LightCount = lightCount;
                 HasCollisionEnabled = hasCollisionEnabled;
                 HasTrailsEnabled = hasTrailsEnabled;
             }
@@ -228,12 +230,14 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             public readonly int SystemCount;
             public readonly long ParticleTarget;
             public readonly long MeshPolyTarget;
+            public readonly long LightTarget;
 
-            public ParticleGenerationPlan(int systemCount, long particleTarget, long meshPolyTarget)
+            public ParticleGenerationPlan(int systemCount, long particleTarget, long meshPolyTarget, long lightTarget)
             {
                 SystemCount = systemCount;
                 ParticleTarget = particleTarget;
                 MeshPolyTarget = meshPolyTarget;
+                LightTarget = lightTarget;
             }
         }
 
@@ -249,7 +253,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Defense profile: MinimalParticleSystems=ON, Lightweight={(IsLightweightDefense ? "ON" : "OFF")}, Lights={lightMode}, CollisionTrails={rankSensitiveMode}, PhysX=OFF, Cloth=OFF");
             return new DefenseParams(
                 0, 0, 0,
-                Constants.PARTICLE_MAX_COUNT, 1,
+                Constants.PARTICLE_MAX_COUNT, 2,
                 lightCount
             );
         }
@@ -257,19 +261,21 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         private ParticleGenerationPlan BuildParticleGenerationPlan(ExistingParticleStats existing)
         {
             if (isDebugMode)
-                return new ParticleGenerationPlan(1, 1, 1);
+                return new ParticleGenerationPlan(1, 1, 1, 1);
 
+            // Each generated statistic owns its own budget. Coupling them (particles limited by the
+            // mesh budget, lights copied from the particle count) is what left the generated totals
+            // short of the int.MaxValue cap by a different amount per stat.
+            long particleTarget = System.Math.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
             long meshPolyTarget = System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
-            if (meshPolyTarget <= 0)
-            {
-                Debug.Log("[ASS] Particle plan: no remaining mesh polygon budget, skipping generated defense particles");
-                return new ParticleGenerationPlan(0, 0, 0);
-            }
-
-            long remainingParticles = System.Math.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
-            int systemCount = remainingParticles > 0 ? 1 : 0;
-            Debug.Log($"[ASS] Particle plan: existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}, remainingParticleBudget={remainingParticles}, generatedSystems={systemCount}, lightweight={(IsLightweightDefense ? "ON" : "OFF")}");
-            return new ParticleGenerationPlan(systemCount, remainingParticles, meshPolyTarget);
+            long lightTarget = System.Math.Max(0L, int.MaxValue - existing.LightCount);
+            int systemCount = particleTarget > 0 ? 2 : 0;
+            Debug.Log($"[ASS] Particle plan: existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}," +
+                      " remainingParticleBudget=" + particleTarget + ", existingMeshTriangles=" + existing.MeshTriangles +
+                      ", remainingMeshPolyBudget=" + meshPolyTarget + ", existingLights=" + existing.LightCount +
+                      ", remainingLightBudget=" + lightTarget +
+                      ", generatedSystems=" + systemCount + ", lightweight=" + (IsLightweightDefense ? "ON" : "OFF"));
+            return new ParticleGenerationPlan(systemCount, particleTarget, meshPolyTarget, lightTarget);
         }
 
         private Material CreateSharedDefenseMaterial()
@@ -302,8 +308,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             int systemCount = 0;
             long particleCount = 0;
             long meshTriangles = 0;
+            long lightCount = 0;
             bool hasCollisionEnabled = false;
             bool hasTrailsEnabled = false;
+
+            foreach (var light in avatarRoot.GetComponentsInChildren<Light>(true))
+                if (light != null && !IsASSManagedTransform(light.transform))
+                    lightCount++;
 
             foreach (var ps in avatarRoot.GetComponentsInChildren<ParticleSystem>(true))
             {
@@ -312,17 +323,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                 systemCount++;
                 particleCount += ps.main.maxParticles;
+                if (ps.lights.enabled)
+                    lightCount += ps.lights.maxLights;
 
                 var renderer = ps.GetComponent<ParticleSystemRenderer>();
                 if (renderer == null) continue;
 
-                long trisPerParticle;
+                // VRChat counts mesh particle triangles only for Mesh-mode renderers. Charging
+                // billboards 2 triangles each overstates the used budget and silently shrinks the
+                // generated particle budget later on.
                 if (renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.mesh != null)
-                    trisPerParticle = renderer.mesh.triangles.Length / 3;
-                else
-                    trisPerParticle = 2;
-
-                meshTriangles += (long)ps.main.maxParticles * trisPerParticle;
+                    meshTriangles += (long)ps.main.maxParticles * (renderer.mesh.triangles.Length / 3);
 
                 if (ps.collision.enabled)
                     hasCollisionEnabled = true;
@@ -330,7 +341,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     hasTrailsEnabled = true;
             }
 
-            return new ExistingParticleStats(systemCount, particleCount, meshTriangles,
+            return new ExistingParticleStats(systemCount, particleCount, meshTriangles, lightCount,
                 hasCollisionEnabled, hasTrailsEnabled);
         }
 
@@ -460,59 +471,68 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return false;
         }
 
-        private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
-            long meshPolyBudget, Light[] lights, Material sharedRendererMaterial,
-            bool lightweightDefense, bool enableCollision, bool enableTrails)
+        private readonly struct ParticleSegment
         {
-            if (meshPolyBudget <= 0)
+            public readonly long Particles;
+            public readonly int TrianglesPerParticle;
+
+            public ParticleSegment(long particles, int trianglesPerParticle)
             {
-                Debug.LogWarning("[ASS] Particle mesh polygon budget exhausted by existing avatar particles, skipping particle defense");
-                return;
+                Particles = particles;
+                TrianglesPerParticle = trianglesPerParticle;
             }
+        }
 
-            var particleRoot = new GameObject(ParticleRootName);
-            particleRoot.transform.SetParent(root.transform);
-            int meshTriangles;
-            Mesh sharedParticleMesh;
-            Mesh sharedSubEmitterMesh;
-            long idealTrisPerParticle = particleTarget > 0
-                ? meshPolyBudget / particleTarget
-                : meshPolyBudget;
-
-            if (idealTrisPerParticle >= 8)
+        /// <summary>
+        /// Split the particle and mesh-triangle budgets over at most two systems so that both
+        /// statistics can sit exactly on their shared int.MaxValue cap: a 1-triangle system plus a
+        /// 2-triangle top-up when more triangles are needed, or a mesh system plus billboards when
+        /// fewer are. A single density cannot do both because every particle carries at least one
+        /// triangle.
+        /// </summary>
+        private static List<ParticleSegment> PlanParticleSegments(long particles, long meshTriangles)
+        {
+            var segments = new List<ParticleSegment>();
+            if (particles <= 0) return segments;
+            long mesh = System.Math.Min(System.Math.Max(meshTriangles, 0L), particles * 2L);
+            if (mesh >= particles)
             {
-                int meshSubdivisions = Mathf.Clamp(
-                    Mathf.FloorToInt(Mathf.Sqrt(idealTrisPerParticle / 2f)), 2, 2);
-                meshTriangles = meshSubdivisions * meshSubdivisions * 2;
-                int meshVertexTarget = meshSubdivisions * meshSubdivisions * 6;
-                sharedParticleMesh = GenerateSphereMesh(meshVertexTarget);
-                sharedSubEmitterMesh = GenerateSphereMesh(meshVertexTarget);
+                long doubleTriangles = mesh - particles;
+                long singleTriangles = particles - doubleTriangles;
+                if (singleTriangles > 0) segments.Add(new ParticleSegment(singleTriangles, 1));
+                if (doubleTriangles > 0) segments.Add(new ParticleSegment(doubleTriangles, 2));
             }
             else
             {
-                meshTriangles = Mathf.Max(1, (int)idealTrisPerParticle);
-                sharedParticleMesh = GenerateFanMesh(meshTriangles);
-                sharedSubEmitterMesh = GenerateFanMesh(meshTriangles);
+                if (mesh > 0) segments.Add(new ParticleSegment(mesh, 1));
+                if (particles - mesh > 0) segments.Add(new ParticleSegment(particles - mesh, 0));
             }
+            return segments;
+        }
 
-            if (meshTriangles > 0 && particleTarget > meshPolyBudget / meshTriangles)
-            {
-                long clampedTarget = meshPolyBudget / meshTriangles;
-                Debug.Log($"[ASS] Particle cap plan adjusted by mesh budget: requestedParticles={particleTarget}, trisPerParticle={meshTriangles}, clampedParticles={clampedTarget}");
-                particleTarget = clampedTarget;
-            }
-
+        private static void CreateParticleComponents(GameObject root, int systemBudget, long particleTarget,
+            long meshPolyBudget, long lightTarget, Light[] lights, Material sharedRendererMaterial,
+            bool lightweightDefense, bool enableCollision, bool enableTrails)
+        {
+            var particleRoot = new GameObject(ParticleRootName);
+            particleRoot.transform.SetParent(root.transform);
+            var segments = PlanParticleSegments(particleTarget, meshPolyBudget);
+            int meshTriangles = 0;
+            Mesh sharedParticleMesh = null;
+            Mesh sharedSubEmitterMesh = null;
             Material particleMaterial = sharedRendererMaterial;
             int systemsUsed = 0;
             long particlesUsed = 0;
             var mainSystems = new List<ParticleSystem>();
             var mainObjects = new List<GameObject>();
-            while (systemsUsed < systemBudget && particlesUsed < particleTarget)
+            foreach (var segment in segments)
             {
-                long remaining = particleTarget - particlesUsed;
-                int remainingSystems = systemBudget - systemsUsed;
-                int particlesForThis = (int)System.Math.Min(remaining / remainingSystems, int.MaxValue);
-                if (particlesForThis <= 0) break;
+                if (systemsUsed >= systemBudget) break;
+                int particlesForThis = (int)System.Math.Min(segment.Particles, int.MaxValue);
+                if (particlesForThis <= 0) continue;
+                meshTriangles = segment.TrianglesPerParticle;
+                sharedParticleMesh = meshTriangles > 0 ? GenerateFanMesh(meshTriangles) : null;
+                sharedSubEmitterMesh = sharedParticleMesh;
                 int s = mainSystems.Count;
                 var psObj = new GameObject($"{PSObjPrefix}_{s}");
                 psObj.transform.SetParent(particleRoot.transform);
@@ -734,14 +754,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 {
                     lightsModule.enabled = true;
                     lightsModule.light = particleLight;
-                    lightsModule.ratio = 10000000f;
+                    lightsModule.ratio = Constants.PARTICLE_MAX_LIGHT_RATIO;
                     lightsModule.useRandomDistribution = true;
                     lightsModule.useParticleColor = true;
                     lightsModule.sizeAffectsRange = true;
                     lightsModule.alphaAffectsIntensity = true;
                     lightsModule.rangeMultiplier = 10000000f;
                     lightsModule.intensityMultiplier = 10000000f;
-                    lightsModule.maxLights = particlesForThis;
+                    // The light statistic has its own budget; copying the particle count here made
+                    // the reported light count depend on the particle plan. Only the first generated
+                    // system carries the light budget so splitting the particle plan cannot double it.
+                    lightsModule.maxLights = s == 0 ? (int)System.Math.Min(lightTarget, int.MaxValue) : 0;
                 }
                 var customData = ps.customData;
                 customData.enabled = true;
@@ -764,9 +787,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 trigger.radiusScale = 1f;
                 if (renderer != null)
                 {
-                    renderer.renderMode = ParticleSystemRenderMode.Mesh;
-                    renderer.mesh = sharedParticleMesh;
-                    renderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
+                    if (meshTriangles > 0)
+                    {
+                        renderer.renderMode = ParticleSystemRenderMode.Mesh;
+                        renderer.mesh = sharedParticleMesh;
+                        renderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
+                    }
                     if (particleMaterial != null)
                     {
                         renderer.sharedMaterial = particleMaterial;
@@ -979,7 +1005,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subLightsModule.alphaAffectsIntensity = true;
                     subLightsModule.rangeMultiplier = 10000000f;
                     subLightsModule.intensityMultiplier = 10000000f;
-                    subLightsModule.maxLights = subParticles;
+                    subLightsModule.maxLights = (int)System.Math.Min(lightTarget, int.MaxValue);
                 }
                 var subCustomData = subPs.customData;
                 subCustomData.enabled = true;
@@ -996,9 +1022,12 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subTrigger.exit = ParticleSystemOverlapAction.Callback;
                 if (subRenderer != null)
                 {
-                    subRenderer.renderMode = ParticleSystemRenderMode.Mesh;
-                    subRenderer.mesh = sharedSubEmitterMesh;
-                    subRenderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
+                    if (meshTriangles > 0)
+                    {
+                        subRenderer.renderMode = ParticleSystemRenderMode.Mesh;
+                        subRenderer.mesh = sharedSubEmitterMesh;
+                        subRenderer.meshDistribution = ParticleSystemMeshDistribution.UniformRandom;
+                    }
                     if (particleMaterial != null)
                     {
                         subRenderer.sharedMaterial = particleMaterial;

@@ -169,6 +169,11 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         public const int LIGHT_MAX_COUNT = 256;
         public const int SHADER_DEFENSE_COUNT = 8;
         public const int MESH_PARTICLE_MAX_POLYGONS = 2147483647;
+        // Unity 2022.3 silently reduces larger values on these particle setters. Store the accepted
+        // maxima so generated defense parameters are exact instead of quietly clamped.
+        public const float PARTICLE_MAX_EMISSION_RATE = 10000000f;
+        public const float PARTICLE_MAX_SIMULATION_SPEED = 100f;
+        public const float PARTICLE_MAX_LIGHT_RATIO = 1f;
         public const int TOTAL_CLOTH_VERTICES_MAX = 2560000;
     }
 }
