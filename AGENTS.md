@@ -34,3 +34,9 @@
   and `Docs/PerformanceResults.json`; update every affected manual and current-branch instruction.
 - Coordinate shared edits and Git operations. Review changes, run the relevant combined-source checks,
   then push `master` without rewriting existing remote history.
+- Keep every temporary Unity project, exported source snapshot, test log and scratch artifact under
+  one dedicated scratch root (for example a single subdirectory of the system temp folder, or
+  `/workspace/unitybox-setup/unity/projects` in the cloud toolchain). Never scatter scratch
+  directories directly into a drive root such as `D:\`. Clean them up when the work is finished:
+  confirm each directory's identity/ownership once, then delete the whole directory; do not
+  enumerate or validate individual files.
