@@ -26,12 +26,19 @@ SDK Base/Avatars **3.8.2**、MA **1.18.0**、NDMF **1.11.0**。当前云工具�
 
 使用真实 Renderer / AnimationMode 验证全局与精准覆盖、空槽、先还原再切换、同名分组隔离、选择变化、外部 AnimationMode 保护、Undo/Redo、Scene/Prefab 保存重载与字节/metadata/配置保全。图形范围打开同组变体和本体 Inspector，验证绘制不结束共享会话；Prefab Stage 单独检查实际保存。隔离工程命令与本机真实依赖范围见[预览验证记录](Verification/ACCVariantPreview/README.md)。不将历史 Player/性能计数记为本次执行。
 
-## ASS 0.9.13 防御预算
+## ASS 0.9.14 防御预算
 
-新增 `GeneratedDefenseBudgetKeepsEachStatisticAtItsOwnCap`：带已有粒子（billboard + Mesh）、
-已有灯光的头像上生成防御，要求「最大粒子总数」「光源」精确等于 `int.MaxValue`，网格三角形
-不超过上限。另有真实 Unity 探针记录三项统计的达标情况，见
-[预算验证](Verification/ASSDefenseBudget/README.md)。
+`GeneratedDefenseBudgetKeepsEachStatisticAtItsOwnCap` 改为调用真实 SDK
+`AvatarPerformance.CalculatePerformanceStats`，断言「最大粒子总数」「网格粒子三角形总数」
+「光源」三项均精确等于 `int.MaxValue`。此前的自检按 `lights.maxLights` 直接累加，漏掉了
+SDK 的 `min(maxParticles, maxLights)` 口径，导致游戏内光源数未达标而测试误报通过。
+0.9.14 增加专用光载体系统修正。系统 TEMP 下统一 scratch 根中的独立工程用反射探针调用
+真实 SDK 统计复验三项，见[预算验证](Verification/ASSDefenseBudget/README.md)。
+
+## ASS 0.9.13 防御预算（历史发布）
+
+三项预算各自独立，粒子数与网格三角形数用两段粒子计划同时达到上限；光源预算当时挂在拆分
+系统首个系统上，受 `min(maxParticles, maxLights)` 限制只到约一半，见 0.9.14 修正。
 
 ## ASS 0.9.12 素材压缩（历史发布）
 

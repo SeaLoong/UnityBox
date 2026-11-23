@@ -1,7 +1,7 @@
 {
-  "scope": "ASS 0.9.13 defense budgets",
+  "scope": "ASS 0.9.14 defense budgets",
   "captured_at_utc": "2026-11-19T22:01:15.562656+00:00",
-  "base_revision": "caa1e24",
+  "base_revision": "d8b70ec",
   "platform": "Windows 11",
   "editor": "2022.3.22f1",
   "dependencies": {
@@ -126,11 +126,46 @@
       "file": "Docs/Verification/ASSDefenseBudget/sdk.log.gz",
       "sha256": "4fd60c2ca375f58828baab26196079c5677851745de49a39b5957038f9c2fc66",
       "raw_sha256": "48c1af5037a6e47756117187ac1ec42998dac6467dbf33e7cb7c70d874bcbeab"
+    },
+    "sdk_probe_log": {
+      "file": "Docs/Verification/ASSDefenseBudget/sdk-probe.log.gz",
+      "sha256": "c2c84f9191d64b841b6397963b1561d17cb248fc7a3a603237d4b73e4a1d0770"
+    },
+    "core_014_log": {
+      "file": "Docs/Verification/ASSDefenseBudget/core-0.9.14.log.gz",
+      "sha256": "e49adbf9fbb0b2cbc5a02b78847003889bffcfa611c3411416614f88e6675b9d"
+    },
+    "core_014_xml": {
+      "file": "Docs/Verification/ASSDefenseBudget/core-results.xml.gz",
+      "sha256": "3c815899910ead8cfccac34cd1c5368b139ee2ad7d3c9daffa30505415a7337b"
     }
   },
   "not_measured": [
     "Player run",
     "actual upload",
     "runtime particle cost"
-  ]
+  ],
+  "version": "0.9.14",
+  "light_count_fix": {
+    "sdk_formula": "lightCount = real_lights + sum(min(main.maxParticles, lights.maxLights)), checked, clamp int.MaxValue",
+    "root_cause": "0.9.13 attached light budget to a split particle system whose maxParticles was ~half int.MaxValue, so min() capped lights at ~half",
+    "fix": "dedicated light-carrier system with maxParticles == maxLights == lightTarget; maxLights=0 on split systems and sub-emitters",
+    "sdk_probe_stats": {
+      "lightCount": 2147483647,
+      "particleTotalCount": 2147483647,
+      "particleMaxMeshPolyCount": 2147483647,
+      "intMax": 2147483647,
+      "all_saturated": true
+    },
+    "probe_log": "Docs/Verification/ASSDefenseBudget/sdk-probe.log.gz",
+    "probe_script": "scripts/unity/verification/Editor/ASSBudgetProbe.cs"
+  },
+  "core_short_path": {
+    "total": 116,
+    "passed": 116,
+    "failed": 0,
+    "note": "C:/Temp/ubs short scratch path; long AppData path still hits pre-existing MAX_PATH ComponentMigration failures"
+  },
+  "sdk_test_assembly": "Not run locally: com.unity.xr.oculus@4.2.0 source needs AndroidJNIModule reference unavailable in this Windows fixture; cloud Linux CI runs it. Real SDK probe used instead.",
+  "false_positive_note": "0.9.13 asserted lightCount by summing lights.maxLights, missing SDK min(maxParticles,maxLights): test passed but game showed ~half. 0.9.14 test calls real SDK CalculatePerformanceStats."
 }

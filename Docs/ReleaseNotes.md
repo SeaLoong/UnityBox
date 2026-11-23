@@ -1,5 +1,13 @@
 # 发布与升级说明
 
+## 2026-11-23：ASS 0.9.14 光源统计达到上限
+
+0.9.13 让「最大粒子总数」「网格粒子三角形总数」达到 `int.MaxValue`，但游戏内实测「光源」
+仍只有约一半。原因是 SDK 对每个粒子系统按 `min(maxParticles, maxLights)` 累加光源，而
+拆分后的粒子系统 `maxParticles` 只有约半个上限。0.9.14 增加专用光载体系统（两个值均为
+光源预算），主/子系统的 `maxLights` 归零避免重复。用真实 SDK 统计验证三项均达到
+`int.MaxValue`。更新后重新构建即可。见[预算验证](Verification/ASSDefenseBudget/README.md)。
+
 ## 2026-11-20：ACC 0.5.5 实时材质预览
 
 开启一次预览后，直接更换/清空“替换为”，或增删全局、精准槽位规则，场景立即更新，无需反复点击。Undo/Redo 同步刷新规则效果，空规则仍保持预览会话；同组状态/切换/本体停止入口保留。槽位选择读取原始材质，刷新先恢复再应用，不叠加上一个效果。更换本体、保存、分析/生成等边界仍结束预览以保护源配置。更新组件代码即可，无需迁移。操作见[ACC 手册](../Assets/UnityBox/AdvancedCostumeController/README.md#场景材质预览)，执行记录见[实时预览验证](Verification/ACCLiveVariantPreview/README.md)。

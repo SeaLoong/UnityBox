@@ -179,13 +179,19 @@ to `master`. Preserve supplied scenes/GUIDs, merge history and any new remote wo
 
 ## Verify ASS defense budgets
 
-- ASS0.9.13 computes particle, mesh-triangle and light budgets independently from each statistic's
+- ASS0.9.14 computes particle, mesh-triangle and light budgets independently from each statistic's
   `int.MaxValue` cap. The particle plan splits into 1-triangle and 2-triangle segments (or mesh plus
-  billboard when triangles are short) so particle count and mesh triangles can both saturate; only
-  the first system carries the light budget. Billboards must not be charged 2 triangles each.
-- Verify with native generation on an avatar that already owns billboard and mesh particles plus a
-  light: totals must reach `int.MaxValue` exactly for particles and lights and stay within the cap
-  for mesh triangles. Retain the probe output under
+  billboard when triangles are short) so particle count and mesh triangles both saturate. Billboards
+  must not be charged 2 triangles each. The SDK counts each system's light contribution as
+  min(main.maxParticles, lights.maxLights) (overflow -> int.MaxValue), NOT raw maxLights: attach the
+  light budget to a dedicated carrier system whose maxParticles equals its maxLights, and zero
+  maxLights on the split systems and sub-emitters. Never verify lights by summing maxLights.
+- Verify with the REAL SDK `AvatarPerformance.CalculatePerformanceStats` (instantiate
+  AvatarPerformanceStats(false)), not a hand-rolled sum. Generate on an avatar that already owns
+  billboard/mesh particles plus a light and require particleTotalCount, particleMaxMeshPolyCount and
+  lightCount all equal `int.MaxValue`. The VRChat test assembly asserts this; a reflection probe
+  (scripts/unity/verification/Editor/ASSBudgetProbe.cs) reproduces it via -executeMethod when the
+  local fixture cannot compile the test assembly. Retain output under
   [ASSDefenseBudget](../../../Docs/Verification/ASSDefenseBudget/README.md).
 
 ## Verify ASS resource compression

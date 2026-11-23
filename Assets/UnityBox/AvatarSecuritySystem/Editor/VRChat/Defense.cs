@@ -253,7 +253,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             Debug.Log($"[ASS] Defense profile: MinimalParticleSystems=ON, Lightweight={(IsLightweightDefense ? "ON" : "OFF")}, Lights={lightMode}, CollisionTrails={rankSensitiveMode}, PhysX=OFF, Cloth=OFF");
             return new DefenseParams(
                 0, 0, 0,
-                Constants.PARTICLE_MAX_COUNT, 2,
+                Constants.PARTICLE_MAX_COUNT, 3,
                 lightCount
             );
         }
@@ -269,7 +269,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             long particleTarget = System.Math.Max(0L, (long)Constants.PARTICLE_MAX_COUNT - existing.ParticleCount);
             long meshPolyTarget = System.Math.Max(0L, (long)Constants.MESH_PARTICLE_MAX_POLYGONS - existing.MeshTriangles);
             long lightTarget = System.Math.Max(0L, int.MaxValue - existing.LightCount);
-            int systemCount = particleTarget > 0 ? 2 : 0;
+            // Two systems split the particle/mesh budget, plus one dedicated light carrier: the SDK
+            // counts each system's light contribution as min(maxParticles, maxLights), so the carrier
+            // needs both values at the light budget to saturate the statistic.
+            int systemCount = particleTarget > 0 ? 3 : 0;
             Debug.Log($"[ASS] Particle plan: existingSystems={existing.SystemCount}, existingParticles={existing.ParticleCount}," +
                       " remainingParticleBudget=" + particleTarget + ", existingMeshTriangles=" + existing.MeshTriangles +
                       ", remainingMeshPolyBudget=" + meshPolyTarget + ", existingLights=" + existing.LightCount +
@@ -761,10 +764,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     lightsModule.alphaAffectsIntensity = true;
                     lightsModule.rangeMultiplier = 10000000f;
                     lightsModule.intensityMultiplier = 10000000f;
-                    // The light statistic has its own budget; copying the particle count here made
-                    // the reported light count depend on the particle plan. Only the first generated
-                    // system carries the light budget so splitting the particle plan cannot double it.
-                    lightsModule.maxLights = s == 0 ? (int)System.Math.Min(lightTarget, int.MaxValue) : 0;
+                    // Light contribution is handled by a dedicated carrier system below. The SDK
+                    // counts min(maxParticles, maxLights) per system, so setting this on the split
+                    // particle systems would only double-count a fraction of the budget.
+                    lightsModule.maxLights = 0;
                 }
                 var customData = ps.customData;
                 customData.enabled = true;
@@ -1005,7 +1008,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     subLightsModule.alphaAffectsIntensity = true;
                     subLightsModule.rangeMultiplier = 10000000f;
                     subLightsModule.intensityMultiplier = 10000000f;
-                    subLightsModule.maxLights = (int)System.Math.Min(lightTarget, int.MaxValue);
+                    subLightsModule.maxLights = 0;
                 }
                 var subCustomData = subPs.customData;
                 subCustomData.enabled = true;
@@ -1053,6 +1056,38 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 subEmitters.AddSubEmitter(subPs, ParticleSystemSubEmitterType.Death, ParticleSystemSubEmitterProperties.InheritColor | ParticleSystemSubEmitterProperties.InheritSize);
                 systemsUsed++;
                 particlesUsed += subParticles;
+            }
+
+            // Dedicated light carrier. The SDK's light statistic counts, per particle system,
+            // min(main.maxParticles, lights.maxLights), clamped to int.MaxValue on accumulation.
+            // Only a system whose maxParticles AND maxLights both reach the light budget can
+            // saturate that statistic; reusing the split particle systems (each holding roughly
+            // half the particle budget) leaves the reported light count at about half the cap.
+            if (lightTarget > 0 && lights != null && lights.Length > 0)
+            {
+                var carrierObj = new GameObject($"{PSObjPrefix}_LightCarrier");
+                carrierObj.transform.SetParent(particleRoot.transform);
+                carrierObj.transform.localPosition = Vector3.zero;
+                var carrier = carrierObj.AddComponent<ParticleSystem>();
+                var carrierMain = carrier.main;
+                carrierMain.duration = 1f;
+                carrierMain.loop = true;
+                carrierMain.prewarm = true;
+                carrierMain.playOnAwake = true;
+                carrierMain.maxParticles = (int)System.Math.Min(lightTarget, int.MaxValue);
+                carrierMain.simulationSpace = ParticleSystemSimulationSpace.World;
+                var carrierEmission = carrier.emission;
+                carrierEmission.enabled = false;
+                var carrierLights = carrier.lights;
+                carrierLights.enabled = true;
+                carrierLights.light = lights[0];
+                carrierLights.ratio = Constants.PARTICLE_MAX_LIGHT_RATIO;
+                carrierLights.useRandomDistribution = true;
+                carrierLights.rangeMultiplier = 10000000f;
+                carrierLights.intensityMultiplier = 10000000f;
+                carrierLights.maxLights = carrierMain.maxParticles;
+                Debug.Log("[ASS] Light carrier: maxParticles=" + carrierMain.maxParticles +
+                          " maxLights=" + carrierLights.maxLights + " (SDK counts min of the two)");
             }
         }
 

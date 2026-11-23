@@ -120,24 +120,17 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             try
             {
                 new Defense(controller, avatar, new ASSConfigData { disableDefense = false }, isDebugMode: false).Generate();
-                long particles = 0, meshTriangles = 0, lights = avatar.GetComponentsInChildren<Light>(true).Length;
-                foreach (var system in avatar.GetComponentsInChildren<ParticleSystem>(true))
-                {
-                    if (system == null) continue;
-                    var main = system.main;
-                    particles += main.maxParticles;
-                    if (system.lights.enabled) lights += system.lights.maxLights;
-                    var renderer = system.GetComponent<ParticleSystemRenderer>();
-                    if (renderer != null && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.mesh != null)
-                        meshTriangles += (long)main.maxParticles * (renderer.mesh.triangles.Length / 3);
-                }
-                // Particle count and light count own separate budgets, so both may reach the cap the
-                // avatar statistics use. The mesh triangle statistic shares the same cap but is
-                // bounded below by one triangle per generated particle.
-                Assert.That(particles, Is.EqualTo(int.MaxValue), "particle statistic should saturate its cap");
-                Assert.That(lights, Is.EqualTo(int.MaxValue), "light statistic should saturate its own cap");
-                Assert.That(meshTriangles, Is.LessThanOrEqualTo(int.MaxValue));
-                Assert.That((double)meshTriangles, Is.GreaterThan(int.MaxValue - (double)(billboards * billboardParticles)), "mesh statistic must stay within its own budget");
+
+                // Use the real SDK calculator: its light count is raw light components plus, per
+                // particle system, min(main.maxParticles, lights.maxLights), saturated on overflow.
+                // Summing lights.maxLights here would hide the fact that a split system cannot
+                // saturate the light budget when its maxParticles is only half of int.MaxValue.
+                var stats = new VRC.SDKBase.Validation.Performance.Stats.AvatarPerformanceStats(false);
+                VRC.SDKBase.Validation.Performance.AvatarPerformance.CalculatePerformanceStats(
+                    "Defense budget", avatar, stats, false);
+                Assert.That(stats.particleTotalCount, Is.EqualTo(int.MaxValue), "particle total should saturate");
+                Assert.That(stats.particleMaxMeshPolyCount, Is.EqualTo(int.MaxValue), "mesh triangle total should saturate");
+                Assert.That(stats.lightCount, Is.EqualTo(int.MaxValue), "SDK light count should saturate");
             }
             finally { Object.DestroyImmediate(controller); }
         }

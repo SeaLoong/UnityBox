@@ -2,7 +2,13 @@
 
 历史条目保留发布时的行为；当前使用流程见 Editor/README.md 和技术参考。
 
-## [0.9.13] - 2026-11-20
+## [0.9.14] - 2026-11-23
+
+### Fixed
+
+- 修正「光源」统计未达到 `int.MaxValue`：VRChat SDK 对每个粒子系统按 `min(main.maxParticles, lights.maxLights)` 计算光源贡献，0.9.13 的拆分粒子系统 `maxParticles` 只有约半个上限，`min()` 把光源数卡在约一半。新增专用光载体粒子系统（`maxParticles` 与 `maxLights` 均等于光源预算），主系统与 sub-emitter 的 `maxLights` 归零避免重复计数。用真实 SDK `CalculatePerformanceStats` 验证三项统计均达到 `int.MaxValue`。
+
+## [0.9.13] - 2026-11-20（历史发布）
 
 ### Fixed
 
