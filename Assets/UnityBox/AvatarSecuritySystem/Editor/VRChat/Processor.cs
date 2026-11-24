@@ -155,16 +155,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // NDMF itself does not guarantee that another plugin has virtualized or
             // cloned these controllers. Isolate persistent sources in both paths.
-            if (assConfig.disableDefense)
-            {
-                if (!VrcPlayableControllers.CanEditBuildFx(descriptor, hasNDMF ? isTemporaryAsset : null))
-                    VrcPlayableControllers.PreparePlayableControllerCopies(descriptor, fxOnly: true);
-            }
-            else
-            {
-                VrcPlayableControllers.PreparePlayableControllerCopies(descriptor,
-                    fxOnly: !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation);
-            }
+            if (!VrcPlayableControllers.CanEditBuildFx(descriptor, hasNDMF ? isTemporaryAsset : null))
+                VrcPlayableControllers.PreparePlayableControllerCopies(descriptor, fxOnly: true);
 
             Debug.Log("[ASS] Starting to generate security system...");
             var fxController = GetFXController(descriptor);
