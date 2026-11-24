@@ -644,6 +644,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             if (clonedController == null)
                 throw new InvalidOperationException($"[ASS] Cannot resolve copied playable controller '{controllerPath}' with local file ID {sourceControllerId}. The source will not be modified.");
 
+            ControllerGraphCopy.IsolateExternalStateGraph(clonedController, sourcePath);
             RegisterGeneratedAssetPath(controllerPath);
 
             string motionFolder = $"{controllerFolder}/{controllerFileBase}_{slotKey}_{guidSuffix}_Motions";

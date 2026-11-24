@@ -217,6 +217,8 @@ VRC SDK 会检查 Controller 状态行为引用的音频；`Decompress On Load` 
 ASS 自有图、参数名称和诱饵仍会生成混淆输出。单独执行 NDMF bake/preview 时没有晚期 SDK
 回调，完整 Playable 改名留到正常 VRC SDK 构建；预览阶段不额外改写第三方全图。
 
+使用自定义 Base 时，构建副本会保留跨资源文件的姿势转场，包括从侧躺经下蹲回到站立。无需为此调整模型的 WD。
+
 时间 UI 和最终诱饵输出的检查范围见
 [时间与混淆验证](../../../../Docs/Verification/ASSTimingObfuscation/README.md)。
 

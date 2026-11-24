@@ -145,6 +145,39 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(sourceState.name, Is.EqualTo("Source"));
         }
 
+        [Test]
+        public void BuildCopyKeepsCrossFilePoseTransitionsInsideTheCopiedLayer()
+        {
+            var machine = controller.layers[0].stateMachine;
+            var standing = machine.AddState("Standing");
+            var side = new AnimatorState { name = "Left Side" };
+            AssetDatabase.CreateAsset(side, folder + "/Left Side.asset");
+            machine.AddState(side, Vector3.zero);
+            machine.defaultState = side;
+            var rise = side.AddTransition(standing);
+            rise.hasExitTime = false;
+            rise.duration = 0;
+            controller.AddParameter("Rise", AnimatorControllerParameterType.Bool);
+            rise.AddCondition(AnimatorConditionMode.If, 0, "Rise");
+            standing.AddTransition(side);
+            AssetDatabase.SaveAssets();
+
+            var copy = Obfuscator.DuplicateAnimatorControllerForBuild(controller, "Base");
+            string path = AssetDatabase.GetAssetPath(copy);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            copy = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+            var layer = copy.layers[0].stateMachine;
+            var copiedSide = layer.states.Single(s => s.state.name == "Left Side").state;
+            var copiedStanding = layer.states.Single(s => s.state.name == "Standing").state;
+            Assert.That(layer.defaultState, Is.EqualTo(copiedSide));
+            Assert.That(copiedSide, Is.Not.EqualTo(side));
+            Assert.That(copiedSide.transitions.Single().destinationState, Is.EqualTo(copiedStanding));
+            Assert.That(copiedStanding.transitions.Single().destinationState, Is.EqualTo(copiedSide));
+            Assert.That(rise.destinationState, Is.EqualTo(standing));
+            Assert.That(AssetDatabase.GetAssetPath(copiedSide.transitions.Single()), Is.EqualTo(path));
+        }
+
         private sealed class RecordingBehaviours : IAnimatorBehaviourAdapter
         {
             public readonly List<(AnimatorState State, string Parameter, float Value, bool LocalOnly)> Drivers =

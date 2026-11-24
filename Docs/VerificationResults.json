@@ -3,6 +3,96 @@
   "schema": 3,
   "supplemental_patch_runs": [
     {
+      "scope": "ASS pose exit across NDMF state graph containers",
+      "date_local": "2026-11-25",
+      "editor": "Unity 2022.3.22f1 (Windows), VRChat SDK 3.10.6, NDMF 1.15.1, VRCFury 1.1506.0",
+      "files_sha256": {
+        "Editor/ControllerGraphCopy.cs": "8f139eeb51e263d5cbff2230d6f817ead3c36deaebf43366b33e6bfd753101b0",
+        "Editor/Obfuscator.cs": "ea4c723e86963586689529089f1426ab92c567c4627c3ff1e9115e07244a4e93",
+        "Tests/Editor/AnimationCoreTests.cs": "ddc1445168b6950b4b360526908f2e73dcd0791a85c678065906eaaa9ef3a75b"
+      },
+      "editmode": {
+        "tests": 19,
+        "failed": 0,
+        "skipped": 0,
+        "xml_sha256": "fb26cfef3ca7eec065ef793a8af21d2e1dbe4a415ec822e029f19280dc01259d",
+        "command": [
+          "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+          "-batchmode",
+          "-nographics",
+          "-projectPath",
+          "C:\\temp\\ub-posefix-261125\\core-complete",
+          "-runTests",
+          "-testPlatform",
+          "EditMode",
+          "-testResults",
+          "C:\\temp\\ub-posefix-261125\\core-complete\\.unitybox-test-results\\20261124T192415-e82cbe2b\\results.xml",
+          "-logFile",
+          "C:\\temp\\ub-posefix-261125\\core-complete\\.unitybox-test-results\\20261124T192415-e82cbe2b\\unity.log",
+          "-testFilter",
+          "AnimationCoreTests;StandaloneRuntimeTests.Override;StandaloneRuntimeTests.Memory",
+          "-assemblyNames",
+          "UnityBox.AvatarSecuritySystem.Editor.Tests"
+        ]
+      },
+      "native_checks": {
+        "avatar": "Himaku_Banshaku-FaceTracking[HD+HD]",
+        "source_contacts": 53,
+        "final_contacts": 110,
+        "whole_sdk_base_edges": 287,
+        "whole_sdk_base_external_destinations": 0,
+        "explicit_copy_external_destinations": 0,
+        "archived_split_graph_external_destinations": 0,
+        "FX_external_destinations_in_whole_sdk": 0,
+        "frame_standing_from_side": 30,
+        "frame_standing_from_pose_change": 61,
+        "hz": 60,
+        "frames_per_trial": 150,
+        "tested_with_FX": true,
+        "active_defense": false,
+        "obfuscate_all_playables": true,
+        "note": "SDK and direct copy checks ran in a saved-project clone. Six optional xyz.misakal SDK UI patch/connect packages were omitted for compatibility with VRCFury in batch mode. The replay loaded the actual split Base saved during the prior 0.9.14 control, copied it explicitly, reimported the output, then evaluated it."
+      },
+      "unity_commands": [
+        [
+          "D:/Unity/2022.3.22f1/Editor/Unity.exe",
+          "-batchmode",
+          "-debugCodeOptimization",
+          "-quit",
+          "-projectPath",
+          "C:\\temp\\ub-posefix-261125\\avatar",
+          "-executeMethod",
+          "PoseCompare.Run",
+          "-logFile",
+          "C:\\temp\\ub-posefix-261125\\out\\avatar-complete.log"
+        ],
+        [
+          "D:/Unity/2022.3.22f1/Editor/Unity.exe",
+          "-batchmode",
+          "-debugCodeOptimization",
+          "-quit",
+          "-projectPath",
+          "C:\\temp\\ub-posefix-261125\\avatar",
+          "-executeMethod",
+          "PoseCompare.Replay",
+          "-logFile",
+          "C:\\temp\\ub-posefix-261125\\out\\replay.log"
+        ]
+      ],
+      "artifact_sha256": {
+        "avatar-complete.log": "12da6c952aa83811fca2b9e47e7041dc0bef33c4beae5677714cdc9a24a9cabf",
+        "replay.log": "6a9a7d5706dbd40b1b18dc46cf02d26c26a3d2daf7838177c9e544c9142a1e7b",
+        "exact-replay.json": "fdbb5ef63be9ffa83232ed45a14b0c17da44335e4abacf70b97b9dcf53cd0361"
+      },
+      "packaging_checks": {
+        "command": "py -3.13 -X utf8 -B -m unittest discover -s .github/scripts -p test_*.py -v",
+        "platform": "Windows",
+        "passed": 19,
+        "failed": 4,
+        "comparison": "same four line-ending and POSIX executable-bit failures on unmodified HEAD and patched checkout"
+      }
+    },
+    {
       "scope": "ASS controller copy-on-write for gesture and feedback builds with defense disabled",
       "date_local": "2026-11-25",
       "editor": "Unity 2022.3.22f1, Windows; VRChat SDK 3.10.6, NDMF 1.15.1",

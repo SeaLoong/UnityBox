@@ -11,6 +11,80 @@ namespace UnityBox.AvatarSecuritySystem.Editor
     /// <summary>Creates a persistent graph copy and resolves AnimatorOverrideController motions.</summary>
     public static class ControllerGraphCopy
     {
+        // CopyAsset remaps references inside one file. A state stored in a second
+        // NDMF container can still point back into the original controller.
+        internal static void IsolateExternalStateGraph(AnimatorController copy, string sourcePath)
+        {
+            string copyPath = AssetDatabase.GetAssetPath(copy);
+            Dictionary<long, Object> copiedById = null;
+            var replacements = new Dictionary<Object, Object>();
+            var visited = new HashSet<Object> { copy };
+            var pending = new Stack<Object>();
+            pending.Push(copy);
+
+            while (pending.Count > 0)
+            {
+                using (var serialized = new SerializedObject(pending.Pop()))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var target = property.objectReferenceValue;
+                        if (!(target is AnimatorStateMachine || target is AnimatorState ||
+                              target is AnimatorTransitionBase || target is StateMachineBehaviour)) continue;
+
+                        var owned = Resolve(target);
+                        if (owned != target) property.objectReferenceValue = owned;
+                        if (visited.Add(owned)) pending.Push(owned);
+                    }
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            Object Resolve(Object target)
+            {
+                if (visited.Contains(target)) return target;
+                if (replacements.TryGetValue(target, out var owned)) return owned;
+                string path = AssetDatabase.GetAssetPath(target);
+                if (path == copyPath) return target;
+                if (path == sourcePath)
+                {
+                    if (copiedById == null)
+                        copiedById = AssetDatabase.LoadAllAssetsAtPath(copyPath).Where(asset => asset).ToDictionary(LocalId);
+                    owned = copiedById[LocalId(target)];
+                }
+                else
+                {
+                    owned = NewStateGraphNode(target);
+                    EditorUtility.CopySerialized(target, owned);
+                    owned.name = target.name;
+                    AssetDatabase.AddObjectToAsset(owned, copy);
+                }
+                replacements.Add(target, owned);
+                return owned;
+            }
+        }
+
+        private static Object NewStateGraphNode(Object source)
+        {
+            switch (source)
+            {
+                case AnimatorStateMachine _: return new AnimatorStateMachine();
+                case AnimatorState _: return new AnimatorState();
+                case AnimatorStateTransition _: return new AnimatorStateTransition();
+                case AnimatorTransition _: return new AnimatorTransition();
+                case StateMachineBehaviour behaviour: return Object.Instantiate(behaviour);
+                default: throw new ArgumentException("Expected an animator state graph object.", nameof(source));
+            }
+        }
+
+        private static long LocalId(Object asset)
+        {
+            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(asset, out _, out long id)) return id;
+            throw new InvalidOperationException($"Cannot identify controller subasset '{asset.name}'.");
+        }
+
         public static AnimatorController CreateEditableCopy(RuntimeAnimatorController source, string targetPath)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -69,12 +143,13 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Object copy;
                 switch (value)
                 {
-                    case AnimatorStateMachine _: copy = new AnimatorStateMachine(); break;
-                    case AnimatorState _: copy = new AnimatorState(); break;
-                    case AnimatorStateTransition _: copy = new AnimatorStateTransition(); break;
-                    case AnimatorTransition _: copy = new AnimatorTransition(); break;
+                    case AnimatorStateMachine _:
+                    case AnimatorState _:
+                    case AnimatorTransitionBase _:
+                    case StateMachineBehaviour _:
+                        copy = NewStateGraphNode(value);
+                        break;
                     case BlendTree _: copy = new BlendTree(); break;
-                    case StateMachineBehaviour behaviour: copy = Object.Instantiate(behaviour); break;
                     case AnimationClip _ when !EditorUtility.IsPersistent(value): copy = new AnimationClip(); break;
                     case AvatarMask _ when !EditorUtility.IsPersistent(value): copy = new AvatarMask(); break;
                     default: return value;

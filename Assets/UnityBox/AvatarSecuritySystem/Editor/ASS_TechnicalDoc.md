@@ -134,6 +134,8 @@ Unity 与 SDK 的 `ObfuscationGraph` 共用诱饵参数、Clip、独立层和 AS
 这一分支保留接触器图的兼容语义。单独 NDMF bake/preview 不额外执行全图改名，正常 SDK
 构建在 NDMF 结果提交后进入该晚期回调。源 Controller 与源 Avatar 名称保持。
 
+复制持久化 Controller 时，先按 local file ID 选中容器内的目标 Controller，然后从它遍历状态机、状态、转场与 Behaviour。外部容器的图节点各复制一次，回指原容器的引用按 local file ID 映射到本次副本，因此重名状态、共享目标和循环转场都保留各自的对象身份。
+
 ## 防御生成与统计范围
 
 当前 `Defense` 的计划只安排一个粒子系统，并关闭 PhysX/Cloth 输出。粒子容量由已有用量与
