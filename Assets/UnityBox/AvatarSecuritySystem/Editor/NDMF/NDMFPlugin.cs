@@ -33,7 +33,8 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 var capturedConfig = Processor.GetCapturedConfig(ctx.AvatarRootObject);
                 try
                 {
-                    if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true, configOverride: capturedConfig))
+                    if (!Processor.ProcessAvatar(ctx.AvatarRootObject, hasNDMF: true, configOverride: capturedConfig,
+                        isTemporaryAsset: ctx.IsTemporaryAsset))
                     {
                         throw new System.Exception(
                             "[ASS] Avatar Security System processing failed (see previous log for details)");

@@ -3,6 +3,69 @@
   "schema": 3,
   "supplemental_patch_runs": [
     {
+      "scope": "ASS controller copy-on-write for gesture and feedback builds with defense disabled",
+      "date_local": "2026-11-25",
+      "editor": "Unity 2022.3.22f1, Windows; VRChat SDK 3.10.6, NDMF 1.15.1",
+      "files_sha256": {
+        "Editor/NDMF/NDMFPlugin.cs": "9c32b062ebf09aecf34860ae1fb3e45ac05c5a0c76e2fe493254de6005d857a8",
+        "Editor/Obfuscator.cs": "455790e1b524772872d1b0fd843661ed4b670db309c8e8ae2a36b078f6ebfbe8",
+        "Editor/VRChat/Processor.cs": "2aaa833fa0bbd896befda0723e37071a87b92adea91fcab37407af6115aaef9e",
+        "Editor/VRChat/VrcPlayableControllers.cs": "55c62a03dcfac806a16ee9aae1accaa8603fd3ac0e76f38e65a230950ac2a391",
+        "Tests/Editor/NDMF/NdmfFinalizationTests.cs": "ed5f4994a7c01376df6234c1c203fc65d39d72dec1daff998609ede61ff28ec2",
+        "Tests/Editor/VRChat/BuildAssetIsolationTests.cs": "00504f60b69048ac49ff72577e16bbdfc4208cddda4ab371a0a4e13ece5b8b13"
+      },
+      "runs": [
+        {
+          "command": [
+            "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+            "-batchmode",
+            "-nographics",
+            "-projectPath",
+            "C:\\temp\\ub-cow-261125\\final",
+            "-runTests",
+            "-testPlatform",
+            "EditMode",
+            "-testResults",
+            "C:\\temp\\ub-cow-261125\\final\\.unitybox-test-results\\20261124T180650-f66f99e9\\results.xml",
+            "-logFile",
+            "C:\\temp\\ub-cow-261125\\final\\.unitybox-test-results\\20261124T180650-f66f99e9\\unity.log",
+            "-testFilter",
+            "NdmfFinalizationTests;LateIndexRepairCopiesFxOnlyWhenTheStoredIndexChanges;SupervisorControlsKeepTheirSiblingTargetsAfterLayerInsertion;LateProcessingIsolatesNewPersistentControllerInEitherBuildMode",
+            "-assemblyNames",
+            "UnityBox.AvatarSecuritySystem.NDMF.Tests;UnityBox.AvatarSecuritySystem.VRChat.Tests"
+          ],
+          "passed": 9,
+          "exit_code": 0,
+          "xml_gz": "Docs/Verification/ASSControllerCopy/20261124T180650-f66f99e9.xml.gz",
+          "xml_sha256": "5456f2f22f51c206c93a9e3e1363920cfd23023d9d3d06349e2634221ad5174f"
+        },
+        {
+          "command": [
+            "D:\\Unity\\2022.3.22f1\\Editor\\Unity.exe",
+            "-batchmode",
+            "-nographics",
+            "-projectPath",
+            "C:\\temp\\ub-cow-261125\\final",
+            "-runTests",
+            "-testPlatform",
+            "EditMode",
+            "-testResults",
+            "C:\\temp\\ub-cow-261125\\final\\.unitybox-test-results\\20261124T180902-a36ee35c\\results.xml",
+            "-logFile",
+            "C:\\temp\\ub-cow-261125\\final\\.unitybox-test-results\\20261124T180902-a36ee35c\\unity.log",
+            "-testFilter",
+            "NdmfFinishThenLateSdkCallbackPreservesSelectedDecoysAndNativeUserAnimation;LateSdkHookRenamesTheIsolatedGraphAndKeepsContactsAndSelectedDecoys",
+            "-assemblyNames",
+            "UnityBox.AvatarSecuritySystem.NDMF.Tests;UnityBox.AvatarSecuritySystem.VRChat.Tests"
+          ],
+          "passed": 3,
+          "exit_code": 0,
+          "xml_gz": "Docs/Verification/ASSControllerCopy/20261124T180902-a36ee35c.xml.gz",
+          "xml_sha256": "3b22d32c29386dff35f99a5e3f8774921fd49a3c92a1d8238c81a2ce09c9c789"
+        }
+      ]
+    },
+    {
       "scope": "ACC 0.5.5 live material rule preview",
       "date_local": "2026-11-20",
       "platform": "Windows 11",

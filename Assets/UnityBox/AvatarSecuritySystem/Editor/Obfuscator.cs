@@ -949,7 +949,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return string.IsNullOrEmpty(assetPath) ? null : assetPath.Replace('\\', '/');
         }
 
-        private static void EnsureFolder(string assetFolderPath)
+        public static void EnsureFolder(string assetFolderPath)
         {
             if (AssetDatabase.IsValidFolder(assetFolderPath))
                 return;

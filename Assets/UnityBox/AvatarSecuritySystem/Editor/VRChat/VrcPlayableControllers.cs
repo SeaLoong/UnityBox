@@ -20,6 +20,24 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             descriptor.specialAnimationLayers = specialLayers;
         }
 
+        internal static bool CanEditBuildFx(VRCAvatarDescriptor descriptor, Func<UnityEngine.Object, bool> isTemporaryAsset)
+        {
+            if (isTemporaryAsset == null || !descriptor.customizeAnimationLayers) return false;
+            var layers = descriptor.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
+            var fx = layers.FirstOrDefault(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX);
+            if (fx.isDefault || !(fx.animatorController is AnimatorController controller) || !isTemporaryAsset(controller))
+                return false;
+
+            var special = descriptor.specialAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
+            return layers.Concat(special).Count(layer =>
+            {
+                var other = layer.animatorController;
+                while (other is UnityEngine.AnimatorOverrideController overridden)
+                    other = overridden.runtimeAnimatorController;
+                return !layer.isDefault && other == controller;
+            }) == 1;
+        }
+
         public static void EnableCustomAnimationLayers(VRCAvatarDescriptor descriptor)
         {
             if (descriptor == null) return;

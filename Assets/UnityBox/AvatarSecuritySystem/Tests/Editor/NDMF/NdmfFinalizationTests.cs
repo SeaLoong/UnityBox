@@ -159,6 +159,8 @@ namespace UnityBox.AvatarSecuritySystem.Tests
                 foreach (var pass in (IEnumerable)phase.GetType().GetField("Item2").GetValue(phase))
                     runPass.Invoke(context, new[] { pass });
                 generatedFolder = Obfuscator.GeneratedFolder;
+                Assert.That(AssetDatabase.IsValidFolder(generatedFolder + "/PlayableControllers"), Is.False,
+                    "The private FX controller supplied by NDMF should be reused.");
                 typeof(BuildContext).GetMethod("Finish", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(context, null);
 
                 var final = descriptor.baseAnimationLayers.Single(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX)

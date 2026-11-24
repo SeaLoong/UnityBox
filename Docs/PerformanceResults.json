@@ -3,6 +3,14 @@
   "editor": "2022.3.22f1",
   "editor_only_feature_notes": [
     {
+      "scope": "ASS controller copy-on-write for gesture and feedback builds with defense disabled",
+      "date_local": "2026-11-25",
+      "dedicated_performance_or_player_run": false,
+      "observable": "Four native NDMF pass-order cases completed without creating an ASS PlayableControllers folder. A late index check preserved FX identity when no correction was required; an incorrect index created a private FX copy.",
+      "functional_evidence": "Docs/VerificationResults.json",
+      "elapsed_time_comparison": null
+    },
+    {
       "scope": "ACC 0.5.5 live material rule preview",
       "date_local": "2026-11-20",
       "dedicated_performance_or_player_run": false,

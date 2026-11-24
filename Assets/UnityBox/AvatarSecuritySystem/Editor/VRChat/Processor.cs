@@ -94,6 +94,10 @@ namespace UnityBox.AvatarSecuritySystem.Editor
         /// 或 NDMF 场景下的 NDMFPlugin（BuildPhase.PlatformFinish）调用。
         /// </summary>
         public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF, ASSConfigData configOverride = null)
+            => ProcessAvatar(avatarGameObject, hasNDMF, configOverride, null);
+
+        public static bool ProcessAvatar(GameObject avatarGameObject, bool hasNDMF, ASSConfigData configOverride,
+            System.Func<UnityEngine.Object, bool> isTemporaryAsset)
         {
             var descriptor = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null)
@@ -151,8 +155,16 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             // NDMF itself does not guarantee that another plugin has virtualized or
             // cloned these controllers. Isolate persistent sources in both paths.
-            VrcPlayableControllers.PreparePlayableControllerCopies(descriptor,
-                fxOnly: !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation);
+            if (assConfig.disableDefense)
+            {
+                if (!VrcPlayableControllers.CanEditBuildFx(descriptor, hasNDMF ? isTemporaryAsset : null))
+                    VrcPlayableControllers.PreparePlayableControllerCopies(descriptor, fxOnly: true);
+            }
+            else
+            {
+                VrcPlayableControllers.PreparePlayableControllerCopies(descriptor,
+                    fxOnly: !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation);
+            }
 
             Debug.Log("[ASS] Starting to generate security system...");
             var fxController = GetFXController(descriptor);
@@ -443,16 +455,25 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                 Obfuscator.RestoreContext(build.ObfuscationContext);
                 Constants.ApplyObfuscation();
             }
+            bool renamePlayables = !assConfig.disableObfuscation && Obfuscator.IsEnabled && assConfig.enablePlayableLayerObfuscation;
+            bool preserveContactGraph = renamePlayables && HasVRCContactComponents(avatarGameObject);
+            if (assConfig.disableDefense && (!renamePlayables || preserveContactGraph))
+            {
+                if (preserveContactGraph)
+                    Debug.Log("[ASS] VRC Contact components detected; preserving third-party playable graph names.");
+                RefreshASSLayerControlIndices(descriptor, copyBeforeRepair: true);
+                return true;
+            }
             // Late build hooks may have installed a different persistent controller.
             // Isolate it before repairing layer indices or renaming its graph.
             VrcPlayableControllers.PreparePlayableControllerCopies(descriptor,
-                fxOnly: assConfig.disableObfuscation || !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation);
+                fxOnly: !renamePlayables);
             RefreshASSLayerControlIndices(descriptor);
 
-            if (assConfig.disableObfuscation || !Obfuscator.IsEnabled || !assConfig.enablePlayableLayerObfuscation)
+            if (!renamePlayables)
                 return true;
 
-            if (HasVRCContactComponents(avatarGameObject))
+            if (preserveContactGraph)
             {
                 // VRCFury HapticContacts/WorldScaleDetector 会为 ContactReceiver
                 // 生成隐藏的 FX/AAP AllReceiversOff 图。ASS 不应改名或重排这套第三方图，
@@ -467,23 +488,33 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             return true;
         }
 
-        private static void RefreshASSLayerControlIndices(VRCAvatarDescriptor descriptor)
+        private static void RefreshASSLayerControlIndices(VRCAvatarDescriptor descriptor, bool copyBeforeRepair = false)
         {
             if (descriptor == null || !descriptor.customizeAnimationLayers) return;
 
-            foreach (var playableLayer in descriptor.baseAnimationLayers ?? System.Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
+            var slots = descriptor.baseAnimationLayers ?? System.Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>();
+            for (int slot = 0; slot < slots.Length; slot++)
             {
+                var playableLayer = slots[slot];
                 if (playableLayer.isDefault || playableLayer.type != VRCAvatarDescriptor.AnimLayerType.FX)
                     continue;
-                if (!(playableLayer.animatorController is AnimatorController controller))
-                    continue;
+                var source = playableLayer.animatorController;
+                while (source is AnimatorOverrideController overridden)
+                    source = overridden.runtimeAnimatorController;
+                if (!(source is AnimatorController controller)) continue;
 
-                int changedCount = 0;
-                var layers = controller.layers;
-                for (int i = 0; i < layers.Length; i++)
+                if (copyBeforeRepair)
                 {
-                    RefreshASSLayerControlIndices(layers[i].stateMachine, i, layers, ref changedCount);
+                    if (RefreshLayerControls(controller, apply: false) == 0) continue;
+                    // Behaviours can live in a different asset from their controller.
+                    // Clone the reachable graph before changing any behaviour.
+                    Obfuscator.EnsureFolder(Obfuscator.GeneratedFolder);
+                    string path = AssetDatabase.GenerateUniqueAssetPath(Obfuscator.GeneratedFolder + "/FX_Repair.controller");
+                    controller = ControllerGraphCopy.CreateEditableCopy(playableLayer.animatorController, path);
+                    slots[slot].animatorController = controller;
+                    descriptor.baseAnimationLayers = slots;
                 }
+                int changedCount = RefreshLayerControls(controller, apply: true);
 
                 if (changedCount > 0)
                 {
@@ -493,8 +524,17 @@ namespace UnityBox.AvatarSecuritySystem.Editor
             }
         }
 
+        private static int RefreshLayerControls(AnimatorController controller, bool apply)
+        {
+            int changes = 0;
+            var layers = controller.layers;
+            for (int i = 0; i < layers.Length; i++)
+                RefreshASSLayerControlIndices(layers[i].stateMachine, i, layers, ref changes, apply);
+            return changes;
+        }
+
         private static void RefreshASSLayerControlIndices(
-            AnimatorStateMachine stateMachine, int layerIndex, AnimatorControllerLayer[] layers, ref int changedCount)
+            AnimatorStateMachine stateMachine, int layerIndex, AnimatorControllerLayer[] layers, ref int changedCount, bool apply)
         {
             if (stateMachine == null) return;
 
@@ -511,7 +551,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
                     if (control.playable != VRC_AnimatorLayerControl.BlendableLayer.FX)
                     {
-                        control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
+                        if (apply) control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
                         changedCount++;
                     }
                     int targetIndex = layerIndex;
@@ -523,7 +563,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
                     }
                     if (control.layer != targetIndex)
                     {
-                        control.layer = targetIndex;
+                        if (apply) control.layer = targetIndex;
                         changedCount++;
                     }
                 }
@@ -531,7 +571,7 @@ namespace UnityBox.AvatarSecuritySystem.Editor
 
             foreach (var childMachine in stateMachine.stateMachines)
             {
-                RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, layers, ref changedCount);
+                RefreshASSLayerControlIndices(childMachine.stateMachine, layerIndex, layers, ref changedCount, apply);
             }
         }
 

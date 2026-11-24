@@ -438,6 +438,34 @@ namespace UnityBox.AvatarSecuritySystem.Tests
             Assert.That(source.layers[0].stateMachine.states[0].state.name, Is.EqualTo("UserState"));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void LateIndexRepairCopiesFxOnlyWhenTheStoredIndexChanges(bool needsRepair)
+        {
+            var source = AnimatorController.CreateAnimatorControllerAtPath(folder + "/User.controller");
+            var state = source.layers[0].stateMachine.AddState("Original");
+            var control = state.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
+            control.debugString = "ASS_Test";
+            control.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
+            control.layer = needsRepair ? 7 : 0;
+            AssetDatabase.SaveAssets();
+            var config = avatar.AddComponent<ASSComponent>();
+            config.disableDefense = config.disableObfuscation = true;
+            config.gesturePassword = new System.Collections.Generic.List<int> { 1 };
+            descriptor.customizeAnimationLayers = true;
+            descriptor.baseAnimationLayers = new[] {
+                Layer(source, VRCAvatarDescriptor.AnimLayerType.Base),
+                Layer(source, VRCAvatarDescriptor.AnimLayerType.FX)
+            };
+            Processor.CaptureConfigSnapshot(avatar, "index repair");
+            Assert.That(Processor.ProcessPlayableObfuscation(avatar, false), Is.True);
+            var fx = (AnimatorController)descriptor.baseAnimationLayers[1].animatorController;
+            Assert.That(fx == source, Is.EqualTo(!needsRepair));
+            Assert.That(descriptor.baseAnimationLayers[0].animatorController, Is.SameAs(source));
+            Assert.That(fx.GetBehaviours<VRCAnimatorLayerControl>().Single().layer, Is.Zero);
+            Assert.That(control.layer, Is.EqualTo(needsRepair ? 7 : 0));
+        }
+
         [Test]
         public void DisabledCustomLayersAreNotCopiedOrReactivatedByPreparation()
         {
