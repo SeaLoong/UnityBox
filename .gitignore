@@ -119,6 +119,7 @@ InitTestScene*.unity*
 /[Aa]ssets/*.unity
 
 **/Generated/
+**/Generated.meta
 
 _build/
 __pycache__/
